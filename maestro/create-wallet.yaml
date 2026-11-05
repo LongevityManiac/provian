@@ -1,0 +1,24 @@
+appId: com.provian.wallet
+---
+# Go back from ToS
+- tapOn:
+    point: "30,65"
+- waitForAnimationToEnd
+
+# Check all 3 boxes (known good coordinates)
+- tapOn:
+    point: "150,440"
+- tapOn:
+    point: "150,530"
+- tapOn:
+    point: "150,610"
+
+- takeScreenshot: screenshots/nav-audit/wallet-pre-create
+
+# Tap Create My Wallet
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+
+# Wait for biometric prompt or next screen
+- takeScreenshot: screenshots/nav-audit/wallet-creating

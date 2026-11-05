@@ -1,0 +1,185 @@
+{
+  "note": "Pinned output-signature vectors (core/meter/output-signature.ts). Public test keys only.",
+  "wallet_test_private_key": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "wallet_signer": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+  "device_test_scalar": 7,
+  "device_id": "dev_vector_macbook",
+  "device_public_key": "048e533b6fa0bf7b4625bb30667c01fb607ef9f8b8a80fef5b300628703187b2a373eb1dbde03318366d069f83a6f5900053c73633cb041b21c55e1a86c1f400b4",
+  "app_test_scalar": 11,
+  "app_public_key": "043ed113b7883b4c590638379db0c21cda16742ed0255048bf433391d374bc21d19099209accc4c8a224c843afa4f4c68a090d04da5e9889dae2f8eefce82a3740",
+  "app_key_id": "aok_0440557dcbdd479617aaec192245329d",
+  "citing_witness": {
+    "type": "observer_device",
+    "identity": "dev_vector_consumer",
+    "attestation_tier": "software"
+  },
+  "cases": [
+    {
+      "signer_kind": "wallet",
+      "input": {
+        "kind": "text",
+        "value": "A research summary the producer agent handed out.\n"
+      },
+      "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+      "message": "provian-output:v1:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+      "digest": "ae5b7d8de75408b86111e3c050cdf1b91a1eb7e9b77b87c200434b94b5125dea",
+      "signature": {
+        "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+        "signer": {
+          "kind": "wallet",
+          "id": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+        },
+        "scheme": "eip191_secp256k1",
+        "sig": "0xf78521ab90efe5f52dc02fee571e625effe90a90f4a7adf4505d9626cfe82a4a750abc8b667b60a63380475dbd86b823126253a4f8432a1e31f0ada42ea43e161b"
+      },
+      "header": "eyJoYXNoIjoic2hhMjU2Ojg5YmEyMTUxODc3NmIyNmViODFhYjhlZGQyYjYyZDEwZGUzNWZlNzI2M2NlMTUxNjc5MjhkZjNhYTNlYWZjMTciLCJzY2hlbWUiOiJlaXAxOTFfc2VjcDI1NmsxIiwic2lnIjoiMHhmNzg1MjFhYjkwZWZlNWY1MmRjMDJmZWU1NzFlNjI1ZWZmZTkwYTkwZjRhN2FkZjQ1MDVkOTYyNmNmZTgyYTRhNzUwYWJjOGI2NjdiNjBhNjMzODA0NzVkYmQ4NmI4MjMxMjYyNTNhNGY4NDMyYTFlMzFmMGFkYTQyZWE0M2UxNjFiIiwic2lnbmVyIjp7ImlkIjoiMHhmMzlmZDZlNTFhYWQ4OGY2ZjRjZTZhYjg4MjcyNzljZmZmYjkyMjY2Iiwia2luZCI6IndhbGxldCJ9fQ",
+      "citation_origin": {
+        "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+        "origin_identifier": "out:wallet:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "witnessed": true,
+        "witness": {
+          "type": "observer_device",
+          "identity": "dev_vector_consumer",
+          "attestation_tier": "software"
+        },
+        "signature": {
+          "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+          "signer": {
+            "kind": "wallet",
+            "id": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          },
+          "scheme": "eip191_secp256k1",
+          "sig": "0xf78521ab90efe5f52dc02fee571e625effe90a90f4a7adf4505d9626cfe82a4a750abc8b667b60a63380475dbd86b823126253a4f8432a1e31f0ada42ea43e161b"
+        }
+      }
+    },
+    {
+      "signer_kind": "wallet",
+      "input": {
+        "kind": "bytes_hex",
+        "value": "00ff10204080c0e0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+      },
+      "hash": "sha256:09dac4824c34801ab6a1e4ff9bc35bed20d7c968946ecb98879f03bc92b7ec0d",
+      "message": "provian-output:v1:09dac4824c34801ab6a1e4ff9bc35bed20d7c968946ecb98879f03bc92b7ec0d",
+      "digest": "aa4166754b62f064ca91f55cee9f090e263c8affc476201f7b76eac50aee68bc",
+      "signature": {
+        "hash": "sha256:09dac4824c34801ab6a1e4ff9bc35bed20d7c968946ecb98879f03bc92b7ec0d",
+        "signer": {
+          "kind": "wallet",
+          "id": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+        },
+        "scheme": "eip191_secp256k1",
+        "sig": "0x00c0758cc581842c3e826687c6e25065d4547660c5bf69f47775bce0826e090c7d0ca7bc5bf81b802237435ae91d0a37ad0163003883f1a6de4d948be09edd8c1b"
+      },
+      "header": "eyJoYXNoIjoic2hhMjU2OjA5ZGFjNDgyNGMzNDgwMWFiNmExZTRmZjliYzM1YmVkMjBkN2M5Njg5NDZlY2I5ODg3OWYwM2JjOTJiN2VjMGQiLCJzY2hlbWUiOiJlaXAxOTFfc2VjcDI1NmsxIiwic2lnIjoiMHgwMGMwNzU4Y2M1ODE4NDJjM2U4MjY2ODdjNmUyNTA2NWQ0NTQ3NjYwYzViZjY5ZjQ3Nzc1YmNlMDgyNmUwOTBjN2QwY2E3YmM1YmY4MWI4MDIyMzc0MzVhZTkxZDBhMzdhZDAxNjMwMDM4ODNmMWE2ZGU0ZDk0OGJlMDllZGQ4YzFiIiwic2lnbmVyIjp7ImlkIjoiMHhmMzlmZDZlNTFhYWQ4OGY2ZjRjZTZhYjg4MjcyNzljZmZmYjkyMjY2Iiwia2luZCI6IndhbGxldCJ9fQ",
+      "citation_origin": {
+        "hash": "sha256:09dac4824c34801ab6a1e4ff9bc35bed20d7c968946ecb98879f03bc92b7ec0d",
+        "origin_identifier": "out:wallet:0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266",
+        "witnessed": true,
+        "witness": {
+          "type": "observer_device",
+          "identity": "dev_vector_consumer",
+          "attestation_tier": "software"
+        },
+        "signature": {
+          "hash": "sha256:09dac4824c34801ab6a1e4ff9bc35bed20d7c968946ecb98879f03bc92b7ec0d",
+          "signer": {
+            "kind": "wallet",
+            "id": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+          },
+          "scheme": "eip191_secp256k1",
+          "sig": "0x00c0758cc581842c3e826687c6e25065d4547660c5bf69f47775bce0826e090c7d0ca7bc5bf81b802237435ae91d0a37ad0163003883f1a6de4d948be09edd8c1b"
+        }
+      }
+    },
+    {
+      "signer_kind": "device",
+      "input": {
+        "kind": "text",
+        "value": "A research summary the producer agent handed out.\n"
+      },
+      "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+      "message": "provian-output:v1:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+      "digest": "ae5b7d8de75408b86111e3c050cdf1b91a1eb7e9b77b87c200434b94b5125dea",
+      "signature": {
+        "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+        "signer": {
+          "kind": "device",
+          "id": "dev_vector_macbook"
+        },
+        "scheme": "p256_sha256",
+        "sig": "150e2b5f037c607706e0bbcba0f048b34f5a707bfe2b128c4a9d4c12e47cf800071452aaceb2a702dbb5cfc7d5dc1bdad3fa59addb226f00238916c18e935d48"
+      },
+      "header": "eyJoYXNoIjoic2hhMjU2Ojg5YmEyMTUxODc3NmIyNmViODFhYjhlZGQyYjYyZDEwZGUzNWZlNzI2M2NlMTUxNjc5MjhkZjNhYTNlYWZjMTciLCJzY2hlbWUiOiJwMjU2X3NoYTI1NiIsInNpZyI6IjE1MGUyYjVmMDM3YzYwNzcwNmUwYmJjYmEwZjA0OGIzNGY1YTcwN2JmZTJiMTI4YzRhOWQ0YzEyZTQ3Y2Y4MDAwNzE0NTJhYWNlYjJhNzAyZGJiNWNmYzdkNWRjMWJkYWQzZmE1OWFkZGIyMjZmMDAyMzg5MTZjMThlOTM1ZDQ4Iiwic2lnbmVyIjp7ImlkIjoiZGV2X3ZlY3Rvcl9tYWNib29rIiwia2luZCI6ImRldmljZSJ9fQ",
+      "citation_origin": {
+        "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+        "origin_identifier": "out:device:dev_vector_macbook",
+        "witnessed": true,
+        "witness": {
+          "type": "observer_device",
+          "identity": "dev_vector_consumer",
+          "attestation_tier": "software"
+        },
+        "signature": {
+          "hash": "sha256:89ba21518776b26eb81ab8edd2b62d10de35fe7263ce15167928df3aa3eafc17",
+          "signer": {
+            "kind": "device",
+            "id": "dev_vector_macbook"
+          },
+          "scheme": "p256_sha256",
+          "sig": "150e2b5f037c607706e0bbcba0f048b34f5a707bfe2b128c4a9d4c12e47cf800071452aaceb2a702dbb5cfc7d5dc1bdad3fa59addb226f00238916c18e935d48"
+        }
+      }
+    },
+    {
+      "signer_kind": "app",
+      "input": {
+        "kind": "text",
+        "value": "An answer a phone handed out."
+      },
+      "hash": "sha256:4cc863e6a2ab11bc19ae6f2d8f30c7e4ca2378d9c0643d282ca60e5a86f88737",
+      "message": "provian-output:v1:4cc863e6a2ab11bc19ae6f2d8f30c7e4ca2378d9c0643d282ca60e5a86f88737",
+      "digest": "5a0f7b2e6cadb88d4a17abc4e8fdba3ade45e11fc14df85ef0eeada83025be76",
+      "signature": {
+        "hash": "sha256:4cc863e6a2ab11bc19ae6f2d8f30c7e4ca2378d9c0643d282ca60e5a86f88737",
+        "signer": {
+          "kind": "app",
+          "id": "aok_0440557dcbdd479617aaec192245329d"
+        },
+        "scheme": "p256_sha256",
+        "sig": "5a6186846acd648c6a2025e048c7d0a1387da4e612fb6423922d62e498ecef1c729177af6e4226a76eb6a7d98423e2dbb3c025076a3662550f20615b00cd1af4"
+      },
+      "header": "eyJoYXNoIjoic2hhMjU2OjRjYzg2M2U2YTJhYjExYmMxOWFlNmYyZDhmMzBjN2U0Y2EyMzc4ZDljMDY0M2QyODJjYTYwZTVhODZmODg3MzciLCJzY2hlbWUiOiJwMjU2X3NoYTI1NiIsInNpZyI6IjVhNjE4Njg0NmFjZDY0OGM2YTIwMjVlMDQ4YzdkMGExMzg3ZGE0ZTYxMmZiNjQyMzkyMmQ2MmU0OThlY2VmMWM3MjkxNzdhZjZlNDIyNmE3NmViNmE3ZDk4NDIzZTJkYmIzYzAyNTA3NmEzNjYyNTUwZjIwNjE1YjAwY2QxYWY0Iiwic2lnbmVyIjp7ImlkIjoiYW9rXzA0NDA1NTdkY2JkZDQ3OTYxN2FhZWMxOTIyNDUzMjlkIiwia2luZCI6ImFwcCJ9fQ",
+      "citation_origin": {
+        "hash": "sha256:4cc863e6a2ab11bc19ae6f2d8f30c7e4ca2378d9c0643d282ca60e5a86f88737",
+        "origin_identifier": "out:app:aok_0440557dcbdd479617aaec192245329d",
+        "witnessed": true,
+        "witness": {
+          "type": "observer_device",
+          "identity": "dev_vector_consumer",
+          "attestation_tier": "software"
+        },
+        "signature": {
+          "hash": "sha256:4cc863e6a2ab11bc19ae6f2d8f30c7e4ca2378d9c0643d282ca60e5a86f88737",
+          "signer": {
+            "kind": "app",
+            "id": "aok_0440557dcbdd479617aaec192245329d"
+          },
+          "scheme": "p256_sha256",
+          "sig": "5a6186846acd648c6a2025e048c7d0a1387da4e612fb6423922d62e498ecef1c729177af6e4226a76eb6a7d98423e2dbb3c025076a3662550f20615b00cd1af4"
+        }
+      }
+    }
+  ],
+  "registration": {
+    "device": {
+      "message": "provian-output-key:v1:device:dev_vector_macbook:048e533b6fa0bf7b4625bb30667c01fb607ef9f8b8a80fef5b300628703187b2a373eb1dbde03318366d069f83a6f5900053c73633cb041b21c55e1a86c1f400b4",
+      "sig": "c6e0b5cd12fb6e8fc3e05b1310044092a27848f0459c1f417cceb4074d2e9aa85eb730fe24d38b24fdb20b84fa55ab0a164504dc11c933e0870dd79945960ebc"
+    },
+    "app": {
+      "owner_id": "user_vector",
+      "message": "provian-output-key:v1:app:user_vector:043ed113b7883b4c590638379db0c21cda16742ed0255048bf433391d374bc21d19099209accc4c8a224c843afa4f4c68a090d04da5e9889dae2f8eefce82a3740",
+      "sig": "535a552c39a4aee4e13d510d859c6dd2035c66a394dae33256eb24bb29de3de73bf59215c6e9c10f322542dcad955fc7cf06d80101ec0e24695416e9e80e3c8c"
+    }
+  }
+}

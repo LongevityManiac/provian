@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    // Type-resolution shim: the @modelcontextprotocol v2 packages expose their
+    // entrypoints only via package.json "exports" maps, which classic 'node'
+    // module resolution cannot read. Node's CJS require() DOES honor the maps at
+    // runtime (each package ships a .cjs build), so these aliases only teach tsc
+    // where the .d.cts declaration files live.
+    "paths": {
+      "@modelcontextprotocol/server": ["node_modules/@modelcontextprotocol/server/dist/index.d.cts"],
+      "@modelcontextprotocol/node": ["node_modules/@modelcontextprotocol/node/dist/index.d.cts"],
+      "@modelcontextprotocol/core": ["node_modules/@modelcontextprotocol/core/dist/index.d.cts"],
+      "@modelcontextprotocol/core/internal": ["node_modules/@modelcontextprotocol/core/dist/internal.d.cts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

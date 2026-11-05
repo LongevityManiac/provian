@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSFaceIDUsageDescription": "Provian usa o Face ID para desbloquear sua carteira e confirmar as transações, assinaturas e aprovações que você realiza.",
+    "NSCameraUsageDescription": "Provian usa a câmera para escanear códigos QR: endereços de carteira, links de conexão WalletConnect e códigos de pareamento de agentes. Nada é gravado ou enviado para o sistema.",
+    "NSMotionUsageDescription": "Provian lê o sensor de movimento apenas durante o envio ou a troca de arquivos, para detectar vibrações fortes que podem indicar que uma transferência está sendo feita sob pressão. As leituras ficam armazenadas neste dispositivo.",
+    "NSPhotoLibraryUsageDescription": "Provian só abre sua biblioteca de fotos quando você escolhe uma imagem para o seu perfil Commons . Somente a imagem que você selecionar será usada."
+  }
+}

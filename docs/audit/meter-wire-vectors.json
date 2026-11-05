@@ -1,0 +1,229 @@
+{
+  "schema": "provian.meter-wire-vectors.v1",
+  "canonical_json": {
+    "input": {
+      "b": [
+        1,
+        "x",
+        null,
+        {
+          "d": true,
+          "c": 0.5
+        }
+      ],
+      "a": "é"
+    },
+    "output": "{\"a\":\"é\",\"b\":[1,\"x\",null,{\"c\":0.5,\"d\":true}]}"
+  },
+  "pes": [
+    {
+      "schema": "provian.pe.v2",
+      "pe_id": "pe_vector_a",
+      "device_id": "dev_vector_0001",
+      "prev_hash": "genesis",
+      "timestamp": 1790000000000,
+      "action_type": "agent_tool_orchestration",
+      "description": "free text that never leaves the device",
+      "metadata": {
+        "tool_call_count": 3,
+        "capture_lane": "transcript",
+        "nested": {
+          "b": 2,
+          "a": 1
+        },
+        "unicode": "é✓"
+      },
+      "compute": {
+        "tokens_processed": 1200,
+        "duration_ms": 4000
+      },
+      "output_digests": [
+        {
+          "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "schema": "provian.pe.v2",
+      "pe_id": "pe_vector_b",
+      "device_id": "dev_vector_0001",
+      "prev_hash": "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+      "timestamp": 1790000060000,
+      "action_type": "coding_session",
+      "metadata": {
+        "commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "lines_added": 10
+      },
+      "signature": "sig-is-excluded-from-the-hash"
+    },
+    {
+      "schema": "provian.pe.v2",
+      "pe_id": "pe_vector_c",
+      "device_id": "dev_vector_0001",
+      "prev_hash": "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+      "timestamp": 1790000120000,
+      "action_type": "ai_conversation",
+      "metadata": {
+        "session_fingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "hardware_witness": {
+        "scheme": "apple_app_attest",
+        "report": "opaque"
+      }
+    }
+  ],
+  "pe_hashes": [
+    "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+    "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+    "40e0c92a7ceeeba5e004e10fe0b373859728a8a64e05e0678a0651411cf47fb3"
+  ],
+  "acts": [
+    {
+      "pe_id": "pe_vector_a",
+      "pe_hash": "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+      "prev_hash": "genesis",
+      "timestamp": 1790000000000,
+      "action_type": "agent_tool_orchestration",
+      "pricing": {
+        "metadata": {
+          "tool_call_count": 3,
+          "capture_lane": "transcript",
+          "nested": {
+            "b": 2,
+            "a": 1
+          },
+          "unicode": "é✓"
+        },
+        "compute": {
+          "tokens_processed": 1200,
+          "duration_ms": 4000
+        },
+        "output_digests": [
+          {
+            "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "kind": "file"
+          }
+        ]
+      }
+    },
+    {
+      "pe_id": "pe_vector_b",
+      "pe_hash": "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+      "prev_hash": "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+      "timestamp": 1790000060000,
+      "action_type": "coding_session",
+      "pricing": {
+        "metadata": {
+          "commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "lines_added": 10
+        }
+      }
+    },
+    {
+      "pe_id": "pe_vector_c",
+      "pe_hash": "40e0c92a7ceeeba5e004e10fe0b373859728a8a64e05e0678a0651411cf47fb3",
+      "prev_hash": "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+      "timestamp": 1790000120000,
+      "action_type": "ai_conversation",
+      "pricing": {
+        "metadata": {
+          "session_fingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "hardware_witness": {
+          "scheme": "apple_app_attest",
+          "report": "opaque"
+        }
+      }
+    }
+  ],
+  "act_leaves": [
+    "6ffc4f30f4a2eea8b7ae4261e3aef442a395946b6259fa4af4eca41d2b6a3e3e",
+    "fc96c6b43de7ac4e0883267f9d5cfd6a94f9b6deb3fcdb3cd69b8929835873a4",
+    "4fe157d1a4619718b22d5daf97f86c3c45fdaf2ca11399630a0c6c8fe4e3031b"
+  ],
+  "hardware_nonce_c": "41a51ea67569df50c67bc1cef2f15f73cfced932ab5600543d0cd03cab1a9cc8",
+  "batch": {
+    "schema": "provian.pe-batch.v1",
+    "device_id": "dev_vector_0001",
+    "seq": 1,
+    "prev_batch_hash": "genesis",
+    "created_at_ms": 1790003600000,
+    "acts": [
+      {
+        "pe_id": "pe_vector_a",
+        "pe_hash": "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+        "prev_hash": "genesis",
+        "timestamp": 1790000000000,
+        "action_type": "agent_tool_orchestration",
+        "pricing": {
+          "metadata": {
+            "tool_call_count": 3,
+            "capture_lane": "transcript",
+            "nested": {
+              "b": 2,
+              "a": 1
+            },
+            "unicode": "é✓"
+          },
+          "compute": {
+            "tokens_processed": 1200,
+            "duration_ms": 4000
+          },
+          "output_digests": [
+            {
+              "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "kind": "file"
+            }
+          ]
+        }
+      },
+      {
+        "pe_id": "pe_vector_b",
+        "pe_hash": "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+        "prev_hash": "ed4375c1e3d0fc5bab14874363bb7026c49987ef87b880d6945fcaa859a19e90",
+        "timestamp": 1790000060000,
+        "action_type": "coding_session",
+        "pricing": {
+          "metadata": {
+            "commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "lines_added": 10
+          }
+        }
+      },
+      {
+        "pe_id": "pe_vector_c",
+        "pe_hash": "40e0c92a7ceeeba5e004e10fe0b373859728a8a64e05e0678a0651411cf47fb3",
+        "prev_hash": "6004654c30a0622ec2c782874f702e9271c4dbd5fe0bc21c748313a54ff2a01b",
+        "timestamp": 1790000120000,
+        "action_type": "ai_conversation",
+        "pricing": {
+          "metadata": {
+            "session_fingerprint": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          "hardware_witness": {
+            "scheme": "apple_app_attest",
+            "report": "opaque"
+          }
+        }
+      }
+    ],
+    "acts_root": "1e0e2ac5a94ead106e1efc7146f67e66fee586c8363fbb12b9d76c5498c348f3"
+  },
+  "batch_hash": "72bc5ae47bb93dbba4a2faf36bfe380df49f09ed095a1e8a64ea813500cacf21",
+  "act_proofs": [
+    [
+      "5ce8871a908de53ad2e5a5db7ce2d890a450a00c67a0f14ba2526d8810eddbb2",
+      "f1846ad510fcd1db682da820a0d576d9f734b76d705dfb80eb9d0dab99cb48da"
+    ],
+    [
+      "c8e092ea1232f0dda1a8d07edeaf9149f33aaf795b1fc686732ec0825d8d7bf0",
+      "f1846ad510fcd1db682da820a0d576d9f734b76d705dfb80eb9d0dab99cb48da"
+    ],
+    [
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "f49abccd0fa03aa3e66edd9f95b6c1ebc685cc62a2c5d299b0c6531703dd4fc5"
+    ]
+  ],
+  "batch_leaf": "3aa3b895a08c04dd6d975c9601b79f15aca49ad715351c28a20174802998b981"
+}

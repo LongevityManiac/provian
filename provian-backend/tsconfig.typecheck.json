@@ -1,0 +1,26 @@
+// TYPECHECK-ONLY PROJECT — wider than the build, emits nothing.
+//
+// `tsconfig.json` sets `rootDir:./src` because that is what the build emits, which means
+// `scripts/` can never belong to it: adding it there is a TS6059 error, not an option. So the
+// operational harnesses under `scripts/` were typechecked by NOTHING.
+//
+// That is not a hygiene point. `scripts/wp4-load-harness.ts` is the only executable evidence in
+// the tree at 50,000-row scale, and it had been broken since M9 round 2 — its seeds set no `leg`,
+// so the `validateNewClaim` check added that round made it throw at seed time. It sat outside
+// `include`, so `npm run typecheck` never saw it, and two full rounds of "verification" ran with
+// the one harness that could have produced scale evidence silently dead. Defect  had no
+// natural home because of it.
+//
+// This project exists so that can never recur: same compiler options, no emit, `scripts/` in
+// scope. `npm run typecheck` points here. The build still uses `tsconfig.json` untouched.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The build pins rootDir to./src to shape `dist/`. Nothing is emitted here, so the wider
+    // root is free — and is what lets `scripts/` be checked at all.
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
+}

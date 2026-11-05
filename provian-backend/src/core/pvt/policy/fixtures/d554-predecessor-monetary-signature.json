@@ -1,0 +1,7 @@
+{
+  "scheme": "sshsig-ed25519",
+  "signer_identity": "frank",
+  "namespace": "provian-pvt-policy",
+  "public_key_sha256": "sha256:200b11f0842bdf578eeb2ebb4859c9fcd3ba870159e53d6747ffaff893462974",
+  "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQNf20ctdgQGAsmGKvGHqn9+kYM/toXgBJR/SSSvKuvqdBk\n5WHEmca/b392dzRnQRzgB7vUJ9WimBzmptyow0tgk=\n-----END SSH SIGNATURE-----\n"
+}

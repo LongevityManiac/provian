@@ -1,0 +1,104 @@
+appId: com.provian.wallet
+---
+# Provian Onboarding - Tap through by coordinates
+# iPhone 17 Pro: 402x874 (Maestro points)
+# "Show Me" button is approximately at y=780, centered at x=201
+
+# Step 1: Hook
+- takeScreenshot: screenshots/onboarding-01-hook
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 2: Problem
+- takeScreenshot: screenshots/onboarding-02-problem
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 3: PE
+- takeScreenshot: screenshots/onboarding-03-pe
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 4: PVT
+- takeScreenshot: screenshots/onboarding-04-pvt
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 5: Agents
+- takeScreenshot: screenshots/onboarding-05-agents
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 6: Wallet Features
+- takeScreenshot: screenshots/onboarding-06-wallet
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 7: Promises
+- takeScreenshot: screenshots/onboarding-07-promises
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 8: Commons
+- takeScreenshot: screenshots/onboarding-08-commons
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 9: Inclusion
+- takeScreenshot: screenshots/onboarding-09-inclusion
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 10: Accord (ToS) - needs "I Accept" or similar
+- takeScreenshot: screenshots/onboarding-10-accord
+- tapOn:
+    point: "201,780"
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+# Step 11: Wallet/Biometrics
+- takeScreenshot: screenshots/onboarding-11-wallet
+
+# Step 12: Backup
+- takeScreenshot: screenshots/onboarding-12-backup
+
+# Final
+- takeScreenshot: screenshots/onboarding-final

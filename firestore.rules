@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ════════════════════════════════════════════════════════════════════════
+    // promise_sync/{promiseId} — RETIRED  → DENY-ALL
+    // ════════════════════════════════════════════════════════════════════════
+    // Human P2P promises moved OFF this client-writable Firestore side-channel and
+    // onto the PROVIAN RELAY under human wallet auth (the `human_promises`
+    // collection, written only by the Admin SDK). The relay verifies REAL EIP-191
+    // wallet signatures and enforces the two-party / write-once / both-parties-to-
+    // close invariants server-side — the properties these rules used to approximate
+    // with device-local tamper tags.
+    //
+    // This collection is therefore DENY-ALL: no client may read, list, create,
+    // update, or delete it. The catch-all below would already deny, but this
+    // explicit block documents the retirement and is the negative control for
+    // "a scripted write to promise_sync is refused by the deployed ruleset"
+    // (F41/F66 terminal state — CLOSED by architecture, not by a granular rule).
+    match /promise_sync/{promiseId} {
+      allow read, write: if false;
+    }
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Everything else is server-write-only (Admin SDK bypasses these rules).
+    // PEs, balances, policy, telemetry, etc. are NEVER client-writable.
+    // ════════════════════════════════════════════════════════════════════════
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

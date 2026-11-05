@@ -1,0 +1,43 @@
+<!--
+  ChatGPT synthetic fixture. NOT captured from chatgpt.com. Hand-written DOM
+  approximating ChatGPT's conversation turn structure on the public web
+  chat surface.
+
+  Selector basis:
+    - [data-testid^="conversation-turn-"]       outer turn container
+    - [data-message-author-role="user"]         user-authored message
+    - [data-message-author-role="assistant"]    assistant message
+    - img inside a user turn                    counts toward imageCount
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>ChatGPT synthetic</title></head>
+<body>
+  <main>
+    <div id="chat">
+
+      <article data-testid="conversation-turn-2" data-turn="user">
+        <div data-message-author-role="user" data-message-id="u-1">
+          <div class="prose">
+            I attached a screenshot from my project. Can you spot what is breaking the layout on narrow screens?
+          </div>
+          <div class="attachment-thumb">
+            <img src="data:image/png;base64,iVBORw0KGgo=" alt="Uploaded image" />
+          </div>
+        </div>
+      </article>
+
+      <article data-testid="conversation-turn-3" data-turn="assistant">
+        <div data-message-author-role="assistant" data-message-id="a-1">
+          <div class="prose">
+            The sidebar is using a fixed pixel width instead of a percentage, so on viewports under 640 pixels it pushes the main column off screen. Swap it to a grid template and let the sidebar collapse to a full-width row below that breakpoint.
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </main>
+</body>
+</html>

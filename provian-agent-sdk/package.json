@@ -1,0 +1,122 @@
+{
+  "name": "@provian/agent-sdk",
+  "version": "1.10.0",
+  "description": "SDK for AI agents to connect to Provian Wallet via Cloud Relay",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "observer": [
+        "dist/observer/index.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./observer": {
+      "types": "./dist/observer/index.d.ts",
+      "require": "./dist/observer/index.js",
+      "default": "./dist/observer/index.js"
+    },
+    "./schema/pe": "./schema/pe-schema.json"
+  },
+  "bin": {
+    "agent-sdk": "dist/scripts/dispatch.js",
+    "onboard": "dist/scripts/onboard.js",
+    "register-device": "dist/scripts/register-device.js",
+    "invite-device": "dist/scripts/invite-device.js",
+    "link-external-address": "dist/scripts/link-external-address.js",
+    "report-chain-addresses": "dist/scripts/report-chain-addresses.js",
+    "create-agent-wallet": "dist/scripts/create-agent-wallet.js",
+    "request-link": "dist/scripts/request-link.js",
+    "join-commons": "dist/scripts/join-commons.js",
+    "prove-solana-address": "dist/scripts/prove-solana-address.js",
+    "fleet-code": "dist/scripts/fleet-code.js",
+    "register-git-identity": "dist/scripts/register-git-identity.js",
+    "github-pr-request": "dist/scripts/github-pr-request.js",
+    "export-agent-keystore": "dist/scripts/export-agent-keystore.js",
+    "restore-wallet": "dist/scripts/restore-wallet.js",
+    "rotate-key": "dist/scripts/rotate-key.js",
+    "report-pe": "dist/scripts/report-pe.js",
+    "setup-hook": "dist/scripts/setup-hook.js",
+    "observe": "dist/scripts/start-observer.js",
+    "start": "dist/scripts/start.js",
+    "doctor": "dist/scripts/doctor.js",
+    "run": "dist/scripts/run.js",
+    "uninstall": "dist/scripts/uninstall.js",
+    "configure": "dist/scripts/configure.js",
+    "connect-github": "dist/scripts/connect-github.js",
+    "disconnect-github": "dist/scripts/disconnect-github.js",
+    "export-pes": "dist/scripts/export-pes.js",
+    "verify-export": "dist/scripts/verify-export.js",
+    "witness": "dist/scripts/witness.js"
+  },
+  "files": [
+    "dist",
+    "hooks",
+    "schema",
+    "scripts/postinstall-helper.js",
+    "src/observer/config/ai-providers.json",
+    "bin/helpers",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/copy-assets.js",
+    "build:bootstrap": "node scripts/build-bootstrap-bundle.mjs",
+    "build:helper": "node scripts/build-helper.js",
+    "lint": "npm run typecheck",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest",
+    "prepack": "node scripts/build-helper.js",
+    "prepublishOnly": "npm run build",
+    "postinstall": "node scripts/postinstall-helper.js",
+    "generate:hook-template": "node scripts/generate-hook-template.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "keywords": [
+    "provian",
+    "ai-agent",
+    "authorization",
+    "relay",
+    "policy",
+    "safety"
+  ],
+  "author": "Provian",
+  "license": "MIT",
+  "homepage": "https://provian.ai",
+  "bugs": {
+    "url": "https://github.com/LongevityManiac/provian/issues"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "^0.4.15",
+    "@types/node": "^20.10.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@noble/ciphers": "1.3.0",
+    "@noble/curves": "1.9.7",
+    "@noble/hashes": "1.8.0",
+    "@scure/base": "1.2.6",
+    "@solana/web3.js": "^1.98.4",
+    "ethers": "^6.17.0",
+    "undici": "6.29.0",
+    "viem": "2.53.1"
+  },
+  "overrides": {
+    "ws": ">=8.21.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LongevityManiac/provian.git"
+  }
+}

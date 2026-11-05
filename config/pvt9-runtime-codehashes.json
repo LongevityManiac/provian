@@ -1,0 +1,15 @@
+{
+  "chain_id": 8453,
+  "contracts": [
+    {
+      "name": "ProvianPVT9",
+      "address": "0x8811441914381143b9408c5C32247367F86F173A",
+      "codehash": "0xf8ae4a66392191fba5900be5f7f29fdefc5d7ceed21f0d35c1c6ebe069a8bf2c"
+    },
+    {
+      "name": "ProvianPVT9EligibilityVerifier",
+      "address": "0xb26Fd9d4f3b42911592B96270e8437287DE33406",
+      "codehash": "0xc3465e2ca8f6fc9c8fe1d92e3844cdd15bda25facff36bc028376e5142659f87"
+    }
+  ]
+}

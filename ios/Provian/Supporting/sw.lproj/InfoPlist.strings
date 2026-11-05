@@ -1,0 +1,4 @@
+NSFaceIDUsageDescription = "Provian hutumia Kitambulisho cha Uso kufungua pochi yako na kuthibitisha miamala, sahihi, na idhini unazofanya.";
+NSCameraUsageDescription = "Provian hutumia kamera kuchanganua misimbo ya QR: anwani za pochi, viungo vya muunganisho WalletConnect , na misimbo ya kuoanisha ya wakala. Hakuna kilichorekodiwa au kupakiwa.";
+NSMotionUsageDescription = "Provian husoma kitambuzi cha mwendo pekee unapotuma au kubadilishana, ili kugundua kutikisika kwa nguvu ambayo inaweza kumaanisha uhamisho unafanywa chini ya shinikizo. Usomaji hubaki kwenye kifaa hiki.";
+NSPhotoLibraryUsageDescription = "Provian hufungua maktaba yako ya picha tu unapochagua picha kwa wasifu wako Commons . Picha unayochagua pekee ndiyo inayotumika.";

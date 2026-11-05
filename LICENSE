@@ -1,0 +1,24 @@
+© 2026 Provian Technologies, LLC. All Rights Reserved.
+
+UNLICENSED - Proprietary and Confidential.
+
+This repository is the canonical source for Provian's reference
+implementation. Selected subdirectories are open-sourced under permissive
+licenses — the Provenance Envelope protocol SDKs and CLI
+(`provian-agent-sdk/`, `provian-cli/`, `provian-python-sdk/`, and similar)
+carry their own MIT or Apache LICENSE file. Everything else is proprietary
+and may not be copied, modified, distributed, or otherwise used without the
+prior written consent of Provian Technologies, LLC.
+
+Note that a `LICENSE` file inside a subdirectory is not necessarily an
+open-source license. The wallet (`src/`) and the Commons reference
+implementation (`provian-commons/`) each carry their own PROPRIETARY
+license; together with this root, the Provian backend, website, and web
+packages, they are closed source. When in doubt, a component is proprietary
+unless its LICENSE explicitly grants an open-source (MIT/Apache) license.
+
+NO WARRANTY / NO LIABILITY. All software in this repository — proprietary and
+open-source alike — is provided "AS IS", without warranty of any kind, and is
+used at your own risk. The wallet is self-custody software: lost keys or
+backups and authorized transactions cannot be reversed, and Provian
+Technologies is not liable for any resulting loss of funds. See `DISCLAIMER.md`.

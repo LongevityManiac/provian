@@ -1,0 +1,19 @@
+{
+  "contract": "ProvianX402FeeSettler",
+  "chain": "base",
+  "chain_id": 8453,
+  "address": "0x7c99bb203ad47ec768612a1234f137d8d3588b7c",
+  "deploy_tx": "0xfc5bc8400f231c5509134a1e72ab8a8e881f6aa908f3a7732d9dd97674b8e3c1",
+  "block": 52181579,
+  "deployer": "0xA37fC594E98e951571C771C9e77CDC73f67d3efB",
+  "deployed_at": "2026-10-04",
+  "constructor_args": {
+    "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "operator": "0xA37fC594E98e951571C771C9e77CDC73f67d3efB",
+    "feeRecipient": "0xA37fC594E98e951571C771C9e77CDC73f67d3efB",
+    "permit2Proxy": "0x402085c248EeA27D92E8b30b2C58ed07f9E20001",
+    "pvt": "0x8811441914381143b9408c5C32247367F86F173A"
+  },
+  "verified_immutables_on_chain": { "MAX_FEE": 50000 },
+  "notes": "Immutables only: no owner, no setters, no proxy. Deployed from the facilitator Base gas key read in-process from Secret Manager (never a CLI argument,). ."
+}

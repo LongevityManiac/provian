@@ -1,0 +1,31 @@
+© 2026 Provian Technologies, LLC. All Rights Reserved.
+
+PROPRIETARY AND CONFIDENTIAL — NO REDISTRIBUTION.
+
+This directory (`src/`) is the Provian non-custodial wallet application. It is
+proprietary software. It is published in this repository for transparency and
+review only. It is NOT open source.
+
+No license is granted. You may not copy, modify, adapt, translate, distribute,
+sublicense, sell, publish, host, deploy, or create derivative works of this code,
+in whole or in part, by any means, without the prior written consent of Provian
+Technologies, LLC. No rights are granted by implication, estoppel, or otherwise.
+
+This proprietary license applies to the wallet (`src/`). It does NOT apply to the
+separately-licensed open-source packages in this repository — the protocol SDKs
+and CLI (`provian-agent-sdk/`, `provian-cli/`, `provian-python-sdk/`, and other
+subdirectories that carry their own MIT/Apache LICENSE file remain under those
+licenses). The Provenance Envelope protocol itself is an open standard.
+
+NO WARRANTY; NO LIABILITY; RISK OF LOSS OF FUNDS. This software is provided
+"AS IS" and "AS AVAILABLE", without warranty of any kind, express or implied,
+including but not limited to the warranties of merchantability, fitness for a
+particular purpose, title, and non-infringement. This software is a self-custody
+cryptocurrency wallet: you alone control your keys and your funds, and Provian
+Technologies cannot recover, reverse, or restore lost keys, lost backups, or
+transactions you authorize. To the maximum extent permitted by law, Provian
+Technologies, LLC and its contributors shall not be liable for any claim, damages,
+or other liability — including, without limitation, any loss of funds, loss of
+keys, loss of data, or loss of profits — whether in contract, tort, or otherwise,
+arising from, out of, or in connection with this software or its use. You use it
+at your own risk. See the repository root `DISCLAIMER.md` for the full disclaimer.

@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.provianpinnedtls'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.provianpinnedtls"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // RN already ships OkHttp; declaring it keeps the custom Dns API explicit.
+  implementation "com.squareup.okhttp3:okhttp:4.12.0"
+}

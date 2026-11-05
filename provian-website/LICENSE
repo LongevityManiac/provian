@@ -1,0 +1,11 @@
+© 2026 Provian Technologies, LLC. All Rights Reserved.
+
+UNLICENSED - Proprietary and Confidential.
+
+This repository is the canonical source for Provian's reference
+implementation. Selected subdirectories are open-sourced under the MIT
+License (see the LICENSE file in each such subdirectory). Everything else,
+including the contents of this root and the Provian backend / website / web
+packages, is proprietary and may not be copied, modified, distributed, or
+otherwise used without the prior written consent of Provian Technologies,
+LLC.

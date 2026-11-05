@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ProvianAppAttestModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.provianappattest.ProvianAppAttestModule"]
+  }
+}

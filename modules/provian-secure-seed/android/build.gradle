@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.proviansecureseed'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.proviansecureseed"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // Same androidx.biometric line expo-secure-store / expo-local-authentication already ship.
+  implementation "androidx.biometric:biometric:1.1.0"
+}

@@ -1,0 +1,2637 @@
+{
+  "schema_version": "pvt9-policy-approval-manifest/v1",
+  "approval_status": "gate_1_plain_english_policy_approved_non_signable",
+  "gate_1_status": "passed_frank_explicit_plain_english_policy_approval",
+  "signing_permitted": false,
+  "wp0_wp1_status": "corrective_implementation_complete_pending_independent_gate_1_closeout_plain_english_policy_approval_preserved",
+  "corrective_pass": "final_strictly_bounded_wp0_wp1_gate_1_device_ownership_and_status_correction_from_e492607048c42084b446fa58981873fcc638f25c",
+  "prohibited_manifest_sha256": [
+    "sha256:04c0bec8a4a1bda992c5819e8e3bcf2def22e3e9306ce2ea51c9ffb682a0f123",
+    "sha256:61c92cefad93a4477e5ff86fa093facee2d72265eae0d8caacc48eaca0903cff",
+    "sha256:5d26fd57cbb3051854850f4cb52fed4f2994821616c50857a7ee1f96763f60a1",
+    "sha256:9081b80b4d35589dcceaf181f13bc30885df2303db56d7717b507de343ee380b",
+    "sha256:f5ee33f065efd2fc0ed028d25cfbdb13f245ab2e6f590f6c0ba5f8a3392f94bd",
+    "sha256:84cfbfd180734b83cf5b286b463d02682c6e44c53c9af6cde2b67d85cbd36422",
+    "sha256:fddd4d8008c67d673b4eb4e71e686e9e0c65248e6432e1e4bd0ae26a3bc3b4e8",
+    "sha256:9dda0e70c92018a070307dd09e9450a4b9ad9a53740f3e382f73637831471cd1",
+    "sha256:42494d93d5c07719a39f1b7ecce65af0a9f7f27c3ec673e4d476593f582c4baf",
+    "sha256:a33676ef6c7b1bff191af4fd392160c98422df6fc00f7a8f3dc5bdbec9270cf2",
+    "sha256:2e2aba9ecd12746b2362b05c6d98a90d8d9cdbd805e37cc063ca36e6bbf6d178",
+    "sha256:14204edca0684b8f354f3f32c018bc16009796f17e426fb11ee921c54c824c6c",
+    "sha256:683bc13371126e2f621f7cc3b07bdf0da4bf1c53180d67e32a09e26cc9e59217",
+    "sha256:44f8145c3b46107b248b0dd5e54955b742e90b939a7d52e0e07646bb226751bf",
+    "sha256:24c1e8affb2fda3aa8b67a88a37deed8e076c41223f1e64436ba9db09a1f6ee4",
+    "sha256:a6cd8ad75f1df87975861f8f91a68e3278af0b5ab6f71b544a11206a4412c7af",
+    "sha256:991022ec75e48e8d845cddcdff4a1b3a338ab0921f0cc55bbf402e3d0ae61629"
+  ],
+  "wp2_status": "pending_independent_gate_1_closeout_not_started_and_must_not_begin",
+  "wp3_status": "blocked_pending_wp2_and_separate_frank_immutable_vs_governable_authority_table_approval",
+  "reviewed_artifact_inventory_status": "bounded_wp0_wp1_economic_authentication_policy_and_status_inventory_reconciled_and_exact_byte_hashed_pending_independent_read_only_closeout_not_approval_of_unchanged_historical_deployment_executables",
+  "reviewed_artifact_scope_statement": "this_inventory_covers_reviewed_wp0_wp1_economic_authentication_policy_and_status_artifacts_inclusion_records_review_within_that_scope_and_does_not_approve_or_make_safe_every_unchanged_historical_deployment_executable_the_named_legacy_authority_surface_remains_unapproved_and_execution_prohibited_pending_wp2_task_1_classification_and_quarantine",
+  "gate_1_policy_decision": {
+    "decision": "approved",
+    "approver": "Frank",
+    "form": "explicit_plain_english_policy_approval",
+    "recorded_on": "2026-07-13",
+    "authority_architecture_approved": false,
+    "production_activation_approved": false,
+    "genesis_launch_dates_approved": false,
+    "badge_bond_or_governance_effects_approved": false
+  },
+  "independent_engineering_review": {
+    "historical_corrective_pass_11": {
+      "disposition": "passed_no_findings",
+      "mode": "fresh_solo_read_only_complete_wp0_wp1_scope_before_frank_gate_1_approval",
+      "completed_on": "2026-07-13",
+      "reviewed_candidate_manifest_sha256": "sha256:53a0e1f19a0c418c3c31bce2e1e21f1fb7826a93248e1df824837b1613d62648",
+      "reviewed_candidate_git_status_sha256": "sha256:86657b4bd15087008ea6d47808a31d7cb14fabc2b5dd4992edb9e85dff9ab7d7",
+      "findings": []
+    },
+    "historical_post_approval_policy_reconciliation": {
+      "disposition": "adversarial_findings_corrected_final_rereview_passed",
+      "mode": "independent_multi_agent_read_only_runtime_artifact_and_current_copy_review",
+      "completed_on": "2026-07-13",
+      "corrected_findings": [
+        "prospective_only_beneficiary_routing_and_legacy_zero_transfer_copy",
+        "genesis_unarmed_no_dates_no_pool_and_durable_backlog_copy",
+        "external_address_h_h_minus_11_h_plus_1_copy",
+        "retired_pvt8_pool_stranger_run_fail_closed",
+        "current_public_generated_and_tool_copy_reconciled",
+        "eligibility_record_creation_and_mint_qualification_copy_reconciled",
+        "retired_activity_bounty_record_only_catalog_copy_reconciled",
+        "historical_no_findings_review_distinguished_from_post_approval_findings",
+        "wp0_wp1_historical_completion_vs_wp2_not_started_pending_new_independent_closeout_status_copy_reconciled",
+        "human_genesis_treasury_split_vs_agent_foundation_rate_copy_reconciled",
+        "linked_agent_default_bounds_unlinked_residual_and_sealed_snapshot_copy_reconciled",
+        "all_maintained_locale_policy_overrides_and_legacy_welcome_bonus_copy_reconciled",
+        "commons_sdk_and_universal_pe_eligibility_and_gross_vs_residual_copy_reconciled",
+        "bootstrap_eoa_direct_authority_and_dormant_non_gating_governance_copy_reconciled",
+        "genesis_fixed_grant_matrix_attestation_neutrality_reconciled",
+        "canonical_thesis_governance_membership_fee_and_launch_copy_reconciled",
+        "foundation_membership_flag_copy_deferred_outside_gate_1",
+        "three_failed_post_approval_frozen_candidates_appended_to_fifteen_digest_rejected_ledger",
+        "governance_error_voter_projection_and_ecosystem_bootstrap_authority_metadata_reconciled",
+        "technical_ip_commons_mobile_service_and_public_authority_copy_reconciled",
+        "legacy_pvt8_breaker_vs_unarmed_pvt9_exact_cap_and_zero_average_copy_reconciled",
+        "agent_wallet_and_ecosystem_eligibility_diversity_fee_and_allocation_copy_reconciled",
+        "wp10_implementation_made_conditional_on_separate_authority_activation_or_handoff_approval",
+        "english_base_locale_and_runtime_onboarding_authority_copy_parity_pinned",
+        "capacity_model_post_flat_exact_two_times_and_zero_average_transition_pinned"
+      ],
+      "remaining_findings": []
+    },
+    "final_bounded_gate_1_corrective_reconciliation": {
+      "disposition": "all_six_bounded_corrective_findings_reconciled_pending_independent_read_only_gate_1_closeout",
+      "mode": "multi_agent_corrective_implementation_with_local_verification_not_independent_closeout",
+      "completed_on": "2026-07-13",
+      "baseline_commit": "0684d03bf87a23c4d7c13448505eaa6d875be474",
+      "corrected_findings": [
+        "canonical_exact_integer_bps_representation_without_floating_point_reconstruction",
+        "ordinary_monetary_formula_restored_without_second_occurrence_multiplier",
+        "verified_human_or_beneficiary_linkage_is_the_only_two_times_human_trust_input_and_attestation_remains_separate_zero_point_five_through_two_point_five",
+        "agent_owned_devices_are_server_enforced_software_only_and_human_mac_secure_enclave_is_hardware_partial_until_verifiable_platform_attestation",
+        "frank_eoa_direct_bootstrap_authority_and_human_vs_agent_treasury_routing_reconciled_across_current_and_historical_contract_surfaces",
+        "approval_manifest_inventory_and_handoff_coverage_claims_expanded_to_every_corrected_load_bearing_current_facing_path_and_relevant_test"
+      ],
+      "implementation_findings_remaining": [],
+      "independent_closeout_status": "required_from_the_new_checkpoint_before_another_no_findings_claim",
+      "pre_freeze_bounded_source_reviews": {
+        "status": "no_findings_across_all_six_source_slices_but_not_a_post_commit_review_of_final_generated_bytes",
+        "findings_1_through_4": {
+          "disposition": "no_findings",
+          "focused_backend_tests": "11_suites_134_tests_passed",
+          "focused_app_tests": "3_files_40_tests_passed"
+        },
+        "authority_contract_and_supporting_copy": {
+          "disposition": "no_findings",
+          "behavior_scope": "comment_stripped_solidity_test_abi_and_script_behavior_unchanged_from_baseline",
+          "safe_batch_scope": "transaction_payloads_unchanged_only_historical_name_and_description_metadata_changed"
+        }
+      },
+      "post_freeze_backend_stabilization": {
+        "completed_on": "2026-07-14",
+        "trigger": "complete_backend_jest_run_found_16_failures_across_4_suites",
+        "correction_scope": "genesis_human_registration_retry_attestation_changed_from_obsolete_hardware_to_software_and_three_already_dirty_accrual_test_mocks_exposed_the_canonical_attestation_normalizer",
+        "newly_dirty_reviewed_paths": [
+          "provian-backend/src/core/pvt/genesis-ingress.ts",
+          "provian-backend/src/core/pvt/genesis-ingress.test.ts"
+        ],
+        "already_dirty_mock_paths": [
+          "provian-backend/src/pvt-accrual-rate-limit.test.ts",
+          "provian-backend/src/pvt-accrual.foundationHook.test.ts",
+          "provian-backend/src/pvt-accrual.genesisRollback.test.ts"
+        ],
+        "focused_rerun": "5_suites_41_tests_passed",
+        "policy_effect": "none_existing_software_only_rule_enforced",
+        "final_complete_backend_rerun": "required_again_after_final_manifest_regeneration_and_reported_by_outer_session",
+        "independent_closeout_effect": "none_still_required_post_commit"
+      }
+    },
+    "strictly_bounded_gate_1_device_ownership_and_status_correction": {
+      "disposition": "all_defined_gate_1_owner_type_plan_status_and_legacy_authority_findings_corrected_pending_independent_read_only_closeout",
+      "mode": "bounded_local_corrective_implementation_not_independent_closeout",
+      "completed_on": "2026-07-14",
+      "baseline_commit": "e492607048c42084b446fa58981873fcc638f25c",
+      "corrected_findings": [
+        "device_documents_require_exact_own_human_or_agent_owner_type_before_authentication_cache_trust_bearer_or_p256_verification_mobile_attestation_selection_and_direct_management_use",
+        "missing_null_malformed_unknown_or_context_contradictory_device_ownership_fails_before_pe_creation_genesis_qualification_or_accrual_without_human_inference",
+        "wp2_dependency_status_requires_independent_read_only_closeout_of_the_corrected_checkpoint",
+        "reviewer_identified_legacy_authority_scripts_are_unapproved_execution_prohibited_and_assigned_to_wp2_task_1_classification_and_quarantine_as_an_acceptance_and_launch_stop"
+      ],
+      "implementation_findings_remaining": [],
+      "independent_closeout_status": "required_from_the_corrected_checkpoint_before_wp0_wp1_close_and_wp2_begin",
+      "first_closeout_candidate_result": "rejected_for_source_only_mobile_no_effect_proof_then_corrected_with_actual_request_guard_behavioral_coverage_and_accessor_inherited_array_path_tests",
+      "policy_approval_effect": "none_frank_existing_plain_english_gate_1_approval_preserved_without_reapproval_or_signature_request"
+    },
+    "wp0": "corrective_implementation_complete_pending_independent_closeout",
+    "wp1": "corrective_implementation_complete_pending_independent_closeout"
+  },
+  "reviewed_artifact_self_cycle_exclusions": [
+    {
+      "path": "docs/audit/pvt-wp0-wp1/pvt-policy-approval-manifest.generated.json",
+      "reason": "the generated manifest cannot contain a hash of its own exact bytes"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pvt9-approval-manifest.generated.ts",
+      "reason": "the generated constant embeds the manifest exact bytes and hash"
+    }
+  ],
+  "remaining_gates_and_forward_assignments": [
+    "before_wp3_frank_must_separately_approve_the_immutable_vs_governable_kernel_table_preserving_his_eoa_as_sole_direct_bootstrap_admin_and_economic_policy_setter",
+    "no_role_handoff_renunciation_admin_transfer_governance_activation_or_bootstrap_eoa_interposition_without_separate_explicit_frank_approval",
+    "wp12_must_supply_and_separately_approve_actual_genesis_start_and_end_timestamps_before_genesis_can_be_armed",
+    "cloud_run_scheduler_and_base_freshness_reverification_is_later_wp12_launch_work_not_a_wp2_prerequisite",
+    "legacy_daily_anchor_backfill_is_outside_wp1_finality_and_requires_later_signer_coordination_before_cutover",
+    "wp2_task_1_must_classify_and_quarantine_the_named_transfer_admin_wire_governance_phase3_pvtv3_through_v7_chunk_bond_court_security_patch_agent_bank_bootstrap_sprint_and_associated_pending_instruction_authority_artifacts_before_any_is_executed_and_incompletion_blocks_wp2_acceptance_and_launch",
+    "badge_driven_bond_effects_are_deferred_to_wp8_badge_driven_governance_effects_to_wp10_and_the_legacy_genesis_agent_badge_cutoff_to_wp12",
+    "cost_rows_are_proposal_only_current_live_behavior_not_row_source_verified"
+  ],
+  "approval_scope_statement": "Frank has completed Gate 1 through explicit plain-English policy approval. This non-signable status artifact records that decision but grants no deployment, authority-architecture, launch-date, or production-activation authority. Any later WP11/WP12 production-activation signature must bind every exact UTF-8 manifest byte, every policy and economic statement, and every reviewed-artifact hash in the then-current activation packet; it is not limited to the 7.5M Genesis sub-budget.",
+  "approval_is_not_activation": true,
+  "repository": "LongevityManiac/provian-wallet-anti-gravity",
+  "relevant_commits": [
+    {
+      "role": "plan_origin_pr_78_merge",
+      "commit": "0385a1aa4f621895ee9212ac82750f0d9c6fd252",
+      "formal_approval": false
+    },
+    {
+      "role": "wp0_wp1_initial_local_implementation",
+      "commit": "30a54aecbe80d871d32fc63556368edbe2f9cb64",
+      "formal_approval": false
+    },
+    {
+      "role": "reviewed_handoff_baseline",
+      "commit": "76e882b550394599cd5d5332ba10ca3b1f9180b0",
+      "formal_approval": false
+    },
+    {
+      "role": "final_bounded_corrective_reconciliation_baseline",
+      "commit": "0684d03bf87a23c4d7c13448505eaa6d875be474",
+      "formal_approval": false
+    },
+    {
+      "role": "strictly_bounded_device_ownership_and_status_correction_baseline",
+      "commit": "e492607048c42084b446fa58981873fcc638f25c",
+      "formal_approval": false
+    }
+  ],
+  "policy_versions": {
+    "action_policy": "base-mainnet-launch-proposal-2026-07-13.1",
+    "monetary_policy": "base-mainnet-monetary-proposal-2026-07-13.1",
+    "genesis_policy": "base-mainnet-genesis-proposal-2026-07-13.1",
+    "pvt_native_cost_catalog": "base-mainnet-cost-proposal-2026-07-11.2"
+  },
+  "policy_cardinality": {
+    "action_policy_entries": 252,
+    "pvt_native_cost_entries": 81,
+    "genesis_reward_legs": 3
+  },
+  "activation_scope": {
+    "chain_id": 8453,
+    "monetary_policy": "prospective_record_and_settlement",
+    "genesis_policy": "gate_1_approved_exact_75_75_25_gross_inputs_but_unarmed_without_launch_dates",
+    "genesis_arming_state": "unarmed_requires_wp12_launch_date_and_activation_approval",
+    "genesis_start_ms": null,
+    "genesis_end_ms": null,
+    "pvt9_kernel": "fresh_epoch_zero_no_configuration_carry_authority_architecture_not_gate_1_approved",
+    "canonical_pvt_manifest_id": null,
+    "effective_at_ms": null,
+    "production_activation_authorized_by_this_manifest": false,
+    "deployment_authorized_by_this_manifest": false
+  },
+  "genesis_settlement_authorization_subject": {
+    "schema_version": "pvt-genesis-settlement-authorization/v1",
+    "authorization_scope": "genesis_settlement_budget",
+    "event_id": "pvt9-genesis-settlement-launch",
+    "policy_version": "base-mainnet-genesis-proposal-2026-07-13.1",
+    "authorized_at_epoch": 0,
+    "effective_epoch": 0,
+    "cap_atomic": "7500000000000000000000000",
+    "previous_event_hash": null,
+    "chain_id": 8453,
+    "campaign_id": "pvt9_genesis_pending",
+    "settlement_kernel_id": "pvt9_fixed_grant_settlement_kernel/v1"
+  },
+  "genesis_settlement_authorization_subject_sha256": "sha256:4cbca756349a89d80e1b6138b6f2e7cfe9b992df6cf4f5ac748389ad8e26963a",
+  "decided_launch_economics": {
+    "genesis_human_signup_atomic": "75000000000000000000",
+    "genesis_agent_signup_atomic": "75000000000000000000",
+    "genesis_registered_device_link_atomic": "25000000000000000000",
+    "genesis_wallet_lifetime_cap_atomic": "500000000000000000000",
+    "genesis_fixed_grant_and_wallet_cap_semantics": "gross_contract_inputs_before_the_immutable_99_0_5_0_5_treasury_split_not_contributor_net_receipts",
+    "genesis_admission_total_pool": "none",
+    "genesis_launch_dates": "none_approved_campaign_unarmed_until_wp12",
+    "genesis_admission_close_control": "local_evented_close_transition_implemented_not_executed_against_production",
+    "genesis_pre_cutoff_outbox_behavior": "preserve_reserve_and_eventually_settle_exactly_even_after_admission_closes",
+    "genesis_lifetime_issuance_bound": "sum_of_valid_pre_cutoff_reservations_not_window_length_times_weekly_sub_budget",
+    "genesis_initial_weekly_settlement_sub_budget_atomic": "7500000000000000000000000",
+    "genesis_settlement_budget_change_control": "append_only_effective_epoch_policy_events_exact_manifest_sshsig_verification_required",
+    "initial_combined_weekly_system_cap_atomic": "10000000000000000000000000",
+    "initial_flat_epoch_count": 12,
+    "later_system_cap_rule": "exactly_two_times_trailing_average",
+    "post_flat_zero_trailing_ceiling_atomic": "0",
+    "combined_headroom_priority": "organic_priority_across_complete_eligible_backlog_single_batch_boundary_preserved",
+    "beneficiary_split_for_genesis": "bypass_standard_linked_agent_beneficiary_routing_but_apply_immutable_99_0_5_0_5_treasury_split_to_exact_gross_fixed_grants_deferred_until_pvt9_kernel",
+    "standard_linked_agent_beneficiary_routing": "default_agent_share_2000_bps_prospectively_configurable_from_500_through_5000_bps_not_an_immutable_universal_ratio",
+    "beneficiary_share_representation": "canonical_exact_integer_agent_share_bps_only_500_through_5000_inclusive_legacy_ratio_is_exact_decimal_compatibility_input_only_and_is_rejected_if_sub_bps_or_out_of_range_never_rounded_or_reconstructed_through_floating_point",
+    "ordinary_pe_formula": "base_points_times_action_weight_times_occurrence_derived_novelty_times_daily_diminishing_times_verified_linkage_times_attestation_divided_by_10000_to_the_fifth_no_separate_occurrence_multiplier",
+    "human_trust_multiplier": "two_times_only_for_verified_human_or_beneficiary_linkage_never_from_attestation_device_ownership_signing_method_or_agent_owned_hardware_claims",
+    "attestation_multiplier": "separate_from_linkage_complete_range_zero_point_five_through_two_point_five_with_social_software_corroborated_software_verified_hardware_partial_compute_tee_full_stack_and_hardware_full_tiers",
+    "agent_owned_device_attestation": "server_enforced_software_only_before_signing_method_tier_selection_agent_owned_device_register_has_no_device_anchor_and_mints_zero_pvt",
+    "device_owner_type_authentication_boundary": "only_exact_own_human_or_agent_values_are_valid_missing_null_malformed_unknown_accessor_inherited_array_or_context_contradictory_ownership_fails_authentication_before_cache_trust_bearer_or_p256_verification_attestation_selection_pe_creation_genesis_qualification_or_accrual_and_is_never_inferred_human",
+    "human_mac_attestation": "secure_enclave_cli_reports_hardware_partial_until_verifiable_platform_attestation_exists",
+    "badge_pvt_economics": "badge_earned_and_pvt_badge_projection_completed_are_record_only_and_mint_zero_pvt",
+    "badge_effect_review_assignment": "preserve_existing_badge_events_now_review_bond_effects_in_wp8_governance_effects_in_wp10_and_legacy_genesis_agent_badge_cutoff_in_wp12",
+    "pvt9_authority_architecture": "not_approved_by_gate_1_requires_separate_frank_approved_immutable_vs_governable_kernel_table_before_wp3",
+    "bootstrap_authority_eoa": "0xD395c8f59131a4736aa4d9eE6e5dEb8fDA07Ce0a",
+    "bootstrap_authority_boundary": "frank_current_eoa_is_the_sole_direct_bootstrap_administrator_and_economic_policy_setter_governance_executor_safe_vote_proposal_and_timelock_components_are_dormant_non_gating_and_not_interposed_between_his_key_and_live_setters_no_transferadmin_renunciation_handoff_interposition_or_no_bypass_regime_without_separate_explicit_frank_approval",
+    "historical_ordinary_pe_migration": "none_by_controlling_no_migration_decision_all_legacy_pe_pvt_and_genesis_state_is_excluded_test_data",
+    "historical_pvt_balance_migration": "none",
+    "accepted_non_test_genesis_carry_atomic": "0",
+    "candidate_non_test_genesis_carry": "not_applicable_zero_carry_is_fixed_by_policy_and_the_seven_sanitized_rows_are_non_gating_audit_history_only",
+    "continuity_v2_rule": "audit_only_parser_retains_legacy_evidence_unless_one_unique_fully_parsed_cross_bound_v2_replacement_is_valid_and_rejects_malformed_duplicate_ambiguous_or_mismatched_evidence; this_parser_has_no_migration_authority_because_the_controlling_no_migration_decision_excludes_all_legacy_genesis_pvt_and_pe_state",
+    "continuity_artifact_status": "seven_sanitized_legacy_rows_are_non_gating_audit_history_only_and_do_not_require_owner_classification_attestation_or_migration_proof; no_live_ownership_claim_is_made",
+    "base_economic_finality": "local_wp1_paths_require_exact_hash_or_exact_block_12_confirmation_evidence_canonical_receipt_height_rechecks_and_agreement_from_two_distinct_configured_operator_identities_for_watcher_discovery_and_classification_mint_and_anchor_finalization_and_recovery_epoch_advancement_and_external_proof_eip1271_fencing",
+    "economic_state_admission": "operators_agree_latest_head_h_and_every_permissive_mint_breaker_batch_rate_scaler_registry_beneficiary_zero_hash_weight_epoch_readiness_and_capacity_field_is_read_at_canonical_h_minus_11_with_eip1898_exact_hash_twelve_confirmation_inclusive_evidence; every_unrelated_shallow_batchminted_and_every_other_shallow_pvt_mutation_denies_or_defers_without_recomputing_headroom_or_composition_while_an_exact_requested_shallow_batch_enters_receipt_finality_recovery_without_resubmission",
+    "prepared_economic_call_binding": "mint_anchor_and_epoch_paths_independently_verify_intended_contract_selector_complete_canonical_arguments_target_calldata_exact_zero_transaction_value_and_exact_raw_bytes_before_persistence_initial_broadcast_every_recovery_rebroadcast_and_finalization",
+    "genesis_settlement_authorization_binding": "every_budget_event_requires_exact_verified_manifest_bytes_whose_canonical_authorization_subject_hash_and_semantics_match_event_id_policy_version_epochs_cap_previous_event_hash_scope_base_chain_campaign_and_fixed_grant_kernel",
+    "mint_claim_integrity": "every_claim_state_has_an_exact_field_matrix_and_malformed_rows_use_a_v2_quarantine_with_a_sha256_derived_document_key_bounded_raw_firestore_document_identity_and_separate_optional_protocol_claim_id; firestore_native_document_id_ordering_startafter_and_endat_drive_repeated_ring_pagination_without_javascript_utf16_wrap_bounds_while_capacity_and_pe_ownership_remain_fenced",
+    "external_address_economic_admission": "only_strict_proven_address_v2_records_with_base_identity_exact_h_and_h_minus_11_block_hash_twelve_confirmations_two_distinct_operators_proof_evidence_baseline_nonce_and_h_plus_1_fence_enter_economic_watchers; legacy_rows_are_record_only_until_same_agent_reproof",
+    "dynamic_watcher_membership": "canonical_native_agent_and_human_registration_atomically_persists_identity_uniqueness_two_operator_head_h_plus_one_eligibility_watcher_admission_independent_catchup_obligation_and_a_monotonic_membership_generation_increment_with_the_first_pe_and_chain_tip; exact_generation_and_exact_prior_monotonic_checkpoint_commits invalidate_pre_registration_workers_while_external_h_plus_one_and_outbound_behavior_remain_unchanged",
+    "epoch_transition_exclusion": "epoch_keeper_renews_and_revalidates_its_shared_transition_lease_and_mint_claim_creation_and_submission_reject_every_non_idle_or_forged_idle_transition",
+    "watcher_claim_binding": "already_existing_claims_must_match_exact_base_event_payload_hash_canonical_evidence_lease_and_state_or_hold_checkpoint_and_surface_as_recovery_issues",
+    "genesis_activation_approval": "qualification_persistence_reservation_restart_evented_close_and_recovery_require_structured_exact_manifest_sshsig_with_approvable_status_and_signing_permitted_true",
+    "rejected_manifest_ledger": "single_append_only_17_digest_ledger_drives_runtime_genesis_settlement_generated_manifest_tests_and_maintained_documentation_and_cannot_be_bypassed_by_injected_verifiers",
+    "recovery_scope": "legacy_anchor_execute_historical_reanchor_and_retired_pvtv4_test_mint_are_fail_closed; mint_claim_recovery_owns_pre_persisted_exact_intended_call_anchor_broadcasts_and_mint_claim_genesis_watcher_and_accrual_drains_are_cursor_paginated_crash_resumable_and_repeatably_quarantine_malformed_identities_without_starving_later_rows",
+    "agent_wallet_key_rotation": "relay_and_sdk_fail_before_state_or_network; wp6_owns_atomic_identity_transition_and_fresh_h_plus_one_fence_wp11_owns_reenable_launch_stop_wp12_owns_canary",
+    "registration_and_credential_durability": "backend_recovery_exactly_cross_binds_every_registration_wallet_trust_index_fence_admission_checkpoint_pe_api_and_generation_field_before_secret_creation_and_install; sdk_cli_and_mcp_network_only_from_authenticated_durable_identity_and_promote_exact_same_wallet_credentials_crash_durably",
+    "ordinary_best_effort_accrual": "valid_pe_remains_provenance_but_without_deterministic_durable_source_replay_is_record_only_and_consumes_no_novelty_activity_cap_mint_once_or_settlement_authority_until_wp11_outbox_intake_and_wp12_canary",
+    "execution_trust_boundary": "communication_and_commitment_payloads_require_strict_types_enums_and_required_fields_before_trust; medical_financial_identity_and_credential_sharing_resolves_before_trust_requires_hard_confirmation_and_unknown_or_malformed_execution_blocks",
+    "economic_snapshot_schema": "economic_state_and_watcher_checkpoint_readers_require_exact_known_fields_and_cross_bound_canonical_h_minus_11_evidence_without_unhashed_extensions_or_missing_height_defaults",
+    "pvt_native_cost_claim_scope": "81_proposed_parameter_choices_current_live_behavior_explicitly_unverified_not_an_approval_basis"
+  },
+  "signature_protocol": {
+    "unavailable_in_current_checkpoint": true,
+    "gate_1_engineering_and_policy_approval": "historically_complete_via_clean_independent_engineering_review_and_frank_explicit_plain_english_policy_approval_without_ssh_key_possession_or_use_current_bounded_corrective_checkpoint_requires_another_independent_read_only_closeout_without_reapproval_of_unchanged_policy",
+    "production_activation_timing": "cryptographic_activation_key_and_signing_ceremony_are_later_wp11_wp12_launch_controls_not_a_wp2_prerequisite",
+    "enforcement_status": "runtime_sshsig_ed25519_verification_over_exact_embedded_manifest_bytes_is_enforced_for_monetary_genesis_activation_and_genesis_settlement_consumers_but_current_manifest_signing_is_disabled",
+    "required_signer": "later production activation signer configured during WP11/WP12 launch work",
+    "signed_bytes": "the exact UTF-8 bytes of this JSON file including its final newline",
+    "ssh_namespace": "provian-pvt-policy",
+    "detached_signature_required": true,
+    "configured_key_binding": "FRANK_PVT_APPROVAL_SSH_PUBLIC_KEY plus FRANK_PVT_APPROVAL_SSH_KEY_SHA256; missing_or_mismatched_configuration_fails_closed",
+    "signed_git_tag_alternative": "not_accepted_by_runtime_activation_v1_a_future_tag_verifier_would_require_a_distinct_reviewed_protocol",
+    "merge_or_pull_request_is_approval": false
+  },
+  "reviewed_artifacts": [
+    {
+      "path": ".github/workflows/typecheck.yml",
+      "sha256": "sha256:5de502dd969c160df5e057b702eb4827dcfa30e07e92f7d861d3b39d942fc7fa"
+    },
+    {
+      "path": "AGENT_ARCHITECTURE.md",
+      "sha256": "sha256:624a697cb4522e8d24ac339989b82a34ffa790b064ecc3fe4178e543d25722df"
+    },
+    {
+      "path": "CLAUDE.md",
+      "sha256": "sha256:e2707abd839e668031a13490bc6d5a592d0f2fc9be3db0a41c35f86edb2fc081"
+    },
+    {
+      "path": "FEATURES_AND_DIFFERENTIATORS.md",
+      "sha256": "sha256:fe49048b847b8e35b7c8f7b79b3d59c5d13efa69ceab287013f6bd64c5b66ec6"
+    },
+    {
+      "path": "GLOBAL_STRATEGY.md",
+      "sha256": "sha256:e603e3ce1a4be7bc5737013a4339963f8332eb9e6f0c1cd0db8e8aa94c44ea15"
+    },
+    {
+      "path": "NARRATIVE_CANON.md",
+      "sha256": "sha256:b5f886ee80546fb7f4ac368daba9bb4b8aca3b26e8ea1c8d020a1f9229ebef0e"
+    },
+    {
+      "path": "NETWORK_CONSTITUTION.md",
+      "sha256": "sha256:e767e59e1e24f5f03288a24ec51aca3c4fa4aee305e91c9d1d0aa6d860146c5c"
+    },
+    {
+      "path": "OPEN_ITEMS.md",
+      "sha256": "sha256:e4b9f4954d8dac3a7e171cd025a29d216ccd486904b7d9d1da37f4ef045acd2a"
+    },
+    {
+      "path": "PVT_ECONOMY_ROADMAP.md",
+      "sha256": "sha256:dee4d3ac3d385799935209347868a6ec92d16bd58ccd6b398b10eedd9eaa73ea"
+    },
+    {
+      "path": "README.md",
+      "sha256": "sha256:3afd72f19824a8d9727a709c90580baa42059f54dc54d76874f4ff0ce7374ccc"
+    },
+    {
+      "path": "VISION.md",
+      "sha256": "sha256:2ed1208f7acb6b5b2a08704d4e610d7edd1ed115b68594268a737cf4a8ec4f05"
+    },
+    {
+      "path": "contracts/README.md",
+      "sha256": "sha256:c3040f6d19d6a16e90d2a67bbe5d43ca9e60e149dbbc145f6bda2f9cb59aac74"
+    },
+    {
+      "path": "contracts/deployments/PASS3_REDEPLOY_PLAN.md",
+      "sha256": "sha256:5ad08f7a7e418829f40e243613a70419fa710a087957dffc348085ca1428eee9"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/README.md",
+      "sha256": "sha256:1e4da254de5ac895041c7e41d566185bab7cafd2ea74a7c0970cec4f2cf9ac31"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/arbitrum-setprotocol-safe-batch.json",
+      "sha256": "sha256:91a52b733a41cc7c248297f04d88d7b9ad03a225af2ccf79176269f7af6947d3"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/base-transfers-D395.sh",
+      "sha256": "sha256:75a1e1826d2e5344a876d8783e8185b355ecad6d16f521ecfbd9d79178ebeb3b"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/optimism-setprotocol-safe-batch.json",
+      "sha256": "sha256:d89f3008cb5356acc7262f0d5ea9fda6fc4f47da1152b9b610479ee87364beac"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/run-base-transfers-D395.sh",
+      "sha256": "sha256:3fa656a6b221de7c6e685a7c597c0a3bf702e4716ecbde9a28b0d3f80111e37d"
+    },
+    {
+      "path": "contracts/scripts/admin-transfer/run-bondpool-deploy.sh",
+      "sha256": "sha256:af8e61d5e2b75365c3774113fe9771dc4e000fbf0598d9bb321cdfc74858f7a4"
+    },
+    {
+      "path": "contracts/scripts/deploy-pvt-v8.ts",
+      "sha256": "sha256:89f51b3d2158a2f03e7493f70682edf5314b1824c2f984b000e41660cf0851fb"
+    },
+    {
+      "path": "contracts/scripts/rotate-keys.ts",
+      "sha256": "sha256:d71c25f7b148bbd3bf469486ee9e525104fef83ae45f4be063dc308675ee28df"
+    },
+    {
+      "path": "contracts/src/FoundationMembership.sol",
+      "sha256": "sha256:3e9eebf331e4526945c9ca95db9eefc96d62b54eefe2c860123385a6fec10137"
+    },
+    {
+      "path": "contracts/src/PreVerificationRegistryStub.sol",
+      "sha256": "sha256:4b69794c286d9eb98dd7a9de038c41bad59fdb71644840c12dbf33d8286d4b70"
+    },
+    {
+      "path": "contracts/src/ProvianBondPool.sol",
+      "sha256": "sha256:e9b8695b0aa5daa10598cfe17e622e7c611bcc0ec63e25c451c8ef2abd3045c6"
+    },
+    {
+      "path": "contracts/src/ProvianConstitutionExecutor.sol",
+      "sha256": "sha256:7f6aed06004b9dc3177015550709836447af4114aae67cd24fa0d317dc026df7"
+    },
+    {
+      "path": "contracts/src/ProvianCourtV2.sol",
+      "sha256": "sha256:3442c3a82fc7302d09429c454800c48fce4aa2c938b12d50874c229671af2d3e"
+    },
+    {
+      "path": "contracts/src/ProvianEscrowV3.sol",
+      "sha256": "sha256:464c2b50a347895e518f40cbcbe0f79622c127f9ad9891e270b5e0d59841cf04"
+    },
+    {
+      "path": "contracts/src/ProvianEscrowV4.sol",
+      "sha256": "sha256:9dda4b1797aa3e29aac6b1d87b7fa63fcb599b57316472b0e720c1c689ee511a"
+    },
+    {
+      "path": "contracts/src/ProvianGovernance.sol",
+      "sha256": "sha256:8920c83a99f7a2f30a8c6549eb13f219a6b18563d9772ae932cf7f2b7a3f2e3a"
+    },
+    {
+      "path": "contracts/src/ProvianHumanGovernance.sol",
+      "sha256": "sha256:4d7b6bccc1bb5f5f01dbfef9ff15053cccb82f67df08ce7d38f67469e193889c"
+    },
+    {
+      "path": "contracts/src/ProvianMintAndAnchor.sol",
+      "sha256": "sha256:be564e2c633083ea310337c5095c34a60146f0d2ef16f1f6217c24849a769093"
+    },
+    {
+      "path": "contracts/src/ProvianPEAnchor.sol",
+      "sha256": "sha256:2ad92d10fa7a178408c07c46bd418b2f8face39f82d3c1e7457d098fac40c3c4"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv3.sol",
+      "sha256": "sha256:5caabb4bcb36cc1b3b4876ecc84c2b5ae969eb714c7427c5290493efa60ca214"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv4.sol",
+      "sha256": "sha256:a8d78316015ae876f939dd7a5cd7ee2f87f240da1bc1d48a45e2aec517f48cf4"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv5.sol",
+      "sha256": "sha256:293a6a6090540788dfbee10458e13f63bc1d2c4159fbbbac961445562e9a5df5"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv6.sol",
+      "sha256": "sha256:60ea2dafab8098b7ca160804396c5c7466af7f14f7576cd4b7b9b72f90dbad70"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv7.sol",
+      "sha256": "sha256:675bced827edcb157bd01d311fb11d2a14d30a5edca108f2d2b0a08e2c249ec1"
+    },
+    {
+      "path": "contracts/src/ProvianPVTv8.sol",
+      "sha256": "sha256:40c1897e83f12482c709dc52b35c81fe5f43a5d2bf902f8fdbded27806f00c48"
+    },
+    {
+      "path": "contracts/src/ProvianPoolV2.sol",
+      "sha256": "sha256:acc4a3b09b0207782987667a2dac7f26fce4683975a489492f3dd714ea8f197c"
+    },
+    {
+      "path": "contracts/src/ProvianPoolV3.sol",
+      "sha256": "sha256:768f67ca75e79a30c4ada5178e6997a5a70eeb88fac339544395963b9863acba"
+    },
+    {
+      "path": "contracts/src/ProvianPromiseV2.sol",
+      "sha256": "sha256:7e223c6228f43d7225d5d682750cd2ef7f4acc92a5f6f791b7def72984eaa23d"
+    },
+    {
+      "path": "contracts/src/ProvianPromiseV3.sol",
+      "sha256": "sha256:c8f344242c824888865abe48ea6c903ff3268f64696413a2aca3ad6524ec489a"
+    },
+    {
+      "path": "contracts/src/interfaces/IPVT.sol",
+      "sha256": "sha256:31b60fcf701c94cc472478c62218a2c0e26bdca361b706971289e7ebc42153bb"
+    },
+    {
+      "path": "contracts/test/FoundationMembership.test.ts",
+      "sha256": "sha256:a522984936f31596f2f3c854abd4a709815929bf46cc77d18dd3cdcfbce62a3e"
+    },
+    {
+      "path": "contracts/test/Pass3CascadeFork.t.sol",
+      "sha256": "sha256:22b4cf60bdd6b1d50b2a904c3cfee4212c0f1db80effb776d5e67d85ffdca4b4"
+    },
+    {
+      "path": "contracts/test/ProvianBondPoolPass3.t.sol",
+      "sha256": "sha256:2d43594a6cee76bc1f2fdce4748cd735eb2787c6d1977edc18e1d8b2a4edf829"
+    },
+    {
+      "path": "contracts/test/ProvianConstitutionExecutor.t.sol",
+      "sha256": "sha256:98ba0492e846d75857222819f22639d86301a30004f77aba7637a9ad40fc0414"
+    },
+    {
+      "path": "contracts/test/ProvianCourtV2.t.sol",
+      "sha256": "sha256:cb559e227a22127d44e02e9c332b0cf60cc676996855e4f032328c0ecced0dcc"
+    },
+    {
+      "path": "contracts/test/ProvianEscrowV4Pass3.t.sol",
+      "sha256": "sha256:9f3a928f1ce3b899f1ab802bae7ec795442ccacfb87140d170cb14841222f1d2"
+    },
+    {
+      "path": "contracts/test/ProvianGovernance.t.sol",
+      "sha256": "sha256:2c040e0512eae714d5495206a993cba09c077ad18fc085c463c9afd14d3f72d3"
+    },
+    {
+      "path": "contracts/test/ProvianPEAnchor.t.sol",
+      "sha256": "sha256:fc2b5263ce63d8cc79487034a2f210a793a7ae66ff60b0aca9f8402fd1577897"
+    },
+    {
+      "path": "contracts/test/ProvianPVTv8Cascade.t.sol",
+      "sha256": "sha256:a7c5e4369829ae361f2074a4700508cbdc19d70c44d82a736b705c81a58a2f9f"
+    },
+    {
+      "path": "contracts/test/ProvianPoolV3Pass3.t.sol",
+      "sha256": "sha256:1a2074ba7c80c4410f0e37fa905adc98c197132ebab57981c6b28f875b1f0438"
+    },
+    {
+      "path": "contracts/test/ProvianPromiseV3.t.sol",
+      "sha256": "sha256:27e0b6950906d3d225b9c38ff5257e469ab1d8d8dcef498ed78df92e76aa4fbd"
+    },
+    {
+      "path": "docs/AGENT_API.md",
+      "sha256": "sha256:3a5252740ce45ab202b19decf38341bdb005001943d7ea6c165f62d893e1583c"
+    },
+    {
+      "path": "docs/AGENT_BENEFICIARY_ONBOARDING.md",
+      "sha256": "sha256:0399117fe0c539eb8eb94085366fd7fa202f1cb634b11a0509eab9fba7246267"
+    },
+    {
+      "path": "docs/AGENT_ECONOMY.md",
+      "sha256": "sha256:883864717089f40f0a74f5f5f370d0764fb6cd8d04be4681bc61ce8a49be7c2d"
+    },
+    {
+      "path": "docs/AGENT_INTEGRATION.md",
+      "sha256": "sha256:708c4039353e5581d5305dcc04b239a3e69ef53c3e37ed96bedee7353096d5a6"
+    },
+    {
+      "path": "docs/AGENT_LAUNCH_PLAN.md",
+      "sha256": "sha256:16cc8af40aecd0707330d30454aacee0bb099e620a91870ab2b946bbc906edc5"
+    },
+    {
+      "path": "docs/ATTESTATION_ROADMAP.md",
+      "sha256": "sha256:1cf90499be989bc15042facc9788909d15ec48d72cefe5b54c257a1e3119d738"
+    },
+    {
+      "path": "docs/AUTH_MAP.md",
+      "sha256": "sha256:50a5342beac9012edd95179de473a976691b2412ebeb931ee08abc191c4d1235"
+    },
+    {
+      "path": "docs/CAPTURE_ARCHITECTURE.md",
+      "sha256": "sha256:3032a61dbe2ae197422f0a149c70a84d69499e00b29ee9b8b63abed266913bcf"
+    },
+    {
+      "path": "docs/CHAIN_STATUS.md",
+      "sha256": "sha256:6595abb2e3da6606fd38d5e988a61c94643fc52c1fd4d2e5c8707271b48df264"
+    },
+    {
+      "path": "docs/COMMONS.md",
+      "sha256": "sha256:7d854d205b96ed4a1138b95440f9e3d04b91f271e3a729a34d146e825e947ab3"
+    },
+    {
+      "path": "docs/COMMONS_ARTIFACTS_SPEC.md",
+      "sha256": "sha256:e24bc6b1dca9a939ae852f0da0cdd16370c5adca5486be4f9b9f60b67b24ded7"
+    },
+    {
+      "path": "docs/CRYPTO_GOVERNANCE.md",
+      "sha256": "sha256:63906130dd98504a2d44351445ed75b6fa751f2d5d44701e93c376fba13292ee"
+    },
+    {
+      "path": "docs/DELEGATION_PE_SPEC.md",
+      "sha256": "sha256:eda9434f49eac0927edb67ff28bff510cfd85c3a6172cf3228193e0e82993d77"
+    },
+    {
+      "path": "docs/DEVELOPER_SETUP.md",
+      "sha256": "sha256:2b1a0c9efd6ce20000ad8d3b09d6d5196760fe168e1de50970711770a0ba2725"
+    },
+    {
+      "path": "docs/ENV_VARS_CHECKLIST.md",
+      "sha256": "sha256:d3d4dfe4bd0f72be4afa8b56fa4c2e24385afcd69804ed08c5386763a75cfee8"
+    },
+    {
+      "path": "docs/EXTERNAL_DEVICE_INTEGRATION.md",
+      "sha256": "sha256:b012e940cbd2fd65470d13f617533040e5e387b7753551a811fe63603c5722ea"
+    },
+    {
+      "path": "docs/FRAMEWORK_INTEGRATION_EXAMPLES.md",
+      "sha256": "sha256:d85a7f5e8bafee9d4ddaecf7bf8c816dfe1ab617f7bd193ec1052481c3403a09"
+    },
+    {
+      "path": "docs/HANDOFF_KEY_ROTATION.md",
+      "sha256": "sha256:d60c79758192f4df3b6f29352296f7e40bc21c4e78117133a32312d5a4ba653e"
+    },
+    {
+      "path": "docs/NATIVE_SECURE_ENCLAVE.md",
+      "sha256": "sha256:0bfc75e1f9b7e906651af44c3202daacad9bff1a13793985b58852186d54e0ab"
+    },
+    {
+      "path": "docs/OPERATOR_ACCESS.md",
+      "sha256": "sha256:c76b850e1a6654b17f216aa23608a2aef71c2b679f8dcbb69b2ed9ab7ffeb849"
+    },
+    {
+      "path": "docs/PE_GENERATION_MODEL.md",
+      "sha256": "sha256:2e46e50c1e490f4f0438258bc60c24ffea3887e011be3b16a82fb097e714e242"
+    },
+    {
+      "path": "docs/PE_PROTOCOL_SPEC.md",
+      "sha256": "sha256:96a6713d4e3b81b8668ea2979ac34cc4ef2a39e9d7c6401f722ba06255b9839c"
+    },
+    {
+      "path": "docs/PE_QUALITY_GUIDE.md",
+      "sha256": "sha256:cdcebb3047b1462844feaed67cb728f5fb9754f4c66d540c5a43bbf228ae43ce"
+    },
+    {
+      "path": "docs/PVTV5_CONSTITUTION.md",
+      "sha256": "sha256:2b4a4a84ac7612aff92c2abca511578c252782bd779c081ed74499938b2465b9"
+    },
+    {
+      "path": "docs/PVT_BASE_MAINNET_CLOSED_LOOP_PLAN.md",
+      "sha256": "sha256:71c984c0aedb0ce5ced32748be22794a9a98eaf557c2a5a8234f720c60304981"
+    },
+    {
+      "path": "docs/PVT_BASE_MAINNET_WP0_PREFLIGHT_REPORT.md",
+      "sha256": "sha256:751b09e5d60bad8dacd8aaf2cad8f19b988c3ff0e96d2a5a4d762e7678381c58"
+    },
+    {
+      "path": "docs/PVT_BASE_ONLY.md",
+      "sha256": "sha256:3b2c3a52933a9a5791eaa40036181e5a163c71469d4f7880693172e32b468d11"
+    },
+    {
+      "path": "docs/PVT_MONETARY_ACCOUNTING_SPEC.md",
+      "sha256": "sha256:c9fdb176767c38f50cc61d3e861eb6b4eaf058bfabe3dec409aee1365e92ea33"
+    },
+    {
+      "path": "docs/QUICK_START.md",
+      "sha256": "sha256:6336acd6b5ba7d1addf680b86a2eeb022ef8121f768c4788f0d48265f9fdcf23"
+    },
+    {
+      "path": "docs/RECOVERY_ARCHITECTURE.md",
+      "sha256": "sha256:0fa3fde511b88df9dcbbecd73cec2cc6101ab438a4dbf548afb438e20d25c67d"
+    },
+    {
+      "path": "docs/REFERENCE_CONTRACT_PATTERN.md",
+      "sha256": "sha256:62b07c1682f881f0ca454aac677b4d6419b2ab40bdc9dd3a11af1dd9681e202a"
+    },
+    {
+      "path": "docs/SECRET_INVENTORY.md",
+      "sha256": "sha256:74cb77d9317b7b774a76419565cd450fef45ea37241eb23adf1c96a7c261b9b2"
+    },
+    {
+      "path": "docs/UNIVERSAL_PE_SUBMISSION_SPEC.md",
+      "sha256": "sha256:b20faf77585438d2cca793318194d47befdaf6b3ba3bec586679c34aadba49c0"
+    },
+    {
+      "path": "docs/appstore/listing.md",
+      "sha256": "sha256:fd00fa7d00192b5d2650d47181a70acfb2d38bdcb49801ff80b9650cc7634ccf"
+    },
+    {
+      "path": "docs/audit/pvt-wp0-wp1/APPROVAL_PROCESS.md",
+      "sha256": "sha256:0946d868b1bc688e7858ef3b609889189f2d46fb38b01c72bdb48084ffeb2caf"
+    },
+    {
+      "path": "docs/audit/pvt-wp0-wp1/genesis-continuity-readonly-audit.json",
+      "sha256": "sha256:f1a371925c3a9d9d244a89264a3f3d0a40b059fe6a44501d1fb03f6bb747ccf3"
+    },
+    {
+      "path": "docs/audit/pvt-wp0-wp1/genesis-owner-classifications.candidate.json",
+      "sha256": "sha256:885613b3200463353491705cfa5ec58b07b4816893680ac8c0a694d978132387"
+    },
+    {
+      "path": "docs/audit/pvt-wp0-wp1/pvt-action-policy-matrix.generated.json",
+      "sha256": "sha256:9a2af8a648650a2cd08e0dceb17ff5687347e3d2f4c4e0a9d8640f82b7a9c172"
+    },
+    {
+      "path": "docs/audit/pvt-wp0-wp1/pvt-launch-capacity-model.generated.json",
+      "sha256": "sha256:9df622ffd8bf3470bcce3ae55a5860dc75f8b5859f3707cfa7a3a9aea2c17967"
+    },
+    {
+      "path": "docs/handoffs/PVT_WP0_WP1_HANDOFF.md",
+      "sha256": "sha256:247830fa9559ddd745d987184a7d7ed3c2790021b1b112bdbe03e34bbb8394b0"
+    },
+    {
+      "path": "docs/help/faq.md",
+      "sha256": "sha256:2776c41e4c4a2a7f50408676a2d37e52d790e66312f272f2634cd6ceba59602d"
+    },
+    {
+      "path": "docs/launch-messaging/launch-announcement.md",
+      "sha256": "sha256:211381c3189a09c505df361d21b10ff57c6cca975c52d9b23a2012e01860f2da"
+    },
+    {
+      "path": "docs/launch-messaging/launch-founder-direct.md",
+      "sha256": "sha256:5f49f02723a1e669f95d96c64e7f0bee92f27c1a52048128c385b50a1dd23492"
+    },
+    {
+      "path": "docs/launch-messaging/launch-linkedin.md",
+      "sha256": "sha256:df8273fe6cc80ff41aa2d6048a80239b83b078b83f51f65cc219289eb4c9ca3a"
+    },
+    {
+      "path": "docs/launch-messaging/launch-thread-x.md",
+      "sha256": "sha256:148e4d83ec8350734812a9bcf9f9ccb5f8baab89647ba32de13d75fcfb396e48"
+    },
+    {
+      "path": "docs/launch/FLIP_RUNBOOK.md",
+      "sha256": "sha256:888ee55883c6ad2fec17d77cac56a70f138e444a66e18423daca22720f50bb17"
+    },
+    {
+      "path": "docs/launch/GENESIS_EXHAUSTION_PARAGRAPH.md",
+      "sha256": "sha256:d3765d237ed861c15aad71238c33e5cc3a08b68f9fef6fb9518c051818ff6e58"
+    },
+    {
+      "path": "docs/launch/SESSION_PROMPTS.md",
+      "sha256": "sha256:b4395ce47ad66d6f9dd147dc86b922ceb32c9d8f92ef1bad23b8a16d374165ab"
+    },
+    {
+      "path": "docs/launch/submissions/moltbook-agent-social-plan.md",
+      "sha256": "sha256:50f4fa749395c16c17d18f632e92b0a252af79038adda8e3a42903ace16d327d"
+    },
+    {
+      "path": "docs/legal/privacy-policy.md",
+      "sha256": "sha256:ea6a5634f1ea3c02149a24302628b54b92bddcf7f4efc624ce62944c04d57ba7"
+    },
+    {
+      "path": "docs/legal/terms-of-service.md",
+      "sha256": "sha256:9f7eee8ac893999a4031c5db510e934d90267ade2e85dc9858ccfa21a997fe8d"
+    },
+    {
+      "path": "provian-agent-sdk/CHANGELOG.md",
+      "sha256": "sha256:a397a3ed10c0f795f166bd2bba09a308e233bd78819c56c1a5dcc49cdc2074b5"
+    },
+    {
+      "path": "provian-agent-sdk/KEYSTORE.md",
+      "sha256": "sha256:4951bd9f5124e6e329d70f8c748eafcab9341c9da459a515b3a5ac0d1fc6d1aa"
+    },
+    {
+      "path": "provian-agent-sdk/README.md",
+      "sha256": "sha256:824e376581bc12874bf159c2821ad351ad540a6e9a3548c75c1d1481341c8d93"
+    },
+    {
+      "path": "provian-agent-sdk/docs/PE_GENERATION_MODEL.md",
+      "sha256": "sha256:5fdbd0e0dd05b8833f29e8712f5f540241d2d72cbe44d40b207139557c90fc55"
+    },
+    {
+      "path": "provian-agent-sdk/package.json",
+      "sha256": "sha256:2dc263476270ad984c1185344dfb3b3072a20b96d116e19e548e4ffcb4ee9feb"
+    },
+    {
+      "path": "provian-agent-sdk/src/ProvianClient.deviceSESubmit.test.ts",
+      "sha256": "sha256:20cdda0e0f6c84e6a7af83c91b4845fe640ad6602649049f0cf209db319db8e0"
+    },
+    {
+      "path": "provian-agent-sdk/src/ProvianClient.ts",
+      "sha256": "sha256:63b5f83ed7c8b293a3d6e9e97191f1186b6b730062186bba50dd728302adb731"
+    },
+    {
+      "path": "provian-agent-sdk/src/agent-bank.ts",
+      "sha256": "sha256:728bba9817e8ec4a2c9952b613863599e9da988133274bcdf9a1fa4f691552c5"
+    },
+    {
+      "path": "provian-agent-sdk/src/agent-wallet-promotion.test.ts",
+      "sha256": "sha256:1fb38d793c07f5660872e73c7e3c8554e3f4980f94c4487e2d3fd6132d022096"
+    },
+    {
+      "path": "provian-agent-sdk/src/agent-wallet-promotion.ts",
+      "sha256": "sha256:6427104c6358954d9e5029f97122e80ed35764aa6b1ea8e2867b3aceaa43bf0d"
+    },
+    {
+      "path": "provian-agent-sdk/src/durable-private-file.ts",
+      "sha256": "sha256:c7ba23d36d7e3c7f68eb8f6ca113d998f33edeea7dfd4785fb944abf739c9966"
+    },
+    {
+      "path": "provian-agent-sdk/src/evm-signer.ts",
+      "sha256": "sha256:6bb3ab820d67bef19786989f59fd3d7de39ef5fcf7456f88666b3223bb8920dd"
+    },
+    {
+      "path": "provian-agent-sdk/src/index.ts",
+      "sha256": "sha256:accd275ffbb914c88376969759915ba9408805e6141baa86dcdfeea0ae24b990"
+    },
+    {
+      "path": "provian-agent-sdk/src/keystore.test.ts",
+      "sha256": "sha256:763dd5f679762a76f8752abfd098827bec4dfabaa479a73cb07b1b475a345f5a"
+    },
+    {
+      "path": "provian-agent-sdk/src/keystore.ts",
+      "sha256": "sha256:5052439cb2d7f2ca882099ecd55867b595e4c1e760c333479855befb6f98ccf4"
+    },
+    {
+      "path": "provian-agent-sdk/src/observer/ProvianObserver.ts",
+      "sha256": "sha256:87b6659c59465344c2a225db540f15f2e0f69a6e20ee742ef07d79927eb1ef39"
+    },
+    {
+      "path": "provian-agent-sdk/src/observer/plugins/GitPlugin.ts",
+      "sha256": "sha256:0732f78fc872771b0301165aa49c5f473de9bf15d72c7543483a1782c016e209"
+    },
+    {
+      "path": "provian-agent-sdk/src/observer/plugins/OTelPlugin.ts",
+      "sha256": "sha256:b144ee0f631e8ab84a8b339be94479864733c608e2742debbd66134f9e006eb6"
+    },
+    {
+      "path": "provian-agent-sdk/src/observer/plugins/llm-session/LLMSessionPlugin.ts",
+      "sha256": "sha256:f14adc19da131e5cfca40b0a502bb6b4d096fb5557e606a6d96fd2de4f0cd604"
+    },
+    {
+      "path": "provian-agent-sdk/src/pending-wallet-registration.test.ts",
+      "sha256": "sha256:48d917ed8360e91969edbade13b1e6e2ddf31727ff3be80f1c9427c0f4b7b651"
+    },
+    {
+      "path": "provian-agent-sdk/src/pending-wallet-registration.ts",
+      "sha256": "sha256:bc64a22879dd2a2b6b3aa849a9c8dfdf5ecf5db81e9bc23de35cd231b27c2838"
+    },
+    {
+      "path": "provian-agent-sdk/src/rotate-key.test.ts",
+      "sha256": "sha256:e1b83b8b071d4f2dc67aaa606c3a63c074903a349c517675c00e31d2286cb527"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/agent-credentials-file.test.ts",
+      "sha256": "sha256:9c4e7c4d36fb0ec65e2b677ed669771148cf8ea0b221cba7508e3d2f7ee5bb76"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/agent-credentials-file.ts",
+      "sha256": "sha256:e9aeacbf5f74ae4aeef61f0836c258dc4aa6cb1d51f0d4e75b076b6e1ceb1ed3"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/create-agent-wallet.ts",
+      "sha256": "sha256:392cabacb87d37d6ccfad43b394312e5dcdf51fc350ee5c84a78a19bd017e9f4"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/credentials.test.ts",
+      "sha256": "sha256:94f4a2e4c90d6706acd7881b8e04007a2409d783b28dfa1aba11fbcdf73912bd"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/credentials.ts",
+      "sha256": "sha256:a533ff505e7b26a86d6533d9bf1ff129b99977bfb7692c7f19ee46f8b6e38136"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/pending-device-registration.test.ts",
+      "sha256": "sha256:8a73f65ca8db7578a24bc3b483ea33666531f357c92c1b1c7833ec3a4b1fdc95"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/pending-device-registration.ts",
+      "sha256": "sha256:1ee69b26be9d8c69531efee97467ed29dbbc90e11f05c12c5f66de1b1fcfc6c2"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/register-device.agentToken.test.ts",
+      "sha256": "sha256:02cbbc3b3b5db33e466674d52d3cb0deefde8bca834a09e2a4f247838208822c"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/register-device.otelProfile.test.ts",
+      "sha256": "sha256:09ae037453a746eb24c10bc20a92c43ff4d5586e72906d120a11452d84819837"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/register-device.submitTestPE.test.ts",
+      "sha256": "sha256:99679abae03702160c0797396fe4217f175206e45436800053e2b82ddfd0f3ca"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/register-device.ts",
+      "sha256": "sha256:cb4f710900d5afeaeb2705d8f7e99caddce7aba184621897e4cf5311777aa570"
+    },
+    {
+      "path": "provian-agent-sdk/src/scripts/report-pe.ts",
+      "sha256": "sha256:457efa955c393a90b0e593e29c88bc1750ca5cd970b245399a37cbcbb74c7a56"
+    },
+    {
+      "path": "provian-agent-sdk/src/session-file.ts",
+      "sha256": "sha256:238c3359c4f0f39187e73bf39168e6266023295e0f916eeb6d77390f1bda0766"
+    },
+    {
+      "path": "provian-agent-sdk/src/sovereign-pe.ts",
+      "sha256": "sha256:34bd0a2761656511ae9fbc80e8fd7a4a2c5ad53c1695906196048221f27fd69d"
+    },
+    {
+      "path": "provian-agent-sdk/src/types.ts",
+      "sha256": "sha256:b923d3e4e02b9e0a088f9d133dc9d18b6d73e019c98c0bfb934c8d176c89e35a"
+    },
+    {
+      "path": "provian-agent-sdk/src/wallet.test.ts",
+      "sha256": "sha256:127b0ee66b1cc1d569d04a23a9417c72b56afc5e2902cac88255035bcdea9bd8"
+    },
+    {
+      "path": "provian-agent-sdk/src/wallet.ts",
+      "sha256": "sha256:5a4582e1b5a0c44a9582bf73e24a9d219e79bede22bc454af67eb3657bd7d3a9"
+    },
+    {
+      "path": "provian-agent-sdk/tsconfig.json",
+      "sha256": "sha256:583a28bc2d184d861912fb30f495753e81bac049f0a0d8c57ea125bf760c3cb7"
+    },
+    {
+      "path": "provian-agent-skill/SKILL.md",
+      "sha256": "sha256:509a1ee2518d9b9c466ce08e8d1e6651f7f757fb6524bee190dad8247e4f74fa"
+    },
+    {
+      "path": "provian-backend/package.json",
+      "sha256": "sha256:063b9bd0f3e6d186477589ab168e07bcf021e81547cd11f4f55a17137093e177"
+    },
+    {
+      "path": "provian-backend/scripts/audit-genesis-continuity.ts",
+      "sha256": "sha256:25ffc64692fac237a1d5c2fe4168e3b566e22175a292c54b81e7e4f4ac76566e"
+    },
+    {
+      "path": "provian-backend/scripts/generate-pvt-approval-manifest.ts",
+      "sha256": "sha256:9a97f7d0dec9823497117d0732d9d12f17ed5e69a8457c3e9a55645286e4e019"
+    },
+    {
+      "path": "provian-backend/scripts/generate-pvt-capacity-model.ts",
+      "sha256": "sha256:e96c93e3de87c5ede8d61e0e0b2cee6d1221a5de8df44ae838b50ec41dcfbd11"
+    },
+    {
+      "path": "provian-backend/scripts/generate-pvt-policy-matrix.ts",
+      "sha256": "sha256:2e63168279d015f3c1de980baaa6181c52908b538d3cb165095ef488367372ed"
+    },
+    {
+      "path": "provian-backend/scripts/launch/genesis-stranger-run.ts",
+      "sha256": "sha256:da0350d6d06d2fc231631392398de39092b9cc471f3b3dfdff949062444acd41"
+    },
+    {
+      "path": "provian-backend/scripts/re-anchor-historical-batches.ts",
+      "sha256": "sha256:b06265c4908d5be3f0d3fdfd89198fd2cbd1de77838ee23cea61569611a7ca87"
+    },
+    {
+      "path": "provian-backend/scripts/test-mint-chunk-ii.ts",
+      "sha256": "sha256:e4591e127192504ad60be3e1588470a32698bc4e0409461fa5b5228c05c47815"
+    },
+    {
+      "path": "provian-backend/scripts/verify-pvt-genesis-load.ts",
+      "sha256": "sha256:af170289aeaba8d62290c2cfe495bb1875b40dd553273c01eab4adca5a515859"
+    },
+    {
+      "path": "provian-backend/src/__test-helpers__/pe-doc-fixtures.ts",
+      "sha256": "sha256:7973735a65176abec627ed90f6cd7b047dd6effa30879c04722bd66facdefefe"
+    },
+    {
+      "path": "provian-backend/src/cache.test.ts",
+      "sha256": "sha256:3fbc3d857efeb3b828da977c7875f6ead12cc1ed0b76c136d2e44410d39755cc"
+    },
+    {
+      "path": "provian-backend/src/cache.ts",
+      "sha256": "sha256:399bc6e69929042dd279d97cb17099e471e9ad625d0bfb226591be670bd548e1"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/bonds.test.ts",
+      "sha256": "sha256:4dec70b7da78a0ab0417e310b621d3aadf483393de12ee49d9aeaa65bc69d56a"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/bonds.ts",
+      "sha256": "sha256:b1415ae478591055a976da9181d3b98a2158be0897b2e231581d09f3eb8a40d2"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/bonds.ws2.test.ts",
+      "sha256": "sha256:315e47c11d707885e74cc5aa624c576aa7773858ad540158cdf6b8a048f5d728"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/court.ts",
+      "sha256": "sha256:c92ff93477af21c91cf40eeeaf16f43aaa36826185585d24c2c23eeaa1692f16"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/directory.ts",
+      "sha256": "sha256:36cd05d8952d01d8b0617fc2ae128db5f72fc013b2e25900bacd63d461a5dad3"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/escrow-release.ts",
+      "sha256": "sha256:c631718173633dcfabc83d67dc75e32a900aae4a34f72ac7d80c38844f34098c"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/escrow.ts",
+      "sha256": "sha256:867e1f54c20ce62f5594a222739f172d5efc6b3a1c5f83f363d0c46ad5467102"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/event-listener.ts",
+      "sha256": "sha256:002bba72201666608cf09c5b4e890ab5273e6f5b2db2bf4c5a4a4be734b5bd9f"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/jobs.ts",
+      "sha256": "sha256:8775fa0daf53ff13af37aeb8dbef5cd6e698c98f29d53fb61ebfc7cd20c1e63e"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pe-proposals.ts",
+      "sha256": "sha256:7fd6ae59db2855520b96bdb8e9ba47d6f2bccb5fbf50686e7b0b76692c727d88"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pe-utils.durability.test.ts",
+      "sha256": "sha256:e45d1a7e519e285ca62f6b86941a9d77e1ff47108535743b82d719166f0a5ff3"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pe-utils.ts",
+      "sha256": "sha256:44b6e20598fd9c2676f74c2f1136487ef5db20fe8927a7fb5954ca2d43919483"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pools.ts",
+      "sha256": "sha256:c3f84d2de88b303d1cf7e230a99a4fda0e2028b69f80443673086920795a535b"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/promises.ts",
+      "sha256": "sha256:0fd315bc10cc7e093dba976e08522949a752c028400fe07d4ac944baca62a725"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pvt-principal-config.test.ts",
+      "sha256": "sha256:a9f19f24fe24829a6cc497f8453569140889f3b81110136eb46fefc68632ec84"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/pvt-principal-config.ts",
+      "sha256": "sha256:e2ded0c33278b0514e38e21f6344bcd2ff349f690b269775a39c65df7287c9b3"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/scheduler.ts",
+      "sha256": "sha256:bd89b9f5e19ade2d007c48a235e8510edd53fb78b13af29eceb05dc7031f895c"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/types.ts",
+      "sha256": "sha256:6ac4deecb09c0ad430aa3bb0eaaa4be1788a827c7754f8e21fe1dbff1e968d3d"
+    },
+    {
+      "path": "provian-backend/src/core/agent-bank/webhooks.ts",
+      "sha256": "sha256:bb96216ed1e0f7aa9c84b8ba04e8f944a086943f310edadd110ec6e6148662ef"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/badge-provenance.test.ts",
+      "sha256": "sha256:44b4bc964bbedd4110beaa56c865dfc415e7be6133c493b1d998288f93394d70"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/badge-provenance.ts",
+      "sha256": "sha256:c28970c54044f705f3535e0cbd54762adca606b1da7e60da4432472250c61e7d"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/badges.ts",
+      "sha256": "sha256:8b4ee4a9d13da22cba1dfc87e4e68471f63dc8976a29399e79da04af86793d1f"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/beneficiary-relationship.ts",
+      "sha256": "sha256:9a898b6fd1d1358ceab52fa7c412f8154a13ee65c180613b4c47268e605fdfbd"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/canonical-agent-pe-chain.ts",
+      "sha256": "sha256:1988d9d9188a6323f38f2c0f909e5f390b23ea51555528a7664400b04538686b"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/event-derived-badge-durability.test.ts",
+      "sha256": "sha256:e19fd791a6231f891f111dc9899d817bb4c7c52c3a64b0547204b2664b131301"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/governance-score.ts",
+      "sha256": "sha256:55f3cf48b363287600304087113510c7ab72a8982f0d9880ddbf3a92036f5a53"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/link-human-binding.test.ts",
+      "sha256": "sha256:8af0f2c18317b43c0dfa276baf89ea960169b57f517a1ab3f223dcafb65452a5"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/link-human-binding.ts",
+      "sha256": "sha256:93aa8c791c654b9c6e2b9d3b33fc37e3e382e14b2d7b421f012f742b5d137377"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/proof-of-possession.ts",
+      "sha256": "sha256:4f5584ceea2cb5d8090a1ca412a35592c09cb1cdd4035747d5100c7d6f06b79e"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/proof-of-possession.wave4.test.ts",
+      "sha256": "sha256:f1fa62bda525422a10e9afaf699713cb71437e14591e9b1d512604986494ded2"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/registration-recovery-integrity.ts",
+      "sha256": "sha256:ba7ec7328413969b259d228450d11875621c188194eae0af58161139a19e8239"
+    },
+    {
+      "path": "provian-backend/src/core/agent-wallet/types.ts",
+      "sha256": "sha256:1a2d7a14185176edc83e117f3956ae28b5afaa82b27568babbbe88c667fae5c9"
+    },
+    {
+      "path": "provian-backend/src/core/attestation/types.ts",
+      "sha256": "sha256:8cfc72889687ebc2de41b39984036c09c35d8350117ef579cb56dd110664fce9"
+    },
+    {
+      "path": "provian-backend/src/core/commons/artifacts.ts",
+      "sha256": "sha256:0100c0ad9de69c59f7948841e2c0da0e595bc8a66e72e36129d3fad3b5332af1"
+    },
+    {
+      "path": "provian-backend/src/core/commons/forum.ts",
+      "sha256": "sha256:099e073f52322113a783e73853405051d552a8073ca11576d5b3c0fd2b50a2af"
+    },
+    {
+      "path": "provian-backend/src/core/commons/human-jobs.ts",
+      "sha256": "sha256:62f6d9e74d81ae1d48c015bf62b44148223859ad7bf3246e94cf0886e7b826d3"
+    },
+    {
+      "path": "provian-backend/src/core/commons/profiles.ts",
+      "sha256": "sha256:ff5e8d7a4db3067f2ce02f2080dba29194aa49426bde630990d8dd3461897e46"
+    },
+    {
+      "path": "provian-backend/src/core/commons/publication.ts",
+      "sha256": "sha256:40da5ac366f0471ea3457b291ccf9458d653c4fdda64b2168ccc4f17895ad919"
+    },
+    {
+      "path": "provian-backend/src/core/commons/vouching.ts",
+      "sha256": "sha256:a101b9f0c6f117a4890d905a3da6bfdc5a093a1f7f3ac831271fa774474ef5df"
+    },
+    {
+      "path": "provian-backend/src/core/commons/wallet-reads.ts",
+      "sha256": "sha256:95f9e1ac13d0760c1b48ec5d0cb71a00a16f05b77fda924850a25168b45700ef"
+    },
+    {
+      "path": "provian-backend/src/core/commons/wave4.test.ts",
+      "sha256": "sha256:f40391567efbd039ddc90ba4b6da39242d2c06ac2f965fd9d17dcd5c353ac486"
+    },
+    {
+      "path": "provian-backend/src/core/corroboration/CorroborationManager.ts",
+      "sha256": "sha256:221256f6b595fdcd258f5fe8a030336cd5e97ba8441756f31df907ebda16229c"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/challenge.test.ts",
+      "sha256": "sha256:41da976ac51f87ab9f8fee41a2bae09c73f4bac9e8536333f48aaf1a2fff64c2"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/challenge.ts",
+      "sha256": "sha256:12014486b9f27d4c1bdffc5116b71199612b16f5837833d02de77a30ef27d404"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/index.test.ts",
+      "sha256": "sha256:0e352eeebd232f2e744fafbfd03d0a7c0f0601f332bff200da2d863cbc0fad33"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/index.ts",
+      "sha256": "sha256:f56da3599d520e9eb70dcc2966bb3c437c42ab3411c1573edb240e47dbf878a3"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/link.test.ts",
+      "sha256": "sha256:572b6b611ea55e33e3e6bcddda2caeeec54055af5f0f08e09402878968e7c1e4"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/link.ts",
+      "sha256": "sha256:4ad8d3ae030afde3d37a14495e7ccfc7b33dd364a015ebe97ac09ca4e06ad919"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/proof-head.test.ts",
+      "sha256": "sha256:ac38d7a1b82e3ce20e4ca8537b7f0ff473b513e4e19e90169897a46bfbf58b09"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/proof-head.ts",
+      "sha256": "sha256:c21bc3146bba868f5dab31ffdba243091102201d503d0cbef2a6b0e1c89a89cf"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/verify.test.ts",
+      "sha256": "sha256:2e0531991d11424071301fbb398ab2d664a095967a531e91ff0145f9b863e7c3"
+    },
+    {
+      "path": "provian-backend/src/core/external-address/verify.ts",
+      "sha256": "sha256:8aada2889379f0061b193e8bd5b9fe4c8b510598f6c6a7c8cc3414e5f9e4d04f"
+    },
+    {
+      "path": "provian-backend/src/core/foundation-membership/client.shortCircuit.test.ts",
+      "sha256": "sha256:faeedba7dd3c2b2a8358fc78a4f90834951dab6c02a8f6e9cde5b6ff123114a8"
+    },
+    {
+      "path": "provian-backend/src/core/foundation-membership/client.ts",
+      "sha256": "sha256:3be0901d5ea6ed2a5476445d759fb576025066e0ffd92f497a26fa0f151897f6"
+    },
+    {
+      "path": "provian-backend/src/core/governance/proposals.ts",
+      "sha256": "sha256:c277d934674078078f74071a002c349b16801785fb1d74d040440404407cdbf5"
+    },
+    {
+      "path": "provian-backend/src/core/governance/voting.ts",
+      "sha256": "sha256:653e2082b0f8d790b1709046f11594d3783a786a89a524690f53a62a1b89ae30"
+    },
+    {
+      "path": "provian-backend/src/core/jurisdiction/jurisdiction-policy.ts",
+      "sha256": "sha256:41a10bc3ba65ebdf1745aec29f0ebbb3cef35860a91ca79341cf8d50e86f0f7a"
+    },
+    {
+      "path": "provian-backend/src/core/notifications/pushDispatcher.test.ts",
+      "sha256": "sha256:38b865af573d96d48deb9427672426e97263481a9b1070181b7985fc3c76bb2d"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-constants.ts",
+      "sha256": "sha256:c4419d41a0350dca013b072f8964dd6fd16481e2280526054231fac4efbedef3"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-discovery.test.ts",
+      "sha256": "sha256:3afa4c108ae62ddb4ef9b833449f5e380a1e67ecca0f55239666098cd69db0bf"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-discovery.ts",
+      "sha256": "sha256:6dd5f10de33de2793841058cf01769e9a0d471889f27aa40b4845968349dacc0"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-finality.test.ts",
+      "sha256": "sha256:88b2d681b5e87062c344b3097cab98b6ac059d121a0495e446ba2963eaef95f9"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-finality.ts",
+      "sha256": "sha256:af830ba5e1f5a966b6a7216a1f7e645d22f8ff0ad4f0431778d87e1a5b556c2e"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-state.test.ts",
+      "sha256": "sha256:4554ff9c7803b5053714924ddd0d9587b3420b89d04c27026163c0e10db27855"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/economic-state.ts",
+      "sha256": "sha256:966a2876ce296ef9c497517816745e6345caf0bb793e503e42afa33458f8a8b8"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/prepared-economic-transaction.test.ts",
+      "sha256": "sha256:fc785fefe0259348b8b8ba1873960b5d375af1a8cbedf2101ab2797769a36e4c"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/prepared-economic-transaction.ts",
+      "sha256": "sha256:31f4b91de189ef4c1f7035593069358165df047c03f70ea8eb153c7d92bd787b"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/rpc-provider.test.ts",
+      "sha256": "sha256:d5778b7b7f874e32c2e96a49beb1bd3c558b5cee1e409393abfa2893f45cebd5"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/rpc-provider.ts",
+      "sha256": "sha256:f7eb793aa7ee91396887940a75ab8fdac46c64a8bebd4d81d8a8cc04a8c4e7ff"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/tx-verifier.pool.test.ts",
+      "sha256": "sha256:1a30c5153559a84e980e88eba6f60be29fac29205c241c63050da2756a47ad4d"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/tx-verifier.test.ts",
+      "sha256": "sha256:6c1928aff871d336034f6540f6b1664766c6d9b027a9c32a5e0401793efaf97b"
+    },
+    {
+      "path": "provian-backend/src/core/onchain/tx-verifier.ts",
+      "sha256": "sha256:719b663b2a7bd7787fbd650a1ab5d69c716badf070320cf8bbfcec8d513013f8"
+    },
+    {
+      "path": "provian-backend/src/core/provenance/pe-type-catalog.ts",
+      "sha256": "sha256:c7aab318090fdfb756d737b47182fbe5a340292c79194ab0e7cea66f20629136"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/__test-helpers__/armed-genesis-policy.ts",
+      "sha256": "sha256:6b36d1168171e35ed8273fb5c159105de223eea2970e82dca57d14ba3334b2f3"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/__test-helpers__/base-economic-evidence.ts",
+      "sha256": "sha256:f7afc5cf87a03cd173e2a1d5bace0d617160d6dee2ad63dd2aeea7d2fb96dd85"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/__test-helpers__/fake-firestore.ts",
+      "sha256": "sha256:be1f4f948125794f71bac57968e916587a162cf53aae9ddf97b1937fd0b35b35"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/activity-mint-limits.test.ts",
+      "sha256": "sha256:07fac49b1a6ca812bb096e518d81f0ff8021c0da326970b4be349172c5d76ae0"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/activity-mint-limits.ts",
+      "sha256": "sha256:e9ddca20a2705708bdedbb5acb5bb9d59a17b3d89727ff032508622a81b218dd"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery-cli.test.ts",
+      "sha256": "sha256:bc4b58cbd8186f4b88a08c99f6886fe7ca42d392e4d071fb9c76e3258d6de44c"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery-cli.ts",
+      "sha256": "sha256:1fc7c69d852ebbaf4badcbc8f8623ddc57fc54fe3fa438b829d0bfd5baf0726e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery-worker.guardrails.test.ts",
+      "sha256": "sha256:9843ab5d94ee9b92c266b1ca99e7c41a3605bebe8131d51571a1e2595f814ce5"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery-worker.test.ts",
+      "sha256": "sha256:13d7b0a7b9140016e4e060d2190d9b0e6b5a9d7f8e864e18cf2250087c974cc6"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery-worker.ts",
+      "sha256": "sha256:9589b9a63b44315c37408e804ae49d43a566a82fab2fc15b27f164a19f3fb49f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery.test.ts",
+      "sha256": "sha256:9a2199adbc3aa5faa00ecee925dd3351d887a22d7728a45f1bb77e66d13c3216"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/anchor-recovery.ts",
+      "sha256": "sha256:b39a9a4045fe340d1d69d1609e01cefc22898955916137a567af690a2c118e4b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/artifact-novelty-claim.ts",
+      "sha256": "sha256:1ca02d03db929ed13f15f3328663451fce781dece32ccf0c80ff2474b99cdc96"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiary-pending-recovery.test.ts",
+      "sha256": "sha256:8f6521692bd79cbe18712975be693021eec5aa9f895e562249894812cc8e7181"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiary-routing.test.ts",
+      "sha256": "sha256:489f3383b636ca6b585420f56eaa67e2e534a664ad25c22154abf4c34a3a38ad"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiary-routing.ts",
+      "sha256": "sha256:3c862404b8c6977012efd088bc70e12534bd9de6e31aa770474353585aa46c95"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiary.authoritative.test.ts",
+      "sha256": "sha256:910cb5d7052c502e397fd782978e31195ccd24bd1da8493956bc7af9b8f9685a"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiary.ts",
+      "sha256": "sha256:6aad0b10db343b035080f9f446041a9bf01fcb6023ff4242c46feb62326e6415"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/beneficiaryPending.queueHygiene.test.ts",
+      "sha256": "sha256:009cfba5154e3ee4f4c622376b15c0f6f3d2845e1c21f11242f8003a89242eee"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/cited-pe-validation.test.ts",
+      "sha256": "sha256:64ea30afd17fea1df0887f663f99e09115571094044dae6bc74bc9f3c3060b15"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/cited-pe-validation.ts",
+      "sha256": "sha256:bd342442188e72a60ebb549cf9a95c031f79232d90ea7796a7387f4652f2673a"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/commit-mint-claim.test.ts",
+      "sha256": "sha256:b6593ff78ff52521f7574f7de2531970d92a71047491847d74cecd294f5d5bc3"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/commit-mint-claim.ts",
+      "sha256": "sha256:e18d23e78b95c30c0980e51e33ce9179980520a07cb8e7970f97a841bdc13931"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/daily-pe-anchor.test.ts",
+      "sha256": "sha256:5741dd89311e7010470541e77c104ffd1d0cf14c5653b239c7e83f9d358a30a3"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/daily-pe-anchor.ts",
+      "sha256": "sha256:3f7019de46ba85fb5565905d62fac5bcf07aa86e6396781daa1446007b71a9d0"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/deferred-release.test.ts",
+      "sha256": "sha256:98b444c2cd76a0fcb4ad09ca7bc3de44787ac46110beed8bd6b3ab9439fa350f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/deferred-release.ts",
+      "sha256": "sha256:ac2826a973d9ce86d922f5a052117c839abe4b0db6be256059f929056d87b2bd"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/delegation-pe.test.ts",
+      "sha256": "sha256:81e8fd005253e578ce1d38d4fed592c188a838de0dd4af22c30bbdcc17f90f8e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/delegation-pe.ts",
+      "sha256": "sha256:96b10dcfbb0263485e3a084b36b550626cb9db33ca0d4453e76ecd3edeb702ca"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/durable-accrual-effects.test.ts",
+      "sha256": "sha256:c08b909966a6307af4e5faf6e425cc1268effe2db26511be7e5f8e931a88b29f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/durable-accrual-effects.ts",
+      "sha256": "sha256:54398ee4e390629a24b58def81a45516c7090d2a40b3216e26af2b533e1fe11e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/economic-transition-coordination.ts",
+      "sha256": "sha256:26865aa7c2436c974754940d4c9c6e0643aeeb8bfe3a27a06d5d82c1b93503f8"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/epoch-keeper.test.ts",
+      "sha256": "sha256:d7f2b9c94bf3f64b62aa660bc60f657d0882e411c7b64f7ee0235b6128ab8092"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/epoch-keeper.ts",
+      "sha256": "sha256:570386350ed8a983aff2a709b934a040f05a5cb0dd0a21abe32c27b7bff141fa"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/estimate.test.ts",
+      "sha256": "sha256:99e2fdeb42f19a111d641f47c1d82572c4aa0ffe683618e74b409cb7fddb3052"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/estimate.ts",
+      "sha256": "sha256:28e48e6c09da74824f1df399541513b51ddaf558861fe6b29d649f1146930aa7"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/foundation-allocation.test.ts",
+      "sha256": "sha256:c27130ba72c7da3d65bb937b590098cfcf5e7a007ad81827774cc68dcce6ac31"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/foundation-allocation.ts",
+      "sha256": "sha256:ba01e9d914a9b4db0ddeece7106551d7aa186da708d71f15d7225f746ab0cbbf"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-activation-approval-binding.test.ts",
+      "sha256": "sha256:6049feef222407d1a5c95de02c7237101ae6dc147b92ae773121dadcb4cfe0d2"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-award-state-machine.test.ts",
+      "sha256": "sha256:6f7f433508c347afa54f7e10f9585e4262c1b149ad4684eb5105da061ee3d539"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-award-state-machine.ts",
+      "sha256": "sha256:9add6e16ef050fa3e2ea7eeb1c4fd125d887f7b7622009247f95a151423d2740"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-campaign.test.ts",
+      "sha256": "sha256:c105bccce25ff1bfa83504e6c33638c1172ab45c269259a91af0f3278cf47372"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-campaign.ts",
+      "sha256": "sha256:c1b2754856f9fb428ef334c91ef0ab7ce817d36105350eae683f93ac2d5d4a1a"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-ingress.test.ts",
+      "sha256": "sha256:4f16919aeabe10fbe597a7034b5e2336125d75578fa440a94bc428a9f5011796"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-ingress.ts",
+      "sha256": "sha256:d3a80167409e8238da14588d708e4b62230ef995a6e59a40bf4286171a2a8e45"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-milestones.external.test.ts",
+      "sha256": "sha256:82a7e84ab6ce0901c9386f081eab78efa2b39c2b5c110df82d55b92f0528f3f1"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-milestones.test.ts",
+      "sha256": "sha256:b8199c9b893d5cbec68b43d0c4f99ca2e78a80fa5eaab63d71b4395cef11aa36"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-milestones.ts",
+      "sha256": "sha256:02eade39c54b61def7d8e3dc376aae9e609b13fae5185d8af104fade1bc3b2fd"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-payout.ts",
+      "sha256": "sha256:d61f7ae0eb20dbcaaeac96faf8dab91a381e043883db92d81d7d0ab51dd3600f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-settlement-approval-binding.test.ts",
+      "sha256": "sha256:b2f1f8c1dda63bf1c11ea07933cd6dd01144eec5735b76feeb96f556110aaeeb"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-settlement-budget.test.ts",
+      "sha256": "sha256:0e4d845aca00cf8e9e214976bfb70ec98cea6f30edc6806123fd88dd457d3935"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/genesis-settlement-budget.ts",
+      "sha256": "sha256:451776c6422000928f83ea6302dddb61b1c56e86b3cbbc52da78762ebb1287be"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/inbound-usdc-watcher.decouple.test.ts",
+      "sha256": "sha256:cf84bd9cd54cd2a9eabf64d8f8a9fd53fa899c7c5597db984f27096535bedf12"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/inbound-usdc-watcher.external.test.ts",
+      "sha256": "sha256:0d1fe39b56e82cca6b40c1a4adf6010b48f7fa11fe4ad5fbb4a252339325b6b6"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/inbound-usdc-watcher.test.ts",
+      "sha256": "sha256:cf99c5ee7d4ae3239aef5188b136eab2f240c3af3548d1924bbc81a602802be6"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/inbound-usdc-watcher.ts",
+      "sha256": "sha256:075b61ba061dcababa3c898f6494aef5938e9a4b2bd340ee60515172a83d133f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/lineage-attribution.test.ts",
+      "sha256": "sha256:4debafb47b2f8bbc471cf9a3a1319ba689e902f06f609f94c1dc7401afa57153"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/lineage-attribution.ts",
+      "sha256": "sha256:3b18d2504668810fbed96bcd8108df2b291599931e00ba0e72868806af9abcb4"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/lineage-routing.test.ts",
+      "sha256": "sha256:ac1fc092a452dd107c32a94615b5ef412a56aadc0d15f516a2b8034d53b06cb4"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/lineage-routing.ts",
+      "sha256": "sha256:5726b582e03ab91bab13b46980ef60f86928a438050bef07069e6aa93d7943af"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/merkle.ts",
+      "sha256": "sha256:026d5e01ca2c43c5f1ea3fdc2f01e415b3f83208f76642e89c4db3e3c8a9a9ca"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-finality-recovery.test.ts",
+      "sha256": "sha256:8d1eed088926b51342ca2756d2a3dac805dbbc1bfae120d5b2c5d182efe19282"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-lineage-cited.test.ts",
+      "sha256": "sha256:abccd06ec635e528e03dbfa35d95d5c956e630f1c006d084839e2482bf9f3a79"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-once-claim.ts",
+      "sha256": "sha256:9650fdd79129cad5b4e8600724019ce16142c95c0da872e0d9d95a57e0300880"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-recipient-resolver.test.ts",
+      "sha256": "sha256:a210d6cdf3330a6973f45ca38596949016b4332972982c88825fba21345c417c"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-recipient-resolver.ts",
+      "sha256": "sha256:90cb6e9641b56a004e9a616235527ba268121c25fcf47ce50479da90a93283e8"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-worker-coordination.test.ts",
+      "sha256": "sha256:e41dab2b8cf62f591cebdb82d7826ba2dfd7a22592b1658588bf71056840cfda"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/mint-worker-coordination.ts",
+      "sha256": "sha256:7ff183328762a4f613e83dbb954d76c07dccdef7c1ea4e8a3b9f442c76b6b813"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/minting-engine.reorg-hooks.test.ts",
+      "sha256": "sha256:5fcc9f1ef87290eb1016598c479a8cf629d3992e858d3d69401c8d2bc603a5a1"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/minting-engine.snapshot.test.ts",
+      "sha256": "sha256:8060bc40da0efeb4adffaa1156e8848059708c6c2fc8e66d0dd339dd63b7fe69"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/minting-engine.ts",
+      "sha256": "sha256:00d78780dd6d71f1f184e0e9e75c5c4c8429eff33882d037473d1e56f55075c2"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/native-wallet-registration.test.ts",
+      "sha256": "sha256:a0264bf6b3dbe18cc4d73c384de2ef13c01284ceaa6c0d7832cf6bf438c25412"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/native-wallet-registration.ts",
+      "sha256": "sha256:1c9b27b0e8c20c1d6281047056d98ebf06c68f8ba5ca854e669f54ec0a7315bd"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/outbound-usdc-watcher.test.ts",
+      "sha256": "sha256:c9b459a20fe6811a3a156a6fe5267ce6b9b01275f8a5a6be156530a779e9f6ca"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/outbound-usdc-watcher.ts",
+      "sha256": "sha256:a4de1e3c0c2c4d401020c311b57f52686aeb8ba278debd43ae1ee481318fabbe"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pe-weight-framework.test.ts",
+      "sha256": "sha256:ddd10be2da38c42cbd633bb88e775b9c131206bb2669359c17bfa46770fb658b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pe-weight-framework.ts",
+      "sha256": "sha256:c52b7064a026573c26b80a28d327973f043cb2f4e0a49dda130dfe9c9cdc5598"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pending-cache-backfill.genesis.test.ts",
+      "sha256": "sha256:e8618dc201bc0ff8f72e1caed5b73c175950d0be930ec192f609f57d2b346255"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pending-cache-backfill.ts",
+      "sha256": "sha256:f8f63bc915eb39d99acb7e1c5a8b6784e84104a87cc6fff0acd8da5e9ec220ec"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pending-cache-resolution.ts",
+      "sha256": "sha256:057cea9154622161a4f1ed9da04641abc7e2ce625c1235e28f2fa4d2bd0a7b7e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/__fixtures__/approval/fixture-key.pub",
+      "sha256": "sha256:e767b209c3dea15e61d1e2c2973d67ac30510714e4b9020264dc5760002ef89b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/__fixtures__/approval/manifest-a.json",
+      "sha256": "sha256:67eabfae6c581b5cc8b8b6e0c7f1db20283e659bd19cdcf8925c107993696ea4"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/__fixtures__/approval/manifest-a.json.sig",
+      "sha256": "sha256:38d19caa4174c72be28386574f17d32a1e0ebc0b94ed0c219c11968ab8cc586b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/__fixtures__/approval/manifest-b.json",
+      "sha256": "sha256:94ec959f432e4b9d180edb84842f1ff2765a89fd5d626fc570034ae9b97ec6b2"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/__fixtures__/approval/manifest-b.json.sig",
+      "sha256": "sha256:65f13d85a0b6ea75c3e3280ef8569a620f3e71f9339ac8aee79627db30de92d8"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/action-policy-gate.test.ts",
+      "sha256": "sha256:80fb6eed087bace9473e01590291862c7c45051ba5d41477048790e5ca2b0a16"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/action-policy-gate.ts",
+      "sha256": "sha256:83e10057cbb236877a16a8adda196644aa27b1019432f397082c3abd4419c476"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/action-type-syntax.test.ts",
+      "sha256": "sha256:328ee8cea8bf7dd64269a85a28c9b252e6a4b2b41629436cf232c720be9f0f4a"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/action-type-syntax.ts",
+      "sha256": "sha256:74a4780e33a7575d64dd6105dde81d136e9cd6cc7eb5edb0def8d82bd39daf54"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/approval-signature.test.ts",
+      "sha256": "sha256:f57abcbcf2c68112a120c120578cbd653bbaeb955ae1f0f9cf69c14f230c89ad"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/approval-signature.ts",
+      "sha256": "sha256:2b0d5714d0607d2ec269662fb49c3b51a8654417cf260fdc48f5f127c3e51212"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/current-approval.test.ts",
+      "sha256": "sha256:05b4478768496e46383f84639408128534a4cabfb3f0aa8a85b1c68439522b41"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/current-approval.ts",
+      "sha256": "sha256:4033c6aa1f418d1640dcc022635f8e78f1312213607c8acaafe019fd7ae0db04"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/economic-projection.test.ts",
+      "sha256": "sha256:e6b1b01ff0093f7313136c677b1aeedf23323082ad6c3de2ba6f6767048334d6"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/economic-projection.ts",
+      "sha256": "sha256:d21eaca222bf4714bcc0f3390b7dc1a604e3ca008ed019efbc93c04389a06f2f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/genesis-continuity-audit.test.ts",
+      "sha256": "sha256:712e30bc1bac45ff56f5ffbd4189f3920ebb6fae5630c06c7dcf514e8d0c4a56"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/genesis-policy-engine.test.ts",
+      "sha256": "sha256:ec14a486097064facbcaf22b9fd60f7f224ac0c0c4017430981a70eb3068c698"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/genesis-policy-engine.ts",
+      "sha256": "sha256:a7aed3fe0163b7aa4b5305ee267a1766907427ddddf1fa58f4fdf9da47530806"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/genesis-settlement-authorization.test.ts",
+      "sha256": "sha256:07212ff73cd3c190857ab508b14a60fae61b938811166a02f788d518389bb3db"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/genesis-settlement-authorization.ts",
+      "sha256": "sha256:a2584c81529f6c0c5e5ecb01038ab36177816c0674d37ac647e74c029f686ff3"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/monetary-accounting.test.ts",
+      "sha256": "sha256:607988ac312f367cadcfabc83309f4dcce2c5b0cd8aea440b9ced0289604e6e9"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/monetary-accounting.ts",
+      "sha256": "sha256:3069f6e9e26d8cbd065f782f18c3f2ed92c83851fe44f14639817e6abb0098c8"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pe-type-catalog.cut-line.json",
+      "sha256": "sha256:64f70b6f544ba14720385554b9d6e2b1cde733ffa8cab6539730203c09030f5c"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pending-policy-queue.test.ts",
+      "sha256": "sha256:cf43133b04d996189760bbc3d5ab3306e1f8b73c9245f51b58b926b5cea35687"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pending-policy-queue.ts",
+      "sha256": "sha256:6c68bffafef78d15de4c6fa2bdcef30682824a27612cb646db61409748b33443"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pending-policy-recovery.test.ts",
+      "sha256": "sha256:e64a4f478fbee3632b6d2aeaf3b5b18babca3b6314a83440f6998168f4983508"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/pending-policy-recovery.ts",
+      "sha256": "sha256:68518820091fc513c4cce81d9f36af3b2eccc97594d4e4c85ca239b8c497cd4d"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/policy-matrix-generator.test.ts",
+      "sha256": "sha256:f8ad0c31c57ea05f005d872b6f2f7d8827cc684ca2ce3211b05d2dbf3a48d38c"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/proposed-action-policy.ts",
+      "sha256": "sha256:9b78c630265777ac27ba4e39a8c37e129c1ac5ee874cfe7b6a861a19d591fe7b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/proposed-genesis-policy.ts",
+      "sha256": "sha256:310b9c54c31a9db2b4936c8452690ca025418fdb88878f013575656e3970f315"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/proposed-monetary-policy.ts",
+      "sha256": "sha256:54f093bfe01b7e285f5be2740fdbc78f5a366468a2fae02b343a9848b0e6f0ec"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/proposed-policy-manifests.test.ts",
+      "sha256": "sha256:6dff7cf52902864183b82dc6195da87a82b43e3ff05a5c5070e56366aa19a32a"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/proposed-pvt-cost-catalog.ts",
+      "sha256": "sha256:d1a5844c334077471c939861585770b658654abd75786b110c8617055f6a0049"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/rejected-approval-manifests.test.ts",
+      "sha256": "sha256:7616f3a8b14e15810106cc070a12cae04947d8138658c87c51b59a473f4c877f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/rejected-approval-manifests.ts",
+      "sha256": "sha256:73a623b3a3aedc288eeccad25eb182eac92ba6daf200726de3229a0cccaac75f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/runtime-monetary-policy.test.ts",
+      "sha256": "sha256:4048bc80f72821cb4d38fec39121fade87af0a5ef19aa9b19615c5cb9562d405"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/runtime-monetary-policy.ts",
+      "sha256": "sha256:038b90ca3f68158a4947b5e9f582de672bd4a44758e5cc1f187b78b8a170bee5"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/policy/types.ts",
+      "sha256": "sha256:6056dc4aff26247a07ba9f6c915ed8be9432a9df38bb9481512311dd305bc457"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pvt-minter-badge-projection.test.ts",
+      "sha256": "sha256:739267e3b8733ba0b64f6a2a9186e00fcd910149fbf8d63cd66e3ab2ad14044f"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/pvt-minter-badge-projection.ts",
+      "sha256": "sha256:dfd783da600062708d611ec0990fd7315c3b467010619e214299d0f663865341"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/recoverStaleMintingPEs.onchain-gate.test.ts",
+      "sha256": "sha256:2647a0ee7f5d40d4f504782dee18ca5f21d0632546ff22524a8da78a09daf856"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/recoverStaleMintingPEs.sentinel.test.ts",
+      "sha256": "sha256:1b136d8573a4e4eda6b455730c176bca0781c2f06b39e3eeed3662cd81f77889"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/recovery-pagination.test.ts",
+      "sha256": "sha256:ae12f7cb6d68e2ca55bee44c9117b531a842a8222bc1b3202b348a74e5b60154"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/retired-economic-scripts.guardrails.test.ts",
+      "sha256": "sha256:844e2a2679b0dba49ee86474d68597026b420bb23cc52e4dcc32ab2104da10c1"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/watcher-address-admission.ts",
+      "sha256": "sha256:b30d6db5abd1813af4252e27bdf644d28f45c903b3f1e67cc5b3f276d39f7ef2"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/watcher-dynamic-membership.test.ts",
+      "sha256": "sha256:d678f57851a7151c1b1d862b45c8f0eaf49736c38a2f2a21186ae60d5039ee5c"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/watcher-enumeration.test.ts",
+      "sha256": "sha256:f298e2ea9d71a4f28784a6d53d6217a6c91bee2b88e89fc57c0e864e5ecbc94e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/watcher-recovery.test.ts",
+      "sha256": "sha256:6ddd7a98aa528c1153a5650edcac6779a5ab7c9abd6839466365adec71ae33b9"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/watcher-recovery.ts",
+      "sha256": "sha256:0b0e779df805b1fc776bfab6a44cf1c5470fe101673a09e113141e7bd569da3b"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/x402-tx-mint-claim.test.ts",
+      "sha256": "sha256:244326cbd88471c3b0b048355ddbb10eec4ba35d19772977c0b602fa03865a6e"
+    },
+    {
+      "path": "provian-backend/src/core/pvt/x402-tx-mint-claim.ts",
+      "sha256": "sha256:ef915c135bbbd14c52771002bce218efbf095f61e54c9adf7411591f068cbd2a"
+    },
+    {
+      "path": "provian-backend/src/core/relay/execution-policy.test.ts",
+      "sha256": "sha256:5da7114ef8a4470c811b7ff077096873224b4369db02b500728788fb0ab8f8e6"
+    },
+    {
+      "path": "provian-backend/src/core/relay/execution-policy.ts",
+      "sha256": "sha256:f26b99a6b237afc83482343ae452a12eb814d97d66a1cab47986616ef53d04eb"
+    },
+    {
+      "path": "provian-backend/src/core/witnesses/bitbucket-webhook.ts",
+      "sha256": "sha256:889fbd948101b44bbc5e3c2898b6ecf1e2be5add7cd4b966a4192c81f96a9663"
+    },
+    {
+      "path": "provian-backend/src/core/witnesses/github-connect.ts",
+      "sha256": "sha256:a610aa7add725f9b4e1af9dd75aeb987dc430fd71a3e7ffa19804fe8cfa81df5"
+    },
+    {
+      "path": "provian-backend/src/core/witnesses/github-webhook.ts",
+      "sha256": "sha256:893f00a5e4db1d0b3307003647c8f9d1fc3a00a4c19f8ca579d56134b04a76e6"
+    },
+    {
+      "path": "provian-backend/src/core/witnesses/gitlab-webhook.ts",
+      "sha256": "sha256:778de53124c9ccea3df267f94a456a7d9b338f575636e0ad65a5227d7585317c"
+    },
+    {
+      "path": "provian-backend/src/device-pe-rate-limiter.test.ts",
+      "sha256": "sha256:344744ee70c4530066c4a5676ab43fb275f928e23a39278f84fb21ef93d27a75"
+    },
+    {
+      "path": "provian-backend/src/device-pe-rate-limiter.ts",
+      "sha256": "sha256:3641ed04d4ebbdb99ad0723ddd1c98880227515af88646b7e82966941365a36f"
+    },
+    {
+      "path": "provian-backend/src/email.ts",
+      "sha256": "sha256:e0803188176f7c0a2736513924847b457ca72f8805d145e4dcccd583d81e0d83"
+    },
+    {
+      "path": "provian-backend/src/firestore-document-id.ts",
+      "sha256": "sha256:7780a5853c03647eeb3a9531948e4dd7b63779951a5fa8092ed737e63f035308"
+    },
+    {
+      "path": "provian-backend/src/firestore-errors.ts",
+      "sha256": "sha256:00090abefc3187ddfc1bfdf4c80e509e14550a20061e4c2fe3f15952f6701ffb"
+    },
+    {
+      "path": "provian-backend/src/mcp/core/crypto.ts",
+      "sha256": "sha256:c4d2cfd13091950520ccf024520a903d5f722d442ca3e9999b1fd118cb5b7b23"
+    },
+    {
+      "path": "provian-backend/src/mcp/core/keccak256.ts",
+      "sha256": "sha256:f5054aada8e46d0f1cd19a02633eee7291b8b66cf42551e97cdde41416795128"
+    },
+    {
+      "path": "provian-backend/src/mcp/core/server.ts",
+      "sha256": "sha256:bc94f761502bbf0482974621ca28dccbc6b057666ee979fd6c37d6d30e4b6148"
+    },
+    {
+      "path": "provian-backend/src/mcp/core/tools.ts",
+      "sha256": "sha256:f078b0ac5d3c3fe285344e14e1fab24e0cf409f6471186304c33f88f20bf3cff"
+    },
+    {
+      "path": "provian-backend/src/mcp/core/types.ts",
+      "sha256": "sha256:e1e962688dc51774825e825d06980cb5a0ab6f4c8d2a197323575fd8928e0e79"
+    },
+    {
+      "path": "provian-backend/src/pe-batch-writer.ts",
+      "sha256": "sha256:65aa2c62906e5afc8682733c6a21bfc7d217ae9f41e1eaa17a892f5549e6b86b"
+    },
+    {
+      "path": "provian-backend/src/pe-chain-validator.ts",
+      "sha256": "sha256:fafe65d2f749e68d7c3586e0f6ed0c22df9e1fbd81ad9786861b03bb641ebc13"
+    },
+    {
+      "path": "provian-backend/src/pe-doc-shape-contract.test.ts",
+      "sha256": "sha256:84750d911424f062e91452b7f639aaa812e19bb16461345eaad2173119416eac"
+    },
+    {
+      "path": "provian-backend/src/pe-durable-write.ts",
+      "sha256": "sha256:c75ab91813921c2338f320214fad8f734082a1c1bba41511bc63b248c9f1c2b0"
+    },
+    {
+      "path": "provian-backend/src/pe-history.pendingCache.test.ts",
+      "sha256": "sha256:61036a565c08210a494a38ad21254a3c608465025f0367a03421892a83428143"
+    },
+    {
+      "path": "provian-backend/src/pe-history.ts",
+      "sha256": "sha256:5647738ed9500dd4287566d454e736520f1911ed52db649fd44289a131843b09"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual-rate-limit.test.ts",
+      "sha256": "sha256:31cc7a052079e67dd6c9f52f0d18b8ab20980e636587428a35060a9fb0c0185c"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual.acceptance.test.ts",
+      "sha256": "sha256:7094c678ef0e6855190dc3fafbc8d83eb8244fb9350b0689c9c7b391572d23c3"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual.foundationHook.test.ts",
+      "sha256": "sha256:5350298be0b4f96b749ff30519322c555bbfb318b2c0cb39f2549fbac360dbbc"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual.genesisRollback.test.ts",
+      "sha256": "sha256:03f83cb4fe3004e4e6483d98659d1c82c54e04da82e5e5dfad2b74d5ca61cd83"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual.streak.test.ts",
+      "sha256": "sha256:504852d67a08522ac3ce847278141c3a4e228d7f96281622b4af43e1a37a7d22"
+    },
+    {
+      "path": "provian-backend/src/pvt-accrual.ts",
+      "sha256": "sha256:25b6e78b90954edd2a69db3e685dd44aa9f00531c3a410ca8ca658a34670b37e"
+    },
+    {
+      "path": "provian-backend/src/routes/admin-genesis.test.ts",
+      "sha256": "sha256:df51f43bcc59106a14a4f433999c844fac07c4e8fbbf9e268cd29008743495e7"
+    },
+    {
+      "path": "provian-backend/src/routes/admin-genesis.ts",
+      "sha256": "sha256:8488c37d9d1dc8229cb9df92ec03f3f991f1f0181fdadeccfd3de99a67db24e6"
+    },
+    {
+      "path": "provian-backend/src/routes/admin-pvt-policy.test.ts",
+      "sha256": "sha256:06213928cc11ae6f9dbcd77be97d604408a4fe0a89b23fa27e4c898171d16dab"
+    },
+    {
+      "path": "provian-backend/src/routes/admin-pvt-policy.ts",
+      "sha256": "sha256:a599842b62467f513b5b752c4ba52ac2ecc45552f900bee70c3dd48511bd78c2"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-bonds.ts",
+      "sha256": "sha256:9fb27696feb2a02c15b955089c4e87917d444f3db3777a1146a43e9284772e6c"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-invite.ts",
+      "sha256": "sha256:b4b2c8a142b1f2fba13d0967408b93c6115033c511ae40f66aef0011f6ed43d4"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-wallet-accept-invite.test.ts",
+      "sha256": "sha256:c87800e1d35877157e10035fe0b481de08b4a3c1f2e71bef43c805482e6f6063"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-wallet-attestation-count.test.ts",
+      "sha256": "sha256:2285f666d1fbc00750e5a7314b3dab779ff4634d897d2a73ddb7327a6bd11380"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-wallet-registration.test.ts",
+      "sha256": "sha256:2c6505e912dcbb094a222dc82162fdff7f669a8c43a00423aa477f871a53f683"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-wallet-rotate.test.ts",
+      "sha256": "sha256:66c503aa35203386fa4152aa3afae1a6b6d1713448fcbdfc3cb0986f258e31f5"
+    },
+    {
+      "path": "provian-backend/src/routes/agent-wallet.ts",
+      "sha256": "sha256:2f50862612abd1c582f339279da4d1e5e64a62aeab29823ef180cf5db3c29dd2"
+    },
+    {
+      "path": "provian-backend/src/routes/conformance.test.ts",
+      "sha256": "sha256:76f570b2a975d9cc9bf52b1080f2d57b0cec8da321b8c84b4f5a774f231aeddb"
+    },
+    {
+      "path": "provian-backend/src/routes/conformance.ts",
+      "sha256": "sha256:6ec97dbe6794b38fa3b2ec5eedea6819585ccf72c678ae7a8dbe5aef2d790199"
+    },
+    {
+      "path": "provian-backend/src/routes/connection-token.test.ts",
+      "sha256": "sha256:09e6f9f336e46b85ed8163ca3964687ccf2de4bf59a06598cfa80e9b9f270b9f"
+    },
+    {
+      "path": "provian-backend/src/routes/connection-token.ts",
+      "sha256": "sha256:eeee03352db610554b62fe4cd6bdb8bce198d23951237d817320175c6ef53b55"
+    },
+    {
+      "path": "provian-backend/src/routes/device-register-agent.test.ts",
+      "sha256": "sha256:b0295aa9024c48216396b565045813dba760826155ed51be69e44652c0f25cca"
+    },
+    {
+      "path": "provian-backend/src/routes/device-workproduct-lineage.test.ts",
+      "sha256": "sha256:b381ec3b9c6f69427eef19119688ef6febe8f4e924eccd4163450652376cbd1f"
+    },
+    {
+      "path": "provian-backend/src/routes/devices-attestation.test.ts",
+      "sha256": "sha256:7bcb1f44ea557dae8f10a994d5f3d42f78c02fa251a23aaa4dc575ea7ff3b5b0"
+    },
+    {
+      "path": "provian-backend/src/routes/devices-owner-type-management.test.ts",
+      "sha256": "sha256:b932ffe3e85d5fbbf2a99e97f94f0d0ac8dd8c9ff2479f15e06d826807bdad6a"
+    },
+    {
+      "path": "provian-backend/src/routes/devices.ts",
+      "sha256": "sha256:e1a0e9c79db68a15a13671d6537227365a14a49fbd447167b40a4abce9ff6dc5"
+    },
+    {
+      "path": "provian-backend/src/routes/discovery-new-read-surfaces.test.ts",
+      "sha256": "sha256:a91ead1bae42db0edd1f5d5cc4167698b6fd006235031e46ce8f0dfd5bc28ed2"
+    },
+    {
+      "path": "provian-backend/src/routes/discovery-truthfulness.test.ts",
+      "sha256": "sha256:54e7c014571c21920176d24345e00d0972bfa372cebc3ebe7eec20563d9a8f44"
+    },
+    {
+      "path": "provian-backend/src/routes/ecosystem.ts",
+      "sha256": "sha256:d45651b886cfd7b906eb703c32d1c8cdaea356dbd15de247a1d9ca31671e36b0"
+    },
+    {
+      "path": "provian-backend/src/routes/external-address.ts",
+      "sha256": "sha256:b57e3b4ad86312ce0ab1fd994d68c5f38255773014f119d1f92d2deb46126491"
+    },
+    {
+      "path": "provian-backend/src/routes/governance.authority-projection.test.ts",
+      "sha256": "sha256:aa6ebc6dcb2146267791903c2fd15fa8096f54835e9ac6c36ccd80e23ad68fe2"
+    },
+    {
+      "path": "provian-backend/src/routes/governance.ts",
+      "sha256": "sha256:4fd5ce5fdcd9821a849c4dae74fdd48b8209d43d5e1ec6774aefabf511a77992"
+    },
+    {
+      "path": "provian-backend/src/routes/human-wallet-registration.test.ts",
+      "sha256": "sha256:8c5339a2bc06f266fa030d1eecb6ed1b78563a50ffdbcb0926820b461f977097"
+    },
+    {
+      "path": "provian-backend/src/routes/human-wallet-registration.ts",
+      "sha256": "sha256:da320e253697f63ed2b0090615be198f262ce4e2d470fea71df8995c1198e3ed"
+    },
+    {
+      "path": "provian-backend/src/routes/mcp.test.ts",
+      "sha256": "sha256:6ae868267b2e1e8b772ec34cab163520c01efbee1b913cea0be9b527f1227a81"
+    },
+    {
+      "path": "provian-backend/src/routes/mcp.ts",
+      "sha256": "sha256:dc6cadb07a0cd42edf473b59ed859ce85e962cca43d48056e99d26a35d345171"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/agent-auth.credential-recovery.test.ts",
+      "sha256": "sha256:7cebab5877a2dc907eccbb09ab60d5b07f17f2a3d51980e9d085354ad85516ef"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/agent-auth.ts",
+      "sha256": "sha256:08674b157d4808f1b53cc87446b72966657c3141aa7316a471f40b6a6aaddc5e"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-auth-revoke.test.ts",
+      "sha256": "sha256:d6eeedfc2bbbb68888fa18f01366bf29b36da44f2a060b3b36b57014f97c87d0"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-auth.owner-type.test.ts",
+      "sha256": "sha256:60be8676592dd8c0606669718eb593a819d45340614e6df6985bf3e5ba068809"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-auth.ts",
+      "sha256": "sha256:775d9047a09fedd66cc0f06f28eaa90a035db73fab66bee611d621fa3645b3d3"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-register-auth.test.ts",
+      "sha256": "sha256:f3fe2ed4df1d468e9cf97250686cec65f517c2ac32eaa8b31d08399150ae60a1"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-register-auth.ts",
+      "sha256": "sha256:d851a733b3803a766afe591b8baa0c55d86ffacdb73a1cc472a251f40efc33f3"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/device-registration-id.ts",
+      "sha256": "sha256:7c78e26b648a49f83530355ba8e1e09659034a54429846c9fb238238ba526b20"
+    },
+    {
+      "path": "provian-backend/src/routes/middleware/governance-auth.ts",
+      "sha256": "sha256:c07c92f418752a256ff2538bc5b1cf9f7e670b680f8a7310fdc43ab54dada0a2"
+    },
+    {
+      "path": "provian-backend/src/routes/openapi.ts",
+      "sha256": "sha256:9158a478d6583d74b2bddf405eb7216f36e14419d345f23253cbb20251f23a18"
+    },
+    {
+      "path": "provian-backend/src/routes/operational-governance.ts",
+      "sha256": "sha256:0c0c62fb289180e88f6bff3b650387f054574e933e826a000504f3eb7c979adf"
+    },
+    {
+      "path": "provian-backend/src/routes/pe-submit-mobile-attestation.source.test.ts",
+      "sha256": "sha256:ad762866298e68694ce8de9de5051202c45d2141f19104298b86e3fea8789c4f"
+    },
+    {
+      "path": "provian-backend/src/routes/pe-submit-mobile-device-ownership.test.ts",
+      "sha256": "sha256:16dae1832df6276aa2a668e9d3d34211c2a2e47786ec275bc57929dc66e2f063"
+    },
+    {
+      "path": "provian-backend/src/routes/pe-submit-mobile-device-ownership.ts",
+      "sha256": "sha256:8a0eea588911f8eab01aa12653f7c3f5c1579f21be3064a9b660426c9bdef01a"
+    },
+    {
+      "path": "provian-backend/src/routes/pe-verify.proof.test.ts",
+      "sha256": "sha256:d4d4cf6b5f6c0eadf5d252a3916778068f948dbd48ac52b7b0353cfeb4181779"
+    },
+    {
+      "path": "provian-backend/src/routes/pe-verify.ts",
+      "sha256": "sha256:c99aae0ea11e28b40d3207f892cc091b513ee1d7025e4f313f3e6ee678d47462"
+    },
+    {
+      "path": "provian-backend/src/routes/provisional.claim-resume.test.ts",
+      "sha256": "sha256:645edbb73c490fd246bd47ce12944d93943b69b88f3ee5479d7b354c97ddbe90"
+    },
+    {
+      "path": "provian-backend/src/routes/provisional.ts",
+      "sha256": "sha256:f71e0314da6ca74622e8070913e9b4a336876d171f82831d7e8fba9c2403c5de"
+    },
+    {
+      "path": "provian-backend/src/routes/pvt-attestation-tiers.test.ts",
+      "sha256": "sha256:9891c514dea7427c464b4a321fbca1e7a3fd181125e709289b89735af58a2715"
+    },
+    {
+      "path": "provian-backend/src/routes/pvt-estimate.test.ts",
+      "sha256": "sha256:1e612074605d2b495b5970b979cb86b49d3a02d5de7e8551909fa4d738d5bd40"
+    },
+    {
+      "path": "provian-backend/src/routes/pvt-estimate.ts",
+      "sha256": "sha256:3bcf40138bca2cb686ef974f0ff6d901e0f5e86bcb3e9bd1db320240215d71eb"
+    },
+    {
+      "path": "provian-backend/src/routes/pvt.ts",
+      "sha256": "sha256:3d0466d79be73b50da64d6a9db71abec32d1c69a655de830996ce8eda6dd31e0"
+    },
+    {
+      "path": "provian-backend/src/routes/retired-wallet-creation.test.ts",
+      "sha256": "sha256:c756b7e8b93cb533cc5b2a6c7d3727683ca0a01217f1f87a904dce8bfa8393d0"
+    },
+    {
+      "path": "provian-backend/src/routes/retired-wallet-creation.ts",
+      "sha256": "sha256:66d845394b1e9306027888800f10b9682f3ec4f460be40d176b15dd5b5540b44"
+    },
+    {
+      "path": "provian-backend/src/routes/rotate-key-address-casing.source.test.ts",
+      "sha256": "sha256:d86914b42e59c5db63bd4b2deeb6580d427c4e4060ab379ddeb5a6bdefea11d1"
+    },
+    {
+      "path": "provian-backend/src/routes/sovereign-pe.ts",
+      "sha256": "sha256:5fed0ea951d4968b1967667f747ae554ab477cadcc86aeec7f14fbe7aa136c63"
+    },
+    {
+      "path": "provian-backend/src/routes/wave3.test.ts",
+      "sha256": "sha256:72daa850a5967f014a5bc6fef040607aa933e4ccdf2c546be59c63b77b35b4cc"
+    },
+    {
+      "path": "provian-backend/src/routes/witnesses-bitbucket.ts",
+      "sha256": "sha256:8253967c9fcf9b2f3383f61f30217e8a9efb896340bcc5cd9d33778ae1bb1314"
+    },
+    {
+      "path": "provian-backend/src/routes/witnesses-gitlab.ts",
+      "sha256": "sha256:5f85d91a04ac929d67e20c87185c1b214cec9191f5fc31f1f4a1e3de87259f1f"
+    },
+    {
+      "path": "provian-backend/src/server.ts",
+      "sha256": "sha256:074804319776f1116a1df51f6bd757ec0b2b18b579d2090dd5f35bdd6b0e606d"
+    },
+    {
+      "path": "provian-claude-plugin/skills/provian/SKILL.md",
+      "sha256": "sha256:509a1ee2518d9b9c466ce08e8d1e6651f7f757fb6524bee190dad8247e4f74fa"
+    },
+    {
+      "path": "provian-cli/README.md",
+      "sha256": "sha256:67908d33b40872070824353d322a463e517f4bc638f4b288a527edce99d1943d"
+    },
+    {
+      "path": "provian-cli/src/cli/init-command.ts",
+      "sha256": "sha256:4c9bd6e39e1473a54e29614327c94becda1677ee9f6d5ec78ead52862731adbd"
+    },
+    {
+      "path": "provian-commons/CONTRIBUTING.md",
+      "sha256": "sha256:903c47f1d3611ba466e769cfa0ef5efe6709da75d59841844117567de6c5f358"
+    },
+    {
+      "path": "provian-commons/README.md",
+      "sha256": "sha256:f582ed4d0c54e7bf731d134dc856a71881075bf03149ab6a99388dcc16dcf8c8"
+    },
+    {
+      "path": "provian-mcp/README.md",
+      "sha256": "sha256:686c22e1d7dfcaf719b39734393f6b93fed3ff6bf389108c21179d67e2f7908d"
+    },
+    {
+      "path": "provian-mcp/listings/mcp-so.md",
+      "sha256": "sha256:adc451960f3381faf375b2d5e47ed9ade47bf6f858b20e49b7a7de5ee79ed2b0"
+    },
+    {
+      "path": "provian-mcp/package.json",
+      "sha256": "sha256:f09a108d5bb7a6d58a5dd34ae83228729d41a7b2f556c4a8c89282ee6cd53f89"
+    },
+    {
+      "path": "provian-mcp/src/agent-wallet-registration.test.ts",
+      "sha256": "sha256:fc87b1e7478d50913d2b97961efd187ab57e9d2a447ee6d9a7f7dbedd0186dd5"
+    },
+    {
+      "path": "provian-mcp/src/agent-wallet-registration.ts",
+      "sha256": "sha256:642b883150d89c1e58cd6832c675521edb48cf84f72aeaf4e56bac778d0e129a"
+    },
+    {
+      "path": "provian-mcp/src/core/crypto.test.ts",
+      "sha256": "sha256:4a047142a98be7cf12584298ff8f268764d1117c0610885a461c39114e8e0a12"
+    },
+    {
+      "path": "provian-mcp/src/core/crypto.ts",
+      "sha256": "sha256:c4d2cfd13091950520ccf024520a903d5f722d442ca3e9999b1fd118cb5b7b23"
+    },
+    {
+      "path": "provian-mcp/src/core/keccak256.ts",
+      "sha256": "sha256:f5054aada8e46d0f1cd19a02633eee7291b8b66cf42551e97cdde41416795128"
+    },
+    {
+      "path": "provian-mcp/src/core/server.test.ts",
+      "sha256": "sha256:59833c75d7a886fbfa43543d6cbe87026a6266bc62df1ff380ad60305ae0da17"
+    },
+    {
+      "path": "provian-mcp/src/core/server.ts",
+      "sha256": "sha256:bc94f761502bbf0482974621ca28dccbc6b057666ee979fd6c37d6d30e4b6148"
+    },
+    {
+      "path": "provian-mcp/src/core/tools.test.ts",
+      "sha256": "sha256:1bd5b5ea4882fb66144388007299f9cb3e9a121eebb1380cc886bc21a960a9e0"
+    },
+    {
+      "path": "provian-mcp/src/core/tools.ts",
+      "sha256": "sha256:f078b0ac5d3c3fe285344e14e1fab24e0cf409f6471186304c33f88f20bf3cff"
+    },
+    {
+      "path": "provian-mcp/src/core/types.ts",
+      "sha256": "sha256:e1e962688dc51774825e825d06980cb5a0ab6f4c8d2a197323575fd8928e0e79"
+    },
+    {
+      "path": "provian-mcp/src/credentials.test.ts",
+      "sha256": "sha256:c73527686de499161680ec5fbc98eb4f2d7f70f3922a8e3990b374880d174704"
+    },
+    {
+      "path": "provian-mcp/src/credentials.ts",
+      "sha256": "sha256:88e66cbedb59cd7d806f99a729cce77b754f656c109c541ca6c6904c0ef06b0d"
+    },
+    {
+      "path": "provian-mcp/src/device-credentials.ts",
+      "sha256": "sha256:99b6cd1a819b5174118b2e6dd4b69e2453e0f4d29df854ebc4fa872bab023bf1"
+    },
+    {
+      "path": "provian-mcp/src/eip191.ts",
+      "sha256": "sha256:0cd0fa72a6c3a452e95720925ff5d829044740bf545e53fd035419cc3283ce46"
+    },
+    {
+      "path": "provian-mcp/src/index.ts",
+      "sha256": "sha256:2fbf953581e4716a803ad46ecdf56e5708eba875bed0098253ec7b12b28a6312"
+    },
+    {
+      "path": "provian-mcp/src/stdio.ts",
+      "sha256": "sha256:3f955c6e8bdd0408b309967e2a0b7569a2b6ef02e3e87ea8730bf52879ec2398"
+    },
+    {
+      "path": "provian-mcp/tsconfig.json",
+      "sha256": "sha256:5a0cc12f0713ea43fdf23db7ebaef3d87f3425bcab57600f2c6b5223a678434f"
+    },
+    {
+      "path": "provian-python-sdk/provian/client.py",
+      "sha256": "sha256:89bc254aa7d38a74feab08e902e53653b24d7888459adb01e73a920b041e394b"
+    },
+    {
+      "path": "provian-se-sign/Package.swift",
+      "sha256": "sha256:3a6c5edb462acd0e1ea3ce3428a03718b1761119fce63f11a4cbe0f334cfb96b"
+    },
+    {
+      "path": "provian-se-sign/Sources/main.swift",
+      "sha256": "sha256:891fc3a2a5b7a58d9caa34a5c1dc4d5bb1d72cbf1cb940a61a615ec61e98907c"
+    },
+    {
+      "path": "provian-website/public/docs-md/agent-api.md",
+      "sha256": "sha256:df3db5435794c23a184859e62bbf967589e574a2fb65019e3701dfa4aef309a4"
+    },
+    {
+      "path": "provian-website/public/docs-md/agent-integration.md",
+      "sha256": "sha256:6a128add030b35f61bec10bdeda50e7f52474cc8b1a4104b62b682fa142d4bbb"
+    },
+    {
+      "path": "provian-website/public/docs-md/agent-safety.md",
+      "sha256": "sha256:37358bf90b43a6b42cfe27e68018924c399f3b34106e38488d6a5d705b01391b"
+    },
+    {
+      "path": "provian-website/public/docs-md/agent-wallet.md",
+      "sha256": "sha256:9dfbbad70270f56a658193ec5a7995d7aa450dc45cfe3f387ca76a65f0b2451f"
+    },
+    {
+      "path": "provian-website/public/docs-md/auth-map.md",
+      "sha256": "sha256:da3e2bfeeb9a79e8c028fb35ee7bfb165bc19353a3e51b257493a505ceb0a67f"
+    },
+    {
+      "path": "provian-website/public/docs-md/capture-architecture.md",
+      "sha256": "sha256:b464481f7a0bdfffb159e34b577471bca11292ef29d051562be465498d859d4c"
+    },
+    {
+      "path": "provian-website/public/docs-md/commons.md",
+      "sha256": "sha256:7d854d205b96ed4a1138b95440f9e3d04b91f271e3a729a34d146e825e947ab3"
+    },
+    {
+      "path": "provian-website/public/docs-md/contract-status.md",
+      "sha256": "sha256:137bf293076e88f2288f141cd0b18e88898f1c53119380cd356cca1dde5ba468"
+    },
+    {
+      "path": "provian-website/public/docs-md/crypto-governance.md",
+      "sha256": "sha256:63906130dd98504a2d44351445ed75b6fa751f2d5d44701e93c376fba13292ee"
+    },
+    {
+      "path": "provian-website/public/docs-md/external-devices.md",
+      "sha256": "sha256:3fb6d5e9164034016a54fdb68a396a395db423e10a37fcd6b71907d3d3eb7b24"
+    },
+    {
+      "path": "provian-website/public/docs-md/framework-examples.md",
+      "sha256": "sha256:2011e8cd9aa912befbc91c05d882cd741db14937804cd771e6a0210527de9e4b"
+    },
+    {
+      "path": "provian-website/public/docs-md/governance-paper.md",
+      "sha256": "sha256:520d6ec61729e125c864d4e575227827f3d8629f818d64f9c78908e35b715c49"
+    },
+    {
+      "path": "provian-website/public/docs-md/network-constitution.md",
+      "sha256": "sha256:e767e59e1e24f5f03288a24ec51aca3c4fa4aee305e91c9d1d0aa6d860146c5c"
+    },
+    {
+      "path": "provian-website/public/docs-md/pe-architecture.md",
+      "sha256": "sha256:84675772ea6077443690f8f0753e23732b5bd004e544291365e04736e23cdbf9"
+    },
+    {
+      "path": "provian-website/public/docs-md/pe-generation-model.md",
+      "sha256": "sha256:ce592b6567ff7c27b99c887596a72461766109dc91031a42a7088385a854559a"
+    },
+    {
+      "path": "provian-website/public/docs-md/pe-protocol-spec.md",
+      "sha256": "sha256:6b811c50cab75dc0e1ab7680f12d4c4b6817235749651ae9864022175c9a2ab4"
+    },
+    {
+      "path": "provian-website/public/docs-md/quick-start.md",
+      "sha256": "sha256:fd123d25a50b20366f4d96c63de1ff88003c0181b4386a1a8633481ff7b0ddc7"
+    },
+    {
+      "path": "provian-website/public/docs-md/the-provian-thesis.md",
+      "sha256": "sha256:767c42db1f441e02b37ceb8ec35e5d321f6dea4c44aa24d07fabeec4bd83e38c"
+    },
+    {
+      "path": "provian-website/public/docs-md/tokenomics.md",
+      "sha256": "sha256:deca390aebb66b7f8a81f0f57ae85316ed288df4edb352fdfc6d301abd9a0931"
+    },
+    {
+      "path": "provian-website/public/llms-full.txt",
+      "sha256": "sha256:05d9e41eb11134845e79394877d39ae6cbfd8d649eb0f081d86ca3eb00e8c545"
+    },
+    {
+      "path": "provian-website/public/llms.txt",
+      "sha256": "sha256:138e0692ff69fadd1cf14875164e6e3632566a5139a27343c8456d0c68141592"
+    },
+    {
+      "path": "provian-website/scripts/sync-docs.mjs",
+      "sha256": "sha256:e1ba3b014ef6f1ee3f7f9923c560fb9568d2131c64db9614770bd02120f29937"
+    },
+    {
+      "path": "provian-website/src/app/preview/agents/page.tsx",
+      "sha256": "sha256:13fc5bc0f0ff9bbb6a466e6731c3ca64c3c805a5273a4d40af116016a74176fa"
+    },
+    {
+      "path": "provian-website/src/app/preview/commons/page.tsx",
+      "sha256": "sha256:dbb822f6b5ab6cbf70aaf3b09e59adf4a312e715c1e4d65c9341bb45b33e2216"
+    },
+    {
+      "path": "provian-website/src/app/preview/developers/page.tsx",
+      "sha256": "sha256:fe286bbce52cc5cf9dbec4d58d387919f08046aae9c35496c6e3ffd67b1617a7"
+    },
+    {
+      "path": "provian-website/src/app/preview/earn/page.tsx",
+      "sha256": "sha256:ab9ebc8c6aa55b9783b125c68cbe3b3dce0189c3b7faff8227bea35b698203f3"
+    },
+    {
+      "path": "provian-website/src/app/preview/foundation/page.tsx",
+      "sha256": "sha256:929195ded1d495c2e8d3f81be675d12a7bf92a0ce5d22cd449f8e415306cf2af"
+    },
+    {
+      "path": "provian-website/src/app/preview/overview/page.tsx",
+      "sha256": "sha256:3397c9d23d4ca178f2b8819cc02248a114593d031dba1e8253b2e69cc2279554"
+    },
+    {
+      "path": "provian-website/src/content/legal/privacy.md",
+      "sha256": "sha256:ea6a5634f1ea3c02149a24302628b54b92bddcf7f4efc624ce62944c04d57ba7"
+    },
+    {
+      "path": "provian-website/src/content/legal/terms.md",
+      "sha256": "sha256:9f7eee8ac893999a4031c5db510e934d90267ade2e85dc9858ccfa21a997fe8d"
+    },
+    {
+      "path": "provian-website/src/data/docsManifest.json",
+      "sha256": "sha256:633161bd2ed31cd869fdd0508725e5204aba0256bed85323721b87589b8b0dd5"
+    },
+    {
+      "path": "reference/CONTRACT_VERSION_STATUS.md",
+      "sha256": "sha256:137bf293076e88f2288f141cd0b18e88898f1c53119380cd356cca1dde5ba468"
+    },
+    {
+      "path": "reference/PE_Generation_Model_v5.md",
+      "sha256": "sha256:ce592b6567ff7c27b99c887596a72461766109dc91031a42a7088385a854559a"
+    },
+    {
+      "path": "reference/Provian_Agent_Safety_v1.md",
+      "sha256": "sha256:37358bf90b43a6b42cfe27e68018924c399f3b34106e38488d6a5d705b01391b"
+    },
+    {
+      "path": "reference/Provian_Agent_Wallet_v2.md",
+      "sha256": "sha256:9dfbbad70270f56a658193ec5a7995d7aa450dc45cfe3f387ca76a65f0b2451f"
+    },
+    {
+      "path": "reference/Provian_Governance_v3.md",
+      "sha256": "sha256:520d6ec61729e125c864d4e575227827f3d8629f818d64f9c78908e35b715c49"
+    },
+    {
+      "path": "reference/Provian_PE_Architecture_v5.md",
+      "sha256": "sha256:84675772ea6077443690f8f0753e23732b5bd004e544291365e04736e23cdbf9"
+    },
+    {
+      "path": "reference/Provian_Technical_and_IP_Notes.md",
+      "sha256": "sha256:f5f715f9dd295ad1ea5034d4a007989378519dcc4f41905ea8cf0a1b37453c92"
+    },
+    {
+      "path": "reference/Provian_Tokenomics_PVT_v3.md",
+      "sha256": "sha256:deca390aebb66b7f8a81f0f57ae85316ed288df4edb352fdfc6d301abd9a0931"
+    },
+    {
+      "path": "reference/TheProvianThesis_v18.md",
+      "sha256": "sha256:767c42db1f441e02b37ceb8ec35e5d321f6dea4c44aa24d07fabeec4bd83e38c"
+    },
+    {
+      "path": "scripts/check-mcp-core-mirror.sh",
+      "sha256": "sha256:09503a26bdcbbe5b3ed974b5214c549f68d85980c7860c16a21d8f1f06fd2d88"
+    },
+    {
+      "path": "scripts/launch-smoke/README.md",
+      "sha256": "sha256:723de9e3c50e54dd492a8f1d47d8ea55796ebe525565f5ed5ea8ae6b81c5b2e1"
+    },
+    {
+      "path": "scripts/sync-mcp-core.sh",
+      "sha256": "sha256:693eaeda3b8d155d0a6e43fbeea26543632738a5501fc7b098577412da510fff"
+    },
+    {
+      "path": "src/components/ParticipationCard.tsx",
+      "sha256": "sha256:b394bba0e5342f8ef3304147975316c86b1aec827a8046c1fb1fb14c1e10481d"
+    },
+    {
+      "path": "src/core/agents/AgentAuthorizationGate.ts",
+      "sha256": "sha256:b3ed198cacff2af6239c622667fc52b6d0ef59ec5a2530101b045906f052a861"
+    },
+    {
+      "path": "src/core/agents/AgentExecutionGate.ts",
+      "sha256": "sha256:d36fd04b42124838772a10e08f88395fa46c3c4921415f88aba2617e3c72d101"
+    },
+    {
+      "path": "src/core/agents/EmergencyStopService.ts",
+      "sha256": "sha256:6fff0f7421fb5ff334c73ecda7f0b98f24e2876a6a06fb20ef683e99efb8f952"
+    },
+    {
+      "path": "src/core/agents/api/AgentAPIServer.ts",
+      "sha256": "sha256:a159f6d810028fc285a6b94b4ba44d386e8187014870de67dacbae67e52d031c"
+    },
+    {
+      "path": "src/core/agents/plugins/AgentPluginRegistry.ts",
+      "sha256": "sha256:b06a89a6e4e6b049fac4bae8f8ec953c838086c74279404d4906b399e1a6e64e"
+    },
+    {
+      "path": "src/core/agents/policy/GoalPolicyManager.ts",
+      "sha256": "sha256:666e2c9ff0fed32579e6e6a2c7874d99bf3c2d223bc803087d0e49d8b801d232"
+    },
+    {
+      "path": "src/core/agents/session/AgentSessionManager.ts",
+      "sha256": "sha256:ff993a350ab24109e079fff2e856f181c27a21c3eeb1f24cb3ac3c393f1c8db6"
+    },
+    {
+      "path": "src/core/approvals/ApprovalManager.ts",
+      "sha256": "sha256:9a5a24d8354171d8f80f1d6d61b51e70c82f65ae9463a027f3320947461375c9"
+    },
+    {
+      "path": "src/core/capture/ChatPEEmitter.ts",
+      "sha256": "sha256:9ef36c02eec5c3ac8fce24dde60038775f4df771e28ce72d753e933539f3b126"
+    },
+    {
+      "path": "src/core/capture/UsageStatsScheduler.ts",
+      "sha256": "sha256:d7462f44c0376759def427f13b2f90f1da7522a0b898c85a93b015086787491b"
+    },
+    {
+      "path": "src/core/commons/CommonsService.ts",
+      "sha256": "sha256:90c4dbdb1cf4eb1a13c53c31f958e8116f521df680828a1d30d9cfa23268e188"
+    },
+    {
+      "path": "src/core/credentials/CredentialVault.ts",
+      "sha256": "sha256:4e747e1746e8477e782cdbae3b6e8beabc340223c784bb9e62073e69c774f56d"
+    },
+    {
+      "path": "src/core/credentials/proxy/ProxiedPaymentRouter.ts",
+      "sha256": "sha256:d02982e02c21119d2dd2d527cfe1beaeceb5cb8264a84d7cfcfd8a279ed067c5"
+    },
+    {
+      "path": "src/core/earn/EarningSurfaceRegistry.ts",
+      "sha256": "sha256:cb5d4a392520b7613f2b428e6655bb8a86b2aa4a1caf08d4946f69d860c9a27f"
+    },
+    {
+      "path": "src/core/earn/__tests__/EarningSurfaceRegistry.test.ts",
+      "sha256": "sha256:b3c6da4c37868e76c3cae0a401eda319de5aaa4867210c62d10def2d405fe4f0"
+    },
+    {
+      "path": "src/core/messages/MessageSafetyEngine.ts",
+      "sha256": "sha256:d8392c4ffc61461ca8c2c4f3a37467bade9d87e684e572c4bba47208d207c299"
+    },
+    {
+      "path": "src/core/onramp/OnRampReconciler.ts",
+      "sha256": "sha256:8849610c161f09c0c54b705309bfc74838a0eee455b38093ddfe3fc0f9bfb77c"
+    },
+    {
+      "path": "src/core/promises/PromiseService.ts",
+      "sha256": "sha256:beac2b78589849618fcdda1f5e1bc16d94980111372375e2db01c66884322a22"
+    },
+    {
+      "path": "src/core/promises/negotiation/NegotiationService.ts",
+      "sha256": "sha256:234de67a99b167fecf6700131b57760c4798dfc22a2f998d5e9fd360bd7266b1"
+    },
+    {
+      "path": "src/core/provenance/CorroborationManager.ts",
+      "sha256": "sha256:e8557083c1782abc72e3b0a48b9b662b1383cf657158979543bc6c84904575c1"
+    },
+    {
+      "path": "src/core/provenance/ProvenanceEnvelopeManager.ts",
+      "sha256": "sha256:2d86f29c82f5e5522c3f2ef4e75b08ca6affd6dd58f00b7f70122a145b62603a"
+    },
+    {
+      "path": "src/core/provenance/attestationTiers.test.ts",
+      "sha256": "sha256:c278779a5b353c838b86235ad1365e93fa8047db8294e3627265955316f0cdfb"
+    },
+    {
+      "path": "src/core/provenance/attestationTiers.ts",
+      "sha256": "sha256:bb817ef972313162710f1698d3f178486c4df1ee883d92cd9bbad6c173374ed3"
+    },
+    {
+      "path": "src/core/provenance/types.ts",
+      "sha256": "sha256:d6ad621781ad1a10d2c8998139291314ae988f27a3b77b87829005925ae57c6a"
+    },
+    {
+      "path": "src/core/security/CallerContext.ts",
+      "sha256": "sha256:e0b0e7b3c90365ecb346103d1f01095706fcb2b486baa537ebb9a9afe9281b20"
+    },
+    {
+      "path": "src/core/security/KeyManager.ts",
+      "sha256": "sha256:f64f249030c695b6d9f1feb374e1cf566e4409f840473486030bb62a83b5299e"
+    },
+    {
+      "path": "src/core/swap/SwapEngine.ts",
+      "sha256": "sha256:a82c4480291a1b02aae6c92855581da843fba225b9fd8449c9395053c22a50ec"
+    },
+    {
+      "path": "src/core/walletconnect/WalletConnectService.ts",
+      "sha256": "sha256:9aa7b9a4054b3b0887ded23b7ffc7efd8f2624a462f7d7ee19267e10e3a81b05"
+    },
+    {
+      "path": "src/i18n/locales/en.json",
+      "sha256": "sha256:1a01efce8a85d0fe58625eb1b31ed018cd0964b172a745c605c960ac827057a3"
+    },
+    {
+      "path": "src/i18n/locales/enOnboardingNarrative.ts",
+      "sha256": "sha256:b0b0eeeb17bdcd72686f002d3095a489472a761cd88f00b76fb9bc52e9a055ed"
+    },
+    {
+      "path": "src/i18n/locales/es.json",
+      "sha256": "sha256:e9a63d95fe11bbc1f1bbd0599a78593c3455b3ee039116cfd826e2e8754c1f6d"
+    },
+    {
+      "path": "src/i18n/locales/fr.json",
+      "sha256": "sha256:60a3ec0b8182aa5c927883f87e10b5a7443580801962004b3477525b7c2cb46c"
+    },
+    {
+      "path": "src/i18n/locales/hi.json",
+      "sha256": "sha256:034b0fbbeb20b1ad145d4450b1ddcfebc3957ec218938023b75552076861facf"
+    },
+    {
+      "path": "src/i18n/locales/id.json",
+      "sha256": "sha256:57d4373552e45208d8fc2eb56d457aa560102edbe9c716deecf69c5332c41889"
+    },
+    {
+      "path": "src/i18n/locales/ja.json",
+      "sha256": "sha256:63886f682ba764270e0b1998f3664a717b9318e075719335a9e216e3b2a82db6"
+    },
+    {
+      "path": "src/i18n/locales/ko.json",
+      "sha256": "sha256:53d4fccaac730e19a55712d7a6c9150372f949a7992cd7b9b03d2709cd65f357"
+    },
+    {
+      "path": "src/i18n/locales/onboardingNarrativeParity.test.ts",
+      "sha256": "sha256:dbb8c96b12fd3f297c00be87343a95842263f06ed6ff68506ff6c79578c39ab7"
+    },
+    {
+      "path": "src/i18n/locales/pt.json",
+      "sha256": "sha256:50327047c0f5f2fa509ca9b2619afbbc54c9bb829670c34a45657f3aaa1cf8a6"
+    },
+    {
+      "path": "src/i18n/locales/sw.json",
+      "sha256": "sha256:f47f106d36ab637da0655463f5440270ed96612ebc283b76125e35fd3ee4900f"
+    },
+    {
+      "path": "src/i18n/locales/tl.json",
+      "sha256": "sha256:8df08cc8d13c520b30f1bc89ce5eecc708261dc31496456690ea74a27b35cd7e"
+    },
+    {
+      "path": "src/i18n/locales/vi.json",
+      "sha256": "sha256:58ec8279d8bff23ff664ab5b00252b7953bbbdbbba980c2f6f5282cf137510ff"
+    },
+    {
+      "path": "src/i18n/locales/zh.json",
+      "sha256": "sha256:46402069ccd95417b30aeca1241902124b08be88458a2e868940809de15f8f28"
+    },
+    {
+      "path": "src/screens/Abundance/AbundanceDashboardScreen.tsx",
+      "sha256": "sha256:7a61169a962315f7a24eac20b10a84a02cee8eb9314de0f6a48cd38b46a3e3b3"
+    },
+    {
+      "path": "src/screens/Action/SendScreen.tsx",
+      "sha256": "sha256:ca4c2a9fdcd86df78c2ef4489529faea7319415e35c859f000aca7c15a6b8b06"
+    },
+    {
+      "path": "src/screens/Activity/EnvelopeDetailScreen.tsx",
+      "sha256": "sha256:354b957b9d26d32bb146ce6ee8b9d81acf4e383db3219413fd6ed3c5d1a34d08"
+    },
+    {
+      "path": "src/screens/Agent/LinkAcceptScreen.tsx",
+      "sha256": "sha256:ee07a33374aab365f3f80d44e3b6673e1ae541c8540e5dca01baed21c3956bcf"
+    },
+    {
+      "path": "src/screens/Commons/CommonsGovernance.test.ts",
+      "sha256": "sha256:ef369de356c43b09df117424dac76c93def8673d716138a93e54fecc55a1dea2"
+    },
+    {
+      "path": "src/screens/Commons/CommonsGovernance.tsx",
+      "sha256": "sha256:83cae8966d9bcb72ffd6a27c92601773cfcc700b2f30665f6ffab642fda3518b"
+    },
+    {
+      "path": "src/screens/Dashboard/DashboardScreen.tsx",
+      "sha256": "sha256:cb0b84be37b550f7afe62166be57fac1a5e7d609e23cb49ba605ce9c6c929c36"
+    },
+    {
+      "path": "src/screens/Legal/TermsOfServiceScreen.tsx",
+      "sha256": "sha256:0ba7daefd08b82d52ca1d347476fb1467e9ad411304062f56ce3e5c60f98cfd7"
+    },
+    {
+      "path": "src/screens/Onboarding/BiometricSetupScreen.tsx",
+      "sha256": "sha256:3dfbb7d158aa39f385fa9bcfd76ed311d0fdb4bf6abb88e9cf63cf2ec95a39dc"
+    },
+    {
+      "path": "src/screens/Provenance/MyProvenanceDashboardScreen.tsx",
+      "sha256": "sha256:0e9d0bbd8bda84ee8122ad063337de9be84392848b78f46dbd609937421e3237"
+    },
+    {
+      "path": "src/screens/Provenance/PVTDetailScreen.tsx",
+      "sha256": "sha256:f5fdf34b34227f9faa48ee116b3722fcc669d8b4d0aef690f6d6c80e311de427"
+    },
+    {
+      "path": "src/screens/Provenance/__tests__/MyProvenanceDashboardScreen.test.ts",
+      "sha256": "sha256:6d7dd63fa6459ad9db0af1294bab659c7db86446ad24755e02c3401314529d09"
+    },
+    {
+      "path": "src/screens/Recovery/ImportRecoveryPhraseScreen.tsx",
+      "sha256": "sha256:70a06808a6484c11d66890029aba54988ea2aae0d285af726505b8a7e2b0e0c2"
+    },
+    {
+      "path": "src/screens/Security/LockdownScreen.tsx",
+      "sha256": "sha256:1517d4818aa463ffcb669ad6924571d8d05646e8ed4b0b54ea30ac68e903efb2"
+    },
+    {
+      "path": "src/screens/Settings/SettingsScreen.tsx",
+      "sha256": "sha256:948fff73247bc1f572dd223692302c10b8271863eb5f9c0302fec123e71f865a"
+    },
+    {
+      "path": "src/screens/Vision/VisionScreen.tsx",
+      "sha256": "sha256:32d110ce5222a409aadc18f0c19180c68d44ea4e0967490e8e944300d65f809e"
+    },
+    {
+      "path": "src/services/DeferredPESyncService.ts",
+      "sha256": "sha256:34fb788bf0e484ee10f58f7bac27e047d44809509228add65da1116855139c1b"
+    },
+    {
+      "path": "src/services/RelayAPIService.ts",
+      "sha256": "sha256:feeea75bcbc0279ffd341d980a512585fe85d3cbc6896d8401c86fdd3df51ef9"
+    }
+  ]
+}

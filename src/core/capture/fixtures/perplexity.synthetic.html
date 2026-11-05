@@ -1,0 +1,40 @@
+<!--
+  Perplexity synthetic fixture. NOT captured from perplexity.ai. Hand-written
+  DOM approximating Perplexity's thread / query / answer structure.
+
+  Selector basis:
+    - [data-testid="thread-question"]   user's question card
+    - [data-testid="thread-answer"]     Perplexity's answer card
+    - img inside a thread-question       counts toward imageCount
+
+  Perplexity has no durable video player element, so videoSeconds is zero
+  by construction in this fixture and in the live observer.
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Perplexity synthetic</title></head>
+<body>
+  <main>
+    <section class="thread">
+
+      <article data-testid="thread-question">
+        <div class="question-body">
+          Why did wheat prices spike in late 2022? I attached a chart I pulled from the USDA site.
+        </div>
+        <div class="question-attachments">
+          <img src="data:image/png;base64,iVBORw0KGgo=" alt="Attached chart" />
+        </div>
+      </article>
+
+      <article data-testid="thread-answer">
+        <div class="answer-body">
+          Three reinforcing drivers were in play: supply contraction from the Black Sea corridor disruption after the Russian invasion of Ukraine, drought across parts of the US Midwest reducing winter-wheat yields, and input costs for fertilizer and diesel pushing producer economics tighter. The spike receded as the grain corridor reopened later in the year.
+        </div>
+      </article>
+
+    </section>
+  </main>
+</body>
+</html>

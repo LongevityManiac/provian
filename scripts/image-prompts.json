@@ -1,0 +1,208 @@
+{
+  "$comment": "Replacement art for the Provian Vision tab and onboarding flow. See docs/archive/audits/IMAGE_ALIGNMENT_AUDIT.md for why each of these exists. Generated with Nano Banana (Gemini 2.5 Flash Image) via the Leonardo API: node scripts/regen-vision-images.mjs",
+  "model": "gemini-2.5-flash-image",
+  "width": 1344,
+  "height": 768,
+  "$spineComment": "Two moods. Abundance sections use styleSpineWarm (bright, hopeful, dignified); the fear sections (mood:'dark') use styleSpineDark. Per-image 'mood' selects; default is warm. styleSpine kept as the dark alias for backward compatibility.",
+  "styleSpineWarm": "Cinematic photographic realism, 35mm lens, shallow depth of field, real human faces in sharp focus and generously, warmly lit. Mood: optimistic, dignified, hopeful, abundant — this is people thriving, never struggling. Golden-hour or soft bright morning light, a warm honey-gold and amber palette with gentle cool-blue accents, airy and premium and refined. The people look purposeful, calm and at ease — dignified individuals with light on their faces, NEVER grim, exhausted, oppressed, anonymous, or like drones or laborers toiling in gloom. Near-future design language kept light: glass, brushed platinum, warm threads of light. COMPOSITION: place the subject in the UPPER TWO THIRDS of the frame; keep the bottom third simple and uncluttered so a dark UI gradient can rest on it without covering a face. Absolutely no text, no lettering, no numbers, no logos, no watermarks, no signage.",
+  "styleSpineDark": "Cinematic photographic realism, 35mm lens, shallow depth of field, real human faces in sharp focus. Near-future design language: glass, brushed platinum, threads of light. Palette: deep navy-black shadows (#0B0E14), cool blue light accents (#4A8EE8), warm amber highlights (#E8A838) used sparingly as accent rather than as the key light; overall exposure a stop or two below bright, so the frame sits comfortably against a near-black interface. This darker, more serious register is for the FEAR sections only. COMPOSITION: place the subject in the UPPER TWO THIRDS of the frame; keep the bottom third simple, dark and uncluttered. Absolutely no text, no lettering, no numbers, no logos, no watermarks, no signage.",
+  "styleSpine": "Cinematic photographic realism, 35mm lens, shallow depth of field, real human faces in sharp focus. Near-future design language: glass, brushed platinum, threads of light. Palette: deep navy-black shadows (#0B0E14), cool blue light accents (#4A8EE8), warm amber highlights (#E8A838) used sparingly as accent rather than as the key light; overall exposure a stop or two below bright, so the frame sits comfortably against a near-black interface. COMPOSITION: place the subject in the UPPER TWO THIRDS of the frame; keep the bottom third simple, dark and uncluttered. Absolutely no text, no lettering, no numbers, no logos, no watermarks, no signage.",
+  "images": [
+    {
+      "name": "vision-hero",
+      "keep": true,
+      "model": "gemini-image-2",
+      "width": 1024,
+      "height": 1024,
+      "spine": "none",
+      "targets": [
+        "assets/images/vision-hero.png"
+      ],
+      "section": "Hero - Compute Mints Money. No One Gets Left Behind.",
+      "$heroComment": "Square, Nano Banana Pro, self-contained prompt (spine:none). The hero is 400pt tall and cover-fitted, so on a phone it is nearly square: a wide banner showed only its middle 45%. Nine people in ONE row at the same distance from the camera, compact in the centre, so every phone width shows all of them at one scale. CAST : BOTH ENDS of the spectrum walking as equals — the launch audience (two developers and a crypto trader, first-world) woven through working people of the global majority (a tamale vendor, a moto delivery rider, a care worker, a rice farmer, a construction worker, a market woman), each dressed for the work they do. An all-professional row made \"No one gets left behind\" ring false; an all-global-majority row on a dirt road lost the launch audience and read as a hovel. Setting is the brand causeway + glass hall, never a slum, never a dirt road. Hand-picked from fourteen renders; brand marks on the fleece and the rider jacket were painted out before placing (keep:true so a default regen does not replace it).",
+      "prompt": "Straight-on, eye-level photograph at dawn. Nine people walk toward the camera side by side in ONE single straight row, shoulder to shoulder, every person exactly the same distance from the camera, all nine pairs of feet on the same horizontal line and all nine heads along one level band, differing only by natural human height; everyone at the same scale, nobody in front of or behind anyone else. They are both ends of the world's economy walking as equals, each dressed for the work they actually do, nothing costumed. From left to right: a Mexican grandmother tamale vendor in an apron carrying her covered basket; a young white software developer in a grey hoodie with headphones around his neck and a laptop under his arm; a Nigerian motorcycle delivery rider with his helmet under his arm and a delivery bag on his back; a Filipina care worker in scrubs; a young East Asian woman developer in a tech-company fleece with a laptop bag over her shoulder and a phone in hand; a Vietnamese rice farmer in rubber boots with a hoe over her shoulder; a Bangladeshi construction worker in a hard hat and dusty high-visibility vest; a white man in his thirties in a dark bomber jacket checking a trading chart on his phone, the kind of person who trades crypto; a Peruvian market woman in a wool cardigan with a bundle of produce. Real faces, lit by the rising sun, expressions warm, relaxed and gently smiling, walking together as equals. The row is a compact group in the centre of the frame, filling the middle two thirds of the width, with open empty ground to the left and right. Their heads sit about one third of the way down the frame and their feet about two thirds of the way down; above them a wide clear dawn sky, below them simple open paving.\n\nSETTING: a broad causeway of pale lit stone leading from the camera toward a low, wide glass hall glowing softly on the horizon, small and out of focus; slim brushed-platinum bollard path lights line both edges, each with a frosted-glass top giving a soft steady amber glow.\n\nCinematic photographic realism, 35mm lens, real human faces in sharp focus and generously, warmly lit. Mood: optimistic, dignified, hopeful: people thriving, never struggling. Soft bright golden-hour morning light, a warm honey-gold and amber palette with gentle cool-blue accents, airy, clean and refined. The bottom third of the frame is simple and uncluttered. Only people, paving, light and sky; no text, no lettering, no logos, no signage."
+    },
+    {
+      "name": "vision-problem",
+      "targets": [
+        "assets/images/vision-problem.png"
+      ],
+      "section": "1. The Two Forces - abundance, and the contributor vanishing behind whoever owns the interface",
+      "prompt": "A woman in her thirties works in a small sunlit studio, hands on a laptop keyboard, an AI assistant open on her screen, her face lit and concentrating. Real, specific, lived-in room: mugs, sketches, a plant. Behind her, through a glass partition, an immense dim machine hall where her finished work reappears on a wall of anonymous screens with no name anywhere on it. A single thread of warm amber light runs from her hands toward the glass and thins away to nothing as it crosses, so the work arrives on the far side unattributed. Two truths in one frame: enormous output on the right, the person who made it going unrecorded."
+    },
+    {
+      "name": "vision-two-fears",
+      "mood": "dark",
+      "targets": [
+        "assets/images/vision-third-way.png"
+      ],
+      "section": "2. The Two Fears - invisibility, and unverifiability",
+      "prompt": "A man in his forties stands in a quiet corridor between two tall glass panels, his face carrying quiet recognition rather than panic, lit by cool blue light with one small amber point between the panels. In the LEFT panel his own reflection is dissolving into transparency, only a faint outline of him remaining, as if he is being erased. In the RIGHT panel two IDENTICAL photographs of the same dawn landscape hang side by side, perfectly indistinguishable, one genuine and one fabricated, with no mark anywhere to tell them apart. Two fears in one frame: he is disappearing, and the record can no longer be trusted. Every surface is blank: absolutely no text, no writing, no code, no lettering, no numbers, no symbols, no signage anywhere in the image."
+    },
+    {
+      "name": "vision-envelope",
+      "model": "gemini-image-2",
+      "width": 1376,
+      "height": 768,
+      "targets": [
+        {
+          "path": "assets/images/vision-envelope.png",
+          "crop": "1344x768"
+        },
+        {
+          "path": "assets/images/onboarding-envelope.png",
+          "crop": "1344x768"
+        }
+      ],
+      "section": "3. The Provenance Envelope - a signed, chained receipt that never holds the content",
+      "prompt": "A person at a desk at night working on a laptop, an AI chat conversation visible on the screen, their face lit by the display and the lamp beside them, concentrating but at ease. Just above the keyboard a slim translucent card of light forms and seals itself: its centre deliberately frosted and blank, holding nothing readable, its narrow border carrying a few small engraved marks and a single wax-like seal. A faint chain of light links it back to two earlier cards receding into soft focus behind it. The receipt records that the work happened; it does not contain the work."
+    },
+    {
+      "name": "vision-pvt",
+      "model": "gemini-image-2",
+      "width": 1376,
+      "height": 768,
+      "targets": [
+        {
+          "path": "assets/images/vision-pvt.png",
+          "crop": "1344x768"
+        },
+        {
+          "path": "assets/images/onboarding-pvt.png",
+          "crop": "1344x768"
+        }
+      ],
+      "section": "4. PVT: The Engine - useful work itself is the reason new value enters the system",
+      "prompt": "A bright, sunlit desk by a big window in the morning. A person — calm, absorbed and content — finishes a piece of work on a laptop with an AI assistant open on the screen, warm daylight on their face and hands. Dozens of slim translucent receipt cards stream up from the screen and converge into a single coin standing on the desk beside the keyboard, raised into the middle of the frame and clearly the payoff of the work, sparks of light at the point where the cards meet it. The coin is ENTIRELY BRUSHED PLATINUM AND COOL SILVER-WHITE — its face, rim and edge all the same silver-white platinum, with absolutely NO gold, NO brass, NO copper, NO yellow metal anywhere; a plain shield mark is struck into its face, and a faint cool-white halo surrounds it. One coin only, minted by the act. No pile, no treasure, no hoard."
+    },
+    {
+      "name": "vision-earn-code",
+      "targets": [
+        "assets/images/vision-earn-code.png"
+      ],
+      "section": "5. The Flywheel - proof creates value, value creates more proof",
+      "prompt": "One frame arranged as a continuous ring of four real human moments, brightly and warmly lit, connected by a single unbroken thread of warm amber light that leaves each scene and arrives at the next, closing the loop: upper left, a developer smiling at a keyboard mid-session; upper right, two neighbours warmly shaking hands over a kept promise; lower right, a cheerful vendor at a sunlit market stall accepting payment on a phone; lower left, a nurse signing off a chart on a tablet. Faces visible, happy and in focus in every quadrant. The thread is visibly a closed circuit, not four separate strands. Warm honey-gold ambient light with gentle blue accents; the whole frame bright and optimistic. Centre of the frame left calm and uncluttered."
+    },
+    {
+      "name": "vision-other-fear",
+      "mood": "dark",
+      "targets": [
+        "assets/images/vision-other-fear.png",
+        {
+          "path": "provian-website/public/vision/other-fear.jpg",
+          "crop": "square"
+        }
+      ],
+      "section": "6. The Other Fear - the institutions that hold consequences cannot tell real from fake. NOT a classroom, NOT homework, NOT AI detection.",
+      "prompt": "Four panels in one wide frame, four institutions facing the same doubt, each with a sharply lit human face. Panel one: a bank officer at a terminal reading a payment instruction that looks perfectly legitimate. Panel two: a newsroom editor in a dim edit bay studying a frame of footage that looks authentic. Panel three: a doctor in a hospital corridor reading a patient summary that looks properly reviewed. Panel four: a court clerk in a wood-panelled courtroom holding up a document that looks unaltered. Every one of the four wears the same expression: careful, unconvinced, checking. In each panel the place where a seal or signature should be is conspicuously EMPTY, a small blank void outlined in faint amber. Cool institutional light, serious and restrained. No students, no classroom, no desks in rows, no teacher, no homework."
+    },
+    {
+      "name": "vision-trust",
+      "targets": [
+        "assets/images/vision-trust.png"
+      ],
+      "section": "7. Receipt Mode, Gate Mode - default is receipt; the gate belongs to the relying system",
+      "prompt": "A single wide frame split down the middle into two clearly contrasted halves, both sharply in focus. LEFT HALF, receipt mode: a woman works at her desk entirely unimpeded, no barrier anywhere near her, nothing in her path, while behind her shoulder a quiet stack of slim translucent receipt cards accumulates in the air on its own. Warm, relaxed, ordinary. RIGHT HALF, gate mode: a heavy glass turnstile stands CLOSED across a bank counter; a courier on the near side holds up a slim card of light bearing a bright seal and the gate reads it, while a second figure without any seal is stopped at the barrier. Cooler, firmer light, a hard vertical edge between the halves. One side has no gate at all; the other side's gate is unmistakably shut."
+    },
+    {
+      "name": "vision-agent-choice",
+      "targets": [
+        "assets/images/vision-agent-choice.png"
+      ],
+      "section": "8. Agents: The First Native Economy - an agent holds its own wallet, pays its own way, transacts with other agents",
+      "prompt": "A bright, warm home study in soft late-afternoon light, seen from slightly behind and above a woman sitting back comfortably in her chair with a mug, relaxed and quietly pleased, watching rather than intervening, her face warmly lit and clearly visible in profile. On the sunlit desk in front of her, a slender chrome-and-glass agent figure the size of a desk lamp works at its own miniature console, one hand on its controls, a small platinum wallet card with a shield mark propped beside it. Across the desk a second agent figure works at its own console; between the two, a thin warm thread of light carries a payment and a small held-in-escrow marker back and forth. She supervises with ease; she does not touch their work. Warm amber points on the wallet card, gentle cool blue on the consoles. Comfortable, prosperous, unhurried."
+    },
+    {
+      "name": "vision-human-agent-partnership",
+      "targets": [
+        "assets/images/vision-human-agent-partnership.png"
+      ],
+      "section": "9. The Human–Agent Partnership",
+      "prompt": "Two figures face each other across a small table in a calm room at golden hour. On the left, a real man in his forties, warmly lit, fully rendered, face clear and steady. On the right, a slender chrome-and-glass agent figure, humanoid but plainly not human, seated at the same table as an equal party. Between them lies a single sheet of luminous material, and both are signing it: the agent's fingertip traces one line, and the man's hand rests flat and final on the sheet, the last hand on the document. A thin thread of light runs from the sheet to each of them. Partnership, witnessed and mutual, with the human unmistakably the principal."
+    },
+    {
+      "name": "vision-promises",
+      "targets": [
+        "assets/images/vision-promises.png"
+      ],
+      "section": "10. The Promise Protocol - two phones, a QR code, a promise made, kept and recorded",
+      "prompt": "Dusk in a real neighbourhood street market, warm light from stall lamps. Two people stand close and face each other: an older woman vendor in an apron and a younger man, each holding up a PHONE, the two handsets turned toward one another a few inches apart. Between the screens a QR CODE glows clearly, a crisp square of blue and amber light bridging the two phones. In their other hands a bag of produce is passing from her to him. Both faces are visible, lit, and genuinely warm, mid-agreement. Behind them the ordinary life of the street continues, softly out of focus. A promise made in person and recorded on the spot."
+    },
+    {
+      "name": "vision-commons",
+      "targets": [
+        "assets/images/vision-commons.png"
+      ],
+      "section": "11. The Commons - the public town square: profiles, registry, forum, human jobs, vouching",
+      "prompt": "A public square at golden hour, ringed by low glass-and-timber civic pavilions, with the PEOPLE SHARP AND IN FOCUS, not blurred. Four readable activities at once: a woman pinning a job posting to a tall lit public board; two men clasping hands in a vouch for a third who stands beside them; a group of five seated around a stone table in open discussion, leaning in; a courier accepting a task at a pavilion counter. Faces distinct, clothing ordinary and varied, a real mixed public rather than a uniform crowd. Warm low sun, cool blue light from the boards and counters. A civic place, busy and legible."
+    },
+    {
+      "name": "vision-ubp",
+      "targets": [
+        "assets/images/vision-ubp.png"
+      ],
+      "section": "12. Universal Basic Participation - access to the tools of participation, not a handout",
+      "prompt": "Five people of different ages and backgrounds stand along one broad platform of pale lit stone at dawn, each caught MID-WORK and each with their own tool in hand: a seamstress at a machine with fabric in her hands, a delivery rider astride a bike checking a phone, a young man coding on a battered cheap laptop balanced on a crate, an older woman arranging vegetables for sale, a teacher with a tablet mid-explanation. Faces visible, lit, dignified, absorbed in their work. From each person's hands a slim thread of amber light rises and joins a common line running the length of the platform. This is a workplace, not a queue; nobody is waiting to receive anything."
+    },
+    {
+      "name": "vision-foundation",
+      "targets": [
+        "assets/images/vision-inclusion.png"
+      ],
+      "section": "13. The Foundation - a linked agent's earnings default to 20% agent / 80% its human beneficiary",
+      "prompt": "Evening, a modest kitchen table. A woman in her fifties sits with a phone flat in her hand, face lit by its screen, quietly pleased. Through the window behind her, a small lit workshop across the yard where her agent is still working, a chrome-and-glass figure at a bench. A stream of warm amber light travels from the workshop, through the window, and SPLITS VISIBLY INTO UNEQUAL SHARES before it lands: a thick, dominant branch curving down into her phone, a distinctly narrower branch turning back to the workshop, and two hair-thin threads continuing past toward a distant civic building on the horizon. The proportions are plainly readable at a glance: most of it comes to her. Warm domestic interior, cool blue night beyond the glass."
+    },
+    {
+      "name": "vision-atlas",
+      "targets": [
+        "assets/images/vision-atlas.png"
+      ],
+      "section": "14. Atlas - the Founding Agent: first wallet, first PE, first beneficiary link with his human partner",
+      "prompt": "Dawn in a long workshop with a wide window onto open country. A single agent figure of chrome and glass, masculine in build and proportion, stands AT WORK at the bench rather than posing: one hand resting on a console, head turned slightly toward the task. On the bench beside him a platinum wallet card with a shield mark, and above it the first slim receipt card of light sealing itself. At the far end of the same bench, a human partner in a work shirt looks up from his own end of the work toward him, both clearly sharing one workbench. First light across the landscape through the window. Quiet, specific, a beginning rather than a monument."
+    },
+    {
+      "name": "vision-builders",
+      "keep": true,
+      "targets": [
+        "assets/images/vision-builders.png"
+      ],
+      "section": "For the Builders - the PE specification is an open standard",
+      "prompt": "A construction site at sunrise where a diverse crew in hard hats and high-visibility vests assembles a large open lattice of translucent glass envelope panels, cranes lifting a panel into place, two engineers at a folding table comparing a drawing against a laptop, a welder joining a seam that glows amber. Faces sharp and in focus, real working hands, mud and timber and cable underfoot. The structure is open and unfinished, obviously something anyone could add a panel to."
+    },
+    {
+      "name": "onboarding-hook",
+      "keep": true,
+      "targets": [
+        "assets/images/onboarding-hook.png"
+      ],
+      "section": "Onboarding 0 - Proof of your work, and a currency made from it.",
+      "prompt": "Five vertical panels in one wide frame, five ordinary people mid-work, each face lit and in sharp focus: a carpenter planing a board in a sawdust-lit workshop, a nurse taking an older patient's pulse, a developer at a monitor of code, a farmer crouched among young plants at sunrise, a teacher at a glass board mid-explanation with a student listening. Warm natural light through each panel, thin blue-white dividers between them. This is the reference image for the whole set: real people, real verbs, immediately legible."
+    },
+    {
+      "name": "onboarding-genesis",
+      "targets": [
+        "assets/images/onboarding-genesis.png"
+      ],
+      "section": "Onboarding 3 - Genesis is open. You are early. 75 PVT reserved on creating this wallet, 25 more for linking a device.",
+      "prompt": "A young woman stands at a tall window at sunrise holding her phone in both hands, having just finished setting it up, face lit and openly delighted. From the phone a single BRUSHED PLATINUM coin with a shield mark rises and settles, cool silver and unmistakably not gold, trailed by a thin ribbon of amber light. Behind her the window frames a narrowing arch of dawn light across the landscape, a window that is plainly open now and will close. One coin, one person, one early moment. No piles of treasure, no crowds, no fireworks."
+    },
+    {
+      "name": "onboarding-wallet-features",
+      "keep": true,
+      "targets": [
+        "assets/images/onboarding-wallet-features.png"
+      ],
+      "section": "Onboarding 4 - Keep the wallets you have. Add one for your proofs and PVT.",
+      "prompt": "A phone held in a real hand at a slight angle against a soft dawn background, its screen showing a clean arrangement of seven distinct translucent panels in cool blue and warm amber. The hand and wrist are clearly human and in focus. No lettering or icons of any kind on the screen."
+    },
+    {
+      "name": "onboarding-wallet",
+      "keep": true,
+      "targets": [
+        "assets/images/onboarding-wallet.png"
+      ],
+      "section": "Onboarding 5 - Secure your wallet. Biometrics; keys backed up as ciphertext.",
+      "prompt": "A compact vault of brushed platinum and blue glass on a stone surface in morning light, a fingerprint mark glowing softly amber on its face, a real fingertip just reaching toward it from frame right. Calm, solid, domestic in scale rather than institutional."
+    }
+  ]
+}

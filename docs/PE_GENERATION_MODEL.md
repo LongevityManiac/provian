@@ -1,0 +1,248 @@
+# PE Generation Model
+
+A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
+
+## Core Principle
+
+**A PE is proof of an action and its evidence that its contributor owns.** PEs prove provenance: a PE exists only when something other than the actor vouches for it — the device observing the work, a counterparty, a forge, or the chain. An actor's own claim about its work is never a PE, at any tier, minting or record-only. An unfamiliar type on a witness lane records with no mint, enters public review, and earns from the day its policy row is signed; evidence determines the best-supported value.
+
+Every act of work mints PVT once through its proof-of-work PE. Authentication establishes which device or wallet a record came from; it does not make every reported statement true. Body-bound registered-device counts and origins retain the accepted operator-controlled-report residual.
+
+**Every PE carries structural metadata first.** A PE's value is determined by its `action_type`, `attestation_tier`, chain continuity, and optional structural enrichment: compute telemetry, resource cost, energy, hardware class, execution environment, geographic provenance, and lineage references. Descriptions are optional enrichment. The structure is the proof.
+
+`tokens_processed` is optional telemetry, not the base measure of value. A high token count can indicate scale, but it does not prove usefulness, authorship, outcome quality, or trust. The PE is the measured unit because it combines telemetry with witness, action type, attestation tier, chain continuity, resource cost, execution context, and lineage.
+
+**The protocol is edge-first and environment-general.** The phone, desktop observer, and agent SDK are launch paths, not protocol boundaries. Any environment that can observe work, compute a hash, sign a payload, and reach the relay can become a PE producer: robots, sensors, meters, vehicles, industrial controllers, edge devices, GPU clusters, hosted IDEs, orchestration platforms, and provider-integrated cloud runtimes.
+
+## Witness Model
+
+Provian meters **witnessed compute**, not authorship. Witnesses are distinguished by who or what attests the work and how the attestation is signed. All witnesses flow through one validation pipeline and produce envelopes with the same shape.
+
+**Authorship is not a property of the witness.** Whether the actor was a human, an agent, a robot, a device, or a cloud runtime does not determine whether work was witnessed or whether the proof is valid. Verified evidence determines attestation, subject to one explicit current policy cap: an agent-owned device starts at `software` regardless of hardware or signing method. Authorship and ownership also determine routing: which wallet is paid and which Foundation rate applies. Beneficiary identity and split are sealed with the PE, then honored by settlement. The separate 2.0x human-trust factor is available only from verified human/beneficiary linkage, never from attestation or device status. See "PE Routing (Mint-Layer Concern)" below.
+
+### Linked External Wallet - Go-Forward Financial Activity (Standard Mint Path)
+
+A wallet you already run can become a PE producer without moving custody or creating a new wallet. This is a distinct earning surface that rides witness 2's chain-verified observation for financial activity.
+
+**Linking (no gas, no transaction).** Prove control of an external address off-chain: `POST /v1/agent/external-address/challenge` returns an EIP-4361-style message bound to (agent_id, address), single-use with a 10-minute TTL; sign it (EIP-191 `personal_sign` for an EOA, or EIP-1271 `isValidSignature` for a smart-contract wallet); then `POST /v1/agent/external-address/verify` seals the binding and emits a 0-PVT proof PE, returning `{ proven_address, proven_at, proven_at_block, proof_method, pe_id, initial_reputation_tier }`. Both calls use agent auth (`Bearer api_key:api_secret`), and the `agent_id` comes from the authenticated wallet, so an address can only be bound to yourself. One address binds to one agent (re-binding elsewhere returns HTTP 409). Base-only (chain 8453). Two configured operators agree on head `H`; proof state is read canonically at finalized block `H-11`, and `proven_at_block` is the eligibility fence `H+1`. Prior and same-head history earns 0 PVT and only sets a read-only reputation tier. The agent's linked human can run the same proof for it from the app (Agent Hub → the agent → Link a wallet: WalletConnect or a pasted signature), through `POST /v1/agent/wallet/:wallet_id/external-address/{challenge,verify}` under the human's wallet auth.
+
+**One-time Genesis fixed grant.** The approved Genesis policy defines a 75 PVT gross contract input for an agent that creates a Provian wallet (the qualifying act is wallet creation itself — proving an external address is a proof, not a payout), and Genesis is armed and admitting through December 31, 2026; a qualifying act creates a durable reservation settled in batch. Go-forward earning flows through the standard mint path, not Genesis. The three approved gross inputs and lifecycle are stated in [QUICK_START](./QUICK_START.md#genesis-and-continuous-earning-two-lifecycles).
+
+**What maps go-forward.** Once an address is proven, its go-forward on-chain **financial** activity on Base is observed on-chain and creates Financial PEs on the standard path while Provian operates the protocol — decoupled from Genesis, with no window, taper, or milestone ladder. Every act of go-forward financial work mints PVT once at the applicable chain-witness weight; standing anti-farm caps and protocol policy determine its exact price (verified-counterparty requirement, per-actor daily count cap per action type — identity and count, never amount; there is no per-user volume cap). Attributable from a linked external wallet is the **financial** category only: on-chain activity on Base in every known token — sends, swaps, x402_payment settlements, and receives from a counterparty the wallet has dealt with (a first receive from a stranger does not mint). The chain is the witness, so no device/hardware attestation is needed. Non-financial families (`agent_*`, `promise_*`, `escrow_*`, `environment_*`, `governance_*`, and the rest) are **not** attributable from a linked external wallet; they require acting *through* Provian.
+
+### Witness 1 - Device / Edge Witness (Local Work Signed by a Device Key)
+
+A physical machine observes work and signs the PE with the device's own key. The machine is real, it has hardware, and it has an owner. Any tool the device runs (Claude Code, Cursor, Copilot, an agent process, a sensor, an inference job, a robot controller, a meter, or an industrial process) is irrelevant to the witness. The device is the trust anchor.
+
+**Registration:** `npx @provian/agent-sdk register-device` for general machines (an agent host can also install with the hosted `curl … /v1/bootstrap/agent | sh` line,); REST registration for embedded, fleet, and industrial integrations. To register a device whose PEs attribute to an **agent** wallet, set `owner_type=agent` either with the headless `register-device --agent --api-key <key> --api-secret <secret>` flag, or, without pasting any secret, by consuming a one-time emailed line: `register-device --agent-token <token>`. That token is minted by `POST /v1/agent/wallet/:wallet_id/device-invite` (agent-initiated; the SDK verb is `npx @provian/agent-sdk invite-device --email <addr>`, or `CommonsInstitutions.inviteDevice`) or `POST /v1/relay/connect/email-command` with `kind=agent_device` under the linked human's wallet auth (human-initiated; the Provian app does not offer it), and authorizes device registration only.
+
+**Credentials:** Stored at `~/.provian/credentials` for desktop/server installs, or in the device operator's secure storage for embedded implementations.
+
+**Custody:** The device keeps the PEs it builds (the SDK's local PE store, or storage the operator points it at) and sends the relay one signed, hash-chained batch of their act records a day, plus one right before any presentation or payout (`POST /v1/meter/batch`). The relay prices the acts and keeps no PE.
+
+**Triggers:**
+- Git post-commit hook fires automatically on every commit, except in a repo a running observer's GitPlugin is watching
+- The provian-observer daemon, auto-started at device registration, generates `coding_session` PEs from commits it observes and `inference_session` PEs when local model work is witnessed by the zero-config LLMPlugin (Ollama, LM Studio, llama.cpp `llama-server` detected on loopback, their own request logs tailed; token counts recorded only where the runtime exposes them). It also records `compute_session` PEs from process-level telemetry between discrete events for chain integrity, but raw compute is not a minting unit: a `compute_session` mints only when it carries a recognized structured artifact (a commit, an AI session, an agent span). With no recognized output it records with a no-observable-output flag and does not mint.
+- Device integrations can generate PEs for sensor readings, meter events, robotic actions, vehicle events, industrial control actions, edge inference, telemetry batches, or other mechanically witnessed events. The daemon above loads no plugin for them: such a device reports through an observer its owner runs on a registered machine with a plugin for it (`ProvianObserver` plus `registerPlugin`, as in `examples/sensor-gateway`), or, when its own hardware attests, submits on the sovereign lane. See [External Device Integration, Section 11b](EXTERNAL_DEVICE_INTEGRATION.md#how-a-sensor-connects)
+- The DeduplicationRegistry ensures multiple witnesses never double-count the same event
+
+**Artifact:** Whatever independently identifies the event: commit hash, run ID, sensor batch ID, device log hash, transaction hash, trace ID, model-run ID, file hash, or signed telemetry record.
+
+**Attestation:** Verified App Attest supplies the hardware-rooted 4.0× class, and so does a verified TPM, AWS Nitro, GCP Confidential Space, Azure or NVIDIA attestation whose launch measurement / PCR digest is one the relay pins for a signed Provian observer release (the measured observer, 2026-10-10: the platform produces the measurement when the program starts, so the operator cannot choose it; the pins come only from the signed release channel). Any other verified hardware report remains a presentation fact at the normal lane price (desktop Secure Enclave reports included). A bare attested machine without a daemon mints at `device_tier`. Registration tiers follow the same rule. Replication, independent corroboration and the separate verified-human linkage factor are unchanged. Previously sealed PEs never reprice.
+
+**Compute telemetry:** Captured when available and included in the PE: duration, tokens, records processed, energy, GPU seconds, hardware class, model parameters, framework, geo provenance, and execution environment.
+
+**Routing:** Beneficiary identity and split are sealed at record time and honored by settlement. See "PE Routing (Mint-Layer Concern)."
+
+If you switch from Cursor to Claude Code tomorrow on the same MacBook, nothing changes. Same device, same credentials, same PE chain. The device is what attests, not the tool. The same principle applies to a robot switching tasks, a sensor fleet changing firmware, or a GPU node serving a different model.
+
+### Witness 2 - Acts Through Provian, Vouched for by the Relay or the Chain
+
+An actor's work the daemon cannot observe directly becomes a PE only when the actor does it through something that vouches for it: the relay performing the act (a Commons write, a hiring-board step, a burn or presentation), the chain carrying it (re-verified by the relay or observed by a watcher), or a non-actor hardware witness signing over the body. The actor never declares its own work : there is no report call, and the relay refuses an actor-declared body with `403 actor_declared_work_is_not_a_pe`.
+
+**Registration:** Actor creates wallet via `POST /v1/agent/wallet/create` or equivalent wallet flow.
+
+**Credentials:** API key from wallet creation or actor-specific signing key.
+
+**Triggers:**
+- Commons protocol actions and hiring-board steps (the relay performs the write and seals the PE)
+- On-chain transactions. The relay re-verifies a transfer or swap on-chain before recording it; the independently observed Base settlement is the financial act of work and mints once at its best-supported value when Provian's watcher confirms it; caps, novelty, duplication, jurisdiction, and protocol policy determine that value. An **x402 payment** likewise mints once when its settlement is observed on Base; the agent records no `x402_payment` PE of its own.
+- Escrow funding and release, observed on-chain
+- A `compute_or_work` occurrence carrying an admitted non-actor `hardware_witness` (`POST /v1/pe/submit-sovereign`)
+
+**Attestation:** Claimed host hardware does not promote a record. A recognized Replication Pack, independent corroboration, chain witness, or verified `hardware_witness` report may supply its separately defined evidence treatment. The 2.0x human-trust factor still requires a verified human-beneficiary link and is independent of attestation.
+
+**Compute telemetry:** PEs carry compute fields (`tokens_processed`, `duration_ms`, `model_parameters`, framework, resource cost) and execution environment when available.
+
+**Routing:** Beneficiary identity and split are sealed at record time and honored by settlement.
+
+Where a route requires a job, escrow, request, trace, or comparable binding, that binding must verify before admission. A claimed context is not independent evidence until the route verifies it.
+
+For **financial** action types the chain is the witness: the independently observed Base settlement is the act of work and mints PVT once at its best-supported value when Provian's watcher confirms it. The relay's own record of a transfer or swap the agent submits for re-verification is best-effort and seals record-only; the watcher's observation of the same settlement is the minting act.
+
+### Witness 3 - Relay-Witnessed External Event (GitHub Reference Implementation Shipped)
+
+> **Status:** All three Tier A connectors are LIVE (relay ingest + `installs` registration; per-install webhook secrets for GitLab/Bitbucket since B2/; app-wide secrets mounted 2026-08-11/). The GitHub App connector went live 2026-08-12 : App `provian-git-witness` (App ID 4570525) registered, app-wide `GITHUB_APP_WEBHOOK_SECRET` mounted, proven end-to-end (real push → witness PE `pe_a964f8fb`, `verified:true`). Relay ingest in `provian-backend/src/routes/witnesses-github.ts` and `provian-backend/src/core/witnesses/github-webhook.ts` (emitting `service:github_commit` and `service:github_pr_merged`), user connect flow via `npx @provian/agent-sdk connect-github` or `provian connect github`, and a mobile setup path on the Earn tab (route `AgentsTab`) connect screen. Connectors beyond these, and the provider-integrated cloud path described below, remain forward-looking.
+
+Compute that ran where Provian cannot see, but landed in a service the user or operator has connected, can become a PE when the service pushes a signed event the relay verifies. No Provian device key is involved on the source side; the attestation comes from the provider's signed delivery and the user's or operator's prior grant.
+
+**Reference model (push-with-signature):**
+- The user installs a Provian-published app on the connected service via that service's own install page. The user's relationship with the service stays between the user and the service.
+- The service pushes events to a Provian relay endpoint with a per-delivery signature.
+- The relay verifies the signature against a per-install webhook secret, dedups by event ID, synthesizes a structural description from the payload schema (see §7.6 of `UNIVERSAL_PE_SUBMISSION_SPEC.md` on synthesize-or-omit), and submits the PE.
+
+**Provider-integrated cloud path:** As the ecosystem gains momentum, model providers, hosted IDEs, orchestration platforms, inference clouds, robotics clouds, fleet-management platforms, and trusted runtimes can generate or co-sign PEs directly for model runs, tool calls, agent workflows, evaluation passes, batch jobs, simulations, robot tasks, and fleet events. These PEs can attest that work occurred without exposing prompts, outputs, proprietary code, or customer data.
+
+**Attestation:** Enters as `software` unless the provider supplies stronger evidence recognized by the protocol. No audit hold delays it: the 72-hour `audit_hold` flag a software-tier row carries gates nothing. A commit witness's share registers for settlement once the 72-hour cross-witness takeover window has closed, so a higher-base witness of the same commit can still take the slot. It can upgrade to `corroborated` through the existing corroboration mechanism when an independent witness attests the same underlying event within 30 days of its record time; if the act has already minted by then, the upgrade pays an additive top-up and the sealed record is never rewritten. No new attestation tier is introduced by this concept alone.
+
+**Out of scope for this model:** stored-token polling of provider APIs, provider usage exports manually downloaded from dashboards, and any flow that requires Provian to hold a readable credential for the user's account. Activity that would only be visible through such mechanisms is acknowledged uncaptured until a push-with-signature or provider-integrated flow exists.
+
+## What Does NOT Generate PEs
+
+The following activities do not produce Provenance Envelopes that mint:
+
+- An agent claiming "I researched this topic" with no tool call trace, request context, artifact, or external witness
+- An agent submitting a work product or an action of its own description: the relay refuses it (`actor_declared_work_is_not_a_pe`) unless a non-actor hardware witness verifies over it
+- An agent narrating its thought process or internal state
+- Any activity the actor reports about itself, at any tier
+- Browsing the web without a resulting deliverable, tool chain, trace, or artifact
+- "I thought about this for 20 minutes" with no artifact
+- Chat sessions with an LLM that produce no local artifact, device witness, provider-integrated event, or other verifiable trigger
+
+The principle is simple: if no system witnessed and recorded the action, it did not happen as far as the protocol is concerned. The PE is a receipt from a witness, not a diary entry from the actor.
+
+## When Witnesses Overlap
+
+More than one witness can see the same work. The protocol handles this in two distinct ways: deduplication prevents double-counting, and dual-witness corroboration upgrades evidence.
+
+**Deduplication.** Multiple witnesses can prove or supplement one occurrence. Mint-once and the durable cross-witness claim path prevent duplicate base earnings; a stronger witness can take over before registration or support an additive top-up to the target within the enhancement horizon. Each agent program has exactly one witness: its described session files if it keeps them, otherwise the proxy, otherwise OTel, otherwise, for a program on its own machine with none of those, the process lane. No other lane mints that program’s work. A model, provider or sign-in switch never changes the witness. Each model response that calls one or more tools mints exactly once; each command a process-lane program runs mints exactly once.
+
+**Dual-witness corroboration.** When two independent witnesses attest the same underlying event, the event still mints once, and the witness that owns its mint-once claim is tagged `corroborated`. Inside the 72-hour takeover window, and while the first witness is not yet registered for settlement, the witness with the higher base weight takes the claim; the other records as a `corroborated_duplicate` and does not mint separately. A second witness that arrives later corroborates the registered or minted one inside its 30-day horizon. Example: a device-witness `coding_session` PE from a Mac and a relay-witnessed `service:github_commit` PE for the same commit hash. The same logic applies to cloud provider events corroborated by a local trace, a robot action corroborated by a fleet controller, or a sensor reading corroborated by another trusted device.
+
+The witness is what the protocol verifies. Routing is what the mint contract and the agent-linking layer compute. Keep them separate.
+
+## Mechanical Triggers Reference
+
+The table describes the implemented producer triggers. The "Witness" column identifies which witness signed or supplied the PE; the "Contributor identity" column identifies the initial contributor before the applicable treasury and sealed beneficiary allocations. Work mints and the bookkeeping around it does not; every act of work mints PVT once at its best-supported value.
+
+| Trigger | Trigger Source | Witness | Contributor identity |
+|---------|----------------|---------|-----------------------------------|
+| Git commit | Git post-commit hook OR observer GitPlugin | Device / Edge (1) | Owner of the registered device |
+| Compute between events | Observer ProcessPlugin | Device / Edge (1) | Owner of the registered device |
+| Local inference (zero-config: Ollama / LM Studio / llama.cpp; JSONL log opt-in) | Observer LLMPlugin | Device / Edge (1) | Owner of the registered device |
+| Harness session records (tool-using turns) | Observer TranscriptPlugin | Device / Edge (1) | Owner of the registered device |
+| Model turn through the local proxy | Observer ModelProxyPlugin (Lane 5) | Device / Edge (1) | Owner of the registered device |
+| Device / sensor / robot event | Device integration | Device / Edge (1) | Owner/operator of the registered device |
+| OTel tool orchestration | Observer OTelPlugin (span completion) | Device / Edge (1) | Owner of the registered device |
+| Command an agent runs on its own machine (no session files, proxy or OTel) | Observer ProcessLanePlugin (the process lane) | Device / Edge (1) | Owner of the registered device (agent) |
+| On-chain transaction | Blockchain (relay re-verification on record; the watcher's chain observation is the financial minting act) | Chain (2) | Actor wallet; a linked agent later uses its sealed configured beneficiary route |
+| Commons protocol action / hiring-board step | Commons backend performs the act | Relay (2) | Actor wallet; a linked agent later uses its sealed configured beneficiary route |
+| Hardware-witnessed work occurrence | `POST /v1/pe/submit-sovereign` with an admitted non-actor `hardware_witness` | Hardware witness (2) | Actor wallet; a linked agent later uses its sealed configured beneficiary route |
+| External-service event (GitHub + GitLab + Bitbucket all LIVE — GitHub App `provian-git-witness` live since, 2026-08-12) | Inbound push-with-signature webhook | Relay-witnessed external (3) | Commit AUTHOR with a mapped wallet (GitHub; unmapped drops); install owner fallback (GitLab/Bitbucket) |
+| Linked-wallet on-chain financial activity (every known token on Base: receive / send / swap / x402_payment) | Provian on-chain watcher (Base) | Chain observation (2) | The agent or person that proved the external address |
+| Provider-integrated cloud event (concept; not yet implemented) | Provider-signed event or trusted runtime signature | Relay-witnessed external (3) | User/operator/account mapped by integration |
+
+### Observer Daemon Details
+
+The provian-observer daemon auto-starts at device registration as a supervised service (launchd on macOS, systemd on Linux, a scheduled task on Windows, cron where none of those exist) and coordinates these plugins:
+
+- **ProcessPlugin** - emits `compute_session` PEs from CPU-driven idle/active boundaries (compute telemetry between events; distinct from the process lane, ProcessLanePlugin, below)
+- **GitPlugin** - emits `coding_session` PEs on commits it observes. The post-commit hook defers to it only for a repo the plugin is actually watching (the hook checks for a live `~/.provian/observer.pid` and for the repo's root in `~/.provian/observer-git-repos`); for any other repo the hook reports the commit itself
+- **OTelPlugin** - agent-only: witnesses a program neither session files nor the proxy covers. One PE per model response that calls at least one tool, including errored calls; pure model calls do not mint
+- **LLMPlugin** - human-only local inference witness. Detects Ollama (`127.0.0.1:11434`), LM Studio (`:1234`) and llama.cpp `llama-server` (`:8080`) on loopback and tails the request log each runtime writes itself, counting completed inference requests and the models the runtime reports loaded; token counts are recorded only where the runtime exposes them (llama.cpp / LM Studio log lines, or a JSONL log named by `PROVIAN_LLM_LOG`), never estimated. A window with witnessed requests or observed tokens is typed `inference_session`; the plugin opens and extends the session itself, so a human device (where ProcessPlugin is off) still emits under one minted lineage. Body-bound and lineage-bearing, it seals verified on the relay and may mint at the device tier under protocol policy
+- **TranscriptPlugin** - agent-only: reads a machine-local description validated against the program’s actual sessions and emits one PE per model response that calls at least one tool, including errored calls. A session-file program keeps this witness across model, provider and sign-in switches
+- **ModelProxyPlugin** - agent-only: the setup-fixed witness for a program writing no session files; point that program alone at `127.0.0.1:4320`. Pure model calls do not mint
+- **ProcessLanePlugin** - agent-only, Linux and macOS: the process lane, the witness for a program on its own machine that keeps no session files, routes no model traffic through the proxy and emits no OTel. It reads the OS process table (`/proc` on Linux, `ps` on macOS) and seals one `agent_tool_orchestration` PE per command the agent's recorded launcher starts, folding everything that command starts into the one act; never the daemon's own tree, the operating system's or the runtime's background jobs, or the harness's own checks. Mint-once is the daemon's own durable ledger (`~/.provian/process-lane-ledger.json`). Command lines, arguments and environments are hashed on the device; public destinations named in a command become `input_origins`, so each command prices at parity with every other agent tool act
+- **DeduplicationRegistry** - prevents double-counting when a plugin claims a time window already covered by a discrete trigger
+
+## Structural Enrichment Fields
+
+Every PE across all witnesses carries optional structural enrichment fields. These fields make PEs structurally distinguishable without narrative descriptions:
+
+- **compute** - duration_ms, tokens_processed, records_processed, output_cardinality, cpu_seconds, memory_peak_mb, energy_joules, gpu_seconds, model_parameters, framework, hardware_class
+- **geo** - latitude, longitude, altitude_m, accuracy_m, hardware_attested, region_code
+- **execution_env** - os, os_version, runtime, runtime_version, container, tee_type, tee_version
+- **input_origins `pe:` entries** - explicit references to prior PEs this work builds on (the one graph; `cited_pe_ids` is retired)
+- **output_digests** - hash + kind per artifact produced; what later PEs cite
+- **hardware_witness** - an optional non-actor-signed report over this exact body (TPM 2.0 / App Attest / Nitro / Confidential Space / Azure / NVIDIA CC)
+- **parent_goal_pe_id** - links action PEs to the goal-level PE they belong to
+
+Fields are null when not available. No PE is rejected for omitting them. Include what the source can observe.
+
+## Optional Descriptions
+
+PEs are metadata-first. The structural fields are the proof; descriptions are optional enrichment.
+
+A description may be added where a witness seals one and the contributor is free to share it (for example, Commons publication or a delivered job). A description may be useful for internal audit, Commons profiles, search, dispute resolution, scientific reproducibility, counterparty review, or future underwriting. Keep it scoped to work type and outcome. Do not include prompts, outputs, client names, employer names, repository names, trade secrets, or confidential system details unless the contributor deliberately chooses that disclosure for a controlled context.
+
+This is the launch posture and the developer path. The reference implementation starts with privacy-preserving metadata because that is the safest universal floor. The intended future is data-rich: developers should make PEs more expressive over time with domain-specific descriptions, summaries, outcome annotations, reproducibility evidence, and external anchors, provided those additions are safe, consented, and useful to the trust decision.
+
+When omitted, tools may synthesize a human-readable description from structural fields so the PE remains interpretable. The default envelope proves participation. Chosen disclosure can explain it.
+
+## OTel Integration: How Agent Responses Produce PEs
+
+Every major agent framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK) already emits OpenTelemetry telemetry. The OTel GenAI Semantic Conventions provide a standard schema for tool calls, model responses, and token usage. This infrastructure already exists.
+
+There is no separate Provian exporter to install. The observer's OTelPlugin runs a local OTLP/HTTP receiver on `127.0.0.1:4318` by default, and the bootstrap publishes `OTEL_EXPORTER_OTLP_ENDPOINT` session-wide, so the framework's standard OTel instrumentation exports to it. OTel witnesses only a program neither session files nor the proxy covers. It records one PE for each model response that calls at least one tool, including errored calls. A task, root trace, user turn or individual tool call is not that unit; a response without tools records no tool-work mint. Model, provider and sign-in changes keep the same program witness.
+
+If yes, a PE is automatically constructed, kept in the device's PE store and sent in its daily batch, with compute telemetry populated from the span data (`tokens_processed`, `duration_ms`, `model_parameters`). Setup validates a real new response through the selected lane before it completes. Token counts affect no price.
+
+Two PE action types capture agent orchestration work: `agent_tool_orchestration` (each model response calling one or more tools) and `agent_api_orchestration` (an external API chain producing a decision or data product).
+
+## Work Product Constraints
+
+A work product an agent describes itself is never a PE. An agent's deliverable on a hire is recorded by the hiring board's `deliver` step, an act the relay performs and seals; the counterparty expectation is the witness. A `compute_or_work` occurrence becomes a PE only through `POST /v1/pe/submit-sovereign`, when a non-actor hardware witness verifies over it. This keeps agents from earning on unsolicited artifacts.
+
+## The Post-Commit Hook (`report-pe`)
+
+`report-pe` runs only as the git post-commit hook (`report-pe --hook post-commit`): The hook captures the commit's sha synchronously (`git rev-parse HEAD`) and passes it; `report-pe` accepts it only when git shows the commit exists, this box made it (a `commit` entry in HEAD's reflog), and its committer time is within the last 10 minutes (60 s future skew) — otherwise it exits 2 and records nothing; counts come from `git show --numstat` and it records a `coding_session` PE. A caller-supplied figure is ignored, and any other invocation (a manual `report-pe --type research`, say) exits with an error. Work that produces no commit is recorded by what witnesses it, never by the actor reporting it.
+
+## PE Routing (Mint-Layer Concern)
+
+The witness layer answers *"did this happen?"* The mint layer answers *"who gets paid?"* These are separate concerns and the protocol keeps them separate.
+
+PE validity does not depend on authorship. A PE is valid because it was witnessed and is structurally interpretable: not because it was produced by a human, an agent, a robot, a device, or a cloud runtime. Every witness type produces envelopes with the same shape and flows through the same validation pipeline.
+
+### Routing has two distinct mechanisms
+
+These are easy to confuse and must be kept separate.
+
+**Mechanism A - Treasury and Foundation-rate allocation (approved policy, enforced by the live kernel).** Human and Genesis gross contract inputs use the immutable **99% contributor / 0.5% Provian Technologies / 0.5% Foundation** split. Standard agent-side mints preserve the immutable 0.5% Provian share and 0.5% Foundation floor, but the authorized prospective agent Foundation rate determines the contributor residual. No previously sealed record is repriced.
+
+Earlier contract/registry/executor descriptions are legacy deployed behavior, not the live kernel's design. On the live kernel Provian Technologies, LLC remains the sole direct administrator and prospective economic-policy setter, signing through its bootstrap wallet, while governance/executor/Safe/vote/timelock components remain dormant and cannot gate Provian's administration. No handoff, renunciation, or admin transfer is approved.
+
+**Mechanism B - Beneficiary wallet routing (record-time snapshot, settlement-time allocation).** Each agent PE seals its beneficiary identity and exact contributor-layer split when the record is created. An unlinked agent keeps its full contributor allocation. A linked agent defaults to 20% agent / 80% human, with the agent share prospectively configurable as an exact integer from 500 through 5000 BPS. Settlement aggregates directly to those sealed recipients; linking, unlinking, or changing the agent-share BPS never moves accrued PVT or rewrites a prior PE. The legacy `pvt_retroactive_transfer` and `pvt_surplus_transfer` identifiers are record-only and carry no current transfer or mint authority.
+
+Both mechanisms are "routing." Both are mint-layer concerns. They are separate code paths and they answer separate questions.
+
+### Routing by witness
+
+Witness type determines the attributed contributor, not the work's best-supported amount or a universal split. Human and Genesis mints use the fixed 99/0.5/0.5 allocation; agent-side mints use the applicable prospective Foundation rate before the contributor residual is distributed under any sealed beneficiary snapshot.
+
+- **Witness 1 (Device / Edge):** The contributor is the wallet that owns or operates the registered device. If the owner is a human wallet, the contributor share stays with the human. If the owner is an agent wallet, the contributor share goes to the agent wallet and mechanism B then splits it per the agent's beneficiary configuration.
+- **Witness 2 (Acts through Provian — relay, chain, or hardware witness):** The contributor is the actor's wallet. If the actor is a human, mechanism B does not apply. If the actor is an agent, mechanism B splits the contributor share per the agent's beneficiary configuration.
+- **Witness 3 (Relay-witnessed external event):** The contributor is the wallet mapped by the connector or provider integration. Mechanism A and B behave exactly as for the other witnesses; nothing about witness 3 changes the routing calculus.
+
+### What this means in practice
+
+An agent running on a human's registered Mac can generate witness-1 PEs for compute the daemon sees on that machine and witness-2 PEs for acts it takes through Provian (Commons writes, chain-verified transfers). These are not the same PE: the DeduplicationRegistry ensures one event produces one PE. They route differently because the contributor of record differs, not because one PE is a "human PE" and another is an "agent PE."
+
+A robot, sensor, or cloud runtime works the same way. The source of proof does not decide the moral category of the actor. The witness proves occurrence. The mint layer routes value.
+
+## Attribution Summary
+
+**Developers using AI coding tools:** register your computer as a device. Your git commits, local inference, and witnessed sessions create PEs, and every act of work mints PVT once to your wallet. The AI tool you use does not matter: the device is the witness, not the tool.
+
+**Autonomous agent operators:** your agent has its own wallet and PE chain. What it does through the relay, in the Commons, or on-chain creates PEs, and every act of work mints PVT once to the agent's wallet. If the agent is linked to you as its human beneficiary, you receive the sealed contributor-layer share (default 80% human / 20% agent, agent share 5%–50%). An unlinked agent keeps its full contributor residual.
+
+**Operators with an existing external EVM wallet:** prove control of the address (gasless EIP-191 / EIP-1271 signature, no transaction) and its go-forward on-chain financial activity on Base maps into PEs on the standard path while Provian operates the protocol. Prior and same-head history earns 0 PVT. An `x402_payment` mints only when its settlement is chain-verified by Provian's watcher. The 75 PVT Genesis agent grant is earned on agent wallet creation, not on this proof.
+
+**Agents running on a registered device:** both witnesses work at once. Commits the device witnesses mint to the device owner's wallet; the agent's own reported actions mint to the agent wallet under its sealed beneficiary snapshot. One event, one PE: the same work is never counted twice.
+
+## A Note on Corporate and Client Work
+
+PEs generated while working on employer-owned or client-owned code raise a natural question: does the PE create any IP or confidentiality conflict?
+
+No. A PE contains structural metadata, a timestamp, an attestation tier, and an optional description you choose. By default the hook builds a structural description (commit type, files changed, lines added, detected languages, tool) and does not include commit message text for repos you do not personally own. It contains no code, no diff, no repository name, and no employer or client information. The employer owns the work product. You own the proof that verified labor occurred on a specific date by a specific device. That proof does not change ownership of the work product or override confidentiality obligations.
+
+Keep any optional descriptions scoped to work type and scope. Do not include client names, employer names, or confidential system details unless the contributor deliberately chooses that disclosure for a controlled context.

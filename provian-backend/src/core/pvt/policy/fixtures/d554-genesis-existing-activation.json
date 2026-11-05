@@ -1,0 +1,24 @@
+{
+  "approval_status": "approved_by_frank",
+  "approval_manifest_sha256": "sha256:704c1a2d9e555b56d9b4a5803b3f641b0e29e5e3012af0c0c3dc5ae665be6e71",
+  "approval_signature": {
+    "scheme": "sshsig-ed25519",
+    "signer_identity": "frank",
+    "namespace": "provian-pvt-policy",
+    "public_key_sha256": "sha256:200b11f0842bdf578eeb2ebb4859c9fcd3ba870159e53d6747ffaff893462974",
+    "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQDLTsGdARnBXovu3u7FWsWdUWWJxksVsmzVuQuP3ida9dQ\n6EdJ6olLG/HQRV3UKWJW5rm9gVz62o25UuINGFbA4=\n-----END SSH SIGNATURE-----\n"
+  },
+  "frank_approval_audit_id": "wp12-genesis-activation-frank",
+  "approved_policy_version": "base-mainnet-genesis-proposal-2026-07-13.1",
+  "approved_policy_manifest_hash": "sha256:63b94b743e39bf96efe8d4c10a5c1fa57c2cc8b6f2b35d71d9b244c55fee13d7",
+  "approved_monetary_policy_template_hash": "sha256:339485389c4aec84bd2b92f1c6bc8137a1a460704cf3ea5f62d148cce4b9cc5a",
+  "effective_at_ms": 1785715200000,
+  "admission_closed_at_ms": null,
+  "admission_close_audit_id": null,
+  "grants_enabled": true,
+  "genesis_kill_switch_active": false,
+  "canonical_pvt_manifest_id": "pvt9_base_mainnet_v1",
+  "ledger_namespace": "pvt9_genesis_v1",
+  "prior_reservations_reconciled": true,
+  "operator_activation_audit_id": "d227-monetary-template-digest-reissue-operator"
+}

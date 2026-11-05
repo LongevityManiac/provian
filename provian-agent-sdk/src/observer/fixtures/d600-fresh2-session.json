@@ -1,0 +1,162 @@
+{
+  "root": "/session-store",
+  "maxDepth": 5,
+  "suffix": ".jsonl",
+  "timestamp": "timestamp",
+  "responseId": "payload.id",
+  "atomicResponses": true,
+  "responseParts": "payload",
+  "rules": [
+    {
+      "kind": "model_response",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "custom_tool_call"
+        }
+      ]
+    },
+    {
+      "kind": "tool_call",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "custom_tool_call"
+        }
+      ],
+      "name": "name",
+      "id": "call_id",
+      "input": "input"
+    },
+    {
+      "kind": "tool_result",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "custom_tool_call_output"
+        }
+      ],
+      "id": "call_id",
+      "text": "output.*.text"
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "message"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "reasoning"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "response_item"
+        }
+      ],
+      "where": [
+        {
+          "path": "type",
+          "equals": "additional_tools"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "session_meta"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "event_msg"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "token_usage_record"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "world_state"
+        }
+      ]
+    },
+    {
+      "kind": "ignore",
+      "at": "payload",
+      "recordWhere": [
+        {
+          "path": "type",
+          "equals": "turn_context"
+        }
+      ]
+    }
+  ]
+}

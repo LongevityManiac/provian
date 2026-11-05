@@ -1,0 +1,46 @@
+appId: com.provian.wallet
+---
+# Steps 1-9: tap through narrative screens
+- repeat:
+    times: 9
+    commands:
+      - tapOn:
+          point: "201,760"
+      - waitForAnimationToEnd
+
+# Now on Step 10 (Accord). Screenshot first.
+- takeScreenshot: screenshots/v2-accord-before
+
+# Scroll down to see checkbox - gentle scroll
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 40%"
+
+- takeScreenshot: screenshots/v2-accord-scrolled
+
+# Tap the CHECKBOX ICON only (left edge, ~x=30, not the link text)
+# The checkbox row is at ~81% of screen height after scroll
+- tapOn:
+    point: "30,708"
+
+- takeScreenshot: screenshots/v2-accord-checked
+
+# Tap Begin button
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Steps 11-14
+- takeScreenshot: screenshots/v2-step-11
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/v2-step-12
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/v2-step-13
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/v2-step-14

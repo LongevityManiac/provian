@@ -1,0 +1,7 @@
+{
+  "name": "provian-store-purchase",
+  "version": "1.0.0",
+  "description": "App Store (StoreKit 2) and Google Play Billing bridge for the two consumable purchases the store builds sell. It buys and finishes; the relay verifies every purchase with its store before anything is credited.",
+  "main": "index.ts",
+  "private": true
+}

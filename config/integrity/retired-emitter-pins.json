@@ -1,0 +1,18 @@
+{
+  "schema": "provian.retired-emitter-pins.v1",
+  "matrix_sha256": "09e0d82aae5466b7f5c2702444a9309bd96ae440aba29c05d606e437aee91c9d",
+  "pairs": [
+    {
+      "action_type": "governance_proposal_created",
+      "file": "provian-backend/src/core/governance/proposals.ts"
+    },
+    {
+      "action_type": "governance_proposal_executed",
+      "file": "provian-backend/src/core/governance/proposals.ts"
+    },
+    {
+      "action_type": "governance_vote_cast",
+      "file": "provian-backend/src/core/governance/voting.ts"
+    }
+  ]
+}

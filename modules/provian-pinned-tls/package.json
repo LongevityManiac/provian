@@ -1,0 +1,7 @@
+{
+  "name": "provian-pinned-tls",
+  "version": "1.0.0",
+  "description": "Pinned-DNS TLS fetch: connect to a pre-validated IP while TLS validates the hostname cert (SSRF-safe HTTPS, closes the DNS-rebinding TOCTOU window). Backs securePinnedFetch / review #33.",
+  "main": "index.ts",
+  "private": true
+}

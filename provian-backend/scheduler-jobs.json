@@ -1,0 +1,365 @@
+{
+  "$schema_note": "Source of truth for which Cloud Scheduler endpoints MUST have an enabled job and which MUST NOT. Reconciled two ways: in CI against source (src/core/deployment/scheduler-manifest.test.ts \u2014 an endpoint added to code without a manifest entry fails the suite) and at deploy time against live gcloud state (scripts/reconcile-scheduler.ts, a HARD gate in deploy-env.sh). This is the class fix for //an endpoint shipped without its cron, or a job left pointing at a retired endpoint, now fails a check instead of silently freezing while looking healthy.",
+  "location": "us-central1",
+  "project": "provian-ai",
+  "serviceUrl": "https://provian-api-185909722463.us-central1.run.app",
+  "schedulerServiceAccount": "provian-scheduler@provian-ai.iam.gserviceaccount.com",
+  "seededFrom": "live 27-job inventory pulled 2026-08-07 ",
+  "endpoints": [
+    {
+      "path": "/v1/internal/scheduler/inbound-usdc",
+      "required": true,
+      "job": "provian-genesis-inbound-usdc",
+      "schedule": "*/15 * * * *",
+      "note": "inbound USDC watcher (cursor genesis_inbound_checkpoints/8453)"
+    },
+    {
+      "path": "/v1/internal/scheduler/outbound-usdc",
+      "required": true,
+      "job": "provian-genesis-external-outbound",
+      "schedule": "*/30 * * * *",
+      "note": "outbound USDC watcher (cursor activity_outbound_checkpoints/8453); job name is historical"
+    },
+    {
+      "path": "/v1/internal/scheduler/chain-record-discovery",
+      "required": true,
+      "job": "provian-chain-record-discovery",
+      "schedule": "*/5 * * * *",
+      "note": "Independent Base discovery and registry repair; queues records without waiting for the verification drain."
+    },
+    {
+      "path": "/v1/internal/scheduler/chain-record",
+      "required": true,
+      "job": "provian-chain-record-watcher",
+      "schedule": "*/5 * * * *",
+      "note": " chain-record lane: mints chain-verified transfer/swap records (observations queued by /transfer/record + /swap/record)"
+    },
+    {
+      "path": "/v1/internal/scheduler/chain-record-auxiliary",
+      "required": true,
+      "job": "provian-chain-record-auxiliary",
+      "schedule": "*/5 * * * *",
+      "note": "Independent proven-address recovery, other EVM chains, facilitator and Solana discovery/drain."
+    },
+    {
+      "path": "/v1/internal/scheduler/institution-funding",
+      "required": true,
+      "job": "provian-institution-funding",
+      "schedule": "*/15 * * * *",
+      "note": "institution funding watcher (cursor pvt_institution_watcher_checkpoints_v1/8453) \u2014 "
+    },
+    {
+      "path": "/v1/internal/scheduler/institution-completion",
+      "required": true,
+      "job": "provian-institution-completion",
+      "schedule": "*/15 * * * *",
+      "note": "institution COMPLETION watcher (sibling of institution-funding; cursor pvt_institution_completion_watcher_checkpoints_v1/8453). EscrowReleased/EscrowResolved/PromiseSettled/PoolExecuted -> escrow_completed/escrow_resolved/promise_settled/pool_executed. ACTIVATED by the  3b matrix re-issue: the 4 completion types are now verified_institution_lifecycle (lineage-optional, attestation-neutral), so the watcher's verified chain-finality emit mints. Same-owner fence seals record_only on self-dealing completions."
+    },
+    {
+      "path": "/v1/internal/scheduler/institution-standing",
+      "required": true,
+      "job": "provian-institution-standing",
+      "schedule": "*/15 * * * *",
+      "note": "institution STANDING watcher (Trust Layer \u00a72.12; third sibling; cursor pvt_institution_standing_watcher_checkpoints_v1/8453). BondPool + CourtV2 lifecycle events (BondSlashed/BondAbandoned/AutonomyDowngrade/ClaimDismissed/Verdict/ArbitratorSeatForfeited/ArbitratorCollateralSlashed... plus the neutral/positive ones) -> chain-witnessed record_only rows that Standing counts. Never mints by construction (every action type is a named record_only row)."
+    },
+    {
+      "path": "/v1/internal/scheduler/standing-reconcile",
+      "required": true,
+      "job": "provian-standing-reconcile",
+      "schedule": "25 * * * *",
+      "note": " Standing reconcile: every sealed adverse-type pe_history row inside 30 days is counted in actor_stats_v1 exactly once (marker-keyed bump). The live bump is best-effort; this pass is what stops a lost bump from hiding an adverse event. Repairs are logged as an alarm; a failure answers 500. Zero mint effect."
+    },
+    {
+      "path": "/v1/internal/scheduler/agent-bank-events",
+      "required": true,
+      "job": "provian-agent-bank-events",
+      "schedule": "*/5 * * * *",
+      "note": "durable webhook/badge outbox drainer (agent_bank_event_outbox_v1) \u2014; also the burn-finality sweep (12-block finality check on every burn accepted at inclusion, revocation of any that fail)"
+    },
+    {
+      "path": "/v1/internal/scheduler/pvt9-epoch-keeper",
+      "required": true,
+      "job": "provian-pvt9-epoch-keeper",
+      "schedule": "*/20 * * * *",
+      "note": "PVT9 epoch keeper (idempotent; advances epoch when due via openNextEpoch(); cannot mint). Decoupled from settlement: advancement only, no issuance."
+    },
+    {
+      "path": "/v1/internal/settlement/pvt9-run",
+      "required": true,
+      "job": "provian-pvt9-settlement",
+      "schedule": "0 12 * * *",
+      "note": "Daily standard settlement pass. Each payee becomes due after its own last settlement plus PVT9_STANDARD_SETTLEMENT_INTERVAL_DAYS (default 30); Genesis remains daily and on-demand payout bypasses this interval."
+    },
+    {
+      "path": "/v1/internal/settlement/pvt9-genesis-run",
+      "required": true,
+      "job": "provian-pvt9-genesis-settlement",
+      "schedule": "0 0 * * *",
+      "note": "PVT9 DAILY Genesis-only settlement (Genesis remains daily). Runs at 00:00 UTC. Same handler as pvt9-run with the lane FORCED to 'genesis': it settles the Genesis lane only and runs NO standard, top-up or meter inlet \u2014 standard earnings settle on a schedule Provian sets, currently every 30 days, or an on-demand payout. Genesis pays each wallet once, so a pass with nothing to settle sends nothing. Scheduler auth + the PVT9_SETTLEMENT_ARMED env gate; idempotent mint-once by claim_key. attemptDeadline=1800s, retries OFF (--max-retry-attempts=0,). If recreated, set --attempt-deadline=1800s --max-retry-attempts=0."
+    },
+    {
+      "path": "/v1/internal/scheduler/payout-sweep",
+      "required": true,
+      "job": "provian-payout-sweep",
+      "schedule": "*/10 * * * *",
+      "note": " on-demand payout sweep: finishes every $1 payout whose fee was charged but whose one-payee settlement is still waiting (signer busy, Base gas above the fee, an unconfirmed charge receipt). Idempotent per request (pvt_payout_requests_v1); a pass with nothing waiting reads one query and sends nothing. Scheduler auth."
+    },
+    {
+      "path": "/v1/internal/scheduler/archive-sweep",
+      "required": true,
+      "job": "provian-archive-sweep",
+      "schedule": "15 * * * *",
+      "note": " paid PE Archive sweep: finishes every $5-per-GB Archive payment whose charge receipt was not yet in (credits the GB exactly once), settles an upload its device never finished, and confirms archived days (object streamed back and matched to its index part by part; every batch anchored). Only a confirmed day may be dropped from an owner's devices. Also moves permanent occurrence fingerprints for actors dormant 90 days into Archive-class storage, using resumable verified checkpoints. Paid PE history is never deleted. A pass with nothing waiting reads three queries. Scheduler auth."
+    },
+    {
+      "path": "/v1/internal/scheduler/firestore-export",
+      "required": true,
+      "job": "provian-firestore-export",
+      "schedule": "30 3 * * 0",
+      "note": "WEEKLY export (Sunday 03:30 UTC; , : weekly, durable collections only) of the DURABLE relay collections (core/backup/durable-export.ts: every top-level collection the live database lists, minus the named legacy pre-meter and transient lists, plus the subcollection groups the source guard pins) to <db>/<day>/<HHMM>Z in gs://provian-ai-relay-exports (Archive class, us-central1, 365-day lifecycle delete). Starts parts of at most 100 collection groups at one PITR snapshot, each under a distinct part prefix. Immutable plan, per-part operation receipts and a manifest account for the complete durable set; every part must finish before the export is considered complete. 03:30 UTC: clear of the 00:00 Genesis run and the 00:25 anchor. PITR (7 days) covers the database itself; there are no full scheduled backups. Scheduler auth; an export that does not start answers 502 and logs an ALARM."
+    },
+    {
+      "path": "/v1/internal/scheduler/deferred-release",
+      "required": true,
+      "job": "provian-deferred-release",
+      "schedule": "*/10 * * * *",
+      "note": "graduated release processor (deferred -> eligible)"
+    },
+    {
+      "path": "/v1/internal/scheduler/court-deadlines",
+      "required": true,
+      "job": "provian-court-deadlines",
+      "schedule": "*/15 * * * *",
+      "note": "court deadline processor"
+    },
+    {
+      "path": "/v1/internal/scheduler/ordinary-accrual-replay",
+      "required": true,
+      "job": "provian-ordinary-accrual-replay",
+      "schedule": "40 * * * *",
+      "note": "ordinary accrual durable-outbox replay. attemptDeadline=600s (NOT the gcloud default 60s): a backlog-draining pass runs the 200-row limit sequentially through recordPEAccrual and can legitimately exceed 60s (270s observed 2026-09-22), which made the scheduler record DEADLINE_EXCEEDED and retry-into-overlap while the original run finished. Idempotent + 10-min grace make overlap benign, but 600s stops the false alarm. If this job is ever recreated, set --attempt-deadline=600s."
+    },
+    {
+      "path": "/v1/internal/scheduler/genesis-drain",
+      "required": true,
+      "job": "provian-genesis-drain",
+      "schedule": "*/30 * * * *",
+      "note": "F-A1-1: Genesis recovery drain \u2014 re-drives a grant stranded mid-state (pending_reservation..pe_recorded) by a Cloud Run instance reclaim during the fire-and-forget processGenesisQualification of the agent/device paying legs, to complete so the settlement inlet (status==complete only) mints it. Lease-guarded + resumable \u2192 idempotent, retry-safe."
+    },
+    {
+      "path": "/v1/internal/scheduler/genesis-retention-backfill",
+      "required": true,
+      "job": "provian-genesis-retention-backfill",
+      "schedule": "15 * * * *",
+      "note": "F-A1-2: Genesis retention -> outbox promotion \u2014 an in-window act whose activation read transiently failed routes to retention (not the mint-readable outbox); re-runs the full persist gate against the current activation and promotes now-admissible retained rows so the next settlement cycle mints them."
+    },
+    {
+      "path": "/v1/internal/scheduler/expired-pools",
+      "required": true,
+      "job": "provian-expired-pools",
+      "schedule": "45 * * * *",
+      "note": "pool expiry processor"
+    },
+    {
+      "path": "/v1/internal/scheduler/pending-evidence-resolve",
+      "required": true,
+      "job": "provian-pending-evidence-resolve",
+      "schedule": "50 * * * *",
+      "note": "pending-evidence resolver"
+    },
+    {
+      "path": "/v1/internal/scheduler/registry-hold-resolve",
+      "required": true,
+      "job": "provian-registry-hold-resolve",
+      "schedule": "40 * * * *",
+      "note": "/(1A) registry-hold self-heal sweep \u2014 the standing hourly analog to pending-cache-backfill. Releases pending_review rows held by a registry gate (linkageState=unverifiable + unresolvedRecordGates includes 'registry'): re-verifies beneficiary linkage and promotes genuinely-linked rows with NO human review. A genuine act promotes on the evidence it has; there is no money-review checkpoint. Writes a per-run summary (pvt_registry_hold_resolver_run_v1) the console reads for self-heal freshness. Promoted from operator_invoked to a live cron in the ops-dashboard build; enabling was the missing self-heal that let the / registry hold linger."
+    },
+    {
+      "path": "/v1/internal/scheduler/pending-cache-backfill",
+      "required": true,
+      "job": "provian-pending-cache-backfill",
+      "schedule": "0 * * * *",
+      "note": "pending_cache rate-limit backfill"
+    },
+    {
+      "path": "/v1/internal/scheduler/pe-aggregate-drift",
+      "required": false,
+      "reason": "retired",
+      "job": null,
+      "note": "RETIRED by the PE meter : the sweep re-folded each identity's pe_history, which the relay no longer keeps; the meter applies every act's aggregate delta once in its batch commit. Endpoint answers a 200 no-op. No scheduler job: its paused job was deleted 2026-10-19."
+    },
+    {
+      "path": "/v1/internal/scheduler/general-dispute-deadlines",
+      "required": true,
+      "job": "provian-general-dispute-deadlines",
+      "schedule": "50 * * * *",
+      "note": "general dispute deadline processor"
+    },
+    {
+      "path": "/v1/internal/scheduler/defaults",
+      "required": true,
+      "job": "provian-defaults",
+      "schedule": "30 * * * *",
+      "note": "promise/loan default processor"
+    },
+    {
+      "path": "/v1/internal/scheduler/auto-release",
+      "required": true,
+      "job": "provian-auto-release",
+      "schedule": "0 * * * *",
+      "note": "escrow auto-release processor"
+    },
+    {
+      "path": "/v1/internal/scheduler/abandoned-bonds",
+      "required": true,
+      "job": "provian-abandoned-bonds",
+      "schedule": "0 8 * * *",
+      "note": "abandoned-bond sweeper (daily)"
+    },
+    {
+      "path": "/v1/internal/scheduler/bond-renewals",
+      "required": true,
+      "job": "provian-bond-renewals",
+      "schedule": "0 7 * * *",
+      "note": "bond renewal processor (daily)"
+    },
+    {
+      "path": "/v1/internal/scheduler/expired-claims",
+      "required": true,
+      "job": "provian-expired-claims",
+      "schedule": "0 9 * * *",
+      "note": "expired-claim sweeper (daily)"
+    },
+    {
+      "path": "/v1/internal/scheduler/purge-transients",
+      "required": true,
+      "job": "provian-purge-transients",
+      "schedule": "15 3 * * *",
+      "note": "transient-collection retention purge (daily)"
+    },
+    {
+      "path": "/v1/internal/daily-spending-digest",
+      "required": true,
+      "job": "provian-daily-spending-digest",
+      "schedule": "0 2 * * *",
+      "note": "daily spending digest emails (note: not under /scheduler/)"
+    },
+    {
+      "path": "/v1/internal/scheduler/action-type-reconcile",
+      "required": true,
+      "job": "provian-action-type-reconcile",
+      "schedule": "20 * * * *",
+      "note": " Phase 2: mark 'building' operator rulings LIVE once their action type is on the served, digest-matched matrix (pvt_policy_rulings). Phase 4 extends the handler to fan out the submitter activation notice. No mint authority \u2014 computes 'live' from the served code + monetary_activation.digest_match, never pvt_action_policies."
+    },
+    {
+      "path": "/v1/internal/scheduler/action-type-activation-notify",
+      "required": true,
+      "job": "provian-action-type-activation-notify",
+      "schedule": "35 * * * *",
+      "note": " Phase 4: durable, idempotent submitter activation-notice fan-out. Scans live rulings whose notice was not yet dispatched (activation_fanout_at absent) and notifies each type's submitters \u2014 humans via push (data.type:'action_type_activated'), agents via the action_type_activated webhook. Also invoked best-effort from action-type-reconcile. No mint authority."
+    },
+    {
+      "path": "/v1/internal/scheduler/pvt-mint",
+      "required": false,
+      "reason": "legacy",
+      "job": null,
+      "note": "LEGACY PVTv8 mint endpoint (503, no runtime). PVT9 settlement runs via /v1/internal/settlement/pvt9-run (provian-pvt9-settlement). No scheduler job: its paused job was deleted 2026-10-19; never create one (it names the wrong engine)."
+    },
+    {
+      "path": "/v1/internal/scheduler/advance-epoch",
+      "required": false,
+      "reason": "retired",
+      "job": null,
+      "note": "503 retired; PVT9 epoch operations run only through pvt9-epoch-keeper (which IS required). No scheduler job: its paused job was deleted 2026-10-19."
+    },
+    {
+      "path": "/v1/internal/scheduler/genesis-first-tx",
+      "required": false,
+      "reason": "retired",
+      "job": null,
+      "note": "no-op; first-tx milestone retired (activity uses the standard mint path). No scheduler job: its paused job was deleted 2026-10-19."
+    },
+    {
+      "path": "/v1/internal/scheduler/genesis-sustained",
+      "required": false,
+      "reason": "retired",
+      "job": null,
+      "note": "no-op; sustained-activity milestone scanner retired. No scheduler job: its paused job was deleted 2026-10-19."
+    },
+    {
+      "path": "/v1/internal/scheduler/genesis-external-outbound",
+      "required": false,
+      "reason": "superseded",
+      "job": null,
+      "note": "retired no-op; superseded by outbound-usdc (the outbound job already targets /outbound-usdc). No dedicated job."
+    },
+    {
+      "path": "/v1/internal/scheduler/daily-pe-anchor",
+      "required": true,
+      "job": "provian-daily-pe-anchor",
+      "schedule": "*/5 * * * *",
+      "note": "Closed-day meter anchoring and exact-selection proof recovery every five minutes. Unfinished closed days return 503. Bounded Scheduler retries: min 60s, max 120s, 3 attempts, max duration 240s, 1 doubling. Known transactions are inspected before any broadcast."
+    },
+    {
+      "path": "/v1/internal/scheduler/meter-anchor-now",
+      "required": false,
+      "reason": "operator-invoked",
+      "job": null,
+      "note": "anchor SEGMENTS : anchors the OPEN day's accepted-but-unanchored batches NOW as the day's next segment (batch id preimage <ns>:meter:<day>:<n>; proofs carry anchor.segment). Operator-run through a one-off Cloud Scheduler job that is created, run once and deleted; deliberately has NO cron."
+    },
+    {
+      "path": "/v1/internal/scheduler/pe-anchor-backfill",
+      "required": false,
+      "reason": "operator-invoked",
+      "job": null,
+      "note": "anchoring restored by B10; endpoint live but deliberately has NO cron \u2014 backfill runs are operator-invoked. (An earlier note claimed the anchor-recovery Cloud Run Job covered scheduled recovery \u2014 false: that job scanned LEGACY PVTv4 BatchMinted events against the legacy PEAnchor and was retired+deleted 2026-08-16.)"
+    },
+    {
+      "path": "/v1/internal/scheduler/jurisdiction-sdn-refresh",
+      "required": true,
+      "job": "provian-jurisdiction-sdn-refresh",
+      "schedule": "15 */6 * * *",
+      "note": "Refresh official OFAC SDN digital-currency addresses; stale/unavailable screening fails closed."
+    },
+    {
+      "path": "/v1/internal/scheduler/jurisdiction-check",
+      "required": false,
+      "reason": "operator_invoked",
+      "note": "Read-only deployed offline resolver and fail-closed policy probe."
+    },
+    {
+      "path": "/v1/internal/scheduler/github-pr-gates",
+      "required": true,
+      "job": "provian-github-pr-gates",
+      "schedule": "18 4 * * *",
+      "note": "Daily lost-event recovery only. Receipts, accepted presentations and owner approvals dispatch immediately through the push queue."
+    }
+  ],
+  "nonHttpJobs": [
+    {
+      "job": "provian-anchor-recovery-schedule",
+      "target": "cloud-run-job:provian-anchor-recovery",
+      "enabledExpected": false,
+      "reason": "retired-legacy-anchor",
+      "note": "RETIRED 2026-08-16 (production-effect audit item 4): scheduler + Cloud Run Job DELETED (with sole-purpose SAs anchor-recovery-invoker@/anchor-recovery-runner@ and the anchor-recovery alert policy). The job ran the pre-quarantine 2026-05-03 image c24bf86 in ANCHOR_RECOVERY_EXECUTE=true mode against the LEGACY PEAnchor 0x3B118f01\u2026 + legacy PVTv4 0x62435696\u2026 \u2014 forbidden by the standing never-wire-a-legacy-anchor rule; only Base-RPC rate limiting (-32016) stood between it and a legacy-anchor write (362 executions, failing 4\u00d7/day). The 2026-08-11 B10 resume re-enabled it by mistake, conflating it with the new-anchor pair (daily-pe-anchor cron + operator-invoked pe-anchor-backfill), which fully cover current anchoring. Never recreate."
+    },
+    {
+      "job": "provian-x402-refill",
+      "target": "https://provian-x402-facilitator-185909722463.us-central1.run.app/internal/refill",
+      "enabledExpected": true,
+      "reason": "separate-service",
+      "note": " x402 facilitator (a separate Cloud Run service, provian-x402-facilitator): gas self-refill + revenue sweep every 15 min (*/15 * * * *, attempt deadline 170s). Scheduler OIDC (provian-scheduler SA, audience = the facilitator run.app URL), never a header secret (F43). Refills Base below 0.0015 ETH / Solana below 0.02 SOL from fee income, then sweeps USDC above the buffer to the revenue wallet."
+    },
+    {
+      "job": "provian-x402-witness-retry",
+      "target": "https://provian-x402-facilitator-185909722463.us-central1.run.app/internal/witness-retry",
+      "enabledExpected": true,
+      "reason": "separate-service",
+      "note": " x402 facilitator: re-sends unacknowledged settlement witness reports to the relay every 10 min (*/10 * * * *, attempt deadline 60s). Scheduler OIDC, never a header secret (F43). A report never blocks or undoes a settlement."
+    }
+  ],
+  "serviceUrls": [
+    "https://provian-api-2ru5myumjq-uc.a.run.app",
+    "https://api.provian.ai"
+  ]
+}

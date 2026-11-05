@@ -1,0 +1,4 @@
+NSFaceIDUsageDescription = "Provian menggunakan Face ID untuk membuka kunci dompet Anda dan untuk mengkonfirmasi transaksi, tanda tangan, dan persetujuan yang Anda buat.";
+NSCameraUsageDescription = "Provian menggunakan kamera untuk memindai kode QR: alamat dompet, tautan koneksi WalletConnect , dan kode pemasangan agen. Tidak ada yang direkam atau diunggah.";
+NSMotionUsageDescription = "Provian hanya membaca sensor gerak saat Anda mengirim atau menukar barang, untuk mendeteksi guncangan keras yang dapat berarti transfer sedang dilakukan di bawah tekanan. Pembacaan tetap tersimpan pada perangkat ini.";
+NSPhotoLibraryUsageDescription = "Provian hanya membuka perpustakaan foto Anda saat Anda memilih gambar untuk profil Commons Anda. Hanya gambar yang Anda pilih yang akan digunakan.";

@@ -1,0 +1,37 @@
+<!--
+  Gemini synthetic fixture. NOT captured from gemini.google.com. Hand-written
+  DOM approximating Gemini's Polymer-custom-element structure.
+
+  Selector basis:
+    - user-query                    custom element wrapping a user turn
+    - model-response                custom element wrapping an assistant turn
+    - img inside a user-query       counts toward imageCount
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Gemini synthetic</title></head>
+<body>
+  <main>
+    <chat-window>
+
+      <user-query>
+        <div class="query-text">
+          Walk me through the safest way to rotate this SSH key on a live production host without risking lockout.
+        </div>
+        <div class="query-attachments">
+          <img src="data:image/png;base64,iVBORw0KGgo=" alt="Attached image" />
+        </div>
+      </user-query>
+
+      <model-response>
+        <div class="response-content">
+          Generate the new key pair locally, append the new public key to the server's authorized_keys file over your existing session, test the new key in a second terminal, and only after that second session is confirmed working remove the old public key line. Never close the first session until the new key has authenticated at least once.
+        </div>
+      </model-response>
+
+    </chat-window>
+  </main>
+</body>
+</html>

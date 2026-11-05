@@ -1,0 +1,73 @@
+{
+ "inputMint": "So11111111111111111111111111111111111111112",
+ "inAmount": "100000000",
+ "outputMint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+ "outAmount": "330272250000",
+ "otherAmountThreshold": "328620888750",
+ "swapMode": "ExactIn",
+ "slippageBps": 50,
+ "platformFee": {
+  "amount": "827750000",
+  "feeBps": 25
+ },
+ "priceImpactPct": "0.0017203850688960101841313862",
+ "routePlan": [
+  {
+   "swapInfo": {
+    "ammKey": "7yD7gfXv49SFxhx9uTc11dEd7Nj98rGWeYMdZJgheZbG",
+    "label": "Kipseli",
+    "inputMint": "So11111111111111111111111111111111111111112",
+    "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "inAmount": "100000000",
+    "outAmount": "12183701",
+    "updateContextSlot": "450453445"
+   },
+   "percent": 100,
+   "bps": null
+  },
+  {
+   "swapInfo": {
+    "ammKey": "23XoPQqGw9WMsLoqTu8HMzJLD6RnXsufbKyWPLJywsCT",
+    "label": "Byreal",
+    "inputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "outputMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "inAmount": "12183701",
+    "outAmount": "12185523",
+    "updateContextSlot": "450453443"
+   },
+   "percent": 100,
+   "bps": null
+  },
+  {
+   "swapInfo": {
+    "ammKey": "FcG27LiEyrtnUDg4FyXytcyFy2GwpDzN6AGcn16x9L84",
+    "label": "Scorch",
+    "inputMint": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+    "outputMint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    "inAmount": "12185523",
+    "outAmount": "331100000000",
+    "updateContextSlot": "450453447"
+   },
+   "percent": 100,
+   "bps": null
+  }
+ ],
+ "contextSlot": 450453447,
+ "timeTaken": 0.009922401,
+ "swapUsdValue": "12.182390158869980",
+ "mostReliableAmmsQuoteReport": {
+  "info": {
+   "8B8KYcFPMjZyDtJ1BENsqhW3fEmMrB4ekoEQJiM6z3SC": "330934229635",
+   "BZtgQEyS6eXUXicYPHecYQ7PybqodXQMvkjUbP4R8mUU": "12183053",
+   "8sjV1AqBFvFuADBCQHhotaRq5DFFYSjjg1jMyVWMqXvZ": "12184745",
+   "Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE": "12175247"
+  }
+ },
+ "longtailMarketQuoteReport": null,
+ "useIncurredSlippageForQuoting": null,
+ "useRewards": null,
+ "otherRoutePlans": null,
+ "loadedLongtailToken": false,
+ "instructionVersion": null,
+ "transactionVersion": 0
+}

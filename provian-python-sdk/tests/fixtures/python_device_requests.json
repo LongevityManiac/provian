@@ -1,0 +1,63 @@
+{
+ "_generated_by": "tests/fixtures/generate_relay_fixture.py",
+ "seal_recipient_secret_b64u": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+ "requests": [
+  {
+   "capture": "recorder",
+   "method": "POST",
+   "path": "/v1/meter/batch",
+   "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "DeviceKey pdk_test0123456789abcdef:pds_test_secret_never_in_body",
+    "X-Provian-Body-HMAC": "31e563a5adddce8de8e04751fd1976c546353445b355ec926132ce97d7a938a8"
+   },
+   "body_utf8": "{\"acts\":[{\"action_type\":\"compute_session\",\"pe_hash\":\"05b44701037fbd35f2060c3ee6c7679f07199457cf61943e3993e34075f02417\",\"pe_id\":\"pe_9c5adca47314dd1c4f08b391\",\"prev_hash\":\"genesis\",\"pricing\":{\"compute\":{\"duration_ms\":1234},\"execution_env\":{\"runtime\":\"python\"},\"geo\":null,\"metadata\":{\"network_calls\":2,\"tool\":\"python-fixture\"},\"parent_goal_pe_id\":null},\"timestamp\":1791942303655},{\"action_type\":\"compute_session\",\"pe_hash\":\"7efb485065bbbeedd433c0c822dd500783e8d5f0784d6d056b7315b648b702ea\",\"pe_id\":\"pe_2293844ee471683a2598801a\",\"prev_hash\":\"05b44701037fbd35f2060c3ee6c7679f07199457cf61943e3993e34075f02417\",\"pricing\":{\"compute\":{\"duration_ms\":567},\"execution_env\":{\"runtime\":\"python\"},\"geo\":null,\"metadata\":{\"network_calls\":0,\"tool\":\"python-fixture\"},\"parent_goal_pe_id\":null},\"timestamp\":1791942303656}],\"acts_root\":\"9b6e02fb9e2e0005b368c9e1c146e61eee6e85e314ecaeb0d844989a6b89290d\",\"created_at_ms\":1791942303657,\"device_id\":\"dev_abababababababababababababababababababababababababababababababab\",\"prev_batch_hash\":\"genesis\",\"schema\":\"provian.pe-batch.v1\",\"sealed\":[{\"box\":\"AQZ8BgaKRuxA_SpEwxJh5CyFGV1mLC-dE0AikmW5n7tCNcMhOUKNaL9XwubygWMzOqy80ZM892o72blJcetMEgNPLdpdIVP9vrXZdEy67wdgV92uWsSgJpZ70Den50s4pn4YvQzzrIm3qZvB2fSPmuEop24pyHH9EgEjsDzPki44t0sSsFzehWuXnxZ4Z2g7ueitlbh062Sh-BppQg3ic9OowhhUDfApRfQ2dmSywVeKIaM92hiD24XRql9gFPPaVOc-QxZVOAysRidg94CVcu0oUx4YAlrk99B6BEuV3SAySOhIRgR52zyR_G12QG-TbC9tjIRBtWuygyULCu_1lXN29F9URxS61wkZZAzjZty9MrYPRW6Nx80L25fvlgTW3S4GUy2R6XVFca8-kIBvx03JRM6uLggqt28I6EwUiK2xOA65b4wnMvt-vYWtwTq5l-gENtHQPmG97XEAO7MF9-igMGn6gPfH6Yn_SAoWvhoUMvuIYo8tNCA4yJ8zArXTlvECP26QJoaBeMy_-7yt63OHu3QowiB6ViHnwX2_9x1-TCeDyiU7pM9sTQTmMHCJHDoFYADRctIVaRHrH-CXjvuDpXy8fsMmMJmnhxLNcNlF25__toU6d3Noaso4O6UgRJIwNocTNtRCZ_xDuQ_CWQ8-zyBo000GY_YVZl2V2ogq5flCU6g8iMFD7IG16yVkQXqJ2duMd9dAJVh6pCy-GgxRXdZbmUXlfHzOJsmc3fE0VZN9zlKTCE1_7n0\",\"pe_id\":\"pe_9c5adca47314dd1c4f08b391\",\"to\":\"linked_human\"},{\"box\":\"AX_HFd5n74pYP-3CT2RbuyHnu0d1kEfCxJEg53aRFjIeLpny3r6iMCJl97oS_SVXZtXiN5a8FbfdCYo96YYD9zlQXxPnuHjLntU8vKJXq2OAycC2LzEqEwsxpsoszgYBDOeWgqnMa6AKeNY9V7Gh7wTdpQBqg7XC6mVBWFp9WxDu3hn0hfptrUUzB1p6jn5PJqhzEr4APL-j0QBt_IUMgYJfE5XG5nA1tjpWiXqXl9ja1fUSNy0xmcvTzZJL_4oBgIimJ0OYkKiDBepEUw-p3kKBV-0AXxgg2r0FklsK_h-dfQkSho4mIib4SpKjs94-tCfXmgzm4Y-4Y1FAqigmw6c8wYip_ilG-PExHEYGF_Dvu2sp1frpizXRUhnfH2iATKNNPxiYk1cZOH4xMHk0T4q-XZw25euBOP6T6TGPcKO1NxVkwtZg8oT5u68tNz2_pSPvIZR9EeXeWPUCcwkbSuCHJdi_2Z7AGScfSBsnjNnF7JIgyzwD8z3CL5raqxYqRLbZe3RnkTJroolptS_aC6SHsXk-bzL2OOmiVtkO2NLkOeJZeTqeBIX1405q3OGfi-sFsM4JJTc4ufXwqT6a1BH-Wr1JTUpZCsJ6nfYRFg2nWOkXUhdenZMcYQJJaINiogGcSqpyWbKfV5KeFtzVzppMtRk3t8HkKmOaIon2LNVDewupHYyfY_VTis85lONgZ6iVCgp-EtjehQf6fJrxMgcM1utMnSL9-Lcfepeo1ie23VZW6jyfE-VSAgueVkudANwo3chWrjdNGLpQvZnCC0a3kjL09APo20R5o0qtFIi-WodvjdX7tRTeQTdJWWq_nV2l\",\"pe_id\":\"pe_2293844ee471683a2598801a\",\"to\":\"linked_human\"}],\"seq\":1}",
+   "pes": [
+    {
+     "schema": "provian.pe.v2",
+     "pe_id": "pe_9c5adca47314dd1c4f08b391",
+     "device_id": "dev_abababababababababababababababababababababababababababababababab",
+     "prev_hash": "genesis",
+     "timestamp": 1791942303655,
+     "action_type": "compute_session",
+     "description": "Compiled the project and ran its unit tests",
+     "metadata": {
+      "tool": "python-fixture",
+      "network_calls": 2
+     },
+     "compute": {
+      "duration_ms": 1234
+     },
+     "geo": null,
+     "execution_env": {
+      "runtime": "python"
+     },
+     "parent_goal_pe_id": null,
+     "pe_hash": "05b44701037fbd35f2060c3ee6c7679f07199457cf61943e3993e34075f02417"
+    },
+    {
+     "schema": "provian.pe.v2",
+     "pe_id": "pe_2293844ee471683a2598801a",
+     "device_id": "dev_abababababababababababababababababababababababababababababababab",
+     "prev_hash": "05b44701037fbd35f2060c3ee6c7679f07199457cf61943e3993e34075f02417",
+     "timestamp": 1791942303656,
+     "action_type": "compute_session",
+     "description": "Rebuilt the documentation site from source",
+     "metadata": {
+      "tool": "python-fixture",
+      "network_calls": 0
+     },
+     "compute": {
+      "duration_ms": 567
+     },
+     "geo": null,
+     "execution_env": {
+      "runtime": "python"
+     },
+     "parent_goal_pe_id": null,
+     "pe_hash": "7efb485065bbbeedd433c0c822dd500783e8d5f0784d6d056b7315b648b702ea"
+    }
+   ]
+  }
+ ]
+}

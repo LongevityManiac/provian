@@ -1,0 +1,7 @@
+{
+  "name": "provian-secure-seed",
+  "version": "1.0.0",
+  "description": "User-authentication-gated seed storage that survives biometric re-enrollment and admits the device passcode : iOS keychain.userPresence; Android Keystore key with setInvalidatedByBiometricEnrollment(false) and BIOMETRIC_STRONG|DEVICE_CREDENTIAL. Never deletes a sibling item on write.",
+  "main": "index.ts",
+  "private": true
+}

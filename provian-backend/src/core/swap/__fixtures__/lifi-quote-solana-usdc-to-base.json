@@ -1,0 +1,76 @@
+{
+ "_source": "li.quest/v1/quote Solana USDC 20 -> Base USDC, integrator=provian fee=0.0025, 2026-09-25",
+ "action": {
+  "fromChainId": 1151111081099710,
+  "fromAmount": "20000000",
+  "fromToken": {
+   "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+  }
+ },
+ "estimate": {
+  "fromAmount": "20000000",
+  "toAmount": "19893772",
+  "toAmountMin": "19873878",
+  "feeCosts": [
+   {
+    "name": "LIFI Fixed Fee",
+    "amount": "100000",
+    "amountUSD": "0.1000",
+    "included": true,
+    "feeSplit": {
+     "lifiFee": "50000",
+     "integratorFee": "50000",
+     "recipients": [
+      {
+       "name": "lifi",
+       "type": "FIXED",
+       "fee": "50000"
+      },
+      {
+       "name": "provian",
+       "type": "FIXED",
+       "fee": "50000"
+      }
+     ]
+    }
+   },
+   {
+    "name": "Rent Exemption Deposit",
+    "amount": "1488440",
+    "amountUSD": "0.17751109980567145",
+    "included": false,
+    "feeSplit": null
+   },
+   {
+    "name": "NearIntents Protocol Fee",
+    "amount": "1990",
+    "amountUSD": "0.0020",
+    "included": true,
+    "feeSplit": null
+   },
+   {
+    "name": "1ClickSwap API Fee",
+    "amount": "1990",
+    "amountUSD": "0.0020",
+    "included": true,
+    "feeSplit": null
+   },
+   {
+    "name": "NearIntents App Fee",
+    "amount": "3980",
+    "amountUSD": "0.0040",
+    "included": true,
+    "feeSplit": null
+   }
+  ],
+  "gasCosts": [
+   {
+    "amount": "41111",
+    "amountUSD": "0.004902890828055521"
+   }
+  ]
+ },
+ "transactionRequest": {
+  "data": "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAKD36MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwby0+qM9aysqM0FIHUSF1xDzvVKXdme3iCha1UlNzjzl9xy9EWzoZrASNKpKP4HdM97i176fGRXy8y8guzw6sk8ecMUofPc0P4CTr363uLpNhRAqE6nk1L8wO9RvXLsGASccR+NKvfiW5GQkr5mo7QTLGxdF6dCvnMOMbn2QItfSa0DBkZv5SEXMv/srbpyw5vnvIzlu8X3EmssQ5s6QAAAACg9DdKCNU/vCuOw4ifTfNicomb7F93498t8zvvk69xVBqfVFxjHdMkoVmOYaR1etoteuKObS21cc1VbIQAAAAAb5jFNWqZQWUGe9BFty369cdAPE34TzIBu0q24QxWUXgbd9uHXZaGT2cvhRs7reawctIXtX1s3kTqM9YV+/wCpxvp6877brTo9ZfNqq8l0MbG75MLS9uDkfKYCA0UvXWGMlyWPTiSJ8bs9ECkUjg2DC1oTmdr/EIQEjnvY2+n4WUEj88pGB7cqm1hgSxghb8+6VFi1KAqk+LQruL641NeUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACKp8tz1nCK8+rfCXy93nRJvAZjE243J1JOuYrW2lGzZcA/Cm3TL7ro8xy/T8dRIywni17KIde+KRMyQkIOeKJMCAUABQIQ6wkABQAJAwTZAAAAAAAABgIHCAkAMoy3NX3pUwAJBAEKAgAKDFDDAAAAAAAABgsGAAMMCg0JAQEJBAEKAwAKDFDDAAAAAAAABgsGAAQOCg0JAQEJBAEKBAAKDGCmLwEAAAAABgA="
+ }
+}

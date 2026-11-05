@@ -1,0 +1,40 @@
+{
+  "schema_version": "pvt9-policy-approval-manifest/v1",
+  "approval_status": "approvable_after_independent_review",
+  "signing_permitted": true,
+  "manifest_role": "genesis_settlement_epoch_zero_authorization",
+  "supersedes_for_settlement_only": "sha256:704c1a2d9e555b56d9b4a5803b3f641b0e29e5e3012af0c0c3dc5ae665be6e71",
+  "supersession_reason": "The Gate 1 approval manifest is non-signable (signing_permitted:false) and its embedded genesis_settlement_authorization_subject names campaign_id \"pvt9_genesis_pending\", the pre-arming campaign name. The live campaign is \"pvt9_genesis_v1\". The Gate 1 artifact is therefore structurally incapable of authorizing settlement for the campaign that exists, and is superseded FOR THE SETTLEMENT EPOCH-ZERO PIN ONLY. It remains byte-identical, remains the Gate 1 evidence of record, and remains the artifact bound by the Genesis runtime activation route. Nothing else moves.",
+  "supersession_does_not_grant": "This manifest grants no deployment, activation, mint, settlement, transaction, admin, owner, proxy, executor, timelock, or governance authority. It authorizes exactly one artifact: the epoch-zero Genesis settlement budget policy event described below. It does not open the record-time monetary policy rail (verifyCurrentPvtManifestApproval), which reads the Gate 1 constant and stays refused.",
+  "authorized_artifact": "genesis_settlement_budget_policy_event",
+  "authorized_epoch": 0,
+  "genesis_settlement_authorization_subject": {
+    "schema_version": "pvt-genesis-settlement-authorization/v1",
+    "authorization_scope": "genesis_settlement_budget",
+    "event_id": "pvt9-genesis-settlement-launch",
+    "policy_version": "base-mainnet-genesis-proposal-2026-07-13.1",
+    "authorized_at_epoch": 0,
+    "effective_epoch": 0,
+    "cap_atomic": "7500000000000000000000000",
+    "previous_event_hash": null,
+    "chain_id": 8453,
+    "campaign_id": "pvt9_genesis_v1",
+    "settlement_kernel_id": "pvt9_fixed_grant_settlement_kernel/v1"
+  },
+  "genesis_settlement_authorization_subject_sha256": "sha256:ac89f850d9782269042fc3dde10a8f7acc9e6923341005d3ee2568ec1a110798",
+  "decided_settlement_economics": {
+    "note": "Recorded, not chosen. Every value below EQUALS the existing ratified literal in proposed-genesis-policy.ts and the armed on-chain epoch-zero policy; none is a new economic decision.",
+    "initial_genesis_sub_budget_atomic": "7500000000000000000000000",
+    "policy_version": "base-mainnet-genesis-proposal-2026-07-13.1",
+    "campaign_id": "pvt9_genesis_v1",
+    "chain_id": 8453,
+    "settlement_kernel_id": "pvt9_fixed_grant_settlement_kernel/v1"
+  },
+  "signature_protocol": {
+    "scheme": "sshsig-ed25519",
+    "namespace": "provian-pvt-policy",
+    "signer_identity": "frank",
+    "signed_over": "the exact bytes of this file, unmodified",
+    "note": "No signature is stored in the repository. The signature lives in the Firestore epoch-zero policy event and is produced by Frank at emission time. Until that event exists and verifies, loadAuthorizedGenesisSettlementPolicyEvent refuses and no settlement is possible."
+  }
+}

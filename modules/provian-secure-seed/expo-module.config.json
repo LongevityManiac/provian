@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ProvianSecureSeedModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.proviansecureseed.ProvianSecureSeedModule"]
+  }
+}

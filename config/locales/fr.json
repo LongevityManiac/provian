@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSFaceIDUsageDescription": "Provian utilise Face ID pour déverrouiller votre portefeuille et confirmer les transactions, les signatures et les approbations que vous effectuez.",
+    "NSCameraUsageDescription": "Provian utilise la caméra pour scanner les codes QR : adresses de portefeuille, liens de connexion WalletConnect et codes d’association d’agents. Aucune donnée n’est enregistrée ni téléchargée.",
+    "NSMotionUsageDescription": "Provian utilise le capteur de mouvement uniquement pendant l'envoi ou le transfert, afin de détecter les fortes secousses pouvant indiquer un transfert sous pression. Les données sont conservées sur l'appareil.",
+    "NSPhotoLibraryUsageDescription": "Provian n'ouvre votre photothèque que lorsque vous choisissez une image pour votre profil Commons . Seule l'image que vous sélectionnez est utilisée."
+  }
+}

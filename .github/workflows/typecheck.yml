@@ -1,0 +1,188 @@
+name: TypeScript Typecheck
+
+# Enforce `tsc --noEmit` across the root mobile app and every
+# TypeScript-bearing subproject. Each subproject has its own tsconfig.json
+# and (mostly) its own package-lock.json, so we run them as a matrix and
+# install per-project. The root tsconfig excludes the subprojects, so the
+# root job covers only `src/` and `test/`.
+#
+# Adding a new TS subproject? Add it to the matrix below.
+
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger. The authoritative gate
+# is local (check:wp2 + money-path + relevant tsc/tests, run before every push);
+# CI here is a nightly safety net against master plus an on-demand/PR run. This
+# is a single-developer, single-machine repo, so per-push CI added billed cost
+# and wait time with no protective value the local gate did not already provide.
+# The nightly runs the full matrix + guards; workflow_dispatch runs them on
+# demand; pull_request covers the rare PR. paths-ignore keeps doc-only PRs cheap.
+on:
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly full run vs master
+  workflow_dispatch:
+
+# Ref-scoped group so a superseded PR run is cancelled (no master-push case now).
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    # bounded PER LEG from each leg's observed max (100 runs, Aug 22-Sep 25
+    # 2026): 3x headroom, rounded up to 5. A new leg must name its own
+    # `timeout:` — scripts/check-workflow-budget.mjs refuses a leg without one.
+    timeout-minutes: ${{ matrix.project.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - name: root
+            path: .
+            timeout: 10  # observed max 3.0 min
+          - name: provian-backend
+            path: provian-backend
+            timeout: 20  # observed max 6.4 min
+          - name: provian-agent-sdk
+            path: provian-agent-sdk
+            timeout: 15  # observed max 3.5 min
+          - name: provian-cli
+            path: provian-cli
+            timeout: 10  # observed max 2.1 min
+          - name: provian-website
+            path: provian-website
+            timeout: 5  # observed max 1.0 min
+          - name: contracts
+            path: contracts
+            timeout: 10  # observed max 3.0 min
+          - name: provian-facilitator
+            path: provian-facilitator
+            timeout: 5 # new leg : local install + tsc ~0.5 min; adds the SDK install for scripts/ (~1.5 min); 3x headroom, rounded up to 5
+    name: typecheck (${{ matrix.project.name }})
+    steps:
+      # The pinned baseline hashes ship with the code; shallow clones are sufficient.
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          # COST: cache ~/.npm keyed on this project's lockfile so `npm install`
+          # skips the registry download on every run (all 9 workspaces have a lock).
+          cache: npm
+          cache-dependency-path: ${{ matrix.project.path }}/package-lock.json
+
+      # provian-cli depends on @provian/agent-sdk, which is NOT
+      # published to npm, so its own `npm install` 404s. Build agent-sdk locally
+      # (its dist/index.d.ts also only exists after build) and pack a tarball
+      # the install step below resolves against. Must run before install.
+      - name: Build + pack provian-agent-sdk (dependency of provian-cli)
+        if: matrix.project.name == 'provian-cli'
+        working-directory: provian-agent-sdk
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npm pack --pack-destination /tmp
+          mv /tmp/provian-agent-sdk-*.tgz /tmp/provian-agent-sdk.tgz
+
+      # provian-facilitator/scripts/proof-seller-setup.ts imports the SDK keystore from source
+      # (../../provian-agent-sdk/src/keystore), so its typecheck program needs the SDK's own
+      # dependencies installed beside it.
+      - name: Install provian-agent-sdk dependencies (imported by provian-facilitator/scripts)
+        if: matrix.project.name == 'provian-facilitator'
+        working-directory: provian-agent-sdk
+        run: npm install --no-audit --no-fund
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project.path }}
+        run: |
+          if [ "${{ matrix.project.name }}" = "provian-cli" ]; then
+            # @provian/agent-sdk is not on npm, so point the dependency at the
+            # locally built tarball (ephemeral CI checkout only) instead of the
+            # registry ^1.1.0 range. Mirrors the local node_modules symlink.
+            npm pkg set "dependencies.@provian/agent-sdk=file:/tmp/provian-agent-sdk.tgz"
+          fi
+          npm install --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: ${{ matrix.project.path }}
+        run: |
+          if [ "${{ matrix.project.name }}" = "root" ]; then
+            # Root typecheck includes the deterministic runtime boundary configuration,
+            # quarantine, scope, and adversarial economic-isolation guard.
+            npm run typecheck
+          elif [ "${{ matrix.project.name }}" = "provian-backend" ]; then
+            # THE SAME CONFIG THE LOCAL CHECK USES, deliberately.
+            #
+            # `npx tsc --noEmit` here resolves the BUILD config, whose `include` is
+            # `src/**/*` and whose `rootDir` is `./src` — so `scripts/` was checked by
+            # NOTHING, in CI or anywhere else. That is 66 files: every operator script,
+            # deploy wrapper, settlement runner and probe. A real type error in
+            # `scripts/genesis-live-admission-probe.ts` was visible locally and invisible
+            # to CI (open since 2026-08-04), and  lost its natural home to the same
+            # blind spot when `scripts/wp4-load-harness.ts` sat broken through two rounds
+            # of "verification".
+            #
+            # `tsconfig.typecheck.json` is the emit-free project that widens `rootDir` so
+            # `scripts/` can be in scope at all (adding it to the build config is TS6059,
+            # not an option). Local and CI now run the identical command, which is the
+            # point: the  lesson is that a local red and a CI green must not be able
+            # to disagree about the same tree.
+            npm run typecheck
+          elif [ "${{ matrix.project.name }}" = "provian-facilitator" ]; then
+            # src/ under NodeNext, then scripts/ + vitest.config.ts (tsconfig.scripts.json), then a
+            # syntax check of proof-seller/server.mjs — the same command as the local gate.
+            npm run typecheck
+          else
+            npx tsc --noEmit
+          fi
+
+  # Guardrail (relay->phone push, 2026-07-06): Firebase Admin
+  # `messaging.sendEachForMulticast` may only be called from the push dispatcher
+  # (provian-backend/src/core/notifications/pushDispatcher.ts). Any other call
+  # site silently drops delivery to every Expo-token device (the format the
+  # mobile app registers). This job fails the build if a direct multicast call
+  # reappears outside the dispatcher.
+  push-dispatcher-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # observed max 0.7 min (100 runs, Aug 22-Sep 25 2026); 3x headroom, rounded up to 5
+    name: push dispatcher guard (no direct FCM multicast)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Fail if sendEachForMulticast is called outside the dispatcher
+        working-directory: provian-backend
+        run: bash scripts/check-no-direct-multicast.sh
+
+  pvt-policy-matrix-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # observed max 1.1 min (100 runs, Aug 22-Sep 25 2026); 3x headroom, rounded up to 5
+    name: PVT action-policy matrix coverage
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-backend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: provian-backend
+        run: npm ci --no-audit --no-fund
+      - name: Verify generated policy matrix and emitter coverage
+        working-directory: provian-backend
+        run: |
+          npm run check:pvt-policy-matrix
+          npm run check:pvt-capacity-model

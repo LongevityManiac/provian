@@ -1,0 +1,11 @@
+[{
+  "relation": [
+    "delegate_permission/common.handle_all_urls",
+    "delegate_permission/common.get_login_creds"
+  ],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.provian.wallet",
+    "sha256_cert_fingerprints": ["CB:E7:BD:D0:0C:32:EF:85:97:78:B1:99:D5:1E:B7:15:90:D1:D0:DD:10:0E:2E:CB:55:93:D9:DD:8A:F4:63:5A"]
+  }
+}]

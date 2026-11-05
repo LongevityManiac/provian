@@ -1,0 +1,332 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-void text-text-primary;
+  }
+
+  ::selection {
+    @apply bg-provian-blue/30 text-white;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-void;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-highlight rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-provian-blue-dim;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-6xl mx-auto px-6 md:px-8;
+  }
+
+  .prose-provian {
+    @apply text-text-secondary leading-relaxed;
+  }
+  .prose-provian h1 {
+    @apply text-3xl md:text-4xl font-display font-bold text-text-primary mb-6 tracking-tight;
+  }
+  .prose-provian h2 {
+    @apply text-2xl md:text-3xl font-display font-semibold text-text-primary mt-16 mb-6 tracking-tight;
+  }
+  .prose-provian h3 {
+    @apply text-xl md:text-2xl font-display font-semibold text-text-primary mt-12 mb-4;
+  }
+  .prose-provian h4 {
+    @apply text-lg font-display font-semibold text-text-primary mt-8 mb-3;
+  }
+  /* An in-page link lands its heading below the sticky header. */
+  .prose-provian :is(h1, h2, h3, h4, h5, h6)[id] {
+    scroll-margin-top: 6rem;
+  }
+  .prose-provian p {
+    @apply mb-5 text-base md:text-lg leading-relaxed;
+  }
+  .prose-provian ul, .prose-provian ol {
+    @apply mb-5 pl-6 space-y-2;
+  }
+  .prose-provian li {
+    @apply text-base md:text-lg;
+  }
+  .prose-provian ul li {
+    @apply list-disc;
+  }
+  .prose-provian ol li {
+    @apply list-decimal;
+  }
+  .prose-provian a {
+    @apply text-provian-blue hover:text-provian-blue-bright underline underline-offset-2 transition-colors;
+  }
+  .prose-provian blockquote {
+    @apply border-l-2 border-provian-blue-dim pl-6 py-1 my-6 italic text-text-secondary;
+  }
+  .prose-provian code {
+    @apply text-provian-blue-bright bg-surface-raised px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+  .prose-provian pre {
+    @apply bg-surface-raised border border-surface-highlight rounded-lg p-4 my-6 overflow-x-auto;
+  }
+  .prose-provian pre code {
+    @apply bg-transparent px-0 py-0 text-sm;
+  }
+  .prose-provian strong {
+    @apply text-text-primary font-semibold;
+  }
+  .prose-provian table {
+    @apply block w-full my-6 overflow-x-auto text-sm;
+  }
+  .prose-provian th {
+    @apply text-left text-text-primary font-semibold px-4 py-3 border-b border-surface-highlight bg-surface-raised;
+  }
+  .prose-provian td {
+    @apply px-4 py-3 border-b border-surface-highlight/50;
+  }
+  .prose-provian hr {
+    @apply border-surface-highlight my-12;
+  }
+
+  /* Mono eyebrow label used above section headings. */
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.28em] text-provian-gold-bright/90;
+  }
+
+  /* Edge-lit glass panel: the refractive surface from the shield, not a
+     frosted-blur blob. A 1px blue edge-light up top fades into a faint fill. */
+  .glass {
+    @apply relative rounded-xl border border-white/10 bg-white/[0.035] transition-all duration-300;
+  }
+  .glass::before {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 top-0 h-px bg-edge-top opacity-60;
+  }
+  .glass:hover {
+    @apply border-white/20 bg-white/[0.05] shadow-glow-soft;
+  }
+
+  /* Backwards-compatible alias; existing markup using .card now reads dark. */
+  .card {
+    @apply glass p-6;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-provian-blue px-6 py-3 font-body text-sm font-semibold text-white shadow-glow-blue transition-all duration-200 hover:bg-provian-blue-bright;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-white/15 px-6 py-3 font-body text-sm font-semibold text-text-primary transition-all duration-200 hover:border-white/35 hover:bg-white/5;
+  }
+
+  /* The signature ascent gradient as text. */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-ascent-h;
+  }
+
+  /* Thin horizontal hairline that glows at the centre. */
+  .glow-line {
+    @apply h-px bg-gradient-to-r from-transparent via-provian-blue/40 to-transparent;
+  }
+
+  /* Vertical "spine": the rising beam, used to thread sections together. */
+  .spine {
+    @apply w-px bg-ascent opacity-60;
+  }
+
+  /* Numbers are the ornament: grants, the split, the countdown. */
+  .numeral {
+    @apply font-mono font-medium leading-none tracking-[-0.04em] text-text-primary;
+  }
+
+  /* A statement screen: one line, large serif, nothing else. */
+  .statement {
+    @apply font-display font-semibold leading-[1.02] tracking-[-0.04em] text-text-primary;
+    font-size: clamp(2.5rem, 7.2vw, 6.5rem);
+    text-wrap: balance;
+  }
+
+  /* Gold marks Genesis and the countdown. */
+  .chip-gold {
+    @apply inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-provian-gold/40 bg-provian-gold/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-provian-gold-bright;
+  }
+
+  /* Numeric index marker (01 / 02 / 03) that replaces icon-in-circle chips. */
+  .marker {
+    @apply font-mono text-xs tracking-[0.2em] text-provian-gold-bright;
+  }
+}
+
+/* Scroll reveal. Content is visible by default. A section is hidden only once
+   RevealOnScroll itself has run in the browser, found the section below the
+   fold, and armed it (.armed) while it watches for it to scroll in. So with no
+   JavaScript, a bundle that fails to load, a crash before the component mounts,
+   or reduced motion, nothing is ever hidden. */
+.reveal.armed {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.reveal.armed.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.armed {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Print and "Save as PDF" never scroll, so nothing may stay armed on paper. */
+@media print {
+  .reveal,
+  .reveal.armed {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Genesis surfaces take themselves down at the window close with no deploy:
+   the root layout's pre-paint script adds .genesis-closed to <html> once
+   Date.now() reaches 2027-01-01T00:00:00Z (src/lib/genesis.ts). The inverse
+   gate ([data-genesis-closed]) is hidden until that same moment. */
+.genesis-closed [data-genesis] {
+  display: none !important;
+}
+[data-genesis-closed] {
+  display: none;
+}
+.genesis-closed [data-genesis-closed] {
+  display: block;
+}
+
+/* ── How it works (HowItWorksFilm) ──────────────────────────────────────────
+   Every element's state is a function of the component's playhead and is
+   written as data-on="true|false"; these rules only ease between the two
+   states. The stage scales like a video: everything inside is sized in em off
+   the stage's font size, which follows the figure's width (cqw). */
+.hiw {
+  container-type: inline-size;
+}
+.hiw-stage {
+  font-size: 12px;
+  font-size: clamp(9px, 3.4cqw, 15px);
+}
+@media (min-width: 640px) {
+  .hiw-stage {
+    font-size: 11px;
+    font-size: clamp(8px, 1.7cqw, 20px);
+  }
+}
+.hiw-scene {
+  animation: hiw-scene-in 0.5s ease-out both;
+}
+.hiw-in {
+  opacity: 0;
+  transform: translateY(0.6em);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.hiw-pop {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.35s ease-out, transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.hiw-stamp {
+  opacity: 0;
+  transform: scale(1.8) rotate(-16deg);
+  transition: opacity 0.25s ease-out, transform 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.hiw-grow {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hiw-door-l,
+.hiw-door-r {
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.hiw-in[data-on='true'],
+.hiw-pop[data-on='true'] {
+  opacity: 1;
+  transform: none;
+}
+.hiw-stamp[data-on='true'] {
+  opacity: 1;
+  transform: rotate(-8deg);
+}
+.hiw-grow[data-on='true'] {
+  transform: scaleX(1);
+}
+.hiw-door-l[data-on='true'] {
+  transform: translateX(-100%);
+}
+.hiw-door-r[data-on='true'] {
+  transform: translateX(100%);
+}
+.hiw-spin {
+  animation: hiw-spin 7s linear infinite;
+}
+.hiw-flicker {
+  transform-origin: 50% 100%;
+  animation: hiw-flicker 1.3s ease-in-out infinite;
+}
+/* A coin on the beneficiary link, travelling from the agent to you. Its
+   resting place (no animation) is the middle of the link. */
+.hiw-travel {
+  left: calc(50% - 0.75em);
+  animation: hiw-travel 2.7s ease-in-out infinite;
+}
+/* Paused: the looping parts hold still with the playhead. */
+.hiw-paused .hiw-spin,
+.hiw-paused .hiw-flicker,
+.hiw-paused .hiw-travel {
+  animation-play-state: paused;
+}
+@keyframes hiw-scene-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hiw-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes hiw-flicker {
+  0%, 100% { transform: scale(1, 1); opacity: 1; }
+  30% { transform: scale(0.94, 1.07); opacity: 0.9; }
+  60% { transform: scale(1.04, 0.95); opacity: 1; }
+  80% { transform: scale(0.97, 1.03); opacity: 0.93; }
+}
+@keyframes hiw-travel {
+  0% { left: calc(100% - 1.5em); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { left: 0; opacity: 0; }
+}
+/* Reduced motion: nothing moves. The component also pins the playhead to the
+   end of each chapter, so every element sits in its final state. */
+@media (prefers-reduced-motion: reduce) {
+  .hiw *,
+  .hiw *::before,
+  .hiw *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

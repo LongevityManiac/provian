@@ -1,0 +1,66 @@
+name: website-canary-guard
+
+# Permanent tripwire for OPEN_ITEMS.md finding #3 (2026-07-06): the internal
+# tracker (OPEN_ITEMS.md / MEMORY.md) must never be compiled into a
+# client-served asset. The /internal open-items dashboard and its
+# gen-open-items pipeline were removed after the tracker was found compiled
+# into a public, unauthenticated /_next/static/ chunk. This job does a real
+# production build of the marketing site and fails if the OPEN_ITEMS canary
+# appears anywhere in the static export (out/) — i.e. if any future change
+# re-wires tracker content into a public bundle. Mirrors the Dockerfile guard
+# that fails the deploy image build.
+#
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger. This full Next build runs
+# on a PR that touches the marketing site, nightly against master (part of the
+# standing safety net), and on demand — never on a push.
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'provian-website/**'
+      - '.github/workflows/website-guard.yml'
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly site build vs master
+  workflow_dispatch:
+
+concurrency:
+  group: website-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  website-canary-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # observed max 1.7 min (98 runs incl. its typecheck.yml era, Aug-Sep 2026); 3x headroom, rounded up to 5
+    name: website canary guard (no tracker in bundle)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: provian-website
+        run: npm ci --no-audit --no-fund
+
+      - name: Build static site
+        working-directory: provian-website
+        run: npm run build
+
+      - name: Fail if the OPEN_ITEMS canary leaked into any client-served asset
+        working-directory: provian-website
+        run: |
+          CANARY='PROVIAN-CANARY-OI-7c19'
+          if grep -rIl "$CANARY" out; then
+            echo "::error::OPEN_ITEMS.md content leaked into the client bundle — canary '$CANARY' found in provian-website/out. A build pipeline is pulling internal tracker content into a public, client-served asset. See OPEN_ITEMS.md finding #3 (2026-07-06)."
+            exit 1
+          fi
+          echo "OK: canary '$CANARY' absent from provian-website/out — no internal tracker content in the client bundle."

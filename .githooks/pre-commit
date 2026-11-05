@@ -1,0 +1,5 @@
+#!/bin/sh
+# Refuses a commit that would capture a mutated frozen contract.
+# See scripts/check-frozen-contracts.mjs. Enable with:
+#   git config core.hooksPath .githooks
+exec node "$(git rev-parse --show-toplevel)/scripts/check-frozen-contracts.mjs"

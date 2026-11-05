@@ -1,0 +1,3924 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "commons_presentations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "recorded_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agent_invites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "agent_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agent_transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pe_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reported_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agent_transactions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pe_generated",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reported_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agent_wallets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "agent_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bond_claims",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bonds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bonds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "renewal_deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "channel",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "upvotes",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hot_score",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "channel",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hot_score",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "channel",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "score",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "channel",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "score",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "root_post_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_forum_posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "parent_author_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "location.type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "compensation_type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "accepted_applicant_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "accepted_applicant_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "posted_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "court_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "panel",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "court_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "voting_deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "owner_type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "owner_user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "devices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "owner_user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "depositor_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "depositor_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "recipient_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "recipient_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "auto_release_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "evidence_deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "filed_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "voting_deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "genesis_qualification_outbox_v2",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "qualification_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "governance_proposals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "governance_votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "proposal_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "voted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "governance_votes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "voter_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "voted_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "insurance_claims",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "insurance_policies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actionType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "hidden",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "peId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actionType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actionType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hidden",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "beneficiary_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "beneficiary_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "wallets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "weekly_week_start",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "weekly_pe_count",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "index_shard",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "index_shard",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "jurisdiction_context",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "index_shard",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mint_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "peId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "creator_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pools",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "borrower_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "borrower_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "defaulted_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "lender_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "counterparty_address",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "promise_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "actor_address",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "self_referencing",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "trust_level_at_creation",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "settled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claim_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "settled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "settled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pe_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_settlement_batches_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt_mint_batches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt_pending_policy_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "policy_review_state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "first_seen_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt_pending_policy_queue",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "policy_review_state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "next_alert_due_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "relay_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "wallets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pvt_earned",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "wallets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "webhook_subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "events",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "is_active",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "webhook_subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "is_active",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt_ordinary_accrual_intake_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "recorded_at_ms",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pe_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_published_pes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published_by",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "published_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_published_pes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published_by",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "institution",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "published_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_vouches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "vouchee_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "escrows",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "depositor_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "promises",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "borrower_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bonds",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "agent_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "provenance_envelopes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_vouches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "voucher_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "vouchee_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "respondent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "resolution",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "resolved_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "filed_by",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "filed_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "respondent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "filed_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "actionType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_history",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "corroboration_status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "authorization_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "agent_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "authorization_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "agent_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bond_claims",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "bond_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bond_renewals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "bond_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "renewed_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "webhook_subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_publication_consents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "consenting_wallet_ids",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "expires_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "budget_usdc",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "budget_usdc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "required_capabilities",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "required_capabilities",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "budget_usdc",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "required_capabilities",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "budget_usdc",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "required_capabilities",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "deadline",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "poster_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assigned_wallet_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "updated_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "agent_directory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "availability",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "capabilities",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pe_count",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_profiles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "commons_join_date",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt_earning_type_proposals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_thread_messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "thread_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_wants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "capabilities",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "commons_wants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claim_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pe_mailbox_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "to",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at_ms",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claim_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "day",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "accepted_at_ms",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "batch_hash",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "device_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "seq",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "action_type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_held_acts_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "held_reason",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "relay_pe_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actor_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "beneficiary_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actor_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "max_ts",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "actor_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "max_ts",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "beneficiary_ids",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "max_ts",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "action_types",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "max_ts",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "contributor",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claim_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "contributor",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "settled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "claim_key",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "archive_days_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "wallet",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "day",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "launch_notify_signups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "platform",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "notified",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "contributor",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lane",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "settled",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "settled_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_pending_ready_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "payee_tag",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "ready_at_ms",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "row",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "side",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "legs",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "facts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "row.commit_sha",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "row.witness_class",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "speech_window_acts_v1",
+      "fieldPath": "refs",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "speech_window_acts_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_v1",
+      "fieldPath": "box",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_v1",
+      "fieldPath": "items",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_relay_acts_v1",
+      "fieldPath": "act",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_relay_acts_v1",
+      "fieldPath": "accrual",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_relay_acts_v1",
+      "fieldPath": "sealed",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "identity_acts_v1",
+      "fieldPath": "act",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "identity_acts_v1",
+      "fieldPath": "act.action_type",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "identity_acts_v1",
+      "fieldPath": "act.pricing.actor_address",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "meter_held_acts_v1",
+      "fieldPath": "key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "claim_keys",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "anchor",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "act_leaves",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "acts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "act_identity",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_relay_acts_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_anchor_days_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "witness_webhook_deliveries",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_submit_idempotency",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_days_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "network_meter_hours_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "financial_by_address",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "beneficiary_acts_by_agent",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "by_attestation_tier",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "financial",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "actor_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "schema",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "corroborated",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_totals_v1",
+      "fieldPath": "updated_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_days_v1",
+      "fieldPath": "actor_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_days_v1",
+      "fieldPath": "day",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_days_v1",
+      "fieldPath": "agent_actions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_meter_days_v1",
+      "fieldPath": "corroborated",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "network_meter_hours_v1",
+      "fieldPath": "hour",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "network_meter_hours_v1",
+      "fieldPath": "count",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "origin_identifier",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "recorded_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "scheme",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "reason",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "cited_signer",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "cited_action_type",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "pair_folded",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "edges",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "counted",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "pe_consumption",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "pe_ring_excluded",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "pe_unwitnessed",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "pe_approvals_cited",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "pe_approvals_cited_witnessed",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "last_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "schema",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "relay_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "client_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "pe_hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "prev_hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "device_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "batch_hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "unit",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "held_reason",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "schema",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "unit",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "device_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "actor_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "leg",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "beneficiary_class",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "record_points_atomic",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "ready_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "integrity_sha256",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "registered_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "settled_batch_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "settled_tx_hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "settled_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "settled_via",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "voided_by",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "voided_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "window_part",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "parent_key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "moved",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "leg",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "topup_of_claim_key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "topup_attestation_tier",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "topup_observed_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "beneficiary_class",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "record_points_atomic",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "genesis_anchor_key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "wallet_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "one_time_anchor",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "grant_type",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "qualified_at",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "reserved_gross_atomic",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "settled_tx_hash",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "reserved_batch_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "bug_demoted_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "bug_demotion_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "settled_via",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "hold",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "chain_settlement_evidence",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "subject_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "owner_user_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "subject_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "acts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "type_counts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "witness_class_counts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "schema",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "device_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "page",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "min_ts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "act_count",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_payout_requests_v1",
+      "fieldPath": "payment",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "archive_payments_v1",
+      "fieldPath": "payment",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "archive_days_v1",
+      "fieldPath": "parts",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_held_acts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "identity_pes_legacy_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "origin_reference_graph_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_relay_acts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batch_acts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "identity_acts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "device_occurrence_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "artifact_novelty_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pair_counts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_device_tips_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_settlement_batches_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_settlement_cycles_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_bug_demotions_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "archive_days_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_chain_tips",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_accrual_failures",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_pending_policy_observations",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_pending_policy_queue",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_registry_hold_resolution_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_pending_evidence_resolution_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_held_act_sweep_cursor_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_pending_evidence_resolver_cursor_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_registry_hold_resolver_cursor_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_registry_hold_resolver_run_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_inlet_state_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_pending_policy_recovery_state",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_reconciliation_reports_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_mint_batch_snapshots",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_mint_batches",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "speech_window_reservations",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_hash_index",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_ordinary_accrual_intake_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_accrual_effects",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_pe_split_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_daily_anchor_segments_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_daily_anchor_days_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_daily_anchor_batches",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "human_approval_requests_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "presentation_requests_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_threads",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_thread_messages",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_human_jobs",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_human_job_applications",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "jobs",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_publication_consents",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commons_published_pes",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_stats_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "actor_stats_applied",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "devices",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "escrows",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "promises",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "general_disputes",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "human_promises",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "service_installs",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "agent_bank_event_outbox_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "agent_author_mappings",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "webhook_subscriptions",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt_novelty_counters_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "inbox_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "agent_inbox_heads_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "watch_registry_v1",
+      "fieldPath": "e",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "watch_registry_marks_v1",
+      "fieldPath": "m",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "watch_registry_marks_v1",
+      "fieldPath": "p",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_occurrence_sets_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_occurrence_sets_v1",
+      "fieldPath": "members",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_acks_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pe_mailbox_acks_v1",
+      "fieldPath": "ns",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_payee_settlement_clocks_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "economic_totals",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "economic_claim_keys",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "economic_paid_claim_keys",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "retained_act_ids",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "work_summary",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "transit_recipients",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "pending_retention_v1",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_batches_v1",
+      "fieldPath": "settlement_complete",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_key_pages_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_key_pages_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_key_pages_v1",
+      "fieldPath": "keys",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_occurrence_sets_v1",
+      "fieldPath": "fingerprints",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_occurrence_states_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_payees_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_ready_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "commit_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "completion_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "financial_settlement_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "x402_tx_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "schema_version",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "claim_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "claim_kind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "event_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "scope_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "owner_pe_id",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "occurrence_mint_claims",
+      "fieldPath": "created_at_ms",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_act_keys_v1",
+      "fieldPath": "_meter_key_page",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_pending_claims_v1",
+      "fieldPath": "inlet_indexed_v1",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_day_counters_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_day_counters_v1",
+      "fieldPath": "actions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_day_counters_v1",
+      "fieldPath": "daily",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_day_counters_v1",
+      "fieldPath": "schema",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "meter_day_counters_v1",
+      "fieldPath": "day",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "pvt9_claim_ledger_v1",
+      "fieldPath": "_provian_range.created_at",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_settlement_batches_v1",
+      "fieldPath": "_provian_range.updated_at",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pvt9_settlement_batches_v1",
+      "fieldPath": "_provian_range.cursor_end_n",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "wallet_jurisdiction_sessions_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "github_webhook_inbox_v1",
+      "fieldPath": "*",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "github_webhook_inbox_v1",
+      "fieldPath": "_provian_range.available_at",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "github_webhook_inbox_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
+}

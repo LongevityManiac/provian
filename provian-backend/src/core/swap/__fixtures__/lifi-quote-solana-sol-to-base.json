@@ -1,0 +1,48 @@
+{
+ "_source": "li.quest/v1/quote Solana 1 SOL (native) -> Base USDC, integrator=provian fee=0.0025, 2026-09-25",
+ "action": {
+  "fromChainId": 1151111081099710,
+  "fromAmount": "1000000000",
+  "fromToken": {
+   "address": "11111111111111111111111111111111"
+  }
+ },
+ "estimate": {
+  "fromAmount": "1000000000",
+  "toAmount": "120420067",
+  "toAmountMin": "119817967",
+  "feeCosts": [
+   {
+    "name": "LIFI Fixed Fee",
+    "amount": "5000000",
+    "amountUSD": "0.5980",
+    "included": true,
+    "feeSplit": {
+     "lifiFee": "2500000",
+     "integratorFee": "2500000",
+     "recipients": [
+      {
+       "name": "lifi",
+       "type": "FIXED",
+       "fee": "2500000"
+      },
+      {
+       "name": "provian",
+       "type": "FIXED",
+       "fee": "2500000"
+      }
+     ]
+    }
+   }
+  ],
+  "gasCosts": [
+   {
+    "amount": "59198",
+    "amountUSD": "0.007079555152955866"
+   }
+  ]
+ },
+ "transactionRequest": {
+  "data": "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAGDH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyQSPzykYHtyqbWGBLGCFvz7pUWLUoCqT4tCu4vrjU15QW/9OZrNKF29ineddFCpv5ydWNPqbDQ0md0U5L5qJE0Q4oEdPuEEMr6lUG+02Rnl4VWRblv0nsjnJkagBEdaYzbQ/ffN89KMzS1moKr3xD+eaLjFLD93Uu7/6fCChoRW/T6oz1rKyozQUgdRIXXEPO9Upd2Z7eIKFrVSU3OPOX3AMGRm/lIRcy/+ytunLDm+e8jOW7xfcSayxDmzpAAAAAKD0N0oI1T+8K47DiJ9N82JyiZvsX3fj3y3zO++Tr3FUb5jFNWqZQWUGe9BFty369cdAPE34TzIBu0q24QxWUXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAtCPlnWlpkuqreRQnU8Cb1tgTWqlAT2NSRxIcSdKfQ5UEedVb8jHAbu50xW7OaBUH/bGy3qP0jlECsc2iVrwTj2AadA8LjPw3YMHIKla41AkQW56BimnuPEXjwTLeD555CwYABQLAXBUABgAJAzmXAAAAAAAABwIQCAkAlLZCjsVibAAJAgAMDAIAAACgJSYAAAAAAAkCAAEMAgAAAKAlJgAAAAAACgcRAAIDEgkTAAoDCQAEDAIAAADAfk47AAAAAAoCEwQBEQsWAAQFFBITEwIVCxgADQ4PBAUTExYZCyi7ZPrMMcSvFMB+TjsAAAAApZ4uBwAAAABkAAAAAAABAAAAjQEQJwABCgQTBAAAAQkKCBcAAwACFxIJfKdmgGp5drpMAAAAAAAAAAAAAAAA2Npr8mlkr51+7Z4D5TQV03qpYEUJZSUHAAAAAAAAAAAAAAAAIV4AAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAClqm4hcbQW4dJ+xTyowT2z+RqJzQA7w8czAAAAAAAAAQAAAAEC2cMN+5YRja4DNaX11bThHmwP8vCzdRYtSPXpFGWT2KsBRAgoBhEFMDQqXGqpw+s1vSQ6Ph/igGje2p5R+TkFxGSr527DImNvLfjZA4WEgAKChw=="
+ }
+}

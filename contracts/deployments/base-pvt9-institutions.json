@@ -1,0 +1,284 @@
+{
+  "version": "pvt9-base-institutions",
+  "network": "base",
+  "chainId": 8453,
+  "mode": "mainnet-broadcast",
+  "contracts": {
+    "escrowV4": {
+      "address": "0x96560fDF49e563eFCdc2d502934676DC074732d0",
+      "nonce": 27,
+      "tx": "0x2cee3c9303843cd759c007dc22e22b5eabd3579b9368a357fdbabaf87410001d",
+      "block": 51824013
+    },
+    "promiseV3": {
+      "address": "0x7506F4A052750260A0ddcdF5E63a77CC646d89B9",
+      "nonce": 28,
+      "tx": "0x8589167e2d53e679b9cce0bb5086e016d938e193f8584ac06a0fc14db431d78c",
+      "block": 51824015
+    },
+    "poolV3": {
+      "address": "0x1301BF63Cb6BaE7171f6c7D895C762B243964d26",
+      "deployer": "0xE80c010e20A97d00196ee3FB102b07c302292f0b",
+      "nonce": 0,
+      "tx": "0x82afe05aa6029ea17ea50dcbe39e0c13c95cfffe75107963d00e5bafc590a5e3",
+      "block": 52855161,
+      "note": "Shutdown coverage (2026-10-20): fresh PoolV3 whose refundPool lets anyone refund a Funded pool past its own deadline, so no contributor depends on the creator or a Provian key. Same constructor arguments as the PoolV3 it replaces (copied from it on-chain). Nothing else changed address; no PVT redeploy. Deployed from the relay's gas-only pool-keeper key (the deployer has no authority over the pool; admin = the bootstrap admin, a constructor argument)."
+    },
+    "bondPool": {
+      "address": "0x6b09E9C72316De9d62d63f09B187d4c86bBf787E",
+      "nonce": 30,
+      "tx": "0x0ed233d5e255fd6cd3661c15db36c4c46e128c88bb5560170c8a0e667ea16e34",
+      "block": 51824019
+    },
+    "courtV2": {
+      "address": "0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f",
+      "nonce": 31,
+      "tx": "0x2ad8aef0b025e284b33a5b1b41248a5425732228e232bc74c0eb4584676e2931",
+      "block": 51824021
+    }
+  },
+  "safetyPolicy": {
+    "note": "The PoolV3 creation guard refuses nonexistent pools. The kernel and the other institutions retain their addresses.",
+    "retiredPoolV3": {
+      "address": "0x68d557e0A7049a8e32908E548556D22bCda1e3D0",
+      "nonce": 29,
+      "tx": "0x1da004b6b28b83186c4877fa43653a65ce6b421ebe6e857ebb08d4e1476debd0",
+      "block": 51824017,
+      "note": "Retired PoolV3 has no current route or authority. It held no pool, funds or scheduled parameter at replacement."
+    },
+    "ceiling": {
+      "call": "kernel.scheduleCapPolicy(1, Fixed, 7500000e18, 10000000e18)",
+      "effectiveEpoch": 1,
+      "effectiveAtIso": "2026-10-03T15:46:00.000Z",
+      "genesisCap": "7500000000000000000000000",
+      "fixedCombinedCap": "10000000000000000000000000",
+      "tx": "0xf274f98671b275abf338117bf6e0a22502c5166fd93b8b297aa91444ce0b1c2b",
+      "block": 52101013,
+      "nonce": 473,
+      "note": "Fixed 7.5M Genesis and 10M combined caps bind from epoch 1. _applySchedules persists the mode and caps, so the scheduled policy binds every later epoch."
+    }
+  },
+  "status": {
+    "state": "broadcast_and_verified",
+    "note": " OBSERVED on Base mainnet. Every address equals its prediction. verify.mjs: 95 checks, 0 failed, at block 51826297. Snapshot block 51823797.",
+    "predicted_addresses_are_not_confirmed": false
+  },
+  "successorKernel": {
+    "note": " successor kernel + eligibility verifier. Genesis window 2026-08-03T00:00:00Z.. 2027-01-01T00:00:00Z (genesisEndsAt);  Fixed/MAX/MAX cap policy armed at epoch zero; epoch zero = arming block time + lead. The predecessor history is REPLAYED into a keyless migration distributor (same claims, same cursor sub-ranges; one successor batch per original recipient group) so every claimSettled / genesisAnchorUsed / genesisWalletGrossIssued entry and the cursor (9545) carry, and the distributor pays every predecessor balance 1:1.",
+    "pvt9Kernel": {
+      "nonce": 22,
+      "address": "0x8811441914381143b9408c5C32247367F86F173A",
+      "tx": "0x1779119e9e96255e598dcc2f6c89ac10e92e0ce7e3fd6bfc8d66b0a86082774b",
+      "block": 51824003
+    },
+    "eligibilityVerifier": {
+      "nonce": 23,
+      "address": "0xb26Fd9d4f3b42911592B96270e8437287DE33406",
+      "tx": "0x7375b288f84c7096cc3871c57433d42762769989c6090eb6cf899df050c184f5",
+      "constructorArgs": [
+        "0x8811441914381143b9408c5C32247367F86F173A",
+        "0xe0ee2de78a611198a17183b8505ed321902ba64b6577e2f1cb04a24e37cf23cb",
+        1
+      ]
+    },
+    "migrationDistributor": {
+      "nonce": 36,
+      "address": "0xf674f1A915862430C9d0Da994f1B9EA5Dd0c71Ed",
+      "tx": "0x9abc5238b66705fd8b1eda1dde634d3ff9d6dc2cad1aa49569c174b7fff04d3a"
+    },
+    "epochZeroStartsAt": 1790437560,
+    "epochZeroStartsAtIso": "2026-09-26T15:46:00.000Z",
+    "armTx": "0xd90145b58f9c28eff6129d1d465590547e31eb805aa23aab08ca4a20384b2e41",
+    "snapshotBlock": 51823797,
+    "relayMinterAppointTx": "0xc227f372e973b7a6cbd52cdf8a5efc3e7a740824264f56017f13b68075d6229f",
+    "relayApproverAppointTx": "0xd07785178a9272720ff3dde288f457649ca209e245e965a74c530ab5eb392da2",
+    "distributeTx": "0xfb1a1c5f7b3715c90e092cb4f42dfd8932b3edb59fdfb7fee12e6e82db80ef47"
+  },
+  "deployOrder": [
+    "predecessorKernel.placeAdministrativeHold",
+    "predecessorKernel.revokeOperationalMinter",
+    "predecessorVerifier.placeAdministrativeHold",
+    "predecessorVerifier.revokeBatchApprover",
+    "kernel",
+    "verifier",
+    "kernel.appointOperationalMinter(replay)",
+    "kernel.armEpochZero",
+    "verifier.appointBatchApprover(replay)",
+    "escrowV4",
+    "promiseV3",
+    "poolV3",
+    "bondPool",
+    "courtV2",
+    "escrowV4.setCourtContract",
+    "courtV2.setBondPool",
+    "bondPool.setCourtContract",
+    "bondPool.setExecutor",
+    "distributor",
+    "replay (approve + settle per batch)",
+    "distributor.distribute",
+    "kernel.appointOperationalMinter(relay)",
+    "verifier.appointBatchApprover(relay)"
+  ],
+  "orderingConstraint": "Escrow MUST precede Court: the Court constructor takes the Escrow address and `escrowContract` has NO setter, so a Court deployed first can never be pointed at the right Escrow.",
+  "constructorArgs": {
+    "escrowV4": [
+      "admin",
+      "feeWallet",
+      "usdc",
+      "pvt",
+      "epochClock",
+      "issuanceIndex",
+      "seedEscrows"
+    ],
+    "promiseV3": [
+      "admin",
+      "feeWallet",
+      "usdc",
+      "pvt",
+      "epochClock"
+    ],
+    "poolV3": [
+      "admin",
+      "feeWallet",
+      "usdc",
+      "pvt",
+      "epochClock"
+    ],
+    "bondPool": [
+      "admin",
+      "provianTechWallet",
+      "pvt",
+      "epochClock",
+      "issuanceIndex",
+      "seedBonds",
+      "seedBps"
+    ],
+    "courtV2": [
+      "admin",
+      "escrowContract",
+      "epochClock",
+      "pvt",
+      "issuanceIndex"
+    ]
+  },
+  "wiring": {
+    "admin": "0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3",
+    "feeWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+    "provianTechWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+    "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "pvt": "0x8811441914381143b9408c5C32247367F86F173A",
+    "epochClock": "0x8811441914381143b9408c5C32247367F86F173A",
+    "issuanceIndex": "0x8811441914381143b9408c5C32247367F86F173A",
+    "executor": "0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3",
+    "note": "pvt == epochClock == issuanceIndex == the  successor kernel. All three are constructor immutables with no setter. Same admin EOA and same executor as the  set; no new authority."
+  },
+  "carry": {
+    "bonds": "Every Active predecessor bond is seeded in the BondPool constructor (amount, level, created/renewed/deadline, requiredAtPost; pendingClaims 0) and emits BondCarried, never BondPosted. Its PVT backing arrives from the migration distributor, which pays the predecessor BondPool balance to the successor BondPool.",
+    "bondBps": "The predecessor BondPool's active bps overrides (depositFeeBps 0, renewalFeeBps 0) are seeded at the successor's epoch 0.",
+    "escrows": "Created (unfunded) predecessor escrows are seeded Created and emit EscrowCarried; the depositor funds them on the successor.",
+    "servicedInPlace": "A Funded/Disputed USDC escrow cannot move custody out of a non-custodial escrow; it completes on the predecessor EscrowV4 (its only kernel read is the time-derived epoch clock). See contracts/deployments/d486/*/plan.json servicedInPlace."
+  },
+  "oneTimeSetters": {
+    "firedAt": "2026-09-26",
+    "firedTxs": {
+      "escrowV4.setCourtContract": "0x2db3a09d619344a94ad850c61120047d327212205a7366cb7cbba9d129a9fee0",
+      "courtV2.setBondPool": "0xe2352ec1d28bd9ad13e4ebed4fb04244cbe4d93d6b5099554a25899aa69a3b79",
+      "bondPool.setCourtContract": "0xea18d85d0eedcb2b7ea86eb840c53fc27b273b4dc053c444977418a9dc1d6d83",
+      "bondPool.setExecutor": "0x76080fe45e355c3b75163477082cace3a91bf53b77d5a0fb830f09d8fead32ab"
+    },
+    "sequence": [
+      {
+        "call": "escrowV4.setCourtContract(courtV2)",
+        "guard": "courtContractSet"
+      },
+      {
+        "call": "courtV2.setBondPool(bondPool)",
+        "guard": "bondPoolSet"
+      },
+      {
+        "call": "bondPool.setCourtContract(courtV2)",
+        "guard": "courtContractSet"
+      },
+      {
+        "call": "bondPool.setExecutor(admin)",
+        "guard": "executorSet"
+      }
+    ]
+  },
+  "compiler": {
+    "solc": "0.8.24",
+    "via_ir": true,
+    "optimizer": true,
+    "optimizer_runs": 200,
+    "evm_version": "cancun",
+    "note": "Must match contracts/foundry.toml exactly or bytecode verification fails."
+  },
+  "predecessor": {
+    "note": "The  set, RETIRED by predecessor kernel HELD with its minter revoked, predecessor verifier HELD with its approver revoked; every balance, bond and unfunded escrow carried to the successor. History is not deleted.",
+    "pvt9Kernel": "0x4Bf02d5C9bC4306c38603EF2aA164f2f2273bcd7",
+    "eligibilityVerifier": "0x3a27957a5C4c867DDB0048De04d75aD44AD951aa",
+    "contracts": {
+      "escrowV4": "0xc738092785698DCfB28af5a016e69c7AD2b97164",
+      "promiseV3": "0x0485dF39af9c978Cb26b51c7eaC01a4B74f06479",
+      "poolV3": "0x8C981b150a6d27d4880A00De9Df924E3e45254d7",
+      "bondPool": "0xC7D699da369f261672cb1A1F765F32dEa26F4676",
+      "courtV2": "0x007CeCa70086EDC96a0E8CfC9f4340CAEf35a580"
+    },
+    "deployTxs": {
+      "escrowV4": "0x29b1c1349c7cc896b6e46b37df9da004aba7d09d57f90242211e877106bf78a0",
+      "promiseV3": "0xc4e0bffe8d006d71138145607b33883fb6df670e16bef95235af729ac15c9317",
+      "poolV3": "0x5852628a9485870a0f63c1b90c1a10593ee5ce4fc45fec8f75445aee27118aaf",
+      "bondPool": "0x8f061e5aed2237670e69b470f0c4042c04e8c60af7a3e3f9b081e380b54619a2",
+      "courtV2": "0x627ebce5487a47070a380adcf4f7834f59554362afbe879006c65c207b98ccb3"
+    },
+    "oneTimeSetterTxs": {
+      "escrowV4.setCourtContract": "0xa7ece2b6a31a582f841cffb5622c2b6e3890ce3444ce07d252d638abdf3e4ba5",
+      "courtV2.setBondPool": "0x1b77335862e62495f709c8d3e85d04f8b1676bfeefe0453cc1c3d0fedf1a2105",
+      "bondPool.setCourtContract": "0x2a003b143e1669d36111509e659ae1cd90e43278df830aaac68aec0e808a1299",
+      "bondPool.setExecutor": "0x489d0b68c1b484648edafa52bc805b23a24393dd4d04cc7b151b69750d901f84"
+    },
+    "retirementTxs": {
+      "predecessorKernel.placeAdministrativeHold": "0x220fddc88eded5dcc7928fa1ea18a7e9f233a77a82cfc23a449120ba9baefe75",
+      "predecessorKernel.revokeOperationalMinter": "0x746170bbdd0a0460cab28c0b94fdbaa4611c26b7ca2be0bdfdd9843d8980d2ec",
+      "predecessorVerifier.placeAdministrativeHold": "0x7e53c9d7568f83f2250812e2e23d1ce5d25020fc7474b642a985a0873a8be717",
+      "predecessorVerifier.revokeBatchApprover": "0xf7a6916ea7cbaba517e789056e949ac668a2be8b44fa7587bf26fda3ee62b716"
+    }
+  },
+  "supersedes": {
+    "note": "These five REPLACE the position-free set at nonces 2-6. Retired with a successor pointer; history is not deleted.",
+    "retired": {
+      "escrowV4": "0x1E14bd3b74edF3041f2dec7c4Bf0f675886bE123",
+      "promiseV3": "0x615C44c044304c6e48e68Ef846339C7476fB2f48",
+      "poolV3": "0x9e11464C5E2405879F76F09567f34acbCf0c1A54",
+      "bondPool": "0xF46C6e8Ee3D32Cf5A6b9ec8eed81Bb06092Dd3d4",
+      "courtV2": "0xb355cfcec77feCDC321975b14fb39661fe0DF9f0"
+    },
+    "retiredReason": "Superseded by institution deployment. Safe to replace rather than migrate: verified on chain to hold no positions and to have all four cross-wiring setters unfired, so nothing is stranded.",
+    "alsoRetired": {
+      "pvtV8": "0x50D6F1Ff28CcaC80B548946F27701016C01f4BAa",
+      "pvtV8Reason": "The institution set now binds the PVT9 kernel 0x4Bf02d5C9bC4306c38603EF2aA164f2f2273bcd7. PVTv8 remains deployed history and is on the kernel config's own forbidden list."
+    }
+  },
+  "postDeployVerification": {
+    "note": "scripts/d486/verify.mjs asserts every item and exits non-zero on any mismatch (95 checks on the rehearsal).",
+    "checks": [
+      "every predecessor holder balance == its successor balance (institutions mapped), treasuries exact, distributor empty, no stray holder",
+      "successor totalSupply == predecessor totalSupply at the snapshot block",
+      "every predecessor claim claimSettled on both kernels; every Genesis anchor used on both; every Genesis wallet gross equal; cursor equal",
+      "epoch 0 Fixed/MAX/MAX; Genesis 2026-08-03 .. 2027-01-01; mint rate; treasuries; verifier configuration; relay minter + approver",
+      "predecessor kernel + verifier held, minter + approver revoked",
+      "institution wiring, bond + escrow seeds equal the predecessor state, bond backing == bonded total",
+      "a second grant on a used Genesis anchor is refused (GenesisAnchorAlreadyUsed)"
+    ]
+  },
+  "shutdownCoverage": {
+    "note": "2026-10-20: every fund-holding institution audited for a relay-independent exit; only PoolV3 lacked one (a Funded pool left only via its creator or the admin). The replaced pool never held a pool: 0 USDC, 0 PVT, no schedules, 0 logs from deploy to the replacement. Evidence: contracts/deployments/shutdown-coverage/.",
+    "retiredPoolV3": {
+      "address": "0xb355C79a78DC0F33b7d1EF5dA230CD8097630a84",
+      "nonce": 472,
+      "tx": "0xae59ae417a2e8b6d1d5a210d8514248aacbc5d4bccf97643e1de1c36fe3f7c28",
+      "block": 52101008,
+      "note": "Retired PoolV3 refuses contribution to a nonexistent pool and retains its constructor-bound Base assets, admin, treasury and kernel clock. The active pool is named in contracts.poolV3."
+    }
+  }
+}

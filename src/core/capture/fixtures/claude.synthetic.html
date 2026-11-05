@@ -1,0 +1,39 @@
+<!--
+  Claude synthetic fixture. NOT captured from claude.ai. Hand-written DOM
+  approximating Claude's message structure: a conversation container with
+  a user-authored turn carrying one image attachment and an assistant-
+  authored turn with text.
+
+  Selector basis:
+    - [data-testid="user-message"]       turn container for user input
+    - [data-testid="assistant-message"]  turn container for assistant output
+    - img inside a user-message           counts toward imageCount
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Claude synthetic</title></head>
+<body>
+  <main>
+    <div data-testid="conversation">
+
+      <div data-testid="user-message" class="font-user-message">
+        <div class="whitespace-pre-wrap break-words">
+          Here is a photograph of a kitchen. Tell me what ingredients you can identify.
+        </div>
+        <div data-testid="file-thumbnail" class="attachment">
+          <img src="data:image/png;base64,iVBORw0KGgo=" alt="Kitchen photo" />
+        </div>
+      </div>
+
+      <div data-testid="assistant-message" class="font-claude-message">
+        <div class="whitespace-pre-wrap break-words">
+          I can see olive oil, garlic, a few tomatoes on the vine, fresh basil, and what looks like a block of parmesan on the counter. There is also a pepper mill and a small dish of flaked salt.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

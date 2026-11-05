@@ -1,0 +1,15 @@
+{
+ "_source": "lite-api.jup.ag/swap/v1/quote SOL 0.1 -> USDC platformFeeBps=25, 2026-09-25",
+ "inputMint": "So11111111111111111111111111111111111111112",
+ "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+ "inAmount": "100000000",
+ "outAmount": "12075998",
+ "otherAmountThreshold": "12015619",
+ "swapMode": "ExactIn",
+ "slippageBps": 50,
+ "platformFee": {
+  "amount": "30265",
+  "feeBps": 25
+ },
+ "priceImpactPct": "0"
+}

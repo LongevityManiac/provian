@@ -1,0 +1,25 @@
+# Used only when building the provian-website Docker image from repo root:
+#   docker build -f provian-website/Dockerfile -t provian-website .
+# The other Dockerfiles in this repo (provian-backend, provian-ops) use their own
+# subdirectory as build context and carry their own .dockerignore files; this
+# file does not affect them.
+
+# Exclude everything from the build context by default.
+*
+
+# Re-include only what the website build needs. NB: OPEN_ITEMS.md (the internal
+# tracker) is deliberately NOT re-included — it must never enter the build
+# context. The /internal dashboard + its gen-open-items pipeline were removed
+# 2026-07-06 (OPEN_ITEMS.md finding #3); nothing in the site build reads it.
+!provian-website
+!provian-website/**
+
+# Then re-exclude heavy / sensitive paths inside the website dir.
+provian-website/node_modules
+provian-website/.next
+provian-website/out
+provian-website/.firebase
+provian-website/.DS_Store
+provian-website/*.pem
+provian-website/npm-debug.log*
+provian-website/.env*.local

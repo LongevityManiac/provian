@@ -1,0 +1,28 @@
+{
+  "name": "provian-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "files": [
+    "src",
+    "scripts",
+    "test",
+    "deployments",
+    "hardhat.config.ts",
+    "foundry.toml",
+    "tsconfig.json",
+    "README.md"
+  ],
+  "scripts": {
+    "compile": "hardhat compile"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.0.0",
+    "hardhat": "^2.28.0",
+    "ts-node": "^10.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20 <21"
+  }
+}

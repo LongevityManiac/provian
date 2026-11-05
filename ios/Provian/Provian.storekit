@@ -1,0 +1,53 @@
+{
+  "identifier" : "6F1D2A4C",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "5.00",
+      "familyShareable" : false,
+      "internalID" : "6754000001",
+      "localizations" : [
+        {
+          "description" : "One more GB of encrypted space for your Provenance Envelopes.",
+          "displayName" : "PE Archive — 1 GB",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.provian.wallet.archive_1gb",
+      "referenceName" : "PE Archive 1 GB",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.00",
+      "familyShareable" : false,
+      "internalID" : "6754000002",
+      "localizations" : [
+        {
+          "description" : "Settle your ready earnings now instead of waiting for the scheduled settlement, currently every 30 days.",
+          "displayName" : "Settle now",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.provian.wallet.settle_now",
+      "referenceName" : "Settle now",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -1,0 +1,57 @@
+name: AI Provider Catalog Sync
+
+# The mobile Chat surface and the desktop LLM session plugin must match
+# users to providers with identical rules. Drift between the two catalog
+# copies produces cross-surface inconsistency for the same user and
+# creates a fingerprint-dedup hazard.
+#
+# This workflow enforces byte-for-byte identity between:
+#   - provian-agent-sdk/src/observer/config/ai-providers.json (desktop)
+#   - src/core/capture/ai-providers.json                      (mobile)
+#
+# Rationale: docs/archive/PHASE_2C_DESIGN_NOTES.md §4.Q1.
+#
+# The Vitest test at src/core/capture/__tests__/catalog-sync.test.ts
+# enforces the same invariant locally, but only runs when the mobile test
+# suite runs. This workflow fires on any PR that touches either catalog
+# file, so drift cannot sneak in through a desktop-only PR that never
+# touches the mobile test path.
+
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger (never had one). This cheap
+# byte-diff check runs on a PR that touches either catalog, nightly against master,
+# and on demand.
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'provian-agent-sdk/src/observer/config/ai-providers.json'
+      - 'src/core/capture/ai-providers.json'
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly catalog-drift check vs master
+  workflow_dispatch:
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  catalog-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # observed max 0.2 min (24 runs, Apr-Sep 2026); 3x headroom, rounded up to 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Diff mobile and desktop catalogs
+        run: |
+          MOBILE=src/core/capture/ai-providers.json
+          DESKTOP=provian-agent-sdk/src/observer/config/ai-providers.json
+          if ! diff -u "$DESKTOP" "$MOBILE"; then
+            echo
+            echo "::error::ai-providers.json has drifted between the mobile and desktop surfaces."
+            echo "Mobile copy:  $MOBILE"
+            echo "Desktop copy: $DESKTOP"
+            echo "Update both copies so they are byte-for-byte identical, then push."
+            exit 1
+          fi
+          echo "Catalogs are byte-for-byte identical."

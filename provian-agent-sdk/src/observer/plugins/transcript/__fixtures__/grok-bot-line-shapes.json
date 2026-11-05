@@ -1,0 +1,172 @@
+{
+ "_comment": "Grok Bot agent-loop transcript LINE SHAPES, derived from real lines of the operator’s Grok bot  and sanitized: every content string replaced by a PROVIAN_SENTINEL_* marker, ids by __ID_<key>__ placeholders, result timestamps by __TS__, command names by a sentinel. Structure (keys, nesting, types, tool names) is the real shape. The raw lines are never committed.",
+ "shapes": {
+  "assistant|tool_use|shell": {
+   "role": "assistant",
+   "message": {
+    "content": [
+     {
+      "type": "tool_use",
+      "name": "shell",
+      "input": {
+       "command": "PROVIAN_SENTINEL_command",
+       "timeout": 30000,
+       "toolCallId": "__ID_toolCallId__",
+       "simpleCommands": [
+        "PROVIAN_SENTINEL_simpleCommands",
+        "PROVIAN_SENTINEL_simpleCommands"
+       ],
+       "hasOutputRedirect": true,
+       "parsingResult": {
+        "executableCommands": [
+         {
+          "name": "PROVIAN_SENTINEL_cmd",
+          "args": [
+           {
+            "type": "word",
+            "value": "PROVIAN_SENTINEL_value"
+           },
+           {
+            "type": "word",
+            "value": "PROVIAN_SENTINEL_value"
+           },
+           {
+            "type": "word",
+            "value": "PROVIAN_SENTINEL_value"
+           }
+          ],
+          "fullText": "PROVIAN_SENTINEL_fullText"
+         },
+         {
+          "name": "PROVIAN_SENTINEL_cmd",
+          "args": [
+           {
+            "type": "number",
+            "value": "PROVIAN_SENTINEL_value"
+           }
+          ],
+          "fullText": "PROVIAN_SENTINEL_fullText"
+         }
+        ],
+        "hasRedirects": true,
+        "allRedirectsAreDevNull": true,
+        "redirects": [
+         {
+          "operator": "PROVIAN_SENTINEL_operator",
+          "destinationFds": [
+           2
+          ],
+          "targetNodeType": "PROVIAN_SENTINEL_targetNodeType",
+          "targetText": "PROVIAN_SENTINEL_targetText"
+         }
+        ]
+       },
+       "requestedSandboxPolicy": {
+        "type": "TYPE_INSECURE_NONE"
+       },
+       "fileOutputThresholdBytes": "PROVIAN_SENTINEL_fileOutputThresholdBytes",
+       "skipApproval": true,
+       "timeoutBehavior": "PROVIAN_SENTINEL_timeoutBehavior",
+       "hardTimeout": 86400000,
+       "description": "PROVIAN_SENTINEL_description",
+       "conversationId": "__ID_conversationId__",
+       "requestId": "__ID_requestId__"
+      }
+     }
+    ]
+   }
+  },
+  "tool|tool_result|shell": {
+   "role": "tool",
+   "message": {
+    "content": [
+     {
+      "type": "tool_result",
+      "name": "shell",
+      "result": {
+       "success": {
+        "command": "PROVIAN_SENTINEL_command",
+        "stdout": "PROVIAN_SENTINEL_stdout",
+        "executionTime": 1957,
+        "interleavedOutput": "PROVIAN_SENTINEL_interleavedOutput",
+        "localExecutionTimeMs": 222
+       },
+       "isBackground": false
+      }
+     }
+    ]
+   }
+  },
+  "assistant|tool_use|send_message": {
+   "role": "assistant",
+   "message": {
+    "content": [
+     {
+      "type": "tool_use",
+      "name": "send_message",
+      "input": {
+       "text": {
+        "content": "PROVIAN_SENTINEL_content"
+       }
+      }
+     }
+    ]
+   }
+  },
+  "tool|tool_result|send_message": {
+   "role": "tool",
+   "message": {
+    "content": [
+     {
+      "type": "tool_result",
+      "name": "send_message",
+      "result": {
+       "success": {
+        "timestamp": "__TS__",
+        "messageId": "__ID_messageId__"
+       }
+      }
+     }
+    ]
+   }
+  },
+  "assistant|text|None": {
+   "role": "assistant",
+   "message": {
+    "content": [
+     {
+      "type": "text",
+      "text": "PROVIAN_SENTINEL_text"
+     }
+    ]
+   }
+  },
+  "user|text|None": {
+   "role": "user",
+   "message": {
+    "content": [
+     {
+      "type": "text",
+      "text": "PROVIAN_SENTINEL_text"
+     }
+    ]
+   }
+  },
+  "tool|tool_result|communicate_update": {
+   "role": "tool",
+   "message": {
+    "content": [
+     {
+      "type": "tool_result",
+      "name": "communicate_update",
+      "result": {
+       "success": {
+        "currentStep": "PROVIAN_SENTINEL_currentStep"
+       }
+      }
+     }
+    ]
+   }
+  }
+ }
+}

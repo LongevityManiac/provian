@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "L83XFY5S26.com.provian.wallet",
+        "paths": [
+          "/p",
+          "/p/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "L83XFY5S26.com.provian.wallet"
+    ]
+  }
+}

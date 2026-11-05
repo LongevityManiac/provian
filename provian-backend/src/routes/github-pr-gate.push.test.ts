@@ -1,0 +1,23 @@
+import express from 'express';
+import request from 'supertest';
+import { createFakeFirestore } from '../core/pvt/__test-helpers__/fake-firestore';
+import * as gate from '../core/witnesses/github-pr-gate';
+import { createGitHubPrGateRouter } from './github-pr-gate';
+const prior = process.env.GITHUB_PR_GATE_ENABLED;
+beforeEach(() => { process.env.GITHUB_PR_GATE_ENABLED = 'true'; });
+afterEach(() => { jest.restoreAllMocks(); if (prior === undefined) delete process.env.GITHUB_PR_GATE_ENABLED; else process.env.GITHUB_PR_GATE_ENABLED = prior; });
+it('durably dispatches provisional clearance before returning pending, including same-token retries', async () => {
+  const fake = createFakeFirestore();
+  const burnId = 'b'.repeat(64);
+  fake.store.set(`${gate.PR_GATES_COLLECTION}/${gate.prGateId('provian', 6)}`, { pending: { burn_id: burnId } });
+  jest.spyOn(gate, 'acceptPrGatePresentation').mockRejectedValue(new gate.PrGateError(425, 'burn_finality_pending_retry_same_token'));
+  const enqueue = jest.fn(async () => {});
+  const app = express(); app.use(express.json());
+  app.use('/gate', createGitHubPrGateRouter(fake as never, { checkRateLimit: async () => ({ allowed: true }) } as never, {}, enqueue));
+  for (let n = 0; n < 2; n++) expect((await request(app).post('/gate/provian/6/present').send({ token: 'verified-by-core' })).status).toBe(425);
+  expect(enqueue).toHaveBeenCalledTimes(2);
+  expect(enqueue).toHaveBeenCalledWith({ kind: 'pr_gate', repo: 'provian', number: 6, burnId });
+  enqueue.mockRejectedValueOnce(new Error('offline'));
+  expect((await request(app).post('/gate/provian/6/present').send({ token: 'verified-by-core' })).status).toBe(503);
+  expect(fake.store.get(`${gate.PR_GATES_COLLECTION}/${gate.prGateId('provian', 6)}`)?.pending).toBeDefined();
+});

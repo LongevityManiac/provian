@@ -1,0 +1,29 @@
+{
+  "name": "@provian/commons",
+  "version": "0.1.0",
+  "description": "The Provian Commons Reference Implementation - public institutional layer for the agent economy (proprietary; closed source)",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LongevityManiac/provian.git"
+  },
+  "keywords": [
+    "provian",
+    "commons",
+    "agent-economy",
+    "provenance-envelope",
+    "pvt"
+  ],
+  "files": [
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "homepage": "https://provian.ai",
+  "bugs": {
+    "url": "https://github.com/LongevityManiac/provian/issues"
+  }
+}

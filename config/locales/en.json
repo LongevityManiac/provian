@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSFaceIDUsageDescription": "Provian uses Face ID to unlock your wallet and to confirm the transactions, signatures, and approvals you make.",
+    "NSCameraUsageDescription": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
+    "NSMotionUsageDescription": "Provian reads the motion sensor only while you send or swap, to notice hard shaking that can mean a transfer is being made under pressure. Readings stay on this device.",
+    "NSPhotoLibraryUsageDescription": "Provian opens your photo library only when you choose a picture for your Commons profile. Only the picture you pick is used."
+  }
+}

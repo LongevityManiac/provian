@@ -1,0 +1,19 @@
+appId: com.provian.wallet
+---
+# Dismiss debug banner by tapping the X (top right of banner, ~y=840, x=385)
+- tapOn:
+    point: "385,845"
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 2000
+
+- takeScreenshot: screenshots/test-after-dismiss
+
+# Now tap Show Me (should be around y=760 without banner)
+- tapOn:
+    point: "201,760"
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 3000
+
+- takeScreenshot: screenshots/test-after-tap

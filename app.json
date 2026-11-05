@@ -1,0 +1,177 @@
+{
+  "expo": {
+    "name": "Provian",
+    "slug": "provian-wallet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "provian",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0E14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.provian.wallet",
+      "googleServicesFile": "./config/firebase/GoogleService-Info.plist",
+      "associatedDomains": [
+        "applinks:provian.ai",
+        "webcredentials:provian.ai"
+      ],
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Provian uses Face ID to unlock your wallet and to confirm the transactions, signatures, and approvals you make.",
+        "NSCameraUsageDescription": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
+        "NSMotionUsageDescription": "Provian reads the motion sensor only while you send or swap, to notice hard shaking that can mean a transfer is being made under pressure. Readings stay on this device.",
+        "NSPhotoLibraryUsageDescription": "Provian opens your photo library only when you choose a picture for your Commons profile. Only the picture you pick is used.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "buildNumber": "2026110405"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0E14"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.provian.wallet",
+      "versionCode": 90,
+      "googleServicesFile": "./config/firebase/google-services.json",
+      "permissions": [
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.ACTIVITY_RECOGNITION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "provian.ai",
+              "path": "/p"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4A8EE8",
+          "sounds": [],
+          "defaultChannel": "agent-requests"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Provian uses Face ID to unlock your wallet and to confirm the transactions, signatures, and approvals you make."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Provian opens your photo library only when you choose a picture for your Commons profile. Only the picture you pick is used.",
+          "cameraPermission": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Provian reads the motion sensor only while you send or swap, to notice hard shaking that can mean a transfer is being made under pressure. Readings stay on this device."
+        }
+      ],
+      "expo-sqlite",
+      "expo-font",
+      "expo-localization",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
+      ],
+      "./plugins/withBiometric",
+      "./plugins/withSecureEnclave",
+      "./plugins/withCloudKeychainSync",
+      "./plugins/withAppAttest",
+      "./plugins/withICloudDocuments",
+      "./plugins/withPlayIntegrity",
+      "./plugins/withReleaseBuildConfig",
+      "./plugins/withIosRuntimeGuard"
+    ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#4A8EE8",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Provian"
+    },
+    "extra": {
+      "COINBASE_CDP_PROJECT_ID": "158e8e0e-42f6-42c5-86e5-52e852e686e1",
+      "eas": {
+        "projectId": "68304003-f7ba-48a4-b9d6-c448a515e175"
+      }
+    },
+    "owner": "provian",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "locales": {
+      "en": "./config/locales/en.json",
+      "es": "./config/locales/es.json",
+      "fr": "./config/locales/fr.json",
+      "hi": "./config/locales/hi.json",
+      "id": "./config/locales/id.json",
+      "ja": "./config/locales/ja.json",
+      "ko": "./config/locales/ko.json",
+      "pt": "./config/locales/pt.json",
+      "sw": "./config/locales/sw.json",
+      "tl": "./config/locales/tl.json",
+      "vi": "./config/locales/vi.json",
+      "zh": "./config/locales/zh.json"
+    }
+  }
+}

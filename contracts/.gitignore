@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Hardhat build artifacts
+artifacts/
+cache/
+typechain-types/
+
+# Foundry build artifacts
+out/
+
+# Echidna / slither analysis output
+crytic-export/
+
+# Coverage
+coverage/
+coverage.json
+
+# Local deployment output
+# Note: deployments/ IS committed to track addresses
+dist/
+
+# Environment
+# Ignore ALL .env variants (.env, .env.save, .env.local, .env.bak, ...) so a
+# backup copy can never carry the deployer key into git. Keep the example file.
+.env
+.env.*
+!.env.example
+
+# Key rotation output (sensitive - never commit)
+.new-minter-key
+.new-admin-key
+.foundation-treasury-key.json
+*.key

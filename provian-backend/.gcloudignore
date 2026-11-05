@@ -1,0 +1,7 @@
+# Keep source uploads consistent with the Docker build context.
+.gcloudignore
+.git
+#!include:.dockerignore
+firestore-debug.log
+firebase-debug.log
+wp11-cutover-dry-run.*.json

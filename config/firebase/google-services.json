@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "813001427078",
+    "project_id": "provian",
+    "storage_bucket": "provian.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:813001427078:android:eebdf3219ed5ee38756907",
+        "android_client_info": {
+          "package_name": "com.provian.wallet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "813001427078-b1bn9cuce17o2udrg6kheufucgp86gg6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.provian.wallet",
+            "certificate_hash": "efcfbac1eda0a2f478636dab7308d03b223aa5ab"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATxEyV5gt4zHyiZKiH-3R2ESnw_pLyb8s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,91 @@
+{
+  "version": "2",
+  "providers": [
+    {
+      "provider": "claude",
+      "surface_match": {
+        "app_bundle_ids": ["ai.anthropic.claude"],
+        "process_names": ["Claude"],
+        "browser_url_patterns": [
+          { "host": "claude.ai", "path_prefix": "" }
+        ]
+      },
+      "session_boundary": "url_session_id",
+      "session_id_extraction": { "regex": "^https://claude\\.ai/chat/([a-f0-9-]+)", "group": 1 },
+      "timestamp_gap_seconds": null,
+      "android_package_name": "com.anthropic.claude"
+    },
+    {
+      "provider": "chatgpt",
+      "surface_match": {
+        "app_bundle_ids": ["com.openai.chat"],
+        "process_names": ["ChatGPT"],
+        "browser_url_patterns": [
+          { "host": "chat.openai.com", "path_prefix": "" },
+          { "host": "chatgpt.com", "path_prefix": "" }
+        ]
+      },
+      "session_boundary": "url_session_id",
+      "session_id_extraction": { "regex": "^https://(?:chat\\.openai\\.com|chatgpt\\.com)/c/([a-f0-9-]+)", "group": 1 },
+      "timestamp_gap_seconds": null,
+      "android_package_name": "com.openai.chatgpt"
+    },
+    {
+      "provider": "gemini",
+      "surface_match": {
+        "app_bundle_ids": [],
+        "process_names": [],
+        "browser_url_patterns": [
+          { "host": "gemini.google.com", "path_prefix": "" }
+        ]
+      },
+      "session_boundary": "url_session_id",
+      "session_id_extraction": { "regex": "^https://gemini\\.google\\.com/app/([a-z0-9-]+)", "group": 1 },
+      "timestamp_gap_seconds": null,
+      "android_package_name": "com.google.android.apps.bard"
+    },
+    {
+      "provider": "perplexity",
+      "surface_match": {
+        "app_bundle_ids": ["ai.perplexity.mac"],
+        "process_names": ["Perplexity"],
+        "browser_url_patterns": [
+          { "host": "perplexity.ai", "path_prefix": "" }
+        ]
+      },
+      "session_boundary": "url_session_id",
+      "session_id_extraction": { "regex": "^https://(?:www\\.)?perplexity\\.ai/search/([a-z0-9-]+)", "group": 1 },
+      "timestamp_gap_seconds": null,
+      "android_package_name": "ai.perplexity.app.android"
+    },
+    {
+      "provider": "grok",
+      "surface_match": {
+        "app_bundle_ids": [],
+        "process_names": [],
+        "browser_url_patterns": [
+          { "host": "grok.com", "path_prefix": "" },
+          { "host": "x.com", "path_prefix": "/i/grok" }
+        ]
+      },
+      "session_boundary": "timestamp_gap",
+      "session_id_extraction": null,
+      "timestamp_gap_seconds": 300,
+      "android_package_name": "xai.grok"
+    },
+    {
+      "provider": "venice",
+      "surface_match": {
+        "app_bundle_ids": [],
+        "process_names": [],
+        "browser_url_patterns": [
+          { "host": "venice.ai", "path_prefix": "" }
+        ]
+      },
+      "session_boundary": "url_session_id",
+      "session_id_extraction": { "regex": "^https://venice\\.ai/c/([A-Za-z0-9_-]+)", "group": 1 },
+      "timestamp_gap_seconds": null,
+      "android_package_name": "com.ai.venice"
+    }
+  ]
+}

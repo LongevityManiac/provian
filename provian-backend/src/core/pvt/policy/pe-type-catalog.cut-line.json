@@ -1,0 +1,1152 @@
+{
+  "schema_version": "pvt-pe-catalog-snapshot/v1",
+  "proposal_status": "requires_frank_approval",
+  "capture": {
+    "captured_at": "2026-07-11T13:55:47Z",
+    "source_project": "provian-ai",
+    "source_collection": "pe_type_catalog",
+    "repository_commit": "0385a1aa4f621895ee9212ac82750f0d9c6fd252",
+    "base_chain_id": 8453,
+    "base_block_number": 48494548,
+    "base_block_hash": "0xa6daf0cfdf46a21424fcf84c7d8eb108d9d1209998547fb12586e49c45272cdd",
+    "base_block_observed_at": "2026-07-11T14:00:47Z",
+    "note": "Firestore is not block-indexed; the Base block records the read-only WP1 cut-line observation."
+  },
+  "document_count": 162,
+  "entries": [
+    {
+      "action_type": "agent_action",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_authorization",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_capabilities_registered",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_commit",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_communicate",
+      "category": "social",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_compute_market",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_court",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_ecosystem_uncategorized",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_first_transaction",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_governance",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_invite_sent",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_labor_market",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_marketplace",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_public_post",
+      "category": "social",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_reputation_system",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_session_revoked",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_session_started",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 2
+    },
+    {
+      "action_type": "agent_session_suspended",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_share_data",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_sustained_activity",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_system_access",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_task_completed",
+      "category": "uncategorized",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 5
+    },
+    {
+      "action_type": "agent_token_transfer",
+      "category": "uncategorized",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 1
+    },
+    {
+      "action_type": "agent_transaction_reported",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_transaction_synced",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_uncategorized",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_wallet_created",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agent_wallet_funded",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agreement",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "agreement_settled",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "anomaly_detected",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "approve",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "badge_earned",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "behavior_baseline_updated",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "burn_spam",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "classification_reclassified",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "code",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 24
+    },
+    {
+      "action_type": "coding_session",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 19
+    },
+    {
+      "action_type": "corroboration_signal",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_escalated",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_evidence_submitted",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_general_dispute_filed",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_general_dispute_resolved",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_majority_bonus",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_minority_vote",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_panel_assigned",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_verdict",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "court_vote_cast",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_added",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_deleted",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_frozen",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_injected",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_release_expired",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_release_used",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_released",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_unfrozen",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "credential_updated",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "deployment",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "device_register",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 6
+    },
+    {
+      "action_type": "device_revoke",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "document",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "egress_data_approved",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "egress_data_blocked",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "egress_data_denied",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "egress_data_executed",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "egress_data_requested",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "emergency_stop",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "environment_attestation",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "environment_drift_detected",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "escrow_completed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "escrow_created",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "escrow_disputed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "escrow_funded",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "escrow_resolved",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "export_logs",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "external_address_proven",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 4
+    },
+    {
+      "action_type": "friction_escalation",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "genesis_device_link",
+      "category": "uncategorized",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 6
+    },
+    {
+      "action_type": "genesis_human_signup",
+      "category": "uncategorized",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 3
+    },
+    {
+      "action_type": "genesis_signup",
+      "category": "uncategorized",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 4
+    },
+    {
+      "action_type": "goal_action_auto_approved",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "goal_constraint_violation",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "goal_envelope_cancelled",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "goal_envelope_completed",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "goal_envelope_created",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "goal_envelope_expired",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "governance_premint_weight_set",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "governance_proposal_cancelled",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "governance_proposal_created",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "governance_proposal_executed",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "governance_vote_cast",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "invite_accepted",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "job_accepted",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "job_applied",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "job_delivered",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "job_posted",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "negotiation_expired",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "negotiation_rejected",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "onramp",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "onramp_order",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pe_type_proposed",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "policy_created",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "policy_updated",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pool_contributed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pool_created",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pool_executed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pool_refunded",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_accepted",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_broken",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_countered",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_created",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_defaulted",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_disputed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_fulfilled",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_funded",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_negotiation_accepted",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_negotiation_expired",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_negotiation_rejected",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_offered",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "promise_settled",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "proxied_payment_approved",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "proxied_payment_executed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "proxied_payment_failed",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "proxied_payment_requested",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_batch_minted",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 1
+    },
+    {
+      "action_type": "pvt_burned_voluntary",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_epoch_advanced",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_fee_burned",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_governance_proposed",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_governance_voted",
+      "category": "governance",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_pe_anchored",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_reputation_slashed",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_reputation_staked",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "pvt_reputation_unstaked",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "receive",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 2
+    },
+    {
+      "action_type": "recovery_action",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "recovery_complete",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "recovery_init",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "recurring_payment_run",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "refactor",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "replication_pack",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "request_auto_approved",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "request_expired",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "research",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "REVOKE_APPROVAL",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "send",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 1
+    },
+    {
+      "action_type": "skill_install_requested",
+      "category": "security",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "social_post_approved",
+      "category": "social",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "social_post_denied",
+      "category": "social",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "stake",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "swap",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "system_access_approved",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "system_access_denied",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "test_run",
+      "category": "compute",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 2
+    },
+    {
+      "action_type": "uncategorized_action_approved",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "uncategorized_action_denied",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "vouch_for_device",
+      "category": "uncategorized",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "wallet_created",
+      "category": "infrastructure",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 20
+    },
+    {
+      "action_type": "wallet_funded",
+      "category": "infrastructure",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 1
+    },
+    {
+      "action_type": "wallet_sustained_activity",
+      "category": "infrastructure",
+      "source": "auto_registered",
+      "status": "active",
+      "observation_count": 1
+    },
+    {
+      "action_type": "webhook_subscribed",
+      "category": "institutional",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 0
+    },
+    {
+      "action_type": "x402_payment",
+      "category": "financial",
+      "source": "seed",
+      "status": "active",
+      "observation_count": 1
+    }
+  ]
+}

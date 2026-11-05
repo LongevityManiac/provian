@@ -1,0 +1,48 @@
+// Gradle init script used by scripts/oss-notices/refresh-android.mjs. It adds one task to :app that
+// prints every external module in the release runtime classpath (the libraries packaged into the
+// release APK) and the licenses its Maven POM declares, following the POM's parent chain when the
+// module's own POM declares none. It changes no build output.
+//
+//   OSS-COMPONENT group:module:version
+//   OSS-LICENSE group:module:version <license name>\t<license url>
+//   OSS-POM-MISSING group:module:version
+allprojects { project ->
+  if (project.path != ':app') return
+  project.afterEvaluate {
+    project.tasks.register('provianOssRuntimeClasspath') {
+      doLast {
+        def pomOf = { String coordinate ->
+          def conf = project.configurations.detachedConfiguration(project.dependencies.create("${coordinate}@pom"))
+          conf.transitive = false
+          def files = conf.resolvedConfiguration.lenientConfiguration.files
+          files.isEmpty() ? null : files.iterator().next()
+        }
+        def ids = project.configurations.getByName('releaseRuntimeClasspath').incoming.resolutionResult.allComponents
+          .collect { it.id }
+          .findAll { it instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier }
+          .collect { "${it.group}:${it.module}:${it.version}".toString() }
+          .unique()
+          .sort()
+        ids.each { coordinate ->
+          println "OSS-COMPONENT ${coordinate}"
+          def current = coordinate
+          def found = false
+          for (int depth = 0; depth < 8 && current != null && !found; depth++) {
+            def pom = pomOf(current)
+            if (pom == null) { println "OSS-POM-MISSING ${current}"; break }
+            def xml = new groovy.xml.XmlSlurper().parse(pom)
+            def licenses = xml.licenses.license
+            if (licenses.size() > 0) {
+              licenses.each { l -> println "OSS-LICENSE ${coordinate} ${l.name.text().trim().replaceAll('\\s+', ' ')}\t${l.url.text().trim()}" }
+              found = true
+            } else if (xml.parent.size() > 0 && xml.parent.artifactId.text()) {
+              current = "${xml.parent.groupId.text().trim()}:${xml.parent.artifactId.text().trim()}:${xml.parent.version.text().trim()}".toString()
+            } else {
+              current = null
+            }
+          }
+        }
+      }
+    }
+  }
+}

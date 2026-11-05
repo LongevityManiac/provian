@@ -1,0 +1,18 @@
+appId: com.provian.wallet
+---
+# Check all 3 acknowledgment boxes
+- tapOn:
+    point: "30,380"
+- tapOn:
+    point: "30,450"
+- tapOn:
+    point: "30,520"
+- takeScreenshot: screenshots/nav-audit/14-checkboxes-checked
+
+# Tap Create My Wallet
+- tapOn:
+    point: "201,650"
+- waitForAnimationToEnd
+
+# Wait for biometric prompt (simulator should use passcode fallback)
+- takeScreenshot: screenshots/nav-audit/15-after-create

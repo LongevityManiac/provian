@@ -1,0 +1,6 @@
+{"toolName":"alpha_search","timestamp":"2026-08-22T20:00:00.000Z","args":{"q":"PRIVACY_SENTINEL_DO_NOT_EMIT"}}
+{"role":"assistant","tool_calls":[{"id":"gen-call-0002","function":{"name":"beta_fetch","arguments":"PRIVACY_SENTINEL_DO_NOT_EMIT"}}],"timestamp":"2026-08-22T20:00:05.000Z"}
+{"tool_call_id":"gen-call-0002","is_error":false,"content":"PRIVACY_SENTINEL_DO_NOT_EMIT","timestamp":"2026-08-22T20:00:10.000Z"}
+{"content":[{"type":"tool_call","id":"gen-call-0003","name":"gamma_write","arguments":{"path":"PRIVACY_SENTINEL_DO_NOT_EMIT"}}],"timestamp":"2026-08-22T20:00:15.000Z"}
+{"tool_call_id":"gen-call-0003","is_error":true,"content":"PRIVACY_SENTINEL_DO_NOT_EMIT","timestamp":"2026-08-22T20:00:20.000Z"}
+{"role":"user","content":"PRIVACY_SENTINEL_DO_NOT_EMIT","timestamp":"2026-08-22T20:01:00.000Z"}

@@ -1,0 +1,4 @@
+NSFaceIDUsageDescription = "Provian使用 Face ID 来解锁您的钱包，并确认您进行的交易、签名和批准。";
+NSCameraUsageDescription = "Provian使用摄像头扫描二维码：钱包地址、 WalletConnect连接链接和代理配对码。不会录制或上传任何内容。";
+NSMotionUsageDescription = "Provian仅在您发送或交换数据时读取运动传感器数据，以检测可能意味着传输过程中存在压力的剧烈晃动。读数会保存在此设备上。";
+NSPhotoLibraryUsageDescription = "Provian仅在您为Commons个人资料选择图片时才会打开您的照片库。并且只会使用您选择的图片。";

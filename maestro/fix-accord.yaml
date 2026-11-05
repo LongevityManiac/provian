@@ -1,0 +1,43 @@
+appId: com.provian.wallet
+---
+# Go back from ToS page
+- tapOn:
+    point: "30,65"
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/accord-back
+
+# Swipe up to scroll to checkbox
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+
+- takeScreenshot: screenshots/accord-scrolled2
+
+# Tap the checkbox (at ~14%, 81% = 56,708)
+- tapOn:
+    point: "56,708"
+
+- takeScreenshot: screenshots/accord-checkbox-tapped
+
+# Tap Begin button
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/step-11-attempt2
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/step-12-attempt2
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/step-13-attempt2
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+- takeScreenshot: screenshots/step-14-attempt2

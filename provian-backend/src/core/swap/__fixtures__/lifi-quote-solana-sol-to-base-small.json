@@ -1,0 +1,500 @@
+{
+ "type": "lifi",
+ "id": "98f96090-4ffa-41f3-8b1b-32adc4a33a51:0",
+ "tool": "mayanFastMCTP",
+ "toolDetails": {
+  "key": "mayanFastMCTP",
+  "name": "CCTPv2 + Mayan",
+  "logoURI": "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/bridges/mayan.svg"
+ },
+ "action": {
+  "fromToken": {
+   "address": "11111111111111111111111111111111",
+   "chainId": 1151111081099710,
+   "symbol": "SOL",
+   "decimals": 9,
+   "name": "SOL",
+   "coinKey": "SOL",
+   "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+   "priceUSD": "121.3954715463969",
+   "tags": [
+    "major_asset"
+   ],
+   "verificationStatus": "unverified",
+   "verificationStatusBreakdown": []
+  },
+  "fromAmount": "100000000",
+  "toToken": {
+   "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+   "chainId": 8453,
+   "symbol": "USDC",
+   "decimals": 6,
+   "name": "USD Coin",
+   "coinKey": "USDC",
+   "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+   "priceUSD": "0.9950941919",
+   "tags": [
+    "stablecoin"
+   ],
+   "verificationStatus": "verified",
+   "verificationStatusBreakdown": [
+    {
+     "provider": "hypernative",
+     "result": "verified",
+     "providerResult": "accept"
+    }
+   ]
+  },
+  "fromChainId": 1151111081099710,
+  "toChainId": 8453,
+  "slippage": 0.03,
+  "fromAddress": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+  "toAddress": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+  "destinationGasConsumption": "",
+  "destinationCallData": "0x00",
+  "jitoBundle": false
+ },
+ "estimate": {
+  "tool": "mayanFastMCTP",
+  "approvalAddress": "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE",
+  "toAmountMin": "11677701",
+  "toAmount": "12038867",
+  "fromAmount": "100000000",
+  "feeCosts": [
+   {
+    "name": "LIFI Fixed Fee",
+    "description": "Fixed LIFI fee, independent of any other fee",
+    "token": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "amount": "500000",
+    "amountUSD": "0.0607",
+    "percentage": "0.0050",
+    "included": true,
+    "feeSplit": {
+     "lifiFee": "250000",
+     "integratorFee": "250000",
+     "recipients": [
+      {
+       "name": "lifi",
+       "type": "FIXED",
+       "fee": "250000"
+      },
+      {
+       "name": "provian",
+       "type": "FIXED",
+       "fee": "250000"
+      }
+     ]
+    }
+   },
+   {
+    "name": "Rent Exemption Deposit",
+    "description": "A deposit needed to open a new token account, paid in native token. This deposit can be refunded when the account is closed.",
+    "token": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "amount": "400240",
+    "included": false,
+    "amountUSD": "0.0485873235317299",
+    "percentage": "0"
+   }
+  ],
+  "gasCosts": [
+   {
+    "token": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "amount": "72134",
+    "amountUSD": "0.008756740944527793",
+    "estimate": "72134",
+    "limit": "72134",
+    "price": "1",
+    "type": "SEND"
+   }
+  ],
+  "executionDuration": 35,
+  "fromAmountUSD": "12.1395",
+  "toAmountUSD": "11.9798",
+  "skipPermit": false
+ },
+ "includedSteps": [
+  {
+   "id": "c9f3cb23-e28b-4b11-a1d2-b983bee2c124",
+   "type": "protocol",
+   "action": {
+    "fromChainId": 1151111081099710,
+    "fromAmount": "100000000",
+    "fromToken": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "toChainId": 1151111081099710,
+    "toToken": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "slippage": 0.03,
+    "fromAddress": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "toAddress": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "jitoBundle": false,
+    "integratorFees": {
+     "feePercent": 0.005,
+     "sourceAmount": {
+      "s": 1,
+      "e": 8,
+      "c": [
+       100000000
+      ]
+     },
+     "totalFee": {
+      "s": 1,
+      "e": 5,
+      "c": [
+       500000
+      ]
+     },
+     "recipients": [
+      {
+       "name": "lifi",
+       "type": "FIXED",
+       "fee": {
+        "s": 1,
+        "e": 5,
+        "c": [
+         250000
+        ]
+       }
+      },
+      {
+       "name": "provian",
+       "type": "FIXED",
+       "fee": {
+        "s": 1,
+        "e": 5,
+        "c": [
+         250000
+        ]
+       },
+       "config": {
+        "fee": 0.0025,
+        "feeType": "FIXED",
+        "chainWallets": {},
+        "defaultWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "defaultSvmWalletAddress": "5PHJDHYveHA1LhqiWpCDRVEgSezDgPBMyL1rwAoMBTco"
+       }
+      }
+     ]
+    },
+    "integratorId": "provian"
+   },
+   "estimate": {
+    "fromAmount": "100000000",
+    "toAmount": "99500000",
+    "toAmountMin": "99500000",
+    "tool": "feeCollection",
+    "approvalAddress": "0x0000000000000000000000000000000000000000",
+    "gasCosts": [
+     {
+      "type": "SEND",
+      "price": "1",
+      "estimate": "130000",
+      "limit": "169000",
+      "amount": "130000",
+      "amountUSD": "0.0158",
+      "token": {
+       "address": "11111111111111111111111111111111",
+       "chainId": 1151111081099710,
+       "symbol": "SOL",
+       "decimals": 9,
+       "name": "SOL",
+       "coinKey": "SOL",
+       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+       "priceUSD": "121.3954715463969",
+       "tags": [
+        "major_asset"
+       ],
+       "verificationStatus": "unverified",
+       "verificationStatusBreakdown": []
+      }
+     }
+    ],
+    "feeCosts": [
+     {
+      "name": "LIFI Fixed Fee",
+      "description": "Fixed LIFI fee, independent of any other fee",
+      "token": {
+       "address": "11111111111111111111111111111111",
+       "chainId": 1151111081099710,
+       "symbol": "SOL",
+       "decimals": 9,
+       "name": "SOL",
+       "coinKey": "SOL",
+       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+       "priceUSD": "121.3954715463969",
+       "tags": [
+        "major_asset"
+       ],
+       "verificationStatus": "unverified",
+       "verificationStatusBreakdown": []
+      },
+      "amount": "500000",
+      "amountUSD": "0.0607",
+      "percentage": "0.0050",
+      "included": true,
+      "feeSplit": {
+       "lifiFee": "250000",
+       "integratorFee": "250000",
+       "recipients": [
+        {
+         "name": "lifi",
+         "type": "FIXED",
+         "fee": "250000"
+        },
+        {
+         "name": "provian",
+         "type": "FIXED",
+         "fee": "250000"
+        }
+       ]
+      }
+     },
+     {
+      "name": "Rent Exemption Deposit",
+      "description": "A deposit needed to open a new token account, paid in native token. This deposit can be refunded when the account is closed.",
+      "token": {
+       "address": "11111111111111111111111111111111",
+       "chainId": 1151111081099710,
+       "symbol": "SOL",
+       "decimals": 9,
+       "name": "SOL",
+       "coinKey": "SOL",
+       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+       "priceUSD": "121.3954715463969",
+       "tags": [
+        "major_asset"
+       ],
+       "verificationStatus": "unverified",
+       "verificationStatusBreakdown": []
+      },
+      "amount": "400240",
+      "included": false,
+      "amountUSD": "0.0485873235317299",
+      "percentage": "0"
+     }
+    ],
+    "executionDuration": 0
+   },
+   "tool": "feeCollection",
+   "toolDetails": {
+    "key": "feeCollection",
+    "name": "Integrator Fee",
+    "logoURI": "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/protocols/feeCollection.svg"
+   }
+  },
+  {
+   "id": "050d4788-18ff-4330-b4a1-7ee83152e386",
+   "type": "cross",
+   "action": {
+    "fromChainId": 1151111081099710,
+    "fromAmount": "99500000",
+    "fromToken": {
+     "address": "11111111111111111111111111111111",
+     "chainId": 1151111081099710,
+     "symbol": "SOL",
+     "decimals": 9,
+     "name": "SOL",
+     "coinKey": "SOL",
+     "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+     "priceUSD": "121.3954715463969",
+     "tags": [
+      "major_asset"
+     ],
+     "verificationStatus": "unverified",
+     "verificationStatusBreakdown": []
+    },
+    "toChainId": 8453,
+    "toToken": {
+     "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+     "chainId": 8453,
+     "symbol": "USDC",
+     "decimals": 6,
+     "name": "USD Coin",
+     "coinKey": "USDC",
+     "logoURI": "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png",
+     "priceUSD": "0.9950941919",
+     "tags": [
+      "stablecoin"
+     ],
+     "verificationStatus": "verified",
+     "verificationStatusBreakdown": [
+      {
+       "provider": "hypernative",
+       "result": "verified",
+       "providerResult": "accept"
+      }
+     ]
+    },
+    "slippage": 0.03,
+    "fromAddress": "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+    "toAddress": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+    "jitoBundle": false,
+    "integratorFees": {
+     "feePercent": 0.005,
+     "sourceAmount": {
+      "s": 1,
+      "e": 8,
+      "c": [
+       100000000
+      ]
+     },
+     "totalFee": {
+      "s": 1,
+      "e": 5,
+      "c": [
+       500000
+      ]
+     },
+     "recipients": [
+      {
+       "name": "lifi",
+       "type": "FIXED",
+       "fee": {
+        "s": 1,
+        "e": 5,
+        "c": [
+         250000
+        ]
+       }
+      },
+      {
+       "name": "provian",
+       "type": "FIXED",
+       "fee": {
+        "s": 1,
+        "e": 5,
+        "c": [
+         250000
+        ]
+       },
+       "config": {
+        "fee": 0.0025,
+        "feeType": "FIXED",
+        "chainWallets": {},
+        "defaultWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "defaultSvmWalletAddress": "5PHJDHYveHA1LhqiWpCDRVEgSezDgPBMyL1rwAoMBTco"
+       }
+      }
+     ]
+    },
+    "integratorId": "provian",
+    "destinationGasConsumption": "0"
+   },
+   "estimate": {
+    "tool": "mayanFastMCTP",
+    "fromAmount": "99500000",
+    "toAmount": "12038867",
+    "toAmountMin": "11677701",
+    "gasCosts": [
+     {
+      "type": "SEND",
+      "price": "1",
+      "estimate": "5000",
+      "limit": "6500",
+      "amount": "5000",
+      "amountUSD": "0.0006",
+      "token": {
+       "address": "11111111111111111111111111111111",
+       "chainId": 1151111081099710,
+       "symbol": "SOL",
+       "decimals": 9,
+       "name": "SOL",
+       "coinKey": "SOL",
+       "logoURI": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+       "priceUSD": "121.3954715463969",
+       "tags": [
+        "major_asset"
+       ],
+       "verificationStatus": "unverified",
+       "verificationStatusBreakdown": []
+      }
+     }
+    ],
+    "executionDuration": 35,
+    "approvalAddress": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+    "feeCosts": []
+   },
+   "tool": "mayanFastMCTP",
+   "toolDetails": {
+    "key": "mayanFastMCTP",
+    "name": "CCTPv2 + Mayan",
+    "logoURI": "https://raw.githubusercontent.com/lifinance/types/main/src/assets/icons/bridges/mayan.svg"
+   }
+  }
+ ],
+ "integrator": "provian",
+ "fee": 0.0025,
+ "executionType": "transaction",
+ "transactionRequest": {
+  "data": "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAGDH6MCIdgv94d3c8ywX8gm4JC7lKq8TH6zYjQ6ixtCwbyQSPzykYHtyqbWGBLGCFvz7pUWLUoCqT4tCu4vrjU15SI/VL3NHv+81CDdiCT5nTTjrVxvlsyqbL2iv4+se7yhasZRwsqJ7gsyL9EWuDF3GyLJ+fbBo+UWmL37K3G9OzUbQ/ffN89KMzS1moKr3xD+eaLjFLD93Uu7/6fCChoRW/T6oz1rKyozQUgdRIXXEPO9Upd2Z7eIKFrVSU3OPOX3AMGRm/lIRcy/+ytunLDm+e8jOW7xfcSayxDmzpAAAAAKD0N0oI1T+8K47DiJ9N82JyiZvsX3fj3y3zO++Tr3FUb5jFNWqZQWUGe9BFty369cdAPE34TzIBu0q24QxWUXgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAtCPlnWlpkuqreRQnU8Cb1tgTWqlAT2NSRxIcSdKfQ5UEedVb8jHAbu50xW7OaBUH/bGy3qP0jlECsc2iVrwTj0/8cGxAe6vhVctfbUzJXY4x0dzC7WhaFeajbGaN/If0CwYABQLAXBUABgAJA1G7AAAAAAAABwIQCAkAcq50emS0twAJAgAMDAIAAACQ0AMAAAAAAAkCAAEMAgAAAADsCQAAAAAACgcRAAIDEgkTAAoDCQAEDAIAAADgP+4FAAAAAAoCEwQBEQsWAAQFFBITEwIVCxgADQ4PBAUTExYZCyi7ZPrMMcSvFOA/7gUAAAAAvdm3AAAAAABkAAAAAAABAAAAjQEQJwABCgQTBAAAAQkKCBcAAwACFxIJfKdmgGp5drpMAAAAAAAAAAAAAAAA2Npr8mlkr51+7Z4D5TQV03qpYEXlVbIAAAAAAAAAAAAAAAAAKxMAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAClqm4hcbQW4dJ+xTyowT2z+RqJzQAvny4FAAAAAAAAAQAAAAEC2cMN+5YRja4DNaX11bThHmwP8vCzdRYtSPXpFGWT2KsBRAgoBhEFMDQqXGqpw+s1vSQ6Ph/igGje2p5R+TkFxGSr527DImNvLfjZA4WEgAKChw=="
+ },
+ "transactionId": "0x72ae747a64b4b700"
+}

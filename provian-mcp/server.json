@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.provian/mcp",
+  "title": "Provian",
+  "description": "Self-custodial agent wallet on Base and a verifiable record of its work (Provenance Envelopes).",
+  "websiteUrl": "https://provian.ai/agents",
+  "repository": {
+    "url": "https://github.com/LongevityManiac/provian",
+    "source": "github",
+    "subfolder": "provian-mcp"
+  },
+  "version": "1.2.0",
+  "icons": [
+    {
+      "src": "https://provian.ai/logos/provian-256.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "256x256"
+      ]
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.provian.ai/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Optional: Bearer <api_key>:<api_secret>, the agent's API credential (also accepted as X-API-Key or x-provian-api-key; it does not expire and is bound to one wallet). The public reads get_agent_record and get_pvt_estimate need no credentials. create_wallet is DISABLED on this remote endpoint (a stateless request cannot safely retain a fund-bearing key): a hosted agent generates its own key in its own runtime and creates the wallet it owns with wallet_challenge + wallet_create (public key and signature only), then reconnects with the returned credential. A PROV- link code is never a credential.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

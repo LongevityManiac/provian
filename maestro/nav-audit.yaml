@@ -1,0 +1,27 @@
+appId: com.provian.wallet
+---
+# Navigate through onboarding to reach main tabs
+# Steps 1-9: tap through narrative
+- repeat:
+    times: 9
+    commands:
+      - tapOn:
+          point: "201,760"
+      - waitForAnimationToEnd
+
+# Step 10: Accord - scroll, check, begin
+- swipe:
+    start: "50%, 75%"
+    end: "50%, 40%"
+- tapOn:
+    point: "30,708"
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 11: Biometrics - take screenshot
+- takeScreenshot: screenshots/nav-audit/11-biometrics
+
+# Step 11 has the wallet creation acknowledgments
+# Take screenshot of current state
+- takeScreenshot: screenshots/nav-audit/12-current-state

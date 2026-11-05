@@ -1,0 +1,6 @@
+node_modules
+.next
+.firebase
+.DS_Store
+*.pem
+npm-debug.log*

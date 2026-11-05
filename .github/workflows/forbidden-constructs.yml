@@ -1,0 +1,99 @@
+name: Removed-Decision Registry
+
+# the operator removes a construct; a year later it is back in the code and nothing
+# fails. Supply halving was deleted in the March 2026 Economics Correction and
+# returned as the Genesis wallet-age taper — found by accident, not by CI.
+#
+# This job is the mechanism that makes a returning decision loud. It runs the
+# registry in `provian-backend/src/core/decisions/forbidden-constructs.ts`,
+# which detects each forbidden construct by SHAPE and by BEHAVIOUR (never by
+# keyword, so a rename does not evade it) and additionally runs every detector
+# against a known violation, so a detector that has silently stopped detecting
+# fails the build too.
+
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger. The registry (and the
+# DECISIONS/OPEN_ITEMS ledger + copy guards) run NIGHTLY against master, on a PR,
+# and on demand — never on a push. The local check:wp2 + money-path gate covers
+# the pre-push moment; the nightly is the standing master safety net.
+on:
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly registry run vs master
+  workflow_dispatch:
+
+concurrency:
+  group: forbidden-constructs-${{ github.ref }}
+  cancel-in-progress: true
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  forbidden-constructs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10  # observed max 2.8 min (100 runs, Aug 30-Sep 25 2026); 3x headroom, rounded up to 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # FC-007 resolves the WP merge record with `git merge-base
+          # --is-ancestor`; on a shallow clone the binder fails closed and the
+          # suite goes red (observed on this workflow's first real execution,
+          # 2026-07-28 — run 30376843870 attempt 3).
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-backend/package-lock.json
+
+      - name: Install
+        working-directory: provian-backend
+        run: npm ci
+
+      - name: No removed decision has reappeared
+        working-directory: provian-backend
+        run: npm run check:forbidden-constructs
+
+  #. These live in THIS workflow, not typecheck/backend-tests, because both
+  # of those `paths-ignore: '**/*.md'` for cost — and stale armed-state copy is
+  # very often a doc-only commit. A guard that skips the commits most likely to
+  # break it is not a guard. No npm install: both scripts are dependency-free.
+  copy-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # observed max 0.4 min (100 runs, Aug 30-Sep 25 2026); 3x headroom, rounded up to 5
+    name: armed-state copy + MCP two-copy parity
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+
+      # Self-tests FIRST. Each plants the exact defect it exists to catch and
+      # requires detection, so a check that has silently stopped checking fails
+      # the build instead of printing ok over everything.
+      - name: Guards can still fail (negative controls)
+        run: |
+          node scripts/check-mcp-tool-parity.mjs --self-test
+          node scripts/check-armed-state-copy.mjs --self-test
+          node scripts/check-earning-copy.mjs --self-test
+          node scripts/check-connection-token-format-parity.mjs --self-test
+
+      - name: MCP tool descriptions have not diverged
+        run: node scripts/check-mcp-tool-parity.mjs
+
+      - name: No stale armed-state copy on any surface
+        run: node scripts/check-armed-state-copy.mjs
+
+      - name: No stale earning doctrine on any current surface
+        run: node scripts/check-earning-copy.mjs
+
+      # The relay canonical connection-token-format and its SDK mirror are two
+      # copies of the same format by necessity (the SDK cannot import across the
+      # package boundary). This fails the build if they diverge on ALPHABET,
+      # PATTERN, or LENGTH — the 14-vs-16 drift class, made un-repeatable.
+      - name: Connection-token-format canonical and SDK mirror have not diverged
+        run: node scripts/check-connection-token-format-parity.mjs

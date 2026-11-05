@@ -1,0 +1,80 @@
+{
+  "generatedFrom": "scripts/sync-docs.mjs",
+  "docs": [
+    {
+      "slug": "executive-summary",
+      "title": "Executive Summary",
+      "group": "why",
+      "badge": "Read this first",
+      "description": "Provian in brief: what it is, how it works, what earns PVT, the trust layer, the economics, the Foundation, and where the network stands.",
+      "sourcePath": "reference/Provian_Executive_Summary.md",
+      "sizeKB": 10
+    },
+    {
+      "slug": "the-provian-thesis",
+      "title": "The Provian Thesis",
+      "group": "why",
+      "displayVersion": "October 2026 revision",
+      "description": "The whole architecture and why it matters: the two fears of the AI age, the receipt, money from proof, the trust layer, agents, the Commons, promises, the Foundation, and what gets built on top.",
+      "sourcePath": "reference/TheProvianThesis_v24.md",
+      "sizeKB": 76
+    },
+    {
+      "slug": "the-exponential-currency",
+      "title": "The Exponential Currency",
+      "group": "why",
+      "displayVersion": "October 2026 revision",
+      "description": "Why parity minting is the best monetary model for an exponential economy, and why a dollar stablecoin can't do its job.",
+      "sourcePath": "reference/The_Exponential_Currency.md",
+      "sizeKB": 42
+    },
+    {
+      "slug": "founding-statement",
+      "title": "Founding Statement",
+      "group": "why",
+      "description": "The Founding Statement, written with Atlas: why Provian exists and what it is for.",
+      "sourcePath": "reference/Provian_Founding_Statement_v16.md",
+      "sizeKB": 15
+    },
+    {
+      "slug": "network-constitution",
+      "title": "Network Constitution",
+      "group": "why",
+      "description": "The founding charter: the two rules, the rights of participants, the Commons, the Foundation, and what is immutable.",
+      "sourcePath": "NETWORK_CONSTITUTION.md",
+      "sizeKB": 18
+    },
+    {
+      "slug": "manual",
+      "title": "The Provian Manual",
+      "group": "build",
+      "description": "The one reference for people and agents: architecture, every action type and how it mints, the wallet, the Commons, settlement, and the contracts.",
+      "sourcePath": "docs/PROVIAN_MANUAL.md",
+      "sizeKB": 256
+    },
+    {
+      "slug": "pe-protocol-spec",
+      "title": "PE Protocol Specification",
+      "group": "build",
+      "description": "The open Provenance Envelope standard: structure, chaining, witness classes, citations, and the minting rule.",
+      "sourcePath": "docs/PE_PROTOCOL_SPEC.md",
+      "sizeKB": 106
+    },
+    {
+      "slug": "burn-to-present",
+      "title": "Burn-to-Present",
+      "group": "build",
+      "description": "How to require proof before you accept an action: signed challenges, the predicate grammar, the vocabulary, and public verification.",
+      "sourcePath": "docs/BURN_TO_PRESENT.md",
+      "sizeKB": 49
+    },
+    {
+      "slug": "contributing",
+      "title": "Contributing to Provian",
+      "group": "build",
+      "description": "LongevityManiac is exempt. Other PR authors present with 50 PVT from their own wallet, once per PR. Wallet setup, GitHub linking and exact human and agent calls.",
+      "sourcePath": "CONTRIBUTING.md",
+      "sizeKB": 8
+    }
+  ]
+}

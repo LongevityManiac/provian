@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Desktop App | Provian</title>
+<style>
+:root { color-scheme: light dark; --bg:#ffffff; --fg:#1a1a1a; --muted:#5b6472; --line:#e4e7ec; --accent:#2f6f5e; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0e1116; --fg:#e6e9ef; --muted:#9aa4b2; --line:#232936; --accent:#69c9ac; }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.65; }
+main { max-width: 46rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+h1 { font-size: 1.9rem; line-height:1.25; margin: 0 0 .5rem; letter-spacing:-.02em; }
+h2 { font-size: 1.25rem; margin: 2.25rem 0 .5rem; letter-spacing:-.01em; }
+h3 { font-size: 1.05rem; margin: 1.5rem 0 .4rem; }
+p, li { color: var(--fg); }
+a { color: var(--accent); }
+hr { border:0; border-top:1px solid var(--line); margin:2rem 0; }
+code { background: color-mix(in srgb, var(--fg) 8%, transparent); padding:.1rem .3rem; border-radius:3px; font-size:.9em; }
+table { border-collapse: collapse; width:100%; display:block; overflow-x:auto; }
+th, td { border:1px solid var(--line); padding:.5rem .6rem; text-align:left; font-size:.95rem; }
+.masthead { font-weight:600; letter-spacing:.02em; text-decoration:none; color:var(--fg); display:inline-block; margin-bottom:2rem; }
+.tagline { color: var(--muted); font-size:1.05rem; margin:0 0 2rem; }
+.foot { margin-top:3rem; padding-top:1.25rem; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
+
+.eyebrow { color:var(--muted); font-size:.78rem; font-weight:600; letter-spacing:.09em; text-transform:uppercase; margin:2.5rem 0 0; }
+.eyebrow + h1, .eyebrow + h2 { margin-top:.35rem; }
+pre { background: color-mix(in srgb, var(--fg) 7%, transparent); border:1px solid var(--line); border-radius:6px; padding:.65rem .85rem; overflow-x:auto; font-size:.9rem; }
+pre code { background:transparent; padding:0; }
+</style>
+</head>
+<body>
+<main>
+<a class="masthead" href="/home">PROVIAN</a>
+
+<p class="eyebrow">The desktop app</p>
+<h1>Your computer already does the work.</h1>
+<p class="tagline">The Provian desktop app is a small program that runs in the background and witnesses the work your computer already does. Each session leaves a receipt you own, and each receipt mints PVT once, at the value its evidence supports. Nothing you write or make ever leaves your computer: only signed metadata does.</p>
+<p><em>It witnesses that you worked, never what you wrote. Content stays home; proof travels.</em></p>
+
+<p class="eyebrow">What it witnesses</p>
+<h2>Four kinds of work, one witness.</h2>
+<h3>Coding sessions</h3>
+<p>Every local commit is witnessed as you make it: files changed, lines added, nothing more. Pair it with the GitHub, GitLab, or Bitbucket connector and a commit seen by both mints once, at the better-supported value.</p>
+<p><small><em>Money finally grows on worktrees.</em></small></p>
+<h3>AI sessions</h3>
+<p>AI chats and model calls on your computer leave receipts: how much and how long, never what you said or what came back.</p>
+<h3>Compute sessions</h3>
+<p>Background compute is witnessed too: how long and how much, never what ran. Each session mints once; a session with no output is recorded without a mint, and replays mint nothing.</p>
+<h3>Model turns</h3>
+<p>Each agent model response that calls a tool, even one that errors, leaves one receipt; responses with no tool call do not mint. Each program has one witness: the session files it already writes, or the local proxy if it writes none, or OpenTelemetry if neither applies. An agent on its own machine with none of those, such as one living on its own computer in the cloud, has each command it runs witnessed from the operating system, one receipt per command. Changing model, provider or sign-in keeps the witness. A person’s own computer witnesses commits and desktop chat, not tool calls.</p>
+
+<p class="eyebrow">Setup</p>
+<h2>Two steps, one pairing.</h2>
+<p>Pairing starts on your phone. The app makes a one-time code; your computer proves it has it. No passwords, no accounts, no wallet keys on the computer.</p>
+<h3>01 · Generate your command in the app</h3>
+<p>In the Provian app: Connect → Your computer (or Earn tab → Your computer → Connect a computer). You get a one-time command with your setup token baked in (it expires shortly). Connecting more than one machine? Each computer needs its own command — generate a fresh one for each.</p>
+<h3>02 · Paste it into a terminal on that computer</h3>
+<p>Your token is already inside the command you copied, so there is nothing to fill in and nothing to install first. It sets up a Node.js runtime if you don't have one, registers the machine, installs the git commit hook, and starts the observer. Works on macOS and Linux; on Windows, use the PowerShell command shown in the app. Receipts start within minutes and appear in your Abundance tab.</p>
+<pre><code>curl -sSL -H 'x-provian-token: …' &quot;https://api.provian.ai/v1/bootstrap/device&quot; | sh</code></pre>
+<h3>03 · Standing up an agent-owned device instead?</h3>
+<p>The agent runs invite-device --email &lt;addr&gt;, and whoever runs the machine gets a ready-to-run register-device --agent-token &lt;token&gt; by email, with no key or secret to paste. The receipts this machine produces then belong to the agent wallet. The setup link authorizes device registration only.</p>
+<pre><code>register-device --agent-token &lt;token-from-email&gt;</code></pre>
+<p>Working with GitHub, GitLab, or Bitbucket too? Run <code>connect-github</code> from the registered machine, or connect straight from the app under Earn. GitLab (cloud or self-hosted) and Bitbucket connect from the app. A forge is a stronger witness than the machine alone, so connecting one raises what each commit earns.</p>
+
+<p class="eyebrow">Custody</p>
+<h2>What leaves your computer, and what never does.</h2>
+<ul>
+  <li>The desktop app sends structural metadata and fingerprints, never code, prompts, file contents, or keystrokes.</li>
+  <li>It does not scan or index your files. It witnesses git commits, AI sessions, and agent activity only.</li>
+  <li>Receipts carry signed metadata only: counts, durations, and hashes.</li>
+  <li>The desktop app holds device credentials, never your wallet keys — those stay in the Provian app, encrypted on your phone.</li>
+  <li>It only witnesses. It never sits in the path of your work or your spending; if it stops, you keep working and simply stop earning receipts until it resumes.</li>
+  <li>Remove the computer from the Provian app at any time. Removal is immediate and leaves its own receipt.</li>
+</ul>
+
+<p class="eyebrow">Install</p>
+<h2>Nothing to install first.</h2>
+<p>The Provian app writes the one-time <code>curl … | sh</code> command for this computer with your token already inside, and that command sets everything up. On Windows the app gives a PowerShell line instead. Questions? Email us and we will help you set it up.</p>
+<p><a href="mailto:hello@provian.ai?subject=Daemon%20setup">hello@provian.ai</a></p>
+
+<div class="foot">
+  <a href="/home">Home</a> &nbsp;·&nbsp; <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp; <a href="/terms">Terms of Service</a> &nbsp;·&nbsp; <a href="mailto:hello@provian.ai">hello@provian.ai</a>
+</div>
+</main>
+</body>
+</html>

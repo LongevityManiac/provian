@@ -1,0 +1,23 @@
+appId: com.provian.wallet
+---
+# Tap each row - full width tap should trigger toggle
+# Row 1: Non-custodial - try y=440 (after header + icon + title + subtitle + card header)
+- tapOn:
+    point: "150,440"
+- takeScreenshot: screenshots/nav-audit/consent-1tap
+
+# Row 2: Terms - ~60px below
+- tapOn:
+    point: "150,510"
+- takeScreenshot: screenshots/nav-audit/consent-2tap
+
+# Row 3: Age - ~60px below
+- tapOn:
+    point: "150,570"
+- takeScreenshot: screenshots/nav-audit/consent-3tap
+
+# Create My Wallet button
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+- takeScreenshot: screenshots/nav-audit/consent-after-create

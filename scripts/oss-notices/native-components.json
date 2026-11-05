@@ -1,0 +1,173 @@
+{
+  "about": "Reviewed license data for the native third-party components the iOS and Android binaries ship. scripts/generate-oss-notices.mjs reads it with ios/Podfile.lock, react-native's pinned native dependencies and scripts/oss-notices/android-runtime.json, and refuses any component it cannot place. Texts live in scripts/oss-notices/licenses/.",
+  "ios": {
+    "firstPartyPathPrefixes": [
+      "../modules/",
+      "build/generated/ios"
+    ],
+    "podsFromNpm": {
+      "React-Core-prebuilt": "react-native"
+    },
+    "podsExpandingToReactNativeDependencies": [
+      "ReactNativeDependencies"
+    ],
+    "pods": {
+      "CocoaAsyncSocket": {
+        "version": "7.6.5",
+        "license": "Public Domain OR BSD-3-Clause",
+        "text": "cocoaasyncsocket.txt",
+        "source": "LICENSE.txt shipped in the pod"
+      },
+      "YttriumWrapper": {
+        "version": "0.10.15",
+        "license": "Apache-2.0",
+        "text": "yttrium.txt",
+        "source": "LICENSE shipped in the pod (Apache License 2.0; the podspec metadata says MIT)"
+      },
+      "ZXingObjC": {
+        "version": "3.6.9",
+        "license": "Apache-2.0",
+        "text": "apache-2.0.txt",
+        "source": "COPYING shipped in the pod"
+      },
+      "hermes-engine": {
+        "version": "0.81.5",
+        "license": "MIT",
+        "text": "hermes.txt",
+        "source": "LICENSE shipped in the pod"
+      }
+    }
+  },
+  "reactNativeDependencies": {
+    "about": "Third-party libraries react-native compiles into its prebuilt iOS ReactNativeDependencies framework and its Android libraries. Each version must equal the version react-native pins: on iOS in third-party-podspecs/ or scripts/cocoapods/helpers.rb, on Android in gradle/libs.versions.toml.",
+    "buildOnlyAndroid": [
+      "gflags",
+      "nlohmannjson"
+    ],
+    "components": [
+      {
+        "name": "boost",
+        "license": "BSL-1.0",
+        "text": "boost.txt",
+        "ios": {
+          "pin": "podspec:boost",
+          "version": "1.84.0"
+        },
+        "android": {
+          "pin": "toml:boost",
+          "version": "1.83.0"
+        }
+      },
+      {
+        "name": "double-conversion",
+        "license": "BSD-3-Clause",
+        "text": "double-conversion.txt",
+        "ios": {
+          "pin": "podspec:DoubleConversion",
+          "version": "1.1.6"
+        },
+        "android": {
+          "pin": "toml:doubleconversion",
+          "version": "1.1.6"
+        }
+      },
+      {
+        "name": "fast_float",
+        "license": "Apache-2.0 OR BSL-1.0 OR MIT",
+        "text": "fast-float.txt",
+        "ios": {
+          "pin": "podspec:fast_float",
+          "version": "8.0.0"
+        },
+        "android": {
+          "pin": "toml:fastFloat",
+          "version": "8.0.0"
+        }
+      },
+      {
+        "name": "fmt",
+        "license": "MIT",
+        "text": "fmt.txt",
+        "ios": {
+          "pin": "podspec:fmt",
+          "version": "11.0.2"
+        },
+        "android": {
+          "pin": "toml:fmt",
+          "version": "11.0.2"
+        }
+      },
+      {
+        "name": "folly",
+        "license": "Apache-2.0",
+        "text": "folly.txt",
+        "ios": {
+          "pin": "podspec:RCT-Folly",
+          "version": "2024.11.18.00"
+        },
+        "android": {
+          "pin": "toml:folly",
+          "version": "2024.11.18.00"
+        }
+      },
+      {
+        "name": "glog",
+        "license": "BSD-3-Clause",
+        "text": "glog.txt",
+        "ios": {
+          "pin": "podspec:glog",
+          "version": "0.3.5"
+        },
+        "android": {
+          "pin": "toml:glog",
+          "version": "0.3.5"
+        }
+      },
+      {
+        "name": "SocketRocket",
+        "license": "BSD-3-Clause",
+        "text": "socketrocket.txt",
+        "ios": {
+          "pin": "helpers:socket_rocket",
+          "version": "0.7.1"
+        }
+      },
+      {
+        "name": "LLVM libc++ (Android NDK)",
+        "license": "Apache-2.0 WITH LLVM-exception",
+        "text": "llvm-libcxx.txt",
+        "android": {
+          "pin": "toml:ndkVersion",
+          "version": "27.1.12297006"
+        }
+      }
+    ]
+  },
+  "android": {
+    "fromNpm": {
+      "com.facebook.react:react-android": "react-native"
+    },
+    "overrides": {
+      "androidx.camera:camera-core": {
+        "license": "Apache-2.0 AND BSD-3-Clause",
+        "text": "apache-2.0.txt",
+        "source": "AndroidX code under Apache 2.0 with the bundled libyuv under BSD; the POM lists both, and the module ships the Apache 2.0 text"
+      },
+      "com.facebook.react:hermes-android": {
+        "license": "MIT",
+        "text": "hermes.txt",
+        "source": "Hermes, built by react-native; the artifact publishes no POM license"
+      },
+      "com.github.Dimezis:BlurView": {
+        "license": "Apache-2.0",
+        "text": "apache-2.0.txt",
+        "source": "upstream LICENSE (Apache License 2.0); the JitPack POM declares none"
+      },
+      "com.github.reown-com.yttrium:yttrium-wcpay": {
+        "license": "Apache-2.0",
+        "text": "yttrium.txt",
+        "source": "same project as the YttriumWrapper pod; the JitPack POM declares none"
+      }
+    }
+  }
+}

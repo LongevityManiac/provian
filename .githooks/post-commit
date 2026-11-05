@@ -1,0 +1,112 @@
+#!/bin/sh
+# --- Provian PE Hook Start ---
+# Local commit capture for THIS repo (pre-flip close).
+#
+# This repo sets core.hooksPath=.githooks, so git ignores BOTH .git/hooks/ and
+# the global ~/.provian/hooks/ — only .githooks/ runs. Without a post-commit here
+# a commit fires NO local coding_session PE and gets NO local witness, leaving only
+# the provian-git-witness webhook's github_commit PE with nothing to corroborate.
+# This hook composes ALONGSIDE .githooks/pre-commit (a different hook name — it is
+# untouched) and emits one coding_session PE carrying metadata.commit_sha, which the
+# backend cross-witnesses against the webhook github_commit on the same sha.
+#
+# Disable:   export PROVIAN_DISABLE_HOOK=1
+# Uninstall: npx @provian/agent-sdk setup-hook --remove   (marker-delimited)
+#
+# The global WS3 SDK capture (3bffca61) still ships at flip for every OTHER repo;
+# this file is the this-repo-only pre-flip equivalent and is not descoped by it.
+
+if [ "$PROVIAN_DISABLE_HOOK" = "1" ]; then
+  exit 0
+fi
+
+# Defer to the observer ONLY if its GitPlugin is actively watching THIS repo, to
+# avoid double-counting. The observer publishes watched roots to observer-git-repos;
+# it usually watches nothing, so most repos are absent and the hook must fire.
+if [ -f "$HOME/.provian/observer.pid" ]; then
+  OBSERVER_PID=$(cat "$HOME/.provian/observer.pid" 2>/dev/null)
+  if [ -n "$OBSERVER_PID" ] && kill -0 "$OBSERVER_PID" 2>/dev/null; then
+    PROVIAN_WATCHED="$HOME/.provian/observer-git-repos"
+    PROVIAN_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [ -n "$PROVIAN_REPO_ROOT" ] && [ -f "$PROVIAN_WATCHED" ] && \
+       grep -qxF "$PROVIAN_REPO_ROOT" "$PROVIAN_WATCHED" 2>/dev/null; then
+      exit 0
+    fi
+  fi
+fi
+
+# Skip rebases, amends, cherry-picks — would double-count work.
+if echo "$GIT_REFLOG_ACTION" | grep -qi "rebase\|amend\|cherry-pick"; then
+  exit 0
+fi
+
+# Resolve the report-pe entrypoint: the repo-local SDK build first (this repo ships
+# the SDK as a workspace), then the published package as a fallback for other clones.
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/provian-agent-sdk/dist/scripts/report-pe.js" ]; then
+  REPORT_PE="node $REPO_ROOT/provian-agent-sdk/dist/scripts/report-pe.js"
+else
+  REPORT_PE="npx -y @provian/agent-sdk report-pe"
+fi
+
+# Commit identity for the cross-witness mint-once (user, commit_sha) slot shared
+# with the webhook github_commit — whichever path witnesses the commit, exactly
+# one mints and the other corroborates.
+COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null)
+BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+
+# Diff stats.
+DIFF_STATS=$(git diff --numstat HEAD~1 HEAD 2>/dev/null)
+FILES_CHANGED=0
+LINES_ADDED=0
+if [ -n "$DIFF_STATS" ]; then
+  FILES_CHANGED=$(echo "$DIFF_STATS" | wc -l | tr -d ' ')
+  LINES_ADDED=$(echo "$DIFF_STATS" | awk '{ s += $1 } END { print s+0 }')
+fi
+
+# Languages from changed file extensions.
+LANGS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | \
+  grep -oE '\.[a-zA-Z0-9]+$' | sort -u | \
+  sed 's/\.ts$/TypeScript/; s/\.tsx$/TypeScript/; s/\.js$/JavaScript/; s/\.jsx$/JavaScript/; s/\.py$/Python/; s/\.go$/Go/; s/\.rs$/Rust/; s/\.rb$/Ruby/; s/\.java$/Java/; s/\.swift$/Swift/; s/\.kt$/Kotlin/; s/\.sol$/Solidity/; s/\.css$/CSS/; s/\.scss$/CSS/; s/\.md$/Markdown/; s/^\.[a-z]*$//' | \
+  grep -v '^$' | sort -u | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
+
+# Coding tool.
+TOOL="unknown"
+if [ -n "$CLAUDE_CODE" ]; then
+  TOOL="claude-code"
+elif echo "$TERM_PROGRAM" | grep -qi "cursor"; then
+  TOOL="cursor"
+elif echo "$TERM_PROGRAM" | grep -qi "vscode\|code"; then
+  TOOL="vscode"
+fi
+
+# Conventional-commit type.
+COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null | head -c 500)
+COMMIT_TYPE=$(echo "$COMMIT_MSG" | grep -oE '^(feat|fix|refactor|docs|test|chore|perf|style|build|ci)(\([^)]+\))?' | head -1)
+if [ -z "$COMMIT_TYPE" ]; then
+  COMMIT_TYPE="code"
+fi
+
+# Structural-metadata description (corporate/client-safe default). Override per-repo
+# with PROVIAN_RICH_DESCRIPTIONS=1.
+if [ "${PROVIAN_RICH_DESCRIPTIONS:-0}" = "1" ]; then
+  DESCRIPTION="$COMMIT_MSG"
+elif [ -n "$LANGS" ]; then
+  DESCRIPTION="${COMMIT_TYPE}: ${FILES_CHANGED} files, ${LINES_ADDED} lines - ${LANGS} - ${TOOL}"
+else
+  DESCRIPTION="${COMMIT_TYPE}: ${FILES_CHANGED} files, ${LINES_ADDED} lines - ${TOOL}"
+fi
+
+# Report the PE asynchronously — never blocks or fails the commit.
+PROVIAN_DIR="$HOME/.provian"
+HOOK_LOG="$PROVIAN_DIR/hook.log"
+mkdir -p "$PROVIAN_DIR"
+(${REPORT_PE} --type coding_session \
+  --description "$DESCRIPTION" \
+  --files-changed "$FILES_CHANGED" \
+  --lines-added "$LINES_ADDED" \
+  --tool "$TOOL" \
+  --commit-sha "$COMMIT_SHA" \
+  --branch "$BRANCH" \
+  >>"$HOOK_LOG" 2>&1 &)
+# --- Provian PE Hook End ---

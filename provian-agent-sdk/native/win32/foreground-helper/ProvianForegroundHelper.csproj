@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Provian Windows foreground helper.
+
+    Native counterpart of native/darwin/foreground-helper (Swift). Emits the
+    same OS-agnostic line-delimited JSON IPC contract on stdout that the
+    TypeScript HelperBridge (src/observer/plugins/llm-session/ipc.ts) reads:
+      foreground_changed | input_event | system_state | permission_status
+      | error | fatal
+
+    UseWindowsForms gives us a message pump (Application.Run) for the
+    low-level input hooks and Microsoft.Win32.SystemEvents. UseWPF gives us
+    UIAutomationClient/UIAutomationTypes for reading the focused browser's
+    address bar.
+
+    Build (on a Windows host or Windows CI runner):
+      dotnet publish -c Release -r win-x64 -o publish
+    Output: publish/ProvianForegroundHelper.exe (self-contained, single file).
+    The SDK packaging step copies this into bin/helpers/win32/ for the
+    postinstall script; resolveHelperBinaryPath() also finds publish/ in dev.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ProvianForegroundHelper</AssemblyName>
+    <RootNamespace>Provian.ForegroundHelper</RootNamespace>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <!-- Single self-contained exe so the postinstall copy is one file and the
+         end user needs no .NET runtime installed. -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- No console window flash: the helper is spawned with piped stdio by the
+         observer, never launched interactively. Keep it a console subsystem
+         binary so stdout piping is reliable. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

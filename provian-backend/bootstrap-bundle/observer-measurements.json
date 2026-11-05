@@ -1,0 +1,7 @@
+[
+  {
+    "scheme": "tpm2_quote",
+    "measurement": "sha256:79a80ba7c01086cd16ebea930cffad71feb190c5a64e518348d0e45ac7b1fc70",
+    "note": "GCE Confidential VM (n2d, AMD SEV, Secure Boot) booting debian-cloud/debian-12-bookworm-v20261006: sha256 PCR0-7 quote digest, read 2026-10-10"
+  }
+]

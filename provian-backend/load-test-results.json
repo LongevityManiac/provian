@@ -1,0 +1,24 @@
+{
+  "total_requests": 241297,
+  "p95_latency_ms": 332.39439999999973,
+  "p99_latency_ms": 0,
+  "error_rate": 0.18428326916621426,
+  "rate_limit_hits": 5109,
+  "pes_created": 26634,
+  "auth_failures": 31464,
+  "firestore_errors": 0,
+  "business_logic_errors": 0,
+  "endpoints": {
+    "policy_p95": 309,
+    "budget_p95": 229,
+    "relay_p95": 467,
+    "work_product_p95": 349,
+    "connection_token_p95": 255,
+    "sessions_list_p95": 242,
+    "pending_requests_p95": 272,
+    "kill_switch_p95": 229,
+    "pvt_stats_p95": 2755.4999999999927,
+    "ecosystem_p95": 156,
+    "wallet_create_p95": 464.29999999999967
+  }
+}

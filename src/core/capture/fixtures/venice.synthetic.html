@@ -1,0 +1,42 @@
+<!--
+  Venice synthetic fixture. NOT captured from venice.ai. Hand-written DOM
+  approximating Venice's conversation message structure.
+
+  Venice is a URL-boundary provider (session id from venice.ai/c/<id>), so
+  this fixture mirrors the full-observer providers: a conversation scope
+  containing user + assistant turns, with one image inside a user turn.
+
+  Selector basis:
+    - [data-testid="chat-messages"]      conversation scope
+    - [data-testid="message-user"]       user turn (feeds charCount)
+    - [data-testid="message-assistant"]  assistant turn
+    - img inside the scope                counts toward imageCount
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Venice synthetic</title></head>
+<body>
+  <main>
+    <div data-testid="chat-messages">
+
+      <div data-testid="message-user">
+        <div class="message-body">
+          Draft a privacy-first onboarding email that explains why we never store conversation contents server-side, and keep it warm rather than legalistic.
+        </div>
+        <div class="message-attachments">
+          <img src="data:image/png;base64,iVBORw0KGgo=" alt="Reference layout" />
+        </div>
+      </div>
+
+      <div data-testid="message-assistant">
+        <div class="message-body">
+          Here is a draft that leads with the benefit, states the privacy guarantee plainly, and closes with a single clear call to action.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

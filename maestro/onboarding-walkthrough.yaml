@@ -1,0 +1,71 @@
+appId: com.provian.wallet
+---
+# Provian Onboarding Walkthrough - 14 Steps
+
+# Step 1: Hook screen
+- assertVisible: "AI is rewriting the economy"
+- takeScreenshot: screenshots/onboarding-01-hook
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 2: Problem
+- takeScreenshot: screenshots/onboarding-02-problem
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 3: PE
+- takeScreenshot: screenshots/onboarding-03-pe
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 4: PVT
+- takeScreenshot: screenshots/onboarding-04-pvt
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 5: Agents
+- takeScreenshot: screenshots/onboarding-05-agents
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 6: Wallet Features
+- takeScreenshot: screenshots/onboarding-06-wallet
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 7: Promises
+- takeScreenshot: screenshots/onboarding-07-promises
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 8: Commons
+- takeScreenshot: screenshots/onboarding-08-commons
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 9: Inclusion
+- takeScreenshot: screenshots/onboarding-09-inclusion
+- tapOn: "Show Me"
+- waitForAnimationToEnd
+
+# Step 10: Accord (ToS)
+- takeScreenshot: screenshots/onboarding-10-accord
+- tapOn:
+    id: "accept-button"
+    optional: true
+- tapOn:
+    text: "I Accept"
+    optional: true
+- tapOn:
+    text: "Accept"
+    optional: true
+- waitForAnimationToEnd
+
+# Step 11: Wallet setup
+- takeScreenshot: screenshots/onboarding-11-wallet
+
+# Step 12: Backup
+- takeScreenshot: screenshots/onboarding-12-backup
+
+# Final state
+- takeScreenshot: screenshots/onboarding-final

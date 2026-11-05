@@ -1,0 +1,4 @@
+NSFaceIDUsageDescription = "Provian Face ID를 사용하여 지갑 잠금을 해제하고 거래, 서명 및 승인을 확인합니다.";
+NSCameraUsageDescription = "Provian 카메라를 사용하여 지갑 주소, WalletConnect 연결 링크 및 에이전트 페어링 코드와 같은 QR 코드를 스캔합니다. 어떤 정보도 기록되거나 업로드되지 않습니다.";
+NSMotionUsageDescription = "Provian 전송 또는 교환 중에만 모션 센서를 읽어, 전송 과정에서 발생할 수 있는 심한 흔들림을 감지합니다. 이러한 흔들림은 전송이 압박 속에서 이루어지고 있음을 나타낼 수 있습니다. 감지된 데이터는 이 장치에 저장됩니다.";
+NSPhotoLibraryUsageDescription = "Provian Commons 프로필에 사용할 사진을 선택할 때만 사진 라이브러리를 엽니다. 사용자가 선택한 사진만 사용됩니다.";

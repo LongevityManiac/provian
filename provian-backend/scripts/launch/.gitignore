@@ -1,0 +1,3 @@
+# Per-run manifests contain wallet ids / key prefixes for prod test artifacts —
+# operational state, not source.
+runs/

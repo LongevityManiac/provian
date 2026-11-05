@@ -1,0 +1,4 @@
+NSFaceIDUsageDescription = "Provian 、ウォレットのロック解除や、取引、署名、承認の確認にFace IDを使用します。";
+NSCameraUsageDescription = "Provianカメラを使ってQRコードをスキャンします。スキャンされるのは、ウォレットアドレス、 WalletConnect接続リンク、エージェントペアリングコードなどです。データは一切記録またはアップロードされません。";
+NSMotionUsageDescription = "Provian 、送信または交換時のみモーションセンサーを読み取り、強い振動を検知します。これは、転送が圧力下で行われている可能性を示唆します。読み取り値はこのデバイスに保存されます。";
+NSPhotoLibraryUsageDescription = "Provian 、 Commonsプロフィールに表示する写真を選択する際にのみ、写真ライブラリを開きます。使用されるのは、選択した写真のみです。";

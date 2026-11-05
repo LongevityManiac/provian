@@ -1,0 +1,51 @@
+{
+  "name": "@provian/x402-facilitator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Provian x402 facilitator (verify + settle) on Base and Solana",
+  "license": "UNLICENSED",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json && node --check proof-seller/server.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@solana-program/compute-budget": "0.11.0",
+    "@solana-program/token": "0.9.0",
+    "@solana-program/token-2022": "0.6.1",
+    "@solana/kit": "^5.5.1",
+    "@x402/core": "2.28.0",
+    "@x402/evm": "2.28.0",
+    "@x402/svm": "2.28.0",
+    "express": "^5.2.1",
+    "firebase-admin": "^12.7.0",
+    "google-auth-library": "^9.15.1",
+    "viem": "^2.57.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.19.43",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LongevityManiac/provian.git"
+  },
+  "homepage": "https://provian.ai",
+  "bugs": {
+    "url": "https://github.com/LongevityManiac/provian/issues"
+  },
+  "overrides": {
+    "body-parser": "2.4.0"
+  }
+}

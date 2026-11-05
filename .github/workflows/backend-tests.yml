@@ -1,0 +1,164 @@
+name: Backend Tests
+
+# Backend jest ran in NO workflow until 2026-07-28 : the typecheck
+# workflow runs tsc only, and the Removed-Decision Registry workflow runs the
+# FC suite only, so "the 31/31 is CI" (#8) was true of the local suite
+# alone. Split per the standing rule: the money-path guards run on every push;
+# the full suite runs on pushes to master and on a daily schedule.
+#
+# FC-009 (forbidden-constructs.ts) pins this file's existence and its suite
+# tokens — renaming or unwiring a money-path suite here fails the FC registry,
+# not just this workflow.
+
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger. The full jest suite +
+# money-path guards run NIGHTLY against master and on demand; the local gate
+# (check:wp2 + money-path + jest before every push) is the authoritative
+# pre-push check. On a PR the fast money-path guards run; schedule/dispatch run
+# the full suite. paths-ignore keeps doc-only PRs cheap.
+on:
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**/*.md'
+  schedule:
+    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly full suite vs master
+  workflow_dispatch:
+
+concurrency:
+  group: backend-tests-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  FRANK_PVT_APPROVAL_SSH_PUBLIC_KEY: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAf9JCgexoRd6ZMoF1oJOIS25hmoqPriUTxlz3rVZ6e provian-pvt-policy'
+  FRANK_PVT_APPROVAL_SSH_KEY_SHA256: 'sha256:200b11f0842bdf578eeb2ebb4859c9fcd3ba870159e53d6747ffaff893462974'
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  money-path-guards:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    # bound the job so a hang fails fast instead of burning the GH 6h max
+    # and reporting "cancelled". The guarded suites run in seconds locally.
+    # re-sized from observed max 1.4 min (69 runs, Aug 26-Sep 25 2026);
+    # 3x headroom, rounded up to 5.
+    timeout-minutes: 5
+    name: money-path guards (31/31 legacy block + FC registry + recon gate)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # FC-007 resolves the WP merge record with `git merge-base
+          # --is-ancestor`; a shallow clone would fail-closed on real history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-backend/package-lock.json
+
+      - name: Install
+        working-directory: provian-backend
+        run: npm ci --no-audit --no-fund
+
+      - name: Money-path guard suites
+        working-directory: provian-backend
+        run: >
+          npx jest --silent
+          src/core/pvt/wp-ev/eligibility.legacyMintedBlock.test.ts
+          src/core/decisions/forbidden-constructs.test.ts
+          src/core/pvt/wp4/standard-lane-recon-gate.test.ts
+
+  #  item 8: the installed-base compatibility guard. Runs on every PR (the
+  # pre-push gate) AND nightly. It pins the cross-layer contracts the CURRENTLY
+  # INSTALLED daemon release / published SDK / CLI depend on as frozen golden
+  # vectors — the registration fingerprint (whose  change would have refused
+  # credential recovery for the whole installed base), the durable-identity
+  # contextHash, the route surface the clients call, version compatibility, and
+  # the served self-update bundle. Both halves (relay jest + SDK vitest) run here
+  # because the ordinary suites drive HEAD's client against HEAD's relay and so
+  # cannot see a lockstep change that strands the fielded base.
+  installed-base-compat:
+    if: >
+      github.event_name == 'pull_request'
+      || github.event_name == 'schedule'
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  #  bound; observed max 1.4 min (9 runs, Sep 2026), 3x headroom, rounded up to 5
+    name: installed-base compatibility (SDK/CLI/daemon vs relay HEAD)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-backend/package-lock.json
+
+      - name: Install backend
+        working-directory: provian-backend
+        run: npm ci --no-audit --no-fund
+
+      - name: Relay-side compatibility (registration fingerprint, route surface, version, bundle)
+        working-directory: provian-backend
+        run: npx jest --silent src/installed-base-compat.test.ts
+
+      - name: Install SDK
+        working-directory: provian-agent-sdk
+        run: npm ci --no-audit --no-fund
+
+      - name: SDK-side compatibility (durable-identity contextHash)
+        working-directory: provian-agent-sdk
+        run: npx vitest run src/installed-base-compat.test.ts
+
+  full-suite:
+    if: >
+      github.event_name == 'schedule'
+      || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    name: full backend suite
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: provian-backend/package-lock.json
+
+      - name: Install
+        working-directory: provian-backend
+        run: npm ci --no-audit --no-fund
+
+      # The jurisdiction suites read the real DB-IP database. It is gitignored and the image
+      # build downloads it, so a checkout has none: without this step countryFromIp answers
+      # null for every address and those suites fail.
+      - name: Bundle the jurisdiction database
+        working-directory: provian-backend
+        run: node scripts/bundle-jurisdiction-data.mjs
+
+      - name: Full jest suite
+        working-directory: provian-backend
+        run: npm test -- --silent
+
+      - name: Build (for boot check)
+        working-directory: provian-backend
+        run: npm run build
+
+      - name: Boot check (module-eval / TDZ guardrail)
+        working-directory: provian-backend
+        # Exercises FULL module evaluation — every `app.use(factory())` mount runs, so an
+        # interleaved-import temporal-dead-zone (the harness-catalog boot crash resolved by
+        # bc298908c) throws here. tsc + unit tests cannot see this class: they import routers
+        # directly, and tsc's own module semantics hoist imports. PROVIAN_BOOT_CHECK skips the
+        # port bind and env validation, exits 0 after eval. RED control (verified locally,
+        # NOT landed): move one interleaved import below its use → this step exits non-zero
+        # with `ReferenceError: Cannot access '<mod>_1' before initialization`.
+        run: PROVIAN_BOOT_CHECK=1 timeout 120 node dist/server.js

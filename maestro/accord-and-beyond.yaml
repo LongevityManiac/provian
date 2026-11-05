@@ -1,0 +1,42 @@
+appId: com.provian.wallet
+---
+# Continue from Step 10 (Accord) - scroll, check box, tap Begin
+
+# Swipe up to scroll down
+- swipe:
+    start: "50%, 80%"
+    end: "50%, 30%"
+
+- takeScreenshot: screenshots/accord-scrolled
+
+# Tap the checkbox area
+- tapOn:
+    point: "100,680"
+
+- takeScreenshot: screenshots/accord-checked
+
+# Now tap "Begin" button
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 11
+- takeScreenshot: screenshots/step-11-real
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 12
+- takeScreenshot: screenshots/step-12-real
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 13
+- takeScreenshot: screenshots/step-13-real
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 14
+- takeScreenshot: screenshots/step-14-real

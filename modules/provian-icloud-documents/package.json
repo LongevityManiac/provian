@@ -1,0 +1,7 @@
+{
+  "name": "provian-icloud-documents",
+  "version": "1.0.0",
+  "description": "iCloud ubiquity-container file store for the PE backup (iCloud.com.provian.wallet, PEBackup/): coordinated atomic writes, on-demand downloads, and a metadata query for restore on a fresh phone. The files are already AES-256-GCM ciphertext when they arrive here. iOS only; Android backs up to Drive appDataFolder through ProvianCloudKeychainSync.",
+  "main": "index.ts",
+  "private": true
+}

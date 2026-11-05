@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "NSFaceIDUsageDescription": "Provian sử dụng Face ID để mở khóa ví của bạn và xác nhận các giao dịch, chữ ký và phê duyệt mà bạn thực hiện.",
+    "NSCameraUsageDescription": "Provian sử dụng camera để quét mã QR: địa chỉ ví, liên kết kết nối WalletConnect và mã ghép nối tác nhân. Không có dữ liệu nào được ghi lại hoặc tải lên.",
+    "NSMotionUsageDescription": "Provian chỉ đọc cảm biến chuyển động khi bạn gửi hoặc trao đổi dữ liệu, để phát hiện những rung lắc mạnh có thể cho thấy quá trình chuyển dữ liệu đang diễn ra dưới áp lực. Dữ liệu được lưu trữ trên thiết bị này.",
+    "NSPhotoLibraryUsageDescription": "Provian chỉ mở thư viện ảnh của bạn khi bạn chọn ảnh cho hồ sơ Commons của mình. Chỉ ảnh bạn chọn mới được sử dụng."
+  }
+}

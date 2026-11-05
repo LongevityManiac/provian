@@ -1,0 +1,4 @@
+.build/
+ProvianForegroundHelper.app/
+Package.resolved
+*.xcodeproj/

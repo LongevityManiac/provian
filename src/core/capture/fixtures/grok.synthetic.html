@@ -1,0 +1,43 @@
+<!--
+  Grok synthetic fixture. NOT captured from grok.com or x.com/i/grok.
+  Hand-written DOM approximating Grok's conversation message structure.
+
+  Grok's observer is lighter: charCount and imageCount only. Session
+  boundaries come from timestamps (detectGrokBoundary), not DOM. turnCount
+  and videoSeconds are zero by construction in the Grok observer, so this
+  fixture does not need to encode a turn selector surface; it only needs
+  a user-message-like container carrying text length and one img.
+
+  Selector basis:
+    - [data-testid="message"]       generic Grok message container
+    - [data-role="user"]            user message marker
+    - img inside a user message      counts toward imageCount
+
+  Live DOM validation deferred to final smoke test.
+-->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Grok synthetic</title></head>
+<body>
+  <main>
+    <div class="conversation">
+
+      <div data-testid="message" data-role="user">
+        <div class="message-body">
+          Rewrite this opening paragraph so it sounds less corporate and more like a person actually wrote it.
+        </div>
+        <div class="message-attachments">
+          <img src="data:image/png;base64,iVBORw0KGgo=" alt="Screenshot" />
+        </div>
+      </div>
+
+      <div data-testid="message" data-role="assistant">
+        <div class="message-body">
+          Sure. Here is a version that keeps the substance but drops the hedge language and lets the verbs do the work.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>

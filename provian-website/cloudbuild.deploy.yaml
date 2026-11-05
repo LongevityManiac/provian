@@ -1,0 +1,66 @@
+# Build + push the provian-site image (marketing site / nginx + static export).
+# The usual way to ship the site is provian-website/scripts/deploy-site.sh: it runs this build
+# (inheriting the live gate), deploys, and purges Cloudflare's cache so visitors see it at once.
+# Build context is the repo ROOT (Dockerfile path is provian-website/Dockerfile).
+# By default this inherits the existing Basic Auth verifier (only the bcrypt HASH) from the
+# deployed private image: the deploy tag itself, so an empty _PW preserves whatever gate is live.
+# (the default used to be a digest pinned months earlier; when a timed-out
+# `op read` produced an empty _PW, builds silently reverted the gate to that old password.)
+# To rotate the password, pass _PW explicitly; never commit it:
+#   gcloud builds submit --config provian-website/cloudbuild.deploy.yaml \
+#     --substitutions=_PW="<password>" --ignore-file=.gcloudignore.website .
+# Then deploy:
+#   gcloud run deploy provian-site --image <_IMAGE> --region us-central1
+#
+# F42: the password is delivered to the build via a BuildKit secret mount (never a --build-arg
+# consumed in a RUN), so no plaintext ever lands in the image history. DOCKER_BUILDKIT=1 enables
+# BuildKit; `--secret id=dashboard_pw,env=DASHBOARD_PASSWORD` reads the value from the step env.
+# When _PW is empty the secret is empty and the Dockerfile inherits the existing bcrypt hash.
+# _REVIEW_OPEN: 'off' (default) builds the walled site; 'on' serves the store-review open set
+# (review-open.json) without the password. scripts/deploy-site.sh --review-open passes 'on'.
+substitutions:
+  _PW: ''
+  _REVIEW_OPEN: 'off'
+  _IMAGE: 'us-central1-docker.pkg.dev/provian-ai/cloud-run-source-deploy/provian-site:dark-redesign'
+  _HTPASSWD_SOURCE_IMAGE: 'us-central1-docker.pkg.dev/provian-ai/cloud-run-source-deploy/provian-site:dark-redesign'
+  # Private bucket holding each signed release APK as android/<sha256>.apk
+  # (upload with provian-website/scripts/publish-android-apk.sh).
+  _APK_BUCKET: 'provian-ai-release-apks'
+steps:
+  # The release APK is never in the uploaded source (.gcloudignore.website drops
+  # any local copy). The /download/android page names it by file and SHA-256;
+  # fetch exactly that object into public/download/. A missing object fails the
+  # build here, and the Dockerfile re-checks size and hash in the export.
+  - name: 'node:20-alpine'
+    entrypoint: 'sh'
+    args: ['-c', 'node provian-website/scripts/release-apk.mjs expect > /workspace/release-apk.expect']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        set -euo pipefail
+        read -r sha file bytes < /workspace/release-apk.expect
+        mkdir -p provian-website/public/download
+        gcloud storage cp "gs://${_APK_BUCKET}/android/$${sha}.apk" "provian-website/public/download/$${file}"
+  - name: 'gcr.io/cloud-builders/docker'
+    env:
+      - 'DOCKER_BUILDKIT=1'
+      - 'DASHBOARD_PASSWORD=${_PW}'
+    args:
+      - 'build'
+      - '--secret'
+      - 'id=dashboard_pw,env=DASHBOARD_PASSWORD'
+      - '-f'
+      - 'provian-website/Dockerfile'
+      - '--build-arg'
+      - 'HTPASSWD_SOURCE_IMAGE=${_HTPASSWD_SOURCE_IMAGE}'
+      - '--build-arg'
+      - 'REVIEW_OPEN=${_REVIEW_OPEN}'
+      - '-t'
+      - '${_IMAGE}'
+      - '.'
+images:
+  - '${_IMAGE}'
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -1,0 +1,46 @@
+{
+  "schema": "provian.shutdown-coverage.pool.v1",
+  "steps": {
+    "poolV3": {
+      "address": "0x1301BF63Cb6BaE7171f6c7D895C762B243964d26",
+      "tx": "0x82afe05aa6029ea17ea50dcbe39e0c13c95cfffe75107963d00e5bafc590a5e3",
+      "block": 52855161,
+      "deployer": "0xE80c010e20A97d00196ee3FB102b07c302292f0b",
+      "nonce": 0,
+      "gasUsed": "2345823"
+    }
+  },
+  "preflight": {
+    "at_block": 52855141,
+    "old_pool": {
+      "address": "0xb355C79a78DC0F33b7d1EF5dA230CD8097630a84",
+      "admin": "0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3",
+      "feeWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+      "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "pvt": "0x8811441914381143b9408c5C32247367F86F173A",
+      "epochClock": "0x8811441914381143b9408c5C32247367F86F173A",
+      "usdc_balance": "0",
+      "pvt_balance": "0",
+      "logs_since_deploy": 0,
+      "logs_scanned": [
+        52101008,
+        52855141
+      ]
+    },
+    "admin_nonce": 474,
+    "admin_balance_wei": "9278268947253959",
+    "predicted_pool": "0x00F04078dffCA45f4180C706b3C4F55956801BBe"
+  },
+  "verify": {
+    "new_pool": "0x1301BF63Cb6BaE7171f6c7D895C762B243964d26",
+    "constructor_args": {
+      "admin": "0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3",
+      "feeWallet": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+      "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "pvt": "0x8811441914381143b9408c5C32247367F86F173A",
+      "epochClock": "0x8811441914381143b9408c5C32247367F86F173A"
+    },
+    "runtime_code_matches_artifact": true,
+    "old_pool_code_differs": true
+  }
+}

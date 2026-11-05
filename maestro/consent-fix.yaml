@@ -1,0 +1,29 @@
+appId: com.provian.wallet
+---
+# First, untoggle row 1 (it's currently checked), then check all 3
+# Row 1 toggle OFF
+- tapOn:
+    point: "150,440"
+
+# Now check all 3 with better spacing
+# Row 1: y=440
+- tapOn:
+    point: "150,440"
+
+# Row 2: try y=530
+- tapOn:
+    point: "150,530"
+
+# Row 3: try y=610
+- tapOn:
+    point: "150,610"
+
+- takeScreenshot: screenshots/nav-audit/consent-attempt3
+
+# If not all checked, try even wider spacing
+- tapOn:
+    point: "150,550"
+- tapOn:
+    point: "150,640"
+
+- takeScreenshot: screenshots/nav-audit/consent-attempt4

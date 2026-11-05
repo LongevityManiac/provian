@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ProvianStorePurchaseModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.provianstorepurchase.ProvianStorePurchaseModule"]
+  }
+}

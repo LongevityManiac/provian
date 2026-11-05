@@ -1,0 +1,36 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "env": {
+    "node": true,
+    "es2022": true
+  },
+  "ignorePatterns": ["dist/", "node_modules/", "*.test.ts"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-empty-function": "off",
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/no-var-requires": "warn",
+    "@typescript-eslint/no-namespace": "warn",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "no-empty": "off",
+    "no-useless-escape": "off",
+    "no-prototype-builtins": "off",
+    "no-constant-condition": "warn",
+    "prefer-const": "warn",
+    "no-control-regex": "off",
+    "no-irregular-whitespace": "off"
+  }
+}

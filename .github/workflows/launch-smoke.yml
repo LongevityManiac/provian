@@ -1,0 +1,88 @@
+name: Launch Smoke Suite
+
+# settlement kernel — the flip gate. Proves the documented agent funnel works against
+# production: discovery-surface gating, package installability, the
+# wallet-create PoP flow, genesis status, /v1/pe/submit device auth, the
+# public record/directory/reputation reads, and the docs install-command lint.
+#
+# Mode comes from scripts/launch-smoke/MODE (currently "pre-flip": gated
+# surfaces must 404/401, launch packages expectedly unpublished). Flip day
+# changes that file to "post-flip" in the same PR that opens the doors, and
+# this job becomes the forever-green post-launch funnel check.
+#
+# Manual flip-day gate: npm run launch-smoke -- --post-flip
+#
+# The suite hits PRODUCTION (api.provian.ai). Its only write is one agent
+# wallet per run, marked platform:'test' (the established test-agent
+# convention), agent_id prefix 'launch-smoke-'. It never proves an external
+# address or registers a device; wallet creation is the Genesis agent act, so
+# each run enqueues one genesis_signup qualification (there is no pool).
+
+# SOLO-DEVELOPER CI SHAPE (2026-09-06): no push trigger (never had one) and
+# deliberately NO nightly schedule — the suite hits PRODUCTION and writes one
+# test agent wallet per run, so a nightly would create prod side-effects every
+# night. It stays PR-on-funnel-change + manual flip-day dispatch.
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'docs/**'
+      - 'scripts/launch-smoke/**'
+      - 'provian-agent-sdk/README.md'
+      - 'provian-cli/README.md'
+      - 'provian-python-sdk/README.md'
+      - 'provian-mcp/README.md'
+      - 'provian-website/public/docs-md/**'
+      - '.github/workflows/launch-smoke.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Override mode (empty = scripts/launch-smoke/MODE)'
+        required: false
+        type: choice
+        options: ['', 'pre-flip', 'post-flip']
+
+concurrency:
+  group: launch-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+# F44: least-privilege default token for every job; a job that needs more declares its own.
+permissions:
+  contents: read
+
+jobs:
+  launch-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # observed max 0.6 min (25 runs, Jul-Aug 2026); 3x headroom, rounded up to 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+
+      #. Runs BEFORE the live suite and against local stubs only. The three
+      # funnel checks assert a 404, and a 404 assertion passes just as well when
+      # the relay is down, the route is missing, or the gate closed everything.
+      # This proves each of those goes RED before the live green below is allowed
+      # to mean anything.
+      - name: Gate assertions go RED when they should (negative control)
+        run: |
+          if ! node scripts/launch-smoke/gate-control.mjs; then
+            echo "::error::launch-smoke's pre-launch-gate assertions did not fail when fed a broken relay — the gated checks may be passing vacuously. The live run below cannot be trusted until this is green."
+            exit 1
+          fi
+
+      - name: Run launch smoke suite
+        run: |
+          MODE_FLAG=""
+          if [ -n "${{ github.event.inputs.mode }}" ]; then
+            MODE_FLAG="--${{ github.event.inputs.mode }}"
+          fi
+          if ! node scripts/launch-smoke/launch-smoke.mjs $MODE_FLAG; then
+            echo "::error::Launch smoke suite failed — the documented agent funnel is broken against production (or a gated surface is exposed early). See job output."
+            exit 1
+          fi
+          echo "Launch smoke suite green."

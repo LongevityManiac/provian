@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ProvianPinnedTlsModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.provianpinnedtls.ProvianPinnedTlsModule"]
+  }
+}

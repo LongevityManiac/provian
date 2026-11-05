@@ -1,0 +1,140 @@
+{
+  "cli": {
+    "version": ">= 5.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    },
+    "development-device": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "preview",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    },
+    "preview-android": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "preview",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    },
+    "android-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDBbovpfYJNEEGRDW84N6Exm6wkv7mupNw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "provian.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "provian",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "provian.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "813001427078",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:813001427078:web:66089b01950164ae756907",
+        "EXPO_PUBLIC_PRIVY_APP_ID": "cml2sbcdw04k1l10c5f9okr4b",
+        "EXPO_PUBLIC_WALLETCONNECT_PROJECT_ID": "b422061b4e0b618b7a4974bec41cecdf",
+        "EXPO_PUBLIC_FEE_WALLET_EVM": "0x086e0F377af1245B8888540f39e99A42a7daF1dA",
+        "EXPO_PUBLIC_ALCHEMY_PAYG": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "$EXPO_APPLE_ID",
+        "appleTeamId": "$EXPO_APPLE_TEAM_ID",
+        "ascApiKeyPath": "~/.credentials/AuthKey.p8",
+        "ascApiKeyId": "$ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "$ASC_ISSUER_ID"
+      }
+    }
+  }
+}

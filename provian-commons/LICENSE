@@ -1,0 +1,17 @@
+© 2026 Provian Technologies, LLC. All Rights Reserved.
+
+UNLICENSED - Proprietary and Confidential.
+
+The Provian Commons is a reference implementation of the public institutional
+layer. It is part of Provian's closed ("wallet + commons") surface and is NOT
+open-sourced: it may not be copied, modified, distributed, or otherwise used
+without the prior written consent of Provian Technologies, LLC.
+
+The Provenance Envelope (PE) protocol that the Commons is built on IS open. The
+open, permissively-licensed surface is the protocol and developer tooling -
+`@provian/agent-sdk`, `@provian/cli`, the Python SDK, the published PE
+specification, and the relay's public API contract. Build an alternative Commons
+on those open primitives; this reference implementation itself stays proprietary.
+
+See the repository root `LICENSE` and `OPEN_SOURCE_SPLIT.md` for the full
+open/closed boundary.

@@ -1,0 +1,20 @@
+# Upload only what the provian-site (website) Docker build needs.
+# Passed explicitly via: gcloud builds submit --ignore-file=.gcloudignore.website
+# NB: OPEN_ITEMS.md (the internal tracker) is deliberately NOT re-included — it
+# must never be uploaded into the build context. The /internal dashboard + its
+# gen-open-items pipeline were removed 2026-07-06 (OPEN_ITEMS.md finding #3).
+.git
+*
+!provian-website
+!provian-website/**
+provian-website/node_modules
+provian-website/.next
+provian-website/out
+provian-website/.firebase
+provian-website/.DS_Store
+provian-website/*.pem
+provian-website/npm-debug.log*
+provian-website/.env*.local
+# The release APK comes from the release bucket at build time, never from the
+# deploying tree (see provian-website/cloudbuild.deploy.yaml).
+provian-website/public/download/*.apk

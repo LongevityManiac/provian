@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // [SEC-audit-4.2] ALL collections are server-write-only (Admin SDK only).
+    // Client-side PE creation was removed because PEs drive PVT minting -
+    // allowing client writes would enable arbitrary PVT accrual.
+    // The mobile app creates PEs through the backend API, which uses Admin SDK
+    // (bypasses these rules entirely).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

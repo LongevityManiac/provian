@@ -1,0 +1,7 @@
+{
+  "name": "provian-app-attest",
+  "version": "1.0.0",
+  "description": "Apple App Attest (DCAppAttestService) bridge: generate a Secure-Enclave key, attest it once, and produce per-PE assertions over the submission binding nonce (Trust Layer §2.9 hardware-rooted witness). Android has no equivalent here and reports unsupported.",
+  "main": "index.ts",
+  "private": true
+}

@@ -1,0 +1,85 @@
+appId: com.provian.wallet
+---
+# Provian Onboarding - Full 14-step walkthrough
+# "Show Me" / "Next" button at point 201,760
+
+# Step 1: Hook - "AI is rewriting the economy"
+- takeScreenshot: screenshots/step-01-hook
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 2: Problem - "You create value every day"
+- takeScreenshot: screenshots/step-02-problem
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 3: PE - Provenance Envelopes
+- takeScreenshot: screenshots/step-03-pe
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 4: PVT
+- takeScreenshot: screenshots/step-04-pvt
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 5: Agents
+- takeScreenshot: screenshots/step-05-agents
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 6: Wallet Features
+- takeScreenshot: screenshots/step-06-wallet-features
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 7: Promises
+- takeScreenshot: screenshots/step-07-promises
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 8: Commons
+- takeScreenshot: screenshots/step-08-commons
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 9: Inclusion
+- takeScreenshot: screenshots/step-09-inclusion
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 10: Accord (ToS gate) - may need different button
+- takeScreenshot: screenshots/step-10-accord
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 11: Wallet/Biometrics setup
+- takeScreenshot: screenshots/step-11-wallet-bio
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 12: Backup / Recovery
+- takeScreenshot: screenshots/step-12-backup
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 13: First PE
+- takeScreenshot: screenshots/step-13-first-pe
+- tapOn:
+    point: "201,760"
+- waitForAnimationToEnd
+
+# Step 14: Summary
+- takeScreenshot: screenshots/step-14-summary

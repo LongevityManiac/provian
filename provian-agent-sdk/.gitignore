@@ -1,0 +1,25 @@
+# TypeScript build output. Publish-only artifact: package `main`/`types`/`bin`
+# and the `files` allowlist all point at dist/, so `npm publish` ships whatever
+# is on disk — but dist/ is NEVER committed. Every publish MUST rebuild it fresh
+# from HEAD (a stale dist/ silently ships a broken package — this bit us, sweep
+# finding #5). See the clean-build + tarball-smoke gate in OPEN_ITEMS.md
+# ("Release sequence" step 3 / "Wave J publish gates"). Also matched by the
+# repo-root .gitignore `dist/` rule; pinned here too so the package stays
+# self-documenting if this dir is ever split out on its own.
+dist/
+
+# Foreground-helper binaries are built by CI (build-foreground-helpers.yml)
+# and bundled into the npm tarball at publish time. Never commit them.
+bin/helpers/
+
+# Native helper build outputs
+# Windows (.NET)
+native/win32/foreground-helper/bin/
+native/win32/foreground-helper/obj/
+native/win32/foreground-helper/publish/
+# macOS (Swift)
+native/darwin/foreground-helper/.build/
+native/darwin/foreground-helper/ProvianForegroundHelper.app/
+
+# npm pack output
+*.tgz
