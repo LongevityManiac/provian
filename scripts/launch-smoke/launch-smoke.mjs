@@ -332,7 +332,11 @@ const CHECKS = {
     const failures = [];
     let byDesign = 0;
     for (const u of urls) {
-      const res = await http(u).catch((e) => ({ status: `ERR ${e.message}` }));
+      // npm's website answers scripted requests with a bot wall (403), so a package page
+      // link is proved by the registry document for that package instead.
+      const npmPage = u.match(/^https:\/\/www\.npmjs\.com\/package\/(@[^/\s]+\/[^/\s]+|[^@/\s][^/\s]*)\/?$/);
+      const probe = npmPage ? `https://registry.npmjs.org/${npmPage[1].replace('/', '%2f')}` : u;
+      const res = await http(probe).catch((e) => ({ status: `ERR ${e.message}` }));
       const expected = BY_DESIGN[u.replace(/\/$/, '')];
       if (res.status === 200) continue;
       if (expected !== undefined && res.status === expected) { byDesign += 1; continue; }
@@ -667,12 +671,17 @@ const CHECKS = {
         ? pass('401 Basic Auth wall up, as expected pre-flip')
         : fail(`expected 401 pre-flip, got ${landing.status} — website auth wall may be down early`);
     }
-    if (landing.status !== 200 || !landing.text.includes('Agent Provenance Record')) {
-      return fail(`expected 200 /a/ landing with the record page, got ${landing.status}`);
+    // Bound to the page's own source title, so a copy change cannot strand this check.
+    const pageSource = readFileSync(new URL('../../provian-website/src/app/a/page.tsx', import.meta.url), 'utf8');
+    const pageTitle = pageSource.match(/^\s*title: '([^']+)',/m)?.[1];
+    if (!pageTitle) return fail('could not read the /a/ page title from provian-website/src/app/a/page.tsx');
+    const marker = `<title>${pageTitle}</title>`;
+    if (landing.status !== 200 || !landing.text.includes(marker)) {
+      return fail(`expected 200 /a/ landing titled "${pageTitle}", got ${landing.status}${landing.status === 200 ? ' without that title' : ''}`);
     }
     // The nginx rewrite must serve the same page for any /a/<id>.
     const withId = await http(`${SITE}/a/wallet_aw_smoke-check`);
-    return withId.status === 200 && withId.text.includes('Agent Provenance Record')
+    return withId.status === 200 && withId.text.includes(marker)
       ? pass('/a/ landing 200 + /a/<id> rewrite serves the record page')
       : fail(`/a/<id> rewrite broken: got ${withId.status} (nginx location ^~ /a/ missing?)`);
   },
