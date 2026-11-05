@@ -2,17 +2,13 @@ name: Build & Publish @provian packages (npm + PyPI)
 
 # Builds the desktop foreground-capture helper binaries for @provian/agent-sdk
 # on their native GitHub-hosted runners, then packs + (optionally) publishes the
-# SDK, @provian/cli, @provian/mcp and @provian/commons to npm — all authenticated by the
-# NPM_TOKEN secret, so publishing never needs an interactive local npm login or
-# a per-publish OTP. This is what lets the flip run §3 unattended.
-#
-# It also packs + (optionally) publishes the Python SDK (`provian-sdk`) to PyPI.
-# The PyPI publish uses OIDC Trusted Publishing (pypa/gh-action-pypi-publish), so
-# it needs NO token and NO stored secret: the publish-pypi job authenticates with
-# a short-lived OIDC token minted from GitHub (permissions: id-token: write) and
-# gated by the `pypi-publish` GitHub environment. PyPI's pending-publisher flow
-# accepts a first publish of a brand-new project name this way, so — unlike npm —
-# nothing needs to exist on PyPI or in a secret store before the flip.
+# SDK, @provian/cli, @provian/mcp and @provian/commons to npm, and the Python SDK
+# (`provian-sdk`) to PyPI. Both registries use OIDC trusted publishing: each publish
+# job authenticates with a short-lived OIDC token minted from GitHub
+# (permissions: id-token: write), gated by the `npm-publish` / `pypi-publish`
+# GitHub environment, that the registry trades for a token scoped to that one
+# package. There is no long-lived registry token and no stored secret, and no
+# publish needs an interactive login or a per-publish OTP.
 #
 # Why this exists:
 #   - The LLMSessionPlugin (ai_conversation desktop capture) spawns a native
@@ -37,8 +33,13 @@ name: Build & Publish @provian packages (npm + PyPI)
 #
 # Inputs (workflow_dispatch):
 #   publish   - false (default): build/pack/verify only, publish NOTHING.
-#               true: publish the selected package(s) — npm via NPM_TOKEN,
-#               PyPI via OIDC trusted publishing (no token).
+#               true: publish the selected package(s) — npm and PyPI both via
+#               OIDC trusted publishing (no token, no secret).
+#   dry_run   - true: run the npm publish jobs as `npm publish --dry-run`. Each
+#               job still trades the workflow's OIDC token for an npm publish
+#               token and fails unless the registry issues one, so the trusted
+#               publisher is proven without publishing anything. PyPI is skipped.
+#               dry_run wins over publish: a run with both set publishes nothing.
 #   packages  - which package(s) a publish targets. Default 'agent-sdk' keeps
 #               the historical `-f publish=true` meaning (SDK only) intact.
 #               'pypi' targets the Python SDK (provian-sdk) on PyPI alone.
@@ -51,8 +52,9 @@ name: Build & Publish @provian packages (npm + PyPI)
 #
 # What it does NOT do by default: publish. PR runs and default manual runs
 # build + pack + verify only - nothing ships. Publishing needs a manual run
-# with publish=true AND the NPM_TOKEN secret AND (if you add a protection rule)
-# approval on the `npm-publish` environment.
+# with publish=true, this repository + this workflow + the `npm-publish` /
+# `pypi-publish` environment registered as the trusted publisher of each package
+# on npmjs.com / PyPI, and (if you add a protection rule) environment approval.
 #
 # Signing note: this produces UNSIGNED dev binaries. macOS notarization and
 # Windows Authenticode signing are the separate pre-beta release workflow
@@ -74,15 +76,20 @@ on:
       - 'provian-agent-sdk/scripts/postinstall-helper.js'
       - 'provian-agent-sdk/package.json'
       - '.github/workflows/build-foreground-helpers.yml'
-  # Manual trigger. Set publish=true to publish to npm (requires NPM_TOKEN).
+  # Manual trigger. Set publish=true to publish (npm + PyPI via OIDC trusted publishing),
+  # or dry_run=true to prove the npm trusted publishers without publishing.
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the selected package(s) after building (npm via NPM_TOKEN; PyPI via OIDC trusted publishing)'
+        description: 'Publish the selected package(s) after building (npm and PyPI via OIDC trusted publishing)'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'npm publish --dry-run: prove each npm trusted publisher issues a token; publish nothing (PyPI skipped)'
         type: boolean
         default: false
       packages:
-        description: 'Which package(s) a publish=true run targets'
+        description: 'Which package(s) a publish=true or dry_run=true run targets'
         type: choice
         default: 'agent-sdk'
         options:
@@ -444,16 +451,25 @@ jobs:
     timeout-minutes: 10  # observed max 0.4 min (1 run, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
     needs: package
     # Only on a manual run with publish=true targeting the SDK. Never on PRs.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish == true && (inputs.packages == 'agent-sdk' || inputs.packages == 'all') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true) && (inputs.packages == 'agent-sdk' || inputs.packages == 'all') }}
     # Add a required-reviewer protection rule to this environment in repo
     # settings for an extra manual approval gate before anything publishes.
     environment: npm-publish
+    # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
+    # OIDC token that npm trades for a publish token scoped to this one package.
+    # No long-lived token, no secret; same shape as publish-pypi.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 20 ships npm 10.
+      - name: Use an npm with trusted publishing
+        run: npm install -g npm@11.21.2 && npm --version
 
       - name: Download packed tarball
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -475,12 +491,21 @@ jobs:
           if [ "$EXPECTED" != "$ACTUAL" ]; then echo "::error::tarball sha256 mismatch — refusing to publish"; exit 1; fi
 
       # Publishes the exact tarball that the package job built and verified,
-      # so what ships is what was tested. Requires the NPM_TOKEN secret to be
-      # configured; without it this step fails and nothing is published.
+      # so what ships is what was tested. Auth is OIDC trusted publishing: this
+      # repo + this workflow + the npm-publish environment must be registered as
+      # the package's trusted publisher on npmjs.com, or the publish is refused.
       - name: Publish
-        run: npm publish provian-agent-sdk-*.tgz --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          TARBALL=$(ls provian-agent-sdk-*.tgz)
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            # --force only skips the already-published-version check; --dry-run never uploads.
+            npm publish "$TARBALL" --access public --dry-run --force --loglevel verbose 2>&1 | tee publish.log
+            grep -q 'Successfully retrieved and set token' publish.log \
+              || { echo "::error::npm did not obtain a trusted-publishing token for this package"; exit 1; }
+            echo "trusted publisher OK (dry run, nothing published)"
+          else
+            npm publish "$TARBALL" --access public
+          fi
 
   # ---- Publish @provian/cli (manual, opt-in) --------------------------
   publish-cli:
@@ -493,17 +518,26 @@ jobs:
     # in 'cli' mode the SDK publish is skipped and that is allowed.
     if: >-
       ${{ always()
-      && github.event_name == 'workflow_dispatch' && inputs.publish == true
+      && github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true)
       && (inputs.packages == 'cli' || inputs.packages == 'all')
       && needs['pack-cli'].result == 'success'
       && (needs['publish'].result == 'success' || needs['publish'].result == 'skipped') }}
     environment: npm-publish
+    # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
+    # OIDC token that npm trades for a publish token scoped to this one package.
+    # No long-lived token, no secret; same shape as publish-pypi.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 20 ships npm 10.
+      - name: Use an npm with trusted publishing
+        run: npm install -g npm@11.21.2 && npm --version
 
       - name: Download packed cli tarball
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -522,9 +556,17 @@ jobs:
           if [ "$EXPECTED" != "$ACTUAL" ]; then echo "::error::tarball sha256 mismatch — refusing to publish"; exit 1; fi
 
       - name: Publish
-        run: npm publish provian-cli-*.tgz --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          TARBALL=$(ls provian-cli-*.tgz)
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            # --force only skips the already-published-version check; --dry-run never uploads.
+            npm publish "$TARBALL" --access public --dry-run --force --loglevel verbose 2>&1 | tee publish.log
+            grep -q 'Successfully retrieved and set token' publish.log \
+              || { echo "::error::npm did not obtain a trusted-publishing token for this package"; exit 1; }
+            echo "trusted publisher OK (dry run, nothing published)"
+          else
+            npm publish "$TARBALL" --access public
+          fi
 
   # ---- Publish @provian/mcp (manual, opt-in) --------------------------
   publish-mcp:
@@ -536,17 +578,26 @@ jobs:
     # publish is skipped and that is allowed (mcp has no SDK/CLI dependency).
     if: >-
       ${{ always()
-      && github.event_name == 'workflow_dispatch' && inputs.publish == true
+      && github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true)
       && (inputs.packages == 'mcp' || inputs.packages == 'all')
       && needs['pack-mcp'].result == 'success'
       && (needs['publish-cli'].result == 'success' || needs['publish-cli'].result == 'skipped') }}
     environment: npm-publish
+    # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
+    # OIDC token that npm trades for a publish token scoped to this one package.
+    # No long-lived token, no secret; same shape as publish-pypi.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 20 ships npm 10.
+      - name: Use an npm with trusted publishing
+        run: npm install -g npm@11.21.2 && npm --version
 
       - name: Download packed mcp tarball
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -565,9 +616,17 @@ jobs:
           if [ "$EXPECTED" != "$ACTUAL" ]; then echo "::error::tarball sha256 mismatch — refusing to publish"; exit 1; fi
 
       - name: Publish
-        run: npm publish provian-mcp-*.tgz --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          TARBALL=$(ls provian-mcp-*.tgz)
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            # --force only skips the already-published-version check; --dry-run never uploads.
+            npm publish "$TARBALL" --access public --dry-run --force --loglevel verbose 2>&1 | tee publish.log
+            grep -q 'Successfully retrieved and set token' publish.log \
+              || { echo "::error::npm did not obtain a trusted-publishing token for this package"; exit 1; }
+            echo "trusted publisher OK (dry run, nothing published)"
+          else
+            npm publish "$TARBALL" --access public
+          fi
 
   # ---- Publish @provian/commons (manual, opt-in) ----------------------
   publish-commons:
@@ -579,17 +638,26 @@ jobs:
     # publishes before it are skipped and that is allowed (no npm dependency).
     if: >-
       ${{ always()
-      && github.event_name == 'workflow_dispatch' && inputs.publish == true
+      && github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true)
       && (inputs.packages == 'commons' || inputs.packages == 'all')
       && needs['pack-commons'].result == 'success'
       && (needs['publish-mcp'].result == 'success' || needs['publish-mcp'].result == 'skipped') }}
     environment: npm-publish
+    # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
+    # OIDC token that npm trades for a publish token scoped to this one package.
+    # No long-lived token, no secret; same shape as publish-pypi.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 20 ships npm 10.
+      - name: Use an npm with trusted publishing
+        run: npm install -g npm@11.21.2 && npm --version
 
       - name: Download packed commons tarball
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -608,9 +676,17 @@ jobs:
           if [ "$EXPECTED" != "$ACTUAL" ]; then echo "::error::tarball sha256 mismatch — refusing to publish"; exit 1; fi
 
       - name: Publish
-        run: npm publish provian-commons-*.tgz --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          TARBALL=$(ls provian-commons-*.tgz)
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            # --force only skips the already-published-version check; --dry-run never uploads.
+            npm publish "$TARBALL" --access public --dry-run --force --loglevel verbose 2>&1 | tee publish.log
+            grep -q 'Successfully retrieved and set token' publish.log \
+              || { echo "::error::npm did not obtain a trusted-publishing token for this package"; exit 1; }
+            echo "trusted publisher OK (dry run, nothing published)"
+          else
+            npm publish "$TARBALL" --access public
+          fi
 
   # ---- Pack provian-sdk for PyPI (build sdist+wheel, twine check, scratch install) ----
   pack-pypi:
@@ -675,7 +751,7 @@ jobs:
     # dependency, so it need not wait on them).
     if: >-
       ${{ always()
-      && github.event_name == 'workflow_dispatch' && inputs.publish == true
+      && github.event_name == 'workflow_dispatch' && inputs.publish == true && inputs.dry_run != true
       && (inputs.packages == 'pypi' || inputs.packages == 'all')
       && needs['pack-pypi'].result == 'success'
       && (needs['publish-commons'].result == 'success' || needs['publish-commons'].result == 'skipped') }}
