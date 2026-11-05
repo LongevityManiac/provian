@@ -21,10 +21,10 @@ export const metadata: Metadata = {
 
 // ── Launch APK facts (keep in sync with the built artifact) ──────────────────
 const VERSION = '1.0.0'
-const VERSION_CODE = 90
+const VERSION_CODE = 92
 const APK_FILE = `provian-wallet-${VERSION}.apk`
 const APK_URL = `/download/${APK_FILE}`
-const APK_SHA256 = '8d0e93aba7afe5d42da6297f1802766c81ce0221ecc25311a4ff204384a4f972'
+const APK_SHA256 = '4cf34382d34c1bb75b2eece94c6d3fed6e0b856ebce1d2ee098ff3116d90805d'
 const APK_SIZE = '181,707,487 bytes (≈173 MB)'
 const MIN_ANDROID = 'Android 7.0 (Nougat) or later'
 const PACKAGE = 'com.provian.wallet'
