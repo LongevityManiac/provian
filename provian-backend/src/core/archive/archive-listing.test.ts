@@ -25,7 +25,7 @@ import {
   archiveHumanListing,
   archivePaymentRequired,
 } from './archive-terms';
-import { cdpSettleBody } from '../payments/cdp-facilitator';
+import { cdpSettleBody, CDP_RESOURCE_DESCRIPTION_MAX_CHARS } from '../payments/cdp-facilitator';
 import { usdcChargeRequirement, type UsdcChargePayment } from '../payments/usdc-charge';
 
 const AGENT_URL = 'https://api.provian.ai/v1/archive/pay';
@@ -51,6 +51,16 @@ function sentToCdp(listing: ReturnType<typeof archiveAgentListing>): { payload: 
     payload: JSON.parse(JSON.stringify(body.paymentPayload)) as Payload,
     requirements: JSON.parse(JSON.stringify(body.paymentRequirements)) as Requirements,
   };
+}
+
+/** The CDP schema limits a settle body breaks: the description length CDP's `maxLength` refuses. */
+function cdpLimitViolations(listing: ReturnType<typeof archiveAgentListing>): string[] {
+  const body = cdpSettleBody(PAYMENT, REQUIREMENT, listing);
+  const resource = (body.paymentPayload as { resource?: { description?: unknown } }).resource;
+  const description = typeof resource?.description === 'string' ? resource.description : '';
+  return description.length > CDP_RESOURCE_DESCRIPTION_MAX_CHARS
+    ? [`resource.description is ${description.length} characters (CDP allows ${CDP_RESOURCE_DESCRIPTION_MAX_CHARS})`]
+    : [];
 }
 
 describe('PE Archive Bazaar listing', () => {
@@ -111,5 +121,18 @@ describe('PE Archive Bazaar listing', () => {
     expect(forbidden.test(`${copy} for $5`)).toBe(true);
     expect(ARCHIVE_LISTING_TAGS.length).toBeLessThanOrEqual(5);
     expect(ARCHIVE_LISTING_SERVICE_NAME.length).toBeLessThanOrEqual(32);
+  });
+  it('GREEN: every settle body the Archive sends CDP is within CDP\'s schema limits', () => {
+    const listings = [archiveAgentListing(AGENT_URL), archiveHumanListing('https://api.provian.ai/v1/archive/mobile/pay')];
+    expect(listings).toHaveLength(2);
+    for (const listing of listings) expect(cdpLimitViolations(listing)).toEqual([]);
+  });
+
+  it('RED: a description over CDP\'s limit is reported by the same check (the check can fail)', () => {
+    const long = archiveAgentListing(AGENT_URL);
+    const over = { ...long, resource: { ...long.resource, description: 'x'.repeat(CDP_RESOURCE_DESCRIPTION_MAX_CHARS + 1) } };
+    expect(cdpLimitViolations(over)).toHaveLength(1);
+    const exact = { ...long, resource: { ...long.resource, description: 'x'.repeat(CDP_RESOURCE_DESCRIPTION_MAX_CHARS) } };
+    expect(cdpLimitViolations(exact)).toEqual([]);
   });
 });

@@ -29,6 +29,9 @@ import { ed25519KeyFromCdpSecret, type CdpCredentials } from '../onramp/coinbase
 import type { UsdcChargePayment, UsdcPaymentRequirement } from './usdc-charge';
 
 export const CDP_FACILITATOR_HOST = 'api.cdp.coinbase.com';
+
+/** CDP's settle schema caps `paymentPayload.resource.description` at this many characters (`maxLength`). */
+export const CDP_RESOURCE_DESCRIPTION_MAX_CHARS = 500;
 export const CDP_FACILITATOR_ROUTE = '/platform/v2/x402';
 /** A settle waits at most this long for CDP; a timeout is a thrown (unconfirmed) submit. */
 export const CDP_FACILITATOR_TIMEOUT_MS = 30_000;

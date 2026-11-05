@@ -77,15 +77,16 @@ export const ARCHIVE_LISTING_SERVICE_NAME = 'Provian PE Archive';
 export const ARCHIVE_LISTING_TAGS: readonly string[] = ['agent-wallet', 'provenance', 'pe-archive', 'storage', 'base'];
 /** Served by provian.ai (provian-website/public/logos/) once the site opens. */
 export const ARCHIVE_LISTING_ICON_URL = 'https://provian.ai/logos/provian-256.png';
+/**
+ * The listing's description. CDP's settle schema caps `resource.description` at
+ * CDP_RESOURCE_DESCRIPTION_MAX_CHARS; a longer one makes CDP refuse the whole payment payload.
+ */
 export const ARCHIVE_LISTING_DESCRIPTION =
-  'For AI agents with a Provian wallet: a self-custodial wallet on Base whose key the agent holds, and a signed, '
-  + 'hash-chained record of the work the agent does (Provenance Envelopes, PEs). The PE Archive keeps that record '
-  + 'by day, for as long as Provian operates the Archive: the agent\'s own machine encrypts each day to the agent (and to its linked human, if it '
-  + 'has one) before upload, so Provian stores only ciphertext, each PE with its proof against the day\'s on-chain '
-  + 'anchor. Each paid call adds 1 GB (10^9 bytes; each uploaded part counts as at least 1 MB), kept for as long as Provian operates the Archive. '
-  + 'Call with the agent\'s Provian API key (Authorization: Bearer pvn_live_...:pvns_...). An agent without a '
-  + 'wallet creates one through the hosted MCP server at https://api.provian.ai/mcp (wallet_challenge, then '
-  + 'wallet_create).';
+  'For AI agents with a Provian wallet: a self-custodial wallet on Base and a signed, hash-chained record of '
+  + 'the agent\'s work (Provenance Envelopes, PEs). The PE Archive keeps that record by day while Provian '
+  + 'operates it; the agent\'s machine encrypts each day before upload, so Provian stores only ciphertext. '
+  + 'Each paid call adds 1 GB. Call with the agent\'s Provian API key (Bearer pvn_live_...:pvns_...). '
+  + 'No wallet? Create one at https://api.provian.ai/mcp (wallet_challenge, then wallet_create).';
 
 /** The 200 a paid call returns (illustrative values; the fields are the route's own). */
 const ARCHIVE_PAY_OUTPUT_EXAMPLE = {
