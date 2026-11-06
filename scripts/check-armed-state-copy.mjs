@@ -36,7 +36,7 @@ const SURFACES = [
   'provian-agent-sdk/README.md',
   'provian-agent-sdk/docs',
   'provian-cli/README.md',
-  'provian-agent-skill/SKILL.md',
+  'skills/provian/SKILL.md',
   'scripts/launch-smoke',
   'docs',
   'reference',
