@@ -74,7 +74,7 @@ export const FILMS: Record<FilmKey, FilmInfo> = {
     poster: '/films/no-one-left-behind-poster.jpg',
     title: 'No One Left Behind',
     line: 'From a phone on a dirt road up: the boom pays whoever does the work, and half a percent of every mint is set aside for people.',
-    seconds: 61,
+    seconds: 66,
     width: 1280,
     height: 720,
   },
