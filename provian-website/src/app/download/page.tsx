@@ -28,6 +28,23 @@ export default function DownloadPage() {
           Get the app for Android below. Your computer and your agents come after.
         </p>
 
+        {/* Store-review note: belongs with the pending store cards below and comes off with them. */}
+        <div className="mt-10 max-w-3xl border-l-2 border-provian-blue/50 pl-6">
+          <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
+            Ready when we were. In the stores when they say so.
+          </h2>
+          <p className="mt-4 leading-7 text-text-secondary">
+            We didn&rsquo;t launch Provian on a date or for a deadline. We launched it when it was
+            ready. It&rsquo;s ready, so it&rsquo;s live.
+          </p>
+          <p className="mt-4 leading-7 text-text-secondary">
+            Android is here today as a signed download. The iPhone app and Google Play listing are
+            submitted and in review. Apple and Google decide when apps show up in their stores, and
+            nobody gets to rush that. Leave your email and we&rsquo;ll tell you the moment Provian
+            is on yours.
+          </p>
+        </div>
+
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           {/* Android — direct APK, available day one */}
           <div className="glass flex flex-col border-provian-blue/40 p-7">
