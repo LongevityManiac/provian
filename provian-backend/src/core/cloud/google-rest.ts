@@ -18,12 +18,23 @@ import { GoogleAuth } from 'google-auth-library';
 
 export const CLOUD_PLATFORM_RO = 'https://www.googleapis.com/auth/cloud-platform.read-only';
 
-let cachedAuth: GoogleAuth | null = null;
-let cachedToken: { value: string; expiresAtMs: number } | null = null;
+/** The slice of `GoogleAuth` this module uses; a test substitutes its own token source. */
+export interface GcpTokenSource {
+  getClient(): Promise<{ getAccessToken(): Promise<string | { token?: string | null } | null | undefined> }>;
+}
+
+let cachedAuth: GcpTokenSource | null = null;
 let loggedTokenFailure = false;
 
-/** A metadata-server access token, cached until ~5 min before expiry. Null when no credentials
- * are available (never throws — the caller treats null as "unavailable").
+/** A metadata-server access token. Null when no credentials are available (never throws — the
+ * caller treats null as "unavailable").
+ *
+ * The auth client owns the token cache. It records the expiry the metadata server reports with
+ * each token and refreshes before it, so every call asks the client. Never cache the token here
+ * under a fixed lifetime: the metadata server hands out its own cached token until about five
+ * minutes before that token expires, so a fresh-looking token can have minutes left. A fixed
+ * 55-minute cache kept sending such a token after it expired, Cloud Tasks refused it, and every
+ * GitHub receipt hand-off in that window failed until the cache rolled over.
  *
  * IMPORTANT — do NOT default to a restricted scope on Cloud Run. The Compute credential forwards
  * requested scopes to the metadata token endpoint as `?scopes=…` (see google-auth-library
@@ -36,18 +47,15 @@ let loggedTokenFailure = false;
  * the runtime SA's IAM roles — not the token scope — are what authorize these reads. */
 export async function getGcpAccessToken(
   scopes: string | string[] | undefined = undefined,
-  now: number = Date.now(),
+  // Kept for existing callers; token freshness is the auth client's, judged on its own clock.
+  _now: number = Date.now(),
 ): Promise<string | null> {
-  if (cachedToken && cachedToken.expiresAtMs - 60_000 > now) return cachedToken.value;
   try {
     if (!cachedAuth) cachedAuth = new GoogleAuth(scopes ? { scopes } : {});
     const client = await cachedAuth.getClient();
     const res = await client.getAccessToken();
     const token = typeof res === 'string' ? res : (res?.token ?? null);
-    if (!token) return null;
-    // getAccessToken() doesn't surface the exact expiry; tokens live ~1h, so cache 55 min.
-    cachedToken = { value: token, expiresAtMs: now + 55 * 60_000 };
-    return token;
+    return token || null;
   } catch (err) {
     // A null token blinds every GCP leg; log the reason ONCE so it is diagnosable without
     // re-blinding the operator surface (a silent catch is exactly what masked the scope bug).
@@ -61,9 +69,8 @@ export async function getGcpAccessToken(
 }
 
 /** Reset the token/auth cache (tests). */
-export function __resetGcpRestForTest(): void {
-  cachedAuth = null;
-  cachedToken = null;
+export function __resetGcpRestForTest(source: GcpTokenSource | null = null): void {
+  cachedAuth = source;
   loggedTokenFailure = false;
 }
 

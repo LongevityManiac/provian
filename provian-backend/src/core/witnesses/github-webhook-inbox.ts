@@ -52,8 +52,13 @@ export async function acceptGitHubWebhook(deps: Pick<AgentBankDeps, 'db'>, input
     })]);
     if (result === 'conflict') return { status: 400, body: { error: 'delivery_content_conflict' } };
     return { status: 200, body: { ok: true, durable: true, idempotent: result !== 'accepted' } };
-  } catch {
+  } catch (error) {
     bumpOpsCounter('gitwitness.receipt_failed');
+    // The reason (storage deadline, queue status, token) is what an operator needs to tell a
+    // stalled save from a refused hand-off; a saved receipt still waits in the inbox either way.
+    console.error('[GitHubWebhook] receipt hand-off failed', {
+      reason: error instanceof Error ? error.message : String(error), delivery_id: input.deliveryId, event_type: input.eventType,
+    });
     return { status: 503, body: { error: 'github_receipt_unavailable' } };
   } finally { if (deadline) clearTimeout(deadline); }
 }

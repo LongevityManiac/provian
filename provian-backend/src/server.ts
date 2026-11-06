@@ -11,6 +11,7 @@ import { createGcpRest, resolveGcpProjectId } from './core/cloud/google-rest';
 import {recordResponseCompression} from './core/net/response-compression';
 import { costCompression } from './core/net/cost-compression';
 import './core/observability/diagnostic-privacy';
+import { publicLatencyMiddleware } from './core/observability/public-latency';
 import { publishRuntimeReadModel } from './core/pvt/runtime-read-model';
 import {unwrapPrivateBatch} from './core/meter/private-pricing';
 /**
@@ -279,6 +280,8 @@ const probeApp = express();
 probeApp.get('/startup', instanceHealth.startup);
 probeApp.get('/health', instanceHealth.liveness);
 app.get('/health', instanceHealth.startup);
+// First, so a public request's latency is timed from arrival (internal job routes excluded).
+app.use(publicLatencyMiddleware());
 app.use(instanceHealth.admit);
 app.use(bodyDeadline());
 app.use(burnTimingMiddleware);

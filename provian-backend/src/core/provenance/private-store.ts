@@ -338,6 +338,35 @@ export function privateFirestore(db:Firestore):Firestore {
   if(data.schema!=='provian.meter-key-page.v1'||data.batch_hash!==pointer.batch_hash||data.actor_id!==pointer.actor_id||!key||key.relay_pe_id!==meta.id||key.batch_hash!==data.batch_hash||key.actor_id!==data.actor_id)throw new Error('meter_key_page_binding_invalid');
   return {...slot,data:key,packed:{id,raw:got.raw,data,transaction}};
  };
+ // A scan chunk of act keys points into many packed pages. Awaiting one page per key in
+ // sequence made a 1,759-key commit lookup take ~10 s. Outside a caller's transaction every read
+ // is its own read-only snapshot read and takes no lock, so the scan keeps up to
+ // KEY_PAGE_LOOKAHEAD distinct page reads in flight ahead of the key it is expanding. `expand`
+ // still awaits each page in order and validates every pointer and binding. Inside a caller's
+ // transaction, reads lock, so the scan reads one page at a time as before.
+ const KEY_PAGE_LOOKAHEAD=32;
+ const keyPagePrefetch=(collection:string,docs:readonly QueryDocumentSnapshot[],read:(ref:FirebaseFirestore.DocumentReference)=>Promise<DocumentSnapshot>,complete:boolean,pages:Map<string,Promise<ResolvedSlot>>):(index:number)=>void=>{
+  if(collection!=='meter_act_keys_v1')return ()=>undefined;
+  const order:string[]=[],slotOfDoc:number[]=[];
+  for(const doc of docs){
+   let id:unknown;
+   try{id=decodePrivateRecord(collection,doc.id,doc.data(),wrapped).data._meter_key_page;}catch{id=undefined;}
+   if(typeof id==='string'&&/^[a-f0-9]{64}~[0-9]+$/.test(id)&&!pages.has(id)&&!order.includes(id))order.push(id);
+   slotOfDoc.push(typeof id==='string'?order.indexOf(id):-1);
+  }
+  let started=0,reached=0;
+  return (index:number)=>{
+   if(slotOfDoc[index]!==undefined&&slotOfDoc[index]>=0)reached=Math.max(reached,slotOfDoc[index]);
+   for(;started<order.length&&started<=reached+KEY_PAGE_LOOKAHEAD-1;started++){
+    const id=order[started];if(pages.has(id))continue;
+    const page=resolve({collection:METER_KEY_PAGES,id},read,complete);
+    // Observed here so a read the loop never reaches (it stopped on an earlier key) cannot
+    // become an unhandled rejection; the loop's own await still surfaces every failure it meets.
+    page.catch(()=>undefined);
+    pages.set(id,page);
+   }
+  };
+ };
  const slotSnapshot=(meta:RefMeta,slot:ResolvedSlot):DocumentSnapshot=>{
   const data=slot.data??(slot.raw.exists?decodePrivateRecord(meta.collection,slot.raw.id,slot.raw.data()!,wrapped).data:undefined);
   return snapshot(slot.raw,{...meta,...(data?{known:{raw:slot.raw,data,...(slot.packed?{packed:slot.packed}:{})}}:{})},{id:meta.id,data});
@@ -350,7 +379,7 @@ export function privateFirestore(db:Firestore):Firestore {
   }
   return slotSnapshot(meta,await expand(meta,await resolve(meta,read,complete),read,complete));
  };
- const queryRead=async(meta:QueryMeta,read:(q:any)=>Promise<any>,countOnly=false,visit?: (doc:QueryDocumentSnapshot)=>unknown,certificate?:DocumentSnapshot)=>{
+ const queryRead=async(meta:QueryMeta,read:(q:any)=>Promise<any>,countOnly=false,visit?: (doc:QueryDocumentSnapshot)=>unknown,certificate?:DocumentSnapshot,lockFree=false)=>{
   // During migration there are mixed formats. No physical limit or cursor may run before
   // logical resolution. Server-side predicates are safe only after all legacy rows move.
   let candidates:any=db.collection(meta.collection);
@@ -412,7 +441,9 @@ export function privateFirestore(db:Firestore):Firestore {
   for(;;){
    let query=(rangeOrder?candidates.orderBy(rangeOrder):candidates).orderBy(FieldPath.documentId()).limit(200);if(physicalAfter)query=query.startAfter(physicalAfter);
    const page=await read(query);raw??=page;
-   for(const doc of page.docs){
+   const advance=lockFree?keyPagePrefetch(meta.collection,page.docs,read,complete,packedPages):()=>undefined;
+   for(const [index,doc] of page.docs.entries()){
+    advance(index);
     const initial=decodePrivateRecord(meta.collection,doc.id,doc.data(),wrapped);
     const expanded=await expand({collection:meta.collection,id:initial.id},{raw:doc,legacy:db.collection(meta.collection).doc(initial.id),opaque:doc.ref,duplicate:false},read,complete,packedPages);
     const decoded={id:initial.id,data:expanded.data??initial.data};
@@ -489,7 +520,7 @@ export function privateFirestore(db:Firestore):Firestore {
 
    if(prop===VISIT||prop===PRIVATE_QUERY_SCAN)return async(visit:(doc:QueryDocumentSnapshot)=>unknown)=>{
     const point=await db.collection(PRIVATE_RETENTION_STATE_COLLECTION).doc(PRIVATE_RETENTION_STATE_DOC).get();
-    await queryRead(meta,(q:any)=>db.runTransaction(tx=>tx.get(q),{readOnly:true,readTime:point.readTime}),false,visit,point);
+    await queryRead(meta,(q:any)=>db.runTransaction(tx=>tx.get(q),{readOnly:true,readTime:point.readTime}),false,visit,point,true);
    };
    if(prop==='doc')return (id?:string)=>makeRef({collection:meta.collection,id:id??randomUUID(),converter:meta.converter});
    if(prop==='add')return async(data:any)=>{const ref=makeRef({collection:meta.collection,id:randomUUID(),converter:meta.converter});await ref.create(data);return ref;};
@@ -572,7 +603,7 @@ export function privateFirestore(db:Firestore):Firestore {
     return queryRead(meta,async(query:FirebaseFirestore.Query)=>{
      if(!readTime){const page=await query.get();readTime=page.readTime;return page;}
      return db.runTransaction(tx=>tx.get(query),{readOnly:true,readTime});
-    },false,undefined,certificate);
+    },false,undefined,certificate,true);
    }
   }
   const point=await db.collection(PRIVATE_RETENTION_STATE_COLLECTION).doc(PRIVATE_RETENTION_STATE_DOC).get();
@@ -592,7 +623,7 @@ export function privateFirestore(db:Firestore):Firestore {
    const size=Math.min(meta.limit??Infinity,Math.max(0,aggregate.data().count-(meta.offset??0)));
    return {size} as QuerySnapshot;
   }
-  return queryRead(meta,(query:any)=>db.runTransaction(tx=>tx.get(query),{readOnly:true,readTime:point.readTime}),countOnly,undefined,point);
+  return queryRead(meta,(query:any)=>db.runTransaction(tx=>tx.get(query),{readOnly:true,readTime:point.readTime}),countOnly,undefined,point,true);
  };
  const apply=async(tx:any,mutations:Mutation[],reads?:Map<string,Promise<Awaited<ReturnType<typeof resolve>>>>,certificate?:DocumentSnapshot)=>{
   const state=mutations.some(m=>m.ref[META])?(certificate??await tx.get(db.collection(PRIVATE_RETENTION_STATE_COLLECTION).doc(PRIVATE_RETENTION_STATE_DOC))):null;
