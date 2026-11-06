@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { Film } from '@/components/Film'
+import { FILMS } from '@/lib/genesis'
 import { ArrowRight } from 'lucide-react'
 import { GenesisGate } from '@/components/GenesisGate'
 import { RevealOnScroll } from '@/components/RevealOnScroll'
@@ -76,14 +78,7 @@ export default function UbpPage() {
               text={LINES.ubp.line}
             />
           </div>
-          <figure className="glass relative mt-14 overflow-hidden">
-            <img
-              src="/vision/foundation-hero.jpg"
-              alt="A farmer, a nurse, a developer, an elderly couple, a market vendor, and a child stand across a sunlit plaza at sunrise as luminous threads of light reach out from a glowing city skyline to each of them."
-              className="h-[300px] w-full object-cover opacity-95 md:h-[460px]"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-void/70 via-void/10 to-transparent" />
-          </figure>
+          <Film {...FILMS.noOneLeftBehind} className="mt-14" />
         </div>
       </section>
 

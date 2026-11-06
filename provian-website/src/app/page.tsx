@@ -209,8 +209,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 7 · THE STANCE ── "Money still matters…" as a type-only screen, then UBP
-          with the split as numerals. */}
+      {/* ── 7 · THE STANCE ── "Money still matters…" as a type-only screen, then the
+          No One Left Behind film, then UBP with the split as numerals. */}
       <Statement
         line={<span className="gradient-text">Money still matters when machines do the work.</span>}
         slug={LINES.yesMoney.slug}
@@ -221,6 +221,12 @@ export default function HomePage() {
         </p>
       </Statement>
 
+      {/* No One Left Behind, the Foundation film, leads into UBP. */}
+      <section className="bg-surface px-6 pt-20 md:px-10 md:pt-24 lg:px-14">
+        <div className="mx-auto max-w-6xl">
+          <Film {...FILMS.noOneLeftBehind} />
+        </div>
+      </section>
       <section className="border-b border-white/10 bg-surface px-6 py-20 md:px-10 md:py-24 lg:px-14">
         <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1fr_1fr] lg:gap-20">
           <div>
