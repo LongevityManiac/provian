@@ -34,8 +34,6 @@ const SITE = process.env.PROVIAN_SITE_BASE || 'https://provian.ai';
 const FETCH_TIMEOUT_MS = 20_000;
 
 // Packages this launch publishes; unpublished pre-flip is expected, not a doc bug.
-const PENDING_PUBLISH_NPM = ['@provian/agent-sdk', '@provian/cli', '@provian/mcp', '@provian/commons'];
-const PENDING_PUBLISH_PYPI = ['provian-sdk'];
 
 // ---------------------------------------------------------------------------
 // Mode
@@ -173,28 +171,6 @@ async function npmView(pkg) {
   }
 }
 
-async function pypiIndex(pkg) {
-  // Prefer `pip index versions` per the runbook; fall back to the PyPI JSON
-  // API when pip is unavailable (CI runners without python).
-  try {
-    const { stdout } = await execFileP(
-      'python3', ['-m', 'pip', 'index', 'versions', pkg, '--disable-pip-version-check'],
-      { timeout: 30_000 },
-    );
-    return { published: true, detail: stdout.trim().split('\n')[0] };
-  } catch (e) {
-    const msg = `${e.stdout || ''}${e.stderr || ''}`;
-    if (/No matching distribution|not found/i.test(msg)) return { published: false };
-    // pip missing or other error — fall back to PyPI JSON API.
-    const res = await http(`https://pypi.org/pypi/${pkg}/json`);
-    if (res.status === 200 && res.json?.info?.version) {
-      return { published: true, detail: `pypi.org: ${res.json.info.version}` };
-    }
-    if (res.status === 404) return { published: false };
-    throw new Error(`PyPI lookup for ${pkg} inconclusive: HTTP ${res.status}`);
-  }
-}
-
 function packageCheck(kind, pkg, lookup) {
   return async (mode) => {
     const r = await lookup(pkg);
@@ -246,7 +222,6 @@ const CHECKS = {
   'npm-cli': packageCheck('npm', '@provian/cli', npmView),
   'npm-mcp': packageCheck('npm', '@provian/mcp', npmView),
   'npm-commons': packageCheck('npm', '@provian/commons', npmView),
-  'pypi-provian-sdk': packageCheck('PyPI', 'provian-sdk', pypiIndex),
 
   'discovery-openapi': async (mode) => {
     const r = await http(`${API}/v1/openapi.json`);

@@ -112,7 +112,7 @@ work is never a PE, at any tier, minting or record-only. So:
   `410 pe_recorder_retired`.
 - The MCP report tools (`submit_pe`, `submit_sovereign_work`), the SDK's `reportAction` /
   `reportWorkProduct` / `submitSovereignWork` / `recordLinkSpend` / `recordX402PaymentPE`, the CLI's
-  `provian report`, and the Python SDK's `submit_pe` are removed. `report-pe` runs only as the
+  and `provian report` are removed. `report-pe` runs only as the
   post-commit hook, reading the commit from git itself.
 
 A refusal writes nothing (the sovereign route answers `403 actor_declared_work_is_not_a_pe`). Already-sealed

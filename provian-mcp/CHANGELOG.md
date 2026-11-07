@@ -1,6 +1,6 @@
 # @provian/mcp release notes
 
-**Published version: 1.2.0.** The package manifest in this directory defines the installed version.
+**Published version: 1.2.1.** The package manifest in this directory defines the installed version.
 
 A Provenance Envelope (PE) is signed proof owned by its contributor. PVT is the currency on Base minted from witnessed work. Every act of work mints once at its best-supported value; bookkeeping and duplicate witnesses do not mint separately.
 

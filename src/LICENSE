@@ -13,7 +13,7 @@ Technologies, LLC. No rights are granted by implication, estoppel, or otherwise.
 
 This proprietary license applies to the wallet (`src/`). It does NOT apply to the
 separately-licensed open-source packages in this repository — the protocol SDKs
-and CLI (`provian-agent-sdk/`, `provian-cli/`, `provian-python-sdk/`, and other
+and CLI (`provian-agent-sdk/`, `provian-cli/`, `provian-mcp/`, and other
 subdirectories that carry their own MIT/Apache LICENSE file remain under those
 licenses). The Provenance Envelope protocol itself is an open standard.
 

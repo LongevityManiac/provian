@@ -1,11 +1,10 @@
-name: Build & Publish @provian packages (npm + PyPI)
+name: Build & Publish @provian packages
 
 # Builds the desktop foreground-capture helper binaries for @provian/agent-sdk
 # on their native GitHub-hosted runners, then packs + (optionally) publishes the
-# SDK, @provian/cli, @provian/mcp and @provian/commons to npm, and the Python SDK
-# (`provian-sdk`) to PyPI. Both registries use OIDC trusted publishing: each publish
+# SDK, @provian/cli, @provian/mcp and @provian/commons to npm. Each publish
 # job authenticates with a short-lived OIDC token minted from GitHub
-# (permissions: id-token: write), gated by the `npm-publish` / `pypi-publish`
+# (permissions: id-token: write), gated by the `npm-publish`
 # GitHub environment, that the registry trades for a token scoped to that one
 # package. There is no long-lived registry token and no stored secret, and no
 # publish needs an interactive login or a per-publish OTP.
@@ -33,28 +32,26 @@ name: Build & Publish @provian packages (npm + PyPI)
 #
 # Inputs (workflow_dispatch):
 #   publish   - false (default): build/pack/verify only, publish NOTHING.
-#               true: publish the selected package(s) — npm and PyPI both via
+#               true: publish the selected package(s) via
 #               OIDC trusted publishing (no token, no secret).
 #   dry_run   - true: run the npm publish jobs as `npm publish --dry-run`. Each
 #               job still trades the workflow's OIDC token for an npm publish
 #               token and fails unless the registry issues one, so the trusted
-#               publisher is proven without publishing anything. PyPI is skipped.
+#               publisher is proven without publishing anything.
 #               dry_run wins over publish: a run with both set publishes nothing.
 #   packages  - which package(s) a publish targets. Default 'agent-sdk' keeps
 #               the historical `-f publish=true` meaning (SDK only) intact.
-#               'pypi' targets the Python SDK (provian-sdk) on PyPI alone.
-#               'all' publishes agent-sdk -> cli -> mcp -> commons -> pypi in that order
+#               'agent-sdk-mcp' publishes the SDK and MCP server only.
+#               'all' publishes agent-sdk -> cli -> mcp -> commons in that order
 #               (the CLI's published ^ dep on the SDK resolves for end users only
 #               once the SDK is live, so the SDK must hit npm first; @provian/commons
-#               (the Commons reference package: its README and licence, no code) and
-#               the PyPI package are independent and publish last, matching the
-#               launch runbook's locked order).
+#               (the Commons reference package) publishes last).
 #
 # What it does NOT do by default: publish. PR runs and default manual runs
 # build + pack + verify only - nothing ships. Publishing needs a manual run
-# with publish=true, this repository + this workflow + the `npm-publish` /
-# `pypi-publish` environment registered as the trusted publisher of each package
-# on npmjs.com / PyPI, and (if you add a protection rule) environment approval.
+# with publish=true, this repository + this workflow + the `npm-publish`
+# environment registered as the trusted publisher of each package
+# on npmjs.com, and (if you add a protection rule) environment approval.
 #
 # Signing note: this produces UNSIGNED dev binaries. macOS notarization and
 # Windows Authenticode signing are the separate pre-beta release workflow
@@ -76,16 +73,16 @@ on:
       - 'provian-agent-sdk/scripts/postinstall-helper.js'
       - 'provian-agent-sdk/package.json'
       - '.github/workflows/build-foreground-helpers.yml'
-  # Manual trigger. Set publish=true to publish (npm + PyPI via OIDC trusted publishing),
+  # Manual trigger. Set publish=true to publish (npm via OIDC trusted publishing),
   # or dry_run=true to prove the npm trusted publishers without publishing.
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the selected package(s) after building (npm and PyPI via OIDC trusted publishing)'
+        description: 'Publish the selected package(s) after building (npm via OIDC trusted publishing)'
         type: boolean
         default: false
       dry_run:
-        description: 'npm publish --dry-run: prove each npm trusted publisher issues a token; publish nothing (PyPI skipped)'
+        description: 'npm publish --dry-run: prove each npm trusted publisher issues a token; publish nothing'
         type: boolean
         default: false
       packages:
@@ -94,10 +91,10 @@ on:
         default: 'agent-sdk'
         options:
           - agent-sdk
+          - agent-sdk-mcp
           - cli
           - mcp
           - commons
-          - pypi
           - all
 
 concurrency:
@@ -114,7 +111,7 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 10  # observed max 0.9 min (2 runs, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
     # Only needed for the SDK. Always on PRs (the C# helper compile guard).
-    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'all' }}
+    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all' }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -148,7 +145,7 @@ jobs:
     name: Build Windows helper
     runs-on: windows-latest
     timeout-minutes: 10  # observed max 1.4 min (2 runs, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
-    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'all' }}
+    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all' }}
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -179,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10  # observed max 1.0 min (1 run, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
     needs: [build-macos, build-windows]
-    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'all' }}
+    if: ${{ github.event_name == 'pull_request' || inputs.packages == 'agent-sdk' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all' }}
     # F44: the sha256 of the exact tarball this job built + verified. The publish job re-hashes
     # the artifact it downloads and refuses to publish unless it matches — so a tampered artifact
     # (or a trojaned action mutating it between download and publish) cannot ship.
@@ -339,7 +336,7 @@ jobs:
     name: Pack @provian/mcp
     runs-on: ubuntu-latest
     timeout-minutes: 10  # observed max 0.5 min (4 runs, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.packages == 'mcp' || inputs.packages == 'all') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.packages == 'mcp' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all') }}
     outputs:
       sha256: ${{ steps.tarball_sha.outputs.sha256 }}  # F44: publish-mcp verifies against this
     steps:
@@ -451,13 +448,13 @@ jobs:
     timeout-minutes: 10  # observed max 0.4 min (1 run, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
     needs: package
     # Only on a manual run with publish=true targeting the SDK. Never on PRs.
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true) && (inputs.packages == 'agent-sdk' || inputs.packages == 'all') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true) && (inputs.packages == 'agent-sdk' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all') }}
     # Add a required-reviewer protection rule to this environment in repo
     # settings for an extra manual approval gate before anything publishes.
     environment: npm-publish
     # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
     # OIDC token that npm trades for a publish token scoped to this one package.
-    # No long-lived token, no secret; same shape as publish-pypi.
+    # No long-lived token, no secret.
     permissions:
       contents: read
       id-token: write
@@ -525,7 +522,7 @@ jobs:
     environment: npm-publish
     # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
     # OIDC token that npm trades for a publish token scoped to this one package.
-    # No long-lived token, no secret; same shape as publish-pypi.
+    # No long-lived token, no secret.
     permissions:
       contents: read
       id-token: write
@@ -579,13 +576,13 @@ jobs:
     if: >-
       ${{ always()
       && github.event_name == 'workflow_dispatch' && (inputs.publish == true || inputs.dry_run == true)
-      && (inputs.packages == 'mcp' || inputs.packages == 'all')
+      && (inputs.packages == 'mcp' || inputs.packages == 'agent-sdk-mcp' || inputs.packages == 'all')
       && needs['pack-mcp'].result == 'success'
       && (needs['publish-cli'].result == 'success' || needs['publish-cli'].result == 'skipped') }}
     environment: npm-publish
     # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
     # OIDC token that npm trades for a publish token scoped to this one package.
-    # No long-lived token, no secret; same shape as publish-pypi.
+    # No long-lived token, no secret.
     permissions:
       contents: read
       id-token: write
@@ -645,7 +642,7 @@ jobs:
     environment: npm-publish
     # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
     # OIDC token that npm trades for a publish token scoped to this one package.
-    # No long-lived token, no secret; same shape as publish-pypi.
+    # No long-lived token, no secret.
     permissions:
       contents: read
       id-token: write
@@ -687,88 +684,3 @@ jobs:
           else
             npm publish "$TARBALL" --access public
           fi
-
-  # ---- Pack provian-sdk for PyPI (build sdist+wheel, twine check, scratch install) ----
-  pack-pypi:
-    name: Pack provian-sdk (PyPI)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10  # observed max 0.5 min (2 runs, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.packages == 'pypi' || inputs.packages == 'all') }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-        with:
-          python-version: '3.x'
-
-      - name: Install build + twine
-        run: python -m pip install --upgrade build twine
-
-      # Build BOTH distributions from provian-python-sdk/pyproject.toml
-      # (name = "provian-sdk"), so the sdist and the wheel are the exact
-      # artifacts publish-pypi later uploads — what ships is what was checked.
-      - name: Build sdist + wheel
-        working-directory: provian-python-sdk
-        run: python -m build
-
-      # twine check validates the package metadata + long-description render;
-      # a bad README would otherwise only fail AFTER the upload on PyPI.
-      - name: twine check
-        working-directory: provian-python-sdk
-        run: twine check dist/*
-
-      # Scratch install the freshly built wheel into a throwaway venv and import
-      # the package. This is the PyPI analogue of the npm jobs' tarball-contents
-      # grep: proof the distribution is installable and importable before publish.
-      - name: Verify the built wheel installs + imports in a scratch venv
-        working-directory: provian-python-sdk
-        run: |
-          python -m venv /tmp/pyverify
-          WHEEL=$(ls dist/*.whl)
-          echo "Installing $WHEEL into a scratch venv"
-          /tmp/pyverify/bin/pip install --quiet "$WHEEL"
-          /tmp/pyverify/bin/python -c "import provian; print('provian', provian.__version__)"
-
-      - name: Upload PyPI dist artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: provian-sdk-pypi-dist
-          path: provian-python-sdk/dist/*
-          if-no-files-found: error
-          retention-days: 14
-
-  # ---- Publish provian-sdk to PyPI (manual, opt-in, OIDC trusted publishing) --
-  publish-pypi:
-    name: Publish provian-sdk to PyPI
-    runs-on: ubuntu-latest
-    timeout-minutes: 10  # observed max 0.4 min (1 run, Aug 2026); thin history -> +5; 3x headroom, rounded up to 5
-    needs: [pack-pypi, publish-commons]
-    # PyPI is last in the locked order (agent-sdk -> cli -> mcp -> commons -> PyPI).
-    # In 'all' mode this waits for the commons publish to SUCCEED first; in 'pypi' mode
-    # the npm publishes are skipped and that is allowed (provian-sdk has no npm
-    # dependency, so it need not wait on them).
-    if: >-
-      ${{ always()
-      && github.event_name == 'workflow_dispatch' && inputs.publish == true && inputs.dry_run != true
-      && (inputs.packages == 'pypi' || inputs.packages == 'all')
-      && needs['pack-pypi'].result == 'success'
-      && (needs['publish-commons'].result == 'success' || needs['publish-commons'].result == 'skipped') }}
-    environment: pypi-publish
-    # OIDC trusted publishing: id-token: write lets the runner mint a short-lived
-    # OIDC token that PyPI trades for an upload scope. No API token, no secret.
-    permissions:
-      id-token: write
-    steps:
-      - name: Download PyPI dist artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: provian-sdk-pypi-dist
-          path: dist
-
-      # Uploads dist/* (the exact sdist + wheel pack-pypi built and verified).
-      # Auth is OIDC — this repo + this workflow + the pypi-publish environment
-      # must be registered as a Trusted Publisher on the PyPI project first.
-      - name: Publish to PyPI (OIDC trusted publishing, no token)
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2

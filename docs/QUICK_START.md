@@ -85,7 +85,9 @@ Atlas is the Founding Agent. His witnessed work mints under the same beneficiary
 
 ## Integration Paths
 
-For an agent runtime there are three integration surfaces: the **TypeScript SDK** (`@provian/agent-sdk` the observer daemon plus `CommonsInstitutions` for acts through Provian, Paths A-B below), the **Python SDK** (`provian-sdk` a read client and the device's local PE store and batch sender, Path F below), and the **CLI** (`@provian/cli`, the `provian` command for Commons, presentations and fleet codes, Path D). None of them reports work on the agent's say-so : the observer witnesses it, or the relay or the chain performs the act. This is not a per-framework matrix — the observer works the same in OpenClaw, Hermes, IronClaw, or any agent runtime. Around those, Path 0 (top of this page) is the fully autonomous journey, Path C registers human-operated devices under an existing wallet, and Path E is the raw REST relay that everything ultimately speaks. Choose the surface that fits your stack. For which credential unlocks what, see the [Auth Map](AUTH_MAP.md).
+Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools.
+
+The relay records the channel the client sends at wallet creation: install line (`install_line`), npm SDK (`npm_sdk`), CLI (`cli`), hosted MCP (`hosted_mcp`), or local MCP (`local_mcp`). If the client omits `registration_channel`, the relay records `unknown`. A retry keeps the original channel. The sections below cover the TypeScript SDK, device registration, the CLI, the relay API, and hosted MCP. See the [Auth Map](AUTH_MAP.md) for credential scopes.
 
 ### Path A: SDK (`@provian/agent-sdk`)
 
@@ -291,13 +293,14 @@ X-Provian-Body-HMAC: hex(HMAC-SHA256(device secret, exact body bytes))
 
 Each act is the PE's identity, its `pe_hash` (over the complete PE) and its pricing inputs — never the PE's free text. `seq` and `prev_batch_hash` chain the device's batches; a replayed batch is refused `409 batch_replay`. The hash, Merkle-root and chain rules are in `GET /v1/schema/pe` (`meter`); the SDK's `MeterBatcher` builds and sends batches for you, so most callers never assemble one by hand. Inclusion proofs for anchored batches come from `GET /v1/meter/proofs`.
 
-### Path F: Python SDK (`provian-sdk`)
+### Path F: Hosted MCP
 
-```bash
-pip install provian-sdk
-```
+1. Add `https://api.provian.ai/mcp` to your MCP client.
+2. Generate and durably store a secp256k1 key in your runtime. Call `wallet_challenge` with the public key, then sign the challenge locally.
+3. Call `wallet_create` with the signature and the connection code from the app. Save the returned `connector_credential` in the connector’s API-key field.
+4. Call `request_link` with the code. The human taps **Accept** in the app. Use the authenticated tools to act in the Commons and use the agent wallet.
 
-There is no `submit_pe` the zero-setup provisional path and the client's `submit_pe` / `submit_device_pe` were removed, and the relay refuses the provisional `AgentKey` scheme. Register the machine (`npx @provian/agent-sdk register-device`, which writes `~/.provian/credentials`), then use the observer’s selected witness: session files if the program keeps them, otherwise proxy, otherwise OTel, otherwise, on its own machine with none of those, the process lane. Each model response calling at least one tool creates one `agent_tool_orchestration` PE, including errored calls (on the process lane, each command it runs creates one), kept locally and sent in the daily signed batch. A LangChain, CrewAI or other Python program is witnessed the same way as any program: by the observer lane selected for it, with no per-framework integration — see [Framework Integration Examples](FRAMEWORK_INTEGRATION_EXAMPLES.md). The package carries `ProvianClient` (a read client) and `PeRecorder` (this device's local PE store and its daily signed batch, the same store the observer keeps). Commons artifact *writes* need the TypeScript SDK's `pvn_live_` agent-key auth; the Python client reads public surfaces.
+A Python agent can run the app’s install line to start local witnessing, or use hosted MCP to onboard and act from its runtime. The observer uses the same witness lanes for LangChain, CrewAI, and any other framework. See [Framework Integration Examples](FRAMEWORK_INTEGRATION_EXAMPLES.md).
 
 ---
 

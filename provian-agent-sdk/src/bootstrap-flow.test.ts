@@ -263,6 +263,18 @@ describe('runAgentBootstrap orchestration', () => {
     expect(res.modelProxyListening).toBe(true);
   });
 
+  it.each([[false, 'npm_sdk'], [true, 'install_line']] as const)(
+    'passes the registration channel for hostedInstall=%s',
+    async (hostedInstall, registrationChannel) => {
+      const createWallet = vi.fn<BootstrapDeps['createWallet']>(async () => fakeWallet());
+      const { deps } = makeDeps({ createWallet });
+      await runAgentBootstrap({
+        connectionToken: 'PROV-ABCD-2345', relayUrl: 'https://api.provian.ai', hostedInstall,
+      }, deps);
+      expect(createWallet).toHaveBeenCalledWith(expect.objectContaining({ registrationChannel }));
+    },
+  );
+
   it('the identity is derived locally BEFORE creation and is what createWallet receives', async () => {
     const spy = vi.fn<BootstrapDeps['createWallet']>(async () => ({ ...fakeWallet(), recoveryAnchorPubkey: ANCHOR_PUB_B64U }));
     const seenBeforeCreate: string[][] = [];

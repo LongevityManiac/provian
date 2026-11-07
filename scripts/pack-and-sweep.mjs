@@ -4,14 +4,13 @@
  *
  *   node scripts/pack-and-sweep.mjs [--out <dir>] [--evidence <file>] [--replace]
  *
- * The publish set: @provian/agent-sdk, @provian/cli, @provian/mcp, @provian/commons (npm) and
- * provian-sdk (PyPI, sdist + wheel). Each is built fresh from this checkout first, the way the
+ * The publish set: @provian/agent-sdk, @provian/cli, @provian/mcp, @provian/commons (npm).
+ * Each is built fresh from this checkout first, the way the
  * publish workflow (.github/workflows/build-foreground-helpers.yml) builds it, so no stale local
  * dist/ is packed: the SDK is installed, built and packed after its helper stage
  * (scripts/build-helper.js, the package's prepack, run explicitly so npm's ignore-scripts setting
  * cannot skip it); the CLI is built against that SDK tarball, installed --no-save so its published
- * `^` dependency stays intact; the MCP package is built after the core-mirror gate;
- * the Python package is built with `python -m build` in a scratch venv.
+ * `^` dependency stays intact; the MCP package is built after the core-mirror gate.
  *
  * Every artifact is then extracted and swept with
  * `node scripts/check-armed-state-copy.mjs --artifact --root <extracted dir>`, which reads every
@@ -58,7 +57,7 @@ const newest = (dir, pred) => readdirSync(dir).filter(pred).sort()
 
 // ── where and what ────────────────────────────────────────────────────────
 mkdirSync(OUT, { recursive: true })
-const leftovers = readdirSync(OUT).filter((n) => /\.(tgz|whl)$|\.tar\.gz$/.test(n) || n === 'extracted' || n === '.pybuild-venv')
+const leftovers = readdirSync(OUT).filter((n) => n.endsWith('.tgz') || n === 'extracted')
 if (leftovers.length) {
   if (!REPLACE) { console.error(`pack-and-sweep: ${OUT} already holds ${leftovers.join(', ')}; pass --replace or another --out`); process.exit(2) }
   for (const n of leftovers) rmSync(path.join(OUT, n), { recursive: true, force: true })
@@ -73,7 +72,7 @@ say(`out:      ${OUT}`)
 say(`node ${process.version}, npm ${run('npm', ['-v'], REPO).trim()}`)
 say('')
 
-const artifacts = [] // { file, name, version, kind }
+const artifacts = [] // { file, name, version }
 function tarList(tgz) { return run('tar', ['-tzf', tgz], REPO).split('\n').filter(Boolean) }
 function tarPkgJson(tgz) { return JSON.parse(run('tar', ['-xzOf', tgz, 'package/package.json'], REPO)) }
 function requireEntries(tgz, entries) {
@@ -92,7 +91,7 @@ function npmPack(dir) {
 
 try {
   // ── @provian/agent-sdk ──────────────────────────────────────────────────
-  say('[1/5] @provian/agent-sdk: npm ci, build, stage the helper this host builds, pack')
+  say('[1/4] @provian/agent-sdk: npm ci, build, stage the helper this host builds, pack')
   run('npm', ['ci', '--no-audit', '--no-fund'], path.join(REPO, 'provian-agent-sdk'))
   run('npm', ['run', 'build'], path.join(REPO, 'provian-agent-sdk'))
   // The package's prepack hook, run explicitly: with npm's ignore-scripts set, `npm pack` skips it.
@@ -104,11 +103,11 @@ try {
     const win32 = list.has('package/bin/helpers/win32/ProvianForegroundHelper.exe')
     say(`  helpers in this tarball: macOS ${darwin ? 'yes' : 'NO'}, Windows ${win32 ? 'yes' : 'no (built only on the workflow\'s windows runner)'}`)
     if (process.platform === 'darwin' && !darwin) problem('macOS helper missing from the SDK tarball on a Mac')
-    artifacts.push({ file: sdk, name: '@provian/agent-sdk', version: tarPkgJson(sdk).version, kind: 'npm' })
+    artifacts.push({ file: sdk, name: '@provian/agent-sdk', version: tarPkgJson(sdk).version })
   }
 
   // ── @provian/cli (against the in-repo SDK tarball, --no-save) ───────────
-  say('[2/5] @provian/cli: install with the SDK tarball --no-save (its ^ SDK dependency is not on npm yet), build, pack')
+  say('[2/4] @provian/cli: install with the SDK tarball --no-save (its ^ SDK dependency is not on npm yet), build, pack')
   run('npm', ['install', sdk, '--no-save', '--no-audit', '--no-fund'], path.join(REPO, 'provian-cli'))
   run('npm', ['run', 'build'], path.join(REPO, 'provian-cli'))
   const cli = npmPack('provian-cli')
@@ -118,20 +117,20 @@ try {
     const dep = (pkg.dependencies ?? {})['@provian/agent-sdk'] ?? ''
     if (/^(file:|\.|\/)/.test(dep) || !dep) problem(`CLI ships SDK dependency ${JSON.stringify(dep)}`)
     say(`  CLI publishes @provian/agent-sdk dependency ${dep}`)
-    artifacts.push({ file: cli, name: '@provian/cli', version: pkg.version, kind: 'npm' })
+    artifacts.push({ file: cli, name: '@provian/cli', version: pkg.version })
   }
 
   // ── @provian/mcp ────────────────────────────────────────────────────────
-  say('[3/5] @provian/mcp: core-mirror gate, npm ci, build, pack')
+  say('[3/4] @provian/mcp: core-mirror gate, npm ci, build, pack')
   run('bash', ['scripts/check-mcp-core-mirror.sh'], REPO)
   run('npm', ['ci', '--no-audit', '--no-fund'], path.join(REPO, 'provian-mcp'))
   run('npm', ['run', 'build'], path.join(REPO, 'provian-mcp'))
   const mcp = npmPack('provian-mcp')
   requireEntries(mcp, ['package/package.json', 'package/dist/index.js', 'package/bin/provian-mcp.mjs'])
-  artifacts.push({ file: mcp, name: '@provian/mcp', version: tarPkgJson(mcp).version, kind: 'npm' })
+  artifacts.push({ file: mcp, name: '@provian/mcp', version: tarPkgJson(mcp).version })
 
   // ── @provian/commons ────────────────────────────────────────────────────
-  say('[4/5] @provian/commons: pack (README and licence; no code)')
+  say('[4/4] @provian/commons: pack (README and licence; no code)')
   const commons = npmPack('provian-commons')
   {
     const list = requireEntries(commons, ['package/package.json', 'package/README.md', 'package/LICENSE'])
@@ -139,24 +138,9 @@ try {
     if (code.length) problem(`commons tarball carries code: ${code.join(', ')}`)
     const pkg = tarPkgJson(commons)
     if (pkg.private) problem('@provian/commons is still marked private; npm publish would refuse it')
-    artifacts.push({ file: commons, name: '@provian/commons', version: pkg.version, kind: 'npm' })
+    artifacts.push({ file: commons, name: '@provian/commons', version: pkg.version })
   }
 
-  // ── provian-sdk (PyPI) ──────────────────────────────────────────────────
-  say('[5/5] provian-sdk (PyPI): python -m build (sdist + wheel) in a scratch venv')
-  const venv = path.join(OUT, '.pybuild-venv')
-  run('python3', ['-m', 'venv', venv], REPO)
-  run(path.join(venv, 'bin', 'pip'), ['install', '--quiet', '--upgrade', 'build'], REPO)
-  const pyBefore = new Set(readdirSync(OUT))
-  run(path.join(venv, 'bin', 'python'), ['-m', 'build', '--outdir', OUT, path.join(REPO, 'provian-python-sdk')], REPO)
-  const pyMade = readdirSync(OUT).filter((n) => !pyBefore.has(n) && (n.endsWith('.whl') || n.endsWith('.tar.gz')))
-  rmSync(venv, { recursive: true, force: true })
-  for (const n of pyMade.sort()) {
-    const m = /^provian_sdk-([^-]+?)(?:-py3-none-any\.whl|\.tar\.gz)$/.exec(n)
-    if (!m) problem(`unexpected Python artifact ${n}`)
-    artifacts.push({ file: path.join(OUT, n), name: 'provian-sdk', version: m ? m[1] : '?', kind: n.endsWith('.whl') ? 'wheel' : 'sdist' })
-  }
-  if (!pyMade.some((n) => n.endsWith('.whl'))) problem('no wheel was built')
 } catch (err) {
   problem(err instanceof Error ? err.message : String(err))
 }
@@ -170,8 +154,7 @@ for (const a of artifacts) {
   const base = path.basename(a.file)
   const dest = path.join(extractedRoot, base.replace(/(\.tgz|\.whl|\.tar\.gz)$/, '') + (a.kind === 'sdist' ? '-sdist' : ''))
   mkdirSync(dest, { recursive: true })
-  if (a.kind === 'wheel') run('unzip', ['-q', '-o', a.file, '-d', dest], REPO)
-  else run('tar', ['-xzf', a.file, '-C', dest], REPO)
+  run('tar', ['-xzf', a.file, '-C', dest], REPO)
   a.sha256 = sha256(a.file)
   let sweep
   let ok = true
@@ -183,13 +166,13 @@ for (const a of artifacts) {
   }
   a.sweep = sweep
   say(`  ${base}`)
-  say(`    package ${a.name} ${a.version} (${a.kind})`)
+  say(`    package ${a.name} ${a.version}`)
   say(`    sha256  ${a.sha256}`)
   for (const l of sweep.split('\n')) say(`    sweep   ${l}`)
   if (!ok) problem(`armed-state sweep failed for ${base}`)
 }
 const names = new Set(artifacts.map((a) => a.name))
-for (const n of ['@provian/agent-sdk', '@provian/cli', '@provian/mcp', '@provian/commons', 'provian-sdk']) if (!names.has(n)) problem(`${n} was not packed`)
+for (const n of ['@provian/agent-sdk', '@provian/cli', '@provian/mcp', '@provian/commons']) if (!names.has(n)) problem(`${n} was not packed`)
 say('')
 say(problems.length ? `RESULT: FAIL — ${problems.length} problem(s)` : `RESULT: PASS — ${artifacts.length} artifacts packed from ${head.slice(0, 12)} and swept`)
 for (const p of problems) say(`  - ${p.split('\n')[0]}`)

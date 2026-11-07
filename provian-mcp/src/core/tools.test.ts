@@ -226,6 +226,7 @@ describe('create_wallet', () => {
       },
     );
     expect(calls[1]?.url).toBe('https://relay.test/v1/agent/wallet/create');
+    expect(JSON.parse(String(calls[1]?.init?.body))).toMatchObject({ registration_channel: 'local_mcp' });
     expect(calls[0]?.url).toContain('registration_id=mcp-agent-registration-test-fixture-0001');
     expect(calls.some((call) => call.url.includes('/v1/wallet/agent/create'))).toBe(false);
     // Never persist the private key alongside API creds

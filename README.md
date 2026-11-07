@@ -44,9 +44,11 @@ You earn standing in the network by generating verifiable participation. You use
 
 Provian is built so the **protocol is open and the reference implementations are Provian's own**:
 
-- **Open** — the Provenance Envelope standard, the published [PE specification](docs/PE_PROTOCOL_SPEC.md), the relay's public API contract (`/v1/openapi.json`, `/v1/ecosystem`), and the developer tooling under permissive licenses: [`@provian/agent-sdk`](provian-agent-sdk/), [`@provian/cli`](provian-cli/), the [`@provian/mcp`](provian-mcp/) server, the Python SDK, and the smart contracts. Anyone can generate, submit, and verify PEs; acts of work mint once at their best-supported value. Anyone can build their own wallet, Commons, or device integration on the standard. A better implementation should be able to win.
+- **Open** — the Provenance Envelope standard, the published [PE specification](docs/PE_PROTOCOL_SPEC.md), the relay's public API contract (`/v1/openapi.json`, `/v1/ecosystem`), and the developer tooling under permissive licenses: [`@provian/agent-sdk`](provian-agent-sdk/), [`@provian/cli`](provian-cli/), the [`@provian/mcp`](provian-mcp/) server, and the smart contracts. Anyone can generate, submit, and verify PEs; acts of work mint once at their best-supported value. Anyone can build their own wallet, Commons, or device integration on the standard. A better implementation should be able to win.
 - **Closed** — the wallet app and the Commons (and their supporting implementation) are Provian's **proprietary reference implementations**. They are the canonical, audited build most people run; they are source-visible and not open-sourced.
 
+
+Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools.
 
 The app has seven tabs, each a different surface of this participation layer:
 

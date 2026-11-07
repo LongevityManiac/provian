@@ -334,7 +334,15 @@ export interface RouterDeps {
 // API Request/Response types
 // ---------------------------------------------------------------------------
 
+export const AGENT_WALLET_REGISTRATION_CHANNELS = [
+  'install_line', 'npm_sdk', 'cli', 'hosted_mcp', 'local_mcp',
+] as const;
+
+export type AgentWalletRegistrationChannel = typeof AGENT_WALLET_REGISTRATION_CHANNELS[number];
+
 export interface CreateAgentWalletRequest {
+  /** Client-reported onboarding channel. Omission is supported for existing clients. */
+  registration_channel?: AgentWalletRegistrationChannel;
   /** Caller-generated stable identity, durably retained with the wallet key
    * before the first challenge request. Reused on every ambiguous retry. */
   registration_id: string;

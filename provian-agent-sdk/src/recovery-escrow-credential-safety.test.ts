@@ -73,7 +73,7 @@ function relay(script: Array<{ createStatus: number; creds: { api_key: string; a
   return { fetchMock, escrowAuths };
 }
 
-const input = { relayUrl: 'https://relay.test', agentId: 'agent-safe', agentName: 'Safe', connectionToken: 'PROV-FLTC-6789' };
+const input = { relayUrl: 'https://relay.test', agentId: 'agent-safe', agentName: 'Safe', connectionToken: 'PROV-FLTC-6789', registrationChannel: 'install_line' as const };
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'provian-cred-safety-'));

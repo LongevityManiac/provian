@@ -28,8 +28,8 @@ const CONNECT: { kind: InstallKind; label: string; body: string }[] = [
   },
   {
     kind: 'mcp-url',
-    label: 'MCP: when your agent cannot run commands',
-    body: 'Give the agent a one-hour link code from Connect an agent and point it at the hosted endpoint. It makes its key in its own runtime, then calls wallet_challenge, wallet_create with the code, and request_link. You tap Accept.',
+    label: 'Hosted MCP',
+    body: 'A Python agent can use the app’s install line or this hosted MCP endpoint to onboard and act. Give the agent a one-hour link code from Connect an agent and point it at the hosted endpoint. It makes its key in its own runtime, then calls wallet_challenge, wallet_create with the code, and request_link. You tap Accept.',
   },
   {
     kind: 'mcp-stdio',

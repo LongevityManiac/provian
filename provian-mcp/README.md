@@ -15,6 +15,8 @@ Two ways to connect, **one identical tool set**:
 | **Remote (zero install)** | Hosted agents, Claude connectors, agent platforms | Point your client at `https://api.provian.ai/mcp` |
 | **Local (`npx`)** | Keys and credentials that never leave your machine | `npx -y @provian/mcp` |
 
+Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools. The hosted endpoint records `hosted_mcp`; the local stdio server records `local_mcp`.
+
 ## Outside-gate presenter: Provian’s live PR gate
 
 **The repository owner, LongevityManiac, is exempt:** owner pushes and PRs, including CC/Codex work from the owner’s checkout, need no burn, presentation, gate check or review; direct push and merge are allowed. For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR.

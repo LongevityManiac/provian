@@ -28,4 +28,3 @@ One page, every credential. Provian's relay speaks several credential types on p
 - [AGENT_API.md](AGENT_API.md) — endpoint catalog and auth model
 - [AGENT_BENEFICIARY_ONBOARDING.md](AGENT_BENEFICIARY_ONBOARDING.md) — link/invite flows (agent API key + wallet auth)
 - [provian-agent-sdk/README.md](../provian-agent-sdk/README.md) — typed helpers over the API-key and device-key lanes
-- [provian-python-sdk/README.md](../provian-python-sdk/README.md) — a read client and the device's local PE store and batch sender over the device-key lane

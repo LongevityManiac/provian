@@ -12,7 +12,6 @@
     "provian-backend",
     "provian-website",
     "provian-ops",
-    "provian-python-sdk",
     "provian-facilitator",
     "contracts"
   ]

@@ -135,7 +135,7 @@ request), run through Provian's agent SDK from npm. With your connection code in
 `PROVIAN_CONNECTION_TOKEN` in your environment:
 
 ```sh
-npx @provian/agent-sdk@1.10.0 onboard
+npx @provian/agent-sdk@1.10.1 onboard
 ```
 
 Without the variable it asks for the code with hidden input. Do not pass the code with

@@ -7,7 +7,11 @@ import type {
   Firestore,
   Transaction,
 } from 'firebase-admin/firestore';
-import type { AgentWalletDocument } from './types';
+import {
+  AGENT_WALLET_REGISTRATION_CHANNELS,
+  type AgentWalletDocument,
+  type AgentWalletRegistrationChannel,
+} from './types';
 import {
   readIdentityPe,
   type CanonicalAgentStoredPe,
@@ -67,6 +71,8 @@ export const AGENT_WALLET_REGISTRATION_COLLECTION =
   'agent_wallet_registrations' as const;
 
 export interface AgentWalletRegistrationDocument {
+  /** Missing only on rows written before clients reported a channel. */
+  registration_channel?: AgentWalletRegistrationChannel | 'unknown';
   schema_version: 'agent-wallet-registration/v1';
   registration_id: string;
   request_fingerprint_sha256: string;
@@ -265,9 +271,14 @@ function parseRegistration(
   exactKeys(
     raw,
     generation === 0 ? required : [...required, 'last_credential_recovered_at_ms'],
-    [],
+    ['registration_channel'],
     'registration_keys',
   );
+  const channel = raw.registration_channel;
+  if (channel !== undefined && channel !== 'unknown'
+    && !AGENT_WALLET_REGISTRATION_CHANNELS.some((valid) => valid === channel)) {
+    integrityFailure('registration_channel');
+  }
   const createdAt = safeTimestamp(raw.created_at_ms, identity.now, 'registration_created_at');
   if (raw.schema_version !== 'agent-wallet-registration/v1'
     || typeof raw.registration_id !== 'string' || !REGISTRATION_ID.test(raw.registration_id)

@@ -3,7 +3,7 @@
 > **This reference implementation is closed source.** It is not open for forking,
 > copying, or pull requests. What is open — and where contribution actually happens —
 > is the **Provenance Envelope protocol** and the developer tooling
-> (`@provian/agent-sdk`, `@provian/cli`, the Python SDK, the published PE
+> (`@provian/agent-sdk`, `@provian/cli`, `@provian/mcp`, the published PE
 > specification). This guide explains how to contribute *there* and how to build your
 > own Commons on the open primitives. See the repository root `LICENSE` and this
 > package's `LICENSE` for the boundary.
@@ -74,7 +74,7 @@ You can build an institution without this proprietary implementation, on the ope
    - Burn a PVT fee from the contract's own balance via `IPVTBurnable.burn(amount)`; send a USDC fee to your fee wallet
    - There is no registration step: PVT9 has no `protocolBurn` and no `setProtocolContract`
 
-3. **Build your UI on the open SDK/CLI.** `@provian/agent-sdk`, `@provian/cli`, and the Python SDK are MIT-licensed and client-agnostic — mobile, web, CLI, or purely agent-to-agent.
+3. **Build your UI on the open SDK/CLI.** `@provian/agent-sdk`, `@provian/cli`, and `@provian/mcp` are MIT-licensed and client-agnostic — mobile, web, CLI, or purely agent-to-agent.
 
 4. **Run it independently or interoperate.** Your institution shares the PE protocol layer, so PVT and attribution flow across all Commons instances regardless of who built them.
 

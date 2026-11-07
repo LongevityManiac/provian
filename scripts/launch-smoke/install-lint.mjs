@@ -5,7 +5,7 @@
  * verifies every named package actually resolves on its public registry.
  *
  * Pre-flip (default): packages on this launch's publish list
- * (@provian/agent-sdk, @provian/cli, @provian/mcp, provian-sdk) are EXPECTED
+ * (@provian/agent-sdk, @provian/cli, @provian/mcp) are EXPECTED
  * unpublished — reported, not failed. Any OTHER named package that does not
  * resolve is a doc bug in both modes (pre-flip: WARN so CI stays green until
  * the docs session fixes it; post-flip: FAIL).
@@ -24,11 +24,11 @@ import { promisify } from 'node:util';
 const execFileP = promisify(execFile);
 const ROOT = join(new URL('.', import.meta.url).pathname, '..', '..');
 
-const PENDING_PUBLISH = new Set(['@provian/agent-sdk', '@provian/cli', '@provian/mcp', 'provian-sdk']);
+const PENDING_PUBLISH = new Set(['@provian/agent-sdk', '@provian/cli', '@provian/mcp']);
 
 // Directories scanned for markdown. Keep curated: node_modules and build
 // output are never doc surfaces.
-const SCAN_DIRS = ['docs', 'provian-agent-sdk', 'provian-cli', 'provian-python-sdk', 'provian-mcp', 'provian-website', 'provian-backend', 'contracts'];
+const SCAN_DIRS = ['docs', 'provian-agent-sdk', 'provian-cli', 'provian-mcp', 'provian-website', 'provian-backend', 'contracts'];
 const SKIP_DIR_NAMES = new Set(['node_modules', 'dist', 'out', '.next', 'build', 'coverage', '.git']);
 // Internal operator docs (runbooks, session prompts, submission plans) are not
 // public doc surfaces — they legitimately reference not-yet-published packages

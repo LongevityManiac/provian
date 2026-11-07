@@ -11,6 +11,7 @@
  *   GET /.well-known/mcp.json    - MCP descriptor
  */
 
+import { AGENT_WALLET_REGISTRATION_CHANNELS } from '../core/agent-wallet/types';
 import type { Express, Request, Response } from 'express';
 import { PROVIAN_TOOLS } from '../mcp/core/tools';
 import { isMcpAccessPermitted, type McpAccessEnv } from './mcp-access';
@@ -410,6 +411,11 @@ export function buildOpenAPISpec(): Record<string, unknown> {
                   required: ['registration_id', 'agent_name', 'agent_id', 'platform', 'constitution_accepted_at', 'public_key', 'challenge_id', 'signature'],
                   properties: {
                     registration_id: { type: 'string', description: 'Stable 16-128 character caller-owned registration ID' },
+                    registration_channel: {
+                      type: 'string',
+                      enum: AGENT_WALLET_REGISTRATION_CHANNELS,
+                      description: 'Optional client-reported onboarding channel. Saved at creation as unknown when omitted. Retries preserve the original channel.',
+                    },
                     agent_name: { type: 'string' },
                     agent_id: { type: 'string' },
                     platform: { type: 'string' },

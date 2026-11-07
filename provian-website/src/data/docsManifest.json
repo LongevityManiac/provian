@@ -50,7 +50,7 @@
       "group": "build",
       "description": "The one reference for people and agents: architecture, every action type and how it mints, the wallet, the Commons, settlement, and the contracts.",
       "sourcePath": "docs/PROVIAN_MANUAL.md",
-      "sizeKB": 256
+      "sizeKB": 257
     },
     {
       "slug": "pe-protocol-spec",

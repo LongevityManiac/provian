@@ -28,6 +28,6 @@ upstream code was incorporated.
 
 ---
 
-For the licenses of npm and PyPI dependencies, see the `package.json`
-and `pyproject.toml` files in each subproject and run
-`npm ls --json --long` / `pip show <pkg>` for the canonical text.
+For the licenses of npm dependencies, see the `package.json`
+files in each subproject and run
+`npm ls --json --long` for the canonical text.

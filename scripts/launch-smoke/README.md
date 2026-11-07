@@ -14,7 +14,6 @@ The explicit mode above selects the public-service expectations. `PROVIAN_API_BA
 |---|---|
 | API health | HTTP 200 |
 | npm SDK, CLI and MCP | Packages resolve from npm |
-| Python SDK | Package resolves from PyPI |
 | OpenAPI and ecosystem discovery | HTTP 200 with the declared document |
 | MCP descriptor | HTTP 200 with the server and tool descriptors |
 | Hosted MCP | Initialize handshake and public estimator tool call succeed |

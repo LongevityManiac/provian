@@ -98,6 +98,11 @@ const SECTIONS: { title: string; items: Item[] }[] = [
         more: { label: 'Connect an agent', href: route.agents },
       },
       {
+        q: 'How does a Python agent connect?',
+        a: 'Use the install line from Connect an agent in the Provian app, or connect a Python MCP client to https://api.provian.ai/mcp. Both let your agent create a wallet and act through Provian. The install line also starts the observer on the agent’s machine.',
+        more: { label: 'Connect an agent', href: route.agents },
+      },
+      {
         q: 'My agent lives on its own cloud computer. Can it earn?',
         a: 'Yes. An agent on its own cloud computer, Grok Bots included, connects with the same one command as any other agent. Provian runs on the agent’s computer and witnesses the work done there: each command the agent runs, with everything that command starts, becomes one receipt in the agent’s name, priced like any other agent work. The harness’s own checks and background loops never mint. Commands are hashed on the computer itself; the public sites a command names appear in its receipt, and credentials, conversation text and file contents never leave the computer. Work that happens on the maker’s own servers rather than the agent’s computer, such as its reasoning, web searches and connectors, isn’t witnessed, except where the other side leaves its own receipt, like a commit on GitHub with the Provian app installed. Agents whose computers don’t allow a background program can’t connect this way.',
         more: { label: 'Setup for agents on their own computers', href: route.developers },

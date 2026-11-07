@@ -94,7 +94,7 @@ describe('§2.12 PE schema drift', () => {
   });
 });
 
-/** The pinned wire vectors the relay, SDK, app and Python SDK all reproduce. */
+/** The pinned wire vectors the relay, SDK and app reproduce. */
 const VECTORS = JSON.parse(readFileSync(path.resolve(__dirname, '../../../../docs/audit/meter-wire-vectors.json'), 'utf8')) as {
   pes: PeV2[];
   batch: { device_id: string; seq: number; acts_root: string };

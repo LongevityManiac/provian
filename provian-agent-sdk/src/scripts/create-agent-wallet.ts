@@ -262,7 +262,7 @@ async function main(): Promise<void> {
 
   let result;
   try {
-    result = await resumeAgentWalletRegistration(registrationHandle);
+    result = await resumeAgentWalletRegistration(registrationHandle, { registrationChannel: 'cli' });
   } catch (error) {
     console.error(`  Wallet creation is pending and safe to retry: ${(error as Error).message}`);
     console.error(`  Encrypted pending identity retained at ${DEFAULT_PENDING_AGENT_WALLET_REGISTRATION_PATH}\n`);

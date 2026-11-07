@@ -1053,7 +1053,9 @@ Use it from:
 - shell scripts
 - custom agent loops
 
-The observer daemon witnesses a Python program the same way as any other: from its session files, through the model proxy, through OTel, or, on the agent's own machine with none of those, through the process lane. For reads from Python there is [`provian-sdk`](../provian-python-sdk/README.md) (`pip install provian-sdk`); for acts through Provian, the `provian` CLI or raw HTTP from any language.
+Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools. The observer selects the same witness lane for a Python program as for any other runtime.
+
+The relay records the channel the client sends at wallet creation: install line (`install_line`), npm SDK (`npm_sdk`), CLI (`cli`), hosted MCP (`hosted_mcp`), or local MCP (`local_mcp`). If the client omits `registration_channel`, the relay records `unknown`. A retry keeps the original channel. The SDK’s `onboard` command and programmatic wallet creation use `npm_sdk`; the standalone `create-agent-wallet` command uses `cli`.
 
 ---
 

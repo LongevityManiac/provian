@@ -4,7 +4,7 @@
  * timestamps inside the window) must accept every client that mints them.
  *
  * Only the app mints wallet-auth tokens and calls /v1/users/recover (the agent SDK, daemon,
- * CLI, MCP and Python SDK authenticate with device keys / API keys, which B1/B2 did not touch).
+ * CLI and MCP authenticate with device keys / API keys, which B1/B2 did not touch).
  * Builds 2026101602, 2026101702 and the tree share the same RelayAPIService token and recover
  * code, so binding to the tree's source binds to every installed build. The lifetime the app
  * mints is READ from that source (one source of truth), then run through the real verifier.

@@ -146,6 +146,7 @@ import {
   parseLinkEpoch,
   type LinkSignaturePayload,
 } from '../core/agent-wallet/link-signature';
+import { AGENT_WALLET_REGISTRATION_CHANNELS } from '../core/agent-wallet/types';
 import { verifyWalletAuthToken } from './middleware/wallet-auth';
 import {
   applyHumanAgentName,
@@ -1302,6 +1303,12 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
   router.post('/create', async (req: Request, res: Response) => {
     try {
       const body = req.body as CreateAgentWalletRequest;
+      const registrationChannel = body.registration_channel;
+      if (registrationChannel !== undefined
+        && !AGENT_WALLET_REGISTRATION_CHANNELS.includes(registrationChannel)) {
+        res.status(400).json({ error: 'invalid_registration_channel' });
+        return;
+      }
 
       // --- Validate inputs ---
       if (!body.registration_id
@@ -2235,6 +2242,7 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
             txn.create(registrationRef, {
               schema_version: 'agent-wallet-registration/v1',
               registration_id: body.registration_id,
+              registration_channel: registrationChannel ?? 'unknown',
               request_fingerprint_sha256: registrationRequestFingerprint,
               wallet_id: walletId,
               agent_id: body.agent_id,

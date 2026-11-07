@@ -223,6 +223,7 @@ describe('prepared agent wallet registration', () => {
     expect(body.registration_id).toBe(challengeRegistrationId);
     expect(body.agent_name).toBe('Test Agent');
     expect(body.platform).toBe('sdk');
+    expect(body.registration_channel).toBe('npm_sdk');
     expect(body.constitution_accepted).toBe(true);
     expect(body.constitution_version).toBe('network-constitution-2026-09-27');
     expect(body.constitution_accepted_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);

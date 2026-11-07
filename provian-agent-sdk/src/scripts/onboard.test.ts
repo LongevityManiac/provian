@@ -245,7 +245,7 @@ describe('runOnboard — the six steps run through the REAL orchestrator, in ord
     const strict = strictDeps();
     const skipping = async (input: BootstrapInput, deps: BootstrapDeps): Promise<BootstrapResult> => {
       const id = deps.agentIdentity();
-      const w = await deps.createWallet({ relayUrl: input.relayUrl, agentId: id.agentId, agentName: id.agentName, connectionToken: input.connectionToken });
+      const w = await deps.createWallet({ relayUrl: input.relayUrl, agentId: id.agentId, agentName: id.agentName, connectionToken: input.connectionToken, registrationChannel: 'npm_sdk' });
       // no escrow, no device, no observer, no Commons
       const link = await deps.fileLinkRequest({ relayUrl: input.relayUrl, walletId: w.walletId, apiKey: w.apiKey, apiSecret: w.apiSecret, connectionToken: input.connectionToken });
       return { walletId: w.walletId, address: w.address, recoveryEscrowed: false, deviceRegistered: false, observerStarted: false, commonsJoined: false, linkRequested: link.ok, linkStatus: link.linkStatus, notes: [] };

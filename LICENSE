@@ -5,7 +5,7 @@ UNLICENSED - Proprietary and Confidential.
 This repository is the canonical source for Provian's reference
 implementation. Selected subdirectories are open-sourced under permissive
 licenses — the Provenance Envelope protocol SDKs and CLI
-(`provian-agent-sdk/`, `provian-cli/`, `provian-python-sdk/`, and similar)
+(`provian-agent-sdk/`, `provian-cli/`, `provian-mcp/`, and similar)
 carry their own MIT or Apache LICENSE file. Everything else is proprietary
 and may not be copied, modified, distributed, or otherwise used without the
 prior written consent of Provian Technologies, LLC.

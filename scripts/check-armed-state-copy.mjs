@@ -46,7 +46,6 @@ const SURFACES = [
   'provian-website/public/llms-full.txt',   // the same index with every doc inlined
   'provian-website/public/llms.post-genesis.txt',      // the 2027+ variant without the Genesis line
   'provian-website/public/llms-full.post-genesis.txt', // (served by nginx from 2027-01-01 UTC)
-  'provian-python-sdk',                     // Python SDK
   'CLAUDE.md',
   // npm-tarball layouts (--root over a packed package)
   'package/README.md',
@@ -58,7 +57,7 @@ const SURFACES = [
 
 const EXT = new Set([
   '.md', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.txt', '.html',
-  '.py', '.yaml', '.yml', '.toml',   // provian-python-sdk
+  '.py', '.yaml', '.yml', '.toml',
 ]);
 
 /** Each exemption names WHY. An unreasoned exemption is a silent cap. */

@@ -242,7 +242,6 @@
     "provian-backend/src/core/meter/pending-claim-index.ts": "3d6991263cbe35225e90ef8ec57308c879741e78cba4893c3cf4ee9a59e05571",
     "provian-backend/src/core/meter/private-pricing.ts": "393bfaa567aab4a9be56187882d85450c5304b73d8a6f8defb835a36eb4fd8bf",
     "provian-backend/src/core/meter/private-request-transit-limit.test.ts": "cb747e79e0f8a1e295dcd546e313f4cfc5dfa33e23d475c2cfa5c8a2216ec50e",
-    "provian-backend/src/core/meter/python-sdk-batch.test.ts": "d95c7b7220851e45e06e53b2ffda49759d8b8c7f75016271d28c5213a0d509cb",
     "provian-backend/src/core/meter/relay-private-request.ts": "e9fccb539ebbb97291a3a668f3004d7cbc92d6fd4101fe8a213d348652e275c3",
     "provian-backend/src/core/meter/retire-demoted-meter-keys.test.ts": "c346dc628a5b8e4f5bad800dbe6de2ef5c348db563f88705dabccc15e782553a",
     "provian-backend/src/core/meter/retire-demoted-meter-keys.ts": "eed649eacae76d950386d85e4d516b8572efb6e69590bc683a8eac88ea0e7639",

@@ -96,8 +96,8 @@ const CONNECT = [
     code: 'npx @provian/agent-sdk fleet-code',
   },
   {
-    label: 'MCP: when the agent cannot run commands',
-    body: 'Point any MCP-capable runtime at the hosted endpoint. A new agent gets a one-hour link code from Connect an agent, makes its key in its own runtime, then calls wallet_challenge, wallet_create with the code, and request_link. The person taps Accept. Other authenticated tools take the agent API key wallet_create returns.',
+    label: 'Hosted MCP',
+    body: 'Python agents can onboard and act through the app’s install line or through this hosted endpoint with a Python MCP client. A new agent gets a one-hour link code from Connect an agent, makes its key in its own runtime, then calls wallet_challenge, wallet_create with the code, and request_link. The person taps Accept. Other authenticated tools take the agent API key wallet_create returns.',
     code: 'https://api.provian.ai/mcp',
   },
   {
@@ -200,6 +200,10 @@ export default function DevelopersPage() {
           at the forge, or in the acts it takes through Provian — and turns it into hash-chained receipts
           the agent owns and another agent, a person, or a job board can verify. Every act of work mints
           PVT once, at the value its evidence supports.
+        </p>
+        <p className="mt-5 max-w-2xl text-sm leading-7 text-text-muted">
+          Wallet registration records the client that created the wallet: the install line, npm SDK,
+          CLI, hosted MCP, or local MCP.
         </p>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-text-muted">
           Three lanes, one history. The interesting part is what happens when two of them see the

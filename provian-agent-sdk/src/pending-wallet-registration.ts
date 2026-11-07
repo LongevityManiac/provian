@@ -568,6 +568,8 @@ export interface ParentAuthorizationProvider {
 
 /** Options for {@link resumeAgentWalletRegistration}. */
 export interface ResumeAgentWalletRegistrationOptions {
+  /** Entry point that initiates registration. The programmatic SDK uses npm_sdk. */
+  registrationChannel?: 'install_line' | 'npm_sdk' | 'cli';
   /**
    * REQUIRED when the durable snapshot carries a `parentWalletId` (a
    * parent-spawned child); FORBIDDEN otherwise. Resume fails closed on either
@@ -696,6 +698,7 @@ export async function resumeAgentWalletRegistration(
         ...(loaded.snapshot.priorRequestContext && challengePayload.registration_exists === true
           ? {prior_request_context: loaded.snapshot.priorRequestContext} : {}),
         registration_id: prepared.registrationId,
+        registration_channel: options?.registrationChannel ?? 'npm_sdk',
         agent_name: prepared.agentName,
         agent_id: prepared.agentId,
         platform: prepared.platform,

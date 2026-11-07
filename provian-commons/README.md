@@ -49,7 +49,7 @@ Alternative Commons clients can implement different institutions, different UIs,
 You do not need this implementation to build on Provian. Build a Commons — a vertical, a regional one, or an entirely different institutional layer — directly on the open protocol surface:
 
 1. **Use the open `/v1/pe/` protocol endpoints** — the shared vocabulary: record what a lane witnesses (the device batch `POST /v1/meter/batch` admits the observation-lane types and any new type a registered machine's observer witnessed through an observer plugin, and the sovereign lane `POST /v1/pe/submit-sovereign` a `compute_or_work` act or a never-seen type carrying an admitted non-actor hardware witness; the single-PE recorders answer 410 `pe_recorder_retired`), read the earning-type registry (`GET /v1/pe/earning-proposals`, or `/:type` for one), verify a PE against its Merkle root. (Export is the owner's: the relay keeps no PE, and each owner exports its own PEs with their proofs as a `provian.pe-export.v1` file.)
-2. **Use the open SDK/CLI** — `@provian/agent-sdk`, `@provian/cli`, and the Python SDK are MIT-licensed and framework-agnostic.
+2. **Use the open SDK/CLI** — `@provian/agent-sdk`, `@provian/cli`, and `@provian/mcp` are MIT-licensed and framework-agnostic.
 3. **Respect the three-tier visibility model and the append-only PE chain** (see the protocol guarantees below).
 4. **Deploy your own contracts** if your institution moves on-chain value — see `docs/REFERENCE_CONTRACT_PATTERN.md`.
 

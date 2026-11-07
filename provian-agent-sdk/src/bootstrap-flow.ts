@@ -220,6 +220,7 @@ export interface BootstrapDeps {
   createWallet(input: {
     relayUrl: string; agentId: string; agentName: string;
     connectionToken: string;
+    registrationChannel: 'install_line' | 'npm_sdk';
   }): Promise<CreatedWallet>;
   /** Seal a recoverable copy of the key to the anchor and escrow ciphertext. */
   escrowRecoveryKey(input: {
@@ -297,12 +298,15 @@ export async function runAgentBootstrap(
 
 
   const identity = deps.agentIdentity();
-  deps.log('Creating your agent wallet (your key stays on this machine)…');
+  const registrationChannel = input.hostedInstall ? 'install_line' : 'npm_sdk';
+  const entryPoint = input.hostedInstall ? 'the install line' : 'the npm SDK';
+  deps.log(`Creating your agent wallet through ${entryPoint}. Your key stays on this machine.`);
   const wallet = await deps.createWallet({
     relayUrl: input.relayUrl,
     agentId: identity.agentId,
     agentName: identity.agentName,
     connectionToken: input.connectionToken,
+    registrationChannel,
   });
 
   let recoveryEscrowed = false;
@@ -890,7 +894,9 @@ export function defaultBootstrapDeps(
       }, { passphrase, fetchImpl, log: (m) => console.error(`  ${m}`) });
       // The resume is idempotent (it re-reads the sealed request), so a transit failure or a
       // relay 5xx is retried twice before the installer reports it.
-      const result = await withTransientRetry(() => resumeAgentWalletRegistration(handle));
+      const result = await withTransientRetry(() => resumeAgentWalletRegistration(handle, {
+        registrationChannel: input.registrationChannel,
+      }));
       persistAgentWalletKey({
         privateKey: result.privateKey, address: result.address, publicKey: result.publicKey,
         walletId: result.walletId, passphrase, createdAt: result.createdAt,

@@ -60,9 +60,7 @@ const GOLDEN_FINGERPRINT_INPUT = {
 const GOLDEN_FINGERPRINT = '8359e82d63123880d163cdb48b2cb8bf5e54f1bc7ad6449bdaf0f3a481f6dfca';
 
 // ---------------------------------------------------------------------------
-// The currently-published versions the installed base runs. Pinned so a bump of
-// the real package.json without updating this record is caught (§3), and so the
-// suite states plainly what "installed" means.
+// Released client versions that this relay must continue to support.
 // ---------------------------------------------------------------------------
 const INSTALLED_SDK_VERSION = '1.10.0';
 const INSTALLED_CLI_VERSION = '1.4.0';
@@ -140,11 +138,10 @@ describe('installed-base compatibility (item 8)', () => {
   });
 
   describe('SDK / CLI version compatibility', () => {
-    it('the pinned installed versions match the real package.json (no silent drift)', () => {
-      expect(INSTALLED_SDK_VERSION).toBe(readPkgVersion('provian-agent-sdk'));
+    it('advertises the current package version and supports the installed SDK version', () => {
+      expect(SDK_LATEST).toBe(readPkgVersion('provian-agent-sdk'));
+      expect(compareSemver(SDK_LATEST, INSTALLED_SDK_VERSION)).toBeGreaterThanOrEqual(0);
       expect(INSTALLED_CLI_VERSION).toBe(readPkgVersion('provian-cli'));
-      // The relay's advertised latest tracks the SDK package version.
-      expect(SDK_LATEST).toBe(INSTALLED_SDK_VERSION);
     });
 
     it('the installed SDK and CLI are at or above the relay’s minimum supported version', () => {

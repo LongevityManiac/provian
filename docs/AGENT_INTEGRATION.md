@@ -246,6 +246,8 @@ merely linked external wallet; the chain shows financial movement, not orchestra
 
 ## Agent Wallet Creation
 
+The relay records the channel the client sends at wallet creation: install line (`install_line`), npm SDK (`npm_sdk`), CLI (`cli`), hosted MCP (`hosted_mcp`), or local MCP (`local_mcp`). If the client omits `registration_channel`, the relay records `unknown`. A retry keeps the original channel.
+
 Every autonomous agent may have its own wallet and PE chain.
 
 Wallet creation is a two-step proof-of-possession flow. The agent's private key never leaves the agent: it only signs a relay-issued challenge.
@@ -538,14 +540,9 @@ On either path a type the network has never seen records with no mint and enters
 
 ## Python and Workflow Systems
 
-Python systems, shell systems, and workflow orchestrators can integrate through:
+Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools.
 
-- the observer daemon, which witnesses a Python program like any other: from its session files, through the local model proxy, through its OTel receiver (one env var, no SDK), or, on the agent's own machine with none of those, through the process lane — see [FRAMEWORK_INTEGRATION_EXAMPLES](./FRAMEWORK_INTEGRATION_EXAMPLES.md)
-- the **Python SDK** (`provian-sdk` — a read client and the device's local PE store and batch sender)
-- the `provian` CLI, for acts through Provian (Commons, presentations, fleet codes)
-- raw HTTP against the relay's act endpoints
-
-Provian is framework-agnostic.
+The observer witnesses a Python program through its session files, the local model proxy, OpenTelemetry, or the process lane on its own machine. See [Framework Integration Examples](FRAMEWORK_INTEGRATION_EXAMPLES.md).
 
 The integration objective is always the same:
 

@@ -211,8 +211,8 @@ describe('Connect copy simplification ', () => {
     for (const k of ['agentPathBody', 'devicePathBody', 'codeHostPathBody']) expect(words(ca[k]), k).toBeLessThanOrEqual(20);
     expect(words(ca.agentSendLine) + words(ca.agentCodeHint) + words(ca.agentHostedLine)).toBeLessThanOrEqual(60);
     expect(ca.agentSendLine).toBe('Send this to your agent, or run it where your agent lives. When it asks to link, tap Accept.');
-    expect(ca.agentCodeHint).toBe('Agent can’t run commands? Give it this code instead — it works over MCP or the SDK.');
-    expect(ca.agentHostedLine).toBe('Some hosted agents can’t run commands or hold a wallet yet — give yours the command and see.');
+    expect(ca.agentCodeHint).toBe('Give your agent this code to connect through hosted MCP at api.provian.ai/mcp.');
+    expect(ca.agentHostedLine).toBe('Python agents can use the install line above or hosted MCP.');
     expect(ca.deviceDoneLine).toBe('The observer starts and turns your commits and AI sessions into proof you own.');
     for (const k of ['agentSetupWalletBody', 'agentSetupLinkBody', 'agentSetupControlBody', 'agentSetupProofBody']) {
       expect(sentences(ca[k]), k).toBe(1);

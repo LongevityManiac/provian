@@ -31,7 +31,6 @@ on:
       - 'scripts/launch-smoke/**'
       - 'provian-agent-sdk/README.md'
       - 'provian-cli/README.md'
-      - 'provian-python-sdk/README.md'
       - 'provian-mcp/README.md'
       - 'provian-website/public/docs-md/**'
       - '.github/workflows/launch-smoke.yml'

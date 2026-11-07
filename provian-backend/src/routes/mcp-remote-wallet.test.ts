@@ -134,6 +134,7 @@ describe('hosted agent: create its own wallet over /mcp, connect with the creden
       expect(call.body).not.toContain(pkcs8);
       expect(call.body).not.toContain(d);
     }
+    expect(JSON.parse(seen[1].body)).toMatchObject({ registration_channel: 'hosted_mcp' });
     expect(seen.map((c) => c.path)).toEqual([
       '/v1/agent/wallet/challenge',
       '/v1/agent/wallet/create',

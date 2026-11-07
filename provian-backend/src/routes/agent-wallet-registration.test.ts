@@ -672,6 +672,7 @@ describe('canonical native agent registration route', () => {
     const registration = fake.store.get(
       exactlyOneKey(fake.store, AGENT_WALLET_REGISTRATION_COLLECTION),
     )!;
+    expect(registration.registration_channel).toBe('unknown');
     expect(validateIdentityAct({
       raw: fake.store.get(`${IDENTITY_ACTS_COLLECTION}/${peId}`),
       peId,
@@ -803,7 +804,10 @@ describe('canonical native agent registration route', () => {
     });
     // `agent_session_id` is a RETIRED field — still accepted from older SDK
     // builds, ignored by the relay (nothing to bind), never a recovery input.
-    const requestBody = registrationBody({ agent_session_id: 'session-legacy-ignored' });
+    const requestBody = registrationBody({
+      agent_session_id: 'session-legacy-ignored',
+      registration_channel: 'install_line',
+    });
     const first = await request(app).post('/v1/agent/wallet/create').send(requestBody);
     expect(first.status).toBe(201);
     expect(countPrefix(fake.store, 'agent_sessions')).toBe(0);
@@ -821,14 +825,18 @@ describe('canonical native agent registration route', () => {
       genesisWalletLedgers: countPrefix(fake.store, GENESIS_WALLET_LEDGER_COLLECTION),
       accrualCalls: recordPEAccrual.mock.calls.length,
     };
+    const registrationKey = exactlyOneKey(fake.store, AGENT_WALLET_REGISTRATION_COLLECTION);
+    expect(fake.store.get(registrationKey)?.registration_channel).toBe('install_line');
     const originalApiPrefix = String(first.body.api_key).slice(0, 24);
 
     const recovered = await request(app).post('/v1/agent/wallet/create').send(registrationBody({
       agent_session_id: 'session-legacy-ignored',
+      registration_channel: 'npm_sdk',
       challenge_id: 'challenge-2',
       signature: 'cd'.repeat(64),
     }));
     expect(recovered.status).toBe(200);
+    expect(fake.store.get(registrationKey)?.registration_channel).toBe('install_line');
     expect(recovered.body).toMatchObject({
       recovered: true,
       wallet_id: first.body.wallet_id,

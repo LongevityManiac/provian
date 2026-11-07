@@ -104,7 +104,7 @@ import type {
 } from './types';
 
 /** Version reported by both transports. Keep in sync with provian-mcp/package.json. */
-export const PROVIAN_MCP_VERSION = '1.2.0';
+export const PROVIAN_MCP_VERSION = '1.2.1';
 export const PROVIAN_MCP_SERVER_NAME = 'provian';
 
 const ELIGIBILITY_DISCLAIMER =
@@ -234,7 +234,7 @@ const createWallet: ProvianToolDef = {
   name: 'create_wallet',
   description:
     'Local stdio only: create a self-sovereign Provian agent wallet. Encrypts one pending agent ID/key before networking, then proves possession of ' +
-    'it by signing a relay-issued challenge (the key itself is never sent), and registers the wallet. Returns ' +
+    'it by signing a relay-issued challenge (the key itself is never sent), and records local MCP as the wallet registration channel. Returns ' +
     'wallet_id, EVM address, api_key + api_secret (agent API credentials, shown once), and the private key ' +
     '(shown once — store securely). The wallet is your durable identity on the Provian trust layer: ' +
     ELIGIBILITY_DISCLAIMER,
@@ -357,6 +357,7 @@ const createWallet: ProvianToolDef = {
     const createRes = await relayCall(ctx, 'POST', '/v1/agent/wallet/create', {
       body: {
         registration_id: pending.registrationId,
+        registration_channel: 'local_mcp',
         agent_name: pending.agentName,
         agent_id: pending.agentId,
         platform: pending.platform,
@@ -3244,7 +3245,7 @@ const walletChallenge: ProvianToolDef = {
 const walletCreate: ProvianToolDef = {
   name: 'wallet_create',
   description:
-    'Step 2 of creating your agent wallet from a hosted runtime: prove you hold the key by sending the signature over ' +
+    'Step 2 of creating your agent wallet from an MCP client, including Python. MCP records the connection channel automatically. Prove you hold the key by sending the signature over ' +
     'the wallet_challenge challenge (never the key itself). Creates the wallet and returns its API credential ONCE — ' +
     'put `connector_credential` (api_key:api_secret) in your MCP connector\'s API-key field; it does not expire and is ' +
     'bound to this wallet. Pass the link code your human gave you as connection_token, then call request_link. ' +
@@ -3308,6 +3309,7 @@ const walletCreate: ProvianToolDef = {
     const res = await relayCall(ctx, 'POST', '/v1/agent/wallet/create', {
       body: {
         registration_id: registrationId,
+        registration_channel: ctx.mode === 'remote' ? 'hosted_mcp' : 'local_mcp',
         agent_name: agentName,
         agent_id: agentId,
         platform,
