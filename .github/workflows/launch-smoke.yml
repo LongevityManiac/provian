@@ -1,4 +1,5 @@
 name: Launch Smoke Suite
+# GitHub only registers a workflow (and its schedule) after a push that changes this file.
 
 # settlement kernel — the flip gate. Proves the documented agent funnel works against
 # production: discovery-surface gating, package installability, the

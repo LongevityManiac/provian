@@ -1,4 +1,5 @@
 name: AI Provider Catalog Sync
+# GitHub only registers a workflow (and its schedule) after a push that changes this file.
 
 # The mobile Chat surface and the desktop LLM session plugin must match
 # users to providers with identical rules. Drift between the two catalog

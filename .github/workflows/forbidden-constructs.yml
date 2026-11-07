@@ -1,4 +1,5 @@
 name: Removed-Decision Registry
+# GitHub only registers a workflow (and its schedule) after a push that changes this file.
 
 # the operator removes a construct; a year later it is back in the code and nothing
 # fails. Supply halving was deleted in the March 2026 Economics Correction and

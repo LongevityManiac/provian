@@ -1,4 +1,5 @@
 name: TypeScript Typecheck
+# GitHub only registers a workflow (and its schedule) after a push that changes this file.
 
 # Enforce `tsc --noEmit` across the root mobile app and every
 # TypeScript-bearing subproject. Each subproject has its own tsconfig.json

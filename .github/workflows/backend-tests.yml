@@ -1,4 +1,5 @@
 name: Backend Tests
+# GitHub only registers a workflow (and its schedule) after a push that changes this file.
 
 # Backend jest ran in NO workflow until 2026-07-28 : the typecheck
 # workflow runs tsc only, and the Removed-Decision Registry workflow runs the
