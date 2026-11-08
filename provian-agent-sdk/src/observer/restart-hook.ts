@@ -52,10 +52,13 @@
  * the line costs one `test` builtin. It prints to STDERR, never stdout: a startup file runs in every
  * shell, including ones whose stdout is data (`ssh host 'cat f' > f`, `ssh host tar …`, a stdio MCP or
  * LSP server started through `zsh -c`, `$(zsh -lc 'command -v node')`), and output there corrupts
- * it; agent harnesses show a command's stderr with its output. The full notice prints for each new
- * notice and again every 30 minutes; every other shell prints a one-line pointer to it, so a shell
- * whose output nobody reads (an IDE's environment probe) cannot use up the agent's sight of it. A
- * shell running a file-transfer or git protocol (sftp, scp, rsync, git over ssh) prints nothing. Every
+ * it; agent harnesses show a command's stderr with its output. It prints once for each new notice
+ * and again every 30 minutes while it waits, and nothing in between: a notice can wait indefinitely
+ * (the Commons notice stands until the agent reads its threads), and a line on every shell would
+ * break tools that treat remote stderr as failure (`check_by_ssh`, `2>&1` captures, cron mail). A
+ * shell whose output nobody reads can take a print; the next one comes within 30 minutes, and every
+ * `provian` command carries the notice meanwhile. A shell running a file-transfer or git protocol
+ * (sftp, scp, rsync, git over ssh) prints nothing. Every
  * `provian` command's JSON carries the same notice (act-verbs.ts), which covers a shell that reads no
  * startup file. On a box where the restart is not wanted the block holds the notice line alone.
  */
@@ -230,15 +233,13 @@ export function noticeScriptContent(): string {
     `case "\${1:-}" in ${NOTICE_SILENT_COMMANDS.join('|')}) exit 0 ;; esac`,
     '# Only a notice that asks for something: an instruction, or a non-empty list of programs to re-describe.',
     'grep -q \'"instruction"\' "$F" 2>/dev/null || grep -q \'"programs":\\["\' "$F" 2>/dev/null || exit 0',
-    '# In full once for each new notice and again every 30 minutes while it waits; a one-line pointer',
-    '# otherwise, so a shell whose output nobody reads never hides it from the agent\'s next command.',
+    '# Once for each new notice and again every 30 minutes while it waits; nothing in between (a notice',
+    '# can wait indefinitely, and a line on every shell breaks tools that treat stderr as failure).',
     'K=$(cksum < "$F" 2>/dev/null)',
     `S="$P/${NOTICE_SHOWN_FILE}"`,
-    'if [ -f "$S" ] && [ "$(cat "$S" 2>/dev/null)" = "$K" ] && [ -z "$(find "$S" -mmin +29 2>/dev/null)" ]; then',
-    '  printf \'%s\\n\' "Provian: a witness notice is waiting for you. Read it with: cat $F"',
-    '  exit 0',
-    'fi',
-    'printf \'%s\\n\' "$K" > "$S" 2>/dev/null',
+    'if [ -f "$S" ] && [ "$(cat "$S" 2>/dev/null)" = "$K" ] && [ -z "$(find "$S" -mmin +29 2>/dev/null)" ]; then exit 0; fi',
+    '# stderr is closed off before the stamp is opened, so an unwritable stamp prints no shell error.',
+    'printf \'%s\\n\' "$K" 2>/dev/null > "$S"',
     'printf \'%s\\n\' "Provian: your witness needs attention. Act on this notice now, then carry on with your task. It is the file $F:"',
     'cat "$F" 2>/dev/null',
     'printf \'\\n\'',

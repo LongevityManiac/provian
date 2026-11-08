@@ -39,7 +39,7 @@ function runNotice(arg = ''): string {
   expect(r.stdout).toBe('');
   return r.stderr;
 }
-const POINTER = 'Provian: a witness notice is waiting for you.';
+
 
 const has = (bin: string): boolean => spawnSync('/bin/sh', ['-c', `command -v ${bin}`]).status === 0;
 
@@ -66,18 +66,15 @@ describe('the notice script (run under /bin/sh)', () => {
     expect(runNotice()).toContain('"programs":["codex"]');
   });
 
-  it('prints a notice in full once, again when it changes and after 30 minutes, and a pointer to it every other time', () => {
+  it('prints a notice once, again when it changes, and again after 30 minutes; nothing in between', () => {
     writeNotice({ instruction: INSTRUCTION, lane: 'process' });
     expect(runNotice()).toContain(INSTRUCTION);
-    // A shell whose output nobody read (an IDE probe) used the full print: the agent's next command
-    // still shows where the notice is.
-    const pointer = runNotice();
-    expect(pointer).toContain(POINTER);
-    expect(pointer).toContain(noticeFile());
-    expect(pointer).not.toContain(INSTRUCTION);
+    // Nothing on the shells in between: a notice can wait indefinitely, and a line on every shell
+    // breaks tools that treat remote stderr as failure.
+    expect(runNotice()).toBe('');
     writeNotice({ instruction: `${INSTRUCTION} (changed)`, lane: 'process' });
     expect(runNotice()).toContain('(changed)');
-    expect(runNotice()).toContain(POINTER);
+    expect(runNotice()).toBe('');
     const stamp = path.join(home, '.provian', NOTICE_SHOWN_FILE);
     const old = new Date(Date.now() - 31 * 60_000);
     fs.utimesSync(stamp, old, old);
@@ -109,8 +106,7 @@ describe('the invariant: the next command an agent runs shows a waiting notice (
     expect(run().all).not.toContain('Provian');
     writeNotice({ instruction: INSTRUCTION, lane: 'process' });
     expect(run().all).toContain(INSTRUCTION);
-    // The next command, and every one after it while the notice waits, still says so.
-    expect(run().all).toContain(POINTER);
+    expect(run().all).not.toContain('Provian');
     // A login shell reading ~/.profile gets it too (a fresh notice, so it is shown in full again).
     writeNotice({ instruction: `${INSTRUCTION} login`, lane: 'process' });
     expect(shell(['bash', '-l', '-c', 'echo agent-command-output']).all).toContain(`${INSTRUCTION} login`);
@@ -121,12 +117,10 @@ describe('the invariant: the next command an agent runs shows a waiting notice (
     const data = path.join(home, 'data.bin');
     fs.writeFileSync(data, Buffer.from([0, 1, 2, 255, 10, 13, 0x7b]));
     writeNotice({ instruction: INSTRUCTION, lane: 'process' });
-    for (let i = 0; i < 2; i++) {
-      const r = spawnSync('bash', ['-i', '-c', `cat '${data}'`], { env: env(), timeout: 10_000 });
-      expect(Buffer.compare(r.stdout, fs.readFileSync(data))).toBe(0);
-      // …and the notice is still in the command's output.
-      expect(r.stderr.toString('utf8')).toMatch(/Provian:/);
-    }
+    const r = spawnSync('bash', ['-i', '-c', `cat '${data}'`], { env: env(), timeout: 10_000 });
+    expect(Buffer.compare(r.stdout, fs.readFileSync(data))).toBe(0);
+    // …and the notice is in the command's output.
+    expect(r.stderr.toString('utf8')).toMatch(/Provian:/);
   });
 
   it.runIf(has('zsh'))('zsh -c (every zsh reads ~/.zshenv): the notice shows with the command\'s output; stdout is untouched', () => {
@@ -137,6 +131,15 @@ describe('the invariant: the next command an agent runs shows a waiting notice (
     const out = run();
     expect(out.all).toContain(INSTRUCTION);
     expect(out.stdout).toBe('agent-command-output\n');
+  });
+
+  it('an unwritable stamp prints no shell error, only the notice', () => {
+    installNoticeHook({ home, zshPresent: false });
+    fs.mkdirSync(path.join(home, '.provian', NOTICE_SHOWN_FILE));
+    writeNotice({ instruction: INSTRUCTION });
+    const out = runNotice();
+    expect(out).toContain(INSTRUCTION);
+    expect(out).not.toMatch(/cannot create|Is a directory|No such file/i);
   });
 
   it('never stacks blocks on a startup file holding a hand-edited, unterminated Provian block', () => {
