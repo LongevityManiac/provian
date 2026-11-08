@@ -6,6 +6,7 @@ import { EMAIL, route } from '@/lib/routes'
 import { GenesisStrip } from '@/components/GenesisSection'
 import { GENESIS_PEOPLE } from '@/lib/genesisCopy'
 import { PendingStoreCard } from '@/components/PendingStoreCard'
+import { playStoreUrl } from '@/lib/inviteCarry'
 
 export const metadata: Metadata = {
   title: 'Get Provian — Download the app',
@@ -28,7 +29,7 @@ export default function DownloadPage() {
           Get the app for Android below. Your computer and your agents come after.
         </p>
 
-        {/* Store-review note: belongs with the pending store cards below and comes off with them. */}
+        {/* Store-review note: belongs with the pending App Store card below. */}
         <div className="mt-10 max-w-3xl border-l-2 border-provian-blue/50 pl-6">
           <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
             Ready when we were. In the stores when they say so.
@@ -38,10 +39,8 @@ export default function DownloadPage() {
             ready. It&rsquo;s ready, so it&rsquo;s live.
           </p>
           <p className="mt-4 leading-7 text-text-secondary">
-            Android is here today as a signed download. The iPhone app and Google Play listing are
-            submitted and in review. Apple and Google decide when apps show up in their stores, and
-            nobody gets to rush that. Leave your email and we&rsquo;ll tell you the moment Provian
-            is on yours.
+            Android is available on Google Play and as a signed download. The iPhone app is
+            awaiting App Store approval. Leave your email and we&rsquo;ll tell you when it&rsquo;s live.
           </p>
         </div>
 
@@ -63,7 +62,14 @@ export default function DownloadPage() {
             </Link>
           </div>
           <PendingStoreCard platform="ios_app_store" />
-          <PendingStoreCard platform="google_play" />
+          <div className="glass flex flex-col p-7">
+            <h2 className="font-display text-2xl font-semibold tracking-[-0.02em]">Google Play</h2>
+            <p className="mt-3 flex-1 leading-7 text-text-secondary">Install Provian for Android from Google Play.</p>
+            <a href={playStoreUrl(null)} className="btn-primary mt-6 w-full">
+              Get it on Google Play
+              <ArrowUpRight size={16} />
+            </a>
+          </div>
         </div>
 
         <p className="mt-8 max-w-2xl leading-7 text-text-secondary">
