@@ -15,6 +15,5 @@ provian-website/.DS_Store
 provian-website/*.pem
 provian-website/npm-debug.log*
 provian-website/.env*.local
-# The release APK comes from the release bucket at build time, never from the
-# deploying tree (see provian-website/cloudbuild.deploy.yaml).
-provian-website/public/download/*.apk
+# Keep local Android artifacts out of the website build context.
+provian-website/public/**/*.apk
