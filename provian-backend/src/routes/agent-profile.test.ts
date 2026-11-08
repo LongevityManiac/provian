@@ -273,8 +273,10 @@ describe('Agent Provenance Record route', () => {
       amount_pvt: '3000000000000000000000',
       renewal_deadline: now + 60_000,
     });
+    // The shape device registration writes for an agent-owned device: owner_user_id is the agent's
+    // WALLET id (routes/devices.ts, `ownerId = agentWallet.id`), never its agent id.
     fake.seed('devices', 'dev_atlas', {
-      owner_user_id: 'atlas',
+      owner_user_id: 'wallet_aw_atlas',
       owner_wallet_id: 'wallet_aw_atlas',
       owner_type: 'agent',
       status: 'active',
@@ -414,6 +416,83 @@ describe('Agent Provenance Record route', () => {
       test_run: 1,
     });
     expect(res.body.activity_summary.last_pe_at).toBe(day2 + 2);
+  });
+
+  describe('the agent\'s attested devices (identity.device_attested / active_agent_owned_devices)', () => {
+    const seedAgent = (fake: FakeFirestore): void => {
+      fake.seed('agent_wallets', 'wallet_aw_grok', {
+        id: 'wallet_aw_grok',
+        agent_id: 'agent-grok',
+        display_name: 'grok-bot-vm',
+        address: '0xgrok',
+        badges: [],
+      });
+      fake.seed('commons_profiles', 'wallet_aw_grok', { identity_verification_level: 'device_attested' });
+    };
+    // Registration's shape for an agent-owned device: keyed by the WALLET, owner_user_id = wallet id.
+    const device = (wallet: string, status = 'active'): DocData => ({
+      device_id: `dev_${wallet}_${status}`,
+      owner_user_id: wallet,
+      owner_wallet_id: wallet,
+      owner_type: 'agent',
+      status,
+    });
+
+    it('counts the agent\'s active agent-owned devices, looked up by agent id or wallet id', async () => {
+      const fake = new FakeFirestore();
+      seedAgent(fake);
+      fake.seed('devices', 'pv1_grok_vm', device('wallet_aw_grok'));
+      // RED controls in the same population: a revoked device of this agent, another agent's device
+      // and a human device of the same wallet id are not counted.
+      fake.seed('devices', 'pv1_grok_old', device('wallet_aw_grok', 'revoked'));
+      fake.seed('devices', 'pv1_other', device('wallet_aw_other'));
+      fake.seed('devices', 'pv1_human', { ...device('wallet_aw_grok'), owner_type: 'human' });
+      for (const id of ['agent-grok', 'wallet_aw_grok']) {
+        const res = await request(buildApp(fake)).get(`/v1/agents/${id}/profile`);
+        expect(res.status).toBe(200);
+        expect(res.body.identity).toMatchObject({
+          device_attested: true,
+          active_agent_owned_devices: 1,
+          attribution_model: 'agent_owned_device',
+        });
+        expect(res.body.trust_signals.device_attested_agent_identity).toBe(true);
+      }
+    });
+
+    it('RED control: an agent with no active device reports false and 0', async () => {
+      const fake = new FakeFirestore();
+      seedAgent(fake);
+      fake.seed('devices', 'pv1_grok_old', device('wallet_aw_grok', 'revoked'));
+      const res = await request(buildApp(fake)).get('/v1/agents/agent-grok/profile');
+      expect(res.body.identity).toMatchObject({ device_attested: false, active_agent_owned_devices: 0, attribution_model: 'public_record_only' });
+      expect(res.body.trust_signals.device_attested_agent_identity).toBe(false);
+    });
+
+    it('a failed device lookup reports unknown (null), never "no attested device"', async () => {
+      const fake = new FakeFirestore();
+      seedAgent(fake);
+      fake.seed('devices', 'pv1_grok_vm', device('wallet_aw_grok'));
+      const failing = {
+        collection: (name: string) => {
+          if (name === 'devices') {
+            const query: Record<string, unknown> = { get: async () => { throw new Error('index unavailable'); } };
+            query.where = () => query;
+            return query;
+          }
+          return fake.collection(name);
+        },
+      } as unknown as FakeFirestore;
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      try {
+        const res = await request(buildApp(failing)).get('/v1/agents/agent-grok/profile');
+        expect(res.status).toBe(200);
+        expect(res.body.identity.device_attested).toBeNull();
+        expect(res.body.identity.active_agent_owned_devices).toBeNull();
+        expect(res.body.trust_signals.device_attested_agent_identity).toBeNull();
+      } finally {
+        warn.mockRestore();
+      }
+    });
   });
 
   it('serves the same Provenance Record from the /provenance alias', async () => {

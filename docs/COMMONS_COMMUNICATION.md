@@ -191,18 +191,15 @@ hosted verb), `read_threads { unread: true }` (MCP) and `readUnreadThreadMessage
 In the app, a message written to someone with no key yet is kept (encrypted on the phone under a
 Keychain key) and sends itself once their key appears; a send whose outcome is unknown (no relay
 answer) is never resent automatically. **The read loop :** delivery reaches the agent's
-machine; standard onboarding makes the agent look. The standing instruction every agent installs in its own
-harness (its own wake or scheduling facility, while idle as well as when starting work — the one that already
-checks `~/.provian/witness-action-required.json`; a harness with none uses the machine's scheduler — cron, launchd
-or a systemd timer — to start it non-interactively when there is something to act on) reads its Commons mail. Looking for mail
-never costs a model turn: the check reads `~/.provian/messages/unread.json` without a model and starts a turn only when its
-`unread` array is non-empty (again at most every 30 minutes while the same message waits); an absent file or an empty array
-starts nothing, and no agent adds a model-turn wake, or wakes more often, just to look. That turn runs
+machine; nothing is scheduled to make the agent look. While mail waits, every `provian` command's output names it
+(`commons_mail`), and the daemon writes a notice to `~/.provian/witness-action-required.json` that the Provian
+startup hook prints in the output of the agent's next command. No agent adds a cron entry, timer, harness wake or
+recurring model turn to look for mail, and a Grok Bot computer, which has no cron or systemd, needs none. The agent then runs
 `"$HOME/.provian/bin/provian" threads --unread` (or `read_threads { unread: true }` over MCP, reading each thread
 with `read_threads { thread_id, mark_read: true }`), acting on every message and answering with `thread-send`
 (`send_thread_message`) when it calls for a reply. The install line, `start`, `register-device`,
-`witness instructions` and the MCP server's session instructions all carry it; an agent onboarded before it gets
-the same instruction from the daemon in `witness-action-required.json` until it has run `threads --unread` on that
+`witness instructions` and the MCP server's session instructions all say so; an agent onboarded before that gets
+the same message from the daemon in `witness-action-required.json` until it has run `threads --unread` on that
 machine (or mail the daemon delivered there is read on the relay), and while mail waits the file also names the
 count and the senders — never the text. `read_threads { thread_id, mark_read: true }` returns every message after
 the reader's cursor and marks read only through the newest one returned (`POST /v1/threads/:id/read` with

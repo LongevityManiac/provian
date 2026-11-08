@@ -44,6 +44,16 @@
  * SCOPE: this restarts the daemon. It is reported as its own capture-health fact
  * (`restart_hook: 'shell_rc'`) and does NOT feed the Grok proxy repoint decision ('s
  * supervised-only rule stands; scope ruling).
+ *
+ * THE NOTICE. The same managed block carries a second line, on every macOS and Linux box (not only
+ * the boxes that need the restart): when the observer has left `~/.provian/witness-action-required.json`
+ * asking for something, `~/.provian/bin/provian-notice` prints it to stdout, so the agent reads it in
+ * the output of the next command it runs. Nothing is scheduled and no model turn is spent looking:
+ * with no notice the line costs one `test` builtin. The script prints a notice the first time a shell
+ * meets it and again at most every 30 minutes while the same one waits, and never in a shell that
+ * carries a file-transfer or git protocol on its stdout (sftp, scp, rsync, git over ssh). Every
+ * `provian` command's JSON carries the same notice (act-verbs.ts), which covers a shell that reads no
+ * startup file. On a box where the restart is not wanted the block holds the notice line alone.
  */
 
 import * as fs from 'fs';
@@ -51,6 +61,7 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { execFileSync } from 'child_process';
 import { rewriteFileInPlace } from '../fs-in-place';
+import { ACTION_REQUIRED_FILE } from '../commons-messaging';
 
 export const RESTART_HOOK_BEGIN = '# >>> provian-restart-hook (managed by Provian; uninstall removes it) >>>';
 export const RESTART_HOOK_END = '# <<< provian-restart-hook <<<';
@@ -184,11 +195,61 @@ export function ensureScriptContent(entry: RestartHookEntrypoint): string {
   ].join('\n');
 }
 
-/** The guard block written into each startup file (pure). */
-export function restartHookBlock(): string {
+export function noticeScriptPath(home: string = homedir()): string {
+  return path.join(home, '.provian', 'bin', 'provian-notice');
+}
+
+/** The stamp holding the checksum of the notice last printed (the 30-minute repeat clock is its mtime). */
+export const NOTICE_SHOWN_FILE = 'witness-notice.shown';
+
+/** The protocols that run a non-interactive shell whose stdout is the protocol stream: never print there. */
+export const NOTICE_SILENT_COMMANDS = [
+  '*sftp-server*', '*internal-sftp*', 'scp\\ *', '*rsync\\ --server*',
+  'git-upload-pack*', 'git-receive-pack*', 'git-upload-archive*',
+  "git\\ upload-pack*", "git\\ receive-pack*",
+] as const;
+
+/** The notice script's exact bytes (pure — unit-testable). */
+export function noticeScriptContent(): string {
+  return [
+    '#!/bin/sh',
+    '# Provian witness notice: prints the observer\'s action-required notice so the agent sees it in the',
+    '# output of the next command it runs. Run by the Provian block in the shell startup files. Silent when',
+    '# there is nothing to act on; always exits 0. Written by the Provian daemon; uninstall removes it.',
+    'P="$HOME/.provian"',
+    `F="$P/${ACTION_REQUIRED_FILE}"`,
+    '[ -f "$F" ] || exit 0',
+    '# $1 is the command string of the shell that read the startup file (bash/zsh -c). A file-transfer or',
+    '# git protocol on that shell\'s stdout would break on any extra output.',
+    `case "\${1:-}" in ${NOTICE_SILENT_COMMANDS.join('|')}) exit 0 ;; esac`,
+    '# Only a notice that asks for something: an instruction, or a non-empty list of programs to re-describe.',
+    'grep -q \'"instruction"\' "$F" 2>/dev/null || grep -q \'"programs":\\["\' "$F" 2>/dev/null || exit 0',
+    '# Once for each new notice, and again at most every 30 minutes while the same one still waits.',
+    'K=$(cksum < "$F" 2>/dev/null)',
+    `S="$P/${NOTICE_SHOWN_FILE}"`,
+    'if [ -f "$S" ] && [ "$(cat "$S" 2>/dev/null)" = "$K" ] && [ -z "$(find "$S" -mmin +29 2>/dev/null)" ]; then exit 0; fi',
+    'printf \'%s\\n\' "$K" > "$S" 2>/dev/null',
+    'printf \'%s\\n\' "Provian: your witness needs attention. Act on this notice now, then carry on with your task. It is the file $F:"',
+    'cat "$F" 2>/dev/null',
+    'printf \'\\n\'',
+    'exit 0',
+    '',
+  ].join('\n');
+}
+
+const RESTART_LINE = 'if [ -x "$HOME/.provian/bin/provian-ensure" ]; then "$HOME/.provian/bin/provian-ensure" rc >/dev/null 2>&1 </dev/null; fi';
+/** No notice file: one `test` builtin, no fork. The shell's own command string goes to the script. */
+const NOTICE_LINE = `if [ -f "$HOME/.provian/${ACTION_REQUIRED_FILE}" ] && [ -x "$HOME/.provian/bin/provian-notice" ]; then "$HOME/.provian/bin/provian-notice" "\${BASH_EXECUTION_STRING-}\${ZSH_EXECUTION_STRING-}" 2>/dev/null </dev/null; fi`;
+
+/**
+ * The guard block written into each startup file (pure): the silent restart line where the box needs
+ * the restart (`restart`, the default), and the notice line always.
+ */
+export function restartHookBlock(opts: { restart?: boolean } = {}): string {
   return [
     RESTART_HOOK_BEGIN,
-    'if [ -x "$HOME/.provian/bin/provian-ensure" ]; then "$HOME/.provian/bin/provian-ensure" rc >/dev/null 2>&1 </dev/null; fi',
+    ...(opts.restart === false ? [] : [RESTART_LINE]),
+    NOTICE_LINE,
     RESTART_HOOK_END,
     '',
   ].join('\n');
@@ -210,8 +271,8 @@ export function stripRestartHookBlock(content: string): string {
 }
 
 /** The block at the top of `content`, the rest byte-identical (pure). */
-export function mergeRestartHookBlock(content: string): string {
-  return restartHookBlock() + stripRestartHookBlock(content);
+export function mergeRestartHookBlock(content: string, block: string = restartHookBlock()): string {
+  return block + stripRestartHookBlock(content);
 }
 
 export interface RcTarget {
@@ -247,20 +308,25 @@ function present(p: string): boolean {
 
 export type RcOutcome = 'written' | 'current' | 'created' | 'skipped' | 'removed' | 'absent' | 'error';
 
+export type ScriptOutcome = 'installed' | 'updated' | 'unchanged' | 'removed' | 'absent' | 'error';
+
 export interface RestartHookResult {
-  script: 'installed' | 'updated' | 'unchanged' | 'removed' | 'absent' | 'error';
+  /** The ensure script (the restart). `absent` on a notice-only install, which never writes it. */
+  script: ScriptOutcome;
+  /** The notice script. */
+  notice?: ScriptOutcome;
   rc: Record<string, RcOutcome>;
 }
 
-function writeRc(target: RcTarget): RcOutcome {
+function writeRc(target: RcTarget, block: string): RcOutcome {
   try {
     if (!present(target.path)) {
       if (!target.create) return 'skipped';
-      fs.writeFileSync(target.path, restartHookBlock(), { mode: 0o644, flag: 'wx' });
+      fs.writeFileSync(target.path, block, { mode: 0o644, flag: 'wx' });
       return 'created';
     }
     const have = fs.readFileSync(target.path, 'utf8');
-    const next = mergeRestartHookBlock(have);
+    const next = mergeRestartHookBlock(have, block);
     if (next === have) return 'current';
     rewriteFileInPlace(target.path, next);
     return 'written';
@@ -291,58 +357,85 @@ export interface InstallRestartHookOptions {
   rc?: boolean;
 }
 
-/** Write (or refresh) the ensure script and the rc blocks. Never throws. */
+/** Write `content` to an executable script at `target` unless it already holds it. Throws on failure. */
+function writeScript(target: string, content: string): ScriptOutcome {
+  let existing: string | null = null;
+  try { existing = fs.readFileSync(target, 'utf8'); } catch { existing = null; }
+  if (existing === content) {
+    try { if ((fs.statSync(target).mode & 0o111) === 0) fs.chmodSync(target, 0o755); } catch { /* best effort */ }
+    return 'unchanged';
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o755 });
+  const tmp = `${target}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, content, { mode: 0o755 });
+  fs.renameSync(tmp, target);
+  try { fs.chmodSync(target, 0o755); } catch { /* best effort */ }
+  return existing === null ? 'installed' : 'updated';
+}
+
+function writeNoticeScript(home: string): ScriptOutcome {
+  try { return writeScript(noticeScriptPath(home), noticeScriptContent()); } catch { return 'error'; }
+}
+
+/** Write (or refresh) the ensure script, the notice script and the rc blocks. Never throws. */
 export function installRestartHook(opts: InstallRestartHookOptions): RestartHookResult {
   const home = opts.home ?? homedir();
   const result: RestartHookResult = { script: 'error', rc: {} };
   if (!path.isAbsolute(opts.entry.command) || opts.entry.args.length === 0) return result;
   try {
-    const target = ensureScriptPath(home);
-    const content = ensureScriptContent(opts.entry);
-    let existing: string | null = null;
-    try { existing = fs.readFileSync(target, 'utf8'); } catch { existing = null; }
-    if (existing === content) {
-      result.script = 'unchanged';
-      try { if ((fs.statSync(target).mode & 0o111) === 0) fs.chmodSync(target, 0o755); } catch { /* best effort */ }
-    } else {
-      fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o755 });
-      const tmp = `${target}.${process.pid}.tmp`;
-      fs.writeFileSync(tmp, content, { mode: 0o755 });
-      fs.renameSync(tmp, target);
-      try { fs.chmodSync(target, 0o755); } catch { /* best effort */ }
-      result.script = existing === null ? 'installed' : 'updated';
-    }
+    result.script = writeScript(ensureScriptPath(home), ensureScriptContent(opts.entry));
   } catch {
     return result;
   }
+  result.notice = writeNoticeScript(home);
   if (opts.rc === false) {
     for (const t of restartHookRcTargets(home, true)) result.rc[t.path] = removeRc(t.path);
     return result;
   }
-  for (const t of restartHookRcTargets(home, opts.zshPresent)) result.rc[t.path] = writeRc(t);
+  const block = restartHookBlock();
+  for (const t of restartHookRcTargets(home, opts.zshPresent)) result.rc[t.path] = writeRc(t, block);
   return result;
 }
 
-/** Remove the rc blocks (every candidate file, even ones we would not create) and the script. */
+/**
+ * The notice alone, for a box whose daemon something else restarts (systemd, launchd, a live cron
+ * on macOS…): the notice script, and the block with only the notice line — replacing a block that
+ * also carried the restart line. `rc: false` (the opt-out) removes the blocks. Never throws.
+ */
+export function installNoticeHook(opts: { home?: string; zshPresent?: boolean; rc?: boolean } = {}): RestartHookResult {
+  const home = opts.home ?? homedir();
+  const result: RestartHookResult = { script: 'absent', notice: writeNoticeScript(home), rc: {} };
+  if (opts.rc === false) {
+    for (const t of restartHookRcTargets(home, true)) result.rc[t.path] = removeRc(t.path);
+    return result;
+  }
+  if (result.notice === 'error') return result;
+  const block = restartHookBlock({ restart: false });
+  for (const t of restartHookRcTargets(home, opts.zshPresent)) result.rc[t.path] = writeRc(t, block);
+  return result;
+}
+
+/** Remove the rc blocks (every candidate file, even ones we would not create) and both scripts. */
 export function uninstallRestartHook(opts: { home?: string } = {}): RestartHookResult {
   const home = opts.home ?? homedir();
-  const result: RestartHookResult = { script: 'absent', rc: {} };
+  const result: RestartHookResult = { script: 'absent', notice: 'absent', rc: {} };
   for (const t of restartHookRcTargets(home, true)) result.rc[t.path] = removeRc(t.path);
-  try {
-    fs.unlinkSync(ensureScriptPath(home));
-    result.script = 'removed';
-  } catch (err) {
-    result.script = (err as NodeJS.ErrnoException).code === 'ENOENT' ? 'absent' : 'error';
-  }
+  const unlink = (p: string): ScriptOutcome => {
+    try { fs.unlinkSync(p); return 'removed'; } catch (err) { return (err as NodeJS.ErrnoException).code === 'ENOENT' ? 'absent' : 'error'; }
+  };
+  result.script = unlink(ensureScriptPath(home));
+  result.notice = unlink(noticeScriptPath(home));
   try { fs.unlinkSync(path.join(home, '.provian', 'restart-hook.stamp')); } catch { /* none */ }
+  try { fs.unlinkSync(path.join(home, '.provian', NOTICE_SHOWN_FILE)); } catch { /* none */ }
   try { fs.unlinkSync(restartHookOptOutPath(home)); } catch { /* none */ }
   return result;
 }
 
 /**
  * Is the restart hook in effect on this box — the ensure script is executable AND at least one
- * startup file carries the block? This is what capture-health reports (`restart_hook: 'shell_rc'`)
- * (nothing else reads it — not the Grok repoint decision). Never throws.
+ * startup file carries the block WITH its restart line (a notice-only block restarts nothing)? This is
+ * what capture-health reports (`restart_hook: 'shell_rc'`) (nothing else reads it — not the Grok
+ * repoint decision). Never throws.
  */
 export function restartHookInstalled(home: string = homedir()): boolean {
   try {
@@ -352,7 +445,12 @@ export function restartHookInstalled(home: string = homedir()): boolean {
     return false;
   }
   for (const t of restartHookRcTargets(home, true)) {
-    try { if (fs.readFileSync(t.path, 'utf8').includes(RESTART_HOOK_BEGIN)) return true; } catch { /* next */ }
+    try {
+      const text = fs.readFileSync(t.path, 'utf8');
+      const begin = text.indexOf(RESTART_HOOK_BEGIN);
+      const end = begin < 0 ? -1 : text.indexOf(RESTART_HOOK_END, begin);
+      if (end > begin && text.slice(begin, end).includes(RESTART_LINE)) return true;
+    } catch { /* next */ }
   }
   return false;
 }
@@ -364,11 +462,17 @@ export function restartHookWanted(method: string, platform: NodeJS.Platform = pr
   return platform === 'linux' && (method === 'detached' || method === 'cron' || method === 'unknown');
 }
 
+/** Startup files run the notice on every macOS and Linux box; Windows has none of them. */
+export function noticeHookWanted(platform: NodeJS.Platform = process.platform): boolean {
+  return platform === 'linux' || platform === 'darwin';
+}
+
 /**
  * The daemon-start heal (so self-updated daemons get the hook with no user action): on a box whose
- * supervision wants it, write/refresh it — or remove it when opted out. Where it is not wanted it is
- * left alone (a box that later gained systemd keeps a harmless, idempotent guard; `repair`/uninstall
- * remove it). Returns what happened, or null when nothing applied. Never throws.
+ * supervision wants the restart, write/refresh the full block; on any other macOS or Linux box, the
+ * notice-only block (a box that later gained systemd loses the restart line and keeps the notice) — or
+ * remove the blocks when opted out. Returns what happened, or null when nothing applied (Windows).
+ * Never throws.
  */
 export function healRestartHook(opts: {
   method: string;
@@ -376,15 +480,15 @@ export function healRestartHook(opts: {
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   home?: string;
+  zshPresent?: boolean;
 }): RestartHookResult | null {
   try {
     if (!restartHookWanted(opts.method, opts.platform)) {
-      // Opted out where the hook is not wanted: still strip any rc block we wrote earlier.
-      return resolveRestartHookOptOut(opts.env ?? process.env, opts.home) && restartHookInstalled(opts.home)
-        ? installRestartHook({ home: opts.home, entry: opts.entry, rc: false }) : null;
+      if (!noticeHookWanted(opts.platform)) return null;
+      return installNoticeHook({ home: opts.home, zshPresent: opts.zshPresent, rc: !resolveRestartHookOptOut(opts.env ?? process.env, opts.home) });
     }
     // Opted out: the ensure script stays (the agent's `observe --if-not-running` runs it); rc blocks go.
-    return installRestartHook({ home: opts.home, entry: opts.entry, rc: !resolveRestartHookOptOut(opts.env ?? process.env, opts.home) });
+    return installRestartHook({ home: opts.home, entry: opts.entry, zshPresent: opts.zshPresent, rc: !resolveRestartHookOptOut(opts.env ?? process.env, opts.home) });
   } catch {
     return null;
   }

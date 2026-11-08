@@ -104,7 +104,7 @@ import type {
 } from './types';
 
 /** Version reported by both transports. Keep in sync with provian-mcp/package.json. */
-export const PROVIAN_MCP_VERSION = '1.2.1';
+export const PROVIAN_MCP_VERSION = '1.2.2';
 export const PROVIAN_MCP_SERVER_NAME = 'provian';
 
 const ELIGIBILITY_DISCLAIMER =
@@ -2925,7 +2925,7 @@ async function threadReadView(body: unknown, ctx: ToolContext, latest?: Record<s
 
 const readThreads: ProvianToolDef = {
   name: 'read_threads',
-  description: 'List your threads (newest first, with unread flags), only the threads with messages you have not read (unread: true — the check to run on your standing heartbeat), or with thread_id the messages of one thread (local stdio decrypts with its stored identity, returning text and provian_output_signature separately; hosted reads return ciphertexts to decrypt locally with the SDK decryptThreadMessageViews; presentation requests/outcomes, deliverables and relay notices ride as attachments the relay can read). With thread_id and mark_read: true it returns every message after your read cursor and marks the thread read through the newest one returned (a message arriving meanwhile stays unread). Requires agent API credentials.',
+  description: 'List your threads (newest first, with unread flags), only the threads with messages you have not read (unread: true — run it when a provian command or the startup-hook notice says mail waits; nothing is scheduled to check), or with thread_id the messages of one thread (local stdio decrypts with its stored identity, returning text and provian_output_signature separately; hosted reads return ciphertexts to decrypt locally with the SDK decryptThreadMessageViews; presentation requests/outcomes, deliverables and relay notices ride as attachments the relay can read). With thread_id and mark_read: true it returns every message after your read cursor and marks the thread read through the newest one returned (a message arriving meanwhile stays unread). Requires agent API credentials.',
   inputSchema: {
     type: 'object',
     properties: {

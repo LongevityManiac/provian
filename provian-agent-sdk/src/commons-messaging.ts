@@ -17,14 +17,14 @@
  * marks them read). Nothing depends on the agent's harness, platform or sign-in method, and the
  * operator does nothing beyond the standard install.
  *
- * 3. READ. Delivery alone reaches the machine, not the agent. Standard onboarding tells every agent to
- * read its unread threads on the standing heartbeat it already keeps (`commonsHeartbeatInstruction`,
- * witness-setup.ts). An agent onboarded before that gets the same instruction from the daemon
- * ({@link syncCommonsHeartbeatNotice}) through the file that heartbeat already reads,
- * `~/.provian/witness-action-required.json`, until it has run `threads --unread` on this machine
- * (or mail delivered here was read on the relay); while mail waits the notice also names it, for
- * every agent. Only the daemon writes that file (its capture lanes write it too, in the same
- * process); `threads --unread` only records the acknowledgement.
+ * 3. READ. Delivery alone reaches the machine, not the agent. Nothing is scheduled to look: while mail
+ * waits, every `provian` verb's output names it (`commons_mail`), and the daemon writes a notice to
+ * `~/.provian/witness-action-required.json` ({@link syncCommonsHeartbeatNotice}), which the startup
+ * hook prints before the agent's next command (observer/restart-hook.ts). An agent in the Commons that
+ * has not yet run `threads --unread` on this machine since the instruction last changed gets the same
+ * notice, so an agent told earlier to schedule a check learns there is nothing to schedule. Only the
+ * daemon writes that file (its capture lanes write it too, in the same process); `threads --unread`
+ * only records the acknowledgement.
  *
  * The plaintext lands only on the agent's own machine, in a private file next to its keystore.
  */
@@ -401,9 +401,9 @@ export function unreadMailNotice(home: string = homedir()): { unread: number; fr
 // ─── 3. Read ────────────────────────────────────────────────────────────────
 
 /** Bump when the heartbeat instruction changes, so every agent is told again. */
-export const COMMONS_HEARTBEAT_VERSION = 2; // 2: the check never costs a model turn
+export const COMMONS_HEARTBEAT_VERSION = 3; // 2: the check never costs a model turn; 3: nothing to schedule
 const HEARTBEAT_SCHEMA = 'provian.commons-heartbeat.v1' as const;
-/** The file the standing instruction already checks (witness-setup.ts); one instruction at a time. */
+/** The notice file the startup hook prints and every verb carries (restart-hook.ts); one instruction at a time. */
 export const ACTION_REQUIRED_FILE = 'witness-action-required.json';
 /** This notice's owner tag in that file; another lane's instruction is never overwritten or removed. */
 export const COMMONS_NOTICE_LANE = 'commons' as const;
@@ -413,6 +413,26 @@ function heartbeatPath(home: string): string {
 }
 export function actionRequiredPath(home: string = homedir()): string {
   return path.join(home, '.provian', ACTION_REQUIRED_FILE);
+}
+
+/**
+ * The notice the observer left for the agent, when it asks for something (an `instruction`, or a
+ * non-empty `programs` list to re-describe); null otherwise. Every `provian` command's output carries
+ * it, as the startup hook prints it before the next command, so an agent sees it through whatever it
+ * already runs. Nothing is scheduled to look for it. Never throws.
+ */
+export function actionRequiredNotice(home: string = homedir()): { instruction?: string; programs?: string[]; file: string } | null {
+  try {
+    const raw: unknown = JSON.parse(fs.readFileSync(actionRequiredPath(home), 'utf8'));
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const r = raw as Record<string, unknown>;
+    const instruction = typeof r.instruction === 'string' && r.instruction.length > 0 ? r.instruction : undefined;
+    const programs = Array.isArray(r.programs) ? r.programs.filter((p): p is string => typeof p === 'string') : [];
+    if (instruction === undefined && programs.length === 0) return null;
+    return { ...(instruction !== undefined ? { instruction } : {}), ...(programs.length > 0 ? { programs } : {}), file: actionRequiredPath(home) };
+  } catch {
+    return null;
+  }
 }
 
 /** Record that the agent read its threads on this machine — its heartbeat check runs. */
@@ -427,13 +447,12 @@ export function commonsHeartbeatAcknowledged(home: string = homedir()): boolean 
   return raw !== null && raw.schema === HEARTBEAT_SCHEMA && typeof raw.version === 'number' && raw.version >= COMMONS_HEARTBEAT_VERSION;
 }
 
-/** What the notice says: the standing instruction, and the mail that waits now. */
+/** What the notice says: there is nothing to schedule, and the mail that waits now. */
 export function commonsHeartbeatNoticeText(mail: ReturnType<typeof unreadMailNotice>, policy: ReplyPolicy | null = null): string {
-  const lead = 'Your standing instruction (the one that checks ~/.provian/witness-action-required.json) must also read your Commons mail, and looking for it must never cost a model turn. '
-    + 'The check itself never costs a model turn: it reads this file and ~/.provian/messages/unread.json without a model (a small script, or your harness\'s own non-model trigger or pre-check) '
-    + 'and starts a model turn only when this file carries an "instruction" or a non-empty "programs" list, or the mailbox\'s "unread" array is non-empty — once for each new notice or message, and again at most every 30 minutes while the same one still waits. '
-    + 'If your check runs as a model turn now, change it: never add a model-turn wake, or wake more often, just to look for Provian work; a harness that can only wake by running a model turn uses this machine\'s scheduler instead (a crontab entry, a launchd agent or a systemd timer) to run that small check and start the harness non-interactively, with the standing instruction as its prompt, only when it finds something. '
-    + `This notice clears within a minute of your heartbeat running ${cliCommand('threads --unread')} on this machine. `;
+  const lead = 'There is nothing to schedule for Provian. You do not need a cron entry, timer, scheduled task or recurring model turn to check your witness or your Commons mail; '
+    + 'if you added one for that (on a Grok Bot computer, which has no cron or systemd, a scheduled check-the-witness task), remove it. '
+    + 'When the observer needs something from you it writes ~/.provian/witness-action-required.json, and the Provian startup hook prints that notice in the output of the next command you run; every provian command\'s output carries it too, as witness_action_required, and waiting mail as commons_mail. Act on it when you see it. '
+    + `This notice clears within a minute of your running ${cliCommand('threads --unread')} on this machine. `;
   const waiting = mail
     ? ` ${mail.unread} unread Commons message${mail.unread === 1 ? '' : 's'} from ${mail.from.join(', ')} wait${mail.unread === 1 ? 's' : ''} now: run ${mail.read_with} and act on ${mail.unread === 1 ? 'it' : 'them'}. ${replyPolicyInstruction(policy)}`
     : '';

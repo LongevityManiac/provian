@@ -24,6 +24,7 @@ it('flushes a large JSON response before process.exit; the no-await control trun
     });
     const scrubSecrets = text => text;
     const unreadMailNotice = () => null;
+    const actionRequiredNotice = () => null;
   `;
   const pipe = (body: string): Promise<{ code: number | null; output: string; errors: string }> =>
     new Promise((resolveResult, reject) => {

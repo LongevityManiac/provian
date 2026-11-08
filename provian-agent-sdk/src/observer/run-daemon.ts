@@ -486,8 +486,10 @@ export async function runObserverDaemon(argv: string[] = process.argv.slice(2)):
     if (entryForHook) {
       const hook = healRestartHook({ method: supervision.method, entry: entryForHook });
       const changed = hook ? Object.entries(hook.rc).filter(([, o]) => o === 'written' || o === 'created' || o === 'removed') : [];
-      if (hook && (hook.script === 'installed' || hook.script === 'updated' || hook.script === 'removed' || changed.length > 0)) {
-        console.log(`[observer] restart hook ${hook.script === 'removed' ? 'removed' : 'in place'} (script ${hook.script}; ${changed.map(([f, o]) => `${f} ${o}`).join(', ') || 'rc files current'})`);
+      const scriptChanged = (o: string | undefined): boolean => o === 'installed' || o === 'updated' || o === 'removed';
+      if (hook && (scriptChanged(hook.script) || scriptChanged(hook.notice) || changed.length > 0)) {
+        const what = hook.script === 'absent' ? 'notice hook' : 'restart hook';
+        console.log(`[observer] ${what} ${hook.script === 'removed' ? 'removed' : 'in place'} (script ${hook.script}; notice ${hook.notice ?? 'n/a'}; ${changed.map(([f, o]) => `${f} ${o}`).join(', ') || 'rc files current'})`);
       }
     }
     removeModelProxyFromExistingProfiles();

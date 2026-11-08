@@ -3,7 +3,7 @@
  *
  * `record` re-records which program launches the agent's commands and the line it starts them with,
  * observed from THIS command's own process ancestry — so the agent runs it as an ordinary command
- * from its own harness (the standing instruction names it when the process lane flags a harness
+ * from its own harness (the witness notice names it when the process lane flags a harness
  * change). Only hashes are written. `status` prints the lane's state as the observer last wrote it.
  */
 

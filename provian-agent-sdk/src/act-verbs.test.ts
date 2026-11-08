@@ -84,6 +84,7 @@ function harness(opts: { respond?: (c: Call) => { status?: number; body: unknown
     flushMeter: flushMeter as unknown as ActDeps['flushMeter'],
     openArchive: async () => null,
     mailNotice: () => null,
+    actionNotice: () => null,
     clearMailbox: () => undefined,
     acknowledgeHeartbeat: () => undefined,
     ...opts.deps,
@@ -443,6 +444,19 @@ describe('threads --unread: the agent reads the mail the daemon delivered ', () 
     expect((await h.run('balance')).json.commons_mail).toEqual({ unread: 1, from: ['the operator'], read_with: 'provian threads --unread' });
     notice = null;
     expect((await h.run('balance')).json).not.toHaveProperty('commons_mail');
+  });
+
+  it('every verb\'s output carries the witness notice while the observer asks for something, and none after', async () => {
+    let notice: { instruction?: string; programs?: string[]; file: string } | null = { instruction: 'Re-record the launcher.', file: '/h/.provian/witness-action-required.json' };
+    const h = harness({ deps: { actionNotice: () => notice } });
+    expect((await h.run('balance')).json.witness_action_required).toEqual(notice);
+    // RED control: the notice cleared, the field is gone.
+    notice = null;
+    expect((await h.run('balance')).json).not.toHaveProperty('witness_action_required');
+    // A reader that throws never fails the verb.
+    const broken = harness({ deps: { actionNotice: () => { throw new Error('unreadable'); } } });
+    const r = await broken.run('balance');
+    expect(r.json).not.toHaveProperty('witness_action_required');
   });
 });
 

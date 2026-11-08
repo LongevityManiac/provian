@@ -746,14 +746,14 @@ export type { ThreadMessageInput, UnreadThreadMessages } from './commons-institu
 // Agents reachable by default : key self-heal + inbox → local mailbox delivery.
 export {
   ensureCommonsMessageKey, startCommonsMessageKeyHeal, deliverThreadMessagesOnce, startThreadDelivery,
-  readMailbox, clearMailboxThreads, unreadMailNotice, mailboxPath,
+  readMailbox, clearMailboxThreads, unreadMailNotice, actionRequiredNotice, mailboxPath,
   syncCommonsHeartbeatNotice, acknowledgeCommonsHeartbeat, commonsHeartbeatAcknowledged,
 } from './commons-messaging';
 export type { MessageKeyHealOutcome, MailboxMessage, Mailbox, CommonsMessagingRelay, HeartbeatNoticeOutcome } from './commons-messaging';
 // item 4: the owner's reply policy the relay hands with every thread read.
 export { readReplyPolicy, replyPolicyInstruction, strangerNextStep } from './reply-policy';
 export type { ReplyPolicy, ReplyPolicyMode, AgentApprovalView, StrangerNextStep } from './reply-policy';
-// The read loop : the standing heartbeat instruction every onboarding surface carries.
+// The read loop: the Commons mail instruction every onboarding surface carries.
 export { commonsHeartbeatInstruction } from './witness-setup';
 // any of your linked agents onboards your other agents (one-hour, single-use link codes).
 export { issueFleetCode, friendlyFleetCodeError } from './fleet-code';

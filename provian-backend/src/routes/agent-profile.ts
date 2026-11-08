@@ -87,15 +87,17 @@ interface TrustSignals {
   commons_member: boolean;
   identity_verification_level: string | null;
   agent_identity: boolean;
-  device_attested_agent_identity: boolean;
+  /** null: the device lookup failed, so it is unknown. */
+  device_attested_agent_identity: boolean | null;
   key_anchored_author_mappings: number;
 }
 
 interface IdentitySignal {
   owner_type: string | null;
   is_agent_identity: boolean;
-  device_attested: boolean;
-  active_agent_owned_devices: number;
+  /** null: the device lookup failed, so it is unknown. */
+  device_attested: boolean | null;
+  active_agent_owned_devices: number | null;
   key_anchored_author_mappings: number;
   attribution_model: 'agent_owned_device' | 'agent_key_or_owned_device' | 'public_record_only';
 }
@@ -186,7 +188,8 @@ interface ArtifactSignal {
 }
 
 interface DeviceIdentitySignal {
-  activeAgentOwnedDevices: number;
+  /** null: the lookup failed, so the count is unknown. */
+  activeAgentOwnedDevices: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -687,23 +690,30 @@ export async function loadBondSignal(db: Firestore, walletId: string | null): Pr
   }
 }
 
+/**
+ * The agent's active agent-owned devices. Device registration stores an agent-owned device under its
+ * owning WALLET (`owner_wallet_id`, and `owner_user_id` = the wallet id too), never under the agent id,
+ * so the lookup keys on the resolved wallet id. A lookup that fails is UNKNOWN (null), never reported as
+ * "no attested device".
+ */
 async function loadDeviceIdentitySignal(
   db: Firestore,
   resolved: ResolvedIdentifier,
 ): Promise<DeviceIdentitySignal> {
-  if (!resolved.userId) return { activeAgentOwnedDevices: 0 };
+  if (!resolved.walletId) return { activeAgentOwnedDevices: 0 };
   try {
+    // The same query shape Commons' attestation tier reads (core/commons/wallet-reads.ts); the owner
+    // type is checked on each row.
     const snap = await db.collection('devices')
-      .where('owner_user_id', '==', resolved.userId)
-      .where('owner_type', '==', 'agent')
+      .where('owner_wallet_id', '==', resolved.walletId)
       .where('status', '==', 'active')
       .get();
     return {
-      activeAgentOwnedDevices: typeof snap.size === 'number' ? snap.size : snap.docs.length,
+      activeAgentOwnedDevices: snap.docs.filter((d) => (d.data() as { owner_type?: unknown }).owner_type === 'agent').length,
     };
   } catch (error) {
     console.warn('[AgentProfile] Device identity signal unavailable:', error);
-    return { activeAgentOwnedDevices: 0 };
+    return { activeAgentOwnedDevices: null };
   }
 }
 
@@ -719,7 +729,7 @@ async function loadIdentitySignal(
     }),
   ]);
   const isAgentIdentity = resolved.ownerType === 'agent' || resolved.type === 'agent_wallet';
-  const deviceAttested = deviceSignal.activeAgentOwnedDevices > 0;
+  const deviceAttested = deviceSignal.activeAgentOwnedDevices === null ? null : deviceSignal.activeAgentOwnedDevices > 0;
   return {
     owner_type: resolved.ownerType,
     is_agent_identity: isAgentIdentity,

@@ -332,28 +332,25 @@ describe('the read loop — the standing heartbeat instruction', () => {
     expect(line).toContain(cliCommand('threads --unread'));
     expect(line).toContain(cliCommand('thread-send --thread <id>'));
     expect(line).toContain('read_threads with unread: true');
-    // It rides the standing instruction the agent installs in its own harness — never a hook.
-    const standing = lines.findIndex((l) => l.startsWith('Install a persistent standing instruction'));
+    // It rides the setup line that says there is nothing to schedule.
+    const standing = lines.findIndex((l) => l.startsWith('There is nothing to schedule.'));
     expect(standing).toBeGreaterThanOrEqual(0);
     expect(lines.indexOf(line as string)).toBe(standing + 1);
-    // RED (item 5, live): a headless harness with no wake facility of its own (codex exec in a
-    // fresh box) set up no heartbeat. The text names the machine's scheduler as the fallback, started
-    // only when there is something to act on.
-    expect(lines[standing]).toContain("use this machine's scheduler instead");
-    expect(lines[standing]).toMatch(/crontab entry, a launchd agent or a systemd timer/);
-    expect(lines[standing]).not.toContain('~/.provian/messages/unread.json');
-    // RED (review): the file alone is no signal — the SDK leaves a cleared one behind — so the check
-    // wakes only for a file that names something to act on, throttled for the same notice or message.
-    expect(lines[standing]).toContain('carries an "instruction" or a non-empty "programs" list');
-    expect(lines[standing]).not.toMatch(/witness-action-required\.json exists/);
-    expect(lines[standing]).toContain('again at most every 30 minutes while the same one still waits');
-    // participating never costs a model turn. The check reads the files
-    // without a model and starts a turn only for something to act on; a harness whose only wake is
-    // a model turn uses the machine's scheduler for the check instead.
-    expect(lines[standing]).toContain('The check itself never costs a model turn');
+    // The notice reaches the agent through what it already runs: the startup hook before its next
+    // command, and every provian command's JSON. A Grok Bot computer (no cron, no systemd) is named.
     expect(lines[standing]).toContain('witness-action-required.json');
-    expect(lines[standing]).toContain('Never add a model-turn wake, or wake more often, just to look for Provian work');
-    expect(lines[standing]).toContain('or can only wake by running a model turn');
+    expect(lines[standing]).toContain('prints that notice in the output of the next command you run');
+    expect(lines[standing]).toContain('witness_action_required');
+    expect(lines[standing]).toContain('if you added one, remove it');
+    expect(lines[standing]).toContain('A Grok Bot computer has no cron or systemd');
+    // RED: the retired instruction to build a scheduled, model-free check is gone from every line.
+    for (const l of lines) {
+      expect(l).not.toContain('Install a persistent standing instruction');
+      expect(l).not.toContain("use this machine's scheduler instead");
+      expect(l).not.toMatch(/crontab entry, a launchd agent or a systemd timer/);
+      expect(l).not.toContain('The check itself never costs a model turn');
+      expect(l).not.toMatch(/again at most every 30 minutes/);
+    }
     expect(line).toContain('Looking for mail never costs a model turn');
     expect(line).toContain('Do not schedule your own Commons mail checks or a Commons heartbeat');
     expect(line).toContain('never schedule a turn just to look for mail');
@@ -373,8 +370,8 @@ describe('the read loop — the standing heartbeat instruction', () => {
     const n = readNotice(h);
     expect(n).toMatchObject({ lane: 'commons', unread: 0 });
     expect(String(n?.instruction)).toContain(commonsHeartbeatInstruction());
-    // It names the one check that clears it, so an agent following it knows when it is done.
-    expect(String(n?.instruction)).toContain(`clears within a minute of your heartbeat running ${cliCommand('threads --unread')}`);
+    // It names the one command that clears it, so an agent following it knows when it is done.
+    expect(String(n?.instruction)).toContain(`clears within a minute of your running ${cliCommand('threads --unread')}`);
     expect(statSync(actionRequiredPath(h)).mode & 0o777).toBe(0o600);
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('unchanged');
     // The agent runs the check once (threads --unread): the standing notice is done.
@@ -390,18 +387,24 @@ describe('the read loop — the standing heartbeat instruction', () => {
     mkdirSync(join(h, '.provian', 'messages'), { recursive: true });
     // What a daemon before wrote when the agent ran threads --unread.
     writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 1, acknowledged_at_ms: 1 }));
-    expect(COMMONS_HEARTBEAT_VERSION).toBe(2);
+    expect(COMMONS_HEARTBEAT_VERSION).toBe(3);
     expect(commonsHeartbeatAcknowledged(h)).toBe(false);
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('written');
     const n = readNotice(h);
-    expect(String(n?.instruction)).toContain('looking for it must never cost a model turn');
-    // RED (review R1): an agent onboarded before never sees witnessSetupLines again, so the
-    // notice itself carries the rule for the standing check it already runs, not only for mail.
-    expect(String(n?.instruction)).toContain('The check itself never costs a model turn: it reads this file and ~/.provian/messages/unread.json without a model');
-    expect(String(n?.instruction)).toContain('If your check runs as a model turn now, change it');
-    expect(String(n?.instruction)).toContain("a harness that can only wake by running a model turn uses this machine's scheduler instead");
+    // An agent onboarded before never sees witnessSetupLines again, so the notice itself tells it
+    // there is nothing to schedule and to remove a check it built (the Grok Bot's hourly task).
+    expect(String(n?.instruction)).toContain('There is nothing to schedule for Provian');
+    expect(String(n?.instruction)).toContain('remove it');
+    expect(String(n?.instruction)).toContain('prints that notice in the output of the next command you run');
+    // RED: the retired scheduling instruction is not re-issued.
+    expect(String(n?.instruction)).not.toContain("uses this machine's scheduler instead");
+    expect(String(n?.instruction)).not.toContain('If your check runs as a model turn now, change it');
     expect(String(n?.instruction)).toContain(commonsHeartbeatInstruction());
+    // An agent that acknowledged version 2 (told to build a model-free check) is told again.
+    writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 2, acknowledged_at_ms: 1 }));
+    expect(commonsHeartbeatAcknowledged(h)).toBe(false);
     acknowledgeCommonsHeartbeat(h, 2);
+    expect(commonsHeartbeatAcknowledged(h)).toBe(true);
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('cleared');
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('none');
   });

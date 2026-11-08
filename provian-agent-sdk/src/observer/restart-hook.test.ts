@@ -72,7 +72,7 @@ function runEnsure(): { status: number | null; stdout: string; stderr: string } 
 }
 
 describe('the rc guard block', () => {
-  it('is marker-delimited, silent and guarded on the ensure script being executable', () => {
+  it('is marker-delimited, the restart line silent and guarded on the ensure script being executable', () => {
     const b = restartHookBlock();
     expect(b.startsWith(`${RESTART_HOOK_BEGIN}\n`)).toBe(true);
     expect(b.endsWith(`${RESTART_HOOK_END}\n`)).toBe(true);
@@ -322,7 +322,7 @@ describe('the daemon-start heal (self-updated daemons get it with no user action
     expect(fs.existsSync(restartHookOptOutPath(home))).toBe(false);
   });
 
-  it('installs on Linux detached and cron; nothing elsewhere; opted out it removes the startup-file blocks and KEEPS the ensure script (review r2 #5)', () => {
+  it('installs the restart on Linux detached and cron, the notice alone elsewhere; opted out it removes the startup-file blocks and KEEPS the ensure script (review r2 #5)', () => {
     expect(restartHookWanted('detached', 'linux')).toBe(true);
     expect(restartHookWanted('cron', 'linux')).toBe(true);
     // follow-up: `unknown` (a daemon an agent's shell started — the operator’s pre- Grok bot) is
@@ -332,10 +332,23 @@ describe('the daemon-start heal (self-updated daemons get it with no user action
     expect(restartHookWanted('detached', 'darwin')).toBe(false);
 
     const { bin } = fakeNode();
-    expect(healRestartHook({ method: 'systemd', entry: entryFor(bin), platform: 'linux', home, env: {} })).toBeNull();
+    // Where the restart is not wanted the box still gets the notice line, never the restart line,
+    // and never the ensure script; Windows gets nothing.
+    const noticeOnly = healRestartHook({ method: 'systemd', entry: entryFor(bin), platform: 'linux', home, env: {}, zshPresent: false });
+    expect(noticeOnly?.script).toBe('absent');
+    expect(noticeOnly?.notice).toBe('installed');
+    expect(fs.readFileSync(path.join(home, '.bashrc'), 'utf8')).toBe(restartHookBlock({ restart: false }));
+    expect(fs.existsSync(ensureScriptPath(home))).toBe(false);
     expect(restartHookInstalled(home)).toBe(false);
-    const done = healRestartHook({ method: 'detached', entry: entryFor(bin), platform: 'linux', home, env: {} });
+    expect(healRestartHook({ method: 'scheduled_task', entry: entryFor(bin), platform: 'win32', home, env: {} })).toBeNull();
+    const done = healRestartHook({ method: 'detached', entry: entryFor(bin), platform: 'linux', home, env: {}, zshPresent: false });
     expect(done?.script).toBe('installed');
+    expect(restartHookInstalled(home)).toBe(true);
+    // The box later gained systemd: the restart line goes, the notice line stays.
+    healRestartHook({ method: 'systemd', entry: entryFor(bin), platform: 'linux', home, env: {}, zshPresent: false });
+    expect(restartHookInstalled(home)).toBe(false);
+    expect(fs.readFileSync(path.join(home, '.bashrc'), 'utf8')).toBe(restartHookBlock({ restart: false }));
+    healRestartHook({ method: 'detached', entry: entryFor(bin), platform: 'linux', home, env: {}, zshPresent: false });
     expect(restartHookInstalled(home)).toBe(true);
     const removed = healRestartHook({ method: 'detached', entry: entryFor(bin), platform: 'linux', home, env: { PROVIAN_RESTART_HOOK: '0' } });
     expect(restartHookInstalled(home)).toBe(false); // no startup file carries the block: the hook is not in effect

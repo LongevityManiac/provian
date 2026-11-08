@@ -72,7 +72,7 @@ import { loadInstalledAgent, type InstalledAgent } from './installed-agent';
 import { encodeOutputSignatureHeader, OUTPUT_SIGNATURE_HEADER } from './output-signature';
 import { outputSignatureJson, signOutputWithWalletKey } from './output-signing';
 import type { CommonsInstitutionsConfig } from './commons-institutions';
-import { acknowledgeCommonsHeartbeat, clearMailboxThreads, unreadMailNotice } from './commons-messaging';
+import { acknowledgeCommonsHeartbeat, actionRequiredNotice, clearMailboxThreads, unreadMailNotice } from './commons-messaging';
 import { replyPolicyInstruction } from './reply-policy';
 
 /** Public Base RPC (same default as `sweep.ts` / `presentation-verify.ts`); --rpc-url / PROVIAN_BASE_RPC_URL override. */
@@ -387,6 +387,8 @@ export interface ActDeps {
   clearMailbox?(threadIds: readonly string[]): void;
   /** The waiting-mail notice every verb carries (default: from ~/.provian/messages), or null. */
   mailNotice?(): { unread: number; from: string[]; read_with: string } | null;
+  /** The observer's action-required notice every verb carries (default: ~/.provian/witness-action-required.json), or null. */
+  actionNotice?(): ReturnType<typeof actionRequiredNotice>;
   /**
    * The agent read its threads here, so its heartbeat check runs: record it (default:
    * ~/.provian/messages/heartbeat.json; the daemon clears its notice on its next pass).
@@ -1104,6 +1106,12 @@ export async function runActVerbCli(verb: string, args: readonly string[], deps:
   try {
     const mail = (deps.mailNotice ?? (() => unreadMailNotice()))();
     if (mail && result && typeof result === 'object' && !Array.isArray(result)) result = { ...result, commons_mail: mail };
+  } catch { /* the notice never fails a verb */ }
+  // So does the observer's action-required notice (the startup hook prints it too): a shell that reads
+  // no startup file still shows it on the agent's next provian command.
+  try {
+    const notice = (deps.actionNotice ?? (() => actionRequiredNotice()))();
+    if (notice && result && typeof result === 'object' && !Array.isArray(result)) result = { ...result, witness_action_required: notice };
   } catch { /* the notice never fails a verb */ }
   const text = scrubSecrets(JSON.stringify(result, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v), 2), secrets);
   secrets.length = 0;
