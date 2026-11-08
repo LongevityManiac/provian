@@ -12,3 +12,9 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# JNA's desktop AWT window handle is unavailable on Android.
+-dontwarn java.awt.Component
+
+# Expo record conversion reflects on Kotlin properties and constructors.
+-keep class expo.modules.kotlin.records.** { *; }

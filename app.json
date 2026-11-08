@@ -44,7 +44,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.provian.wallet",
-      "versionCode": 92,
+      "versionCode": 94,
       "googleServicesFile": "./config/firebase/google-services.json",
       "permissions": [
         "INTERNET",
@@ -130,7 +130,10 @@
           "android": {
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,
-            "buildToolsVersion": "36.0.0"
+            "buildToolsVersion": "36.0.0",
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "# JNA's desktop AWT window handle is unavailable on Android.\n-dontwarn java.awt.Component\n\n# Expo record conversion reflects on Kotlin properties and constructors.\n-keep class expo.modules.kotlin.records.** { *; }"
           }
         }
       ],

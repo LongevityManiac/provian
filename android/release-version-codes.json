@@ -266,6 +266,27 @@
       "artifact": "app-release.apk",
       "sha256": "4cf34382d34c1bb75b2eece94c6d3fed6e0b856ebce1d2ee098ff3116d90805d",
       "built_at": "2026-11-05T18:42:58.012Z"
+    },
+    {
+      "versionCode": 93,
+      "channel": "play",
+      "artifact": "app-release.aab",
+      "sha256": "51e906f63535004577f207b24fa8eb6d35d790e584884a626f59000716da427c",
+      "built_at": "2026-11-08T14:25:47.268Z"
+    },
+    {
+      "versionCode": 94,
+      "channel": "play",
+      "artifact": "app-release.aab",
+      "sha256": "cc77118e983a577e836b0b3fc4b86072dd16af2220e03001afa72eb07912d2b6",
+      "built_at": "2026-11-08T14:30:47.594Z"
+    },
+    {
+      "versionCode": 95,
+      "channel": "website",
+      "artifact": "app-release.apk",
+      "sha256": "3c8999fa76edfb6744e53d30694ed33933b0354208f3f4c5c173c95789113329",
+      "built_at": "2026-11-08T14:33:48.534Z"
     }
   ]
 }

@@ -308,7 +308,7 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <View style={styles.loadingContainer}>
-          <StatusBar style="light" backgroundColor={COLORS.background} />
+          <StatusBar style="light" />
           <Text style={styles.errorTitle}>{translate('appInit.couldNotFinishLoading', 'Provian could not finish loading')}</Text>
           <Text style={styles.errorText}>
             {translate('appInit.failedToInitialize', `Failed to initialize: ${failedList}`, { services: failedList })}
@@ -346,7 +346,7 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <View style={styles.loadingContainer}>
-          <StatusBar style="light" backgroundColor={COLORS.background} />
+          <StatusBar style="light" />
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>{translate('appInit.initializing', 'Initializing Provian...')}</Text>
         </View>
@@ -357,7 +357,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
+        <StatusBar style="light" />
         <AppNavigator
           navigationRef={navigationRef}
           onReady={handleNavigationReady}

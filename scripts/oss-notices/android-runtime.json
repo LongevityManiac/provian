@@ -1,6 +1,6 @@
 {
   "about": "The Android release runtime classpath (Gradle releaseRuntimeClasspath, external modules) with each module's license and stored text. Written by scripts/oss-notices/refresh-android.mjs; do not edit by hand.",
-  "fingerprint": "sha256:320dcb6e82b0a5570fb276491033e36383b95125258cba31f2c3a7606f65ae49",
+  "fingerprint": "sha256:180b5e4c24aa7abdfdc0b05a33c50e06881344b5a3e7d4eb2939508798f14161",
   "artifacts": [
     {
       "id": "androidx.activity:activity-ktx:1.10.0",
