@@ -14,7 +14,7 @@ PVT lives on Base, a public blockchain built on Ethereum. The wallet runs on iPh
 
 ## Why Provian exists
 
-AI is on course to produce more wealth than any technology in history. Left alone, that value flows to whoever owns the models, the platforms, and the compute, and everyone else gets nothing to show for their part. A basic income handed out afterward makes them spectators, dependent on political will.
+AI is on course to produce more wealth than any technology in history. Left alone, that value flows to whoever owns the models, the platforms, and the compute, and everyone else gets nothing to show for their part. A basic income can keep people afloat; it cannot say what they contributed, and it leaves their standing to political will.
 
 Provian exists for a different outcome: human abundance, with no one left behind. People earn from the AI boom directly, for their own work and for their agents' work, paid at the source in a currency whose supply grows as the work grows. All it takes is a phone.
 
@@ -37,7 +37,7 @@ The same mechanism answers the safety question. Agents now act, pay, and work on
 
 ## The trust layer
 
-Agents need reputation, and the systems that deal with them need trust. A **presentation** is how a participant proves its record. Any system deciding whether to accept an action can ask for one: a payment system before it lets an agent spend, a deployment pipeline before it ships code, an API before it grants access. The requester names the questions it needs answered, for example "more than ten escrows completed and zero adverse events." The participant burns PVT to produce a signed answer from its live history; Provian co-signs it, and the requester verifies it for free, with no account. One presentation opens a relationship, and the requester decides when to ask again. Lost disputes, forfeited bonds, and defaulted loans are always included and cannot be hidden.
+Agents need reputation, and the systems that deal with them need trust. A **presentation** is how a participant proves its record. Any system deciding whether to accept an action can ask for one: a payment system before it lets an agent spend, a deployment pipeline before it ships code, an API before it grants access. The requester names the questions it needs answered, for example "more than ten escrows completed and zero adverse events." The participant burns PVT to produce a signed answer from its live history; Provian co-signs it, and the requester verifies it for free, with no account. One presentation opens a relationship, and the requester decides when to ask again. Lost disputes, forfeited bonds, and defaulted promises are always included and cannot be hidden.
 
 Yes-or-no answers are the floor, not the ceiling. A sensitive system can require the specific evidence it needs: it names particular receipts and asks to see their details, including the owner's description of the work and its intent. A participant that knows what such a system requires carries that evidence in its receipts from the start, sealed until it chooses to show it. An agent without the proof does not get in. What is shown goes only to that requester, and Provian keeps none of it.
 
@@ -64,11 +64,11 @@ Yes-or-no answers are the floor, not the ceiling. A sensitive system can require
 4. Receipts build reputation, which makes Provian more useful to everyone who deals with its participants.
 5. More use brings more work, more receipts, and more trust.
 
-**Supply.** PVT is created only by witnessed work; nothing was created in advance for insiders and nothing was sold. There is no lifetime cap: compute is growing exponentially, and a fixed-supply currency cannot denominate that growth, so PVT's supply grows at the pace of the work.
+**Supply.** PVT is created only by witnessed work: it is earned, not bought from Provian, and nothing was created in advance for insiders. There is no lifetime cap: compute is growing exponentially, and a fixed-supply currency cannot denominate that growth, so PVT's supply grows at the pace of the work.
 
-**The split.** Every mint divides by a contract rule no one can change: 0.5% to Provian Technologies, 0.5% to the Provian Foundation, and 99% to whoever did the work.
+**The split.** Every mint that reaches a person divides 0.5% to Provian Technologies, 0.5% to the Provian Foundation, and 99% to whoever did the work; the Provian share and the human Foundation share are fixed in the contract. On agents' work the Foundation share is a floor that can be raised for future mints, with the contributor receiving the rest.
 
-**Price.** Provian sells no PVT and sets no price on it. PVT is worth what the network does with it; its worth outside the network is for markets Provian does not create, run, or promise.
+**Price.** PVT is earned by work, not bought from Provian, and Provian sets no price on it. PVT is worth what the network does with it; its worth outside the network is for markets Provian does not create, run, or promise.
 
 **If the keys break.** Every crypto asset rests on private keys, and the quantum computing concern is that the mathematics behind them could one day fail. For Bitcoin the chain is the only record, so a broken chain is lost money. For PVT the chain is only the rail: the record of who did the work exists apart from any key, and the token contract can be succeeded, so balances can be reissued onto cryptography that holds.
 

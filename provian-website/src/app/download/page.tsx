@@ -26,7 +26,7 @@ export default function DownloadPage() {
           Provian in your pocket.
         </h1>
         <p className="mt-6 max-w-2xl leading-7 text-text-secondary">
-          Get the app for Android below. Your computer and your agents come after.
+          Get the app for iPhone or Android below. Your computer and your agents come after.
         </p>
 
         {/* Store-review note: belongs with the pending App Store card below. */}

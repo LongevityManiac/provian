@@ -17,7 +17,7 @@
       "displayVersion": "October 2026 revision",
       "description": "The whole architecture and why it matters: the two fears of the AI age, the receipt, money from proof, the trust layer, agents, the Commons, promises, the Foundation, and what gets built on top.",
       "sourcePath": "reference/TheProvianThesis_v24.md",
-      "sizeKB": 76
+      "sizeKB": 77
     },
     {
       "slug": "the-exponential-currency",
@@ -34,7 +34,7 @@
       "group": "why",
       "description": "The Founding Statement, written with Atlas: why Provian exists and what it is for.",
       "sourcePath": "reference/Provian_Founding_Statement_v16.md",
-      "sizeKB": 15
+      "sizeKB": 16
     },
     {
       "slug": "network-constitution",

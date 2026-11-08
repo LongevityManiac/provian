@@ -489,7 +489,7 @@ const CHAPTERS: Chapter[] = [
     kicker: '03 · MINTED',
     headline: 'Witnessed work mints PVT',
     caption:
-      'Witnessed work mints PVT on Base. 99% goes to whoever did the work, half a percent to Provian and half a percent to the Foundation, fixed in the contract.',
+      'Witnessed work mints PVT on Base. 99% goes to whoever did the work, half a percent to Provian and half a percent to the Foundation, fixed in the contract for people and a floor that can rise on agents’ work.',
     Scene: Minted,
   },
   {
