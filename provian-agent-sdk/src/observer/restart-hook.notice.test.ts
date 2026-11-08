@@ -32,11 +32,14 @@ const writeNotice = (value: unknown): void => { fs.writeFileSync(noticeFile(), J
 const INSTRUCTION = 'Your observer cannot parse the current session records. Re-describe them.';
 const env = (): NodeJS.ProcessEnv => ({ PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: home, ZDOTDIR: home });
 
+/** What the notice script prints (stderr). Its stdout must always stay empty. */
 function runNotice(arg = ''): string {
   const r = spawnSync('/bin/sh', [noticeScriptPath(home), arg], { env: env(), encoding: 'utf8', timeout: 10_000 });
   expect(r.status).toBe(0);
-  return r.stdout;
+  expect(r.stdout).toBe('');
+  return r.stderr;
 }
+const POINTER = 'Provian: a witness notice is waiting for you.';
 
 const has = (bin: string): boolean => spawnSync('/bin/sh', ['-c', `command -v ${bin}`]).status === 0;
 
@@ -63,13 +66,18 @@ describe('the notice script (run under /bin/sh)', () => {
     expect(runNotice()).toContain('"programs":["codex"]');
   });
 
-  it('prints a notice once, again when it changes, and again after 30 minutes while it still waits', () => {
+  it('prints a notice in full once, again when it changes and after 30 minutes, and a pointer to it every other time', () => {
     writeNotice({ instruction: INSTRUCTION, lane: 'process' });
     expect(runNotice()).toContain(INSTRUCTION);
-    expect(runNotice()).toBe('');
+    // A shell whose output nobody read (an IDE probe) used the full print: the agent's next command
+    // still shows where the notice is.
+    const pointer = runNotice();
+    expect(pointer).toContain(POINTER);
+    expect(pointer).toContain(noticeFile());
+    expect(pointer).not.toContain(INSTRUCTION);
     writeNotice({ instruction: `${INSTRUCTION} (changed)`, lane: 'process' });
     expect(runNotice()).toContain('(changed)');
-    expect(runNotice()).toBe('');
+    expect(runNotice()).toContain(POINTER);
     const stamp = path.join(home, '.provian', NOTICE_SHOWN_FILE);
     const old = new Date(Date.now() - 31 * 60_000);
     fs.utimesSync(stamp, old, old);
@@ -87,38 +95,65 @@ describe('the notice script (run under /bin/sh)', () => {
 });
 
 describe('the invariant: the next command an agent runs shows a waiting notice (real shells)', () => {
-  it.runIf(has('bash'))('bash reading ~/.bashrc: the notice precedes the command output; with none the output is untouched', () => {
+  /** A command run the way a harness runs it: its combined output, and its stdout alone. */
+  const shell = (argv: string[]): { all: string; stdout: string } => {
+    const r = spawnSync(argv[0], argv.slice(1), { env: env(), encoding: 'utf8', timeout: 10_000 });
+    return { all: `${r.stderr}${r.stdout}`, stdout: r.stdout };
+  };
+
+  it.runIf(has('bash'))('bash reading ~/.bashrc: the notice shows with the command\'s output, before the next one; with none nothing is added', () => {
     installNoticeHook({ home, zshPresent: false });
     expect(fs.readFileSync(path.join(home, '.bashrc'), 'utf8')).toBe(restartHookBlock({ restart: false }));
-    const run = (): string => spawnSync('bash', ['-i', '-c', 'echo agent-command-output'], { env: env(), encoding: 'utf8', timeout: 10_000 }).stdout;
-    expect(run()).toBe('agent-command-output\n');
+    const run = () => shell(['bash', '-i', '-c', 'echo agent-command-output']);
+    expect(run().stdout).toBe('agent-command-output\n');
+    expect(run().all).not.toContain('Provian');
     writeNotice({ instruction: INSTRUCTION, lane: 'process' });
-    const out = run();
-    expect(out).toContain(INSTRUCTION);
-    expect(out.endsWith('agent-command-output\n')).toBe(true);
-    expect(out.indexOf(INSTRUCTION)).toBeLessThan(out.indexOf('agent-command-output'));
-    // A login shell reading ~/.profile gets it too (a fresh notice, so it is shown again).
+    expect(run().all).toContain(INSTRUCTION);
+    // The next command, and every one after it while the notice waits, still says so.
+    expect(run().all).toContain(POINTER);
+    // A login shell reading ~/.profile gets it too (a fresh notice, so it is shown in full again).
     writeNotice({ instruction: `${INSTRUCTION} login`, lane: 'process' });
-    const login = spawnSync('bash', ['-l', '-c', 'echo agent-command-output'], { env: env(), encoding: 'utf8', timeout: 10_000 }).stdout;
-    expect(login).toContain(`${INSTRUCTION} login`);
+    expect(shell(['bash', '-l', '-c', 'echo agent-command-output']).all).toContain(`${INSTRUCTION} login`);
   });
 
-  it.runIf(has('zsh'))('zsh -c (every zsh reads ~/.zshenv): the notice precedes the command output; with none the output is untouched', () => {
+  it.runIf(has('bash'))('a shell whose stdout is data stays byte-identical while a notice waits (ssh host \'cat f\' > f)', () => {
+    installNoticeHook({ home, zshPresent: false });
+    const data = path.join(home, 'data.bin');
+    fs.writeFileSync(data, Buffer.from([0, 1, 2, 255, 10, 13, 0x7b]));
+    writeNotice({ instruction: INSTRUCTION, lane: 'process' });
+    for (let i = 0; i < 2; i++) {
+      const r = spawnSync('bash', ['-i', '-c', `cat '${data}'`], { env: env(), timeout: 10_000 });
+      expect(Buffer.compare(r.stdout, fs.readFileSync(data))).toBe(0);
+      // …and the notice is still in the command's output.
+      expect(r.stderr.toString('utf8')).toMatch(/Provian:/);
+    }
+  });
+
+  it.runIf(has('zsh'))('zsh -c (every zsh reads ~/.zshenv): the notice shows with the command\'s output; stdout is untouched', () => {
     installNoticeHook({ home, zshPresent: true });
-    const run = (): string => spawnSync('zsh', ['-c', 'echo agent-command-output'], { env: env(), encoding: 'utf8', timeout: 10_000 }).stdout;
-    expect(run()).toBe('agent-command-output\n');
+    const run = () => shell(['zsh', '-c', 'echo agent-command-output']);
+    expect(run().all).toBe('agent-command-output\n');
     writeNotice({ instruction: INSTRUCTION, lane: 'transcript' });
     const out = run();
-    expect(out).toContain(INSTRUCTION);
-    expect(out.endsWith('agent-command-output\n')).toBe(true);
+    expect(out.all).toContain(INSTRUCTION);
+    expect(out.stdout).toBe('agent-command-output\n');
+  });
+
+  it('never stacks blocks on a startup file holding a hand-edited, unterminated Provian block', () => {
+    const rc = path.join(home, '.bashrc');
+    const broken = `${restartHookBlock({ restart: false }).split('\n')[0]}\nmy own line\n`;
+    fs.writeFileSync(rc, broken);
+    for (let i = 0; i < 3; i++) expect(installNoticeHook({ home, zshPresent: false }).rc[rc]).toBe('skipped');
+    expect(fs.readFileSync(rc, 'utf8')).toBe(broken);
   });
 
   it.runIf(has('bash'))('the opt-out removes the block, and uninstall removes the script: then nothing prints', () => {
     installNoticeHook({ home, zshPresent: false });
     writeNotice({ instruction: INSTRUCTION });
     installNoticeHook({ home, zshPresent: false, rc: false });
-    const out = spawnSync('bash', ['-i', '-c', 'echo x'], { env: env(), encoding: 'utf8', timeout: 10_000 }).stdout;
-    expect(out).toBe('x\n');
+    const r = spawnSync('bash', ['-i', '-c', 'echo x'], { env: env(), encoding: 'utf8', timeout: 10_000 });
+    expect(r.stdout).toBe('x\n');
+    expect(r.stderr).not.toContain('Provian');
     const u = uninstallRestartHook({ home });
     expect(u.notice).toBe('removed');
     expect(fs.existsSync(noticeScriptPath(home))).toBe(false);

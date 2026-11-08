@@ -47,11 +47,15 @@
  *
  * THE NOTICE. The same managed block carries a second line, on every macOS and Linux box (not only
  * the boxes that need the restart): when the observer has left `~/.provian/witness-action-required.json`
- * asking for something, `~/.provian/bin/provian-notice` prints it to stdout, so the agent reads it in
- * the output of the next command it runs. Nothing is scheduled and no model turn is spent looking:
- * with no notice the line costs one `test` builtin. The script prints a notice the first time a shell
- * meets it and again at most every 30 minutes while the same one waits, and never in a shell that
- * carries a file-transfer or git protocol on its stdout (sftp, scp, rsync, git over ssh). Every
+ * asking for something, `~/.provian/bin/provian-notice` prints it, so the agent reads it in the output
+ * of the next command it runs. Nothing is scheduled and no model turn is spent looking: with no notice
+ * the line costs one `test` builtin. It prints to STDERR, never stdout: a startup file runs in every
+ * shell, including ones whose stdout is data (`ssh host 'cat f' > f`, `ssh host tar …`, a stdio MCP or
+ * LSP server started through `zsh -c`, `$(zsh -lc 'command -v node')`), and output there corrupts
+ * it; agent harnesses show a command's stderr with its output. The full notice prints for each new
+ * notice and again every 30 minutes; every other shell prints a one-line pointer to it, so a shell
+ * whose output nobody reads (an IDE's environment probe) cannot use up the agent's sight of it. A
+ * shell running a file-transfer or git protocol (sftp, scp, rsync, git over ssh) prints nothing. Every
  * `provian` command's JSON carries the same notice (act-verbs.ts), which covers a shell that reads no
  * startup file. On a box where the restart is not wanted the block holds the notice line alone.
  */
@@ -202,7 +206,7 @@ export function noticeScriptPath(home: string = homedir()): string {
 /** The stamp holding the checksum of the notice last printed (the 30-minute repeat clock is its mtime). */
 export const NOTICE_SHOWN_FILE = 'witness-notice.shown';
 
-/** The protocols that run a non-interactive shell whose stdout is the protocol stream: never print there. */
+/** The protocols that run a non-interactive shell for a file transfer or git: print nothing there at all. */
 export const NOTICE_SILENT_COMMANDS = [
   '*sftp-server*', '*internal-sftp*', 'scp\\ *', '*rsync\\ --server*',
   'git-upload-pack*', 'git-receive-pack*', 'git-upload-archive*',
@@ -219,15 +223,21 @@ export function noticeScriptContent(): string {
     'P="$HOME/.provian"',
     `F="$P/${ACTION_REQUIRED_FILE}"`,
     '[ -f "$F" ] || exit 0',
+    '# Everything this prints goes to stderr: stdout may be data (ssh host cat f > f, a stdio server).',
+    'exec 1>&2',
     '# $1 is the command string of the shell that read the startup file (bash/zsh -c). A file-transfer or',
-    '# git protocol on that shell\'s stdout would break on any extra output.',
+    '# git protocol shell prints nothing.',
     `case "\${1:-}" in ${NOTICE_SILENT_COMMANDS.join('|')}) exit 0 ;; esac`,
     '# Only a notice that asks for something: an instruction, or a non-empty list of programs to re-describe.',
     'grep -q \'"instruction"\' "$F" 2>/dev/null || grep -q \'"programs":\\["\' "$F" 2>/dev/null || exit 0',
-    '# Once for each new notice, and again at most every 30 minutes while the same one still waits.',
+    '# In full once for each new notice and again every 30 minutes while it waits; a one-line pointer',
+    '# otherwise, so a shell whose output nobody reads never hides it from the agent\'s next command.',
     'K=$(cksum < "$F" 2>/dev/null)',
     `S="$P/${NOTICE_SHOWN_FILE}"`,
-    'if [ -f "$S" ] && [ "$(cat "$S" 2>/dev/null)" = "$K" ] && [ -z "$(find "$S" -mmin +29 2>/dev/null)" ]; then exit 0; fi',
+    'if [ -f "$S" ] && [ "$(cat "$S" 2>/dev/null)" = "$K" ] && [ -z "$(find "$S" -mmin +29 2>/dev/null)" ]; then',
+    '  printf \'%s\\n\' "Provian: a witness notice is waiting for you. Read it with: cat $F"',
+    '  exit 0',
+    'fi',
     'printf \'%s\\n\' "$K" > "$S" 2>/dev/null',
     'printf \'%s\\n\' "Provian: your witness needs attention. Act on this notice now, then carry on with your task. It is the file $F:"',
     'cat "$F" 2>/dev/null',
@@ -239,7 +249,7 @@ export function noticeScriptContent(): string {
 
 const RESTART_LINE = 'if [ -x "$HOME/.provian/bin/provian-ensure" ]; then "$HOME/.provian/bin/provian-ensure" rc >/dev/null 2>&1 </dev/null; fi';
 /** No notice file: one `test` builtin, no fork. The shell's own command string goes to the script. */
-const NOTICE_LINE = `if [ -f "$HOME/.provian/${ACTION_REQUIRED_FILE}" ] && [ -x "$HOME/.provian/bin/provian-notice" ]; then "$HOME/.provian/bin/provian-notice" "\${BASH_EXECUTION_STRING-}\${ZSH_EXECUTION_STRING-}" 2>/dev/null </dev/null; fi`;
+const NOTICE_LINE = `if [ -f "$HOME/.provian/${ACTION_REQUIRED_FILE}" ] && [ -x "$HOME/.provian/bin/provian-notice" ]; then "$HOME/.provian/bin/provian-notice" "\${BASH_EXECUTION_STRING-}\${ZSH_EXECUTION_STRING-}" </dev/null; fi`;
 
 /**
  * The guard block written into each startup file (pure): the silent restart line where the box needs
@@ -326,6 +336,9 @@ function writeRc(target: RcTarget, block: string): RcOutcome {
       return 'created';
     }
     const have = fs.readFileSync(target.path, 'utf8');
+    // A hand-edited, unterminated Provian block cannot be replaced safely: leave the user's file alone
+    // rather than stacking another block above it on every daemon start.
+    if (have.includes(RESTART_HOOK_BEGIN) && stripRestartHookBlock(have) === have) return 'skipped';
     const next = mergeRestartHookBlock(have, block);
     if (next === have) return 'current';
     rewriteFileInPlace(target.path, next);
