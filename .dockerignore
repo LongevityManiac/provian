@@ -23,3 +23,6 @@ provian-website/.DS_Store
 provian-website/*.pem
 provian-website/npm-debug.log*
 provian-website/.env*.local
+
+# Never package local Android release artifacts in the website image.
+provian-website/public/**/*.apk

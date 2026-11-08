@@ -18,9 +18,7 @@
 #
 # 1. Builds the provian-site image with Cloud Build, inheriting the Basic-Auth
 #    gate (only its bcrypt hash) from the revision that is serving now, so a
-#    deploy never changes the gate password. The build fetches the Android APK
-#    the /download/android page names from the release bucket and fails, so
-#    nothing deploys, if that APK is missing or its hash does not match.
+#    deploy never changes the gate password.
 # 2. Deploys it to Cloud Run (provian-site, us-central1), over end-to-end HTTP/2
 #    so responses over 32 MiB (the films) are not refused; see nginx.conf.
 # 3. Purges Cloudflare's cache for the provian.ai zone, so visitors see the new

@@ -1,7 +1,7 @@
 // Download and setup paths for people, computers and agents.
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Download, ArrowUpRight, Terminal } from 'lucide-react'
+import { ArrowUpRight, Terminal } from 'lucide-react'
 import { EMAIL, route } from '@/lib/routes'
 import { GenesisStrip } from '@/components/GenesisSection'
 import { GENESIS_PEOPLE } from '@/lib/genesisCopy'
@@ -39,28 +39,12 @@ export default function DownloadPage() {
             ready. It&rsquo;s ready, so it&rsquo;s live.
           </p>
           <p className="mt-4 leading-7 text-text-secondary">
-            Android is available on Google Play and as a signed download. The iPhone app is
+            Android is available on Google Play. The iPhone app is
             awaiting App Store approval. Leave your email and we&rsquo;ll tell you when it&rsquo;s live.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {/* Android — direct APK, available day one */}
-          <div className="glass flex flex-col border-provian-blue/40 p-7">
-            <p className="font-mono text-xs uppercase tracking-[0.22em] text-provian-blue-bright">
-              Android
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-semibold tracking-[-0.02em]">
-              Download for Android
-            </h2>
-            <p className="mt-3 flex-1 leading-7 text-text-secondary">
-              A signed install file, with the steps. Android 7.0 and later.
-            </p>
-            <Link href={route.downloadAndroid} className="btn-primary mt-6 w-full">
-              Download for Android
-              <Download size={16} />
-            </Link>
-          </div>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
           <PendingStoreCard platform="ios_app_store" />
           <div className="glass flex flex-col p-7">
             <h2 className="font-display text-2xl font-semibold tracking-[-0.02em]">Google Play</h2>

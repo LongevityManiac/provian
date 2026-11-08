@@ -230,6 +230,8 @@ function verifySelfContained(name, html, { allowExternalNavigation = false } = {
   if (allowExternalNavigation) {
     html = html.replace(/<a\s+href="https?:\/\/[^"]*"/gi, '<a').replace(/<code>[\s\S]*?<\/code>/gi, '<code></code>')
   }
+  // The store listing is an outbound navigation link, not a page asset.
+  html = html.replaceAll('<a href="https://play.google.com/store/apps/details?id=com.provian.wallet"', '<a')
   const patterns = [
     [/<script\b/i, '<script> tag'],
     [/<link\b/i, '<link> tag (stylesheet/preload)'],
@@ -289,50 +291,6 @@ const manualHtml = page({
   extraCss: DAEMON_CSS,
 })
 
-/** The Android download facts, read from the /download/android page (the one place they are stamped). */
-function androidApkFacts() {
-  const src = readFileSync(join(siteRoot, 'src', 'app', 'download', 'android', 'page.tsx'), 'utf8')
-  const pick = (re, label) => {
-    const m = re.exec(src)
-    if (!m) throw new Error(`download/android page.tsx: cannot read ${label}`)
-    return m[1]
-  }
-  return {
-    version: pick(/const VERSION = '([^']+)'/, 'VERSION'),
-    versionCode: pick(/const VERSION_CODE = (\d+)/, 'VERSION_CODE'),
-    sha256: pick(/const APK_SHA256 = '([0-9a-f]{64})'/, 'APK_SHA256'),
-    size: pick(/const APK_SIZE = '([^']+)'/, 'APK_SIZE'),
-    signing: pick(/const SIGNING_SHA256 =\s*'([0-9A-F:]+)'/, 'SIGNING_SHA256'),
-  }
-}
-const apk = androidApkFacts()
-const apkFile = `provian-wallet-${apk.version}.apk`
-const downloadAndroidHtml = page({
-  title: 'Download Provian for Android (APK)',
-  body: marked.parse(`# Install Provian on Android
-
-Provian for Android installs straight from a signed APK, with no store account needed. Android 7.0 or later. It is also on Google Play.
-
-**[Download the APK](/download/${apkFile})** — ${apkFile} · v${apk.version} · ${apk.size}
-
-## Verify the download
-
-Before you install, confirm the file is exactly what Provian published. On a Mac or Linux computer: \`shasum -a 256 ${apkFile}\`
-
-- SHA-256: \`${apk.sha256}\`
-- Version: ${apk.version} (versionCode ${apk.versionCode})
-- Package: com.provian.wallet
-- Signing certificate (SHA-256): \`${apk.signing}\`
-
-## Install
-
-1. Tap Download the APK and let the download finish. It is a large file, so use Wi-Fi if you can.
-2. Open the downloaded file from the notification, or from Files / Downloads.
-3. Android says apps from this source aren't allowed yet. Tap Settings and turn on "Allow from this source" for your browser or Files app. You are permitting this one app, not weakening the whole phone.
-4. Go back, tap Install, then open Provian and create your wallet.
-`),
-})
-
 const PAGES = [
   ['privacy.html', privacyHtml, 'from src/content/legal/privacy.md'],
   ['terms.html', termsHtml, 'from src/content/legal/terms.md'],
@@ -342,7 +300,6 @@ const PAGES = [
   ['delete-account.html', deleteAccountHtml, 'from src/content/public/delete-account.md'],
   ['promise.html', promiseHtml, 'from src/content/public/promise.md'],
   ['download.html', downloadHtml, 'from src/content/public/download.md'],
-  ['download-android.html', downloadAndroidHtml, 'from src/app/download/android/page.tsx'],
   ['manual.html', manualHtml, 'from public/docs-md/manual.md'],
 ]
 

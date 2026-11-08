@@ -6,5 +6,5 @@ The promise travels end-to-end encrypted inside the link you were sent. It is ne
 
 ## Open it
 
-1. Install Provian: from the App Store on iPhone, from Google Play on Android, or as the [signed Android APK](/download/android) from provian.ai.
+1. Install Provian: from the App Store on iPhone, from [Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet) on Android.
 2. Open the link you were sent again, on the phone with Provian installed. It opens in the app.

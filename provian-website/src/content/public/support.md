@@ -10,7 +10,7 @@ Provian is non-custodial. Provian cannot sign spending from your wallet or recov
 
 ## Purchases
 
-The PE Archive and Settle now can be bought in the app. In the App Store and Google Play versions they are in-app purchases: refunds follow Apple's or Google's refund process, and if a purchase you paid for did not take effect, email us with the date and what you bought. In the Android APK from provian.ai they are paid in USDC from your own wallet on Base.
+The PE Archive and Settle now can be bought in the app. In the App Store and Google Play versions they are in-app purchases: refunds follow Apple's or Google's refund process, and if a purchase you paid for did not take effect, email us with the date and what you bought.
 
 ## Reporting content in the Commons
 

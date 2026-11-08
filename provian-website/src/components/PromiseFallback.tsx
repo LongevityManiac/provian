@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Smartphone, ArrowUpRight } from 'lucide-react'
 import { route } from '@/lib/routes'
+import { playStoreUrl } from '@/lib/inviteCarry'
 import { PendingStoreCard } from '@/components/PendingStoreCard'
 
 type Platform = 'ios' | 'android' | 'other'
@@ -30,13 +31,13 @@ export function PromiseFallback() {
           platform="ios_app_store"
           className={`glass w-full p-6 sm:max-w-sm${platform === 'android' ? ' order-last' : ''}`}
         />
-        <Link
-          href={route.downloadAndroid}
+        <a
+          href={playStoreUrl(null)}
           className={platform === 'ios' ? 'btn-ghost w-full sm:w-auto' : 'btn-primary w-full sm:w-auto'}
         >
           <Smartphone size={16} />
-          Download for Android
-        </Link>
+          Get it on Google Play
+        </a>
       </div>
       <p className="mt-5 text-sm leading-6 text-text-muted">
         Already have Provian? Open this link on your phone and it launches the app

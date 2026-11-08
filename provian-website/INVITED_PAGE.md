@@ -18,11 +18,11 @@ The relay's invite emails build this URL in `provian-backend/src/email.ts`. The 
 - Falls back to generic copy when either parameter is missing, the read fails, or the invite is expired, accepted, or unknown.
 
 ### Download CTAs
-1. **Download for Android**: links to `https://provian.ai/download/android` (the APK install page).
-2. **Download for iPhone**: links to `/download` (the "Get the app" page, which shows the App Store and Google Play listings as in review, each with a notify-me sign-up). There is no App Store URL in the page yet. When the page's query carries a well-formed agent invite, this link carries the same `?invite=…&agent_wallet=…` query to `/download`.
+1. **Get it on Google Play** links to the [Provian Wallet listing](https://play.google.com/store/apps/details?id=com.provian.wallet) and carries the invitation in the Play install referrer.
+2. **Download for iPhone**: links to `/download` (the "Get the app" page, which shows the pending App Store card with a notify-me sign-up). There is no App Store URL in the page yet. When the page's query carries a well-formed agent invite, this link carries the same `?invite=…&agent_wallet=…` query to `/download`.
 3. **Open in app** (shown only when both parameters are present): `provian://link?invite={invite}&agent_wallet={wallet}`, handled by the app's `link` deep-link route (`src/navigation/AppNavigator.tsx`).
 
-When the query carries a well-formed agent invite, either download tap first copies the invite's canonical URL to the clipboard (`src/lib/inviteCarry.ts`), so the app picks up the invitation on first launch.
+When the query carries a well-formed agent invite, the Google Play tap also copies the invite's canonical URL to the clipboard (`src/lib/inviteCarry.ts`), so the app picks up the invitation on first launch.
 
 ### API Integration (optional)
 When both parameters are present, the page fetches invite details client-side from:
@@ -49,8 +49,8 @@ Checked with the site's Basic Auth credentials, and without them.
 
 - **Website:** `/invited/` and the linked public reading pages are reachable without an account.
 - **Hero image**: the page renders `<img src="/invited-hero.jpg">` (`public/invited-hero.jpg`), and the live URL answers 200.
-- **Android**: `/download/android/` answers 200 and names `provian-wallet-1.0.0.apk` with its SHA-256 and signing certificate. Since 2026-10-27 the signed APK (versionCode 51) is served at `/download/provian-wallet-1.0.0.apk`, streamed chunked because Cloud Run refuses a larger non-chunked HTTP/1 response, and the downloaded file matches the published SHA-256.
-- **iOS**: `/download/` shows the App Store and Google Play listings as in review. When the App Store listing is approved, point the "Download for iPhone" button in `src/app/invited/page.tsx` at it.
+- **Android**: the install button opens the [Google Play listing](https://play.google.com/store/apps/details?id=com.provian.wallet).
+- **iOS**: `/download/` shows the App Store card as pending. When the App Store listing is approved, point the "Download for iPhone" button in `src/app/invited/page.tsx` at it.
 - **Unsubscribe**: the page has no footer unsubscribe link. Invite emails carry their own signed unsubscribe link from the relay (`/v1/unsubscribe?token=…`), and the page has no token to unsubscribe anyone.
 
 ## Technical Details

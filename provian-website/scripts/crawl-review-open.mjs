@@ -8,7 +8,7 @@
  *     [--chrome "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
  *
  * Build and run the images first (repo root; any local image with a test .htpasswd can stand in
- * for HTPASSWD_SOURCE_IMAGE; the release APK must be at provian-website/public/download/):
+ * for HTPASSWD_SOURCE_IMAGE):
  *   docker build -f provian-website/Dockerfile --build-arg HTPASSWD_SOURCE_IMAGE=<local auth image> \
  *     --build-arg REVIEW_OPEN=on  -t provian-site-local:review-on  .
  *   docker build ... --build-arg REVIEW_OPEN=off -t provian-site-local:review-off .
@@ -85,7 +85,6 @@ if (set.mode !== opt.expect) fail(`image switch is ${set.mode}, expected ${opt.e
 const openExact = new Set(set.exact)
 const openPrefixes = set.prefixes.map((p) => p.prefix)
 for (const e of source.entries) {
-  if (e.kind === 'apk') continue
   if (e.kind === 'prefix') { if (!openPrefixes.includes(e.url)) fail(`source ${e.url} (prefix) missing from the resolved set`); continue }
   if (!openExact.has(e.url)) fail(`source ${e.url} (${e.kind}) missing from the resolved set`)
 }
@@ -104,7 +103,7 @@ for (const f of exportFiles) {
 }
 for (const u of set.exact) universe.add(u)
 const PROBES = [
-  '/p?d=abc', '/p/some-promise-id', '/p/?d=abc', '/download?p=prm_123', '/download/android?x=1',
+  '/p?d=abc', '/p/some-promise-id', '/p/?d=abc', '/download?p=prm_123',
   '/invited?invite=inv_0123456789&agent_wallet=wallet_aw_0123456789', '/pair?wallet=0xabc&t=1',
   '/approve-recovery?recoveryId=rec_td_1', '/support?from=app', '/earn', '/earn/', '/library/manual',
   '/library', '/library/', '/library/thesis/', '/library/manual/extra', '/start', '/start/', '/preview', '/preview/',

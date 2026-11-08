@@ -35,9 +35,5 @@ next-env.d.ts
 # firebase
 .firebase/
 
-# Android release APK — served from public/download/ (nginx sets the
-# application/vnd.android.package-archive type) but the ~170 MB signed binary is
-# never committed to git: each site build fetches it from the release bucket by
-# the SHA-256 the /download/android page shows (cloudbuild.deploy.yaml). The QR
-# SVG and the version manifest under public/ ARE committed.
+# Local Android artifacts do not belong in the website.
 public/download/*.apk

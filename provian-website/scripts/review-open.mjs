@@ -6,7 +6,7 @@
  *
  * Reads `review-open.json` (the single source list) and resolves it against the static export:
  * every `page`/`prefix` file must exist, every `redirect` must land on a URL in the set, the
- * `apk` entry resolves to the one APK under download/, and each `next` page is opened together
+ * Each `next` page is opened together
  * with exactly the files an unauthenticated load of it requests: the scripts, stylesheets, fonts
  * and images its own HTML names (including the chunks named in its inline RSC payload), the fonts
  * and images its stylesheets name, the media paths written into its own script chunks, and its
@@ -22,7 +22,7 @@
  * With `off` the three URL maps hold only a comment (and mode.map says 0), so nginx serves exactly what it serves without
  * the switch; the set is still resolved, so a broken list fails the build in either mode.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -30,7 +30,7 @@ const siteRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 export const SOURCE_LIST = join(siteRoot, 'review-open.json')
 
 const SITE_ORIGIN = 'https://provian.ai'
-const KINDS = new Set(['page', 'prefix', 'redirect', 'next', 'file', 'alias', 'apk'])
+const KINDS = new Set(['page', 'prefix', 'redirect', 'next', 'file', 'alias'])
 /** File types a page load fetches as a subresource. Anything else is a link, not an asset. */
 const ASSET_EXT = /\.(?:js|css|woff2?|ttf|otf|png|jpe?g|gif|webp|avif|svg|ico|mp4|webm|vtt)$/i
 /** Media paths written into a script chunk as string literals (films, posters, images). */
@@ -200,13 +200,6 @@ export function resolveOpenSet(exportDir, list = JSON.parse(readFileSync(SOURCE_
         if (!ASSET_EXT.test(file) || !exportHas(exportDir, file)) fail(`alias ${url}: ${file} is not an asset in the export`)
         addExact(url, entry.source)
         files.set(url, file)
-        break
-      }
-      case 'apk': {
-        const dir = join(exportDir, 'download')
-        const apks = existsSync(dir) ? readdirSync(dir).filter((n) => n.endsWith('.apk')) : []
-        if (apks.length !== 1) fail(`apk: expected exactly one APK under download/, found ${apks.length}`)
-        addExact(`/download/${apks[0]}`, entry.source)
         break
       }
     }

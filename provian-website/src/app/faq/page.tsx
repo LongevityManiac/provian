@@ -8,6 +8,7 @@ import { ArrowRight } from 'lucide-react'
 import { GenesisGate } from '@/components/GenesisGate'
 import { pageMeta } from '@/lib/og'
 import { route } from '@/lib/routes'
+import { playStoreUrl } from '@/lib/inviteCarry'
 
 export const metadata = pageMeta({
   title: 'FAQ | Provian',
@@ -151,8 +152,8 @@ const SECTIONS: { title: string; items: Item[] }[] = [
     items: [
       {
         q: 'Where do I get the app?',
-        a: 'Use the download page. It has the Android app, and the setup for your computer and your agents.',
-        more: { label: 'Get the app', href: route.download },
+        a: 'Get Provian for Android on Google Play. The download page has setup instructions for your computer and your agents.',
+        more: { label: 'Get it on Google Play', href: playStoreUrl(null) },
       },
       {
         q: 'What does Provian cost?',

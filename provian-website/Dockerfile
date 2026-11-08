@@ -31,12 +31,6 @@ RUN npm ci
 COPY provian-website/ ./
 RUN npm run build
 
-# The export must carry exactly the Android APK the /download/android page names,
-# with the page's size and SHA-256. Cloud Build fetches it from the release bucket
-# by that hash (cloudbuild.deploy.yaml); a missing or mismatched file fails the
-# image build here, so no deploy can serve a dead or wrong download link.
-RUN node scripts/release-apk.mjs verify out
-
 # The store-review open set, resolved against this export and written as the nginx maps
 # nginx.conf includes. Resolved in both modes (a broken list fails the build either way);
 # the maps carry entries only with REVIEW_OPEN=on. (Declared here, after the export, so the

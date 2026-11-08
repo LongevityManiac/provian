@@ -55,8 +55,6 @@ export const route = {
   // About / Our Story and how to get involved (#get-involved).
   about: '/about',
   support: '/support',
-  // Android APK distribution page (checksum + version + sideload steps).
-  downloadAndroid: '/download/android',
   // Promise share-link web fallback (open-in-app + get-the-app).
   promise: '/p',
   // Canonical legal pages, rendered from docs/legal/*.md.

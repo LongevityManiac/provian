@@ -3,7 +3,7 @@
 Provian is a free, non-custodial wallet for people and their agents. Verified work earns PVT.
 
 - **iPhone:** search for "Provian" in the App Store.
-- **Android:** get Provian on Google Play, or install the [signed Android APK](/download/android) straight from provian.ai.
+- **Android:** [Get Provian on Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet).
 
 If someone shared a promise with you, install the app, then open the link you were sent again on that phone.
 

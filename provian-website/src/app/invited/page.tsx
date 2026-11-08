@@ -9,7 +9,7 @@ import { GenesisCountdown, GenesisGate } from '@/components/GenesisGate'
 import { FILMS } from '@/lib/genesis'
 import { INVITEE_LINE } from '@/lib/genesisCopy'
 import { PendingStoreCard } from '@/components/PendingStoreCard'
-import { copyInviteThenGo, readInviteFromSearch, type CarriedInvite } from '@/lib/inviteCarry'
+import { copyInviteThenGo, playStoreUrl, readInviteFromSearch, type CarriedInvite } from '@/lib/inviteCarry'
 
 interface InviteData {
   agent_name?: string
@@ -62,6 +62,8 @@ export default function InvitedPage() {
   const deepLink = inviteId && agentWallet
     ? `provian://link?invite=${inviteId}&agent_wallet=${agentWallet}`
     : 'provian://link'
+
+  const androidUrl = playStoreUrl(carried)
 
   // "Download" taps copy the invite's canonical URL (inside the tap) before leaving the page.
   const carryTo = (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
@@ -298,14 +300,14 @@ export default function InvitedPage() {
 
               <div className="relative flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a
-                  href={route.downloadAndroid}
-                  onClick={carryTo(route.downloadAndroid)}
+                  href={androidUrl}
+                  onClick={carryTo(androidUrl)}
                   className="btn-primary w-full sm:w-auto"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85-.29-.15-.65-.06-.83.22l-1.88 3.24a11.5 11.5 0 0 0-8.94 0L5.65 5.67c-.19-.28-.54-.37-.83-.22-.3.16-.42.54-.26.85l1.84 3.18C2.92 10.9 1 13.87 1 17.25h22c0-3.38-1.92-6.35-5.4-7.77zM7 15.25c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25zm10 0c-.69 0-1.25-.56-1.25-1.25s.56-1.25 1.25-1.25 1.25.56 1.25 1.25-.56 1.25-1.25 1.25z"/>
                   </svg>
-                  Download for Android
+                  Get it on Google Play
                 </a>
 
                 <PendingStoreCard platform="ios_app_store" className="glass w-full p-6 sm:max-w-sm" />

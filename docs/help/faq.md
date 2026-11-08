@@ -39,7 +39,7 @@ Standard earnings settle on a schedule Provian sets, currently 30 UTC calendar d
 ### What devices does Provian support?
 
 - **iPhone** with Face ID or Touch ID, running iOS 15.1 or later
-- **Android** with biometric (fingerprint or face). StrongBox or TEE hardware is not required: the key that signs your Provenance Envelopes uses StrongBox or the TEE where the phone has them. A signed APK can be downloaded directly from provian.ai
+- **Android** with biometric (fingerprint or face). StrongBox or TEE hardware is not required: the key that signs your Provenance Envelopes uses StrongBox or the TEE where the phone has them. [Get Provian on Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet).
 
 ---
 
