@@ -191,7 +191,8 @@ export function supervisionLines(
       + '  so nothing on this machine restarts it after a reboot or a move to a new machine. That is the agent\'s job.\n'
       + '  Setup for the agent:\n'
       + `  ${AGENT_KEEPS_OBSERVER_RUNNING(cmd)}\n`
-      + `  ${AGENT_SCHEDULES_OBSERVER}\n`;
+      // Only `observe --if-not-running` is safe to schedule; a bare `observe` runs the daemon in the foreground.
+      + (bundle ? `  ${AGENT_SCHEDULES_OBSERVER}\n` : '');
   }
   return `  Observer supervised by ${method}${at}.\n`;
 }

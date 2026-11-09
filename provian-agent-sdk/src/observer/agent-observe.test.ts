@@ -151,3 +151,59 @@ describe('buildAgentObserveDeps — the production wiring (review r1 #3)', () =>
     expect(detached).toBe(0);
   });
 });
+
+describe('observe --if-not-running prints what the observer is waiting for (a Grok Bot computer reads no startup file)', () => {
+  const NOTICE = { instruction: 'Re-describe the changed session format.', file: '/h/.provian/witness-action-required.json' };
+  const MAIL = { unread: 2, from: ['Ada'], read_with: 'provian threads --unread' };
+  const run = async (o: World, notice: unknown, mail: unknown) => {
+    const w = world(o);
+    const out: string[] = [];
+    w.deps.log = (l) => { out.push(l); };
+    w.deps.actionNotice = () => notice as ReturnType<NonNullable<AgentObserveDeps['actionNotice']>>;
+    w.deps.mailNotice = () => mail as ReturnType<NonNullable<AgentObserveDeps['mailNotice']>>;
+    return { outcome: await agentObserve(w.deps), out };
+  };
+
+  it('a running observer: the pid line, then the notice and the mail', async () => {
+    const r = await run({ running: 55 }, NOTICE, MAIL);
+    expect(r.outcome).toBe('already_running');
+    expect(r.out[0]).toBe('  Provian observer is running (pid 55).');
+    expect(r.out).toContain(`  witness_action_required: ${JSON.stringify(NOTICE)}`);
+    expect(r.out).toContain(`  commons_mail: ${JSON.stringify(MAIL)}`);
+  });
+
+  it('a start prints them too, and a failed start still does', async () => {
+    expect((await run({ script: true }, NOTICE, null)).out).toContain(`  witness_action_required: ${JSON.stringify(NOTICE)}`);
+    const failed = await run({ script: false, installWorks: false, spawnDoes: 'nothing' }, NOTICE, null);
+    expect(failed.outcome).toBe('failed');
+    expect(failed.out).toContain(`  witness_action_required: ${JSON.stringify(NOTICE)}`);
+  });
+
+  it('RED control: with nothing waiting, only the pid line prints', async () => {
+    expect((await run({ running: 55 }, null, null)).out).toEqual(['  Provian observer is running (pid 55).']);
+  });
+
+  it('a notice that cannot be read never changes the outcome', async () => {
+    const w = world({ running: 9 });
+    w.deps.actionNotice = () => { throw new Error('unreadable'); };
+    w.deps.mailNotice = () => { throw new Error('unreadable'); };
+    expect(await agentObserve(w.deps)).toBe('already_running');
+  });
+
+  it('the production deps read the real notice and mailbox files under the box\'s home', async () => {
+    const fs = await import('fs'); const os = await import('os'); const path = await import('path');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'provian-observe-notice-'));
+    try {
+      const deps = buildAgentObserveDeps({
+        entryScript: '/x/agent.js', node: '/x/node', platform: 'linux', home,
+        running: () => 1, serviceInstalled: () => false, startInstalledService: () => false, startDetached: () => {},
+      });
+      // RED: nothing on disk, nothing to print.
+      expect(deps.actionNotice?.()).toBeNull();
+      expect(deps.mailNotice?.()).toBeNull();
+      fs.mkdirSync(path.join(home, '.provian'), { recursive: true });
+      fs.writeFileSync(path.join(home, '.provian', 'witness-action-required.json'), JSON.stringify({ instruction: 'x' }));
+      expect(deps.actionNotice?.()).toEqual({ instruction: 'x', file: path.join(home, '.provian', 'witness-action-required.json') });
+    } finally { fs.rmSync(home, { recursive: true, force: true }); }
+  });
+});

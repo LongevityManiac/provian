@@ -16,9 +16,15 @@
  * 3. Linux with no service: write the ensure script (+ the restart hook, per the opt-out) — so
  * this start AND every later one go through it — and run it;
  * 4. last resort: start the daemon detached with the node running this command.
+ *
+ * Whatever the outcome, it then prints the observer's waiting notice (`witness_action_required`) and
+ * unread Commons mail (`commons_mail`), as every act verb's output carries them. On a box whose shell
+ * reads no startup file (a Grok Bot computer) the startup hook never fires, and a scheduled run of this
+ * command is how the agent keeps its observer running, so its output is where the agent sees them.
  */
 
 import { installRestartHook, resolveRestartHookOptOut, restartHookWanted, runEnsureScript, type RestartHookEntrypoint } from './restart-hook';
+import { actionRequiredNotice, unreadMailNotice } from '../commons-messaging';
 
 export interface AgentObserveDeps {
   /** The running observer's pid (never this process), or null. */
@@ -40,6 +46,10 @@ export interface AgentObserveDeps {
   serviceWaitMs?: number;
   /** How long it must then STAY up to count. */
   settleMs?: number;
+  /** The observer's waiting notice, printed after the start (null: none). */
+  actionNotice?: () => ReturnType<typeof actionRequiredNotice>;
+  /** Unread Commons mail the daemon delivered, printed after the start (null: none). */
+  mailNotice?: () => ReturnType<typeof unreadMailNotice>;
 }
 
 export type AgentObserveOutcome = 'already_running' | 'started' | 'failed';
@@ -57,6 +67,27 @@ async function cameUp(deps: AgentObserveDeps, waitMs: number): Promise<number | 
 }
 
 export async function agentObserve(deps: AgentObserveDeps): Promise<AgentObserveOutcome> {
+  const outcome = await startIfNotRunning(deps);
+  reportNotices(deps);
+  return outcome;
+}
+
+/** Print what the observer is waiting for the agent to act on. A notice never changes the outcome. */
+function reportNotices(deps: AgentObserveDeps): void {
+  try {
+    const notice = deps.actionNotice?.() ?? null;
+    if (notice) {
+      deps.log('  Provian: your witness needs attention. Act on this notice now, then carry on with your task.');
+      deps.log(`  witness_action_required: ${JSON.stringify(notice)}`);
+    }
+  } catch { /* a notice never fails the start */ }
+  try {
+    const mail = deps.mailNotice?.() ?? null;
+    if (mail) deps.log(`  commons_mail: ${JSON.stringify(mail)}`);
+  } catch { /* a notice never fails the start */ }
+}
+
+async function startIfNotRunning(deps: AgentObserveDeps): Promise<AgentObserveOutcome> {
   const before = deps.running();
   if (before !== null) {
     deps.log(`  Provian observer is running (pid ${before}).`);
@@ -129,5 +160,7 @@ export function buildAgentObserveDeps(w: AgentObserveWiring): AgentObserveDeps {
     sleep: w.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
     log: w.log ?? ((l) => console.log(l)),
     error: w.error ?? ((l) => console.error(l)),
+    actionNotice: () => actionRequiredNotice(w.home),
+    mailNotice: () => unreadMailNotice(w.home),
   };
 }

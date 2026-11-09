@@ -37,6 +37,14 @@ describe('supervisionLines — the install states truthfully which mechanism res
     expect(out.toLowerCase()).not.toMatch(/report (your|its) work|submit/);
   });
 
+  it('an npm install (bare observe runs the daemon in the foreground) is never told to schedule it', () => {
+    const NPM = { command: '/usr/bin/node', args: ['/n/node_modules/@provian/agent-sdk/dist/scripts/start-observer.js'] };
+    const out = supervisionLines('detached', undefined, NPM, 'agent');
+    expect(out).toContain('Setup for the agent:');
+    expect(out).not.toContain(AGENT_SCHEDULES_OBSERVER);
+    expect(out).not.toContain('--if-not-running');
+  });
+
   it('a crontab with no running cron daemon is NOT cron supervision — it says so and falls to the real mechanism', () => {
     const out = supervisionLines('cron', 'crontab', BUNDLE, 'agent');
     expect(out).toContain('no running cron daemon');
