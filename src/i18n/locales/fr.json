@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Dépenses par carte",
     "captureNoSources": "Son ordinateur signale un programme d'agent dont il ne peut rien lire.",
     "captureSoleSilence": "Son ordinateur lit les enregistrements de session de l'agent mais n'y reconnaît aucun appel d'outil.",
-    "captureFormatBroken": "Le format de session de l'agent a changé. Son instruction permanente lui demande de décrire le nouveau format.",
+    "captureFormatBroken": "Le format de session de l'agent a changé. L'agent voit un avis à sa prochaine commande, et dans chaque commande provian, lui demandant de décrire le nouveau format. Rien n'est à planifier.",
     "captureLauncherChanged": "L'environnement de l'agent a changé sa façon de lancer les commandes, donc ses commandes ne sont pas attestées.",
     "captureLauncherNotSeen": "Aucun programme en cours sur son ordinateur ne correspond à son lanceur enregistré, donc ses commandes ne sont pas attestées.",
     "captureNoLauncher": "Aucun lanceur n'est enregistré sur son ordinateur, donc aucune de ses commandes n'est attestée.",

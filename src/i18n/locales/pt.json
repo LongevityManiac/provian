@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Gastos no cartão",
     "captureNoSources": "O computador dele informa um programa de agente do qual não consegue ler nada.",
     "captureSoleSilence": "O computador dele lê os registros de sessão do agente, mas não reconhece neles nenhuma chamada de ferramenta.",
-    "captureFormatBroken": "O formato de sessão do agente mudou. A instrução permanente dele pede que descreva o novo formato.",
+    "captureFormatBroken": "O formato de sessão do agente mudou. O agente vê um aviso no próximo comando, e em todo comando provian, pedindo que descreva o novo formato. Não há nada a agendar.",
     "captureLauncherChanged": "O ambiente do agente mudou a forma de iniciar comandos, então os comandos dele não são testemunhados.",
     "captureLauncherNotSeen": "Nenhum programa em execução no computador dele corresponde ao inicializador registrado, então os comandos dele não são testemunhados.",
     "captureNoLauncher": "Nenhum iniciador está registrado no computador dele, então nenhum dos comandos dele é testemunhado.",

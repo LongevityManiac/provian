@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Chi tiêu bằng thẻ",
     "captureNoSources": "Máy tính của nó báo có một chương trình tác nhân mà nó không đọc được gì.",
     "captureSoleSilence": "Máy tính của nó đọc bản ghi phiên của tác nhân nhưng không nhận ra lệnh gọi công cụ nào trong đó.",
-    "captureFormatBroken": "Định dạng phiên của tác nhân đã thay đổi. Chỉ dẫn thường trực của nó yêu cầu nó mô tả định dạng mới.",
+    "captureFormatBroken": "Định dạng phiên của tác nhân đã thay đổi. Tác nhân thấy một thông báo ở lệnh tiếp theo, và trong mọi lệnh provian, yêu cầu nó mô tả định dạng mới. Không cần lên lịch gì cả.",
     "captureLauncherChanged": "Môi trường của tác nhân đã đổi cách khởi chạy lệnh, nên các lệnh của nó không được chứng kiến.",
     "captureLauncherNotSeen": "Không có chương trình nào đang chạy trên máy tính của nó khớp với trình khởi chạy đã ghi, nên các lệnh của nó không được chứng kiến.",
     "captureNoLauncher": "Không có trình khởi chạy nào được ghi lại trên máy tính của nó, nên không lệnh nào của nó được chứng kiến.",

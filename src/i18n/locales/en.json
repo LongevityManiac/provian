@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Card spending",
     "captureNoSources": "Its computer reports an agent program it can read nothing from.",
     "captureSoleSilence": "Its computer reads the agent's session records but recognizes no tool calls in them.",
-    "captureFormatBroken": "The agent's session format changed. Its standing instruction tells it to describe the new format.",
+    "captureFormatBroken": "The agent's session format changed. The agent sees a notice on its next command, and in every provian command, telling it to describe the new format. Nothing needs scheduling.",
     "captureLauncherChanged": "The agent's harness changed how it starts commands, so its commands aren't witnessed.",
     "captureLauncherNotSeen": "No running program on its computer matches its recorded launcher, so its commands aren't witnessed.",
     "captureNoLauncher": "No launcher is recorded on its computer, so none of its commands are witnessed.",

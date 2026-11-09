@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Paggastos sa card",
     "captureNoSources": "Iniuulat ng computer nito ang isang agent program na wala itong mabasa.",
     "captureSoleSilence": "Binabasa ng computer nito ang mga session record ng agent, pero wala itong nakikilalang tool call sa mga iyon.",
-    "captureFormatBroken": "Nagbago ang session format ng agent. Sinasabi ng nakatayong tagubilin nito na ilarawan ang bagong format.",
+    "captureFormatBroken": "Nagbago ang session format ng agent. Makikita ng agent ang isang abiso sa susunod nitong command, at sa bawat provian command, na nagsasabing ilarawan ang bagong format. Walang kailangang i-schedule.",
     "captureLauncherChanged": "Binago ng harness ng agent kung paano nito sinisimulan ang mga command, kaya hindi nasasaksihan ang mga command nito.",
     "captureLauncherNotSeen": "Walang tumatakbong program sa computer nito na tumutugma sa naitalang launcher nito, kaya hindi nasasaksihan ang mga command nito.",
     "captureNoLauncher": "Walang naka-record na launcher sa computer nito, kaya wala sa mga command nito ang nasasaksihan.",
