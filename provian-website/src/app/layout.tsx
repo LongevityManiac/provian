@@ -31,6 +31,10 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://provian.ai'),
   title: 'Provian — Proving provenance',
   description: OG_DESCRIPTION,
+  // Every page names its own trailing-slash URL as canonical ('./' resolves
+  // against each route's pathname), so Google stops treating the slash and
+  // no-slash forms as unclaimed duplicates.
+  alternates: { canonical: './' },
   openGraph: {
     type: 'website',
     url: 'https://provian.ai',
