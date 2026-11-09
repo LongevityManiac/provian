@@ -15,6 +15,8 @@ import Link from 'next/link'
 import { ArrowLeft, FileDown } from 'lucide-react'
 import { Marked, type Tokens } from 'marked'
 import { route } from '@/lib/routes'
+import { Film } from '@/components/Film'
+import { FILMS, type FilmKey } from '@/lib/genesis'
 import manifest from '@/data/docsManifest.json'
 
 interface DocEntry {
@@ -30,6 +32,12 @@ interface DocEntry {
 // The published Library: the documents scripts/sync-docs.mjs
 // writes to docsManifest.json. Nothing else gets a library route.
 const docs = manifest.docs as DocEntry[]
+
+// A document that opens with a film. The Founding Statement is the launch
+// document, and its film plays above the text.
+const DOC_FILMS: Partial<Record<string, FilmKey>> = {
+  'founding-statement': 'thisIsHowItHappens',
+}
 
 // sync-docs.mjs rewrites every cross-doc link in the docs-md mirror to its
 // absolute raw-markdown URL (https://provian.ai/docs-md/<slug>.md), so the
@@ -123,6 +131,8 @@ export default function LibraryDocPage({ params }: { params: { slug: string } })
 
   const raw = readFileSync(join(process.cwd(), 'public', 'docs-md', `${doc.slug}.md`), 'utf8')
   const html = libraryMarked().parse(raw, { async: false }) as string
+  const filmKey = DOC_FILMS[doc.slug]
+  const film = filmKey ? FILMS[filmKey] : undefined
 
   return (
     <div className="bg-void text-text-primary">
@@ -156,6 +166,7 @@ export default function LibraryDocPage({ params }: { params: { slug: string } })
 
       <section className="px-6 py-12 md:px-10 md:py-16 lg:px-14">
         <div className="mx-auto max-w-4xl">
+          {film ? <Film {...film} className="mb-12 md:mb-16" /> : null}
           <article className="prose-provian" dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </section>

@@ -40,7 +40,7 @@ export const HEAD_SCRIPT = GENESIS_CLOSE_SCRIPT
 // Posters stay on this site.
 export const FILM_MEDIA_BASE: string = 'https://media.provian.ai'
 
-export type FilmKey = 'toTheStars' | 'noOneLeftBehind' | 'genesisIsOpen' | 'nothingUnwitnessed'
+export type FilmKey = 'thisIsHowItHappens' | 'toTheStars' | 'noOneLeftBehind' | 'genesisIsOpen' | 'nothingUnwitnessed'
 
 export type FilmInfo = {
   slug: string
@@ -57,6 +57,17 @@ export type FilmInfo = {
 }
 
 export const FILMS: Record<FilmKey, FilmInfo> = {
+  // Permanent: the launch film. Opens the Founding Statement in the Library.
+  thisIsHowItHappens: {
+    slug: 'this-is-how-it-happens',
+    src: `${FILM_MEDIA_BASE}/films/this-is-how-it-happens.mp4`,
+    poster: '/films/this-is-how-it-happens-poster.jpg',
+    title: 'This Is How It Happens',
+    line: 'A town asked to make room for a future no one showed it takes a seat at the table instead, and the future that needed it gets built. All of it.',
+    seconds: 105,
+    width: 1280,
+    height: 720,
+  },
   toTheStars: {
     slug: 'to-the-stars',
     src: `${FILM_MEDIA_BASE}/films/to-the-stars.mp4`,
@@ -102,7 +113,7 @@ export const FILMS: Record<FilmKey, FilmInfo> = {
   },
 }
 
-export const FILM_ORDER: FilmKey[] = ['toTheStars', 'noOneLeftBehind', 'genesisIsOpen', 'nothingUnwitnessed']
+export const FILM_ORDER: FilmKey[] = ['thisIsHowItHappens', 'toTheStars', 'noOneLeftBehind', 'genesisIsOpen', 'nothingUnwitnessed']
 
 // The muted loop behind the homepage hero (a passage of To The Stars).
 export const HERO_LOOP = {
