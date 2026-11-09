@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Matumizi ya kadi",
     "captureNoSources": "Kompyuta yake inaripoti programu ya wakala ambayo haiwezi kusoma chochote kutoka kwayo.",
     "captureSoleSilence": "Kompyuta yake inasoma rekodi za vipindi vya wakala, lakini haitambui mwito wowote wa zana ndani yake.",
-    "captureFormatBroken": "Muundo wa vipindi vya wakala umebadilika. Wakala anaona taarifa kwenye amri yake inayofuata, na katika kila amri ya provian, inayomwambia aeleze muundo mpya. Hakuna cha kupanga ratiba.",
+    "captureFormatBroken": "Muundo wa vipindi vya wakala umebadilika. Taarifa inayomwambia aeleze muundo mpya inaonekana katika kila amri ya provian anayoendesha, na katika amri yake inayofuata popote shell inaposoma faili la kuanzia. Kwenye mashine yenye kidhibiti huduma, cron au faili la kuanzia, hakuna cha kupanga ratiba. Kwenye kompyuta ya Grok Bot, wakala anaendelea kuwa na provian observe --if-not-running iliyopangiwa ratiba, ambayo pia inaonyesha taarifa hiyo.",
     "captureLauncherChanged": "Mazingira ya wakala yamebadilisha jinsi yanavyoanzisha amri, kwa hivyo amri zake hazishuhudiwi.",
     "captureLauncherNotSeen": "Hakuna programu inayoendeshwa kwenye kompyuta yake inayolingana na kizinduzi chake kilichorekodiwa, kwa hivyo amri zake hazishuhudiwi.",
     "captureNoLauncher": "Hakuna kizinduzi kilichorekodiwa kwenye kompyuta yake, kwa hivyo hakuna amri yake hata moja inayoshuhudiwa.",

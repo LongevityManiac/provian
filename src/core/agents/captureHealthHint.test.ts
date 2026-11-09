@@ -85,4 +85,22 @@ describe('capture-health hint', () => {
       expect(src, screen).toContain('workingLine(');
     }
   });
+
+  it('the format-changed line states the restart rule in all 12 locales: nothing to schedule with a service manager, cron or a startup file; a Grok Bot computer keeps its scheduled observe', () => {
+    const lines = localeFiles.map((file) => [file, String(get(JSON.parse(readFileSync(resolve(localesDir, file), 'utf8')), 'agentHub.captureFormatBroken'))] as const);
+    expect(lines).toHaveLength(12);
+    for (const [file, line] of lines) {
+      expect(line, file).toContain('Grok Bot');
+      expect(line, file).toContain('provian observe --if-not-running');
+      expect(line, file).toContain('cron');
+    }
+    const en = lines.find(([f]) => f === 'en.json')?.[1] ?? '';
+    expect(en).toContain('On a machine with a service manager, cron or a startup file, nothing needs scheduling.');
+    expect(en).toContain('On a Grok Bot computer, the agent keeps its scheduled provian observe --if-not-running');
+    // RED: the earlier line, true only where a startup file is read, claimed nothing needs scheduling anywhere.
+    const retired = "The agent's session format changed. The agent sees a notice on its next command, and in every provian command, telling it to describe the new format. Nothing needs scheduling.";
+    expect(retired).not.toContain('Grok Bot');
+    expect(en).not.toBe(retired);
+    for (const [file, line] of lines) expect(line, file).not.toMatch(/Nothing needs scheduling\.$/);
+  });
 });

@@ -1506,7 +1506,7 @@
     "cardSpendingCta": "银行卡消费",
     "captureNoSources": "它的计算机报告有一个智能体程序，但什么都读不到。",
     "captureSoleSilence": "它的计算机读取了智能体的会话记录，但没有从中识别出任何工具调用。",
-    "captureFormatBroken": "智能体的会话格式已更改。智能体会在下一条命令以及每条 provian 命令的输出中看到通知，要求它描述新格式。无需设置任何计划任务。",
+    "captureFormatBroken": "智能体的会话格式已更改。要求它描述新格式的通知会出现在它运行的每条 provian 命令的输出中；在 shell 会读取启动文件的环境中，也会出现在它的下一条命令中。在有服务管理器、cron 或启动文件的机器上，无需设置任何计划任务。在 Grok Bot 计算机上，智能体保留其计划运行的 provian observe --if-not-running，该命令也会显示此通知。",
     "captureLauncherChanged": "智能体的运行环境改变了启动命令的方式，因此它的命令没有被见证。",
     "captureLauncherNotSeen": "它的计算机上没有任何正在运行的程序与记录的启动器匹配，因此它的命令没有被见证。",
     "captureNoLauncher": "它的计算机上没有记录启动器，因此它的命令一条都没有被见证。",

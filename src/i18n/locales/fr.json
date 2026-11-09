@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Dépenses par carte",
     "captureNoSources": "Son ordinateur signale un programme d'agent dont il ne peut rien lire.",
     "captureSoleSilence": "Son ordinateur lit les enregistrements de session de l'agent mais n'y reconnaît aucun appel d'outil.",
-    "captureFormatBroken": "Le format de session de l'agent a changé. L'agent voit un avis à sa prochaine commande, et dans chaque commande provian, lui demandant de décrire le nouveau format. Rien n'est à planifier.",
+    "captureFormatBroken": "Le format de session de l'agent a changé. Un avis lui demandant de décrire le nouveau format apparaît dans chaque commande provian qu'il exécute, et dans sa prochaine commande partout où le shell lit un fichier de démarrage. Sur une machine dotée d'un gestionnaire de services, de cron ou d'un fichier de démarrage, rien n'est à planifier. Sur un ordinateur Grok Bot, l'agent conserve sa tâche planifiée provian observe --if-not-running, qui affiche aussi l'avis.",
     "captureLauncherChanged": "L'environnement de l'agent a changé sa façon de lancer les commandes, donc ses commandes ne sont pas attestées.",
     "captureLauncherNotSeen": "Aucun programme en cours sur son ordinateur ne correspond à son lanceur enregistré, donc ses commandes ne sont pas attestées.",
     "captureNoLauncher": "Aucun lanceur n'est enregistré sur son ordinateur, donc aucune de ses commandes n'est attestée.",

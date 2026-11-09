@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Belanja kartu",
     "captureNoSources": "Komputernya melaporkan program agen yang tidak bisa dibaca sama sekali.",
     "captureSoleSilence": "Komputernya membaca catatan sesi agen, tetapi tidak mengenali panggilan alat apa pun di dalamnya.",
-    "captureFormatBroken": "Format sesi agen berubah. Agen melihat pemberitahuan pada perintah berikutnya, dan di setiap perintah provian, yang memintanya menjelaskan format baru. Tidak ada yang perlu dijadwalkan.",
+    "captureFormatBroken": "Format sesi agen berubah. Pemberitahuan yang memintanya menjelaskan format baru muncul di setiap perintah provian yang dijalankannya, dan di perintah berikutnya di mana pun shell membaca file startup. Di mesin dengan pengelola layanan, cron, atau file startup, tidak ada yang perlu dijadwalkan. Di komputer Grok Bot, agen mempertahankan provian observe --if-not-running terjadwalnya, yang juga menampilkan pemberitahuan itu.",
     "captureLauncherChanged": "Harness agen mengubah cara memulai perintah, sehingga perintahnya tidak disaksikan.",
     "captureLauncherNotSeen": "Tidak ada program yang berjalan di komputernya yang cocok dengan peluncur yang tercatat, sehingga perintahnya tidak disaksikan.",
     "captureNoLauncher": "Tidak ada launcher yang tercatat di komputernya, sehingga tidak ada perintahnya yang disaksikan.",

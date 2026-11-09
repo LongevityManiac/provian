@@ -1505,7 +1505,7 @@
     "cardSpendingCta": "Gastos con tarjeta",
     "captureNoSources": "Su ordenador informa de un programa de agente del que no puede leer nada.",
     "captureSoleSilence": "Su ordenador lee los registros de sesión del agente, pero no reconoce en ellos ninguna llamada a herramientas.",
-    "captureFormatBroken": "El formato de sesión del agente cambió. El agente ve un aviso en su próximo comando, y en cada comando provian, que le indica que describa el nuevo formato. No hay nada que programar.",
+    "captureFormatBroken": "El formato de sesión del agente cambió. Un aviso que le pide describir el nuevo formato aparece en cada comando provian que ejecuta, y en su próximo comando siempre que el shell lea un archivo de inicio. En una máquina con un gestor de servicios, cron o un archivo de inicio, no hay nada que programar. En una computadora Grok Bot, el agente mantiene su provian observe --if-not-running programado, que también muestra el aviso.",
     "captureLauncherChanged": "El entorno del agente cambió la forma en que inicia los comandos, así que sus comandos no se atestiguan.",
     "captureLauncherNotSeen": "Ningún programa en ejecución en su ordenador coincide con su lanzador registrado, así que sus comandos no se atestiguan.",
     "captureNoLauncher": "No hay ningún lanzador registrado en su ordenador, así que ninguno de sus comandos se atestigua.",
