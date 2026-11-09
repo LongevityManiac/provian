@@ -79,7 +79,7 @@ const PAGE_CARDS: Record<string, OgCard> = {
   },
   films: {
     eyebrow: 'Films',
-    headline: 'This Is How It Happens. To The Stars. Genesis Is Open. Nothing Unwitnessed.',
+    headline: 'To The Stars. Genesis Is Open. Nothing Unwitnessed.',
     image: '/films/to-the-stars-poster.jpg',
   },
   invite: {

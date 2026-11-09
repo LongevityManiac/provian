@@ -1,4 +1,4 @@
-// /films — the five films. Each has its own watch page at /films/<slug>/;
+// /films — the four films. Each has its own watch page at /films/<slug>/;
 // the .mp4 files stay at /films/<slug>.mp4 (the app links to those).
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
@@ -10,7 +10,7 @@ import { filmPath } from '@/lib/routes'
 
 export const metadata = pageMeta({
   title: 'Films | Provian',
-  description: 'Five short films: This Is How It Happens, To The Stars, No One Left Behind, Genesis Is Open, and Nothing Unwitnessed.',
+  description: 'Four short films: To The Stars, No One Left Behind, Genesis Is Open, and Nothing Unwitnessed.',
   card: 'films',
   path: '/films/',
 })
