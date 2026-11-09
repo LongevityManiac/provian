@@ -1,6 +1,6 @@
 {
   "name": "@provian/agent-sdk",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "SDK for AI agents to connect to Provian Wallet via Cloud Relay",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

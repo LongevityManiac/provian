@@ -104,7 +104,7 @@ import type {
 } from './types';
 
 /** Version reported by both transports. Keep in sync with provian-mcp/package.json. */
-export const PROVIAN_MCP_VERSION = '1.2.2';
+export const PROVIAN_MCP_VERSION = '1.2.3';
 export const PROVIAN_MCP_SERVER_NAME = 'provian';
 
 const ELIGIBILITY_DISCLAIMER =

@@ -9,4 +9,4 @@
  * the moment the two drift — so bumping the package version without bumping this
  * is a build failure, not a silent skew.
  */
-export const SDK_VERSION = '1.11.0';
+export const SDK_VERSION = '1.11.1';

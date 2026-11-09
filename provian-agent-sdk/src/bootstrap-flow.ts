@@ -162,6 +162,8 @@ export interface BootstrapResult {
  */
 export const AGENT_KEEPS_OBSERVER_RUNNING = (cmd: string): string =>
   `Keep the Provian observer running — if it isn't, run \`${cmd}\`.`;
+/** On a box where the agent is the restart mechanism (a Grok Bot computer), a scheduled run of that command is how it does so. */
+export const AGENT_SCHEDULES_OBSERVER = 'A scheduled task in your own runtime that runs that command is the right way to do it. If you have one, keep it; never remove it.';
 
 export function supervisionLines(
   method: string,
@@ -188,7 +190,8 @@ export function supervisionLines(
     return `  Observer running in the background. ${none} Your shell reads no startup file,\n`
       + '  so nothing on this machine restarts it after a reboot or a move to a new machine. That is the agent\'s job.\n'
       + '  Setup for the agent:\n'
-      + `  ${AGENT_KEEPS_OBSERVER_RUNNING(cmd)}\n`;
+      + `  ${AGENT_KEEPS_OBSERVER_RUNNING(cmd)}\n`
+      + `  ${AGENT_SCHEDULES_OBSERVER}\n`;
   }
   return `  Observer supervised by ${method}${at}.\n`;
 }

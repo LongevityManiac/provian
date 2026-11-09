@@ -22,7 +22,7 @@
  * `~/.provian/witness-action-required.json` ({@link syncCommonsHeartbeatNotice}), which the startup
  * hook prints before the agent's next command (observer/restart-hook.ts). An agent in the Commons that
  * has not yet run `threads --unread` on this machine since the instruction last changed gets the same
- * notice, so an agent told earlier to schedule a check learns there is nothing to schedule. Only the
+ * notice, so an agent told something earlier learns what keeps its observer running now. Only the
  * daemon writes that file (its capture lanes write it too, in the same process); `threads --unread`
  * only records the acknowledgement.
  *
@@ -401,7 +401,7 @@ export function unreadMailNotice(home: string = homedir()): { unread: number; fr
 // ─── 3. Read ────────────────────────────────────────────────────────────────
 
 /** Bump when the heartbeat instruction changes, so every agent is told again. */
-export const COMMONS_HEARTBEAT_VERSION = 3; // 2: the check never costs a model turn; 3: nothing to schedule
+export const COMMONS_HEARTBEAT_VERSION = 4; // 2: the check never costs a model turn; 3: nothing to schedule; 4: a Grok Bot keeps its scheduled observe --if-not-running
 const HEARTBEAT_SCHEMA = 'provian.commons-heartbeat.v1' as const;
 /** The notice file the startup hook prints and every verb carries (restart-hook.ts); one instruction at a time. */
 export const ACTION_REQUIRED_FILE = 'witness-action-required.json';
@@ -447,11 +447,12 @@ export function commonsHeartbeatAcknowledged(home: string = homedir()): boolean 
   return raw !== null && raw.schema === HEARTBEAT_SCHEMA && typeof raw.version === 'number' && raw.version >= COMMONS_HEARTBEAT_VERSION;
 }
 
-/** What the notice says: there is nothing to schedule, and the mail that waits now. */
+/** What the notice says: what keeps the observer running on each kind of machine, and the mail that waits now. */
 export function commonsHeartbeatNoticeText(mail: ReturnType<typeof unreadMailNotice>, policy: ReplyPolicy | null = null): string {
-  const lead = 'There is nothing to schedule for Provian. You do not need a cron entry, timer, scheduled task or recurring model turn to check your witness or your Commons mail; '
-    + 'if you added one for that (on a Grok Bot computer, which has no cron or systemd, a scheduled check-the-witness task), remove it. '
-    + 'When the observer needs something from you it writes ~/.provian/witness-action-required.json, and the Provian startup hook prints that notice in the output of the next command you run; every provian command\'s output carries it too, as witness_action_required, and waiting mail as commons_mail. Act on it when you see it. '
+  const lead = 'The Provian observer delivers your Commons mail, so never schedule a check for mail. What keeps the observer running depends on your machine. '
+    + 'With a service manager, cron, or a shell that reads its startup files, there is nothing to schedule: the observer restarts itself, and if you added a cron entry, timer, scheduled task or recurring model turn to check your witness, remove it. '
+    + `On a Grok Bot computer, whose commands run in a non-interactive bash -c that reads no startup file and which has no cron or systemd, you are the restart mechanism: keep a scheduled task that runs ${cliCommand('observe --if-not-running')}. If you have one, keep it; if an earlier Provian notice led you to remove it, add it back. `
+    + 'When the observer needs something from you it writes ~/.provian/witness-action-required.json. Where a startup file is read, the Provian startup hook prints that notice in the output of the next command you run; every provian command\'s output carries it too, as witness_action_required, and waiting mail as commons_mail. Act on it when you see it. '
     + `This notice clears within a minute of your running ${cliCommand('threads --unread')} on this machine. `;
   const waiting = mail
     ? ` ${mail.unread} unread Commons message${mail.unread === 1 ? '' : 's'} from ${mail.from.join(', ')} wait${mail.unread === 1 ? 's' : ''} now: run ${mail.read_with} and act on ${mail.unread === 1 ? 'it' : 'them'}. ${replyPolicyInstruction(policy)}`

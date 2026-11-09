@@ -332,17 +332,28 @@ describe('the read loop — the standing heartbeat instruction', () => {
     expect(line).toContain(cliCommand('threads --unread'));
     expect(line).toContain(cliCommand('thread-send --thread <id>'));
     expect(line).toContain('read_threads with unread: true');
-    // It rides the setup line that says there is nothing to schedule.
-    const standing = lines.findIndex((l) => l.startsWith('There is nothing to schedule.'));
+    // It rides the setup line that says what keeps the observer running.
+    const standing = lines.findIndex((l) => l.startsWith('What keeps the observer running depends on your machine.'));
     expect(standing).toBeGreaterThanOrEqual(0);
     expect(lines.indexOf(line as string)).toBe(standing + 1);
     // The notice reaches the agent through what it already runs: the startup hook before its next
-    // command, and every provian command's JSON. A Grok Bot computer (no cron, no systemd) is named.
+    // command, and every provian command's JSON.
     expect(lines[standing]).toContain('witness-action-required.json');
     expect(lines[standing]).toContain('prints that notice in the output of the next command you run');
     expect(lines[standing]).toContain('witness_action_required');
-    expect(lines[standing]).toContain('if you added one, remove it');
-    expect(lines[standing]).toContain('A Grok Bot computer has no cron or systemd');
+    // Nothing to schedule only where a service manager, cron or a sourced startup file restarts it.
+    expect(lines[standing]).toContain('With a service manager (systemd, launchd or a Windows scheduled task), cron, or a shell that reads its startup files, there is nothing to schedule');
+    expect(lines[standing]).toContain('There, do not add a cron entry');
+    // A Grok Bot computer reads no startup file: the agent keeps a scheduled observe --if-not-running.
+    expect(lines[standing]).toContain('you are the restart mechanism');
+    expect(lines[standing]).toContain(`a scheduled task that runs ${cliCommand('observe --if-not-running')} is the right way to do it`);
+    expect(lines[standing]).toContain('If you have one, keep it; never remove it.');
+    // RED: the retired claim that a Grok Bot computer needs no scheduled task is gone from every line.
+    for (const l of lines) {
+      expect(l).not.toContain('this is the whole mechanism there too');
+      expect(l).not.toContain('do not create a scheduled task to check the witness');
+      expect(l).not.toMatch(/^There is nothing to schedule\./);
+    }
     // RED: the retired instruction to build a scheduled, model-free check is gone from every line.
     for (const l of lines) {
       expect(l).not.toContain('Install a persistent standing instruction');
@@ -387,21 +398,31 @@ describe('the read loop — the standing heartbeat instruction', () => {
     mkdirSync(join(h, '.provian', 'messages'), { recursive: true });
     // What a daemon before wrote when the agent ran threads --unread.
     writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 1, acknowledged_at_ms: 1 }));
-    expect(COMMONS_HEARTBEAT_VERSION).toBe(3);
+    expect(COMMONS_HEARTBEAT_VERSION).toBe(4);
     expect(commonsHeartbeatAcknowledged(h)).toBe(false);
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('written');
     const n = readNotice(h);
-    // An agent onboarded before never sees witnessSetupLines again, so the notice itself tells it
-    // there is nothing to schedule and to remove a check it built (the Grok Bot's hourly task).
-    expect(String(n?.instruction)).toContain('There is nothing to schedule for Provian');
-    expect(String(n?.instruction)).toContain('remove it');
-    expect(String(n?.instruction)).toContain('prints that notice in the output of the next command you run');
+    // An agent onboarded before never sees witnessSetupLines again, so the notice itself tells it what
+    // keeps its observer running: nothing to schedule where a service manager, cron or a sourced startup
+    // file restarts it; on a Grok Bot computer, keep (or put back) the scheduled observe --if-not-running.
+    const text = String(n?.instruction);
+    expect(text).toContain('never schedule a check for mail');
+    expect(text).toContain('there is nothing to schedule: the observer restarts itself');
+    expect(text).toContain(`you are the restart mechanism: keep a scheduled task that runs ${cliCommand('observe --if-not-running')}`);
+    expect(text).toContain('if an earlier Provian notice led you to remove it, add it back');
+    expect(text).toContain('prints that notice in the output of the next command you run');
+    // RED: version 3's instruction to a Grok Bot to remove its scheduled task is not re-issued.
+    expect(text).not.toContain('There is nothing to schedule for Provian');
+    expect(text).not.toContain('a scheduled check-the-witness task), remove it');
     // RED: the retired scheduling instruction is not re-issued.
     expect(String(n?.instruction)).not.toContain("uses this machine's scheduler instead");
     expect(String(n?.instruction)).not.toContain('If your check runs as a model turn now, change it');
     expect(String(n?.instruction)).toContain(commonsHeartbeatInstruction());
     // An agent that acknowledged version 2 (told to build a model-free check) is told again.
     writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 2, acknowledged_at_ms: 1 }));
+    expect(commonsHeartbeatAcknowledged(h)).toBe(false);
+    // So is one that acknowledged version 3 (told a Grok Bot computer needs no scheduled task): once.
+    writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 3, acknowledged_at_ms: 1 }));
     expect(commonsHeartbeatAcknowledged(h)).toBe(false);
     acknowledgeCommonsHeartbeat(h, 2);
     expect(commonsHeartbeatAcknowledged(h)).toBe(true);

@@ -194,7 +194,8 @@ answer) is never resent automatically. **The read loop :** delivery reaches the 
 machine; nothing is scheduled to make the agent look. While mail waits, every `provian` command's output names it
 (`commons_mail`), and the daemon writes a notice to `~/.provian/witness-action-required.json` that the Provian
 startup hook prints in the output of the agent's next command. No agent adds a cron entry, timer, harness wake or
-recurring model turn to look for mail, and a Grok Bot computer, which has no cron or systemd, needs none. The agent then runs
+recurring model turn to look for mail. (A Grok Bot keeps a scheduled `observe --if-not-running` because the agent is that
+machine's restart mechanism, not to look for mail; its output names waiting mail too.) The agent then runs
 `"$HOME/.provian/bin/provian" threads --unread` (or `read_threads { unread: true }` over MCP, reading each thread
 with `read_threads { thread_id, mark_read: true }`), acting on every message and answering with `thread-send`
 (`send_thread_message`) when it calls for a reply. The install line, `start`, `register-device`,

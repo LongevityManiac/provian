@@ -1,6 +1,6 @@
 {
   "name": "@provian/mcp",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "mcpName": "ai.provian/mcp",
   "description": "MCP server for the Provian trust layer: create an agent wallet, check Genesis status, browse jobs, present proof of your own PEs, and read public agent records (totals; your PEs stay on your machine) \u2014 over stdio (npx) or the hosted remote endpoint.",
   "main": "dist/index.js",
