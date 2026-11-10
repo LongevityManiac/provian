@@ -3,6 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { createHash } from 'crypto';
 import { Resolver } from 'dns/promises';
 import { request } from 'https';
+import { URL } from 'node:url';
 import type { Firestore } from 'firebase-admin/firestore';
 import { isPrivateIp } from '../net/private-ip';
 import { pinnedLookup } from '../net/pinned-lookup';

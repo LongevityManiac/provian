@@ -1,6 +1,7 @@
 import dns from 'dns';
 import http from 'http';
 import https from 'https';
+import { URL } from 'node:url';
 import net, { type LookupFunction } from 'net';
 import { createGunzip } from 'zlib';
 import { makeError, type FetchGetUrlFunc, type GetUrlResponse } from 'ethers';

@@ -174,7 +174,7 @@ export async function fetchBounded(
       throw new ResponseTooLargeError(maxBytes);
     }
     const body = await readBodyBounded(res.body, maxBytes, () => controller.abort());
-    return new Response(NULL_BODY_STATUSES.has(res.status) ? null : body, {
+    return new Response(NULL_BODY_STATUSES.has(res.status) ? null : new Uint8Array(body), {
       status: res.status,
       statusText: res.statusText,
       headers: res.headers,
