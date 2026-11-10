@@ -1,5 +1,5 @@
 import {sha256,toUtf8Bytes,Transaction,getCreateAddress} from 'ethers';
-import {advanceChangeoverTransaction} from './changeover-transaction.mjs';
+import {advanceChangeoverTransaction,validateChangeoverAttempt} from './changeover-transaction.mjs';
 const ensure=(value,code)=>{if(!value)throw Error('changeover_stage_'+code);};
 const digest=value=>sha256(toUtf8Bytes(JSON.stringify(value)));
 /** Durable ordered execution. A shared signer lease is retained for the whole
@@ -13,6 +13,21 @@ export async function advanceChangeoverStage({steps,planDigest,port,journal,pers
  const stageDigest=digest({planDigest,steps});
  let state=journal??{version:1,stageDigest,attempts:{},completed:false};
  ensure(state.version===1&&state.stageDigest===stageDigest&&state.attempts&&typeof state.attempts==='object','journal_mismatch');
+ if(state.completed){
+  // A lost completion response is read-only recovery. Never take a nonce lease
+  // back from a later settlement or broadcast an old stage during this read.
+  await port.assertPlan(planDigest);
+  ensure(Object.keys(state.attempts).length===steps.length,'incomplete');
+  for(let i=0;i<steps.length;i++){
+   const attempt=state.attempts[String(i)],step=steps[i];
+   ensure(attempt?.raw,'incomplete');validateChangeoverAttempt(attempt,step);
+   const receipt=await port.forSigner(step.from).finalized(attempt.raw);
+   ensure(receipt?.hash===attempt.hash&&receipt?.status===1,'not_finalized');
+   if(step.to===undefined)ensure(receipt.contractAddress?.toLowerCase()===getCreateAddress({from:step.from,nonce:attempt.nonce}).toLowerCase()
+    &&(step.address===undefined||receipt.contractAddress.toLowerCase()===step.address),'creation_mismatch');
+  }
+  return {status:'confirmed',step:steps.length,journal:state};
+ }
  await port.assertLease(stageDigest);
  await port.assertPlan(planDigest);
  let allFinalized=true;
