@@ -42,6 +42,7 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
+    "@noble/post-quantum": "0.6.1",
     "@peculiar/asn1-android": "^2.7.0",
     "@peculiar/asn1-schema": "^2.7.0",
     "@peculiar/x509": "^1.14.3",
@@ -59,6 +60,7 @@
     "maxmind": "^5.0.7",
     "node-app-attest": "^1.0.1",
     "resend": "^6.9.4",
+    "undici": "6.29.0",
     "uuid": "^9.0.0",
     "ws": "^8.19.0"
   },

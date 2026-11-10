@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Headless tests for the bond calldata encoders + deposit math (slice 2).
  * Oracles: hand-built selector+ABI words and ethers.Interface cross-check.

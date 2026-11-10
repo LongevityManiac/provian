@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * processStaleClaims — Pass-3 #3 (Session B backend leg).
  *

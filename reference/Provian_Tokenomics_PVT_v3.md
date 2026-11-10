@@ -4,7 +4,7 @@
 
 *Full Economic Architecture of Provian Value Token*
 
-Edition 3 · Revised September 2026 · Describes the economics of PVT on its live minting kernel
+Compute mints money. Ownership survives a key.
 
 
 > **GENESIS POLICY NOTE (controls Section 2.1):** Genesis has exactly three fixed **gross contract inputs**: 75 PVT new-human signup, 75 PVT agent wallet creation, and 25 PVT registered-device link, with a 500 PVT gross wallet ceiling. The fixed lane bypasses standard linked-agent beneficiary routing but retains the immutable treasury split. It has no depletable pool or participant/action/source cap, and no time-based reduction of any kind: a qualified act pays its approved fixed grant exactly. Genesis is armed and admitting through December 31, 2026 (window opened 2026-08-03). Admission closes by time, while every valid pre-cutoff reservation remains durable backlog and may settle later.
@@ -13,15 +13,33 @@ Edition 3 · Revised September 2026 · Describes the economics of PVT on its liv
 
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
-Provian begins from a single premise: as artificial intelligence performs more of the world's useful work, the people and agents who generate verifiable benefit should share in the value that work creates. Compute mints money. No one gets left behind. The Provian Value Token (PVT) is the mechanism that makes that premise concrete.
+A thousand years from now, a civilization trading beyond Earth will need digital money. That money must arise from participation, move freely, and preserve ownership when a key is stolen or its mathematics fails. Provian connects those requirements: witnessed work creates PVT; an ownership registry binds holdings to people and agents; independent recovery proof makes recourse possible. Built by one human, with AI, Provian carries the same purpose through each part: compute mints money. No one gets left behind.
+
+The argument that crypto is bounded by its weaknesses names real problems. They are problems to solve. A bank account can be hacked too; its record of who is owed what survives the password. Provian separates ownership from the wallet key while leaving ordinary transfers public, permissionless and ungated. Binding is the owner's choice. It links addresses that were already public and adds a distinct recovery defense.
 
 To understand PVT you first need to understand the Provenance Envelope (PE). A PE is cryptographically signed, hash-chained proof of an action and its evidence that its contributor owns - a witnessed payment, a job delivered, a promise kept, an AI conversation captured, a corroboration signal received. Every PE's act record reaches the Provian relay in its owner's signed, hash-chained batch, and the relay verifies its structure, attestation, and lineage before accepting it; a PE the relay itself authors is priced as a one-act relay batch and sealed to its owner. The PE, not the token, is the protocol's measurement primitive: it is the unit in which evidenced participation is proven and priced.
 
-PVT is the operating currency minted from those verified PEs. It is an ERC-20 token minted from acts of work, once at each act's best-supported value - there is no other issuance mechanism. Work mints; non-work events and mint-once supplements provide attribution, audit, safety, denial, or chain continuity without a separate mint. PVT cannot be pre-mined or airdropped: the PVT9 kernel line launched at zero supply, and its only supply-creating paths are the batch settlement of sealed acts of work and exact fixed-grant Genesis PEs. There is no non-PE issuance path, no administrative mint, and no balance migration from any pre-PVT9 token. When replaced the kernel with its successor, the settlement history was re-settled on the successor through a one-shot, keyless migration distributor, which paid every balance 1:1 and burned the remainder, exactly the PVT that had been burned on the kernel: nothing was minted twice and nothing burned was reissued. Every unit of PVT in existence corresponds to work proven by a PE the relay accepted.
+Only witnessed work creates PVT, once at each act's best-supported value. Settlement creates that work's currency; security records, burns and restoration records create no separate earnings. A restoration returns existing PVT to its owner and creates none. A theft reversal destroys the specified amount at reachable addresses and issues the same amount to the owner's fresh destination in one transaction, leaving total supply unchanged. After a cryptographic break, registered balances at the last good block reissue onto a successor with their monetary history preserved. That carry is existing ownership, never a second reward for the same work.
 
 PVT supports useful coordination. It is the settlement currency of the agent economy, the collateral agents post as performance bonds, and the unit burned for institution fees and for benefits an agent consumes directly. Provian Technologies does not sell PVT, operate an exchange, or represent its external value. PVT is minted from acts of work, once at each act's best-supported value.
 
-This document follows the life of the token: how it is created from PEs (Section 2), how the underlying work is valued (Section 3), how each mint is shared (Section 4), what constrains its supply (Section 5), how it is destroyed (Section 6), who ultimately benefits (Section 7), how it is used across the ecosystem (Section 8), and how the system evolves (Section 9). Two appendices collect the immutable constants and verified contract addresses for reference. All constants referenced below are Solidity constant declarations in the live kernel and institution contracts, or parameters enforced at the relay layer.
+The economic design follows the same life cycle: work creates PVT, the contributor holds it, optional membership burns part and contributes part to shared reserves, and an evidence-based restoration can return existing holdings after theft. The published rule never converts a token price, exchange rate or fiat amount into issuance.
+
+## Ownership and the Recourse Pool
+
+Every bound address belongs to a verified human or agent identity. The registry follows Transfer events and distinguishes minted from received PVT. Both belong to the holder. App and agent wallets bind at creation; an owner can bind additional addresses by proving control. Binding silently registers a recovery commitment independent of the wallet curve. A person's secret derives from the seed and travels only in the encrypted backup. The SDK generates separate encrypted recovery material for an agent.
+
+Every bound owner has free restoration after a cryptographic break. Theft recourse is optional and belongs to Recourse Pool members. One membership includes all bound holdings, earned and received alike. It is intended for holders with enough at stake.
+
+Every enrolled month requires a **100 PVT participation burn**, earning or not. Separately, **1% of gross issuance** goes into the on-chain reserve at settlement. A month with no earnings instead requires a **100 PVT reserve contribution from holdings**, in addition to the burn. Burned units are destroyed; contributed units remain in the pool. All three amounts are published in the signed rule and can rise or fall prospectively with loss experience.
+
+A missed month has one calendar month of grace. Catching up within grace preserves continuous membership. After grace, membership ends; rejoining protects only from that day forward. No later contribution includes a theft that occurred during a lapse.
+
+A member makes a restoration request once. The determination follows independently witnessed evidence and prior outcomes, without member-facing amount limits, holds, waiting periods or second confirmations. Reversal reaches PVT still held by the person who took it or anyone who gave nothing for it. A recipient in a witnessed exchange keeps it. Execution requires both the separate restoration authority and independent owner proof; neither alone can move PVT. Frank's key holds that appointable role until the Court opens.
+
+The pool restores the remaining loss by its rule, pro rata when underfunded and never beyond its resources. Its reserve-to-member-balance ratio is published. Members fund it entirely. Provian Technologies contributes nothing, holds nothing and never profits from it. Members can leave and redeem their available reserve interest directly on-chain without the relay. Every determination and outcome enters the member's own chain, and on-chain restoration is public.
+
+Restoration is discretionary. Membership creates no contractual entitlement to restoration, and members accept determinations as final under the Terms. Ordinary transfers remain ungated.
 
 # 2. How PVT Is Created: Minting from Verified PEs
 
@@ -81,7 +99,7 @@ The registered-device witness authenticates the report, not the truth of an oper
 
 # 4. How the Value Is Shared: The Minting Split
 
-Once a PE's gross PVT amount is determined, that amount is divided on-chain the moment it is minted. Every PVT minted in the network - by any agent, in any ecosystem - flows through this split. The split has two immutable components and one governable component.
+Once a PE's gross PVT amount is determined, that amount is divided on-chain the moment it is minted. Every unit newly created by work flows through this split. Restoration of existing units does not create another split. The split has two immutable components and one governable component.
 
 | **Recipient** | **Policy** | **Mechanism** |
 |----|----|----|
@@ -90,7 +108,7 @@ Once a PE's gross PVT amount is determined, that amount is divided on-chain the 
 | Provian Foundation, agent side | At least 0.5% | Prospective, epoch-indexed policy rate, never below the immutable floor; set at the floor today. |
 | Contributor | Residual | 10000 BPS minus Provian component minus applicable Foundation component. Derived per mint. |
 
-Human-resolving and Genesis mints use the immutable 99% contributor / 0.5% Provian Technologies / 0.5% Foundation allocation. Standard agent-side mints preserve the immutable 0.5% Provian share and 0.5% Foundation floor, while the applicable prospective Foundation rate determines the contributor residual; when that rate is at the floor, both treatments resolve to 99/0.5/0.5.
+The 99% contributor / 0.5% Provian Technologies / 0.5% Foundation statement is the floor allocation. Human-resolving and Genesis issuance starts from that split. For an enrolled member, the separate 1% gross contribution goes to the pool, leaving 98% at that split; it does not become company revenue. Standard agent-side mints preserve the immutable 0.5% Provian share and 0.5% Foundation floor, while the applicable prospective Foundation rate determines the contributor residual; when that rate is at the floor, both treatments resolve to 99/0.5/0.5.
 
 The contributor share is not a constant. It is the residual: 10000 BPS minus the applicable Foundation component minus the Provian component. When the agent-side Foundation rate rises, the contributor share for agent-side mints falls by the same amount; human-side mints are unaffected.
 
@@ -128,7 +146,7 @@ Against issuance, the live system exposes a small number of burn paths. Every on
 
 ## 6.1 The Kernel's Burn Surface
 
-The kernel's entire burn surface is the two standard ERC-20 self-burn functions, `burn` and `burnFrom`. Any holder can destroy its own PVT, and any approved spender can burn within its allowance. There is no fee burn, no administrative burn, and no confiscation path on the kernel itself; every other burn below is an institution or a holder calling one of these two functions against PVT it already holds.
+A holder can destroy its own PVT with `burn`, or authorize a spender to burn within its allowance with `burnFrom`. These are true reductions in supply. The largest recurring burn is the member's 100 PVT monthly participation burn, earning or not. The separate reserve contribution is not burned. An authorized theft reversal also destroys units at named sources, but immediately reissues exactly that amount to the owner: that operation returns existing PVT and leaves supply unchanged. Ordinary transfers do not burn PVT and are never gated.
 
 ## 6.2 Institution Fee Burns
 
@@ -216,7 +234,7 @@ In short, PVT today buys settlement, collateral, and consumable benefits; it doe
 
 The compute economy is accelerating. New forms of beneficial compute, new device categories, new agent capabilities, and new economic structures built on the constitutional layer will emerge. The tokenomics are designed to accommodate that growth without ever introducing a new issuance mechanism - minting from proof-of-work PEs remains the only way PVT is created.
 
-The institutions bound to the kernel burn PVT through `IPVTBurnable.burn` - a self-burn of PVT the contract already custodies; the kernel exposes no protocol-burn registry and no administrative burn. An actor cannot name its own work into existence: a computer's batch admits the observation types its observer witnesses and a never-seen type an observer plugin witnessed, the sovereign lane admits a compute-or-work or never-seen type only with an admitted non-actor hardware witness, the single-PE recorders are retired, and a type a person's phone names outside the signed policy records as that person's own claim and mints nothing. Any structurally valid PE that does arrive can participate in the attribution layer, while only proof-of-work PEs enter the minting pipeline, regardless of which Commons implementation generated it.
+The institutions bound to the kernel burn PVT through `IPVTBurnable.burn` - a self-burn of PVT the contract already custodies; the kernel exposes no protocol-burn registry. Separately, an authorized theft reversal destroys exact amounts at named sources and reissues the same total to the independently proven owner. It needs both restoration authority and owner proof, creates no PVT, and leaves ordinary transfers ungated. An actor cannot name its own work into existence: a computer's batch admits the observation types its observer witnesses and a never-seen type an observer plugin witnessed, the sovereign lane admits a compute-or-work or never-seen type only with an admitted non-actor hardware witness, the single-PE recorders are retired, and a type a person's phone names outside the signed policy records as that person's own claim and mints nothing. Any structurally valid PE that does arrive can participate in the attribution layer, while only proof-of-work PEs enter the minting pipeline, regardless of which Commons implementation generated it.
 
 The Provian Commons already demonstrates this pattern. Escrow burns PVT for settlement fees, Promises burn PVT for loan fees, Pools burn PVT for coordination fees, BondPool burns PVT across the bond lifecycle, the Court burns forfeited collateral and sweeps, participants burn PVT to claim names, to vouch, to open a Commons speech window, to stake a challenge, and to bid for featured placement, and — the presentment burn — a participant burns PVT to present a signed presentation of its own provenance; every Provian-mediated commitment (escrow, a job acceptance, a bond, a pledge, a subscription) rides a live presentation handshake, to its counterparty or, for a bond, a pledge or a subscription, to the Commons, rather than a second burn, and a standing export is itself a reputation presentation. Each is a use of PVT the protocol did not centrally plan; future ecosystems may add burn semantics only through their own authorized implementations and prospective policy.
 
@@ -244,22 +262,10 @@ These values are the principal economic constants and seeds of the live kernel. 
 | MAX_RECIPIENTS_PER_BATCH | 500 | Upper bound on recipients in one settlement batch. Immutable. |
 | Beneficiary route (relay) | 20% agent / 80% human default; 5%–50% agent range | Division of the contributor share under a human link (Section 4). Relay policy, prospective only. |
 
-# Appendix B. Verified Contract Addresses
+# Appendix B. Finding the current contracts
 
-All PVT minting is on Base (chainId 8453). The canonical minting contract is the successor kernel `0x8811441914381143b9408c5C32247367F86F173A` (epoch zero armed; Genesis open through December 31, 2026), with its eligibility verifier at `0xb26Fd9d4f3b42911592B96270e8437287DE33406`. It replaced the kernel `0x4Bf02d5C9bC4306c38603EF2aA164f2f2273bcd7` and verifier `0x3a27957a5C4c867DDB0048De04d75aD44AD951aa` (live 2026-07-31; first settlement minted 2026-08-10), which retired. Both name the bootstrap administrator `0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3` as a compile-time constant; there is no admin transfer, renunciation, owner, proxy, or governance call path, and changing an immutable rule requires a separately approved successor contract. The kernel's treasury destinations are Provian Technologies `0x086e0F377af1245B8888540f39e99A42a7daF1dA` and the Provian Foundation Safe `0x94F3D06ca027dFD1e6cCaa1117b050E08D5EA936`; the Safe is a treasury recipient only and sets no rate.
+The permanent protocol pointer on Base names the current kernel, verifier and institutions. Every app and SDK shipped with this release and afterward resolves that pointer directly, verifies deployed code and contract links through independent chain reads, and refuses retired contracts. An address change does not require another client rebuild. The pointer's permanent address and runtime commitment ship in the public client configuration; current component addresses come from the chain.
 
-The institutions bound to the kernel, all on Base and all wired with PVT principal enabled:
+Successors carry balances, the Genesis window, anchors, settled occurrences and institution obligations. The old kernel's minting ends. A migration cannot turn previously witnessed work into a second issuance or turn institutional custody into an administrator's funds.
 
-| **Contract** | **Address** |
-|----|----|
-| ProvianEscrowV4 | 0x96560fDF49e563eFCdc2d502934676DC074732d0 |
-| ProvianPromiseV3 | 0x7506F4A052750260A0ddcdF5E63a77CC646d89B9 |
-| ProvianPoolV3 | 0x1301BF63Cb6BaE7171f6c7D895C762B243964d26 |
-| ProvianCourtV2 | 0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f |
-| ProvianBondPool | 0x6b09E9C72316De9d62d63f09B187d4c86bBf787E |
-| ProvianPEAnchor (daily PE Merkle root) | 0x889A59A847e490c5Cc91f281468AbAacc100a9fD |
-
-Foundation Membership registry (deployed 2026-04-19, not enabled; Section 7): Base `0xBf471fb8778e0c474a1a79f5804b7057174492b8`, Arbitrum and Optimism `0x8625089A92Bd4261a810e9793d1F6AE56e684F98`.
-
-
-Compute mints money. No one gets left behind. · Provian Technologies · provian.ai · August 2026
+Compute mints money. No one gets left behind. · Provian Technologies · provian.ai

@@ -32,6 +32,7 @@ th, td { border:1px solid var(--line); padding:.5rem .6rem; text-align:left; fon
 <a class="masthead" href="/home">PROVIAN</a>
 <h1>Delete your Provian account</h1>
 <p>You can delete your Provian account and its data from inside the app, at any time, at no cost.</p>
+<p>Before deleting, keep your recovery phrase or a usable encrypted backup. That backup also preserves the independent recovery material for bound PVT. If you want to leave the Recourse Pool, use its leave and reserve-exit controls first; deleting an app account does not itself execute an on-chain exit.</p>
 <h2>In the app</h2>
 <ol>
 <li>Open Provian and go to <strong>Settings</strong>.</li>
@@ -57,7 +58,7 @@ th, td { border:1px solid var(--line); padding:.5rem .6rem; text-align:left; fon
 <ul>
 <li><strong>Your wallet and its funds are yours.</strong> Provian never holds them. Delete the app only after you have your recovery phrase or a cloud backup if you want to keep using the wallet.</li>
 <li><strong>Your Provenance Envelopes</strong> stay on your phone and in your own encrypted backup, and you can export them first (Settings → Storage → Export all my PEs).</li>
-<li><strong>On-chain records</strong> (PVT settlement transactions and the daily anchors) are permanent on Base and cannot be deleted by anyone.</li>
+<li><strong>On-chain records</strong> (ownership bindings and recovery commitments, PVT transfers and settlements, daily anchors, membership and restoration outcomes) are permanent on Base. Deleting an account cannot erase those records or undo public associations between bound addresses. A recovery commitment is public; its independent signing material remains in your encrypted backup.</li>
 <li><strong>Records still carrying unminted earnings, running totals, job records and promises</strong> are kept under the retention rules in the <a href="/privacy">Privacy Policy</a>, section 9, so settlement stays correct. Paid PE Archive space you bought stays for as long as Provian operates the Archive.</li>
 </ul>
 <p>The <a href="/privacy">Privacy Policy</a>, section 11.2, describes deletion in full.</p>

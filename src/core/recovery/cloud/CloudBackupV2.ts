@@ -70,6 +70,7 @@ import {
     type StoredBackup,
 } from './cloudBackupEnvelope';
 import { translate } from '../../../i18n/translate';
+import { deriveHumanAccount, readHumanAccountSelection } from '../../recourse/human-account';
 
 // The envelope crypto (types, KDF, encrypt/decrypt, iteration constants)
 // lives in cloudBackupEnvelope.ts — a dependency-light module so the
@@ -146,6 +147,9 @@ export async function createCloudBackup(pin: string, biometricAction?: Biometric
         // getEVMAddress() returns public material only and wipes the derived
         // private key internally.
         const address = await SeedManager.getEVMAddress(biometricAction);
+        const rootAccount = await deriveHumanAccount(mnemonic, 0);
+        const recourseAccount = await readHumanAccountSelection(rootAccount.evm);
+        if (recourseAccount && recourseAccount.evm !== address.toLowerCase()) throw new Error('recourse_backup_account_mismatch');
 
         // A second wallet created on the same iCloud / Google account used to overwrite the
         // first wallet's only cloud recovery without a word. The primary is replaced freely only
@@ -165,9 +169,9 @@ export async function createCloudBackup(pin: string, biometricAction?: Biometric
             ? 'keep'
             : options.replaceExisting === true ? 'replace' : undefined;
         const target = resolveBackupTarget({
-            address,
+            address: rootAccount.evm,
             primaryRaw: await retrieveSynced(STORE_KEY),
-            walletKeyRaw: await retrieveSynced(walletBackupKey(address)),
+            walletKeyRaw: await retrieveSynced(walletBackupKey(rootAccount.evm)),
             choice,
         });
         if (target.kind === 'ask') {
@@ -180,6 +184,7 @@ export async function createCloudBackup(pin: string, biometricAction?: Biometric
         const payload: CloudBackupPayload = {
             mnemonic,
             wallet_address: address,
+            ...(recourseAccount ? { recourse_account: recourseAccount } : {}),
             chain_ids: DEFAULT_CHAIN_IDS,
             created_at: new Date().toISOString(),
             device_info: {
@@ -190,7 +195,7 @@ export async function createCloudBackup(pin: string, biometricAction?: Biometric
 
         // Encrypt (async KDF — yields to the event loop so the UI stays live
         // through the 600K-iteration derivation).
-        const stored: StoredBackup = { ...(await encryptBackupEnvelope(payload, pin)), wallet_address: address.toLowerCase() };
+        const stored: StoredBackup = { ...(await encryptBackupEnvelope(payload, pin)), wallet_address: rootAccount.evm.toLowerCase() };
 
         if (!isCloudKeychainAvailable()) {
             throw new Error(
@@ -305,8 +310,16 @@ export async function listCloudBackups(): Promise<{ entries: CloudBackupEntry[];
  * Check if a cloud backup exists (without decrypting). With a wallet address: whether THAT
  * wallet has a completed backup (the primary names it, or its own key holds one).
  */
+async function backupIdentity(forWalletAddress: string): Promise<string> {
+    const root = await SeedManager.getBackupIdentityAddress();
+    if (!root) return forWalletAddress;
+    const current = await readHumanAccountSelection(root);
+    return forWalletAddress.toLowerCase() === root.toLowerCase() || current?.evm === forWalletAddress.toLowerCase()
+        ? root : forWalletAddress;
+}
 export async function hasCloudBackup(forWalletAddress?: string): Promise<boolean> {
     if (forWalletAddress) {
+        forWalletAddress = await backupIdentity(forWalletAddress);
         return walletHasBackup({
             address: forWalletAddress,
             primaryRaw: await retrieveSynced(STORE_KEY),
@@ -321,6 +334,7 @@ export async function hasCloudBackup(forWalletAddress?: string): Promise<boolean
  * pre-2026-10-17 primary that names no wallet — possibly this wallet's backup, unprovable.
  */
 export async function cloudBackupStatus(forWalletAddress: string): Promise<WalletBackupStatus> {
+    forWalletAddress = await backupIdentity(forWalletAddress);
     return walletBackupStatus({
         address: forWalletAddress,
         primaryRaw: await retrieveSynced(STORE_KEY),
@@ -340,6 +354,7 @@ export async function cloudBackupWalletAddress(): Promise<string | null> {
  * Without an address (no wallet on the device), the primary alone, as before.
  */
 export async function deleteCloudBackup(forWalletAddress?: string): Promise<{ deletedKeys: string[]; keptUnidentifiedBackup: boolean }> {
+    if (forWalletAddress) forWalletAddress = await backupIdentity(forWalletAddress);
     const plan = forWalletAddress
         ? backupKeysToDelete({
             address: forWalletAddress,

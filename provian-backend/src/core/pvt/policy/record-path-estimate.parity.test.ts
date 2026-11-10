@@ -1,3 +1,4 @@
+jest.mock('../../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * THE ACCEPTANCE TEST FOR C-2: what the estimator SHOWS is what the rail PAYS.
  *

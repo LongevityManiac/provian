@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture }));
 /**
  * item 3 — a real exchange through a DEX router or 0x is labelled and
  * ceiling-counted as a SWAP in both USDC watchers, keyed on its transaction.

@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses } }; }) }));
+import { currentProtocolDeployment } from '../protocol/runtime';
 /**
  * createEscrow guards (Pass-2 WS3 C2).
  *
@@ -79,12 +81,11 @@ function makeDeps(): { deps: AgentBankDeps; setMock: jest.Mock; updateMock: jest
 describe('createEscrow - C2 fail-fast contract resolution', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('throws ValidationError with NO Firestore/PE side effects when the chain has no configured contract', async () => {
-    delete process.env.ESCROW_CONTRACT_ADDRESS;
-    delete process.env.ESCROW_CONTRACT_ADDRESS_BASE;
+  it('refuses with NO Firestore/PE side effects when the pointer cannot be verified', async () => {
+    jest.mocked(currentProtocolDeployment).mockRejectedValueOnce(new Error('protocol_pointer_unavailable'));
     const { deps, setMock, updateMock } = makeDeps();
 
-    await expect(createEscrow(deps, BODY)).rejects.toBeInstanceOf(ValidationError);
+    await expect(createEscrow(deps, BODY)).rejects.toThrow('protocol_pointer_unavailable');
 
     // The whole point of C2: no orphaned escrow doc, no escrow_created PE.
     expect(setMock).not.toHaveBeenCalled();

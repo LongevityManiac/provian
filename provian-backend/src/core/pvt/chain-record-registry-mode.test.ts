@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * the chain-record scan and the proven-EOA nonce scanner in registry mode.
  *

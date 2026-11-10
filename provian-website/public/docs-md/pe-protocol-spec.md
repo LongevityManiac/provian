@@ -2,6 +2,8 @@
 
 # Provian PE Protocol Specification
 
+Digital money for a civilization trading beyond Earth needs continuity across compromised keys and changes in cryptography. Provian separates three kinds of evidence: the work that creates PVT, the independent record of who owns bound holdings, and the authorization that returns existing PVT after a loss. This specification defines the participant-owned proof connecting those systems. A restored balance is not new work, and a restoration outcome never rewrites an earlier proof.
+
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
 **Envelope wire:** `provian.pe.v2` · **Live schema:** 2.3.2 · **Export:** `provian.pe-export.v1`
@@ -32,6 +34,10 @@ Think of PEs as SMTP: the Provian wallet is one mail client, but the protocol ru
 ---
 
 ## 1. Design Principles
+
+**Contribution, ownership and recourse are distinct.** Work PEs support minting once; they do not alone establish a current balance after transfers. The ownership registry follows bound addresses prospectively and keeps a separate recovery commitment. A restoration determination cites verifiable chain and registry evidence, and appends its outcome to the member's history. It never modifies a sealed work PE, treats a self-reported theft as a witnessed fact, or mints a second time for old work. Recovery secrets and wallet keys never appear in an envelope or public projection.
+
+**Discretionary pool determinations.** Recourse Pool membership creates no contractual payment right. An outcome records the pool's determination, its evidence commitment and, when executed, the actual chain transfer and any true burn. The outcome proves what the pool decided and executed, not that every assertion in the member's restoration request was true. Private work content remains with its owner. Restoration records and contribution accounting do not become separately mintable work merely because they are consequential.
 
 **Evidence and its limits.** A PE binds an actor and a submitted record to evidence that the relay can verify. Witness class and attestation grade describe the evidence, not guaranteed correctness, usefulness, or computational expenditure. Hardware witnesses require a non-actor signature checked to the scheme’s pinned public root. A body-bound registered-device report is accepted at its device tier; an operator-controlled daemon can fabricate reported origins and token counts. This report-authenticity residual is accepted. No provider catalog, independent token meter, or volume cap is implied.
 

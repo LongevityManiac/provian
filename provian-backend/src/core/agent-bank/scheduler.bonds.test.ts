@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * processAbandonedBonds — Capability-Truthfulness Pass-2 (WS2 #24) regression.
  *

@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake-firestore';

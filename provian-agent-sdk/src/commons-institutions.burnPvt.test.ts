@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * burnPvt: the burn is irreversible the moment it is mined. the SDK no longer waits for
  * confirmations on its own RPC — it broadcasts and makes ONE `burn/record` call with

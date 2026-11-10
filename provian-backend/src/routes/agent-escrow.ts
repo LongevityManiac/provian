@@ -134,10 +134,10 @@ export function createAgentEscrowRouter(deps: AgentBankDeps): Router {
       // resolveEscrowContractAddress reads the per-chain env var so the funding
       // instructions point at the correct contract on the correct chain.
       const escrowCurrency = escrow.currency ?? 'usdc';
-      const contractAddress = resolveEscrowContractAddress(
+      const contractAddress = (await resolveEscrowContractAddress(
         escrowCurrency,
         escrow.chain as AgentBankChain,
-      );
+      ));
       const tokenSymbol = escrowCurrency === 'pvt' ? 'PVT' : 'USDC';
 
       res.status(201).json({

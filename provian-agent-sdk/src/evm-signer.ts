@@ -52,6 +52,8 @@ import { randomUUID } from 'node:crypto';
 import { fileNonceStore } from './nonce-file-store';
 import { type NonceJournalStore, type SignedNonceAttempt } from './canonical-nonce';
 import { Transaction } from 'ethers';
+import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
+import { assertCurrentProtocolTransaction } from './protocol-transaction';
 import { sendChainOperation, readChainOperation, resolveCanonicalNonceConsumption, ChainNonceError } from './chain-nonce';
 import {
   CHAIN_IDS,
@@ -421,6 +423,7 @@ async function broadcast(
   const attempt = await sendChainOperation(chainRuntime(wallet, chain, opts),
     `${CHAIN_IDS[chain]}_${account.address.toLowerCase()}`, operationId,
     `${to_.toLowerCase()}:${value}:${callData ?? '0x'}`, async (nonce) => {
+      if (chain === 'base') await assertCurrentProtocolTransaction(ownerChainNetwork(), to_, callData);
       const raw = await account.signTransaction({ ...prepared, nonce });
       return { raw, hash: keccak256(raw), nonce };
     }, { nonce: opts.nonce, resume: opts.operationId !== undefined });
@@ -488,6 +491,10 @@ function chainRuntime(wallet: EvmWallet, chain: SupportedChain, opts: SignerOpts
       }
     },
     broadcast: async (a: SignedNonceAttempt) => {
+      if (chain === 'base') {
+        const tx = Transaction.from(a.raw);
+        if (tx.to) await assertCurrentProtocolTransaction(ownerChainNetwork(), tx.to, tx.data);
+      }
       const hash = await reads.sendRawTransaction({ serializedTransaction: a.raw as Hex });
       if (hash.toLowerCase() !== a.hash.toLowerCase()) throw new Error('nonce_broadcast_hash_mismatch');
     },
@@ -578,6 +585,7 @@ export async function sendTransaction(
   if (params.data !== undefined && !/^0x([0-9a-fA-F]{2})*$/.test(params.data)) {
     throw new EvmSignerError("'data' must be 0x-prefixed even-length hex", 'INVALID_DATA');
   }
+  if (params.chain === 'base') await currentProtocolDeployment();
   if (params.allowUnlistedTarget !== true && !isAllowlistedTarget(params.chain, params.to)) {
     throw new EvmSignerError(
       `target ${params.to} is not allowlisted on ${params.chain}. ` +
@@ -650,6 +658,7 @@ export async function transferToken(
   // whole signer surface rejects with one error type.
   let info: ReturnType<typeof getToken>;
   try {
+    if (params.chain === 'base') await currentProtocolDeployment();
     info = getToken(params.chain, params.token);
   } catch (err) {
     throw new EvmSignerError((err as Error).message, 'TOKEN_NOT_ALLOWLISTED');

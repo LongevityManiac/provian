@@ -350,7 +350,7 @@ describe('Genesis for agents: every agent with its own wallet and key (all 12 lo
         expect(vision.genesisBody).toContain(
             "Every agent with its own wallet and its own key gets its own 75 PVT, however it was onboarded, including through another agent's fleet code.",
         );
-        expect(vision.card11Body).toContain("Provian's reference implementations: source-visible, and not the only possible ones.");
+        expect(vision.card12Body).toContain("Provian's reference implementations: source-visible, and not the only possible ones.");
         const faq = (en.help as Record<string, Record<string, string>>).faq.howEarnMoreGenesisA;
         expect(faq).toContain('fifty fleet agents means fifty grants');
         expect(faq).toContain('with no wallet of its own, gets none');

@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * the SDK exposes no path for an agent to declare its own work.
  *

@@ -3,9 +3,9 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const PRIVACY_DOCUMENT: LegalDocument = {
-  "version": "sha256:96d53edf32341e5318437551e1fde1da564a9df978d68667ba61e9c5956de90d",
+  "version": "sha256:eee520ce8d4dbd61d18b484558f4265872f3c8ca6dffeb6a1393dd59bdd3024f",
   "title": "Provian Privacy Policy",
-  "lastUpdated": "November 2, 2026",
+  "lastUpdated": "November 9, 2026",
   "footer": "This Privacy Policy is effective as of July 16, 2026.",
   "blocks": [
     {
@@ -32,11 +32,11 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Your keys live on your device.",
+          "text": "You hold your keys and choose which addresses to bind.",
           "bold": true
         },
         {
-          "text": " We are non-custodial by architecture, not just by policy. We never have your private keys, your seed, or your biometric data."
+          "text": " Your wallet seed is encrypted on your device and backed up only as ciphertext. The device’s separate PE attestation key is hardware-bound. We never receive your wallet private keys, seed or biometric data. Binding creates an ownership record apart from the spending key; it can support PVT restoration under the published rule. The restoration authority and the owner’s independent proof are both required, and every restoration is public."
         }
       ]
     },
@@ -70,7 +70,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
         ],
         [
           {
-            "text": "Your ordinary wallet assets remain under your own signing keys; the bounded escrow admin power is described in the Terms of Service"
+            "text": "Ordinary wallet transfers remain under your own signing keys. The appointed restoration authority can return existing PVT only with independent owner proof under the published rule; the Terms also describe bounded institution powers"
           }
         ],
         [
@@ -2058,6 +2058,34 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       "spans": [
         {
           "text": "For data protection matters in the EU, you may also contact your local data protection authority."
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "text": "Recourse and ownership records"
+    },
+    {
+      "type": "paragraph",
+      "spans": [
+        {
+          "text": "Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "spans": [
+        {
+          "text": "At binding, the relay stores a hash commitment. A person’s recovery material derives from the seed protected by the existing encrypted backup; an agent’s independently generated recovery material is stored encrypted with its wallet key. Restoration publishes the consumed recovery preimage, a destination-bound hash signature and the next commitment on-chain. The relay retains the signed operation for reliable execution and its public outcome; it does not receive the independent signing secret or the next recovery preimage. A recovery or rotation adds a record and does not silently rewrite prior ownership evidence."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "spans": [
+        {
+          "text": "Recourse Pool requests use the loss transaction and ownership history, available device evidence, counterparty history and previous determinations. The pool records the evidence basis and determination. Restoration outcomes are included in the member's chain, and on-chain restoration transfers are public. Private work content, wallet keys and recovery secrets are not included in those public outcomes. Membership and contributions create no contractual right to payment; restoration is a discretionary determination of the pool under its published rule."
         }
       ]
     }

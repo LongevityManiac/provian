@@ -1,3 +1,8 @@
+import { baseAssetsForKernel } from './wallet-exchange';
+import { baseChainRecordProfile } from './chain-record-chains';
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
 /**
  * the chain-record lane: act derivation, the cross-lane mint-once gate,
  * and the observation cycle. The money outcome (what the emitted act SEALS
@@ -11,7 +16,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake-firestore';
 import type { Firestore } from 'firebase-admin/firestore';
 import {
-  CHAIN_RECORD_EXCLUDED_COUNTERPARTIES,
+  CHAIN_RECORD_EXCLUDED_COUNTERPARTIES as staticExcluded,
   CHAIN_RECORD_MINT_CUT_LINE_MS,
   CHAIN_RECORD_OBSERVATION_HORIZON_MS,
   CHAIN_RECORD_OBSERVATIONS_COLLECTION,
@@ -20,7 +25,8 @@ import {
   chainRecordObservationId,
   chainRecordPeId,
   buildChainRecordWatcherDeps,
-  deriveChainRecordAct,
+  deriveChainRecordAct as deriveWithProfile,
+  BASE_CHAIN_RECORD_PROFILE,
   readUsdcWitnessVerdict,
   reopenParkedChainRecordObservations,
   runChainRecordWatcherCycle,
@@ -666,3 +672,9 @@ describe('2026-10-01 — ETH that arrives INSIDE a transaction (deriveChainRecor
     expect(typeof scan.getInternalTransfers).toBe('function');
   });
 });
+
+const fixtureProfile = baseChainRecordProfile(new Set([...staticExcluded, protocolDeploymentFixture.addresses.kernel.toLowerCase()]), BASE_CHAIN_RECORD_PROFILE.institutionTargets, baseAssetsForKernel(protocolDeploymentFixture.addresses.kernel.toLowerCase()));
+const CHAIN_RECORD_EXCLUDED_COUNTERPARTIES = fixtureProfile.excludedCounterparties;
+function deriveChainRecordAct(evidence: Parameters<typeof deriveWithProfile>[0], wallet: string, internal: Parameters<typeof deriveWithProfile>[2] = null) {
+ return deriveWithProfile(evidence, wallet, internal, fixtureProfile);
+}

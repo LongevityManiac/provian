@@ -505,7 +505,7 @@ export async function verifyEvmPvtTransfer(
     return { ok: false, reason: 'unsupported_chain' };
   }
 
-  const pvtAddress = getPvtAddressForChain(chainName);
+  const pvtAddress = (await getPvtAddressForChain(chainName));
   if (!pvtAddress) {
     return { ok: false, reason: 'pvt_principal_disabled_or_unconfigured_chain' };
   }
@@ -658,7 +658,7 @@ export async function verifyEvmPvtBurn(
 
   // the live token at any block, plus the retired predecessor kernel for burns mined
   // at or before the migration snapshot (its balances were carried from that block).
-  const burnTokens = getAcceptedPvtBurnTokensForChain(chainName);
+  const burnTokens = (await getAcceptedPvtBurnTokensForChain(chainName));
   if (burnTokens.length === 0) {
     return { ok: false, reason: 'pvt_principal_disabled_or_unconfigured_chain' };
   }

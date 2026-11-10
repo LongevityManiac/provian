@@ -21,6 +21,8 @@ import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OUT as OSS_NOTICES_MODULE, expectedModule as expectedOssNotices } from './generate-oss-notices.mjs';
 
+import { CURRENT_PERSON_DISCLOSURES } from './current-person-disclosures.mjs';
+
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const RECORD_KEY = /\bD-\d{2,}(?:[a-z]|\([a-z\d]+\))?|\bWP(?:-CLK|\d+)(?=\b|_)/;
 const ATTRIBUTION = /\b[F]rank\b/;
@@ -44,7 +46,6 @@ export const FROZEN_ARTIFACTS = Object.freeze({
   "contracts/src/ProvianPromiseV3.sol": "2cd557fa76f15805f8ac8983541b9cf6543deb00e82b826901fb3158ca091a8b",
   "contracts/src/interfaces/IPVT.sol": "31b60fcf701c94cc472478c62218a2c0e26bdca361b706971289e7ebc42153bb",
   "contracts/test/ProvianPEAnchor.t.sol": "fc2b5263ce63d8cc79487034a2f210a793a7ae66ff60b0aca9f8402fd1577897",
-  "docs/audit/pvt-wp0-wp1/pvt-action-policy-matrix.generated.json": "acdd8f592c75ac2b427c0dac87053f12be41fd4646fd84a22c5c13ac9ebd12a7",
   "docs/audit/pvt-wp0-wp1/pvt-launch-capacity-model.generated.json": "9df622ffd8bf3470bcce3ae55a5860dc75f8b5859f3707cfa7a3a9aea2c17967",
   "docs/audit/pvt-wp0-wp1/pvt-policy-approval-manifest.generated.json": "704c1a2d9e555b56d9b4a5803b3f641b0e29e5e3012af0c0c3dc5ae665be6e71",
   "provian-agent-sdk/src/agent-wallet-promotion.test.ts": "1fb38d793c07f5660872e73c7e3c8554e3f4980f94c4487e2d3fd6132d022096",
@@ -61,8 +62,8 @@ export const FROZEN_ARTIFACTS = Object.freeze({
   "provian-agent-sdk/src/scripts/register-device.agentToken.test.ts": "02cbbc3b3b5db33e466674d52d3cb0deefde8bca834a09e2a4f247838208822c",
   "provian-agent-sdk/src/scripts/register-device.otelProfile.test.ts": "09ae037453a746eb24c10bc20a92c43ff4d5586e72906d120a11452d84819837",
   "provian-backend/scripts/generate-pvt-capacity-model.ts": "e96c93e3de87c5ede8d61e0e0b2cee6d1221a5de8df44ae838b50ec41dcfbd11",
-  "provian-backend/src/core/agent-bank/escrow.ts": "013f6515529a4b5a0572ceb8620cf43c6ceab9ea6155245fc48a98912c5ca855",
-  "provian-backend/src/core/agent-bank/scheduler.ts": "589f3d02e25f2f085ea50df3eca51b9f5624be5543ea777d7a3afba69957ce73",
+  "provian-backend/src/core/agent-bank/escrow.ts": "4055840e1ed00ddc119d2ec76ebac91b493100103a8659421623f0d3916f7a33",
+  "provian-backend/src/core/agent-bank/scheduler.ts": "3b3c72c5f347bbf91020785966095ef7d30c81f3a6de99be8c80a4474a0a824b",
   "provian-backend/src/core/agent-wallet/proof-of-possession.wave4.test.ts": "f1fa62bda525422a10e9afaf699713cb71437e14591e9b1d512604986494ded2",
   "provian-backend/src/core/attestation/types.ts": "8cfc72889687ebc2de41b39984036c09c35d8350117ef579cb56dd110664fce9",
   "provian-backend/src/core/external-address/challenge.test.ts": "41da976ac51f87ab9f8fee41a2bae09c73f4bac9e8536333f48aaf1a2fff64c2",
@@ -196,7 +197,8 @@ export function findIds(files, read = (f) => readBytes(f).toString('utf8'), allo
   for (const f of files) {
     read(f).split('\n').forEach((line, i) => {
       const key = line.match(RECORD_KEY);
-      const attribution = line.match(RULING_ATTRIBUTION) || (!allowFoundingName && line.match(ATTRIBUTION));
+      const disclosedName = CURRENT_PERSON_DISCLOSURES[f]?.includes(createHash('sha256').update(line).digest('hex'));
+      const attribution = line.match(RULING_ATTRIBUTION) || (!allowFoundingName && !disclosedName && line.match(ATTRIBUTION));
       const record = line.match(NUMBERED_RECORD);
       if (REMOVED_EARNING_PATH.test(line)) hits.push(`${f}:${i + 1}: removed earning path`);
       if (key) hits.push(`${f}:${i + 1}: internal record key ${key[0]}`);
@@ -289,6 +291,18 @@ function selfTest() {
     || findIds(['narrative.md'], () => `${name}'s ruling: do work`, true).length !== 1
     || findIds(['nul-control.md'], () => `\0${key}`).length !== 1) {
     throw new Error('self-test: a narrative attribution or NUL escaped');
+  }
+  for (const [file, pins] of Object.entries(CURRENT_PERSON_DISCLOSURES)) {
+    const approved = readFileSync(resolve(ROOT, file), 'utf8').split('\n').filter(line => pins.includes(createHash('sha256').update(line).digest('hex')));
+    if (approved.length !== pins.length) throw new Error(`self-test: stale current-person disclosure: ${file}`);
+    for (const line of approved) {
+      if (findIds([file], () => line).length !== 0
+        || findIds(['docs/other-control.md'], () => line).length === 0) throw new Error('self-test: disclosure path boundary failed');
+      for (const suffix of [` ${name}`, ` (${name}, 2099-01-01)`, ` approved by ${name}`, ` ${key}`]) {
+        if (findIds([file], () => line + suffix).length === 0) throw new Error('self-test: amended disclosure bypassed history checks');
+      }
+      if (findIds([file], () => line.replace(name, `${name} changed`)).length === 0) throw new Error('self-test: changed disclosure escaped');
+    }
   }
   let emptyRefused = false;
   try { findIds([], () => 'clean'); } catch { emptyRefused = true; }

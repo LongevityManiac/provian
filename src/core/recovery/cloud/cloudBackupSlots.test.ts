@@ -65,7 +65,13 @@ vi.mock('react-native', () => ({
 vi.mock('../../wallet/SeedManager', () => ({ default: {
     getMnemonic: async () => device.mnemonic,
     getEVMAddress: async () => device.address,
+    getBackupIdentityAddress: async () => device.address,
+    getRecoveryGeneration: async () => 0,
 } }));
+vi.mock('../../recourse/human-account', () => ({
+    deriveHumanAccount: async () => ({ evm: device.address.toLowerCase(), sol: 'fixture' }),
+    readHumanAccountSelection: async () => null,
+}));
 vi.mock('../../security/KeyManager', () => ({ default: { getKeyAttestation: async () => ({ tier: 'software' }) } }));
 vi.mock('../../security/securityLogger', () => ({ default: { log: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 vi.mock('../../security/hmacAsyncStorage', () => ({ setItemHmac: async () => undefined }));

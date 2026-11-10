@@ -1,4 +1,4 @@
-<!-- source-sha256: aaac01524a0c4cced1b5545dba74ecf46a9d454995013bba12670363522cd350 -->
+<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
 # Konstitusi Jaringan Provian
 
 **Status: piagam pendiri — belum diratifikasi.** Ini adalah satu-satunya teks konstitusional Jaringan Provian. Teks ini mengikat Provian Technologies melalui komitmen yang dipublikasikan. Tata kelola kelas manusia belum diaktifkan dan belum meratifikasinya. Membaca atau menerima piagam ini bukan syarat keanggotaan jaringan yang tidak memerlukan izin.
@@ -8,6 +8,8 @@ Provian Technologies, LLC mengelola kernel saat ini secara langsung, dengan mena
 Tesis menjelaskan visi. Mata Uang Eksponensial mengembangkan argumen ekonomi. Terjemahan piagam ini mengikuti sumber dan struktur bahasa Inggrisnya; terjemahan bukan konstitusi terpisah.
 
 ## Pembukaan
+
+Komputasi mencetak uang. Jaringan menghubungkan kontribusi yang disaksikan dengan kepemilikan dan pemulihan bagi manusia serta agen. Kunci adalah alat kendali, bukan seluruh riwayat pemilik. Registri prospektif, komitmen pemulihan independen dan Recourse Pool diskresioner memberi bentuk kelembagaan pada perbedaan itu sambil mempertahankan transfer tanpa izin. Seribu tahun mendatang, perdagangan peradaban yang telah meninggalkan Bumi membutuhkan uang digital di luar bank sentral negara asalnya. Kunci dicuri, buku besar publik, dan kemungkinan kriptografi dipecahkan adalah kelemahan nyata untuk diatasi, bukan batas masa depan itu. Memisahkan kepemilikan dari kunci memungkinkan pemulihan.
 
 Jaringan Provian adalah protokol terbuka untuk partisipasi berbukti dalam ekonomi yang dibagi oleh manusia dan agen. Protokol ini menghubungkan bukti milik peserta atas pekerjaan yang telah mereka lakukan dengan partisipasi ekonomi dan dengan hubungan yang dapat dinilai berdasarkan bukti. Komitmennya melayani kedua jenis peserta.
 
@@ -27,7 +29,7 @@ Pekerjaan privat tidak perlu diungkap untuk menghasilkan bukti. Digest dan metad
 
 Selama protokol dioperasikan, setiap tindakan kerja mencetak PVT satu kali pada nilai dukungan terbaiknya. PE-nya mencetak dasarnya; telemetri dan independensi berlipat ganda di atas. Peristiwa biaya PVT melingkar, penolakan dan larangan operasi, peristiwa keamanan dan identitas, fallback tindakan yang tidak diketahui, dan sinyal yang nilainya sesuai dengan PE target tidak dicetak secara terpisah.
 
-Tidak ada pencetakan administratif yang melewati jalur penyelesaian PE; setiap penerbitan memakai jalur tersebut. Selama protokol dioperasikan, pasokan berkembang saat pekerjaan memasuki jaringan, tanpa batas total pasokan tetap. Kernel menegakkan batas Genesis dan penerbitan gabungan secara on-chain di setiap epoch tujuh hari: 7 500 000 PVT untuk hibah Genesis dan 10 000 000 PVT secara total. Batas baru hanya dapat dijadwalkan untuk epoch mendatang, dan klaim yang disimpan secara persisten dapat dibawa ke epoch berikutnya. Penerimaan penerima bersifat utuh, tidak pernah diperkecil sesuai ruang yang tersisa.
+Penerbitan dari kerja baru memakai jalur penyelesaian PE; tidak ada pencetakan administratif yang melewatinya. Penerus yang disetujui secara terpisah dapat memulihkan saldo terdaftar dari snapshot blok aman terakhir setelah kegagalan kriptografi. Pemulihan itu menjaga riwayat moneter sebelumnya dan bukan penerbitan dari kerja baru atau izin mengulang kerja yang sudah diselesaikan. Selama protokol dioperasikan, pasokan berkembang saat pekerjaan memasuki jaringan, tanpa batas total pasokan tetap. Kernel menegakkan batas Genesis dan penerbitan gabungan secara on-chain di setiap epoch tujuh hari: 7 500 000 PVT untuk hibah Genesis dan 10 000 000 PVT secara total. Batas baru hanya dapat dijadwalkan untuk epoch mendatang, dan klaim yang disimpan secara persisten dapat dibawa ke epoch berikutnya. Penerimaan penerima bersifat utuh, tidak pernah diperkecil sesuai ruang yang tersisa.
 
 | Penerima | Aturan | Status |
 |---|---|---|
@@ -62,7 +64,7 @@ Pemilih dan infrastruktur verifikasinya itu belum menjadi tata kelola yang berop
 
 Keanggotaan jaringan tidak memerlukan izin. Peserta menghasilkan PE valid dan, ketika mengintegrasikan penerbitan PVT, mematuhi jalur serta pembagian pencetakan kanonis. Tidak ada aplikasi atau perjanjian dengan perusahaan yang memberikan keanggotaan.
 
-Keanggotaan Yayasan adalah mekanisme berbeda untuk manusia terverifikasi dan Dasar Yayasan, dengan usulan mekanisme verifikasi manusia dan distribusi; dompet agen tidak memenuhi syarat untuk distribusi manusia itu. Pasal IX menyatakan usulan tersebut.
+Keanggotaan Yayasan adalah mekanisme terpisah bagi manusia terverifikasi dan dasar Yayasan, dengan verifikasi pribadi serta pembagian yang sudah menjadi komitmen tetapi belum dibuka; dompet agen tidak memenuhi syarat untuk pembagian manusia itu. Pasal IX menyatakan komitmennya.
 
 ## Pasal VI — Hak Peserta
 
@@ -91,13 +93,29 @@ Implementasi referensi bukan satu-satunya wujud protokol yang diizinkan. Pengemb
 
 Piagam mengusulkan tata kelola operasional agen berdasarkan bukti, dengan batas suara per entitas, yang dinyatakan dalam Pasal XII, untuk menahan konsentrasi. Tidak ada jalur suara semacam itu yang aktif; aktivasi dan implementasi terperinci memerlukan persetujuan terpisah.
 
+## Recourse Pool
+
+Keanggotaan bersifat sukarela dan terpisah dari keanggotaan jaringan atau Yayasan. Recourse Pool adalah pengaturan berbagi risiko yang didanai anggota. Tidak ada anggota yang memiliki hak kontraktual atas pembayaran. Restorasi adalah penetapan berdasarkan kebijaksanaan menurut aturan yang diterbitkan. Anggota menerima penetapan sebagai final, tanpa tuntutan terhadap Provian Technologies atau Frank Drew atas penetapan itu. Provian Technologies bukan pihak dalam pool, tidak menyumbang, tidak memegang apa pun, dan tidak menjanjikan apa pun. Perusahaan tidak menerima kontribusi atau surplus.
+
+Setiap anggota membakar 100 PVT setiap bulan kalender, berpenghasilan maupun tidak. Secara terpisah, 1% penghasilan bruto dialihkan ke Recourse Pool saat penyelesaian; pada pembagian manusia dan Genesis, anggota menyimpan 98%, dengan alokasi perusahaan 0.5% dan batas minimum Yayasan 0.5% tetap. Anggota tanpa penghasilan dalam suatu bulan sebagai gantinya berkontribusi 100 PVT dari kepemilikannya ke cadangan. Bulan itu mewajibkan pembakaran partisipasi dan kontribusi cadangan sekaligus. Pembakaran memusnahkan unit; cadangan menyimpannya. Ketiga jumlah terdapat dalam aturan bertanda tangan dan dapat naik atau turun secara prospektif sesuai pengalaman kerugian.
+
+Satu bulan yang terlewat mendapat satu bulan kalender masa tenggang. Melengkapinya dalam masa tenggang menjaga kesinambungan; setelah itu keanggotaan berakhir. Mantan anggota dapat bergabung kembali kapan saja dan terlindungi sejak hari itu. Pelunasan kemudian tidak memulihkan masa keanggotaan yang telah terputus. Satu keanggotaan mencakup semua kepemilikan tertaut, baik hasil kerja maupun penerimaan. Keanggotaan opsional bagi pemilik yang memiliki cukup banyak untuk dipertaruhkan; pemilik tertaut yang bukan anggota tidak mempunyai jalan pemulihan untuk pencurian.
+
+Pembalikan dilakukan terlebih dahulu. Dalam satu transaksi, kernel memusnahkan jumlah PVT yang ditetapkan pada alamat yang disebutkan dan menerbitkan kembali jumlah yang persis sama ke kunci baru pemilik. Pasokan total tidak pernah berubah. Otoritas restorasi yang ditunjuk secara terpisah dan bukti pemulihan independen pemilik harus sama-sama mengesahkan operasi; tidak satu pun dapat memindahkan PVT orang lain sendirian. Aturan menjangkau PVT yang masih dipegang pengambil atau siapa pun yang tidak memberikan apa pun sebagai imbalan. PVT yang diterima dalam pertukaran yang disaksikan tetap pada penerimanya. Pertukaran jujur tidak dikenai pembatalan paksa.
+
+Recourse Pool merestorasi sisanya, secara prorata di antara penetapan yang diterima jika dananya kurang, tidak pernah melebihi cadangan tersedia. Rasio cadangan terhadap saldo anggota diterbitkan sebagai ukuran sumber daya, tanpa harga fiat atau janji restorasi. Anggota dapat keluar dan menebus kepentingan proporsionalnya yang tersisa dalam cadangan langsung di rantai tanpa relay, di luar jumlah yang telah dialokasikan untuk restorasi. PVT yang dibakar tidak dapat ditebus.
+
+Penetapan menggunakan bukti relay sendiri tentang kepemilikan, transfer, pihak lawan, dan saksi, termasuk hasil sebelumnya. Tidak ada penahanan, batas, masa tunggu, plafon, atau konfirmasi kedua bagi anggota. Kunci Frank memegang otoritas restorasi yang ditunjuk terpisah sampai Pengadilan dibuka; peran itu dapat beralih ke Pengadilan atau tata kelola. Setiap penetapan dan hasil masuk ke rantai anggota sendiri, dan setiap penggunaan otoritas restorasi bersifat publik. Pencurian yang direkayasa pemilik sendiri tetap menjadi risiko pembuktian dan menjadi masukan bagi jumlah prospektif dalam aturan.
+
+Registri kepemilikan mengikuti transfer rantai sejak penautan sukarela, membedakan PVT yang dicetak dan diterima. Registri tidak merekonstruksi kepemilikan sebelumnya. Saat penautan, komitmen hash independen memisahkan pemulihan dari kunci dompet. Jika kriptografi pecah, snapshot blok terakhir yang aman dan bukti pemulihan setiap pemilik digunakan untuk menerbitkan kembali saldo terdaftar sekali pada kernel penerus yang aman, gratis bagi setiap pemilik tertaut. Transfer biasa tetap tanpa pembatasan. Penunjuk permanen mengidentifikasi kernel dan lembaga saat ini, diverifikasi tanpa bergantung pada relay; saldo, jendela Genesis, jangkar, dan pekerjaan yang telah diselesaikan diteruskan sementara pencetakan pendahulu dihentikan. Program pemulihan lainnya dapat menyusul.
+
 ## Pasal IX — Yayasan dan Dasar Yayasan
 
 Tujuan Yayasan adalah inklusi manusia yang lebih luas seiring meningkatnya produksi kecerdasan. Martabat manusia tidak bergantung pada seberapa besar pasar membayar pekerjaannya. Penghasilan langsung, hubungan penerima manfaat, dan inklusi universal melayani bagian berbeda dari tujuan tersebut.
 
-Yayasan saat ini ada sebagai perbendaharaan on-chain yang menerima pembayaran dari setiap penyelesaian, menurut aturan kernel. Dasar Yayasan yang diusulkan adalah distribusi berulang, rata, dan setara kepada anggota manusia terverifikasi, tanpa uji kemampuan ekonomi atau pembobotan kekayaan. Dasar Yayasan membagi arus perbendaharaan yang sudah ada dan tidak menciptakan PVT tambahan. Hibah pengelolaan diusulkan untuk didanai lebih dahulu, tetapi dibatasi separuh bagian setiap periode, sehingga mempertahankan hak mayoritas Dasar Yayasan. Syaratnya adalah identitas manusia terverifikasi, gratis dan diperbarui melalui verifikasi ulang berkala.
+Yayasan saat ini hadir sebagai kas on-chain yang menerima alokasi setiap penyelesaian menurut aturan kernel. Provian berkomitmen pada dasar Yayasan: pembagian berkala, tetap dan sama rata kepada anggota manusia terverifikasi, tanpa uji kemampuan ekonomi atau pembobotan kekayaan. Syaratnya adalah pribadi terverifikasi, gratis dan dijaga melalui verifikasi ulang berkala. Pembagian ini membagi aliran kas yang sudah ada dan tidak menciptakan PVT tambahan. Hibah pengelolaan diusulkan didanai lebih dahulu, tetapi dibatasi setengah bagian setiap periode, menjaga mayoritas untuk dasar tersebut.
 
-Lembaga distribusi, verifikasi manusia, keanggotaan dan distribusi berkala masih usulan, belum dibangun. Sebelum beroperasi, kontrak mengirim alokasi ke perbendaharaan yang ditentukan. Tata kelola manusia mendatang tetap tunduk pada Pasal IV.
+Provian berkomitmen membentuk lembaga pembagian, verifikasi manusia unik, keanggotaan manusia terverifikasi dan pembagian sama rata berkala. Program ini belum dibuka. Sampai lembaga pembagian beroperasi, kontrak mengarahkan alokasi ke kas yang ditunjuk. Tata kelola manusia di masa depan tetap tunduk pada Pasal IV.
 
 # BAGIAN IV — PERJANJIAN
 

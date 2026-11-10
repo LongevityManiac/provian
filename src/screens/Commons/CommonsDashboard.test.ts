@@ -119,18 +119,18 @@ describe('Commons tab - About sheet keeps the dashboard content (not-open-yet ro
 });
 
 describe('Commons › Work - institution cards (rows, restored)', () => {
-    it('pins the LIVE row to exactly Escrow, Bonds, Agent market (by id, in order;)', () => {
-        expect([...LIVE_INSTITUTION_ROW]).toEqual(['escrow', 'bonds', 'market']);
+    it('pins the LIVE row to exactly Escrow, Bonds, Agent market, Recourse (by id, in order;)', () => {
+        expect([...LIVE_INSTITUTION_ROW]).toEqual(['escrow', 'bonds', 'market', 'recourse']);
     });
 
-    it('pins the NOT OPEN row to exactly Disputes, Voting, Compute market, Insurance (Court is not activated,)', () => {
-        expect([...NOT_OPEN_INSTITUTION_ROW]).toEqual(['court', 'governance', 'compute', 'insurance']);
+    it('pins the NOT OPEN row to exactly Disputes, Voting, Compute market (Court is not activated,)', () => {
+        expect([...NOT_OPEN_INSTITUTION_ROW]).toEqual(['court', 'governance', 'compute']);
     });
 
     it('renders every card even before the catalog loads (RED control: an empty catalog drops nothing)', () => {
         const rows = selectInstitutionRows([]);
-        expect(rows.live.map((c) => c.id)).toEqual(['escrow', 'bonds', 'market']);
-        expect(rows.notOpen.map((c) => c.id)).toEqual(['court', 'governance', 'compute', 'insurance']);
+        expect(rows.live.map((c) => c.id)).toEqual(['escrow', 'bonds', 'market', 'recourse']);
+        expect(rows.notOpen.map((c) => c.id)).toEqual(['court', 'governance', 'compute']);
     });
 
     it('selects by id from the catalog, not by audience (market is audience both)', () => {
@@ -143,7 +143,7 @@ describe('Commons › Work - institution cards (rows, restored)', () => {
     });
 
     it('no tile does nothing on tap — every LIVE card opens its screen, every NOT OPEN card explains itself', () => {
-        expect(INSTITUTION_SCREENS).toEqual({ escrow: 'CommonsInstitutions', bonds: 'CommonsBonds', market: 'CommonsMarket' });
+        expect(INSTITUTION_SCREENS).toEqual({ escrow: 'CommonsInstitutions', bonds: 'CommonsBonds', market: 'CommonsMarket', recourse: 'Recourse' });
         const rows = selectInstitutionRows([]);
         // RED control: a card with neither a screen nor an explanation is exactly the inert tile.
         for (const c of rows.live) expect(c.screen, c.id).not.toBeNull();

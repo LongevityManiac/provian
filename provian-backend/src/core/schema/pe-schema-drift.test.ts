@@ -40,7 +40,7 @@ describe('§2.12 PE schema drift', () => {
     // token-volume pricing removed — 610a1f08… → 7d539bce….
     // Measured observer (2026-10-10): hardwarePricingMeasuredSchemes joins the template — 7d539bce… → 33948538….
     // unknownActionAdmission joins the template — 33948538… → cbe39337….
-    expect(doc.pricing_template_sha256).toBe('sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39');
+    expect(doc.pricing_template_sha256).toBe('sha256:05babadb74dd62da60ecf17bf228b68f9ec76ea335174b778be8a7eb4956a9f8');
     // vocabulary extension (windows, share, measurement, predicate-only volume, patterns) — 1.3.0.
     // PE meter (2026-10-03): PE v2 kept by its owner, act records in signed batches — 2.0.0.
     // Signed outputs (2026-10-04): input_origins entries may carry the producer's signature — 2.1.0.

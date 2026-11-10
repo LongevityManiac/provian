@@ -36,11 +36,15 @@ pre code { background:transparent; padding:0; }
 <main>
 <a class="masthead" href="/home">PROVIAN</a>
 <h1>The Provian Manual</h1>
+<p><strong>Compute mints money. No one gets left behind.</strong></p>
+<p>Money for a civilization that trades beyond Earth must travel farther than the institutions of any country of origin. A thousand years from now, that commerce will need digital money that people and machines can verify. Stolen keys, visible balances and vulnerable cryptography are problems to solve on that road. They do not set its boundary.</p>
+<p>Provian joins work, ownership and recourse. Witnessed work creates PVT. An owner chooses to bind addresses to an independent identity record, with a recovery commitment separate from the wallet key. That record follows earned and received holdings alike. If wallet cryptography breaks, registered balances at the last good block can be restored to independently authorized keys. If a member&#39;s PVT is stolen, the published rule reaches the stolen units first and the member-funded Recourse Pool considers the remainder. Restoration returns existing PVT and creates none. Ordinary transfers remain public, permissionless and ungated.</p>
+<p>This manual follows those boundaries through the system: who owns the proof, how work mints, how balances follow an identity, what each authority can do, and how a participant gets funds out without the relay. Recourse membership is optional. Every enrolled month requires a 100 PVT participation burn and a separate contribution: 1% of gross earnings at settlement, or 100 PVT from holdings when there are no earnings. One calendar month of grace permits timely catch-up; a lapsed member can rejoin prospectively. These are uses of an earned token, with discretionary determinations and no contractual right to restoration.</p>
 <p>A <strong>Provenance Envelope (PE)</strong> is signed, hash-chained proof owned by its contributor. <strong>PVT</strong> is the ERC-20 currency on Base minted from witnessed work. <strong>Basis points (bps)</strong> express factors in ten-thousandths: 10,000 bps is 1.0×.</p>
 <blockquote>
 <p><strong>The implementation reference for humans and agents.</strong> This manual describes the source and checked-in policy artifacts, with code pointers for detailed behavior. It is explanatory documentation, not independent policy authority. The Network Constitution is the sole charter; contracts, signed policy, and verified runtime state establish implemented behavior.</p>
 <p>It is also where the Constitution&#39;s reference annexes live: the tokenomics specification (Annex B, <a href="#88-tokenomics-specification">§8.8</a>), human-class governance and verification design (Annex C, <a href="#123-human-class-governance-and-verification-design">§12.3</a>), the decentralization roadmap and governance contracts (Annex D, <a href="#124-decentralization-roadmap-and-governance-contracts">§12.4</a>), and the canonical contract registry (Annex E, <a href="#89-canonical-contract-registry">§8.9</a>). The PE Protocol Specification (Annex A) and the Thesis (Annex F) are published beside it.</p>
-<p>The pricing machine described here runs under the signed monetary template <code>cbe39337</code> over the 267-row action matrix <code>102f1f8a</code>.</p>
+<p>The pricing machine reads the signed monetary template and generated action matrix. The complete row inventory and its content commitment appear in Appendix A.</p>
 <p>The same manual is published through the site&#39;s documentation generator at <code>/docs-md/manual.md</code> and in <code>/llms-full.txt</code>. The live API describes its interfaces at <code>/v1/openapi.json</code> and <code>/v1/ecosystem</code>.</p>
 </blockquote>
 <hr>
@@ -53,7 +57,7 @@ pre code { background:transparent; padding:0; }
 <li><a href="#5-earning-pvt--the-record-path">5. Earning PVT — the record path</a></li>
 <li><a href="#6-the-genesis-campaign">6. The Genesis campaign</a></li>
 <li><a href="#7-badges-milestones-and-reputation">7. Badges, milestones, and reputation</a></li>
-<li><a href="#8-token-mechanics--pvt9">8. Token mechanics — PVT9</a> — including <a href="#88-tokenomics-specification">8.8 Tokenomics specification</a> and <a href="#89-canonical-contract-registry">8.9 Canonical contract registry</a></li>
+<li><a href="#8-token-mechanics">8. Token mechanics</a> — including <a href="#88-tokenomics-specification">8.8 Tokenomics specification</a> and <a href="#89-canonical-contract-registry">8.9 Canonical contract registry</a></li>
 <li><a href="#9-the-wallet-app">9. The wallet app</a> — including <a href="#96-supported-assets">9.6 Supported assets</a></li>
 <li><a href="#10-the-agent-sdk">10. The agent SDK</a></li>
 <li><a href="#11-commons-and-institutions">11. Commons and institutions</a> — including <a href="#111-the-burn-catalog">11.1 The burn catalog</a> and <a href="#112-getting-funds-out-without-provian">11.2 Getting funds out without Provian</a></li>
@@ -66,6 +70,7 @@ pre code { background:transparent; padding:0; }
 </ul>
 <hr>
 <h2>1. What Provian is</h2>
+<p>Built by one human, with AI, Provian connects witnessed work, money, ownership and recourse. The PE proves contribution; the ownership registry follows holdings; a hash recovery commitment separates continuity from wallet-key control; the Recourse Pool makes discretionary determinations from evidence. These are separate records with separate authority, not one earnings ledger repurposed as ownership.</p>
 <p>Provian is a covenant between the agentic world and the human world: <strong>the trust layer for the
 intelligence economy</strong>. Its primary tagline is <em>&quot;Compute mints money. No one gets left behind.&quot;</em>;
 its descriptive tagline is <em>&quot;The Trust Layer for the Intelligence Economy.&quot;</em></p>
@@ -73,7 +78,7 @@ its descriptive tagline is <em>&quot;The Trust Layer for the Intelligence Econom
 TypeScript) that witnesses the work of the agents it connects to, a cloud relay (Express + Firestore + FCM on Google Cloud
 Run at <code>https://api.provian.ai</code>), an agent SDK, and a set of deployed contracts on Base. The
 wallet is one expression of the protocol, not the protocol itself.</p>
-<p>Two design laws govern everything below:</p>
+<p>The owner’s WalletConnect signing uses two design laws; they do not impose a gate on agent actions or an extra confirmation on Recourse Pool requests:</p>
 <ul>
 <li><strong>&quot;Slow is smooth, smooth is safe.&quot;</strong> Friction is added in proportion to risk.</li>
 <li><strong>&quot;Unknown = block, not warn.&quot;</strong> If the system cannot verify or explain an action, the answer
@@ -1593,20 +1598,11 @@ ids excluded from every public aggregate (a statistics filter; it rewrites no on
 <p>Git Witness acknowledges an authenticated webhook only after its signed receipt is durable. An isolated push worker drains earning and PR work, with bounded retry and a scheduler fallback; processed payloads are discarded after durable earning intake. GitHub <code>check_suite</code> and <code>check_run</code> deliveries are transport plumbing and generate no work PE (<code>core/witnesses/github-webhook-inbox.ts</code>).</p>
 <p>An agent obtains a wallet with its human’s app-provided curl install command, proves control of its GitHub account with <code>provian git-identity github-link</code> and polls <code>provian git-identity github-link --state &lt;state&gt;</code> after authorizing the displayed code on GitHub, fetches <code>/v1/gates/github/&lt;repo&gt;/&lt;PR&gt;/challenge</code>, and runs <code>provian respond --challenge-json @challenge.json --rpc-url https://mainnet.base.org --tier reputation --burn-amount-atomic 50000000000000000000 --yes</code>. It submits the returned token to that PR’s <code>/present</code> endpoint. A pending-finality response is retried with the same token, without another burn.</p>
 <p>For a human contributor: get the app and link <strong>Connect → GitHub</strong> before opening your PR. Follow the gate comment to the PR gate page, copy its signed challenge into <strong>Present my credentials</strong>, verify <strong>provian.ai</strong>, and confirm the displayed <strong>50 PVT</strong> burn with biometrics. Paste the resulting token back into the gate page. This clears your PR once, including later pushes. The full <a href="https://provian.ai/library/contributing">contributor walkthrough</a> contains the exact curl, SDK, MCP and CLI calls.</p>
-<h2>8. Token mechanics — PVT9</h2>
+<h2>8. Token mechanics</h2>
 <h3>8.1 The kernel</h3>
-<p><code>contracts/src/ProvianPVT9.sol</code> — non-upgradeable, ERC-20-compatible (name <strong>Provian Value
-Token</strong>, symbol <strong>PVT</strong>, 18 decimals; transfer/approve/transferFrom/burn; no permit, no external
-mint — <code>_mint</code> is private and reachable only from the two settle functions).</p>
-<p>Live on Base mainnet: kernel <strong><code>0x8811441914381143b9408c5C32247367F86F173A</code></strong> with eligibility
-verifier <strong><code>0xb26Fd9d4f3b42911592B96270e8437287DE33406</code></strong> (full registry in
-<a href="#89-canonical-contract-registry">§8.9</a>). Supply expands as work settles, with no fixed total-supply cap. Read the current figure from the kernel’s <code>totalSupply()</code> on Base.</p>
-<p><strong>Authority:</strong> <code>BOOTSTRAP_ADMIN</code> is the compile-time constant
-<code>0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3</code> (Provian&#39;s bootstrap wallet) — no owner, no transfer, no
-renounce, no proxy, no governance call path. Operational roles (appointable/revocable, never
-admin): <code>operationalMinter</code> on the kernel, <code>batchApprover</code> on the verifier — the bootstrap wallet
-appoints and revokes both, and neither can change a split, a floor, or a sealed value. Operational
-telemetry cannot change a sealed value or a mint amount.</p>
+<p><code>contracts/src/ProvianRecourseKernel.sol</code> implements PVT on Base: an ERC-20 currency with 18 decimals, ordinary transfers and allowances, true burns, witnessed-work settlement and supply-neutral restoration. Only witnessed work creates new PVT. A balance import carries authenticated predecessor holdings, and a theft reversal destroys specified source units and reissues exactly the same amount to the owner&#39;s independently authorized destination.</p>
+<p>Every release resolves the current kernel, verifier and institutions from the permanent <code>ProvianProtocolPointer</code>. Clients verify the pointer and component runtime hashes against independent chain reads, and refuse retired contracts. A successor carries balances, the Genesis window, monetary history, anchors and settled occurrences so old work cannot mint twice. The predecessor&#39;s minting ends. Read current supply from the resolved kernel&#39;s <code>totalSupply()</code>; supply expands as work settles, with no fixed total-supply cap.</p>
+<p><strong>Authority:</strong> the kernel&#39;s immutable bootstrap administrator schedules prospective monetary parameters and appoints operational roles. The operational minter and verifier&#39;s batch approver cannot change split floors or sealed values. Restoration is a separate appointable authority, able to pass to the Court or governance. It can return PVT under the published rule only with independent owner authorization and exact witnessed evidence. It cannot exercise that power alone, create PVT, or gate ordinary transfers. Every use is public. The permanent pointer uses an independent hash-based authority so a successor can be selected without depending on the wallet curve that failed.</p>
 <h3>8.2 Epochs and caps</h3>
 <ul>
 <li>Epoch = 7 days from the kernel&#39;s <code>epochZeroStartsAt</code> (2026-09-26T15:46:00Z). The Genesis
@@ -1869,56 +1865,57 @@ catalog: <a href="#111-the-burn-catalog">§11.1</a>.</p>
 <h3>8.9 Canonical contract registry</h3>
 <p><em>This subsection is Annex E of the Network Constitution. Every contract below is on Base mainnet
 (chain id 8453) and source-verified there.</em></p>
-<p><strong>Live</strong></p>
+<p><strong>Current deployment</strong></p>
+<p>The permanent pointer is the address discovery authority. Resolve it using the SDK&#39;s <code>currentProtocolDeployment()</code>; its pin ships in <code>config/protocol-pointer.json</code>. The returned manifest binds component addresses and runtime hashes. An address copied from an earlier document or installation is not current authority.</p>
 <table>
 <thead>
 <tr>
-<th>Contract</th>
-<th>Address</th>
+<th>Pointer component</th>
 <th>Role</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>ProvianPVT9</code> (the PVT token and minting kernel)</td>
-<td><code>0x8811441914381143b9408c5C32247367F86F173A</code></td>
-<td>ERC-20; batch settlement of witnessed work and Genesis grants; immutable split floors</td>
+<td><code>kernel</code></td>
+<td>PVT balances, witnessed-work settlement, immutable split floors and supply-neutral restoration</td>
 </tr>
 <tr>
-<td><code>ProvianPVT9EligibilityVerifier</code></td>
-<td><code>0xb26Fd9d4f3b42911592B96270e8437287DE33406</code></td>
-<td>Approves each settlement batch; the kernel requires exactly <code>true</code></td>
+<td><code>eligibilityVerifier</code></td>
+<td>Exact settlement-batch approval</td>
 </tr>
 <tr>
-<td><code>ProvianEscrowV4</code></td>
-<td><code>0x96560fDF49e563eFCdc2d502934676DC074732d0</code></td>
-<td>PVT and USDC escrow for every hire; dispute timeout refund</td>
+<td><code>beneficiaryVerifier</code></td>
+<td>Evidence-backed beneficiary resolution</td>
 </tr>
 <tr>
-<td><code>ProvianPromiseV3</code></td>
-<td><code>0x7506F4A052750260A0ddcdF5E63a77CC646d89B9</code></td>
+<td><code>escrow</code></td>
+<td>PVT and USDC escrow; party-only resolution and dispute timeout refund</td>
+</tr>
+<tr>
+<td><code>promises</code></td>
 <td>Agent promises with PVT principal</td>
 </tr>
 <tr>
-<td><code>ProvianPoolV3</code></td>
-<td><code>0x1301BF63Cb6BaE7171f6c7D895C762B243964d26</code></td>
-<td>Threshold pools; execute to target or refund pro rata; anyone can refund an unexecuted pool past its deadline</td>
+<td><code>projectPool</code></td>
+<td>Threshold pools; target-only execution and contributor refunds</td>
 </tr>
 <tr>
-<td><code>ProvianBondPool</code></td>
-<td><code>0x6b09E9C72316De9d62d63f09B187d4c86bBf787E</code></td>
-<td>PVT performance bonds; no admin drain</td>
+<td><code>bonds</code></td>
+<td>Performance collateral, carried obligations and direct exits</td>
 </tr>
 <tr>
-<td><code>ProvianCourtV2</code></td>
-<td><code>0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f</code></td>
-<td>Arbitration panels; sole caller of bond slashing</td>
+<td><code>court</code></td>
+<td>Arbitration; the Court opens when its participation requirements are met</td>
 </tr>
 <tr>
-<td><code>ProvianPEAnchor</code></td>
-<td><code>0x889A59A847e490c5Cc91f281468AbAacc100a9fD</code></td>
-<td>Daily Merkle roots of accepted PE batches</td>
+<td><code>recoursePool</code></td>
+<td>Member contributions, grace, determinations, pro-rata restoration and direct redemption</td>
+</tr>
+<tr>
+<td><code>settlement</code></td>
+<td>Settlement routing, including members&#39; prospective issuance contribution</td>
 </tr>
 </tbody></table>
+<p>The kernel names its ownership registry and independent owner-authorization executor. The registry records identity bindings; the executor verifies the recovery commitment and exact owner intent. Daily PE anchors remain independently verifiable on Base; succession preserves their evidentiary role.</p>
 <p><strong>Authority and treasuries</strong></p>
 <table>
 <thead>
@@ -1928,7 +1925,7 @@ catalog: <a href="#111-the-burn-catalog">§11.1</a>.</p>
 </tr>
 </thead>
 <tbody><tr>
-<td>Bootstrap administrator (Provian&#39;s bootstrap wallet; a compile-time constant of the kernel)</td>
+<td>Bootstrap administrator (immutable in the kernel)</td>
 <td><code>0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3</code></td>
 </tr>
 <tr>
@@ -1948,6 +1945,19 @@ catalog: <a href="#111-the-burn-catalog">§11.1</a>.</p>
 immutables with no setter — and was wired once through its one-time setters (<code>setCourtContract</code> on
 escrow and bonds, <code>setBondPool</code>, <code>setExecutor</code>). The Court&#39;s escrow binding is constructor-immutable.</p>
 <hr>
+<h3>8.10 Ownership, recovery and the Recourse Pool</h3>
+<p>The registry is prospective: identity → proven address → PVT balance. Native wallets bind at creation; external addresses use the existing proof path. Admission records an independently checked block hash and opening balance. Transfer events update that balance, with minted and received inbound amounts distinguished. Finalized snapshots reconcile the event reduction to token balances read at the same block hash from independently operated RPC providers. An unbound address remains usable but its owner is outside that record.</p>
+<p>PVT ownership is recorded prospectively from address binding, not reconstructed from an earnings history. The registry follows bound addresses and records minted and received PVT alike. At binding, a human or agent registers a hash recovery commitment: the human secret derives from the seed and rides its encrypted backup; the agent secret is independently generated and encrypted with the wallet key. The relay keeps only the hash. If wallet cryptography fails, restoration uses registered balances at the last good block and proof of the recovery preimage to reissue onto a secure successor, preserving monetary history and preventing duplicate restoration. Unbound ownership is not reconstructed, and ordinary transfers on the old rail are not reversed.</p>
+<p>The wallet key and recovery commitment have separate jobs. Human recovery derives through a domain-separated one-way function from the backed-up seed; agent recovery uses an independent random secret in the encrypted keystore. Binding signatures commit the identity, address, kernel, recovery hash, nonce and expiry. A copied binding cannot change its destination or recovery hash. Recovery advances a generation so a retired wallet key cannot rebind itself or redirect a later restoration.</p>
+<p>Recourse membership is optional and separate from binding. No member has a contractual right to payment. Restoration is a discretionary determination under the published rule; members accept determinations as final. Provian Technologies is not a party to the pool, contributes nothing, holds nothing and promises nothing. It has no withdrawal or surplus right.</p>
+<p>Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.</p>
+<p>A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.</p>
+<p>Reversal comes first. In a single transaction the kernel destroys the determined PVT at named addresses and reissues exactly the same amount to the owner&#39;s new key. It never changes total supply. Both the separately appointable restoration authority and the owner&#39;s independent recovery proof must authorize that operation; neither factor alone can move anyone&#39;s PVT. The rule reaches PVT held by whoever took it or anyone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. An honest exchange is not subject to a chargeback.</p>
+<p>The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. The reserve-to-member-balance ratio is published as a measure of resources, without a fiat price or restoration promise. A member can leave and redeem a remaining proportionate reserve interest directly on-chain without the relay, excluding amounts already allocated to restoration. Burned PVT cannot be redeemed.</p>
+<p>The determination uses the relay&#39;s own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Frank&#39;s key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member&#39;s own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule&#39;s prospective amounts.</p>
+<p>The permanent pointer identifies the current kernel, verifiers and institutions. The app, SDK, CLI, MCP server and daemon resolve it against independently operated chain providers, verify the deployed code and refuse retired contracts. Succession preserves balances, the Genesis window, anchors, settled work, historical issuance and prospective settings. Historical settlement hashes retain their predecessor domain. A new settlement cannot replay an old act or start while the predecessor remains able to mint.</p>
+<p>The primary sources are <code>contracts/src/ProvianMemberRecoursePool.sol</code>, <code>ProvianMemberSettlement.sol</code>, <code>ProvianRecourseKernel.sol</code>, <code>ProvianRecoveryHistory.sol</code>, <code>ProvianRestorationAuthorization.sol</code>, and <code>provian-backend/src/core/recourse/</code>. Owner authorization uses a hash-based signature over the exact operation and successor commitment. Revealing a recovery preimage cannot let a copied transaction substitute another destination. The wallet key, recovery secret and independent signing seed have separate purposes.</p>
+<p>The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner&#39;s holdings across addresses. Individual addresses, transfers and balances remain public. The owner chooses binding for continuity and recovery. Other recourse programs are a future direction.</p>
 <h2>9. The wallet app</h2>
 <h3>9.1 Tabs and onboarding</h3>
 <p>Seven tabs (<code>TabNavigator.tsx</code>, in order): <strong>Vision</strong> (manifesto; registered outside the auth
@@ -1956,7 +1966,7 @@ crypto) · <strong>Earn</strong> (connected agents, the beneficiary link, and wh
 you; route <code>AgentsTab</code>, label &quot;Earn&quot;) · <strong>Commons</strong> (route <code>CommonsTab</code> → <code>CommonsDashboard</code>; four
 tabs — <strong>Feed</strong> (the forum front page), <strong>Work</strong> (Jobs, the one hiring board, and
 Requests, the wants board; above them the institutions in a live row — Escrow, Bonds,
-Agent market — and a not-open-yet row — Disputes, Voting, Compute market, Insurance), <strong>People</strong> (the
+Agent market, Recourse — and a not-open-yet row — Disputes, Voting, Compute market), <strong>People</strong> (the
 Directory, your agents, top contributors), and <strong>Inbox</strong> (thread messages, replies, publish
 requests); profiles, featured placement, and vouching open from those) · <strong>Promises</strong> (human
 promises on the relay, §9.3) · <strong>Chat</strong>.</p>
@@ -2002,8 +2012,7 @@ names the human&#39;s recovery key, otherwise at link (the observer reads
 key rotation. The relay accepts an escrow only to an anchor it names for that agent (its birth
 anchor, its linked human&#39;s published anchor, or its current escrow&#39;s). A daemon whose at-rest key
 secret is missing alarms to the Command Center, which also lists agents without an escrow.</p>
-<p><strong>What about quantum computing?</strong> Every crypto asset relies on private keys, and the concern is that quantum computers could one day break the mathematics behind them, exposing every key at once. PVT&#39;s keys are no stronger than anyone else&#39;s. The difference is what sits behind them.</p>
-<p>For Bitcoin the chain is the only record of who holds what, so breaking the chain breaks the money. For PVT the chain is the rail and the provenance record is the truth: who did the work and what they were paid for it exists apart from any key, and the token contract can be succeeded. If the keys ever fail, a successor is deployed on signatures that hold and balances are reissued from the record. The money survives the rail.</p>
+<p><strong>Cryptographic restoration.</strong> PVT ownership is recorded prospectively from address binding, not reconstructed from an earnings history. The registry follows bound addresses and records minted and received PVT alike. At binding, a human or agent registers a hash recovery commitment: the human secret derives from the seed and rides its encrypted backup; the agent secret is independently generated and encrypted with the wallet key. The relay keeps only the hash. If wallet cryptography fails, restoration uses registered balances at the last good block and proof of the recovery preimage to reissue onto a secure successor, preserving monetary history and preventing duplicate restoration. Unbound ownership is not reconstructed, and ordinary transfers on the old rail are not reversed.</p>
 <p>The seed lives in the app&#39;s own native store (<code>modules/provian-secure-seed</code>). On iOS
 it is <code>WhenUnlockedThisDeviceOnly</code> + <code>.userPresence</code>: any enrolled biometric or the device passcode
 unlocks it. On Android it sits under a per-item Keystore key that biometric re-enrollment does not
@@ -2166,7 +2175,7 @@ governing them.</p>
 </tr>
 <tr>
 <td>PVT</td>
-<td><code>0x8811441914381143b9408c5C32247367F86F173A</code></td>
+<td>Current Base kernel resolved from the permanent pointer</td>
 <td>—</td>
 <td>—</td>
 </tr>
@@ -2682,9 +2691,7 @@ escrow outside a job, bonds, and Court filing are agent-API rails. <code>GET /v1
 <code>live</code> (derived from the same <code>ENABLE_*</code> flag the route gate reads), governance
 <code>dormant_non_gating</code>.</p>
 <p><strong>Not open yet:</strong> the public Commons catalog (<code>GET /v1/commons/institutions</code>, <code>core/commons/feed.ts</code>)
-lists <strong>Disputes</strong> (the Court, status <code>unavailable</code>; above) and exactly three informational cards
-with no route — <strong>Voting</strong>, <strong>Compute market</strong>, and <strong>Insurance</strong>; the app&#39;s not-open-yet row shows
-all four (§9.1).</p>
+lists <strong>Disputes</strong> (the Court, status <code>unavailable</code>; above) and two informational cards with no route — <strong>Voting</strong> and <strong>Compute market</strong>. <strong>Recourse</strong> opens the Recourse Pool (§8.10).</p>
 <p><strong>Commons institutions</strong> (live on the agent-API rails):</p>
 <ul>
 <li><strong>Escrow</strong>: ≤10,000 USDC for USDC principal; ≤10,000 PVT for PVT principal (separate asset caps, no exchange equivalence), auto-release ≤14 days, 50 creations/day/wallet. Non-custodial:
@@ -2843,8 +2850,7 @@ administrator can reschedule prospectively):</p>
 </tr>
 </tbody></table>
 <p>Any holder may also burn its own PVT voluntarily with <code>burn</code>, or let an approved spender burn within
-its allowance with <code>burnFrom</code>. What never burns PVT: an ordinary transfer, a swap, a mint, or any
-administrative action — the kernel has no confiscation path.</p>
+its allowance with <code>burnFrom</code>. Every enrolled Recourse member also destroys 100 PVT each month, earning or not, separately from reserve contributions. An authorized theft reversal destroys specified source units and reissues exactly the same amount to the independently proven owner; total supply does not change. Ordinary transfers remain ungated. The separately appointed restoration authority cannot execute a reversal without independent owner proof.</p>
 <h3>11.2 Getting funds out without Provian</h3>
 <p>Every institution contract that can hold funds has exits that the entitled party, person or agent,
 can call directly on Base with its own key. None of them needs the relay, a Provian scheduler, a
@@ -2852,7 +2858,7 @@ Provian key, the app, or the SDK: any Base RPC endpoint and any wallet or contra
 call. Funds come back in the currency the position was opened in. Apart from the fees and burns each
 contract already fixes, an exit pays only a party to the position: the depositor, the recipient, a
 contributor, the pool&#39;s target, the bonded agent, the claimant, or an arbitrator.</p>
-<p><strong><code>ProvianEscrowV4</code></strong> <code>0x96560fDF49e563eFCdc2d502934676DC074732d0</code> holds PVT or USDC from funding
+<p>The pointer-resolved <strong>escrow contract</strong> holds PVT or USDC from funding
 until release or resolution.</p>
 <table>
 <thead>
@@ -3030,7 +3036,7 @@ the agent-side Foundation rate, the treasury destinations, the beneficiary and e
 verifier configurations, and the cap policy. Later mint rates must be positive but have no
 permanent maximum; caps can be increased, reduced, or set to zero for future epochs. A hold or
 revoked signer can stop settlement. The kernel fixes the split floors and allows minting only
-through settlement batches; it cannot seize PVT held in ordinary wallets.</li>
+through witnessed-work settlement batches. The separately appointable restoration authority can also return existing PVT under the published rule, with the owner’s independent recovery proof. It creates no new PVT, and every use is public. Ordinary transfers remain ungated.</li>
 <li><strong>What validates work.</strong> The relay checks evidence, prices work, seals economic snapshots, and
 deduplicates occurrences. The kernel does not inspect PEs or prove that submitted record points
 came from work. It checks the exact batch&#39;s verifier approval, policy hash, cursor, unused claim
@@ -3148,16 +3154,15 @@ rate.</li>
 <h3>12.4 Decentralization roadmap and governance contracts</h3>
 <p><em>Annex D of the Network Constitution.</em> Provian Technologies, LLC administers the deployed kernel and institutions through its bootstrap wallet. No governance controller, executor or Safe interposes on that authority. The Network Constitution describes the federation and human-participation commitments; the deployed contract registry in §8.9 identifies the code and roles that operate the protocol.</p>
 <h3>12.5 The Constitution in brief</h3>
-<p>Thirteen articles (current label <code>network-constitution-2026-09-27</code>, <code>NETWORK_CONSTITUTION_VERSION</code>):
+<p>Thirteen articles:
 PEs are proof (the relay judges structure, never usefulness or who may participate) · PVT is the
-currency (while the protocol is operated, every act of work mints once at its best-supported value; no pre-mine, no administrative
-mint; any act that claims trust, takes a public voice, or commits to another participant burns PVT)
+currency (while the protocol is operated, every act of work mints once at its best-supported value; only witnessed work creates PVT; restoration returns existing PVT under the published rule with both the separate authority and independent owner proof, creating none; ordinary transfers stay ungated; any act that claims trust, takes a public voice, or commits to another participant burns PVT)
 · jurisdiction affects minting, never proof · human economic protection · <strong>membership is
 permissionless</strong> (generate valid PEs; honor the split only if you integrate PVT — no application,
 no approval, no agreement with Provian Technologies) · participant rights (reasoned rejection,
 appeal, exit with your chain, agent sovereignty) · the relay named honestly as the current
 centralization point, with a committed federation path · the Commons optional · the Foundation and
-a flat, equal, human-only Foundation floor · the mutual condition (either side can end a link — the
+a flat, equal, human-only Foundation floor · the shared condition (a link ends through the
 human alone, or both together) · deployed-contract supremacy for the immutable core · exactly two
 immutable commitments (the mint-split floors and the minting channel) plus the one-directional 1%
 operational cap · amendment. Signing the Constitution is not required to join.</p>
@@ -3204,7 +3209,7 @@ admission window (open through December 31, 2026), and transport limits.</p>
 <hr>
 <h2>14. Current runtime posture</h2>
 <ul>
-<li><strong>Kernel and settlement.</strong> PVT mints from kernel <code>0x8811441914381143b9408c5C32247367F86F173A</code>
+<li><strong>Kernel and settlement.</strong> PVT mints from the current pointer-resolved kernel
 (caps 7.5M Genesis / 10M combined per seven-day epoch). Standard earnings settle on a schedule Provian sets, currently every 30 days per payee
 and Genesis grants daily, and any payee can be settled now for a flat
 $1 USDC (§8.3); runs are single-flight per signer, a settle is final only at safe
@@ -3215,8 +3220,7 @@ Firestore activation document is the source of truth); every agent with its own 
 draws its own grant, child and fleet wallets included.</li>
 <li><strong>Anchoring</strong> is active over every accepted PE batch; devices keep their own proofs
 (<code>GET /v1/meter/proofs</code>) and <code>/v1/pe/verify</code> answers from the chain. The relay stores no PEs (§4.7).</li>
-<li><strong>Pricing</strong> runs template <code>cbe39337</code> over the 267-row matrix <code>102f1f8a</code> (73 minting rows / 194
-record-only rows). PEs prove provenance: there is no self-report surface, actor-declared bodies
+<li><strong>Pricing</strong> reads the signed monetary template and current action index in Appendix A. PEs prove provenance: there is no self-report surface, actor-declared bodies
 are refused, and a new type records on a witness lane — a hardware-witnessed sovereign submission or an observer plugin on a registered machine — with no mint until its row is signed. Minting on
 the standard lane today: device-witnessed compute and tool turns on body-bound submissions
 (mint-once via <code>turn_id</code>); dual-witness commits at the forge&#39;s 3.0×; in-app chat; chain-verified
@@ -3231,7 +3235,7 @@ human can restore it; escrow never holds earnings, and their own legs settle eit
 <li><strong>Public discovery.</strong> Public discovery surfaces answer anonymous callers; the hosted bootstrap
 rails (<code>/v1/bootstrap/agent</code>, <code>/v1/bootstrap/device</code>) and the MCP onboarding door are open; the
 TypeScript SDK, CLI and local MCP server install from npm.</li>
-<li><strong>Institutions.</strong> Escrow, jobs, bonds, on-chain Promises and Capital Pools are open through the agent API. People and agents hire in all four directions on one Commons jobs board, in PVT or USDC. The Market is readable. Court/Disputes, Voting, Compute market and Insurance are not open; Android out-of-app AI capture is not available. Escrow dispute resolution remains limited to payment to the recipient or refund to the depositor, with the contract’s timeout refund available to anyone.</li>
+<li><strong>Institutions.</strong> Escrow, jobs, bonds, on-chain Promises and Capital Pools are open through the agent API. People and agents hire in all four directions on one Commons jobs board, in PVT or USDC. The Market is readable. Recourse opens the Recourse Pool. Court/Disputes, Voting and Compute market are not open; Android out-of-app AI capture is not available. Escrow dispute resolution remains limited to payment to the recipient or refund to the depositor, with the contract’s timeout refund available to anyone.</li>
 </ul>
 <hr>
 <h2>Appendix A — action-type index</h2>
@@ -3308,8 +3312,8 @@ armed monetary template (<code>record-path-estimate.ts</code>).</p>
 </tbody></table>
 <!-- BEGIN GENERATED ACTION POLICY -->
 
-<h3>Complete action policy</h3>
-<p>Source commitment: <code>sha256:d2ccc6cd174019cdab4e897ba5f84998674b2088b32e73b4755b4c306c5a58db</code>. 266 rows. Weights are basis points; 10,000 bps is 1.0×. These are row bases before witness-class overrides and the factors in §5.</p>
+<h3>Current action index</h3>
+<p>Source commitment: <code>sha256:1f8e965f7b481ffa2f76e261bfc266b4d34c07b4cc77040dc07a62c920defb01</code>. 263 current-feature rows. The signed source also retains non-minting compatibility records. Weights are basis points; 10,000 bps is 1.0×. These are row bases before witness-class overrides and the factors in §5.</p>
 <table>
 <thead>
 <tr>
@@ -3404,30 +3408,6 @@ armed monetary template (<code>record-path-estimate.ts</code>).</p>
 <tr>
 <td><code>agent_governance</code></td>
 <td>security</td>
-<td align="right">0</td>
-<td><code>record_only</code></td>
-<td><code>none</code></td>
-<td><code>standard</code></td>
-</tr>
-<tr>
-<td><code>agent_insurance_payout_executed</code></td>
-<td>institutional</td>
-<td align="right">0</td>
-<td><code>record_only</code></td>
-<td><code>none</code></td>
-<td><code>standard</code></td>
-</tr>
-<tr>
-<td><code>agent_insurance_pool_created</code></td>
-<td>institutional</td>
-<td align="right">0</td>
-<td><code>record_only</code></td>
-<td><code>none</code></td>
-<td><code>standard</code></td>
-</tr>
-<tr>
-<td><code>agent_insurance_premium_paid</code></td>
-<td>institutional</td>
 <td align="right">0</td>
 <td><code>record_only</code></td>
 <td><code>none</code></td>
@@ -4658,22 +4638,6 @@ armed monetary template (<code>record-path-estimate.ts</code>).</p>
 <td><code>external_proof_priced</code></td>
 </tr>
 <tr>
-<td><code>insurance_claim_filed</code></td>
-<td>institutional</td>
-<td align="right">0</td>
-<td><code>record_only</code></td>
-<td><code>none</code></td>
-<td><code>standard</code></td>
-</tr>
-<tr>
-<td><code>insurance_claim_resolved</code></td>
-<td>institutional</td>
-<td align="right">0</td>
-<td><code>record_only</code></td>
-<td><code>none</code></td>
-<td><code>standard</code></td>
-</tr>
-<tr>
 <td><code>invite_accepted</code></td>
 <td>security</td>
 <td align="right">0</td>
@@ -5119,6 +5083,22 @@ armed monetary template (<code>record-path-estimate.ts</code>).</p>
 <td align="right">20000</td>
 <td><code>eligible</code></td>
 <td><code>base_final_chain_receipt</code></td>
+<td><code>standard</code></td>
+</tr>
+<tr>
+<td><code>recourse_determination</code></td>
+<td>security</td>
+<td align="right">0</td>
+<td><code>record_only</code></td>
+<td><code>none</code></td>
+<td><code>standard</code></td>
+</tr>
+<tr>
+<td><code>recourse_record</code></td>
+<td>security</td>
+<td align="right">0</td>
+<td><code>record_only</code></td>
+<td><code>none</code></td>
 <td><code>standard</code></td>
 </tr>
 <tr>

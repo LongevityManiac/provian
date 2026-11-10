@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * a badge qualified before a key rotation survives it. A REAL agent wallet (created through
  * the route) is rotated through the REAL rotation transition (`rotated-agent` fixture), so the

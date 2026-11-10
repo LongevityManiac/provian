@@ -1,0 +1,32 @@
+import { expect, it } from 'vitest';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, hexToBytes, concatBytes } from '@noble/hashes/utils';
+import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './recourse-hash-authorization';
+it('binds the independent public key and signs the full intent without revealing its seed', async () => {
+  const { slh_dsa_sha2_128s: slh } = await import("@noble/post-quantum/slh-dsa.js");
+  const seed = new Uint8Array(32).fill(7), secret = new Uint8Array(32).fill(8);
+  const root = await recoverySigningRoot(seed);
+  expect(recoveryCommitment(secret, root)).toBe(`0x${bytesToHex(sha256(concatBytes(secret, hexToBytes(root.slice(2)))))}`);
+  const intent = `0x${'a5'.repeat(32)}`;
+  let reserved = false;
+  const signed = await signRecoveryIntent(seed, intent, { reserve: async (r, i) => { expect(r).toBe(root); expect(i).toBe(intent); reserved = true; } });
+  expect(reserved).toBe(true);
+  expect(hexToBytes(signed.signature.slice(2))).toHaveLength(7856);
+  expect(`0x${bytesToHex(sha256(hexToBytes(signed.publicKey.slice(2))))}`).toBe(root);
+  expect(slh.verify(hexToBytes(signed.signature.slice(2)), hexToBytes(intent.slice(2)), hexToBytes(signed.publicKey.slice(2)))).toBe(true);
+  expect(slh.verify(hexToBytes(signed.signature.slice(2)), new Uint8Array(32), hexToBytes(signed.publicKey.slice(2)))).toBe(false);
+  expect(JSON.stringify(signed)).not.toContain(bytesToHex(seed));
+  expect(await recoverySigningRoot(secret)).not.toBe(root);
+}, 20_000);
+it('safely signs different intents after restoring a stale backup and preserves deterministic retries', async () => {
+  const { slh_dsa_sha2_128s: slh } = await import("@noble/post-quantum/slh-dsa.js");
+  const seed = new Uint8Array(32).fill(9), first = `0x${'01'.repeat(32)}`, second = `0x${'02'.repeat(32)}`;
+  const journal = { reserve: async () => {} };
+  const signed = await signRecoveryIntent(seed, first, journal);
+  expect(await signRecoveryIntent(seed, first, journal)).toEqual(signed);
+  const other = await signRecoveryIntent(seed, second, journal);
+  expect(other.signingRoot).toBe(signed.signingRoot);
+  expect(slh.verify(hexToBytes(other.signature.slice(2)), hexToBytes(second.slice(2)), hexToBytes(other.publicKey.slice(2)))).toBe(true);
+  expect(slh.verify(hexToBytes(other.signature.slice(2)), hexToBytes(first.slice(2)), hexToBytes(other.publicKey.slice(2)))).toBe(false);
+  await expect(signRecoveryIntent(seed, first, { reserve: async () => { throw new Error('disk_failed'); } })).rejects.toThrow('disk_failed');
+}, 20_000);

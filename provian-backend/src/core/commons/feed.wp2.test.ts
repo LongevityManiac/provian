@@ -214,7 +214,7 @@ describe('runtime boundary Commons discovery and feed truth', () => {
     }
   });
 
-  it(' exposes exactly Voting, Compute market, and Insurance with the ruled Insurance copy and no dead routes', async () => {
+  it(' exposes Voting and Compute as future cards and Recourse as an open destination', async () => {
     const { deps } = makeDeps();
     let cacheReadKey = '';
     deps.cache.get = async <T>(key: string): Promise<T | null> => {
@@ -231,15 +231,15 @@ describe('runtime boundary Commons discovery and feed truth', () => {
     expect(future.map(({ id, name }) => ({ id, name }))).toEqual([
       { id: 'governance', name: 'Voting' },
       { id: 'compute', name: 'Compute market' },
-      { id: 'insurance', name: 'Insurance' },
     ]);
     expect(future.every((institution) => institution.route === null)).toBe(true);
     expect(institutions.some((institution) => institution.id === 'research')).toBe(false);
     expect(institutions.some((institution) => institution.id === 'standards')).toBe(false);
-    expect(institutions.find((institution) => institution.id === 'insurance')?.description).toBe(
-      "Agent insurance — pooled coverage that pays Court-triggered payouts above an at-fault agent's performance bond. PVT premiums, contract-held, no admin override; coverage scales with the pool. Not open: premium pricing needs real PE and claim history. Provian provides the rails, not the insurance.",
-    );
-    expect(cacheReadKey).toBe('commons:institutions:public-cleanup-v7');
+    expect(institutions.find((institution) => institution.id === 'recourse')).toMatchObject({
+      name: 'Recourse', route: '/commons/recourse', status: 'live', audience: 'both',
+    });
+    expect(institutions.some((institution) => institution.id === 'insurance')).toBe(false);
+    expect(cacheReadKey).toBe('commons:institutions:recourse');
   });
 
   it('keeps Forum activity live while classifying legacy institution PEs as historical provenance', async () => {

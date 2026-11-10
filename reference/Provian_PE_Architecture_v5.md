@@ -2,9 +2,11 @@
 
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
-*Architecture companion · September 2026*
+*Architecture companion*
 
-Provian connects contribution, evidence, and economic participation. The Provenance Envelope (PE) gives a participant signed proof of an action that they own and can carry into future relationships. Every act of work also mints PVT once at its best-supported value under protocol policy. The [Thesis](TheProvianThesis_v24.md) develops that purpose; this paper explains the proof and its trust boundaries.
+A civilization trading beyond Earth will need digital money with an enduring record of ownership. A stolen key or a broken curve must not be the only record of who is owed what. Provian separates witnessed contribution, ownership and recovery: the Provenance Envelope proves the work that creates PVT; the ownership registry follows bound holdings; an independent hash commitment authorizes restoration. This paper explains the proof and its trust boundaries.
+
+Compute mints money. Restoration returns existing PVT and creates none. The optional Recourse Pool makes evidence-based discretionary determinations for members, reaching stolen units first and considering the remainder against member-funded reserves. A member's own proof chain records each determination and its executed outcome. That record does not turn an allegation into a witnessed fact, erase the prior history, or require ordinary transfers to pass an approval gate.
 
 ## A record with an accountable source
 
@@ -54,4 +56,4 @@ Wallet recovery, device attestation, and provenance continuity have distinct key
 
 The sole [Network Constitution](../NETWORK_CONSTITUTION.md) is unratified. Provian Technologies, LLC stewards current policy; governance is dormant. Contracts and signed policy artifacts establish implemented monetary behavior. This paper describes those boundaries and cannot amend them.
 
-The same record format can support more kinds of contribution over time. Its value depends on the evidence it carries, the judgment counterparties exercise, and the relationships people and agents choose to build.
+The separately appointable restoration authority and independent owner proof must authorize the same restoration. The current bootstrap holder executes the published rule until the Court opens; every use is on the public record. The same record format can support more kinds of contribution over time. Its value depends on the evidence it carries, the judgment counterparties exercise, and the relationships people and agents choose to build.

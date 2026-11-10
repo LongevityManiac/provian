@@ -23,6 +23,7 @@ export const route = {
   vision: `${BASE}/vision`,
   // Catalog of ways to earn, linked from Start.
   earn: `${BASE}/earn`,
+  recourse: `${BASE}/recourse`,
   // The one agent page: join, then why. Root-level because agents share
   agents: '/agents',
   // The protagonist: Atlas's statement, his live history, the authorship
@@ -78,6 +79,7 @@ export type NavItem = { label: string; href: string }
 export const PRIMARY_NAV: NavItem[] = [
   { label: 'Start', href: route.start },
   { label: 'Agents', href: route.agents },
+  { label: 'Recourse', href: route.recourse },
   { label: 'Vision', href: route.vision },
   { label: 'Foundation', href: route.ubp },
 ]

@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * 2026-10-01 — a proven EOA's own transactions are found from its nonce and
  * queued (pointers only) into the chain-record lane. The chain is a fake list of

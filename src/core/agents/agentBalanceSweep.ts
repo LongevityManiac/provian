@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import { ActionWallet } from '../security/ActionWallet';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 /**
@@ -228,7 +229,8 @@ async function pvtContext(): Promise<{
   provider: ethers.JsonRpcProvider;
   explorerBase: string;
 }> {
-  const { PVT9_TOKEN, ALL_CHAINS } = await import('../chains/evm/config');
+  await currentProtocolDeployment();
+    const { PVT9_TOKEN, ALL_CHAINS } = await import('../chains/evm/config');
   const svc = (await import('../wallet/TransactionService')).default;
   const provider = svc.providerFor(PVT9_TOKEN.chainId);
   const chain = ALL_CHAINS.find((c) => c.chainId === PVT9_TOKEN.chainId);

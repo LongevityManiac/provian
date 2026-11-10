@@ -1,6 +1,6 @@
 {
   "schema_version": "2.3.2",
-  "pricing_template_sha256": "sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39",
+  "pricing_template_sha256": "sha256:05babadb74dd62da60ecf17bf228b68f9ec76ea335174b778be8a7eb4956a9f8",
   "summary": "A Provenance Envelope (v2) is metadata-only, witnessed, and kept by its owner: the device that observed the act builds, hashes, chains and keeps it, and sends the relay only its act record inside one signed batch per day (and right before any presentation or on-demand payout). The relay prices the acts, mints, keeps running totals and the daily on-chain fingerprint, and keeps no PE. This document is the single source for building or reading one on any path.",
   "pe_fields": [
     {

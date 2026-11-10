@@ -16,6 +16,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getAddress } from 'viem';
+import { verifiedProtocolSnapshot } from './protocol-runtime';
 // Type-only import (erased at runtime) — avoids any require() cycle with
 // evm-allowlist.ts, which imports the value resolvers below.
 import type { SupportedChain } from './evm-allowlist';
@@ -144,11 +145,11 @@ const optimismChunkII = (): ChunkIIDeployment =>
  * so the backing artifact is read on first property access, never at import.
  */
 export const BASE_PVT9_ADDRESSES = {
-  get escrow(): `0x${string}` { return getAddress(basePvt9().contracts.escrowV4.address); },
-  get pool(): `0x${string}` { return getAddress(basePvt9().contracts.poolV3.address); },
-  get court(): `0x${string}` { return getAddress(basePvt9().contracts.courtV2.address); },
-  get bondPool(): `0x${string}` { return getAddress(basePvt9().contracts.bondPool.address); },
-  get pvt(): `0x${string}` { return getAddress(basePvt9().successorKernel.pvt9Kernel.address); },
+  get escrow(): `0x${string}` { return getAddress(verifiedProtocolSnapshot().addresses.escrow); },
+  get pool(): `0x${string}` { return getAddress(verifiedProtocolSnapshot().addresses.projectPool); },
+  get court(): `0x${string}` { return getAddress(verifiedProtocolSnapshot().addresses.court); },
+  get bondPool(): `0x${string}` { return getAddress(verifiedProtocolSnapshot().addresses.bonds); },
+  get pvt(): `0x${string}` { return getAddress(verifiedProtocolSnapshot().addresses.kernel); },
 } as const;
 
 /**
@@ -240,6 +241,7 @@ function envAddress(...names: string[]): `0x${string}` | undefined {
  * the caller fails closed (matching evm-bond.ts's slice scope).
  */
 export function resolveBondPoolAddress(chain: SupportedChain): `0x${string}` | undefined {
+  if (chain === 'base') return BASE_PVT9_ADDRESSES.bondPool;
   return (
     envAddress(`BOND_POOL_CONTRACT_ADDRESS_${chain.toUpperCase()}`, 'BOND_POOL_CONTRACT_ADDRESS') ??
     BOND_POOL_DEFAULTS[chain]
@@ -251,6 +253,7 @@ export function resolveBondPoolAddress(chain: SupportedChain): `0x${string}` | u
  * names the backend reads) → deployment-JSON default.
  */
 export function resolveEscrowUsdcAddress(chain: SupportedChain): `0x${string}` | undefined {
+  if (chain === 'base') return BASE_PVT9_ADDRESSES.escrow;
   return (
     envAddress(`ESCROW_CONTRACT_ADDRESS_${chain.toUpperCase()}`, 'ESCROW_CONTRACT_ADDRESS') ??
     ESCROW_USDC_DEFAULTS[chain]
@@ -264,6 +267,7 @@ export function resolveEscrowUsdcAddress(chain: SupportedChain): `0x${string}` |
  * live PoolV3 serves both currencies, so a single address is correct.
  */
 export function resolvePoolAddress(chain: SupportedChain): `0x${string}` | undefined {
+  if (chain === 'base') return BASE_PVT9_ADDRESSES.pool;
   return (
     envAddress(
       `POOL_V2_CONTRACT_ADDRESS_${chain.toUpperCase()}`,

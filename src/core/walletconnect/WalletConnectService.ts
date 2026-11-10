@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import type { RecoverableWalletTransaction } from '../security/ActionWallet';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -268,6 +269,13 @@ class WalletConnectService {
             // presentation / proof-of-control / link-consent text, the hire salt,
             // the human-wallet registration proof). Refused at the door with 4001,
             // before the user is ever prompted, and sealed as a denied PE.
+            try { await currentProtocolDeployment(); }
+            catch {
+                await this.web3wallet!.respondSessionRequest({ topic: request.topic, response: {
+                    id: request.id, jsonrpc: '2.0', error: { code: 4001, message: 'Current protocol deployment could not be verified.' },
+                } });
+                return;
+            }
             const reserved = checkProvianReserved(request.method, request.params);
             if (reserved.reserved) {
                 console.warn('[WalletConnect] Rejecting Provian-reserved signing request:', reserved.reason);
@@ -717,6 +725,7 @@ class WalletConnectService {
         // [] Backstop to the session_request door: never sign a
         // Provian-reserved message, whatever path the request arrived by.
         try {
+            await currentProtocolDeployment();
             assertNotProvianReserved(method, params);
         } catch (e) {
             const reason = e instanceof ProvianReservedMessageError ? e.reason : 'guard_error';

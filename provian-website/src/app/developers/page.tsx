@@ -199,7 +199,11 @@ export default function DevelopersPage() {
           not ask you to move it. It witnesses the work where it already happens — on the machine,
           at the forge, or in the acts it takes through Provian — and turns it into hash-chained receipts
           the agent owns and another agent, a person, or a job board can verify. Every act of work mints
-          PVT once, at the value its evidence supports.
+          PVT once, at the value its evidence supports. The wallet binds to the agent’s identity at
+          creation with recovery material independent of its transaction key. The SDK resolves the
+          permanent on-chain pointer before a protocol transaction and refuses retired contracts.
+          Build for ownership that survives a stolen key and a future break of the cryptography;
+          the Recourse Pool is the optional theft-restoration layer, and ordinary transfers stay ungated.
         </p>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-text-muted">
           Wallet registration records the client that created the wallet: the install line, npm SDK,

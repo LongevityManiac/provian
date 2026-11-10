@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import { jest } from '@jest/globals';
 import express, { type Request, type Response } from 'express';
 import type { Firestore } from 'firebase-admin/firestore';

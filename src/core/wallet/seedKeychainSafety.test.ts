@@ -168,7 +168,8 @@ const models = vi.hoisted(() => {
         },
         async getItemAsync(key: string) {
             tick();
-            if (expoFaults.readThrows) throw new Error(expoFaults.readThrows);
+            // This fault models the legacy biometric item, not unrelated non-biometric metadata.
+            if (key === LEGACY && expoFaults.readThrows) throw new Error(expoFaults.readThrows);
             const item = expoItems.get(key);
             if (!item) return null;
             if (item.auth && item.boundGeneration !== device.enrollmentGeneration) return null; // invalidated

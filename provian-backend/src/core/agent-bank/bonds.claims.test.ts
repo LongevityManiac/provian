@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * Bond claim binding, dedup, and resolution — Capability-Truthfulness Pass-2
  * regression tests (#1 write-only/griefable resolution leg, #10 replay-stacking).

@@ -33,7 +33,7 @@ export const LINES = {
   ubp: {
     slug: 'universal-basic-participation',
     line: 'Universal Basic Participation',
-    sentence: 'Not a check for existing. PVT for your own work in the boom, minted at the source.',
+    sentence: 'Your work mints PVT. Participation, a lasting record of ownership, and a protected share for people.',
     cta: { label: 'Universal Basic Participation', href: route.ubp },
   },
   tagline: {

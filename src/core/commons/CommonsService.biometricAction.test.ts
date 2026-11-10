@@ -1,3 +1,4 @@
+vi.mock('../protocol/runtime', async () => (await import('../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
 import * as SecureStore from 'expo-secure-store';

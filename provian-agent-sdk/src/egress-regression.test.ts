@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 // Port of Codex's security-check-2026-10-10-evidence/egress-regression.test.ts.
 // Synthetic credentials and loopback TLS/HTTP only; certificate and hostname checks stay enabled.
 //

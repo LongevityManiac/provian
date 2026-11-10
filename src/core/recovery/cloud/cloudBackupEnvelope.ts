@@ -17,11 +17,14 @@ import { pbkdf2Async } from '@noble/hashes/pbkdf2';
 import { sha256 } from '@noble/hashes/sha256';
 import { gcm } from '@noble/ciphers/aes';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import type { HumanAccountSelection } from '../../recourse/human-account';
 
 export interface CloudBackupPayload {
     /** The BIP-39 mnemonic - the seed material required to restore the wallet */
     mnemonic: string;
     wallet_address: string;
+    /** Encrypted alongside the seed, never placed in cloud metadata. */
+    recourse_account?: HumanAccountSelection;
     chain_ids: number[];
     created_at: string;
     device_info: {

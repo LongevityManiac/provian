@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
 import { ethers } from 'ethers';
@@ -114,7 +115,6 @@ const VERIFIED_ADDRESSES: Set<string> = (() => {
             if (token?.address) set.add(token.address.toLowerCase());
         }
     }
-    set.add(PVT9_TOKEN.address.toLowerCase());
     return set;
 })();
 
@@ -131,7 +131,9 @@ function isRetiredPvtContract(contractAddress: string | undefined): boolean {
  */
 function isVerifiedContractAt(contractAddress: string, blockNumber: number | undefined): boolean {
     if (isRetiredPvtContract(contractAddress)) return isPreMigrationPredecessorBlock(blockNumber);
-    return VERIFIED_ADDRESSES.has(contractAddress.toLowerCase());
+    if (VERIFIED_ADDRESSES.has(contractAddress.toLowerCase())) return true;
+    try { return contractAddress.toLowerCase() === PVT9_TOKEN.address.toLowerCase(); }
+    catch { return false; }
 }
 
 /**
@@ -561,6 +563,7 @@ class TransactionHistoryService {
      * Routes through backend proxy which holds the API keys.
      */
     private async fetchEVMTransactions(address: string, chain: ChainType): Promise<Transaction[]> {
+        await currentProtocolDeployment();
         const alchemyNetwork = CHAIN_TO_ALCHEMY_NETWORK[chain];
         if (!alchemyNetwork) return [];
 

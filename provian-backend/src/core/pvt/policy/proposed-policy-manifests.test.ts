@@ -241,9 +241,9 @@ describe('atomic accounting proposed action policy', () => {
 
     // 3 retired types removed from each live catalog (203→200, 154→151).
     // `link_spend` (the Stripe Link spend witness) added to both (200→201, 151→152).
-    expect(actionTypeUnion).toHaveLength(208); // +human_approval; +7 Commons communication types; 2026-09-23: -1 (fact-base item 3)
+    expect(actionTypeUnion).toHaveLength(210); // +human_approval; +7 Commons communication types; 2026-09-23: -1 (fact-base item 3)
     expect(conformanceTypes).toHaveLength(152);
-    expect(requiredTypes.size).toBe(221); // +link_spend; +human_approval; +7; 2026-09-23: -1 (fact-base item 3)
+    expect(requiredTypes.size).toBe(223); // +link_spend; +human_approval; +7; 2026-09-23: -1 (fact-base item 3)
     for (const actionType of requiredTypes) {
       expect(manifestTypes).toContain(actionType);
     }

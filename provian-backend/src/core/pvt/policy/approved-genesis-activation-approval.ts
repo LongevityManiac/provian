@@ -30,7 +30,7 @@
  */
 
 import crypto from 'crypto';
-export const BOUND_GENESIS_TEMPLATE_SHA256 = 'sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39';
+export const BOUND_GENESIS_TEMPLATE_SHA256 = 'sha256:05babadb74dd62da60ecf17bf228b68f9ec76ea335174b778be8a7eb4956a9f8';
 
 import {
   approvalVerifierConfigFromEnv,
@@ -126,7 +126,7 @@ export const APPROVED_GENESIS_ACTIVATION_SIGNATURE: SshApprovalSignature = Objec
   "signer_identity": "frank",
   "namespace": "provian-pvt-policy",
   "public_key_sha256": "sha256:200b11f0842bdf578eeb2ebb4859c9fcd3ba870159e53d6747ffaff893462974",
-  "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQHh3dn/GHW5Xdf7WnCHDy/WBJ5NSKBz5dCNQKFaSvcG4v8\nEhSIq+oWWNoBFp+ZBYHW6LnL7QA9J+89Tj6RophAE=\n-----END SSH SIGNATURE-----\n"
+  "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQPmNoFhNAfiE/mcVBFx3Ql4WOzkX/ZjYNvpAmPqzQuOLCi\nBN3VpZYICxlCpVuhlmO3gjZi/iGfH+QJonpz0YLgs=\n-----END SSH SIGNATURE-----\n"
 });
 
 /** Domain-separated authorization of the campaign and the exact monetary template. */

@@ -191,7 +191,10 @@ export default function EarnPage() {
             blockchain that sits in your own wallet: you can send it and hold it. Provian runs no PVT
             exchange and sets no PVT price. Earnings settle on a schedule Provian sets, currently every 30 days per payee, and
             Genesis grants daily; you can settle ready earnings sooner for a flat $1 USDC fee.
-            While the protocol is operated, supply grows only as witnessed work is paid.
+            Only witnessed work creates PVT. Binding a wallet gives its owner a recovery record apart
+            from the transaction key. The optional Recourse Pool protects bound holdings against theft
+            under its published rule; restoration returns existing PVT and creates none. Membership
+            uses earned PVT through a monthly participation burn and a separate pool contribution.
           </p>
         </div>
       </section>

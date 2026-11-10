@@ -53,14 +53,14 @@ import { generatePE } from './pe-utils';
  * Wave J-bis: chain-aware resolver. Single-chain deployments keep working
  * via the legacy single-valued env var fallback in chain-registry.
  */
-export function resolvePoolContractAddress(currency: Currency, chain: AgentBankChain): string {
+export async function resolvePoolContractAddress(currency: Currency, chain: AgentBankChain): Promise<string> {
   if (currency === 'pvt') {
     if (!isPvtPrincipalEnabledForChain(chain)) {
       throw new ValidationError(`PVT-principal pools are not enabled for chain '${chain}' on this relay`);
     }
-    return requireAddressOrThrow(poolV3AddressForChain(chain), 'POOL_V3', chain);
+    return requireAddressOrThrow((await poolV3AddressForChain(chain)), 'POOL_V3', chain);
   }
-  return requireAddressOrThrow(poolUsdcAddressForChain(chain), 'POOL', chain);
+  return requireAddressOrThrow((await poolUsdcAddressForChain(chain)), 'POOL', chain);
 }
 
 // ---------------------------------------------------------------------------
@@ -271,7 +271,7 @@ export async function contribute(
   // so every recorded contributor is a real on-chain contributor of the same pool.
   const contribChain = (initialDoc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(contribChain);
-  const poolContractAddress = resolvePoolContractAddress(poolCurrency, contribChain);
+  const poolContractAddress = (await resolvePoolContractAddress(poolCurrency, contribChain));
   const contribVerification = await verifyEvmPoolContribution({
     chainId: chainIdForName(contribChain),
     txHash,
@@ -448,7 +448,7 @@ export async function executePool(
   const executeCurrency = doc.currency ?? 'usdc';
   const executeChain = (doc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(executeChain);
-  const poolContractAddress = resolvePoolContractAddress(executeCurrency, executeChain);
+  const poolContractAddress = (await resolvePoolContractAddress(executeCurrency, executeChain));
   const execVerification = await verifyEvmContractCall({
     chainId: chainIdForName(executeChain),
     txHash,
@@ -550,7 +550,7 @@ export async function withdrawContribution(
   const withdrawCurrency = doc.currency ?? 'usdc';
   const withdrawChain = (doc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(withdrawChain);
-  const poolContractAddress = resolvePoolContractAddress(withdrawCurrency, withdrawChain);
+  const poolContractAddress = (await resolvePoolContractAddress(withdrawCurrency, withdrawChain));
   const chainId = chainIdForName(withdrawChain);
 
   // Bind the withdrawal to THIS pool's on-chain bytes32 poolId so a same-contract

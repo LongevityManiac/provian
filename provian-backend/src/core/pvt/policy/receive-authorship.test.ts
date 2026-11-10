@@ -1,3 +1,4 @@
+jest.mock('../../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses, escrow: '0x6666666666666666666666666666666666666666' } }; }) }));
 /**
  * Receive authorship detection — behaviour plus its RED controls.
  *

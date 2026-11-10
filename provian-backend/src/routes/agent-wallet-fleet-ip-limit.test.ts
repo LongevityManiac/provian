@@ -1,3 +1,4 @@
+jest.mock('../core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * FLEET-LINKED WALLETS COUNT AGAINST THE PER-IP WALLET LIMIT.
  *

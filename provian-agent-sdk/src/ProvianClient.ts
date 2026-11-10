@@ -1,3 +1,5 @@
+import { ownerChainNetwork } from './protocol-runtime';
+import { assertCurrentProtocolAddresses } from './protocol-transaction';
 import { guardedFetch, guardedFetcher } from './guarded-fetch';
 import type { HostResolver } from './egress-guard';
 import {sealPrivatePricing} from './meter/private-pricing';
@@ -1435,6 +1437,7 @@ export class ProvianClient {
         // memoized authorization for the SAME logical payment (idempotency
         // guard, audit Pass-3 #9): a caller retry must not mint a second
         // settleable authorization for a payment already settled.
+        if (requirement.network === 'eip155:8453') await assertCurrentProtocolAddresses(ownerChainNetwork(), [requirement.asset, requirement.payTo]);
         let signed: SignedX402Authorization;
         const memo = signedByPayment.get(paymentKey);
         if (memo && Number(memo.authorization.validBefore) > nowSec) {
@@ -1447,7 +1450,7 @@ export class ProvianClient {
             if (Number(v.authorization.validBefore) <= nowSec) signedByPayment.delete(k);
           }
           try {
-            signed = signX402Payment({
+            signed = await signX402Payment({
               privateKeyHex: wallet.privateKeyHex,
               fromAddress: wallet.address,
               requirement,

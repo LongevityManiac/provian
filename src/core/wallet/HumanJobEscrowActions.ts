@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 /**
@@ -226,6 +227,7 @@ export async function runEscrowActionOnChain(
     biometricReason: string, biometricAction?: BiometricAction,
 ): Promise<EscrowActionResult> {
     assertWalletEnabled('runEscrowActionOnChain');
+    await currentProtocolDeployment();
     const call = buildEscrowActionCall(action, target); // validate before prompting
     return await withBiometricAction(biometricReason, async (biometricAction) => {
         assertBiometricAction(biometricAction);

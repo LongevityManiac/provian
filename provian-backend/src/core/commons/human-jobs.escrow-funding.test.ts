@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses } }; }) }));
+import { currentProtocolDeployment } from '../protocol/runtime';
 /**
  * getHumanJobEscrowFunding must return the on-chain fields a human poster
  * needs to build the approve + createEscrow + fundEscrow sequence — the SAME

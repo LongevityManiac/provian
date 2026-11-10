@@ -30,13 +30,13 @@
     "static actionType/action_type literals under src/, provian-backend/src/, provian-agent-sdk/src/, and provian-cli/src/ (.ts/.tsx/.js/.mjs)"
   ],
   "counts": {
-    "rows": 266,
-    "required_identifiers": 253,
-    "mobile": 208,
+    "rows": 268,
+    "required_identifiers": 255,
+    "mobile": 210,
     "conformance": 152,
     "cut_line": 162,
     "emitter_additions": 79,
-    "statically_discovered_emitters": 115
+    "statically_discovered_emitters": 117
   },
   "rows": [
     {
@@ -6568,6 +6568,66 @@
       }
     },
     {
+      "action_type": "recourse_determination",
+      "category": "security",
+      "base_action_weight_bps": 0,
+      "policy_override_bps": null,
+      "mint_disposition": "record_only",
+      "policy_review_state": "not_required",
+      "reason_code": "SECURITY_POLICY_OR_IDENTITY_RECORD",
+      "evidence_requirement": "none",
+      "financial_attestation_neutral": false,
+      "attestation_pricing": "standard",
+      "allow_verified_attestation_upgrade": false,
+      "canonical_event_required": false,
+      "canonical_event_group": "record_only:recourse_determination",
+      "beneficial_ownership_policy": "not_applicable",
+      "session_lineage_policy": "not_applicable",
+      "linkage_treatment": "none_record_only",
+      "amount_independent": true,
+      "fixed_grant_source": "none",
+      "evidence_resolution_mode": "not_applicable",
+      "maintained_sources": {
+        "mobile_action_type_union": true,
+        "backend_conformance_catalog": false,
+        "firestore_cut_line": false,
+        "validated_emitter_additions": false,
+        "static_emitter_files": [
+          "provian-backend/src/core/recourse/determination-outcome.ts"
+        ]
+      }
+    },
+    {
+      "action_type": "recourse_record",
+      "category": "security",
+      "base_action_weight_bps": 0,
+      "policy_override_bps": null,
+      "mint_disposition": "record_only",
+      "policy_review_state": "not_required",
+      "reason_code": "SECURITY_POLICY_OR_IDENTITY_RECORD",
+      "evidence_requirement": "none",
+      "financial_attestation_neutral": false,
+      "attestation_pricing": "standard",
+      "allow_verified_attestation_upgrade": false,
+      "canonical_event_required": false,
+      "canonical_event_group": "record_only:recourse_record",
+      "beneficial_ownership_policy": "not_applicable",
+      "session_lineage_policy": "not_applicable",
+      "linkage_treatment": "none_record_only",
+      "amount_independent": true,
+      "fixed_grant_source": "none",
+      "evidence_resolution_mode": "not_applicable",
+      "maintained_sources": {
+        "mobile_action_type_union": true,
+        "backend_conformance_catalog": false,
+        "firestore_cut_line": false,
+        "validated_emitter_additions": false,
+        "static_emitter_files": [
+          "provian-backend/src/core/recourse/lifecycle-records.ts"
+        ]
+      }
+    },
+    {
       "action_type": "recovery_action",
       "category": "security",
       "base_action_weight_bps": 0,
@@ -6593,6 +6653,7 @@
         "firestore_cut_line": true,
         "validated_emitter_additions": false,
         "static_emitter_files": [
+          "provian-backend/src/core/recourse/human-recovery.ts",
           "src/screens/Security/LockdownScreen.tsx"
         ]
       }
@@ -6878,6 +6939,7 @@
         "validated_emitter_additions": false,
         "static_emitter_files": [
           "provian-backend/src/core/pvt/chain-record-watcher.ts",
+          "provian-backend/src/core/pvt/solana-chain-record-derive.ts",
           "src/core/earn/EarningSurfaceRegistry.ts",
           "src/core/walletconnect/WalletConnectService.ts",
           "src/screens/Action/SendScreen.tsx"
@@ -7330,6 +7392,7 @@
         "static_emitter_files": [
           "provian-backend/src/core/pvt/chain-record-watcher.ts",
           "provian-backend/src/core/pvt/inbound-usdc-watcher.ts",
+          "provian-backend/src/core/pvt/solana-chain-record-derive.ts",
           "src/core/earn/EarningSurfaceRegistry.ts",
           "src/core/swap/CrossChainSwapEngine.ts",
           "src/core/swap/SwapEngine.ts"
@@ -7770,5 +7833,5 @@
       }
     }
   ],
-  "content_sha256": "sha256:d2ccc6cd174019cdab4e897ba5f84998674b2088b32e73b4755b4c306c5a58db"
+  "content_sha256": "sha256:1f8e965f7b481ffa2f76e261bfc266b4d34c07b4cc77040dc07a62c920defb01"
 }

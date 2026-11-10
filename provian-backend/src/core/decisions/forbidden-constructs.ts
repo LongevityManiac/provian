@@ -1470,12 +1470,12 @@ const FC_011: ForbiddenConstruct = {
  * grant transaction. Canonical controls remain authoritative.
  */
 export const BOUND_ACTIVATION_TEMPLATE_SHA256 =
-  'sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39';
+  'sha256:05babadb74dd62da60ecf17bf228b68f9ec76ea335174b778be8a7eb4956a9f8';
 
 /** Current template binding and its explicitly supported predecessor digest. */
 export const ACTIVATION_TEMPLATE_COMPATIBILITY = Object.freeze({
   rule: 'source_bound_signed_template_stages',
-  prior_digest: 'sha256:cbe39337418064ba3c7a3ecd490d6e2fc3109570fe518ac41b0ff95a88083530',
+  prior_digest: 'sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39',
   cause: 'Both activation documents bind the exact current template. Source-bound signed stages serve new revisions while the canonical documents remain valid for prior revisions during rollout.',
   bound_documents: Object.freeze([
     'pvt_policy_activations/genesis',

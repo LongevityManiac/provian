@@ -9,6 +9,7 @@
 // ENVIRONMENT (imported from shared, re-exported for convenience)
 // =============================================================================
 
+import { verifiedProtocolSnapshot } from '../../protocol/runtime';
 import {
     type Environment,
     getEnvironment,
@@ -247,7 +248,7 @@ export const TOKEN_ADDRESSES: Record<number, Record<string, string>> = {
  */
 export const PVT9_TOKEN = {
     chainId: 8453,
-    address: '0x8811441914381143b9408c5C32247367F86F173A',
+    get address() { return verifiedProtocolSnapshot().addresses.kernel; },
     symbol: 'PVT',
     name: 'Provian Value Token',
     decimals: 18,
@@ -262,7 +263,7 @@ export const PVT9_TOKEN = {
  */
 export const JOB_ESCROW_V4 = {
     chainId: 8453,
-    address: '0x96560fDF49e563eFCdc2d502934676DC074732d0',
+    get address() { return verifiedProtocolSnapshot().addresses.escrow; },
 } as const;
 
 /**
@@ -274,14 +275,15 @@ export const JOB_ESCROW_V4 = {
  * `contracts/deployments/base-pvt9-institutions.json` by `provianReserved.test.ts`.
  */
 export const PROVIAN_BASE_CONTRACTS = {
-    pvt9Kernel: PVT9_TOKEN.address,
-    eligibilityVerifier: '0xb26Fd9d4f3b42911592B96270e8437287DE33406',
-    escrowV4: JOB_ESCROW_V4.address,
-    promiseV3: '0x7506F4A052750260A0ddcdF5E63a77CC646d89B9',
-    poolV3: '0x1301BF63Cb6BaE7171f6c7D895C762B243964d26', // 2026-10-20: Funded pools refundable past deadline; 0xb355C79a… replaced
-    bondPool: '0x6b09E9C72316De9d62d63f09B187d4c86bBf787E',
-    courtV2: '0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f',
-    migrationDistributor: '0xf674f1A915862430C9d0Da994f1B9EA5Dd0c71Ed',
+    get pvt9Kernel() { return PVT9_TOKEN.address; },
+    get eligibilityVerifier() { return verifiedProtocolSnapshot().addresses.eligibilityVerifier; },
+    get escrowV4() { return JOB_ESCROW_V4.address; },
+    get promiseV3() { return verifiedProtocolSnapshot().addresses.promises; },
+    get poolV3() { return verifiedProtocolSnapshot().addresses.projectPool; },
+    get bondPool() { return verifiedProtocolSnapshot().addresses.bonds; },
+    get courtV2() { return verifiedProtocolSnapshot().addresses.court; },
+    get recoursePool() { return verifiedProtocolSnapshot().addresses.recoursePool; },
+    get settlement() { return verifiedProtocolSnapshot().addresses.settlement; },
 } as const;
 
 /**

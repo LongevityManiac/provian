@@ -263,10 +263,17 @@ describe('judgeMintCapability', () => {
       constructions: [],
       unrefused_endpoints: [],
       sanctioned_mint_signers: [
+        'scripts/recourse-break-authority.ts',
+        'scripts/recourse-determinations.ts',
         // B10 : the PE-anchor runtime — a declared on-chain WRITE
         // (anchoring-only; cannot mint) at a named location.
         'src/core/pvt/pe-anchor-runtime.ts',
         'src/core/pvt/wp4/operator-runtime.ts',
+        'src/core/recourse/binding-operation.ts',
+        'src/core/recourse/binding-runtime.ts',
+        'src/core/recourse/break-deployment-runtime.ts',
+        'src/core/recourse/break-registration.ts',
+        'src/core/recourse/owner-operation-runtime.ts',
       ],
     });
   });

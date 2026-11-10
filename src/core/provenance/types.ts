@@ -238,6 +238,8 @@ export type ActionType =
     | 'service:github_pr_merged'      // GitHub App webhook PR merged (tier 4, code work product)
     | 'service_install_created'       // User installed a Tier A service connector (tier 3, infrastructure)
     | 'service_install_revoked'       // User revoked a Tier A service connector (tier 1, infrastructure)
+    | 'recourse_determination'        // Finalized determination and restoration result; no mint
+    | 'recourse_record'               // Finalized membership, binding or free restoration; no mint
     // Performance bond events (Phase 5)
     | 'bond_posted'                   // Agent posts PVT performance bond
     | 'bond_renewed'                  // Agent renews bond quarterly

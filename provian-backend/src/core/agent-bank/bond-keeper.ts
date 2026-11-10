@@ -124,7 +124,7 @@ class RealBondKeeperGateway implements BondKeeperGateway {
   async processAbandonment(bond: BondDocument): Promise<BondAbandonmentResult> {
     if (!this.canSign()) return { status: 'unconfigured' };
 
-    const bondPoolAddress = bondPoolAddressForChain(bond.chain);
+    const bondPoolAddress = (await bondPoolAddressForChain(bond.chain));
     if (!bondPoolAddress) return { status: 'failed', reason: 'bond_pool_unconfigured' };
 
     const chain = bond.chain as ChainName;
@@ -170,7 +170,7 @@ class RealBondKeeperGateway implements BondKeeperGateway {
       return { status: 'not_found', reason: 'claim has no onchain_claim_id' };
     }
 
-    const bondPoolAddress = bondPoolAddressForChain(claim.chain);
+    const bondPoolAddress = (await bondPoolAddressForChain(claim.chain));
     if (!bondPoolAddress) return { status: 'failed', reason: 'bond_pool_unconfigured' };
 
     const chain = claim.chain as ChainName;

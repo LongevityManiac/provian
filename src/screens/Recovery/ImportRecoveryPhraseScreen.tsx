@@ -26,6 +26,9 @@ import SeedManager, {
     OverwriteConfirmationRequired,
 } from '../../core/wallet/SeedManager';
 import { REQUIRED_CONFIRMATION_PHRASE } from '../../core/recovery/applyCloudRecovery';
+import { discoverHumanAccountForRestore } from '../../core/recourse/human-break-recovery';
+import { installHumanAccountSelection, installHumanHashAccountSelection } from '../../core/recourse/human-account';
+import { ownerChainNetwork } from '../../core/protocol/runtime';
 import { restoreActivityHistory } from '../../core/recovery/restoreActivityHistory';
 import { registerRecoveredHumanWallet } from '../../core/recovery/registerRecoveredWallet';
 import { ensureSolanaAddressProven } from '../../core/chains/solana/solanaAddressProof';
@@ -220,6 +223,10 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
             await preparePeCloudAccess().catch(() => false);
             return withBiometricOrFallback(t('recovery.confirmWalletReplacement'), action => performRestore(mnemonic, force, action));
         }
+        const current = await discoverHumanAccountForRestore(mnemonic, biometricAction);
+        if (current?.selection?.kind === 'hash') await installHumanHashAccountSelection(mnemonic, current.identity,
+            current.selection.requestId, biometricAction, ownerChainNetwork(), current.selection.generation);
+        else if (current?.selection) await installHumanAccountSelection(mnemonic, current.selection, biometricAction);
         await SeedManager.importMnemonic(mnemonic, force ? { force: true } : undefined, biometricAction);
         const walletAddress = await SeedManager.getEVMAddress(biometricAction);
 

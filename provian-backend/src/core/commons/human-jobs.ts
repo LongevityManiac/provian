@@ -69,10 +69,10 @@ function resolveHumanJobEscrowChain(): string | null {
  * address, which holds Base USDC and PVT). Anything else — unset, or a V3 address — refuses
  * the post (Unknown = Block): a USDC escrow without the refund would strand a disputed payment.
  */
-export function resolveUsdcHireEscrowChain(): AgentBankChain | null {
+export async function resolveUsdcHireEscrowChain(): Promise<AgentBankChain | null> {
   const chain: AgentBankChain = 'base';
-  const usdcEscrow = escrowUsdcAddressForChain(chain);
-  const v4Escrow = escrowV4AddressForChain(chain);
+  const usdcEscrow = (await escrowUsdcAddressForChain(chain));
+  const v4Escrow = (await escrowV4AddressForChain(chain));
   if (!usdcEscrow || !v4Escrow) return null;
   if (usdcEscrow.toLowerCase() !== v4Escrow.toLowerCase()) return null;
   if (!usdcTokenAddressForChainId(chainIdForName(chain))) return null;
@@ -262,7 +262,7 @@ export async function postHumanJob(
     }
   } else {
     budgetUsdc = parseUsdcBudget(body.budget_usdc);
-    if (resolveUsdcHireEscrowChain() === null) {
+    if ((await resolveUsdcHireEscrowChain()) === null) {
       throw new ValidationError(
         'USDC hires are not enabled on this relay: no escrow contract with the 30-day dispute refund ' +
         'holds USDC here, so a USDC hire could not reach its dispute fallback.',
@@ -966,7 +966,7 @@ export async function acceptApplicant(
   if (job.currency === 'usdc') {
     // a USDC hire escrows on the V4 contract (the only escrow with the 30-day dispute
     // refund). Re-derived here from the same guard the post used; refuse if it no longer holds.
-    const usdcChain = resolveUsdcHireEscrowChain();
+    const usdcChain = (await resolveUsdcHireEscrowChain());
     if (usdcChain === null) {
       throw new ValidationError(
         'USDC hires are not enabled on this relay (no escrow contract with the dispute refund holds USDC); ' +
@@ -1126,7 +1126,7 @@ export async function getHumanJobEscrowFunding(
   if (!escrowDoc.exists) throw new NotFoundError('Escrow not found');
   const escrow = escrowDoc.data() as EscrowDocument;
   const currency = escrow.currency ?? 'usdc';
-  const contractAddress = resolveEscrowContractForDocument({ ...escrow, currency });
+  const contractAddress = (await resolveEscrowContractForDocument({ ...escrow, currency }));
   return {
     escrow_id: escrow.escrow_id,
     currency,
@@ -1141,7 +1141,7 @@ export async function getHumanJobEscrowFunding(
     // the on-chain PVT verifier reads. USDC : the verifier's own canonical USDC address
     // for the escrow's chain — never a drift-prone literal.
     token_address: currency === 'pvt'
-      ? getPvtAddressForChain(escrow.chain) ?? undefined
+      ? (await getPvtAddressForChain(escrow.chain)) ?? undefined
       : usdcTokenAddressForChainId(chainIdForName(escrow.chain as AgentBankChain)),
     // the on-chain bytes32 id bound at funding — what release / dispute / refund call.
     onchain_escrow_id: escrow.onchain_escrow_id ?? null,

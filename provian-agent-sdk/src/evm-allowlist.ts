@@ -22,7 +22,7 @@
  * hardcoding them, so confirm against the contract if changing this table.
  */
 import { base, arbitrum, optimism, type Chain as ViemChain } from 'viem/chains';
-import { resolveBondPoolAddress, resolveEscrowUsdcAddress, resolvePoolAddress } from './contract-addresses';
+import { BASE_PVT9_ADDRESSES, resolveBondPoolAddress, resolveEscrowUsdcAddress, resolvePoolAddress } from './contract-addresses';
 
 /** Mainnets the signer supports today. */
 export type SupportedChain = 'base' | 'arbitrum' | 'optimism';
@@ -81,7 +81,7 @@ export const TOKEN_ALLOWLIST: Record<SupportedChain, Record<AllowlistedToken, To
   base: {
     USDC: { symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
     USDT: { symbol: 'USDT', address: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
-    PVT: { symbol: 'PVT', address: '0x8811441914381143b9408c5C32247367F86F173A', decimals: 18 },
+    get PVT() { return { symbol: 'PVT' as const, address: BASE_PVT9_ADDRESSES.pvt, decimals: 18 }; },
   },
   arbitrum: {
     USDC: { symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6 },
@@ -127,27 +127,12 @@ function escrowContractAllowlist(chain: SupportedChain): Record<string, `0x${str
   return escrow ? { EscrowUSDC: escrow } : {};
 }
 
-// Built on first ACCESS, never at module import. Resolving an institution
-// address reads a deployment artifact (contract-addresses.ts); the self-contained
-// bootstrap bundle ships none, and the observer pulls this module in transitively
-// (x402-signer → ProvianClient → ProvianObserver). An eager build here read the
-// filesystem at import and crashed `agent.js observe` once a real wallet made it
-// construct the client. Memoized, so every access returns the same record and the
-// artifact is read at most once. Values are unchanged — only the timing moves.
-let _contractAllowlist:
-  | Record<SupportedChain, Record<string, `0x${string}`>>
-  | undefined;
-function contractAllowlist(): Record<SupportedChain, Record<string, `0x${string}`>> {
-  return (_contractAllowlist ??= {
-    base: baseContractAllowlist(),
-    arbitrum: escrowContractAllowlist('arbitrum'),
-    optimism: escrowContractAllowlist('optimism'),
-  });
-}
+// Base addresses are resolved from the current pointer on each access. Reading
+// another chain never requires or caches a Base deployment.
 export const CONTRACT_ALLOWLIST: Record<SupportedChain, Record<string, `0x${string}`>> = {
-  get base(): Record<string, `0x${string}`> { return contractAllowlist().base; },
-  get arbitrum(): Record<string, `0x${string}`> { return contractAllowlist().arbitrum; },
-  get optimism(): Record<string, `0x${string}`> { return contractAllowlist().optimism; },
+  get base(): Record<string, `0x${string}`> { return baseContractAllowlist(); },
+  get arbitrum(): Record<string, `0x${string}`> { return escrowContractAllowlist('arbitrum'); },
+  get optimism(): Record<string, `0x${string}`> { return escrowContractAllowlist('optimism'); },
 };
 
 export function isSupportedChain(chain: unknown): chain is SupportedChain {

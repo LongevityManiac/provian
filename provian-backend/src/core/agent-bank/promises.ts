@@ -45,14 +45,14 @@ import { generatePE } from './pe-utils';
  * Wave J-bis: chain-aware resolver. Single-chain deployments keep working
  * via the legacy single-valued env var fallback in chain-registry.
  */
-export function resolvePromiseContractAddress(currency: Currency, chain: AgentBankChain): string {
+export async function resolvePromiseContractAddress(currency: Currency, chain: AgentBankChain): Promise<string> {
   if (currency === 'pvt') {
     if (!isPvtPrincipalEnabledForChain(chain)) {
       throw new ValidationError(`PVT-principal promises are not enabled for chain '${chain}' on this relay`);
     }
-    return requireAddressOrThrow(promiseV3AddressForChain(chain), 'PROMISE_V3', chain);
+    return requireAddressOrThrow((await promiseV3AddressForChain(chain)), 'PROMISE_V3', chain);
   }
-  return requireAddressOrThrow(promiseUsdcAddressForChain(chain), 'PROMISE', chain);
+  return requireAddressOrThrow((await promiseUsdcAddressForChain(chain)), 'PROMISE', chain);
 }
 
 async function getBorrowerSnapshot(
@@ -299,7 +299,7 @@ export async function fundPromise(
   const promiseCurrency = initialDoc.currency ?? 'usdc';
   const fundChain = (initialDoc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(fundChain);
-  const promiseContractAddress = resolvePromiseContractAddress(promiseCurrency, fundChain);
+  const promiseContractAddress = (await resolvePromiseContractAddress(promiseCurrency, fundChain));
   // / Stage 1a — THE BAR IS THE CONTRACT'S OWN EVENT, not a bare transfer.
   //
   // Both V2 (USDC) and V3 (PVT) call IERC20.transferFrom(lender → borrower)
@@ -498,7 +498,7 @@ export async function settlePromise(
   const settleCurrency = doc.currency ?? 'usdc';
   const settleChain = (doc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(settleChain);
-  const settleContractAddress = resolvePromiseContractAddress(settleCurrency, settleChain);
+  const settleContractAddress = (await resolvePromiseContractAddress(settleCurrency, settleChain));
   const settleVerification = await verifyEvmPromiseSettlement({
     chain: settleChain,
     settleTxHash: txHash,
@@ -708,7 +708,7 @@ export async function defaultPromise(
   const defaultCurrency = doc.currency ?? 'usdc';
   const defaultChain = (doc.chain || 'base') as AgentBankChain;
   assertSupportedAgentBankChain(defaultChain);
-  const defaultContractAddress = resolvePromiseContractAddress(defaultCurrency, defaultChain);
+  const defaultContractAddress = (await resolvePromiseContractAddress(defaultCurrency, defaultChain));
   const defaultVerification = await verifyEvmPromiseDefault({
     chain: defaultChain,
     defaultTxHash: txHash,

@@ -814,3 +814,25 @@ export type { SignerOpts } from './evm-signer';
 
 export { githubPrRequestMessage, prepareGitHubPrRequest } from './github-pr-request';
 export type { GitHubPrRequest, SignedGitHubPrRequest } from './github-pr-request';
+
+export { bindRecourseOwnership, readRecourseOwnership, recourseBindingMessage, submitAgentRestorationRequest, readRestorationRequests } from './recourse';
+export type { RecourseConfig, RecourseBinding } from './recourse';
+export { recoverRecourseAgent } from './recourse-recovery';
+
+export { currentProtocolDeployment } from "./protocol-runtime";
+export type { ProtocolDeployment } from "./protocol-pointer";
+
+export { readRecoursePoolChain } from './recourse-pool-chain';
+export type { RecoursePoolState } from './recourse-pool-chain';
+
+export { prepareHashAccountOperation, hashAccountIntentDigest, hashAccountCall, hashAccountOutcome,
+  hashAccountContractDigest, signHashAccountMessage, HASH_ACCOUNT_ABI } from './hash-account';
+export type { HashAccountIntent, SignedHashAccountOperation } from './hash-account';
+export { prepareBreakRecovery, readBreakRecoveryContext } from './break-recovery';
+export type { BreakOwnerEntitlement, BreakRecoveryInput, BreakRecoveryBackup, PreparedBreakRecovery } from './break-recovery';
+
+export { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, readActiveHashWallet, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, pendingActiveHashWalletOperations, cancelActiveHashWalletOperation } from './break-recovery-store';
+
+export { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
+
+export type { ActiveHashWallet, HashWalletCall } from './break-recovery-store';

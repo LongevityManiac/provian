@@ -685,6 +685,8 @@ export const PROPOSED_ACTION_POLICY_ENTRIES: readonly ProposedActionPolicyEntry[
   entry("recovery_action", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
   entry("recovery_complete", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
   entry("recovery_init", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
+  entry("recourse_determination", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
+  entry("recourse_record", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
   entry("recurring_payment_run", "record_only", "SECURITY_POLICY_OR_IDENTITY_RECORD", "none", "none"),
   entry("refactor", "eligible", "VERIFIED_SOVEREIGN_AGENT_WORK", "verified_compute_or_work", "none"),
   entry("replication_pack", "eligible", "VERIFIED_SOVEREIGN_AGENT_WORK", "verified_compute_or_work", "none"),

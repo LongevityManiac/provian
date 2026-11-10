@@ -1,3 +1,4 @@
+jest.mock('./core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('./__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * ACCEPTANCE — the mainline agent path is a genuine durable replay source.
  *

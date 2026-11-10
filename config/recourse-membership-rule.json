@@ -1,0 +1,9 @@
+{
+  "schema": "provian-recourse-membership/v1",
+  "chainId": 8453,
+  "pointer": "0x45e312d974b3d04445bc7ba79d2134d298a39dbc",
+  "firstMonth": 0,
+  "participationBurnAtomic": "100000000000000000000",
+  "noEarningsContributionAtomic": "100000000000000000000",
+  "earningsBps": 100
+}

@@ -161,11 +161,11 @@ const RELATIONSHIP_SCAN_LIMIT = 200;
  * chain/currency isn't configured, so this never needs a try/catch of its
  * own — an empty set (nothing configured) is a valid, safe result.
  */
-function knownEscrowContractAddresses(): Set<string> {
+async function knownEscrowContractAddresses(): Promise<Set<string>> {
   const addresses = new Set<string>();
   for (const chain of SUPPORTED_AGENT_BANK_CHAINS) {
-    const usdc = escrowUsdcAddressForChain(chain);
-    const pvt = escrowV4AddressForChain(chain);
+    const usdc = (await escrowUsdcAddressForChain(chain));
+    const pvt = (await escrowV4AddressForChain(chain));
     if (usdc) addresses.add(usdc.toLowerCase());
     if (pvt) addresses.add(pvt.toLowerCase());
   }
@@ -335,7 +335,7 @@ export async function resolveReceiveAuthorship(
     // peer — see CONTRACT-MEDIATED ESCROW/JOB PAYOUTS in the module header.
     // Synchronous (env reads only), so calling it here adds no dangling-
     // promise risk regardless of where it sits relative to `checks`.
-    const isEscrowContractCounterparty = knownEscrowContractAddresses().has(counterparty);
+    const isEscrowContractCounterparty = (await knownEscrowContractAddresses()).has(counterparty);
 
     const checks: Promise<boolean>[] = [];
     if (actorId !== null) {

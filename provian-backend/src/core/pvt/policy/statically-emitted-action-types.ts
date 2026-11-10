@@ -113,6 +113,8 @@ export const STATICALLY_EMITTED_ACTION_TYPES: readonly string[] = Object.freeze(
   'promise_settled',
   'receive',
   'recovery_action',
+  'recourse_determination',
+  'recourse_record',
   'send',
   'service:bitbucket_pr_merged',
   'service:bitbucket_push',

@@ -1,3 +1,4 @@
+vi.mock('../../protocol/runtime', async () => (await import('../../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * [Audit Pass-3 #42] Partial token-fetch must not drop a still-held token.
  *

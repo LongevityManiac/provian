@@ -1,3 +1,7 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
+const fixturePvt = protocolDeploymentFixture.addresses.kernel.toLowerCase();
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * ( follow-up) — A SERVICE FEE IS NEVER A PRICE FOR PVT.
  *
@@ -92,7 +96,7 @@ import {
 } from './native-wallet-registration';
 import { HUMAN_PROVEN_ADDRESSES_COLLECTION, PROVEN_ADDRESSES_COLLECTION } from '../external-address/link';
 import { HUMAN_PROVEN_ADDRESS_SCHEMA } from '../external-address/human-link';
-import { LIVE_PVT9_TOKEN } from './wallet-exchange';
+
 import { FEE_SETTLED_TOPIC, facilitatorActPeId, type FacilitatorSettlementClaim } from './x402-facilitator-settlement';
 import { buildFacilitatorEmit, processFacilitatorSettlement, type FacilitatorLaneDeps } from './x402-facilitator-lane';
 import { PAYOUT_FEE_RECIPIENT } from '../payout/payout-terms';
@@ -380,7 +384,7 @@ describe('fixtures bind to the real wallets', () => {
     expect([TREASURY, FACILITATOR_GAS, PAYOUT_GAS].every((a) => isProvianServiceWallet(a))).toBe(true);
     expect(TREASURY).toBe(PAYOUT_FEE_RECIPIENT);
     expect(isProvianServiceWallet(STRANGER)).toBe(false);
-    expect(LIVE_PVT9_TOKEN).not.toBeNull();
+    expect(fixturePvt).not.toBeNull();
   });
 });
 
@@ -501,7 +505,7 @@ describe('the chain-record lane (ETH / PVT / DAI to a Provian wallet), every kin
 
   it('RED: a PERSON\'s app-recorded PVT send to the facilitator gas EOA (the phone batch\'s queued hash) records at 0', async () => {
     const tx = nextTx();
-    chain.set(tx, tokenTransfer(tx, LIVE_PVT9_TOKEN as string, H.address, H.address, FACILITATOR_GAS));
+    chain.set(tx, tokenTransfer(tx, fixturePvt, H.address, H.address, FACILITATOR_GAS));
     await queueNative(tx, H.wallet, 'app_send_record', 'human');
     await cycle();
     expectServiceFee(chainRecordPeId(`8453:${tx}:9`), 'send');
@@ -510,7 +514,7 @@ describe('the chain-record lane (ETH / PVT / DAI to a Provian wallet), every kin
 
   it('GREEN twin: the person\'s same PVT send to a stranger mints', async () => {
     const tx = nextTx();
-    chain.set(tx, tokenTransfer(tx, LIVE_PVT9_TOKEN as string, H.address, H.address, STRANGER));
+    chain.set(tx, tokenTransfer(tx, fixturePvt, H.address, H.address, STRANGER));
     await queueNative(tx, H.wallet, 'app_send_record', 'human');
     await cycle();
     expect(minted(chainRecordPeId(`8453:${tx}:9`))).toBe(true);

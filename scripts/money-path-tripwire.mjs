@@ -49,6 +49,27 @@ export const MANIFEST_PATH = 'docs/audit/money-path-tripwire.json';
  * Each entry is matched as a path prefix against `git ls-files`.
  */
 export const MONEY_PATH_ROOTS = Object.freeze([
+  // Ownership, restoration, retirement discovery and succession all authorize
+  // real value or preserve its owner. Include their checks and tooling so a
+  // weakened proof or a changed deployment cannot escape review.
+  'contracts/src/',
+  'scripts/recourse/',
+  'provian-backend/src/core/recourse/',
+  'provian-backend/scripts/recourse-',
+  'provian-backend/src/routes/recourse',
+  'provian-backend/src/routes/recovery-current-signer',
+  'provian-agent-sdk/src/recourse-',
+  'provian-agent-sdk/src/break-',
+  'provian-agent-sdk/src/free-break-recovery',
+  'provian-agent-sdk/src/hash-account',
+  'provian-agent-sdk/src/protocol-',
+  'src/core/recourse/',
+  'src/core/protocol/',
+  'src/core/wallet/SeedManager',
+  'src/core/wallet/TransactionService',
+  'config/protocol-pointer.json',
+  'config/recourse-membership-rule.json',
+  'config/policy/recourse-membership.',
   // accrual: where a PE becomes points, and points become a payable row
   'provian-backend/src/pvt-accrual',
   // the novelty-counter store (close-out; carve-out). `cache.ts`

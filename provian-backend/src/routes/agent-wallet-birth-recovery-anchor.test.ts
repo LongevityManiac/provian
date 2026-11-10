@@ -1,3 +1,4 @@
+jest.mock('../core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * invariant at the relay (OPEN_ITEMS L381): `POST /v1/agent/wallet/create` hands every new
  * agent whose human is known at birth the PUBLIC key to seal its own wallet key to — including a

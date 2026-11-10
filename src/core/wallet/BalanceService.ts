@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import type { BiometricAction } from '../security/biometricAction';
 /**
  * BalanceService - Balance Queries (EVM + Solana)
@@ -411,6 +412,7 @@ class BalanceService {
             // Lazy import: keeps the RelayAPIService graph off BalanceService's
             // static import path and out of the hot loop.
             const { default: relayService } = await import('../../services/RelayAPIService');
+            await currentProtocolDeployment();
             const pvt = await relayService.getPVTBalance(address, biometricAction);
             if (!pvt || typeof pvt.balance_raw !== 'string' || !/^\d+$/.test(pvt.balance_raw)) {
                 return { asset: null, failed: true };

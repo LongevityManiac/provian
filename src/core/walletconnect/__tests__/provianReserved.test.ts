@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('../../protocol/runtime', async () => (await import('../../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * the WalletConnect Provian-reserved-message guard, on its own.
  *
@@ -94,22 +96,11 @@ describe('provianReserved — inputs bound to their sources of truth', () => {
         expect(RELAY_RECOVERY_PURPOSE).toBe(RECOVERY_PURPOSE);
     });
 
-    it('reserves every live Provian contract in the deployment record', () => {
-        const record = JSON.parse(readFileSync(resolve(ROOT, 'contracts/deployments/base-pvt9-institutions.json'), 'utf8')) as {
-            contracts: Record<string, { address: string }>;
-            successorKernel: Record<string, unknown>;
-        };
-        const recorded = [
-            ...Object.values(record.contracts).map((c) => c.address),
-            ...Object.values(record.successorKernel)
-                .filter((v): v is { address: string } => typeof v === 'object' && v !== null && typeof (v as { address?: unknown }).address === 'string')
-                .map((v) => v.address),
-        ];
-        const thirdPartyTokens = new Set(Object.values(TOKEN_ADDRESSES).flatMap((t) => Object.values(t)).map((a) => a.toLowerCase()));
-        const provian = recorded.filter((a) => !thirdPartyTokens.has(a.toLowerCase()));
-        expect(provian.length).toBeGreaterThanOrEqual(8);
+    it('reserves every current protocol component named by the verified pointer', async () => {
+        const { verifiedProtocolSnapshot } = await import('../../protocol/runtime');
+        const current = Object.values(verifiedProtocolSnapshot().addresses).filter(address => !/^0x0{40}$/i.test(address));
         const reserved = new Set(provianReservedAddresses());
-        for (const address of provian) expect(reserved.has(address.toLowerCase())).toBe(true);
+        for (const address of current) expect(reserved.has(address.toLowerCase())).toBe(true);
     });
 
     it('reserves every retired PVT token on the canonical forbidden list', () => {

@@ -27,7 +27,7 @@ describe('cloud-computer agents are invited in the app', () => {
         expect(en.connectAgent.whatEarns2).toMatch(/own cloud computer.*machine itself witnesses each command/);
         expect(en.earn.surfaces.connected_agents.description)
             .toMatch(/computer of its own in the cloud.*witnessed where it runs and mints PVT, mostly for you/);
-        expect(en.visionScreen.card5Body)
+        expect(en.visionScreen.card6Body)
             .toMatch(/computer of its own in the cloud connects with the same one command and earns from the work it does there/);
     });
 
@@ -37,7 +37,7 @@ describe('cloud-computer agents are invited in the app', () => {
             const texts = [
                 ...Object.values(j.connectAgent as Record<string, string>),
                 ...Object.values(j.earn.surfaces.connected_agents as Record<string, string>),
-                j.visionScreen.card5Body as string,
+                j.visionScreen.card6Body as string,
             ];
             for (const text of texts) expect(text).not.toMatch(/Grok Bot|Muse/);
         });
@@ -53,7 +53,7 @@ describe('cloud-computer agents are invited in the app', () => {
             // The chooser card, the Earn card and the Vision card each name the cloud computer.
             expect(j.connectAgent.agentPathBody).toMatch(CLOUD);
             expect(j.earn.surfaces.connected_agents.description).toMatch(CLOUD);
-            expect(j.visionScreen.card5Body).toMatch(CLOUD);
+            expect(j.visionScreen.card6Body).toMatch(CLOUD);
         });
     }
 

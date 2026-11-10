@@ -14,7 +14,7 @@ import { route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Start | Provian',
   description:
-    'A person’s path on Provian, in order: get the app, create your wallet, do what you already do, show a wallet you already hold is yours, install the desktop app, link an AI agent.',
+    'Create a wallet with independent recovery, earn from witnessed work, bind the PVT you hold, and choose optional theft recourse. Connect your computer and agents to the same economy.',
   card: 'start',
   path: '/start/',
 })
@@ -37,7 +37,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Create your wallet.',
-    body: 'It’s yours alone. A backup password brings it to a new phone.',
+    body: 'Your wallet binds to its owner at creation. Its independent recovery commitment separates ownership from the spending key. Keep your recovery phrase or encrypted cloud backup; a backup password brings it to a new phone.',
   },
   {
     title: 'Do what you already do.',
@@ -50,6 +50,11 @@ const STEPS: Step[] = [
     title: 'Already have a crypto wallet?',
     body: 'Coinbase Wallet, MetaMask, any of them: show it is yours with one signature. Nothing moves, it costs nothing, and from that day its sends, swaps, and payments mint as yours.',
     receipt: 'Receipts for that wallet’s sends, swaps, and payments, from the day you prove it.',
+  },
+  {
+    title: 'Protect the PVT you hold.',
+    body: 'Commons → Recourse lets you bind other addresses and choose optional theft recourse. Members burn 100 PVT monthly and separately contribute 1% of earnings, or 100 PVT for a month with no earnings. The amounts can change under the published rule. Reversal comes first; the pool restores the remainder by its rule, pro rata when underfunded. Ordinary transfers stay permissionless. Free restoration after a cryptographic break applies to every bound owner, including nonmembers.',
+    action: { label: 'Read the Recourse rule', href: '/recourse/' },
   },
   {
     title: 'Install the desktop app.',

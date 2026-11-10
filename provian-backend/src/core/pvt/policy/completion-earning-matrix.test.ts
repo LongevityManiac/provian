@@ -96,14 +96,14 @@ describe('every pin moved with the artifact', () => {
     expect(ACTIVATION_TEMPLATE_COMPATIBILITY.rule).toBe('source_bound_signed_template_stages');
     expect(ACTIVATION_TEMPLATE_COMPATIBILITY.cause).toContain('Both activation documents');
     expect(ACTIVATION_TEMPLATE_COMPATIBILITY.prior_digest)
-      .toBe('sha256:cbe39337418064ba3c7a3ecd490d6e2fc3109570fe518ac41b0ff95a88083530');
+      .toBe('sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39');
   });
 
   it('three job-settlement records join record_only and no other row lost or changed its price', () => {
     const rows = readMatrix().rows;
-    expect(rows).toHaveLength(266);
+    expect(rows).toHaveLength(268);
     expect(rows.filter((r) => r.mint_disposition === 'eligible')).toHaveLength(73);
-    expect(rows.filter((r) => r.mint_disposition === 'record_only')).toHaveLength(193);
+    expect(rows.filter((r) => r.mint_disposition === 'record_only')).toHaveLength(195);
     // Each is the settlement signal of an escrow event another row mints (09-11 rule); the
     // job_completed sibling is the parity reference. RED: a drift on any of the four fails.
     const peer = rows.find((r) => r.action_type === 'job_completed');
@@ -172,7 +172,7 @@ describe('every pin moved with the artifact', () => {
     // commons_featured_placement, want_cancelled, want_fulfilled; − commons_challenge_escalated → 265.
     // 2026-09-23 (fact-base fixes item 3): − one never-wired record_only row → 264.
     // + three job-settlement record_only rows → 267.
-    expect(rows).toHaveLength(266);
+    expect(rows).toHaveLength(268);
   });
 
   it('the signing handoff the operator signs is byte-identical to the verifier\'s own scope bytes and names the live digest', () => {

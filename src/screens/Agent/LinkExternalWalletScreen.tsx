@@ -44,6 +44,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import type { SessionTypes } from '@walletconnect/types';
 import type { AppParamList } from '../../navigation/types';
+import { recourseExternalProofApi } from '../../core/recourse/service';
 import { COLORS, SPACING, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
 import { useTheme } from '../../theme';
 import BackButton, { BACK_BUTTON_SIZE } from '../../components/BackButton';
@@ -72,7 +73,8 @@ type WcPhase = 'idle' | 'connecting' | 'awaiting_session' | 'signing' | 'verifyi
 /** Who the proven wallet belongs to: one of the person's agents, or the person themself. */
 export type ExternalWalletProofMode =
     | { kind: 'agent'; walletId: string; agentName?: string }
-    | { kind: 'person' };
+    | { kind: 'person' }
+    | { kind: 'recourse' };
 
 type ChallengeResult =
     | { ok: true; challenge: AgentExternalAddressChallenge }
@@ -87,6 +89,7 @@ export interface ExternalWalletProofApi {
 }
 
 export function proofApiFor(mode: ExternalWalletProofMode): ExternalWalletProofApi {
+    if (mode.kind === 'recourse') return recourseExternalProofApi();
     if (mode.kind === 'person') {
         return {
             list: () => RelayAPIService.listOwnExternalAddresses(),
@@ -113,6 +116,7 @@ export const PERSON_COPY_KEYS = [
 ] as const;
 
 export function proofCopyKey(mode: ExternalWalletProofMode['kind'], key: string): string {
+    if (mode === 'recourse' && (PERSON_COPY_KEYS as readonly string[]).includes(key)) return `recourse.binding.${key}`;
     return mode === 'person' && (PERSON_COPY_KEYS as readonly string[]).includes(key)
         ? `proveOwnWallet.${key}`
         : `linkExternalWallet.${key}`;
@@ -135,11 +139,11 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
     const navigation = useNavigation<NativeStackNavigationProp<AppParamList>>();
     const { t: translate, i18n } = useTranslation();
     const { colors: themeColors } = useTheme();
-    const isPerson = mode.kind === 'person';
+    const isPerson = mode.kind !== 'agent';
     const walletId = mode.kind === 'agent' ? mode.walletId : '';
     const api = useMemo(
-        () => proofApiFor(isPerson ? { kind: 'person' } : { kind: 'agent', walletId }),
-        [isPerson, walletId],
+        () => proofApiFor(mode.kind === 'agent' ? { kind: 'agent', walletId } : { kind: mode.kind }),
+        [mode.kind, walletId],
     );
     // `t('linkExternalWallet.x')` resolves to the person-mode wording where one exists.
     const t = useCallback(

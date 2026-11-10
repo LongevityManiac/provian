@@ -1,3 +1,5 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
+import { predecessorBurnAcceptances } from '../protocol/predecessor-burns';
 
 
 /** Chain ids retained for non-PVT callers and display labels. */
@@ -40,20 +42,6 @@ const CHAIN_STRING_TO_ID: Record<string, number> = {
   'optimism-sepolia': 11155420,
 };
 
-// ── Canonical Base-mainnet addresses (4a/4b;) ──────────────────
-// successor PVT9 kernel. Lowercased at its point of use — tx-verifier
-// compares the token address WITHOUT normalizing the config side.
-const PVT9_KERNEL_BASE = '0x8811441914381143b9408c5C32247367F86F173A';
-// institution set (contracts/deployments/base-pvt9-institutions.json), each
-// bound to the successor kernel (`pvt() == epochClock() == issuanceIndex()`).
-const BASE_INSTITUTIONS_ESCROW_V4_BASE = '0x96560fDF49e563eFCdc2d502934676DC074732d0';
-const BASE_INSTITUTIONS_PROMISE_V3_BASE = '0x7506F4A052750260A0ddcdF5E63a77CC646d89B9';
-// PoolV3 replaced in place by a fresh deploy carrying de6007ca (S1-A), bound to
-// the same live kernel. The PoolV3 `0x68d557e0…` never held a pool and nothing routes to it.
-// Shutdown coverage (2026-10-20): replaced again by a PoolV3 whose Funded pools anyone may refund past
-// their deadline; the pool `0xb355C79a…` never held a pool either.
-const BASE_INSTITUTIONS_POOL_V3_BASE = '0x1301BF63Cb6BaE7171f6c7D895C762B243964d26';
-
 /**
  * the PREDECESSOR PVT9 kernel. Held, minter revoked, every balance carried
  * 1:1 to the successor from its state at the migration's snapshot block. It is NOT a live
@@ -95,17 +83,6 @@ const DISABLED_CONFIG: PvtPrincipalConfig = Object.freeze({
   pvtAddressByChainId: Object.freeze({}),
 });
 
-const ENABLED_CONFIG: PvtPrincipalConfig = Object.freeze({
-  enabled: true,
-  chains: Object.freeze([BASE_CHAIN_ID]) as unknown as number[],
-  escrowV4Address: BASE_INSTITUTIONS_ESCROW_V4_BASE,
-  promiseV3Address: BASE_INSTITUTIONS_PROMISE_V3_BASE,
-  poolV3Address: BASE_INSTITUTIONS_POOL_V3_BASE,
-  // Lowercase: `getPvtAddressForChain`'s result is compared against a
-  // lowercased on-chain log address WITHOUT re-normalizing (tx-verifier.ts:498).
-  pvtAddressByChainId: Object.freeze({ [BASE_CHAIN_ID]: PVT9_KERNEL_BASE.toLowerCase() }),
-});
-
 function isPvtPrincipalFlagOn(): boolean {
   return process.env.ENABLE_PVT_PRINCIPAL === 'true';
 }
@@ -114,8 +91,12 @@ function isPvtPrincipalFlagOn(): boolean {
  * Return the canonical config for the current env. Computed per call (no cache)
  * so tests and boot both see the live flag; env does not change at runtime.
  */
-export function loadPvtPrincipalConfig(): PvtPrincipalConfig {
-  return isPvtPrincipalFlagOn() ? ENABLED_CONFIG : DISABLED_CONFIG;
+export async function loadPvtPrincipalConfig(): Promise<PvtPrincipalConfig> {
+  if (!isPvtPrincipalFlagOn()) return DISABLED_CONFIG;
+  const deployment = await currentProtocolDeployment();
+  return { enabled: true, chains: [BASE_CHAIN_ID], escrowV4Address: deployment.addresses.escrow,
+    promiseV3Address: deployment.addresses.promises, poolV3Address: deployment.addresses.projectPool,
+    pvtAddressByChainId: { [BASE_CHAIN_ID]: deployment.addresses.kernel.toLowerCase() } };
 }
 
 /** Compatibility seam for historical tests; there is no environment cache. */
@@ -128,8 +109,9 @@ export function _resetPvtPrincipalConfigForTests(): void {
  * disabled or the chain has no configured PVT principal. Returned LOWERCASE
  * (see the ENABLED_CONFIG note).
  */
-export function getPvtAddressForChain(chainString: string): string | null {
-  const config = loadPvtPrincipalConfig();
+export async function getPvtAddressForChain(chainString: string): Promise<string | null> {
+  if (CHAIN_STRING_TO_ID[chainString] !== BASE_CHAIN_ID) return null;
+  const config = await loadPvtPrincipalConfig();
   if (!config.enabled) return null;
   const chainId = CHAIN_STRING_TO_ID[chainString];
   if (chainId === undefined) return null;
@@ -151,11 +133,12 @@ export interface PvtBurnTokenAcceptance {
   readonly maxBlock: number | null;
 }
 
-export function getAcceptedPvtBurnTokensForChain(chainString: string): readonly PvtBurnTokenAcceptance[] {
-  const live = getPvtAddressForChain(chainString);
+export async function getAcceptedPvtBurnTokensForChain(chainString: string): Promise<readonly PvtBurnTokenAcceptance[]> {
+  const live = await getPvtAddressForChain(chainString);
   if (!live) return [];
   const accepted: PvtBurnTokenAcceptance[] = [{ address: live, maxBlock: null }];
   if (CHAIN_STRING_TO_ID[chainString] === BASE_CHAIN_ID) {
+    accepted.push(...await predecessorBurnAcceptances(live));
     accepted.push({ address: PREDECESSOR_PVT9_KERNEL_BASE.toLowerCase(), maxBlock: PREDECESSOR_PVT9_BURN_CUTOFF_BLOCK });
   }
   return accepted;
@@ -163,10 +146,7 @@ export function getAcceptedPvtBurnTokensForChain(chainString: string): readonly 
 
 /** True iff PVT-principal is enabled AND the chain string resolves to an enabled chain. */
 export function isPvtPrincipalEnabledForChain(chainString: string): boolean {
-  const config = loadPvtPrincipalConfig();
-  if (!config.enabled) return false;
-  const chainId = CHAIN_STRING_TO_ID[chainString];
-  return chainId !== undefined && config.chains.includes(chainId);
+  return isPvtPrincipalFlagOn() && CHAIN_STRING_TO_ID[chainString] === BASE_CHAIN_ID;
 }
 
 /**
@@ -175,16 +155,16 @@ export function isPvtPrincipalEnabledForChain(chainString: string): boolean {
  * the auto-escrow chain (`null` ⇒ posting closed, Unknown = Block).
  */
 export function getPvtPrincipalChainString(): string | null {
-  return loadPvtPrincipalConfig().enabled ? CHAIN_ID_LABELS[BASE_CHAIN_ID] : null;
+  return isPvtPrincipalFlagOn() ? CHAIN_ID_LABELS[BASE_CHAIN_ID] : null;
 }
 
 /** Canonical Agent Bank institution address for a chain, or `undefined`. Base-only.
  * `chain-registry.ts` prefers this over env for the V4/V3 (PVT) resolvers. */
-export function pvtPrincipalInstitutionAddress(
+export async function pvtPrincipalInstitutionAddress(
   institution: 'escrowV4' | 'promiseV3' | 'poolV3',
   chainString: string,
-): string | undefined {
-  const config = loadPvtPrincipalConfig();
+): Promise<string | undefined> {
+  const config = await loadPvtPrincipalConfig();
   if (!config.enabled) return undefined;
   if (CHAIN_STRING_TO_ID[chainString] !== BASE_CHAIN_ID) return undefined;
   switch (institution) {

@@ -2,18 +2,19 @@
 
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
-> This is the burn mechanism and the trust layer. It is not an incremental
-> architecture change: it is the thing that lets one party be *believed* by another
-> that has never met it, and the reason PVT is worth destroying. Burn-to-present is the
-> **foundational burn**: any party asks, and the presenter burns once to produce a signed
-> presentation bound to that requester. Most presentations happen at **gates outside
-> Provian** — services, rails and counterparties that Provian does not run and that do
-> not register with Provian. Provian proves the presentation is real; the gate decides
-> what it grants and for how long, so an agent does not burn on every transaction: one
-> presentation opens the relationship, and the gate decides when to ask again. **Agents
-> are the primary path**, over the SDK, CLI and MCP; the human app is the symmetric
-> on-device leg. Provian's own Commons talking pass and rail handshake are applications
-> of the same primitive, under the settings Provian chooses for its own space and rail.
+Money that can serve commerce across worlds must do more than survive a transfer. Its owner needs continuity when a key is stolen or its cryptography fails; its counterparties need evidence they can verify. Provian connects those two needs. Work creates PVT, independent ownership records support restoration, and agents use earned PVT to establish trust and protect what they hold.
+
+Burn-to-present is the foundational trust burn: an agent destroys PVT to produce a signed presentation for a named counterparty. The counterparty decides what that proof establishes and when it needs another. Most of these relationships can begin outside Provian, without an account or registration with Provian. The human app provides the same mechanism on-device.
+
+The optional Recourse Pool adds the largest standing burn: 100 PVT destroyed every enrolled month, separate from the member contribution. A presentation proves witnessed history; a recovery commitment proves continuity of ownership. Neither can substitute for the other. This paper explains how those uses of earned money support relationships without promising a price or a favorable restoration determination.
+
+## Trust, ownership and recourse
+
+Compute mints money; agents burn it to establish trust with counterparties. A presentation proves a witnessed history. The ownership registry answers a different question: which bound addresses and PVT balances belong to an identity from binding forward. Its recovery commitment separates continuity from the wallet curve. A presentation cannot substitute for that commitment or convert an unbound address into historical ownership.
+
+Recourse Pool determinations enter the member's history. They cannot be erased to make a later restoration request look like a first one. A determination is evidence of the pool's decision and any executed transfer, not proof that a member's allegation was necessarily true. The pool is a member-funded risk-sharing arrangement with no contractual payment entitlement; restoration is discretionary under its published rule.
+
+Recourse has the largest standing burn in the system: every member destroys **100 PVT each calendar month**, earning or not. Separately, **1% of gross earnings** goes into the on-chain Recourse Pool at settlement; a member with no earnings contributes **100 PVT from holdings** to that reserve instead. The burn destroys units, while the contribution holds them for restoration. None is a presentation ticket, and none buys favorable standing or guarantees a determination. The three amounts can change prospectively through the signed rule. A missed month receives one calendar month of grace; timely catch-up preserves membership, expiry ends it, and rejoining protects only from that day forward. Provian receives no contribution or surplus.
 
 ## The idea in one paragraph
 

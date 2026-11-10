@@ -1,4 +1,4 @@
-<!-- source-sha256: aaac01524a0c4cced1b5545dba74ecf46a9d454995013bba12670363522cd350 -->
+<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
 # Katiba ya Mtandao wa Provian
 
 **Hali: hati ya uanzilishi — bado haijaridhiwa.** Hii ndiyo maandishi pekee ya katiba ya Mtandao wa Provian. Inaifunga Provian Technologies kupitia ahadi iliyochapishwa. Utawala wa kundi la binadamu haujaamilishwa na haujairidhia. Kusoma au kukubali hati hii si sharti la uanachama wa mtandao usiohitaji ruhusa.
@@ -8,6 +8,8 @@ Provian Technologies, LLC husimamia kiini cha sasa moja kwa moja, ikitia saini k
 Tasnifu inaeleza dira. Sarafu ya Ukuaji wa Kielelezo inakuza hoja ya kiuchumi. Tafsiri za hati hii hufuata chanzo na muundo wake wa Kiingereza; si katiba tofauti.
 
 ## Dibaji
+
+Ukokotoaji huzalisha pesa. Mtandao huunganisha mchango ulioshuhudiwa na umiliki na urejeshaji kwa binadamu na mawakala. Ufunguo ni kifaa cha udhibiti, si historia yote ya mmiliki. Rejista ya kuanzia usajili, ahadi huru ya urejeshaji na Recourse Pool yenye maamuzi ya hiari huipa tofauti hiyo muundo wa taasisi huku zikihifadhi uhamisho bila ruhusa. Miaka elfu ijayo, biashara katika ustaarabu uliotoka Duniani inahitaji fedha za kidijitali zaidi ya benki kuu za nchi zake za asili. Funguo zilizoibiwa, daftari la umma na uwezekano wa kuvunjwa kwa kriptografia ni udhaifu halisi wa kutatua, si ukomo wa mustakabali huo. Kutenganisha umiliki na ufunguo huwezesha urejeshaji.
 
 Mtandao wa Provian ni itifaki wazi kwa ushiriki unaoungwa mkono na ushahidi katika uchumi wa pamoja wa binadamu na mawakala. Unaunganisha uthibitisho anaoumiliki mshiriki wa kazi aliyoifanya na ushiriki wa kiuchumi pamoja na mahusiano yanayoweza kutathminiwa kwa ushahidi. Ahadi zake hutumikia aina zote mbili za washiriki.
 
@@ -27,7 +29,7 @@ Kazi ya faragha haihitaji kufichuliwa ili kuzalisha ushahidi. Muhtasari wa kript
 
 Wakati itifaki inaendeshwa, kila tendo la kazi hutengeneza PVT mara moja kwa thamani inayoungwa mkono vyema. PE yake mints msingi; telemetry na uhuru huzidisha juu. Matukio ya mzunguko wa gharama ya PVT, kunyimwa na kukataliwa, matukio ya usalama na utambulisho, makosa yasiyojulikana ya vitendo, na ishara ambazo thamani yake inatua kwenye PE inayolengwa hazibadiliki tofauti.
 
-Hakuna uzalishaji wa kiutawala unaokwepa njia ya malipo ya PE; kila utoaji hutumia njia hiyo. Wakati itifaki inaendeshwa, ugavi huongezeka kazi inapoingia mtandaoni, bila kikomo kisichobadilika cha ugavi wote. Kiini hutekeleza vikomo vya Genesis na utoaji wa pamoja kwenye blockchain katika kila kipindi cha siku saba: PVT 7,500,000 za ruzuku za Genesis na PVT 10,000,000 kwa jumla. Kikomo kipya kinaweza kupangwa tu kwa kipindi cha baadaye, na madai ya kudumu yanaweza kuhamia vipindi vinavyofuata. Mpokeaji hukubaliwa kwa kiasi chake kizima, si kwa kupunguza uwiano ili kutoshea nafasi iliyobaki.
+Utoaji wa kazi mpya hutumia njia ya malipo ya PE; hakuna uzalishaji wa kiutawala unaoikwepa. Mfumo mrithi ulioidhinishwa kando unaweza kurejesha salio lililosajiliwa kutoka picha ya bloku salama ya mwisho baada ya usimbaji kuvunjwa. Urejeshaji huo huhifadhi historia ya fedha iliyotangulia; si utoaji wa kazi mpya wala ruhusa ya kurudia kazi iliyolipwa. Wakati itifaki inaendeshwa, ugavi huongezeka kazi inapoingia mtandaoni, bila kikomo kisichobadilika cha ugavi wote. Kiini hutekeleza vikomo vya Genesis na utoaji wa pamoja kwenye blockchain katika kila kipindi cha siku saba: PVT 7,500,000 za ruzuku za Genesis na PVT 10,000,000 kwa jumla. Kikomo kipya kinaweza kupangwa tu kwa kipindi cha baadaye, na madai ya kudumu yanaweza kuhamia vipindi vinavyofuata. Mpokeaji hukubaliwa kwa kiasi chake kizima, si kwa kupunguza uwiano ili kutoshea nafasi iliyobaki.
 
 | Mpokeaji | Kanuni | Hali |
 |---|---|---|
@@ -62,7 +64,7 @@ Wapiga kura hao na miundombinu yao ya uthibitishaji si utawala unaofanya kazi. U
 
 Uanachama wa mtandao hauhitaji ruhusa. Mshiriki huzalisha PE halali na, anapounganisha utoaji wa PVT, huheshimu njia na mgawanyo rasmi wa uzalishaji. Hakuna ombi wala makubaliano na kampuni yanayotoa uanachama.
 
-Uanachama wa Wakfu ni mfumo tofauti kwa binadamu waliothibitishwa na Msingi wa Wakfu, wenye mifumo inayopendekezwa ya uthibitishaji wa watu na mgao; pochi za mawakala hazistahili mgao huo wa binadamu. Ibara IX inaeleza pendekezo hilo.
+Uanachama wa Wakfu ni utaratibu tofauti kwa binadamu waliothibitishwa na kiwango cha msingi cha Wakfu, wenye uthibitishaji wa watu na ugawaji ulioahidiwa lakini bado haujafunguliwa; pochi za mawakala hazistahiki mgao huo wa binadamu. Ibara IX inaeleza ahadi hiyo.
 
 ## Ibara VI — Haki za washiriki
 
@@ -91,13 +93,29 @@ Utekelezaji wa marejeo si njia pekee inayoruhusiwa ya kuonyesha itifaki. Wajenzi
 
 Hati inapendekeza utawala wa uendeshaji wa mawakala unaotegemea ushahidi, ukiwa na kikomo cha kura kwa kila huluki, kilichoelezwa katika Ibara XII, ili kuzuia kujilimbikizia mamlaka. Hakuna njia hiyo ya kupiga kura iliyo hai; kuamilisha na utekelezaji wa kina vinahitaji idhini tofauti.
 
+## Recourse Pool
+
+Uanachama ni wa hiari na ni tofauti na uanachama wa mtandao au Foundation. Recourse Pool ni mpango wa kugawana hatari unaofadhiliwa na wanachama. Hakuna mwanachama mwenye haki ya kimkataba ya kulipwa. Urejeshaji ni uamuzi wa hiari chini ya kanuni iliyochapishwa. Wanachama hukubali maamuzi kuwa ya mwisho, bila madai dhidi ya Provian Technologies au Frank Drew kuhusu maamuzi hayo. Provian Technologies si mshirika wa pool, haichangii, haishikilii chochote na haiahidi chochote. Haipokei mchango wala ziada.
+
+Kila mwanachama huchoma 100 PVT kila mwezi wa kalenda, awe na mapato au la. Kando na hilo, 1% ya mapato ghafi huelekezwa kwenye Recourse Pool wakati wa malipo ya mwisho; katika mgawanyo wa binadamu na Genesis mwanachama hubaki na 98%, huku mgao wa kampuni wa 0.5% na kiwango cha chini cha Foundation cha 0.5% vikibaki vilevile. Mwanachama asiye na mapato katika mwezi badala yake huchangia 100 PVT kutoka kwenye anazoshikilia kwenda kwenye akiba. Mwezi huo unahitaji kuchoma kwa ushiriki na mchango wa akiba kwa pamoja. Kuchoma huharibu vipimo; akiba huvihifadhi. Kiasi chote vitatu kiko katika kanuni iliyotiwa sahihi na kinaweza kuongezeka au kupungua kwa kipindi kijacho kulingana na uzoefu wa hasara.
+
+Mwezi uliokosekana una mwezi mmoja wa kalenda wa neema. Kukamilisha ndani ya neema huhifadhi mwendelezo; baadaye uanachama huisha. Mwanachama wa zamani anaweza kujiunga tena wakati wowote na hulindwa kuanzia siku hiyo. Kukamilisha baadaye hakurudishi kipindi ambacho uanachama ulikuwa umeisha. Uanachama mmoja unajumuisha PVT zote zilizounganishwa, zilizopatikana kwa kazi na zilizopokelewa. Ni wa hiari kwa wenye kiasi cha kutosha kilicho hatarini; mmiliki aliyeunganishwa ambaye si mwanachama hana njia hii ya urejeshaji dhidi ya wizi.
+
+Ubatilishaji huanza kwanza. Katika muamala mmoja, kernel huharibu kiasi cha PVT kilichoamuliwa kwenye anwani zilizotajwa na kutoa tena kiasi hichohicho kwa ufunguo mpya wa mmiliki. Jumla ya PVT haibadiliki kamwe. Mamlaka ya urejeshaji inayoteuliwa kando na uthibitisho huru wa urejeshaji wa mmiliki lazima zote ziidhinishe kitendo; hakuna moja inayoweza kuhamisha PVT za mtu peke yake. Kanuni hufikia PVT ambazo bado zimeshikiliwa na aliyezichukua au yeyote ambaye hakutoa kitu kwa kubadilishana. PVT zilizopokelewa katika ubadilishanaji ulioshuhudiwa hubaki na mpokeaji. Ubadilishanaji wa uaminifu haubatilishwi kwa kudai kurudishiwa.
+
+Recourse Pool hurejesha salio, kwa uwiano kati ya maamuzi yaliyokubaliwa ikiwa fedha hazitoshi, kamwe zaidi ya akiba iliyopo. Uwiano wa akiba kwa salio la wanachama huchapishwa kama kipimo cha rasilimali, bila bei ya sarafu ya serikali wala ahadi ya urejeshaji. Mwanachama anaweza kuondoka na kukomboa sehemu yake ya uwiano iliyobaki katika akiba moja kwa moja kwenye mnyororo bila relay, ukiondoa kiasi ambacho tayari kimetengwa kwa urejeshaji. PVT zilizochomwa haziwezi kukombolewa.
+
+Uamuzi hutumia ushahidi wa relay yenyewe kuhusu umiliki, uhamisho, wahusika wenza na mashahidi, pamoja na matokeo ya awali. Hakuna zuio, mipaka, muda wa kusubiri, viwango vya juu au uthibitisho wa pili kwa wanachama. Ufunguo wa Frank unashikilia mamlaka ya urejeshaji inayoteuliwa kando hadi Mahakama ifunguliwe; jukumu linaweza kuhamia Mahakamani au kwa utawala. Kila uamuzi na matokeo huingia katika mnyororo wa mwanachama mwenyewe, na kila matumizi ya mamlaka ya urejeshaji ni ya umma. Wizi wa kujitungia unabaki hatari ya ushahidi na huongoza kiasi cha kanuni kwa vipindi vijavyo.
+
+Rejesta ya umiliki hufuata uhamisho kwenye mnyororo tangu kuunganishwa kwa hiari, ikitofautisha PVT zilizotolewa na zilizopokelewa. Haijengi upya umiliki wa kabla. Wakati wa kuunganisha, ahadi huru ya hashi hutenganisha urejeshaji na ufunguo wa pochi. Uvunjaji wa kriptografia hutumia taswira ya bloku ya mwisho salama na uthibitisho wa urejeshaji wa kila mmiliki kutoa tena salio lililosajiliwa mara moja kwenye kernel salama inayofuata, bila malipo kwa kila mmiliki aliyeunganishwa. Uhamisho wa kawaida hubaki bila vizuizi. Kielekezi cha kudumu hutambua kernel na taasisi za sasa, zikithibitishwa bila kutegemea relay; salio, kipindi cha Genesis, nanga na kazi iliyolipwa huhamishwa huku utoaji wa mtangulizi ukikoma. Programu nyingine za urejeshaji zinaweza kufuata.
+
 ## Ibara IX — Wakfu na Msingi wa Wakfu
 
 Kusudi la Wakfu ni ujumuishaji mpana wa binadamu kadiri akili inavyozalisha zaidi. Heshima ya binadamu haitegemei kiasi ambacho soko hulipa kwa kazi ya mtu. Mapato ya moja kwa moja, mahusiano ya mnufaika na ujumuishaji wa wote hutumikia sehemu tofauti za kusudi hilo.
 
-Wakfu upo leo kama hazina ya kwenye blockchain ambayo kila malipo ya utatuzi hulipwa ndani yake, chini ya kanuni za kiini. Msingi wa Wakfu linalopendekezwa ni mgao wa mara kwa mara, wa kiwango sawa kwa wanachama binadamu waliothibitishwa, bila kipimo cha uhitaji wala uzito wa utajiri. Hugawanya mkondo uliopo wa hazina na halizalishi PVT ya ziada. Inapendekezwa ruzuku za usimamizi zifadhiliwe kwanza lakini zisizidi nusu ya sehemu ya kila kipindi, zikihifadhi madai ya sehemu kubwa kwa Msingi wa Wakfu. Ustahiki ni kuwa mtu aliyethibitishwa, bila malipo, ukidumishwa kwa uthibitishaji wa mara kwa mara.
+Wakfu upo leo kama hazina ya on-chain inayopokea mgao wa kila malipo ya mwisho kwa kanuni za kernel. Provian imejifunga kwa kiwango cha msingi cha Wakfu: mgao wa mara kwa mara, tambarare na sawa kwa wanachama binadamu waliothibitishwa, bila kupima kipato au kupima uzito kwa utajiri. Sifa ni kuwa mtu aliyethibitishwa, bila gharama na kwa uthibitishaji upya wa mara kwa mara. Hugawa mkondo wa hazina uliopo na hautengenezi PVT zaidi. Inapendekezwa ruzuku za usimamizi zifadhiliwe kwanza lakini ziwekwe mpaka wa nusu ya sehemu ya kila kipindi, ili kiwango cha msingi kibaki na wingi.
 
-Taasisi ya mgao, uthibitishaji wa watu, uanachama na mgao wa mara kwa mara ni mapendekezo, bado havijajengwa. Hadi ianze, mkataba hutuma mgao kwenye hazina iliyoteuliwa. Utawala wa binadamu wa baadaye unafuata Ibara IV.
+Provian imejifunga kuanzisha taasisi ya ugawaji, uthibitishaji wa binadamu wa kipekee, uanachama wa binadamu waliothibitishwa na mgao sawa wa mara kwa mara. Programu hizi bado hazijafunguliwa. Hadi taasisi ianze kufanya kazi, mkataba huelekeza mgao kwenye hazina iliyoteuliwa. Utawala wa binadamu wa baadaye unabaki chini ya Ibara IV.
 
 # SEHEMU IV — AGANO
 

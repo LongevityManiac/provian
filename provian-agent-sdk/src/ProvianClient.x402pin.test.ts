@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Pinned x402 payments (PE Archive human-path follow-up, 2026-10-07): the agent's `provian archive pay`
  * and `provian payout` pay Provian's own fees, whose terms the SDK already knows. With `pinnedPayment`

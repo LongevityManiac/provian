@@ -1,4 +1,4 @@
-<!-- source-sha256: aaac01524a0c4cced1b5545dba74ecf46a9d454995013bba12670363522cd350 -->
+<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
 # La Constitution du Réseau Provian
 
 **Statut : charte fondatrice — pas encore ratifiée.** Il s’agit de l’unique texte constitutionnel du Réseau Provian. Il engage Provian Technologies par un engagement publié. La gouvernance de la classe humaine n’a pas été activée et ne l’a pas ratifié. Lire ou accepter cette charte n’est pas une condition d’adhésion sans autorisation préalable au réseau.
@@ -8,6 +8,8 @@ Provian Technologies, LLC administre directement le noyau actuel, en signant au 
 La Thèse explique la vision. La Monnaie Exponentielle développe l’argument économique. Les traductions de cette charte suivent sa source et sa structure anglaises ; elles ne sont pas des constitutions distinctes.
 
 ## Préambule
+
+Le calcul crée la monnaie. Le réseau relie la contribution attestée à la propriété et au recours pour les humains et les agents. Une clé est un instrument de contrôle, pas toute l’histoire d’un propriétaire. Le registre prospectif, l’engagement de récupération indépendant et le Recourse Pool discrétionnaire donnent une forme institutionnelle à cette distinction tout en préservant les transferts sans autorisation. Dans mille ans, le commerce d’une civilisation ayant quitté la Terre a besoin de monnaie numérique au-delà des banques centrales de ses pays d’origine. Les clés volées, un registre public et une cryptographie qui pourrait être brisée sont des faiblesses réelles à résoudre, pas des plafonds à cet avenir. Séparer la propriété de la clé rend la restauration possible.
 
 Le Réseau Provian est un protocole ouvert de participation étayée par des preuves dans une économie partagée entre humains et agents. Il relie la preuve, détenue par chaque participant, du travail qu’il a accompli à la participation économique et à des relations évaluables sur preuves. Ses engagements servent les deux catégories de participants.
 
@@ -27,7 +29,7 @@ Le travail privé n’a pas besoin d’être divulgué pour produire des preuves
 
 Tant que le protocole est exploité, chaque acte de travail donne PVT une fois à sa valeur la mieux supportée. Son PE frappe la base ; la télémétrie et l'indépendance se multiplient par-dessus. Les événements circulaires à coût PVT, les refus et les non-opérations, les événements de sécurité et d'identité, les replis d'action inconnue et les signaux dont la valeur atterrit sur un PE cible ne sont pas créés séparément.
 
-Aucune émission administrative ne contourne le canal de règlement des PE ; toute émission l’utilise. Tant que le protocole est exploité, l’offre augmente à mesure que le travail rejoint le réseau, sans plafond fixe d’offre totale. Le noyau applique sur la chaîne les plafonds Genesis et d’émission combinée à chaque époque de sept jours : 7 500 000 PVT d’attributions Genesis et 10 000 000 PVT au total. Un nouveau plafond ne peut être programmé que pour une époque future, et les demandes durables peuvent être reportées. L’admission d’un destinataire est entière, jamais réduite au prorata de la marge restante.
+L’émission liée au nouveau travail utilise le canal de règlement des PE ; aucune émission administrative ne le contourne. Un successeur approuvé séparément peut restaurer les soldes enregistrés depuis un instantané du dernier bloc sûr après une défaillance cryptographique. Cette restauration conserve l’histoire monétaire antérieure ; elle n’est ni une émission pour un nouveau travail ni une autorisation de rejouer un travail déjà réglé. Tant que le protocole est exploité, l’offre augmente à mesure que le travail rejoint le réseau, sans plafond fixe d’offre totale. Le noyau applique sur la chaîne les plafonds Genesis et d’émission combinée à chaque époque de sept jours : 7 500 000 PVT d’attributions Genesis et 10 000 000 PVT au total. Un nouveau plafond ne peut être programmé que pour une époque future, et les demandes durables peuvent être reportées. L’admission d’un destinataire est entière, jamais réduite au prorata de la marge restante.
 
 | Destinataire | Règle | Statut |
 |---|---|---|
@@ -62,7 +64,7 @@ Cet électorat et son infrastructure de vérification ne constituent pas une gou
 
 L’adhésion au réseau ne requiert pas d’autorisation. Un participant génère des PE valides et, lorsqu’il intègre l’émission de PVT, respecte le canal et le partage canoniques. Aucune candidature ni convention avec l’entreprise ne confère l’adhésion.
 
-L’adhésion à la Fondation est un mécanisme distinct pour les humains vérifiés et le Plancher de la Fondation, avec des mécanismes proposés de vérification des personnes et de distribution ; les portefeuilles d’agents ne sont pas admissibles à cette distribution humaine. L’Article IX énonce la proposition.
+L’adhésion à la Fondation est un mécanisme distinct pour les humains vérifiés et le socle de la Fondation, avec une vérification des personnes et une distribution promises mais pas encore ouvertes ; les portefeuilles d’agents ne sont pas admissibles à cette distribution humaine. L’Article IX expose cet engagement.
 
 ## Article VI — Droits des participants
 
@@ -91,13 +93,29 @@ Les implémentations de référence ne sont pas la seule expression permise du p
 
 La charte propose une gouvernance opérationnelle des agents fondée sur les preuves, avec un plafond de vote par entité, énoncé à l’Article XII, pour résister à la concentration. Aucun tel circuit de vote n’est actif ; l’activation et l’implémentation détaillée exigent une approbation distincte.
 
+## Recourse Pool
+
+L’adhésion est volontaire et distincte de l’appartenance au réseau ou à la Fondation. Le Recourse Pool est un dispositif de partage des risques financé par ses membres. Aucun membre ne dispose d’un droit contractuel à un paiement. La restitution est une détermination discrétionnaire selon la règle publiée. Les membres acceptent les déterminations comme définitives, sans recours contre Provian Technologies ou Frank Drew à leur sujet. Provian Technologies n’est pas partie au pool, ne contribue rien, ne détient rien et ne promet rien. Elle ne reçoit aucune contribution ni aucun excédent.
+
+Chaque membre brûle 100 PVT par mois civil, qu’il ait des revenus ou non. Séparément, 1% des revenus bruts est dirigé vers le Recourse Pool lors du règlement ; avec la répartition humaine et Genesis, le membre conserve 98%, sans modifier l’allocation de 0.5% à l’entreprise ni le plancher de 0.5% à la Fondation. Un membre sans revenus pendant un mois contribue à la place 100 PVT de ses avoirs à la réserve. Ce mois exige à la fois la destruction de participation et la contribution à la réserve. La destruction supprime des unités ; la réserve les conserve. Les trois montants figurent dans la règle signée et peuvent augmenter ou diminuer prospectivement selon les pertes observées.
+
+Un mois manqué bénéficie d’un mois civil de grâce. Le rattraper pendant ce délai préserve la continuité ; ensuite l’adhésion prend fin. Un ancien membre peut revenir à tout moment et est protégé à compter de ce jour. Aucun rattrapage ultérieur ne rétablit une période sans adhésion. Une adhésion comprend tous les avoirs liés, gagnés comme reçus. Elle est facultative, pour ceux qui ont suffisamment en jeu ; un propriétaire lié non membre ne bénéficie d’aucun recours contre le vol.
+
+La restitution par annulation vient d’abord. Dans une seule transaction, le noyau détruit la quantité déterminée de PVT aux adresses désignées et réémet exactement la même quantité vers la nouvelle clé du propriétaire. L’offre totale ne change jamais. L’autorité de restitution, nommée séparément, et la preuve indépendante de récupération du propriétaire doivent toutes deux autoriser l’opération ; aucune ne peut déplacer seule les PVT d’autrui. La règle atteint les PVT encore détenus par celui qui les a pris ou par quiconque n’a rien donné en échange. Les PVT reçus dans un échange attesté restent à leur destinataire. Un échange honnête ne fait pas l’objet d’une rétrofacturation.
+
+Le Recourse Pool restitue le reste, au prorata des déterminations acceptées si les fonds manquent, jamais au-delà des réserves disponibles. Le ratio des réserves aux soldes des membres est publié comme mesure des ressources, sans prix en monnaie fiduciaire ni promesse de restitution. Un membre peut partir et retirer directement en chaîne, sans le relay, son intérêt proportionnel restant dans la réserve, hors montants déjà affectés aux restitutions. Les PVT brûlés ne peuvent pas être retirés.
+
+La détermination utilise les propres preuves du relay concernant la propriété, les transferts, les contreparties et les témoins, y compris les résultats antérieurs. Aucun blocage, limite, délai d’attente, plafond ni seconde confirmation n’est imposé aux membres. La clé de Frank détient l’autorité de restitution, nommée séparément, jusqu’à l’ouverture du Tribunal ; ce rôle peut passer au Tribunal ou à la gouvernance. Chaque détermination et son résultat entrent dans la chaîne du membre, et chaque usage de l’autorité est public. Le vol simulé par le propriétaire reste un risque d’appréciation des preuves et éclaire les montants prospectifs de la règle.
+
+Le registre de propriété suit les transferts en chaîne à partir du lien volontaire, en distinguant les PVT frappés des PVT reçus. Il ne reconstitue pas la propriété antérieure. Lors du lien, un engagement de hachage indépendant sépare la récupération de la clé du portefeuille. Une rupture cryptographique déclenche un instantané au dernier bloc sûr et la preuve de récupération de chaque propriétaire pour réémettre une seule fois les soldes enregistrés sur un successeur sûr, gratuitement pour tout propriétaire lié. Les transferts ordinaires restent sans restriction. Un pointeur permanent identifie le noyau et les institutions actuels, vérifiés indépendamment du relay ; les soldes, la fenêtre Genesis, les ancrages et le travail réglé sont préservés tandis que la frappe du prédécesseur cesse. D’autres programmes de recours pourront suivre.
+
 ## Article IX — La Fondation et le Plancher de la Fondation
 
 La Fondation vise une inclusion humaine plus large à mesure que l’intelligence produit davantage. La dignité humaine ne dépend pas du prix que le marché accorde au travail d’une personne. Revenus directs, relations de bénéficiaires et inclusion universelle servent différentes dimensions de cet objectif.
 
-La Fondation existe aujourd’hui en tant que trésorerie sur la chaîne que chaque règlement alimente, selon les règles du noyau. Le Plancher de la Fondation proposé est une distribution récurrente, uniforme et égale aux membres humains vérifiés, sans condition de ressources ni pondération par la richesse. Il partage un flux de trésorerie existant et ne crée aucun PVT supplémentaire. Il est proposé de financer d’abord les subventions de gestion, mais de les plafonner à la moitié de la part de chaque période, préservant ainsi la part majoritaire du Plancher de la Fondation. L’éligibilité repose sur une personne vérifiée, gratuitement, avec une nouvelle vérification périodique.
+La Fondation existe aujourd’hui comme trésorerie en chaîne alimentée par chaque règlement selon les règles du noyau. Provian s’engage à un socle de la Fondation : une distribution récurrente, uniforme et égale aux membres humains vérifiés, sans condition de ressources ni pondération par la richesse. L’admissibilité repose sur une personne vérifiée, gratuitement et avec une revérification périodique. Elle répartit un flux de trésorerie existant et ne crée aucun PVT supplémentaire. Il est proposé de financer d’abord les subventions de gestion, dans la limite de la moitié de la part de chaque période, préservant la majorité pour le socle.
 
-L’institution de distribution, la vérification des personnes, l’adhésion et les distributions récurrentes sont proposées, pas encore construites. Jusqu’à son fonctionnement, le contrat verse l’allocation à la trésorerie désignée. La gouvernance humaine future reste soumise à l’Article IV.
+Provian s’engage à établir l’institution de distribution, la vérification d’unicité humaine, l’adhésion d’humains vérifiés et les distributions égales récurrentes. Ces programmes ne sont pas encore ouverts. Jusqu’au fonctionnement de l’institution, le contrat dirige l’allocation vers sa trésorerie désignée. La future gouvernance humaine reste soumise à l’Article IV.
 
 # PARTIE IV — LE PACTE
 

@@ -63,6 +63,8 @@ export interface KernelEpochObservation extends EpochClockObservation {
   readonly operationalMinter: string | null;
   /** The address this settler signs settlement transactions as. */
   readonly settlementSigner: string;
+  /** Present only after the chain adapter verifies the immutable forwarding contract. */
+  readonly settlementForwarder?: { readonly address: string; readonly submitter: string };
 }
 
 export type EpochGateClosedReason =
@@ -183,7 +185,12 @@ export function evaluateEpochGate(
     return { kind: 'closed', reason: 'kernel_state_unreadable' };
   }
   // Identity, not configuration: a repointed minter reverts our batches.
-  if (observation.operationalMinter.toLowerCase() !== observation.settlementSigner.toLowerCase()) {
+  const forwarder = observation.settlementForwarder;
+  if (forwarder && (!ADDRESS.test(forwarder.address) || !ADDRESS.test(forwarder.submitter)
+    || forwarder.submitter.toLowerCase() !== observation.settlementSigner.toLowerCase())) {
+    return { kind: 'closed', reason: 'operational_minter_mismatch' };
+  }
+  if (observation.operationalMinter.toLowerCase() !== (forwarder?.address ?? observation.settlementSigner).toLowerCase()) {
     return { kind: 'closed', reason: 'operational_minter_mismatch' };
   }
 

@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * bond lifecycle — the bond routes are wired through the ONE institution state machine
  * (`evaluateInstitutionTransition`). These tests probe the ACTUAL wired module

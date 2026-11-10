@@ -1,4 +1,5 @@
 import { invalidateSeedDerivedCaches } from '../security/seedDerivedCache';
+import { humanAccountPaths, readHumanAccountSelection } from '../recourse/human-account';
 /**
  * SeedManager: BIP-39 Mnemonic Generation and Multi-Chain Key Derivation
  *
@@ -162,6 +163,20 @@ async function deriveSolanaAddressFromMnemonic(mnemonic: string): Promise<string
 }
 
 class SeedManagerImpl {
+    async getBackupIdentityAddress(): Promise<string | null> {
+        return (await vault.publicAddresses())?.evm ?? null;
+    }
+    async getRecoveryGeneration(): Promise<number> {
+        const root = await vault.publicAddresses();
+        if (!root) return 0;
+        const current = await readHumanAccountSelection(root.evm);
+        return current?.recoveryGeneration ?? current?.generation ?? 0;
+    }
+
+    private async activeAccount() {
+        const root = await vault.publicAddresses();
+        return root ? readHumanAccountSelection(root.evm) : null;
+    }
     private async invalidateDerivedCaches(): Promise<void> {
         invalidateSeedDerivedCaches();
         await AsyncStorage.removeItem('provian_meter_message_key_published_v1');
@@ -321,7 +336,10 @@ class SeedManagerImpl {
      */
     async getEVMPrivateKey(action?: BiometricAction): Promise<string> {
         assertBiometricAction(action);
-        const key = await this.deriveKey(DERIVATION_PATHS.EVM, 'evm', action);
+        const account = await this.activeAccount();
+        if (account?.kind === 'hash') throw new Error('recourse_hash_account_signer_required');
+        const key = await this.deriveKey(humanAccountPaths(account?.generation ?? 0).evm, 'evm', action);
+        if (account && key.address !== account.evm) { key.privateKey.fill(0); throw new Error('recourse_account_binding_mismatch'); }
         try { assertBiometricAction(action); } catch (err) { key.privateKey.fill(0); throw err; }
         const hex = '0x' + key.privateKeyHex;
         key.privateKey.fill(0);
@@ -337,7 +355,10 @@ class SeedManagerImpl {
      */
     async getEVMKey(action?: BiometricAction): Promise<DerivedKey> {
         assertBiometricAction(action);
-        const key = await this.deriveKey(DERIVATION_PATHS.EVM, 'evm', action);
+        const account = await this.activeAccount();
+        if (account?.kind === 'hash') throw new Error('recourse_hash_account_signer_required');
+        const key = await this.deriveKey(humanAccountPaths(account?.generation ?? 0).evm, 'evm', action);
+        if (account && key.address !== account.evm) { key.privateKey.fill(0); throw new Error('recourse_account_binding_mismatch'); }
         try { assertBiometricAction(action); return key; } catch (err) { key.privateKey.fill(0); throw err; }
     }
 
@@ -370,7 +391,7 @@ class SeedManagerImpl {
         // [] The seed store's identity names the wallet whose seed is stored — never a cache
         // that could lag it.
         const known = await vault.publicAddresses();
-        if (known?.evm) return known.evm;
+        if (known?.evm) return (await readHumanAccountSelection(known.evm))?.evm ?? known.evm;
         assertBiometricAction(action);
         const mnemonic = await vault.read(seedUnlockPrompt(), action?.nativeId);
         assertBiometricAction(action);
@@ -388,7 +409,7 @@ class SeedManagerImpl {
      */
     async getSolanaAddress(action?: BiometricAction): Promise<string> {
         const known = await vault.publicAddresses();
-        if (known?.sol) return known.sol;
+        if (known?.sol) return (await readHumanAccountSelection(known.evm))?.sol ?? known.sol;
         if (!known) {
             // A wallet that never moved to the native store: the F14 cache, as before.
             const cached = await AsyncStorage.getItem(PUBLIC_ADDRESS_CACHE.SOLANA);
@@ -416,15 +437,22 @@ class SeedManagerImpl {
      */
     async getSolanaSeed(action?: BiometricAction): Promise<Uint8Array> {
         assertBiometricAction(action);
-        assertBiometricAction(action);
+        const account = await this.activeAccount();
         const mnemonic = await vault.read(seedUnlockPrompt(), action?.nativeId);
         assertBiometricAction(action);
         if (!mnemonic) {
             throw new Error('No mnemonic found: wallet not created');
         }
         const bip39Seed = mnemonicToSeedSync(mnemonic);
-        const ed25519Seed = slip10DeriveEd25519Seed(bip39Seed, DERIVATION_PATHS.SOLANA);
+        const ed25519Seed = slip10DeriveEd25519Seed(bip39Seed, humanAccountPaths(account?.generation ?? 0).sol);
         bip39Seed.fill(0);
+        if (account) {
+            const { ed25519 } = await import('@noble/curves/ed25519');
+            if (bs58.encode(ed25519.getPublicKey(ed25519Seed)) !== account.sol) {
+                ed25519Seed.fill(0); throw new Error('recourse_account_binding_mismatch');
+            }
+        }
+        try { assertBiometricAction(action); } catch (error) { ed25519Seed.fill(0); throw error; }
         return ed25519Seed;
     }
 

@@ -56,7 +56,7 @@ function buildDeps(): WalletAuthDeps {
     setUserAuthSecret: async () => { /* noop */ },
   };
   const db: any = {
-    collection: () => ({ doc: () => ({ async get() { return { exists: false }; } }) }),
+    collection: (name: string) => ({ doc: () => ({ async get() { return name === 'auth_secrets' ? { exists: true, data: () => ({ secret: AUTH_SECRET }) } : { exists: false }; } }) }),
     runTransaction: async (fn: (txn: unknown) => Promise<unknown>) => fn({}),
   };
   return { db, cache };
@@ -149,7 +149,7 @@ describe('wallet-auth token lifetime (2026-10-17)', () => {
         getUserAuthSecret: async () => AUTH_SECRET,
         setUserAuthSecret: async () => { /* noop */ },
       } as any,
-      db: { collection: () => ({ doc: () => ({ async get() { return { exists: false }; } }) }) } as any,
+      db: { collection: (name: string) => ({ doc: () => ({ async get() { return name === 'auth_secrets' ? { exists: true, data: () => ({ secret: AUTH_SECRET }) } : { exists: false }; } }) }) } as any,
     };
     const app = express();
     app.get('/v1/devices', async (req, res) => {

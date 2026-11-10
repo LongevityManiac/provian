@@ -1,3 +1,4 @@
+jest.mock('../core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * / `POST /v1/agent/wallet/:wallet_id/chain-addresses` on a ROTATED wallet. A REAL
  * agent wallet (route-created) rotated through the REAL rotation transition reports its addresses

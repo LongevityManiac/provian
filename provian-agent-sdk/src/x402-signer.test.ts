@@ -1,3 +1,11 @@
+const pointerTest = vi.hoisted(() => ({ retired: false }));
+vi.mock('./protocol-runtime', () => {
+  const deployment = { manifestHash: 'current', blockHash: `0x${'44'.repeat(32)}`, pointer: `0x${'55'.repeat(20)}`,
+    addresses: { kernel: `0x${'66'.repeat(20)}` } };
+  const rpc = { request: async () => `0x${(pointerTest.retired ? '1' : '0').padStart(64, '0')}` };
+  return { verifiedProtocolSnapshot: () => deployment, currentProtocolDeployment: async () => deployment,
+    ownerChainNetwork: () => ({ deployment: async () => deployment, rpcs: [rpc, rpc] }) };
+});
 /**
  * Tests for the agent-side x402 EIP-3009 signer.
  *
@@ -71,7 +79,7 @@ describe('signX402Payment — EIP-3009 EIP-712 vs ethers (byte-exact)', () => {
     const net = getX402Network(network)!;
 
     it(`digest + signature match ethers for ${network} (${net.usdcDomainName})`, async () => {
-      const signed = signWithCap({
+      const signed = await signWithCap({
         privateKeyHex: TEST_PRIV_KEY,
         fromAddress: TEST_ADDRESS,
         requirement: requirement(network, usdc),
@@ -111,15 +119,15 @@ describe('signX402Payment — EIP-3009 EIP-712 vs ethers (byte-exact)', () => {
     });
   }
 
-  it('random nonce differs per call but stays a valid signature', () => {
-    const a = signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: requirement('eip155:8453', BASE_MAINNET_USDC) });
-    const b = signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: requirement('eip155:8453', BASE_MAINNET_USDC) });
+  it('random nonce differs per call but stays a valid signature', async () => {
+    const a = await signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: requirement('eip155:8453', BASE_MAINNET_USDC) });
+    const b = await signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: requirement('eip155:8453', BASE_MAINNET_USDC) });
     expect(a.authorization.nonce).not.toBe(b.authorization.nonce);
     expect(a.signature).toMatch(/^0x[0-9a-f]{130}$/);
   });
 
-  it('clamps maxTimeoutSeconds to 300', () => {
-    const signed = signWithCap({
+  it('clamps maxTimeoutSeconds to 300', async () => {
+    const signed = await signWithCap({
       privateKeyHex: TEST_PRIV_KEY,
       fromAddress: TEST_ADDRESS,
       requirement: { ...requirement('eip155:8453', BASE_MAINNET_USDC), maxTimeoutSeconds: 99999 },
@@ -132,27 +140,33 @@ describe('signX402Payment — EIP-3009 EIP-712 vs ethers (byte-exact)', () => {
 
 describe('signX402Payment — rejections', () => {
   const base = requirement('eip155:8453', BASE_MAINNET_USDC);
+  it('refuses a retired payment recipient before returning a USDC authorization', async () => {
+    pointerTest.retired = true;
+    try {
+      await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: base })).rejects.toThrow('retired');
+    } finally { pointerTest.retired = false; }
+  });
 
-  it('rejects a non-exact scheme', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, scheme: 'upto' as unknown as 'exact' } })).toThrow(/scheme/);
+  it('rejects a non-exact scheme', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, scheme: 'upto' as unknown as 'exact' } })).rejects.toThrow(/scheme/);
   });
-  it('rejects an unsupported network', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, network: 'eip155:1' } })).toThrow(/network/);
+  it('rejects an unsupported network', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, network: 'eip155:1' } })).rejects.toThrow(/network/);
   });
-  it('rejects an asset that is not the network USDC', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, asset: PAY_TO } })).toThrow(/USDC/);
+  it('rejects an asset that is not the network USDC', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, asset: PAY_TO } })).rejects.toThrow(/USDC/);
   });
-  it('rejects a malformed payTo', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, payTo: '0xdead' } })).toThrow(/payTo/);
+  it('rejects a malformed payTo', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, payTo: '0xdead' } })).rejects.toThrow(/payTo/);
   });
-  it('rejects a non-positive amount', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, amount: '0' } })).toThrow(/positive/);
+  it('rejects a non-positive amount', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: { ...base, amount: '0' } })).rejects.toThrow(/positive/);
   });
-  it('rejects a key that does not control fromAddress', () => {
-    expect(() => signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: PAY_TO, requirement: base })).toThrow(/does not match/);
+  it('rejects a key that does not control fromAddress', async () => {
+    await expect(signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: PAY_TO, requirement: base })).rejects.toThrow(/does not match/);
   });
-  it('rejects a malformed private key', () => {
-    expect(() => signWithCap({ privateKeyHex: '0xdeadbeef', fromAddress: TEST_ADDRESS, requirement: base })).toThrow(/32 bytes/);
+  it('rejects a malformed private key', async () => {
+    await expect(signWithCap({ privateKeyHex: '0xdeadbeef', fromAddress: TEST_ADDRESS, requirement: base })).rejects.toThrow(/32 bytes/);
   });
 });
 
@@ -162,10 +176,10 @@ describe('signX402Payment — per-payment ceiling (F31)', () => {
   // and enforced BEFORE signing.
   const drain = requirement('eip155:8453', BASE_MAINNET_USDC); // amount '10000'
 
-  it('refuses an amount above the ceiling before signing (X402_AMOUNT_EXCEEDS_CAP)', () => {
+  it('refuses an amount above the ceiling before signing (X402_AMOUNT_EXCEEDS_CAP)', async () => {
     let code = '';
     try {
-      signX402Payment({
+      await signX402Payment({
         privateKeyHex: TEST_PRIV_KEY,
         fromAddress: TEST_ADDRESS,
         requirement: { ...drain, amount: '5000000000' }, // $5,000 hostile 402
@@ -179,8 +193,8 @@ describe('signX402Payment — per-payment ceiling (F31)', () => {
     expect(code).toBe('X402_AMOUNT_EXCEEDS_CAP');
   });
 
-  it('signs an amount at exactly the ceiling', () => {
-    const signed = signX402Payment({
+  it('signs an amount at exactly the ceiling', async () => {
+    const signed = await signX402Payment({
       privateKeyHex: TEST_PRIV_KEY,
       fromAddress: TEST_ADDRESS,
       requirement: { ...drain, amount: '10000' },
@@ -191,11 +205,11 @@ describe('signX402Payment — per-payment ceiling (F31)', () => {
     expect(signed.signature).toMatch(/^0x[0-9a-f]{130}$/);
   });
 
-  it('refuses when no ceiling is supplied (required, no unlimited default)', () => {
+  it('refuses when no ceiling is supplied (required, no unlimited default)', async () => {
     let code = '';
     try {
       // Untyped-JS caller path: omit maxAmountAtomic entirely.
-      signX402Payment({
+      await signX402Payment({
         privateKeyHex: TEST_PRIV_KEY,
         fromAddress: TEST_ADDRESS,
         requirement: drain,
@@ -208,22 +222,22 @@ describe('signX402Payment — per-payment ceiling (F31)', () => {
     expect(code).toBe('X402_CEILING_REQUIRED');
   });
 
-  it('refuses a non-positive ceiling', () => {
-    expect(() =>
+  it('refuses a non-positive ceiling', async () => {
+    await expect(
       signX402Payment({
         privateKeyHex: TEST_PRIV_KEY,
         fromAddress: TEST_ADDRESS,
         requirement: drain,
         maxAmountAtomic: 0n,
       }),
-    ).toThrow(/positive integer/);
+    ).rejects.toThrow(/positive integer/);
   });
 });
 
 describe('buildPaymentHeader / network table / helpers', () => {
-  it('encodes the v2 base64 PaymentPayload envelope: chosen requirement echoed under `accepted`, no top-level scheme/network', () => {
+  it('encodes the v2 base64 PaymentPayload envelope: chosen requirement echoed under `accepted`, no top-level scheme/network', async () => {
     const req = requirement('eip155:8453', BASE_MAINNET_USDC);
-    const signed = signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: req, nowSeconds: FIXED_NOW, nonce: FIXED_NONCE });
+    const signed = await signWithCap({ privateKeyHex: TEST_PRIV_KEY, fromAddress: TEST_ADDRESS, requirement: req, nowSeconds: FIXED_NOW, nonce: FIXED_NONCE });
     const header = buildPaymentHeader(signed, req);
     const decoded = JSON.parse(Buffer.from(header, 'base64').toString('utf8'));
     expect(decoded.x402Version).toBe(2);
@@ -237,13 +251,13 @@ describe('buildPaymentHeader / network table / helpers', () => {
     expect(decoded.payload.authorization.from).toBe(TEST_ADDRESS);
   });
 
-  it('getX402Network returns null for unsupported networks', () => {
+  it('getX402Network returns null for unsupported networks', async () => {
     expect(getX402Network('eip155:1')).toBeNull();
     expect(getX402Network('eip155:8453')).not.toBeNull();
     expect(Object.keys(X402_NETWORKS)).toEqual(['eip155:8453', 'eip155:84532']);
   });
 
-  it('selectCompatibleRequirement picks the USDC/exact/Base option (case-insensitive asset)', () => {
+  it('selectCompatibleRequirement picks the USDC/exact/Base option (case-insensitive asset)', async () => {
     const pr: PaymentRequired = {
       x402Version: 2,
       resource: { url: 'https://api.test/x' },
@@ -256,7 +270,7 @@ describe('buildPaymentHeader / network table / helpers', () => {
     expect(chosen.network).toBe('eip155:8453');
   });
 
-  it('selectCompatibleRequirement throws when nothing is compatible', () => {
+  it('selectCompatibleRequirement throws when nothing is compatible', async () => {
     const pr: PaymentRequired = {
       x402Version: 2,
       resource: { url: 'https://api.test/x' },
@@ -265,7 +279,7 @@ describe('buildPaymentHeader / network table / helpers', () => {
     expect(() => selectCompatibleRequirement(pr)).toThrow(/supported/);
   });
 
-  it('selectCompatibleRequirement reads the WIRE field `accepts` (live-seller shape, LIVE-VERIFY 2026-07-08)', () => {
+  it('selectCompatibleRequirement reads the WIRE field `accepts` (live-seller shape, LIVE-VERIFY 2026-07-08)', async () => {
     // Mirrors the real 402 from a Bazaar-indexed Base-mainnet seller
     // (x402.ottoai.services): `accepts` array, multi-network, permit2 variant
     // included. The SDK previously read only `accepted` — a key no live 402
@@ -283,7 +297,7 @@ describe('buildPaymentHeader / network table / helpers', () => {
     expect(chosen.amount).toBe('1000');
   });
 
-  it('decodePaymentResponse reads the base64 receipt header', () => {
+  it('decodePaymentResponse reads the base64 receipt header', async () => {
     const receipt = { success: true, payer: TEST_ADDRESS, transaction: '0xabc', network: 'eip155:8453' };
     const res = new Response('ok', {
       status: 200,

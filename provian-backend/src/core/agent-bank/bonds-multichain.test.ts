@@ -1,3 +1,6 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn() }));
+import { currentProtocolDeployment } from '../protocol/runtime';
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
 /**
  * Bonds: per-chain BondPool address resolver tests.
  *
@@ -20,6 +23,7 @@ describe('bondPoolAddressForChain', () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
+    jest.mocked(currentProtocolDeployment).mockReset().mockResolvedValue(protocolDeploymentFixture);
     delete process.env.BOND_POOL_CONTRACT_ADDRESS;
     delete process.env.BOND_POOL_CONTRACT_ADDRESS_BASE;
     delete process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM;
@@ -30,69 +34,75 @@ describe('bondPoolAddressForChain', () => {
     process.env = originalEnv;
   });
 
-  it('resolves Base from BOND_POOL_CONTRACT_ADDRESS_BASE', () => {
+  it('resolves Base from the pointer despite stale environment addresses', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS_BASE = BASE_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM = ARBITRUM_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_OPTIMISM = OPTIMISM_ADDRESS;
 
-    expect(bondPoolAddressForChain('base')).toBe(BASE_ADDRESS);
+    expect(await bondPoolAddressForChain('base')).toBe(protocolDeploymentFixture.addresses.bonds);
   });
 
-  it('resolves Arbitrum from BOND_POOL_CONTRACT_ADDRESS_ARBITRUM', () => {
+  it('resolves Arbitrum from BOND_POOL_CONTRACT_ADDRESS_ARBITRUM', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS_BASE = BASE_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM = ARBITRUM_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_OPTIMISM = OPTIMISM_ADDRESS;
 
-    expect(bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
+    expect(await bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
   });
 
-  it('resolves Optimism from BOND_POOL_CONTRACT_ADDRESS_OPTIMISM', () => {
+  it('resolves Optimism from BOND_POOL_CONTRACT_ADDRESS_OPTIMISM', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS_BASE = BASE_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM = ARBITRUM_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_OPTIMISM = OPTIMISM_ADDRESS;
 
-    expect(bondPoolAddressForChain('optimism')).toBe(OPTIMISM_ADDRESS);
+    expect(await bondPoolAddressForChain('optimism')).toBe(OPTIMISM_ADDRESS);
   });
 
-  it('keeps each chain isolated: Arbitrum address does not leak to Optimism', () => {
+  it('keeps each chain isolated: Arbitrum address does not leak to Optimism', async () => {
     const distinctOptimism = '0x222222222222222222222222222222222222beef';
     process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM = ARBITRUM_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_OPTIMISM = distinctOptimism;
 
-    expect(bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
-    expect(bondPoolAddressForChain('optimism')).toBe(distinctOptimism);
+    expect(await bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
+    expect(await bondPoolAddressForChain('optimism')).toBe(distinctOptimism);
   });
 
-  it('falls back to legacy BOND_POOL_CONTRACT_ADDRESS when per-chain env is unset', () => {
+  it('falls back to legacy BOND_POOL_CONTRACT_ADDRESS when per-chain env is unset', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS = LEGACY_ADDRESS;
 
-    expect(bondPoolAddressForChain('base')).toBe(LEGACY_ADDRESS);
-    expect(bondPoolAddressForChain('arbitrum')).toBe(LEGACY_ADDRESS);
-    expect(bondPoolAddressForChain('optimism')).toBe(LEGACY_ADDRESS);
+    expect(await bondPoolAddressForChain('base')).toBe(protocolDeploymentFixture.addresses.bonds);
+    expect(await bondPoolAddressForChain('arbitrum')).toBe(LEGACY_ADDRESS);
+    expect(await bondPoolAddressForChain('optimism')).toBe(LEGACY_ADDRESS);
   });
 
-  it('prefers per-chain env over legacy fallback', () => {
+  it('prefers per-chain env over legacy fallback', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS = LEGACY_ADDRESS;
     process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM = ARBITRUM_ADDRESS;
 
-    expect(bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
-    // Base falls through to legacy because no per-chain Base env is set.
-    expect(bondPoolAddressForChain('base')).toBe(LEGACY_ADDRESS);
+    expect(await bondPoolAddressForChain('arbitrum')).toBe(ARBITRUM_ADDRESS);
+    // Base always uses the independently verified pointer.
+    expect(await bondPoolAddressForChain('base')).toBe(protocolDeploymentFixture.addresses.bonds);
   });
 
-  it('returns undefined when nothing is configured', () => {
-    expect(bondPoolAddressForChain('base')).toBeUndefined();
-    expect(bondPoolAddressForChain('arbitrum')).toBeUndefined();
-    expect(bondPoolAddressForChain('optimism')).toBeUndefined();
+  it('returns undefined when nothing is configured', async () => {
+    expect(await bondPoolAddressForChain('base')).toBe(protocolDeploymentFixture.addresses.bonds);
+    expect(await bondPoolAddressForChain('arbitrum')).toBeUndefined();
+    expect(await bondPoolAddressForChain('optimism')).toBeUndefined();
   });
 
-  it('returns undefined for unknown chain strings without legacy fallback', () => {
+  it('returns undefined for unknown chain strings without legacy fallback', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS_BASE = BASE_ADDRESS;
-    expect(bondPoolAddressForChain('solana')).toBeUndefined();
+    expect(await bondPoolAddressForChain('solana')).toBeUndefined();
   });
 
-  it('returns legacy fallback for unknown chain when legacy is set', () => {
+  it('returns legacy fallback for unknown chain when legacy is set', async () => {
     process.env.BOND_POOL_CONTRACT_ADDRESS = LEGACY_ADDRESS;
-    expect(bondPoolAddressForChain('zksync')).toBe(LEGACY_ADDRESS);
+    expect(await bondPoolAddressForChain('zksync')).toBe(LEGACY_ADDRESS);
   });
+});
+
+it('refuses Base when pointer verification fails, even with a legacy environment address', async () => {
+  process.env.BOND_POOL_CONTRACT_ADDRESS = LEGACY_ADDRESS;
+  jest.mocked(currentProtocolDeployment).mockRejectedValue(new Error('protocol_pointer_not_deployed'));
+  await expect(bondPoolAddressForChain('base')).rejects.toThrow('protocol_pointer_not_deployed');
 });

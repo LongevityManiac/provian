@@ -525,3 +525,17 @@ describe('evaluateBatchResumption', () => {
       .toEqual({ kind: 'submit', epoch: 0, policyHash: POLICY_HASH });
   });
 });
+
+describe('immutable mutual settlement forwarding', () => {
+  it('requires both the appointed forwarder and its independently verified submitter', () => {
+    const forwarded = observation({ operationalMinter: OTHER_MINTER,
+      settlementForwarder: { address: OTHER_MINTER, submitter: SIGNER } });
+    expect(evaluateEpochGate(forwarded, 0).kind).toBe('open');
+    expect(evaluateEpochGate({ ...forwarded, settlementForwarder: { address: OTHER_MINTER, submitter: ZERO_ADDRESS } }, 0))
+      .toEqual({ kind: 'closed', reason: 'operational_minter_mismatch' });
+    expect(evaluateEpochGate({ ...forwarded, operationalMinter: SIGNER }, 0))
+      .toEqual({ kind: 'closed', reason: 'operational_minter_mismatch' });
+    expect(evaluateEpochGate({ ...forwarded, settlementForwarder: undefined }, 0))
+      .toEqual({ kind: 'closed', reason: 'operational_minter_mismatch' });
+  });
+});

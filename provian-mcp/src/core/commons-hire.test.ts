@@ -4,13 +4,19 @@
  * pin the exact calldata each plan returns and the refusals that fire BEFORE any plan is
  * handed out. Every refusal is a RED negative control and names the mutation that reddens it.
  */
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { callProvianTool, COMMONS_HIRE_BASE_PINS, deriveHireOnchainEscrowId, encodeHireCall, usdcToAtomic } from './tools';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { currentProtocolDeployment } from './protocol-runtime';
+import { callProvianTool, deriveHireOnchainEscrowId, encodeHireCall, usdcToAtomic } from './tools';
 import type { ToolContext } from './types';
 
-const REPO = resolve(__dirname, '../../..');
+vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: vi.fn() }));
+const COMMONS_HIRE_BASE_PINS = { chainId: 8453, escrow: '0x96560fdf49e563efcdc2d502934676dc074732d0',
+  tokens: { pvt: '0x8811441914381143b9408c5c32247367f86f173a', usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913' } };
+const deployment = { pointer: `0x${'99'.repeat(20)}`, revision: 1n, manifestHash: `0x${'aa'.repeat(32)}`,
+  blockHash: `0x${'bb'.repeat(32)}`, runtimeHashes: [], addresses: { kernel: COMMONS_HIRE_BASE_PINS.tokens.pvt,
+    escrow: COMMONS_HIRE_BASE_PINS.escrow, eligibilityVerifier: '', beneficiaryVerifier: '', promises: '',
+    projectPool: '', bonds: '', court: '', recoursePool: '', settlement: '' } };
+beforeEach(() => { vi.mocked(currentProtocolDeployment).mockReset().mockResolvedValue(deployment); });
 const AUTH = { apiKey: 'pvn_live_k', apiSecret: 'pvns_s' };
 const ID = '0x' + '7'.repeat(64);
 const RECIPIENT = '0x2222222222222222222222222222222222222222';
@@ -56,14 +62,25 @@ function escrow(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
-describe('pins bind to the checked-in sources of truth (not a copy)', () => {
-  it('escrow = base-pvt9-institutions.json escrowV4; PVT + USDC = config/pvt9-base.json assets', () => {
-    const inst = JSON.parse(readFileSync(resolve(REPO, 'contracts/deployments/base-pvt9-institutions.json'), 'utf8'));
-    const cfg = JSON.parse(readFileSync(resolve(REPO, 'config/pvt9-base.json'), 'utf8'));
-    expect(COMMONS_HIRE_BASE_PINS.escrow).toBe(String(inst.contracts.escrowV4.address).toLowerCase());
-    expect(COMMONS_HIRE_BASE_PINS.tokens.pvt).toBe(String(cfg.assets.pvt9.address).toLowerCase());
-    expect(COMMONS_HIRE_BASE_PINS.tokens.usdc).toBe(String(cfg.assets.usdc.address).toLowerCase());
-    expect(inst.chainId).toBe(COMMONS_HIRE_BASE_PINS.chainId);
+describe('independently resolved current deployment', () => {
+  it('refuses a plan when the pointer cannot be verified', async () => {
+    vi.mocked(currentProtocolDeployment).mockRejectedValueOnce(new Error('protocol_pointer_unavailable'));
+    const { ctx } = ctxFor(() => ({ body: escrow() }));
+    const result = await callProvianTool('fund_job', { job_id: 'hjob_1' }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('protocol_pointer_unavailable');
+  });
+  it('a new revision supplies every target; an old relay target is refused', async () => {
+    const successor = '0x3333333333333333333333333333333333333333';
+    vi.mocked(currentProtocolDeployment).mockResolvedValue({ ...deployment, revision: 2n,
+      addresses: { ...deployment.addresses, escrow: successor } });
+    const old = ctxFor(() => ({ body: escrow() }));
+    expect((await callProvianTool('fund_job', { job_id: 'hjob_1' }, old.ctx)).isError).toBe(true);
+    const current = ctxFor(() => ({ body: escrow({ contract_address: successor }) }));
+    const out = parse(await callProvianTool('fund_job', { job_id: 'hjob_1' }, current.ctx));
+    expect(out.protocol_revision).toBe('2');
+    expect((out.calls as Array<{ to: string }>)[0].to).toBe(successor);
+    expect((out.calls as Array<{ to: string }>)[2].to).toBe(successor);
   });
 });
 

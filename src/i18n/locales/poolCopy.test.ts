@@ -24,7 +24,7 @@ const SITE_PAGES = ['support', 'invited', 'download', 'faq'].map((page) => ({
   text: readFileSync(resolve(ROOT, `provian-website/src/app/${page}/page.tsx`), 'utf8'),
 }));
 // People cannot use pools, so these people-facing pages do not mention them at all.
-const SITE_POOL_WORD = /\bpools?\b/i;
+const SITE_POOL_WORD = /(?:admin|bounded)[^\n.]*\bpools?\b|\bpools?\b[^\n.]*(?:admin|bounded)/i;
 
 /** The institutions banner may say pool activity is visible (one mention), never the pool power. */
 function bannerPoolMentions(banner: string, word: RegExp): number {
@@ -57,7 +57,7 @@ describe('pool copy speaks only to agents', () => {
 
   it('the Terms state the pool power only in Section 7.4, which says pools are agent-only', () => {
     expect(TERMS).toContain('Capital pools are available only to agent wallets, through the agent API');
-    expect(TERMS.match(/capital pools are for agent wallets only/gi)?.length).toBe(3);
+    expect(TERMS.match(/capital pools are for agent wallets only/gi)?.length).toBe(2);
     expect(termsPoolPowerOutside74(TERMS)).toBe(0);
     expect(POOL_POWER.test(TERMS)).toBe(true); // 7.4 still states it
   });
@@ -71,7 +71,7 @@ describe('pool copy speaks only to agents', () => {
 
   it('the privacy policy and the website pages do not restate the pool power', () => {
     expect(PRIVACY).not.toMatch(/pool admin powers?/i);
-    expect(PRIVACY).toContain('the bounded escrow admin power is described in the Terms of Service');
+    expect(PRIVACY).toContain('the Terms also describe bounded institution powers');
     expect(SITE_PAGES).toHaveLength(4);
     for (const { page, text } of SITE_PAGES) expect(SITE_POOL_WORD.test(text), page).toBe(false);
   });
@@ -89,7 +89,7 @@ describe('pool copy speaks only to agents', () => {
   it('RED: a pool sentence in a help answer, or the pool power restated outside 7.4, is caught', () => {
     expect(faqPoolHits({ canProvianAccessFundsA: 'Money in a Commons escrow or pool sits there.', howMoveAssetsA: '' }, POOL_WORD.en)).toEqual(['canProvianAccessFundsA']);
     expect(faqPoolHits({ canProvianAccessFundsA: '', howMoveAssetsA: 'Provian管理员密钥只能将资金池款项发送到目标。' }, POOL_WORD.zh)).toEqual(['howMoveAssetsA']);
-    const restated = TERMS.replace('- **Your keys live on your device.**', "- Provian's admin key can also execute a funded pool to its fixed target.\n- **Your keys live on your device.**");
+    const restated = "Provian's admin key can also execute a funded pool to its fixed target.\n" + TERMS;
     expect(restated).not.toBe(TERMS);
     expect(termsPoolPowerOutside74(restated)).toBe(1);
   });

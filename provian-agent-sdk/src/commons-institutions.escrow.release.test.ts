@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Headless tests for the WS1-SDK depositor-side escrow release flow:
  *   - CommonsInstitutions.releaseEscrow -> on-chain releaseEscrow(bytes32) + POST
@@ -8,7 +9,7 @@
  * broadcasts go through an injected viem transport (raw txs captured + decoded).
  * Mirrors agent-institutions.evmFlows.test.ts and evm-bond.test.ts.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ethers } from 'ethers';
 import { custom, keccak256, parseTransaction, type Hex } from 'viem';
 import { CommonsInstitutions } from './commons-institutions';

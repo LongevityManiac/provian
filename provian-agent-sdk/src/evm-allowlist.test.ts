@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Regression: the agent signer's "only safety boundary" the contract allowlist
  * must allowlist the institution deployment/PVT9 BondPool + EscrowV4 and REJECT the superseded
@@ -83,9 +84,9 @@ describe('evm-allowlist import is filesystem-free (bundle safety)', () => {
     await expect(importWithNoDeployments()).resolves.toBeDefined();
   });
 
-  it('still fails closed when the contract allowlist is actually read (RED control: mock is live)', async () => {
+  it('reads the verified pointer allowlist without deployment files', async () => {
     const mod = await importWithNoDeployments();
-    expect(() => mod.CONTRACT_ALLOWLIST.base).toThrow(/deployment artifact/);
+    expect(mod.CONTRACT_ALLOWLIST.base.EscrowUSDC).toMatch(/^0x[0-9a-fA-F]{40}$/);
     // A token-only allowlist check (no institution artifact) stays usable: USDC
     // is pinned in TOKEN_ALLOWLIST, so this resolves true without reading a file.
     const usdc = mod.getToken('base', 'USDC').address;

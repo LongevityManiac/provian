@@ -856,7 +856,7 @@ const MUTATION_SETS = {
     // the derived-suite check caught four *CostMachinery suites that construct a
     // real ProvianPVT9 (as their kernel clock / issuance index) and were out of scope.
     // KernelArmingInputs constructs a real kernel (the arming-time cap policy + window).
-    testMatchPath: 'test/{ProvianPVT9*,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*}.t.sol',
+    testMatchPath: 'test/{ProvianPVT9*,ProvianRecourseKernel,ProvianRecourseHistory,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*}.t.sol',
     mutations: [
       // the arming-time cap policy and the pre-epoch-zero Genesis open.
       {
@@ -1075,6 +1075,227 @@ const MUTATION_SETS = {
       },
     ],
   },
+  ProvianSuccessionImporter: {
+    sourcePath: 'contracts/src/ProvianSuccessionImporter.sol',
+    testMatchPath: 'test/ProvianSuccessionImporter.t.sol',
+    mutations: [
+      {
+        id: 'IMPORTER-1', description: 'failed proof no longer rolls back its batch',
+        find: 'if (!ok) revert InvalidImport();', replace: 'if (false) revert InvalidImport();',
+        expectedKilledBy: 'testBadLaterProofRollsBackEveryEarlierImport',
+      },
+      {
+        id: 'IMPORTER-2', description: 'history batch accepts an unrelated target function',
+        find: ': selector != ProvianRecoveryHistory.importEntry.selector && selector != ProvianRecoveryHistory.importBatch.selector)',
+        replace: ': false)',
+        expectedKilledBy: 'testCannotRedirectCallsInvokeOtherFunctionsOrCrossImportFamilies',
+      },
+      {
+        id: 'IMPORTER-3', description: 'completed balance import accepts an altered destination',
+        find: 'if (digest != source.restorationRoot()) revert InvalidImport();', replace: 'if (false) revert InvalidImport();',
+        expectedKilledBy: 'testPermissionlessBatchPreservesExactEntryBatchAndBalanceArguments',
+      },
+      {
+        id: 'IMPORTER-4', description: 'already imported leaves are executed a second time',
+        find: 'if (balances ? _balanceDone(data) : _historyDone(selector, data)) continue;', replace: 'if (false) continue;',
+        expectedKilledBy: 'testPermissionlessBatchPreservesExactEntryBatchAndBalanceArguments',
+      },
+    ],
+  },
+  ProvianProtocolPointer: {
+    "sourcePath": "contracts/src/ProvianProtocolPointer.sol",
+    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry,RecoursePoolHistory}.t.sol",
+    "mutations": [
+        {
+            "id": "POINTER-1",
+            "description": "runtime pin removed",
+            "find": "hashes[i] != next[i].codehash",
+            "replace": "false",
+            "expectedKilledBy": "testUnauthorizedEmptyStaleAndMismatchedCodeRefused"
+        },
+        {
+            "id": "POINTER-2",
+            "description": "revision guard removed",
+            "find": "if (revision != expectedRevision) revert StaleRevision();",
+            "replace": "if (false) revert StaleRevision();",
+            "expectedKilledBy": "testUnauthorizedEmptyStaleAndMismatchedCodeRefused"
+        },
+        {
+            "id": "POINTER-3",
+            "description": "pool replaced without token succession",
+            "find": "if (revision != 0 && next[8] != components[8] && next[0] == components[0]) revert InvalidManifest();",
+            "replace": "if (false) revert InvalidManifest();",
+            "expectedKilledBy": "testPoolReplacementRequiresTokenSuccessionToPreserveCustodyProtection"
+        },
+        {
+            "id": "POINTER-4",
+            "description": "custody institution replaced while retaining its liability token",
+            "find": "if (slot != 4 && next[slot] != components[slot]) revert InvalidManifest();",
+            "replace": "if (false) revert InvalidManifest();",
+            "expectedKilledBy": "testCustodyReplacementRequiresTokenSuccession"
+        }
+    ]
+},
+  ProvianRecourseBondPool: {
+    "sourcePath": "contracts/src/ProvianRecourseBondPool.sol",
+    "testMatchPath": "test/{ProvianRecourseBondPool,ProvianRecourseCourt,ProvianRecourseEscrowPass3}.t.sol",
+    "mutations": [
+      { "id": "BOND-CUSTODY-1", "description": "bond deposits no longer reserve their backing",
+        "find": "encumberedPVT += lockedAmount;", "replace": "encumberedPVT += 0;",
+        "expectedKilledBy": "testEncumbranceTracksBondAndFilingDepositButNotDonations" },
+      { "id": "BOND-CUSTODY-2", "description": "carried bond obligations omitted",
+        "find": "encumberedPVT += s.amount;", "replace": "encumberedPVT += 0;",
+        "expectedKilledBy": "testSeededBondObligationExistsBeforeBackingAndRemainsExact" }
+    ]
+  },
+  ProvianRecourseEscrow: {
+    "sourcePath": "contracts/src/ProvianRecourseEscrow.sol",
+    "testMatchPath": "test/{ProvianRecourseBondPool,ProvianRecourseCourt,ProvianRecourseEscrowPass3}.t.sol",
+    "mutations": [
+      { "id": "ESCROW-CUSTODY-1", "description": "successful credited withdrawal retains a false obligation",
+        "find": "if (cur == Currency.PVT) encumberedPVT -= amount;", "replace": "if (false) encumberedPVT -= amount;",
+        "expectedKilledBy": "test_18_resolveRelease_toBlacklistedRecipient_creditsPull_PVT" }
+    ]
+  },
+  ProvianRecourseProjectPool: {
+    "sourcePath": "contracts/src/ProvianRecourseProjectPool.sol",
+    "testMatchPath": "test/ProvianRecourseProjectPoolPass3.t.sol",
+    "mutations": [
+      { "id": "PROJECT-CUSTODY-1", "description": "project contributions omit their backing obligation",
+        "find": "encumberedPVT += amount;", "replace": "encumberedPVT += 0;",
+        "expectedKilledBy": "testPVTRefundCreditRemainsEncumberedUntilSuccessfulPull" }
+    ]
+  },
+  ProvianRecourseCourt: {
+    "sourcePath": "contracts/src/ProvianRecourseCourt.sol",
+    "testMatchPath": "test/{ProvianRecourseBondPool,ProvianRecourseCourt,ProvianRecourseEscrowPass3}.t.sol",
+    "mutations": [
+      { "id": "COURT-CUSTODY-1", "description": "bond-panel funded awards omit their obligation",
+        "find": "bondRewardSharePerSeat[caseKey] = share;\n        encumberedPVT += share * 3;",
+        "replace": "bondRewardSharePerSeat[caseKey] = share;\n        encumberedPVT += 0;",
+        "expectedKilledBy": "testCourtEncumbranceTracksCollateralAndRewardsButNotDonations" }
+    ]
+  },
+  RecourseOwnerAuthorization: {
+    "sourcePath": "contracts/src/RecourseOwnerAuthorization.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "mutations": [
+        {
+            "id": "OWNER-1",
+            "description": "owner hash signature verification bypassed",
+            "find": "if (!proofVerifier.verify(intent, proof.signature, proof.publicKey)) revert InvalidOwnerAuthorization();",
+            "replace": "if (false) revert InvalidOwnerAuthorization();",
+            "expectedKilledBy": "testAuthoritySeeingPreimageCannotSubstituteDestinationOrNextRoot"
+        }
+    ]
+},
+  ProvianRestorationAuthorization: {
+    "sourcePath": "contracts/src/ProvianRestorationAuthorization.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "mutations": [
+        {
+            "id": "RESTORE-1",
+            "description": "authority requirement bypassed",
+            "find": "executing || msg.sender != IRestorationKernel(kernel).restorationAuthority()",
+            "replace": "executing",
+            "expectedKilledBy": "testNeitherAuthorityNorOwnerAloneCanReverseAndDestinationCannotChange"
+        },
+        {
+            "id": "RESTORE-2",
+            "description": "pool obligations no longer protected from reversal",
+            "find": "if (balance < encumbered || poolDebit > balance - encumbered) revert InvalidRestoration();",
+            "replace": "if (false) revert InvalidRestoration();",
+            "expectedKilledBy": "testReversalProtectsPoolSharesAndAllocatedAwardsButReachesUnallocatedDonation"
+        },
+        {
+            "id": "RESTORE-3",
+            "description": "duplicate pool sources spend the same surplus twice",
+            "find": "poolDebit += reversal.amounts[i];",
+            "replace": "poolDebit = reversal.amounts[i];",
+            "expectedKilledBy": "testRepeatedPoolSourceCannotSpendTheSameUnencumberedSurplusTwice"
+        },
+        {
+            "id": "RESTORE-4",
+            "description": "institution obligations no longer protected from reversal",
+            "find": "if (balance < obligations || debit > balance - obligations) revert InvalidRestoration();",
+            "replace": "if (false) revert InvalidRestoration();",
+            "expectedKilledBy": "testBondObligationsProtectedAndDonationReversible"
+        },
+        {
+            "id": "RESTORE-5",
+            "description": "duplicate institution sources reuse encumbered surplus",
+            "find": "debit += reversal.amounts[i];",
+            "replace": "debit = reversal.amounts[i];",
+            "expectedKilledBy": "testEscrowObligationsProtectedAndDonationReversible"
+        }
+    ]
+},
+  RecourseMonthlyAccounting: {
+    "sourcePath": "contracts/src/RecourseMonthlyAccounting.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "mutations": [
+        {
+            "id": "MONTH-1",
+            "description": "grace extended an unauthorized month",
+            "find": "uint256 expiry = m + 2;",
+            "replace": "uint256 expiry = m + 3;",
+            "expectedKilledBy": "testReadOnlyStatusDistinguishesPaidGraceAndLapsedWithoutKeeper"
+        }
+    ]
+},
+  RecourseReserveAccounting: {
+    "sourcePath": "contracts/src/RecourseReserveAccounting.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "mutations": [
+        {
+            "id": "RESERVE-1",
+            "description": "restoration allocation made redeemable",
+            "find": "return balance - allocatedRestorations;",
+            "replace": "return balance;",
+            "expectedKilledBy": "testDeterminationAllocationsSurviveMemberExitAndRequireActualMembership"
+        }
+    ]
+},
+  SlhDsaSha2128s: {
+    "sourcePath": "contracts/src/crypto/SlhDsaSha2128s.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount*,SlhDsaSha2128s,ProvianBreakRecoveryHistory,ProvianOwnershipRegistry,ProvianProtocolPointer}.t.sol",
+    "mutations": [
+        {
+            "id": "SLH-1",
+            "description": "hash root comparison bypassed",
+            "find": "return root == pkRoot;",
+            "replace": "return true;",
+            "expectedKilledBy": "testFuzzRejectMutatedSignature"
+        },
+        {
+            "id": "SLH-2",
+            "description": "external message domain omitted",
+            "find": "abi.encodePacked(r, pkSeed, pkRoot, bytes2(0), message)",
+            "replace": "abi.encodePacked(r, pkSeed, pkRoot, message)",
+            "expectedKilledBy": "testIndependentOpenSslVectorsAndStatelessRepeatedKey"
+        }
+    ]
+},
+  ProvianRecourseKernel: {
+    "sourcePath": "contracts/src/ProvianRecourseKernel.sol",
+    "testMatchPath": "test/{ProvianRecourseKernel,ProvianRecourseHistory}.t.sol",
+    "mutations": [
+        {
+            "id": "KERNEL-1",
+            "description": "authority can bypass owner executor for balance import",
+            "find": "function importAuthorizedBalance(address destination, uint256 amount) external {\n        if (msg.sender != address(ownerAuthorization) || destination == address(0)",
+            "replace": "function importAuthorizedBalance(address destination, uint256 amount) external {\n        if (destination == address(0)",
+            "expectedKilledBy": "testAuthorityCannotInvokeRestrictedLedgerWithoutOwnerExecutor"
+        },
+        {
+            "id": "KERNEL-2",
+            "description": "authority can bypass owner executor for reversal",
+            "find": "if (msg.sender != address(ownerAuthorization) || destination == address(0)\n            || sources.length == 0",
+            "replace": "if (destination == address(0)\n            || sources.length == 0",
+            "expectedKilledBy": "testAuthorityCannotInvokeRestrictedLedgerWithoutOwnerExecutor"
+        }
+    ]
+},
 };
 
 function sha256(buf) {
@@ -1136,7 +1357,7 @@ function preRunDirtyTargets() {
 function runScopedSuite(testMatchPath) {
   const res = spawnSync(
     'forge',
-    ['test', '--root', 'contracts', '--match-path', testMatchPath, '--json'],
+    ['test', '--root', 'contracts', '--ffi', '--match-path', testMatchPath, '--json'],
     { cwd: REPO_ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
   );
   const stdout = res.stdout || '';
@@ -1297,20 +1518,22 @@ function buildConstructionIndex() {
     e.isDirectory() ? walk(path.join(dir, e.name), path.join(prefix, e.name))
       : (e.name.endsWith('.sol') ? [path.join(prefix, e.name)] : []));
   const files = walk(testDir);
-  const byFile = new Map();       // file -> { constructs:Set, declares:[{name, bases:[]}] }
-  const declaredIn = new Map();   // contract name -> file
-  for (const f of files) {
+  const sourceDir = path.join(REPO_ROOT, 'contracts', 'src');
+  const sources = walk(sourceDir).map(f => `../src/${f}`);
+  const byFile = new Map();
+  const declaredIn = new Map();
+  const libraryNames = new Set();
+  for (const f of [...files, ...sources]) {
     const src = fs.readFileSync(path.join(testDir, f), 'utf8');
-    // `{salt: …}` is CREATE2 and must still count as a construction.
-    const constructs = new Set([...src.matchAll(/new\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\{[^}]*\})?\s*\(/g)].map((m) => m[1]));
-    const declares = [...src.matchAll(/contract\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:is\s+([^{]+))?\{/g)]
-      .map((m) => ({
-        name: m[1],
-        // `is Base(args)` must yield `Base`, not `Base(args)` — the latter never resolves.
-        bases: (m[2] || '').split(',').map((b) => b.trim().split(/[\s(]/)[0]).filter(Boolean),
-      }));
-    byFile.set(f, { constructs, declares });
+    const constructs = new Set([...src.matchAll(/new\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:\{[^}]*\})?\s*\(/g)].map(m => m[1]));
+    const declares = [...src.matchAll(/(?:contract|library)\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?:is\s+([^{]+))?\{/g)]
+      .map(m => ({ name: m[1], bases: (m[2] || '').split(',').map(b => b.trim().split(/[\s(]/)[0]).filter(Boolean) }));
+    for (const m of src.matchAll(/library\s+([A-Za-z_][A-Za-z0-9_]*)\s*\{/g)) libraryNames.add(m[1]);
+    byFile.set(f, { constructs, declares, src, libraries: new Set() });
     for (const d of declares) declaredIn.set(d.name, f);
+  }
+  for (const entry of byFile.values()) {
+    for (const name of libraryNames) if (new RegExp(`\\b${name}\\s*\\.`).test(entry.src)) entry.libraries.add(name);
   }
   return { files, byFile, declaredIn };
 }
@@ -1388,9 +1611,14 @@ function derivedSuitesFor(contractName) {
     seen.add(file);
     const entry = byFile.get(file);
     if (!entry) return false;
-    if (entry.constructs.has(contractName)) return true;
+    if (entry.constructs.has(contractName) || entry.libraries.has(contractName)) return true;
+    for (const dependency of [...entry.constructs, ...entry.libraries]) {
+      const dependencyFile = declaredIn.get(dependency);
+      if (dependencyFile && dependencyFile !== file && exercises(dependencyFile, seen)) return true;
+    }
     for (const d of entry.declares) {
       for (const b of d.bases) {
+        if (b === contractName) return true;
         const baseFile = declaredIn.get(b);
         if (baseFile && baseFile !== file && exercises(baseFile, seen)) return true;
       }
@@ -1413,6 +1641,9 @@ function derivedSuitesFor(contractName) {
  * failure regardless of what the live registry says.
  */
 const HISTORICAL_GLOB_DEFECTS = Object.freeze([
+  { set: 'RecourseOwnerAuthorization', glob: 'test/ProvianHashAccount.t.sol', was: 'abstract owner proof omitted through production inheritance' },
+  { set: 'SlhDsaSha2128s', glob: 'test/SlhDsaSha2128s.t.sol', was: 'library verifier integration omitted through production constructors' },
+  { set: 'ProvianProtocolPointer', glob: 'test/ProvianProtocolPointer.t.sol', was: 'pointer consumers omitted while direct tests remained' },
   { set: 'ProvianCourtV2', glob: 'test/{ProvianCourtV2*,Institution*}.sol',
     was: 'the literal pre-audit glob at b4964267 (loses ProvianEscrowV4Pass3)' },
   { set: 'ProvianBondPool', glob: 'test/{ProvianBondPool*,Institution*}.sol',

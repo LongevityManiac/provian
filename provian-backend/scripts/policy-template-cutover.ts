@@ -10,8 +10,8 @@ import {explainGenesisActivationRefusal} from '../src/core/pvt/genesis-activatio
 import {shouldPersistGenesisQualification} from '../src/core/pvt/genesis-award-state-machine';
 import {scriptDb} from './lib/script-db';
 
-const BEFORE='sha256:cbe39337418064ba3c7a3ecd490d6e2fc3109570fe518ac41b0ff95a88083530';
-const AFTER='sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39';
+const BEFORE='sha256:8a6390074ac8d6d1530105f473fe0df142e7f1494cb7b23b67ad20720022ac39';
+const AFTER='sha256:05babadb74dd62da60ecf17bf228b68f9ec76ea335174b778be8a7eb4956a9f8';
 async function main():Promise<void>{
  const stage=process.argv.includes('--stage'), commit=process.argv.includes('--commit');
  if(stage&&commit)throw new Error('Choose stage or canonical cutover');

@@ -217,14 +217,6 @@ export const NOT_OPEN_YET_INSTITUTIONS: readonly InstitutionInfo[] = [
     status: 'coming_soon',
     audience: 'both',
   },
-  {
-    id: 'insurance',
-    name: 'Insurance',
-    description: "Agent insurance — pooled coverage that pays Court-triggered payouts above an at-fault agent's performance bond. PVT premiums, contract-held, no admin override; coverage scales with the pool. Not open: premium pricing needs real PE and claim history. Provian provides the rails, not the insurance.",
-    route: null,
-    status: 'coming_soon',
-    audience: 'both',
-  },
 ];
 
 export async function getInstitutions(
@@ -233,7 +225,7 @@ export async function getInstitutions(
   // bump whenever catalog copy changes. Reusing v3 left production
   // serving the pre- cached payload even after the new image was live.
   // the Market is live for both people and agents.
-  const cacheKey = 'commons:institutions:public-cleanup-v7'; // Escrow + Bonds live
+  const cacheKey = 'commons:institutions:recourse';
   const cached = await deps.cache.get<string>(cacheKey);
   if (cached) return typeof cached === 'string' ? JSON.parse(cached) : cached;
 
@@ -306,6 +298,10 @@ export async function getInstitutions(
       status: 'live',
       audience: 'both',
     },
+    {
+      id: 'recourse', name: 'Recourse', route: '/commons/recourse', status: 'live', audience: 'both',
+      description: 'Protect the PVT you hold. Bind your addresses, register independent recovery, and choose Recourse Pool membership for discretionary theft restoration. Reversal first; member-funded reserves for the remainder. Other recourse programs can follow.',
+    },
     ...NOT_OPEN_YET_INSTITUTIONS,
   ];
 
@@ -362,7 +358,7 @@ export async function getInstitutionsStats(
   let pvtBurned: number | null = null;
   let pvtMinted: number | null = null;
   try {
-    const kernelAddress = getPvtAddressForChain('base');
+    const kernelAddress = (await getPvtAddressForChain('base'));
     const supplyAtomic = kernelAddress
       ? await readErc20TotalSupply(8453, kernelAddress)
       : null;

@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Headless tests for the P4-01-SDK contributor-side pool withdrawal flow:
  *   - CommonsInstitutions.withdrawFromPool -> on-chain withdrawContribution(bytes32) + POST
@@ -8,7 +9,7 @@
  * broadcasts go through an injected viem transport (raw txs captured + decoded).
  * Mirrors agent-institutions.escrow.release.test.ts.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { custom, keccak256, parseTransaction, type Hex } from 'viem';
 import { CommonsInstitutions } from './commons-institutions';
 import { encodeWithdrawContribution, POOL_ADDRESSES } from './evm-pool';

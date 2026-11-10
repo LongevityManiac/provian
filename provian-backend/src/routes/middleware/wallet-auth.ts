@@ -84,8 +84,7 @@ export async function verifyWalletAuthToken(
   );
   if(result.ok&&(req.body?.private_request||req.query?.private_query)){
     try {
-      const cached=await deps.cache.getUserAuthSecret(result.userId);
-      const secret=cached||(await deps.db.collection('auth_secrets').doc(result.userId).get()).data()?.secret;
+      const secret=(await deps.db.collection('auth_secrets').doc(result.userId).get()).data()?.secret;
       openPrivateAuthenticatedRequest(req,secret);
     }catch{return {ok:false,status:400,error:'Private request could not be opened'};}
   }
@@ -160,18 +159,22 @@ export async function verifyWalletAuthTokenWithBinding(
     return { ok: false, status: 401, error: 'Token expiry too far ahead' };
   }
 
-  let authSecret = await cache.getUserAuthSecret(userId);
-  if (!authSecret) {
+  // Recovery replaces this record atomically with owner state. Redis cannot
+  // participate in that transaction: a stale cached secret must never extend
+  // the old key's authority after the recovery commits.
+  let authSecret: string;
+  try {
     const secretDoc = await db.collection('auth_secrets').doc(userId).get();
     if (!secretDoc.exists) {
       return { ok: false, status: 401, error: 'Auth secret not configured. Re-register device.' };
     }
-    const secretData = secretDoc.data() as { secret: string };
-    if (!secretData.secret) {
+    const secretData = secretDoc.data();
+    if (typeof secretData?.secret !== 'string' || !secretData.secret) {
       return { ok: false, status: 401, error: 'Auth secret not configured. Re-register device.' };
     }
     authSecret = secretData.secret;
-    cache.setUserAuthSecret(userId, authSecret).catch(() => {});
+  } catch {
+    return { ok: false, status: 503, error: 'Auth state unavailable' };
   }
 
   const expectedSignature = crypto

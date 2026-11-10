@@ -185,7 +185,7 @@ class RealPoolKeeperGateway implements PoolKeeperGateway {
 
     let contractAddress: string;
     try {
-      contractAddress = resolvePoolContractAddress(currency, chain);
+      contractAddress = (await resolvePoolContractAddress(currency, chain));
     } catch (err) {
       return { status: 'failed', reason: `pool_contract_unconfigured: ${(err as Error).message}` };
     }

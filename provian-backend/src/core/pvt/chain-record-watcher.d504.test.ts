@@ -1,3 +1,9 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+import { baseAssetsForKernel } from './wallet-exchange';
+import { baseChainRecordProfile } from './chain-record-chains';
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
+const fixturePvt = protocolDeploymentFixture.addresses.kernel.toLowerCase();
 /**
  * the chain-record lane serves humans and non-USDC receives on one rule.
  * Derivation, the per-act cut lines, human wallet resolution, the untrusted-
@@ -20,13 +26,14 @@ import {
   chainRecordEnqueue,
   chainRecordObservationId,
   chainRecordPeId,
-  deriveChainRecordAct,
+  deriveChainRecordAct as deriveWithProfile,
+  BASE_CHAIN_RECORD_PROFILE,
   enqueueChainRecordObservation,
   resolveChainRecordWallet,
   runChainRecordWatcherCycle,
   type ChainRecordWatcherDeps,
 } from './chain-record-watcher';
-import { VERIFIED_COMMERCE_CUT_LINE_MS, LIVE_PVT9_TOKEN, ZEROX_ALLOWANCE_HOLDER_BASE } from './wallet-exchange';
+import { VERIFIED_COMMERCE_CUT_LINE_MS, ZEROX_ALLOWANCE_HOLDER_BASE } from './wallet-exchange';
 import { INSTITUTION_ADDRESSES } from './institution-funding-watcher';
 import { inboundUsdcPeId } from './inbound-usdc-watcher';
 import {
@@ -74,20 +81,20 @@ describe('deriveChainRecordAct — the RECEIVE of a known non-USDC asset ', () =
   });
 
   it('GREEN: PVT and WETH receives qualify too', () => {
-    for (const token of [LIVE_PVT9_TOKEN as string, WETH]) {
+    for (const token of [fixturePvt, WETH]) {
       const d = deriveChainRecordAct(ev({ logs: [transferLog(TX, token, STRANGER, WALLET, 5n, 1)] }), WALLET);
       expect(d).toMatchObject({ status: 'act', act: { actionType: 'receive', assetAddress: token } });
     }
   });
 
   it('RED: PVT from the zero address (a settlement / Genesis mint) is no receive', () => {
-    const d = deriveChainRecordAct(ev({ logs: [transferLog(TX, LIVE_PVT9_TOKEN as string, ZERO, WALLET, 5n, 1)] }), WALLET);
+    const d = deriveChainRecordAct(ev({ logs: [transferLog(TX, fixturePvt, ZERO, WALLET, 5n, 1)] }), WALLET);
     expect(d).toMatchObject({ status: 'no_act', reason: 'no_qualifying_receive' });
   });
 
   it('RED: a migration-distributor payout is no receive', () => {
     const d = deriveChainRecordAct(ev({
-      logs: [transferLog(TX, LIVE_PVT9_TOKEN as string, PVT9_MIGRATION_DISTRIBUTOR_BASE, WALLET, 5n, 1)],
+      logs: [transferLog(TX, fixturePvt, PVT9_MIGRATION_DISTRIBUTOR_BASE, WALLET, 5n, 1)],
     }), WALLET);
     expect(d).toMatchObject({ status: 'no_act', reason: 'no_qualifying_receive' });
   });
@@ -350,3 +357,7 @@ describe('runChainRecordWatcherCycle — humans, receives, the pointer horizon, 
     expect(second.emitted).toBe(1);
   });
 });
+
+function deriveChainRecordAct(evidence: Parameters<typeof deriveWithProfile>[0], wallet: string, internal: Parameters<typeof deriveWithProfile>[2] = null) {
+ return deriveWithProfile(evidence, wallet, internal, baseChainRecordProfile(BASE_CHAIN_RECORD_PROFILE.excludedCounterparties, BASE_CHAIN_RECORD_PROFILE.institutionTargets, baseAssetsForKernel(fixturePvt)));
+}

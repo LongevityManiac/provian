@@ -35,6 +35,8 @@ export type AppParamList = {
     CommonsInstitutions: undefined;
     CommonsCourt: undefined;
     CommonsBonds: undefined;
+    Recourse: undefined;
+    RecourseBind: undefined;
     CommonsGovernance: undefined;
     CommonsForum: undefined;
     CommonsForumPost: { postId: string; channel?: string; focusCommentId?: string };

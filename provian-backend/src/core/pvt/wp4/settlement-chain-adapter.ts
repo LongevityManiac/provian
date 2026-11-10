@@ -24,6 +24,7 @@ import { Contract, JsonRpcProvider, Transaction, type Signer } from 'ethers';
 import type { BatchApproverAdapter } from './batch-approval';
 import { SettlementLane } from '../wp-ev/settlement-batch';
 import { CombinedCapMode, type CapClockObservation } from './cap-clock';
+import { verifyRecourseForwarder, type RecourseForwarderConfig } from '../../recourse/settlement-forwarder';
 import type {
   CycleChainObservation,
   MinedReceipt,
@@ -76,6 +77,7 @@ export interface SettlementSigner {
 }
 
 export interface ProductionAdapterConfig {
+  readonly forwarder?: RecourseForwarderConfig;
   readonly rpcUrl: string;
   readonly kernelAddress: string;
   readonly chainId: bigint;
@@ -190,6 +192,7 @@ export function createProductionChainAdapter(
 
       const lastOpenedEpoch = Number(await kernel.lastOpenedEpoch());
       const policy = await kernel.getEpochPolicy(lastOpenedEpoch);
+      if (config.forwarder) await verifyRecourseForwarder(config.forwarder, config.kernelAddress, deps.signer.address);
 
       return {
         epochZeroArmed: Boolean(await kernel.epochZeroArmed()),
@@ -198,6 +201,7 @@ export function createProductionChainAdapter(
         administrativeHold: Boolean(await kernel.administrativeHold()),
         operationalMinter: String(await kernel.operationalMinter()),
         settlementSigner: deps.signer.address,
+        ...(config.forwarder ? { settlementForwarder: { address: config.forwarder.address, submitter: deps.signer.address } } : {}),
         observedAtSec: Number(block.timestamp),
         nextFinalizedCursor: BigInt(await kernel.nextFinalizedCursor()),
         openEpochPolicyHash: String(policy.policyHash),

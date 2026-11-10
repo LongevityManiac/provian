@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * the MONEY OUTCOME of the chain-record lane, driven through the lane's
  * PRODUCTION emit (`buildChainRecordWatcherDeps.emitActPE`) into the REAL

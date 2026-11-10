@@ -62,32 +62,30 @@ const DOCS = [
     group: 'why',
     badge: 'Read this first',
     description:
-      'Provian in brief: what it is, how it works, what earns PVT, the trust layer, the economics, the Foundation, and where the network stands.',
+      'Witnessed work, durable ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.',
   },
   {
     slug: 'the-provian-thesis',
     src: 'reference/TheProvianThesis_v24.md',
     title: 'The Provian Thesis',
-    displayVersion: 'October 2026 revision',
     group: 'why',
     description:
-      'The whole architecture and why it matters: the two fears of the AI age, the receipt, money from proof, the trust layer, agents, the Commons, promises, the Foundation, and what gets built on top.',
+      'Money for a civilization beyond Earth: proof of contribution, ownership apart from keys, recourse, agents, the Commons and shared abundance.',
   },
   {
     slug: 'the-exponential-currency',
     src: 'reference/The_Exponential_Currency.md',
     title: 'The Exponential Currency',
-    displayVersion: 'October 2026 revision',
     group: 'why',
     description:
-      "Why parity minting is the best monetary model for an exponential economy, and why a dollar stablecoin can't do its job.",
+      'How witnessed work creates PVT for an expanding economy, while restoration returns existing holdings and creates none.',
   },
   {
     slug: 'founding-statement',
     src: 'reference/Provian_Founding_Statement_v16.md',
     title: 'Founding Statement',
     group: 'why',
-    description: "The Founding Statement, written with Atlas: why Provian exists and what it is for.",
+    description: 'The thousand-year argument and the missing ownership layer: why the founder built Provian, with AI, and what it is for.',
   },
   {
     slug: 'network-constitution',
@@ -95,7 +93,7 @@ const DOCS = [
     title: 'Network Constitution',
     group: 'why',
     description:
-      'The founding charter: the two rules, the rights of participants, the Commons, the Foundation, and what is immutable.',
+      'The founding charter: work, ownership, restoration authority, the Recourse Pool, participant rights and the Foundation.',
   },
 
   // ── Build on it ─────────────────────────────────────────────────────
@@ -105,7 +103,7 @@ const DOCS = [
     title: 'The Provian Manual',
     group: 'build',
     description:
-      'The one reference for people and agents: architecture, every action type and how it mints, the wallet, the Commons, settlement, and the contracts.',
+      'The reference for people and agents: witnessed work, binding and recovery, membership, restoration, settlement and current contracts.',
   },
   {
     slug: 'pe-protocol-spec',
@@ -113,7 +111,7 @@ const DOCS = [
     title: 'PE Protocol Specification',
     group: 'build',
     description:
-      'The open Provenance Envelope standard: structure, chaining, witness classes, citations, and the minting rule.',
+      'The open Provenance Envelope standard: owner-held chains, independent witnesses, minting, and non-minting restoration records.',
   },
   {
     slug: 'burn-to-present',

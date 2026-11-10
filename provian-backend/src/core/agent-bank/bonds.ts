@@ -14,6 +14,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { currentProtocolDeployment } from '../protocol/runtime';
 import {
   SAFETY_LIMITS,
   type AgentBankDeps,
@@ -93,18 +94,11 @@ export function chainIdForChain(chain: string): number {
   return chains[chain] || 8453;
 }
 
-/**
- * Resolve the BondPool contract address for a given chain. Mirrors the
- * per-chain address pattern used by foundation-membership/client.ts and
- * pvt-principal-config.ts.
- *
- * Falls back to the legacy single-chain BOND_POOL_CONTRACT_ADDRESS when no
- * per-chain env var is set, so deployments that have not yet adopted
- * per-chain configuration keep working (Base-only behaviour).
- */
-export function bondPoolAddressForChain(chain: string): string | undefined {
+/** Resolve Base from the verified permanent pointer on every call. Other chains
+ * retain their per-chain configuration and legacy fallback. */
+export async function bondPoolAddressForChain(chain: string): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.bonds;
   const perChain: Record<string, string | undefined> = {
-    base: process.env.BOND_POOL_CONTRACT_ADDRESS_BASE,
     arbitrum: process.env.BOND_POOL_CONTRACT_ADDRESS_ARBITRUM,
     optimism: process.env.BOND_POOL_CONTRACT_ADDRESS_OPTIMISM,
   };
@@ -329,7 +323,7 @@ export async function postBond(
   const requiredBond = getRequiredBondAmount(body.autonomy_level, trustDiscountBps);
 
   // Verify on-chain transaction
-  const bondPoolAddress = bondPoolAddressForChain(body.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(body.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
 
   // #26: derive the on-chain collateral FLOOR from the LIVE base bond, not the
@@ -566,7 +560,7 @@ export async function renewBond(
   }
 
   // Verify on-chain
-  const bondPoolAddress = bondPoolAddressForChain(bond.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(bond.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
 
   // FIX C: confirm a BondRenewed event was emitted for THIS agent (the bond's
@@ -720,7 +714,7 @@ export async function withdrawBond(
   if (bond.pending_claims > 0) throw new ValidationError('Cannot withdraw with pending claims');
 
   // Verify on-chain
-  const bondPoolAddress = bondPoolAddressForChain(bond.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(bond.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
 
   // FIX C symmetry: confirm a BondWithdrawn event was emitted for THIS agent
@@ -831,7 +825,7 @@ export async function topUpBond(
   if (bond.agent_wallet_id !== walletId) throw new ForbiddenError('Not bond owner');
   if (bond.status !== 'active') throw new ValidationError('Bond is not active');
 
-  const bondPoolAddress = bondPoolAddressForChain(bond.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(bond.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
 
   // Verify the BondToppedUp event for THIS agent and recover the exact
@@ -985,7 +979,7 @@ export async function fileClaim(
   const respondent = await getWallet(deps, body.respondent_wallet_id);
 
   // Verify on-chain
-  const bondPoolAddress = bondPoolAddressForChain(body.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(body.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
 
   // WS Pass-2 (#10): bind the backend claim to the on-chain claim. Decode the
@@ -1206,7 +1200,7 @@ export async function resolveBondClaim(
 
   // Verify the settlement receipt at Base finality BEFORE the Firestore
   // transaction (no RPC under an open txn). The event decides the verdict.
-  const bondPoolAddress = bondPoolAddressForChain(settlement.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(settlement.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
   const ver = await verifyEvmBondClaimResolved({
     chainId: chainIdForChain(settlement.chain),
@@ -1475,7 +1469,7 @@ export async function observeBondClaimSettlement(
     });
   }
 
-  const bondPoolAddress = bondPoolAddressForChain(claim.chain);
+  const bondPoolAddress = (await bondPoolAddressForChain(claim.chain));
   if (!bondPoolAddress) throw new ValidationError('Bond pool contract not configured');
   const recovered = await recoverEvmBondClaimResolution({
     chainId: chainIdForChain(claim.chain),

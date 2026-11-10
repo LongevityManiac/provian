@@ -25,7 +25,7 @@ jest.mock('../core/agent-bank/pe-utils', () => ({
 
 import { createAgentWalletRouter } from './agent-wallet';
 import { generateApiCredentials } from '../core/agent-wallet/api-key';
-import { AGENT_RECOVERY_ESCROW_COLLECTION } from '../core/agent-recovery-escrow';
+import { AGENT_RECOVERY_ESCROW_COLLECTION, AGENT_RETIRED_KEY_BACKUPS_COLLECTION, retiredKeyBackupId } from '../core/agent-recovery-escrow';
 import type { RouterDeps, AgentWalletDocument } from '../core/agent-wallet/types';
 
 const MOUNT = '/v1/agent/wallet';
@@ -60,6 +60,7 @@ function buildV2Token(method: string, path: string, body: string): string {
 
 function makeHarness() {
   const store = new Map<string, Doc>();
+  store.set(`auth_secrets/${USER_ID}`, { secret: AUTH_SECRET });
 
   const docRef = (key: string) => ({
     __path: key,
@@ -149,6 +150,30 @@ function makeHarness() {
 }
 
 beforeEach(() => { jest.clearAllMocks(); });
+
+describe('retired encrypted-key backup access',()=>{
+  const address=`0x${'12'.repeat(20)}`;
+  function seed(h:ReturnType<typeof makeHarness>,walletId:string){h.store.set(`${AGENT_RETIRED_KEY_BACKUPS_COLLECTION}/${retiredKeyBackupId(walletId,address)}`,
+    {wallet_id:walletId,retired_address:address,rotation_id:'rotation',retired_at:100,blob_version:1,
+      sealed_key_blob:REAL_SEALED_BLOB,recovery_anchor_pubkey:REAL_ANCHOR_PUBKEY});}
+  it('the owning agent retrieves only its historical ciphertext; another wallet is refused',async()=>{
+    const h=makeHarness(),bearer=h.seedAgentWallet('wallet_aw_1',USER_ID);h.seedAgentWallet('wallet_aw_2',OTHER_USER);
+    seed(h,'wallet_aw_1');seed(h,'wallet_aw_2');
+    const result=await request(h.app).get(`${MOUNT}/wallet_aw_1/retired-key-backups/${address}`).set('Authorization',bearer);
+    expect(result.status).toBe(200);expect(result.body).toMatchObject({retired_address:address,sealed_key_blob:REAL_SEALED_BLOB});
+    expect((await request(h.app).get(`${MOUNT}/wallet_aw_2/retired-key-backups/${address}`).set('Authorization',bearer)).status).toBe(403);
+    expect((await request(h.app).get(`${MOUNT}/wallet_aw_1/retired-key-backups/${address}`)).status).toBe(401);
+  });
+  it('only the linked human can request the historical backup and it never appears as the active escrow',async()=>{
+    const h=makeHarness();h.seedAgentWallet('wallet_aw_1',USER_ID);h.seedAgentWallet('wallet_aw_2',OTHER_USER);seed(h,'wallet_aw_1');seed(h,'wallet_aw_2');
+    const base=`${MOUNT}/wallet_aw_1/recovery-escrow`;
+    const result=await request(h.app).get(`${base}?retired_address=${address}`).set('Authorization',`Bearer ${buildV2Token('GET',base,'')}`);
+    expect(result.status).toBe(200);expect(result.body.retired_address).toBe(address);
+    expect((await request(h.app).get(base).set('Authorization',`Bearer ${buildV2Token('GET',base,'')}`)).status).toBe(404);
+    const other=`${MOUNT}/wallet_aw_2/recovery-escrow`;
+    expect((await request(h.app).get(`${other}?retired_address=${address}`).set('Authorization',`Bearer ${buildV2Token('GET',other,'')}`)).status).toBe(403);
+  });
+});
 
 describe('POST /:wallet_id/recovery-escrow (agent auth + ownership)', () => {
   it('stores a valid sealed blob for the owning agent (sealed to its linked human\'s published anchor)', async () => {

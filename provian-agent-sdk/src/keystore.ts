@@ -35,6 +35,7 @@ import * as path from 'path';
 import { homedir } from 'os';
 import { ProvianError } from './errors';
 import { deriveAddressFromPrivateKey } from './wallet';
+import { withFileLockSync } from './meter/file-lock';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -109,7 +110,7 @@ export interface KeystoreCrypto {
 }
 
 export interface AgentKeystore {
-  version: typeof KEYSTORE_VERSION;
+  version: typeof KEYSTORE_VERSION | 2;
   type: typeof KEYSTORE_TYPE;
   /** Provian wallet ID (wallet_aw_...) */
   wallet_id: string;
@@ -123,6 +124,10 @@ export interface AgentKeystore {
 }
 
 export interface EncryptKeystoreParams {
+  /** Independent recovery secret; never derive this from a curve private key. */
+  recoverySecret?: string;
+  /** Independent one-time hash-signature seed; never derived from recoverySecret. */
+  recoverySigningSeed?: string;
   /** Hex-encoded secp256k1 private key (64 hex chars, optional 0x prefix) */
   privateKey: string;
   /** EVM address that the private key derives to */
@@ -239,8 +244,13 @@ export function encryptKeystore(params: EncryptKeystoreParams): AgentKeystore {
   const encryptionKey = deriveEncryptionKey(params.passphrase, kdfparams);
   const iv = randomBytes(12); // 96-bit GCM nonce
 
+  if (params.recoverySigningSeed !== undefined && params.recoverySecret === undefined) throw new ProvianError('Incomplete recovery material', 'INVALID_KEYSTORE');
+  const version = params.recoverySecret === undefined ? KEYSTORE_VERSION : 2 as const;
+  const recoverySecret = params.recoverySecret === undefined ? undefined : normalizePrivateKey(params.recoverySecret);
+  const signingSeed = recoverySecret === undefined ? undefined
+    : params.recoverySigningSeed === undefined ? randomBytes(32).toString('hex') : normalizePrivateKey(params.recoverySigningSeed);
   const header = {
-    version: KEYSTORE_VERSION,
+    version,
     type: KEYSTORE_TYPE,
     wallet_id: params.walletId,
     address: params.address,
@@ -251,13 +261,13 @@ export function encryptKeystore(params: EncryptKeystoreParams): AgentKeystore {
   const cipher = createCipheriv(CIPHER, encryptionKey, iv);
   cipher.setAAD(aad);
   const ciphertext = Buffer.concat([
-    cipher.update(Buffer.from(privateKeyHex, 'hex')),
+    cipher.update(Buffer.from(privateKeyHex + (recoverySecret ?? '') + (signingSeed ?? ''), 'hex')),
     cipher.final(),
   ]);
   const tag = cipher.getAuthTag();
 
   return {
-    version: KEYSTORE_VERSION,
+    version,
     type: KEYSTORE_TYPE,
     wallet_id: params.walletId,
     address: params.address,
@@ -278,7 +288,7 @@ export function encryptKeystore(params: EncryptKeystoreParams): AgentKeystore {
  * the passphrase is incorrect or the file has been tampered with (both surface
  * as a failed GCM tag check - indistinguishable by design).
  */
-export function decryptKeystore(keystore: AgentKeystore, passphrase: string): DecryptedKey {
+function decryptKeystoreBytes(keystore: AgentKeystore, passphrase: string): Buffer {
   validateKeystoreShape(keystore);
   assertPassphrase(passphrase);
 
@@ -304,12 +314,78 @@ export function decryptKeystore(keystore: AgentKeystore, passphrase: string): De
     );
   }
 
+  if (privateKeyBytes.length !== (keystore.version === 2 ? 96 : 32)) {
+    privateKeyBytes.fill(0);
+    throw new ProvianError('Keystore payload length is invalid', 'INVALID_KEYSTORE');
+  }
+  return privateKeyBytes;
+}
+
+export function decryptKeystore(keystore: AgentKeystore, passphrase: string): DecryptedKey {
+  const bytes = decryptKeystoreBytes(keystore, passphrase);
+  const privateKey = bytes.subarray(0, 32).toString('hex');
+  bytes.fill(0);
   return {
-    privateKey: privateKeyBytes.toString('hex'),
+    privateKey,
     address: keystore.address,
     publicKey: keystore.public_key,
     walletId: keystore.wallet_id,
   };
+}
+
+/** Recovery secrets are deliberately absent from ordinary signing-key callbacks. */
+export async function withRecoverySecret<T>(keystore: AgentKeystore, passphrase: string,
+  fn: (secret: Uint8Array) => Promise<T> | T): Promise<T> {
+  if (keystore.version !== 2) throw new ProvianError('Recovery commitment is not initialized', 'INVALID_KEYSTORE');
+  const bytes = decryptKeystoreBytes(keystore, passphrase);
+  try { return await fn(bytes.subarray(32, 64)); } finally { bytes.fill(0); }
+}
+
+/** Both independent recovery factors are confined to one zeroized callback. */
+export async function withRecoveryMaterial<T>(keystore: AgentKeystore, passphrase: string,
+  fn: (secret: Uint8Array, signingSeed: Uint8Array) => Promise<T> | T): Promise<T> {
+  if (keystore.version !== 2) throw new ProvianError('Recovery commitment is not initialized', 'INVALID_KEYSTORE');
+  const bytes = decryptKeystoreBytes(keystore, passphrase);
+  try { return await fn(bytes.subarray(32, 64), bytes.subarray(64, 96)); } finally { bytes.fill(0); }
+}
+
+/** Persist before sending a commitment. Reopening the same keystore preserves its secret. */
+export function initializeRecoveryKeystore(keystore: AgentKeystore, passphrase: string,
+  filePath: string): AgentKeystore {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  return withFileLockSync(`${filePath}.identity.lock`, { timeoutMs: 10_000, staleMs: 0, syncOnly: true }, () => {
+  const persisted = loadKeystore(filePath);
+  if (persisted) {
+    if (persisted.wallet_id !== keystore.wallet_id || persisted.address.toLowerCase() !== keystore.address.toLowerCase()) {
+      throw new ProvianError('Keystore identity changed during recovery setup', 'INVALID_KEYSTORE');
+    }
+    keystore = persisted;
+  }
+  if (keystore.version === 2) {
+    const bytes = decryptKeystoreBytes(keystore, passphrase); bytes.fill(0);
+    return keystore;
+  }
+  const key = decryptKeystore(keystore, passphrase);
+  const secret = randomBytes(32);
+  try {
+    const upgraded = encryptKeystore({ ...key, passphrase, recoverySecret: secret.toString('hex'),
+      createdAt: keystore.created_at, kdfParams: keystore.crypto.kdfparams });
+    saveKeystore(upgraded, filePath);
+    return upgraded;
+  } finally { secret.fill(0); key.privateKey = ''; }
+  });
+}
+
+/** A curve-key rotation preserves the independent identity-recovery secret. */
+export function replaceKeystoreWalletKey(keystore: AgentKeystore, passphrase: string,
+  replacement: Pick<EncryptKeystoreParams, 'privateKey' | 'address' | 'publicKey' | 'walletId'>): AgentKeystore {
+  if (replacement.walletId !== keystore.wallet_id) throw new ProvianError('Rotation identity mismatch', 'INVALID_KEYSTORE');
+  const bytes = decryptKeystoreBytes(keystore, passphrase);
+  try {
+    return encryptKeystore({ ...replacement, passphrase, createdAt: keystore.created_at,
+      kdfParams: keystore.crypto.kdfparams,
+      ...(keystore.version === 2 ? { recoverySecret: bytes.subarray(32, 64).toString('hex'), recoverySigningSeed: bytes.subarray(64, 96).toString('hex') } : {}) });
+  } finally { bytes.fill(0); }
 }
 
 /**
@@ -364,7 +440,7 @@ function assertKdfParamsInBounds(kp: KeystoreKdfParams | undefined): void {
 function validateKeystoreShape(keystore: AgentKeystore): void {
   if (
     !keystore
-    || keystore.version !== KEYSTORE_VERSION
+    || (keystore.version !== KEYSTORE_VERSION && keystore.version !== 2)
     || keystore.type !== KEYSTORE_TYPE
     || !keystore.crypto
     || keystore.crypto.cipher !== CIPHER
@@ -539,6 +615,18 @@ export interface PersistAgentWalletParams {
 export function persistAgentWalletKey(
   params: PersistAgentWalletParams,
 ): { keystore: AgentKeystore; path: string } {
+  const filePath = params.filePath ?? DEFAULT_KEYSTORE_PATH;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  return withFileLockSync(`${filePath}.identity.lock`, { timeoutMs: 10_000, staleMs: 0, syncOnly: true }, () => {
+  const existing = loadKeystore(filePath);
+  if (existing?.version === 2) {
+    const previous = decryptKeystore(existing, params.passphrase);
+    if (previous.walletId !== params.walletId || previous.privateKey !== normalizePrivateKey(params.privateKey)) {
+      throw new ProvianError('Cannot overwrite a recovery identity; use key rotation', 'INVALID_KEYSTORE');
+    }
+    previous.privateKey = '';
+    return { keystore: existing, path: filePath };
+  }
   const keystore = encryptKeystore({
     privateKey: params.privateKey,
     address: params.address,
@@ -550,4 +638,5 @@ export function persistAgentWalletKey(
   });
   const writtenPath = saveKeystore(keystore, params.filePath ?? DEFAULT_KEYSTORE_PATH);
   return { keystore, path: writtenPath };
+  });
 }

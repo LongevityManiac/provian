@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Pool withdrawal calldata + address pins (P4-01-SDK).
  * - encodeWithdrawContribution byte-exact calldata (selector + bytes32 arg)

@@ -356,6 +356,9 @@ export async function advanceRelayAct(
     readonly actorId: string;
     readonly walletId: string;
     readonly ownerType?: 'human' | 'agent';
+    /** Consequential outcomes must reach their owner, even if a linked
+     * beneficiary already has a mailbox key. Refuse before advancing the tip. */
+    readonly requiredRecipient?: string;
     readonly peId: string;
     readonly timestamp: number;
     readonly actionType: string;
@@ -375,6 +378,9 @@ export async function advanceRelayAct(
   const targets = await resolveRelaySealTargets(db, {
     actorId: input.actorId, walletId: input.walletId, ownerType: input.ownerType,
   });
+  if (input.requiredRecipient && !targets.some(target => target.recipient === input.requiredRecipient)) {
+    throw new Error('relay_act_owner_message_key_required');
+  }
   const peFor = (prevHash: string): PeV2 => relayPeOf({
     peId: input.peId,
     actorId: input.actorId,

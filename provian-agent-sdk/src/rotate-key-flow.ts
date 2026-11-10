@@ -57,6 +57,7 @@ export interface RotateKeyFlowDeps {
   generateNewKey(): { privateKey: string; publicKey: string; address: string };
   loadJournal(): RotationJournal | null;
   saveJournal(journal: RotationJournal): void;
+  assertInstalledIdentity?(journal: RotationJournal): void;
   rotate(config: RotateKeyConfig): Promise<RotateKeyResult>;
   persistNewKey(params: { privateKey: string; address: string; publicKey: string; walletId: string; apiKey: string; apiSecret: string }): void;
   rotateCredentials(params: { apiKey: string; apiSecret: string; walletId: string; address: string }): void;
@@ -144,11 +145,13 @@ async function runLocked(input: RotateKeyFlowInput, deps: RotateKeyFlowDeps): Pr
   // Repeatable atomic installs. The journal remains authoritative if either
   // write, or its fsync, fails; no need to load a half-installed identity.
   const result = journal.result;
-  deps.persistNewKey({ privateKey: journal.config.newPrivateKey, address: journal.newAddress,
-    publicKey: journal.newPublicKey, walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret });
-  deps.rotateCredentials({ apiKey: result.apiKey, apiSecret: result.apiSecret, walletId: result.walletId, address: journal.newAddress });
-  journal.installed = true;
-  deps.saveJournal(journal);
+  if (!journal.installed) {
+    deps.persistNewKey({ privateKey: journal.config.newPrivateKey, address: journal.newAddress,
+      publicKey: journal.newPublicKey, walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret });
+    deps.rotateCredentials({ apiKey: result.apiKey, apiSecret: result.apiSecret, walletId: result.walletId, address: journal.newAddress });
+    journal.installed = true;
+    deps.saveJournal(journal);
+  } else deps.assertInstalledIdentity?.(journal);
   const pending = { walletId: result.walletId, oldAddress: journal.oldAddress, newAddress: journal.newAddress };
   // The sweep is optional asset movement, NEVER a condition for key retention.
   const sweep = await deps.sweepPending(pending, options);
@@ -192,6 +195,11 @@ export function defaultRotateKeyFlowDeps(directory: string = path.join(homedir()
       return { walletId: row.wallet_id, oldAddress: row.old_address, newAddress: row.new_address };
     },
     loadJournal: load,
+    assertInstalledIdentity(journal) {
+      const active = keystoreModule.loadKeystore(keyPath);
+      if (!active || active.wallet_id !== journal.config.walletId
+        || active.address.toLowerCase() !== journal.newAddress.toLowerCase()) throw new Error('The wallet has advanced beyond this rotation journal.');
+    },
     saveJournal(journal) {
       // Addressed by operation id: starting another rotation never overwrites a
       // previous retired key. Archive first; then publish the active journal.
@@ -211,7 +219,15 @@ export function defaultRotateKeyFlowDeps(directory: string = path.join(homedir()
     generateNewKey() { return (walletModule).generateAgentKeyPair(); },
     rotate(config) { return (walletModule).rotateKey(config); },
     persistNewKey(params) {
-      (keystoreModule).persistAgentWalletKey({ ...params, passphrase: secret(), filePath: keyPath });
+      const journal = load();
+      if (!journal || journal.config.walletId !== params.walletId
+        || journal.newAddress.toLowerCase() !== params.address.toLowerCase()) throw new Error('Key install is not bound to the rotation journal.');
+      const active = keystoreModule.loadKeystore(keyPath);
+      if (!active || active.wallet_id !== params.walletId
+        || ![journal.oldAddress.toLowerCase(), journal.newAddress.toLowerCase()].includes(active.address.toLowerCase())) {
+        throw new Error('The wallet has advanced beyond this rotation journal.');
+      }
+      keystoreModule.saveKeystore(keystoreModule.replaceKeystoreWalletKey(journal.oldKeystore, secret(), params), keyPath);
     },
     rotateCredentials(params) {
       // A checked journal authorizes this exact cross-address replacement. No

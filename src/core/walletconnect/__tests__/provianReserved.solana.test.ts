@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('../../protocol/runtime', async () => (await import('../../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * The Solana proof-of-control message is Provian-reserved: no dApp can obtain the wallet's
  * signature over it through WalletConnect.

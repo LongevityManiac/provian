@@ -1,3 +1,4 @@
+vi.mock('../../protocol/runtime', async () => (await import('../../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 vi.mock('../../security/ActionWallet', async () => ({ ActionWallet: (await import('ethers')).ethers.Wallet }));
 /**
  * WALLETCONNECT v2 SERVICE - INTEGRATION TESTS
@@ -664,7 +665,7 @@ describe('WalletConnectService', () => {
         it('personal_sign: signs the RAW BYTES of a hex message (EIP-191), not a re-encoded string', async () => {
             // (a message naming Provian is now refused at the door — see §14.)
             const hexMsg = '0x' + Buffer.from('Hello Base').toString('hex');
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(201, SESSION_TOPIC, 'personal_sign', [hexMsg, TEST_ADDRESS])
             );
 
@@ -687,7 +688,7 @@ describe('WalletConnectService', () => {
             const failure = Object.assign(new Error('Se requiere una acción biométrica activa.'), { englishMessage: english });
             mockSignMessage.mockRejectedValueOnce(failure);
             vi.mocked(ProvenanceEnvelopeManager.createEnvelope).mockClear();
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(209, SESSION_TOPIC, 'personal_sign', ['Hello plain text', TEST_ADDRESS])
             );
             await expect(WalletConnectService.approveRequest(209)).rejects.toBe(failure);
@@ -704,7 +705,7 @@ describe('WalletConnectService', () => {
         });
 
         it('personal_sign: handles non-hex plain text message', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(202, SESSION_TOPIC, 'personal_sign', ['Hello plain text', TEST_ADDRESS])
             );
             await WalletConnectService.approveRequest(202);
@@ -717,7 +718,7 @@ describe('WalletConnectService', () => {
             const digest = new Uint8Array(32);
             for (let i = 0; i < 32; i++) digest[i] = (i * 7 + 0x80) & 0xff;
             const hexDigest = '0x' + Buffer.from(digest).toString('hex');
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(203, SESSION_TOPIC, 'personal_sign', [hexDigest, TEST_ADDRESS])
             );
             await WalletConnectService.approveRequest(203);
@@ -734,7 +735,7 @@ describe('WalletConnectService', () => {
                 message: { content: 'hello' },
             });
 
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(203, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, typedData])
             );
 
@@ -753,7 +754,7 @@ describe('WalletConnectService', () => {
                 domain: {},
                 message: { val: '42' },
             });
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(209, SESSION_TOPIC, 'eth_signTypedData', [TEST_ADDRESS, typedData])
             );
             await WalletConnectService.approveRequest(209, undefined, confirmedFor(209));
@@ -786,7 +787,7 @@ describe('WalletConnectService', () => {
                 data: '0x',
                 gas: '0x5208',
             };
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(205, SESSION_TOPIC, 'eth_sendTransaction', [txParams])
             );
             const result = await WalletConnectService.approveRequest(205);
@@ -797,7 +798,7 @@ describe('WalletConnectService', () => {
         it('eth_sendTransaction creates PE with counterparty and amount', async () => {
             vi.mocked(ProvenanceEnvelopeManager.createEnvelope).mockClear();
             const txParams = { from: TEST_ADDRESS, to: '0xRecipientAddr', value: '0xDE0B6B3A7640000', data: '0x' };
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(206, SESSION_TOPIC, 'eth_sendTransaction', [txParams])
             );
             await WalletConnectService.approveRequest(206);
@@ -811,7 +812,7 @@ describe('WalletConnectService', () => {
         });
 
         it('rejectRequest sends error response and cleans up', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(207, SESSION_TOPIC, 'personal_sign', ['0xab', TEST_ADDRESS])
             );
             await WalletConnectService.rejectRequest(207, 'User said no');
@@ -823,7 +824,7 @@ describe('WalletConnectService', () => {
         });
 
         it('rejectRequest uses default message when none provided', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(210, SESSION_TOPIC, 'personal_sign', ['msg', TEST_ADDRESS])
             );
             await WalletConnectService.rejectRequest(210);
@@ -936,8 +937,8 @@ describe('WalletConnectService', () => {
             await initWithSession(SESSION_TOPIC);
         });
 
-        it('request chainId is captured from the session_request event', () => {
-            capturedHandlers.sessionRequest?.(
+        it('request chainId is captured from the session_request event', async () => {
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(401, SESSION_TOPIC, 'personal_sign', ['0xab', TEST_ADDRESS], 'eip155:42161')
             );
             expect(WalletConnectService.getPendingRequest(401)?.chainId).toBe('eip155:42161');
@@ -945,7 +946,7 @@ describe('WalletConnectService', () => {
 
         it('transaction uses the chain ID from the request for PE recording', async () => {
             vi.mocked(ProvenanceEnvelopeManager.createEnvelope).mockClear();
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(402, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }], 'eip155:8453')
             );
             await WalletConnectService.approveRequest(402);
@@ -955,7 +956,7 @@ describe('WalletConnectService', () => {
         });
 
         it('transaction for unsupported chain throws a clear, actionable error', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(403, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }], 'eip155:999999')
             );
             await expect(WalletConnectService.approveRequest(403)).rejects.toThrow('Provian sends transactions on');
@@ -963,7 +964,7 @@ describe('WalletConnectService', () => {
 
         it('signing requests record the correct chainId in the PE', async () => {
             vi.mocked(ProvenanceEnvelopeManager.createEnvelope).mockClear();
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(404, SESSION_TOPIC, 'personal_sign', ['hello', TEST_ADDRESS], 'eip155:42161')
             );
             await WalletConnectService.approveRequest(404);
@@ -1183,7 +1184,7 @@ describe('WalletConnectService', () => {
 
         it('new requests can be processed after re-establishing connection', async () => {
             const hexMsg = '0x' + Buffer.from('post-reconnect').toString('hex');
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(801, SESSION_TOPIC, 'personal_sign', [hexMsg, TEST_ADDRESS])
             );
             const result = await WalletConnectService.approveRequest(801);
@@ -1200,10 +1201,10 @@ describe('WalletConnectService', () => {
         });
 
         it('multiple pending requests can accumulate and be processed independently', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(810, SESSION_TOPIC, 'personal_sign', ['msg1', TEST_ADDRESS])
             );
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(811, SESSION_TOPIC, 'personal_sign', ['msg2', TEST_ADDRESS])
             );
             expect(WalletConnectService.getPendingRequests()).toHaveLength(2);
@@ -1220,7 +1221,7 @@ describe('WalletConnectService', () => {
                 from: TEST_ADDRESS, to: '0xRecipient', value: '0x0', data: '0xdeadbeef',
                 gas: '0x7530', maxFeePerGas: '0x3B9ACA00', maxPriorityFeePerGas: '0x77359400',
             };
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(812, SESSION_TOPIC, 'eth_sendTransaction', [txParams])
             );
             await WalletConnectService.approveRequest(812);
@@ -1241,7 +1242,7 @@ describe('WalletConnectService', () => {
                 from: TEST_ADDRESS, to: '0xRecipient', value: '0x0', data: '0x',
                 gasLimit: '0x5208', gasPrice: '0x4A817C800',
             };
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(813, SESSION_TOPIC, 'eth_sendTransaction', [txParams])
             );
             await WalletConnectService.approveRequest(813);
@@ -1253,10 +1254,10 @@ describe('WalletConnectService', () => {
             );
         });
 
-        it('session_request event emits to registered handlers', () => {
+        it('session_request event emits to registered handlers', async () => {
             const handler = vi.fn();
             WalletConnectService.on('session_request', handler);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(814, SESSION_TOPIC, 'personal_sign', ['msg', TEST_ADDRESS])
             );
             expect(handler).toHaveBeenCalledTimes(1);
@@ -1306,7 +1307,7 @@ describe('WalletConnectService', () => {
                 denyReason: 'Unlimited approvals are blocked by your WalletConnect security policy.',
             } as never);
 
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(901, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(901)).rejects.toThrow(/blocked/i);
@@ -1322,7 +1323,7 @@ describe('WalletConnectService', () => {
                 riskScore: 70, riskCategory: 'high', category: 'token_approval', reasons: ['Token approval requires explicit approval'],
             } as never);
 
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(903, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             const result = await WalletConnectService.approveRequest(903, undefined, confirmedFor(903));
@@ -1353,7 +1354,7 @@ describe('WalletConnectService', () => {
 
         it('eth_sendTransaction: records an execution-failure PE if broadcast throws, then re-throws', async () => {
             mockSendTransaction.mockRejectedValueOnce(new Error('insufficient funds'));
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(908, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(908)).rejects.toThrow('insufficient funds');
@@ -1385,7 +1386,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_approval', reasons: ['blocked'], denyReason: 'This signature is blocked',
             } as never);
 
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(905, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, permitTypedData])
             );
             await expect(WalletConnectService.approveRequest(905)).rejects.toThrow(/blocked/i);
@@ -1402,7 +1403,7 @@ describe('WalletConnectService', () => {
                 riskScore: 70, riskCategory: 'high', category: 'token_approval', reasons: [],
             } as never);
 
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(906, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, permitTypedData])
             );
             const result = await WalletConnectService.approveRequest(906, undefined, confirmedFor(906));
@@ -1469,7 +1470,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_transfer',
                 reasons: ['blocked'], denyReason: 'This transfer authorization is blocked',
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(920, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, eip3009TypedData])
             );
             await expect(WalletConnectService.approveRequest(920)).rejects.toThrow(/blocked/i);
@@ -1483,7 +1484,7 @@ describe('WalletConnectService', () => {
         });
 
         it('unrecognized typed data fails CLOSED: sealed high/80 + fail-closed reason codes, NOT the plain path\'s 15/low', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(922, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, unknownTypedData])
             );
             const sig = await WalletConnectService.approveRequest(922, undefined, confirmedFor(922));
@@ -1520,7 +1521,7 @@ describe('WalletConnectService', () => {
                 },
                 message: { holder: TEST_ADDRESS, spender: GOV_SPENDER, nonce: '0', expiry: '1900000000', allowed: false },
             });
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(924, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, daiRevoke])
             );
             const sig = await WalletConnectService.approveRequest(924);
@@ -1568,7 +1569,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_approval',
                 reasons: ['blocked'], denyReason: 'Blocked by your WalletConnect security policy.',
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1002, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(1002)).rejects.toThrow(/blocked/i);
@@ -1581,7 +1582,7 @@ describe('WalletConnectService', () => {
 
         it('broadcast failure → JSON-RPC -32000 to the dApp + clears pending, then re-throws', async () => {
             mockSendTransaction.mockRejectedValueOnce(new Error('insufficient funds'));
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1003, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(1003)).rejects.toThrow('insufficient funds');
@@ -1599,7 +1600,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_approval',
                 reasons: ['blocked'], denyReason: 'This signature is blocked', amountUsd: 0,
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1004, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, permit30])
             );
             await expect(WalletConnectService.approveRequest(1004)).rejects.toThrow(/blocked/i);
@@ -1644,7 +1645,7 @@ describe('WalletConnectService', () => {
                 lane: 'hard_confirm', allowed: true, requiresStrongConfirm: true,
                 riskScore: 70, riskCategory: 'high', category: 'token_approval', reasons: [], amountUsd: 40,
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1101, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, permit29])
             );
             const sig = await WalletConnectService.approveRequest(1101, undefined, confirmedFor(1101));
@@ -1659,7 +1660,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_approval',
                 reasons: ['blocked'], denyReason: 'blocked', amountUsd: 40,
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1102, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, permit29])
             );
             await expect(WalletConnectService.approveRequest(1102)).rejects.toThrow(/blocked/i);
@@ -1693,7 +1694,7 @@ describe('WalletConnectService', () => {
                 riskScore: 95, riskCategory: 'high', category: 'token_approval',
                 reasons: ['blocked'], denyReason: 'Blocked by your WalletConnect security policy.',
             } as never);
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1201, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(1201)).rejects.toThrow(/blocked/i);
@@ -1706,7 +1707,7 @@ describe('WalletConnectService', () => {
 
         it('successful approve → EXACTLY ONE response, the result (never also an error)', async () => {
             // Defaults: ALLOW_TX_VERDICT (auto_approve), kill switch off, sendTransaction → 0xtxhash123.
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1202, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             const hash = await WalletConnectService.approveRequest(1202);
@@ -1738,7 +1739,7 @@ describe('WalletConnectService', () => {
                 hash: '0xreverted',
                 wait: vi.fn().mockResolvedValue({ status: 0, hash: '0xreverted' }),
             });
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1301, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(1301)).rejects.toThrow(/reverted/i);
@@ -1758,7 +1759,7 @@ describe('WalletConnectService', () => {
         });
 
         it('eth_sendTransaction: CONFIRMED (status 1) → returns hash AND credits the daily cap (regression guard)', async () => {
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1302, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             const hash = await WalletConnectService.approveRequest(1302);
@@ -1773,7 +1774,7 @@ describe('WalletConnectService', () => {
             vi.mocked(requireBiometric).mockRejectedValueOnce(
                 new BiometricAuthError('user_cancel')
             );
-            capturedHandlers.sessionRequest?.(
+            await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(1303, SESSION_TOPIC, 'eth_sendTransaction', [{ from: TEST_ADDRESS, to: '0xR', value: '0x0', data: '0x' }])
             );
             await expect(WalletConnectService.approveRequest(1303)).rejects.toBeInstanceOf(BiometricAuthError);

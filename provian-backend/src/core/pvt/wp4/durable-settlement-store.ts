@@ -955,11 +955,14 @@ export interface SignerLeaseDoc {
   readonly owner: string;
   readonly acquired_at_ms: number;
   readonly expires_at_ms: number;
+  /** A signed non-settlement operation owns the nonce until finalized, even
+   * after the process lease expires or its worker crashes before broadcast. */
+  readonly pending_operation?: string | null;
 }
 
 export type AcquireSignerLeaseResult =
   | { readonly kind: 'acquired' }
-  | { readonly kind: 'refused'; readonly reason: 'lease_held'; readonly owner: string };
+  | { readonly kind: 'refused'; readonly reason: 'lease_held' | 'operation_reserved'; readonly owner: string };
 
 /**
  * Take (or renew) the signer lease. A LIVE lease held by a different worker refuses — the
@@ -968,7 +971,7 @@ export type AcquireSignerLeaseResult =
  */
 export async function acquireSignerLease(
   db: SettlementDb,
-  params: { signer: string; workerId: string; nowMs: number; leaseTtlMs: number },
+  params: { signer: string; workerId: string; nowMs: number; leaseTtlMs: number; operationId?: string },
 ): Promise<AcquireSignerLeaseResult> {
   const signer = params.signer.toLowerCase();
   const ref = db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(signer);
@@ -977,6 +980,10 @@ export async function acquireSignerLease(
     const existing = snap.exists ? (snap.data() ?? {}) : {};
     const owner = typeof existing.owner === 'string' ? existing.owner : null;
     const expires = typeof existing.expires_at_ms === 'number' ? existing.expires_at_ms : 0;
+    const pending = existing.pending_operation;
+    if (pending !== undefined && pending !== null && (typeof pending !== 'string' || pending !== params.operationId)) {
+      return { kind: 'refused', reason: 'operation_reserved', owner: typeof pending === 'string' ? pending : 'invalid_reservation' };
+    }
     if (owner !== null && owner !== params.workerId && expires > params.nowMs) {
       return { kind: 'refused', reason: 'lease_held', owner };
     }
@@ -985,6 +992,7 @@ export async function acquireSignerLease(
       owner: params.workerId,
       acquired_at_ms: params.nowMs,
       expires_at_ms: params.nowMs + params.leaseTtlMs,
+      ...(typeof pending === 'string' ? { pending_operation: pending } : {}),
     };
     txn.set(ref, lease as unknown as Record<string, unknown>);
     return { kind: 'acquired' };
@@ -1060,6 +1068,8 @@ export async function closeCycle(
 export interface BatchAttempt {
   readonly nonce: number;
   readonly tx_hash: string;
+  /** Exact execution destination, retained across forwarder deployment and retries. */
+  readonly target?: string;
   /**
    * 'cancel' is a plain self-transfer at the SAME nonce as a stuck attempt
    * whose batch binding has died (epoch crossed) — it resolves the nonce

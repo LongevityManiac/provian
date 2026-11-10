@@ -48,14 +48,14 @@ import {
  * Wave J-bis: chain-aware resolver. Single-chain deployments keep working
  * via the legacy single-valued env var fallback in chain-registry.
  */
-export function resolveEscrowContractAddress(currency: Currency, chain: AgentBankChain): string {
+export async function resolveEscrowContractAddress(currency: Currency, chain: AgentBankChain): Promise<string> {
   if (currency === 'pvt') {
     if (!isPvtPrincipalEnabledForChain(chain)) {
       throw new ValidationError(`PVT-principal escrows are not enabled for chain '${chain}' on this relay`);
     }
-    return requireAddressOrThrow(escrowV4AddressForChain(chain), 'ESCROW_V4', chain);
+    return requireAddressOrThrow((await escrowV4AddressForChain(chain)), 'ESCROW_V4', chain);
   }
-  return requireAddressOrThrow(escrowUsdcAddressForChain(chain), 'ESCROW', chain);
+  return requireAddressOrThrow((await escrowUsdcAddressForChain(chain)), 'ESCROW', chain);
 }
 
 /**
@@ -67,11 +67,11 @@ export function resolveEscrowContractAddress(currency: Currency, chain: AgentBan
  * Block): a document can never steer a funding check, a release, or a keeper call to an address the
  * relay does not already name.
  */
-export function resolveEscrowContractForDocument(
+export async function resolveEscrowContractForDocument(
   escrow: Pick<EscrowDocument, 'escrow_id' | 'currency' | 'chain' | 'escrow_contract_address'>,
-): string {
+): Promise<string> {
   const chain = escrow.chain as AgentBankChain;
-  const configured = resolveEscrowContractAddress(escrow.currency ?? 'usdc', chain);
+  const configured = (await resolveEscrowContractAddress(escrow.currency ?? 'usdc', chain));
   const pinned = escrow.escrow_contract_address;
   if (pinned === undefined) return configured;
   if (typeof pinned === 'string') {
@@ -226,7 +226,7 @@ export async function createEscrow(
   // PE behind. The previous order wrote the doc + PE first and only threw at the
   // route's later address resolve, stranding an unfundable escrow the agent
   // could never get a funding address for. Throws on a missing per-chain env.
-  resolveEscrowContractAddress(currency, body.chain);
+  (await resolveEscrowContractAddress(currency, body.chain));
 
   // --- Look up both wallets (agent OR human; D-329) ---
   const depositor = await resolveEscrowParty(deps, body.depositor_wallet_id, 'Depositor');
@@ -344,7 +344,7 @@ export async function verifyFunding(
   // per-chain env var; verifyTransfer dispatches to the right RPC provider.
   const docChain = doc.chain as AgentBankChain;
   assertSupportedAgentBankChain(docChain);
-  const escrowContractAddress = resolveEscrowContractForDocument({ ...doc, currency, chain: docChain });
+  const escrowContractAddress = (await resolveEscrowContractForDocument({ ...doc, currency, chain: docChain }));
 
   // The on-chain verify happens BEFORE the transaction so we don't hold the
   // Firestore txn open across an external RPC call. Two concurrent verify

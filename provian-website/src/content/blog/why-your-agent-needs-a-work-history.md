@@ -1,6 +1,6 @@
 An agent that has done a thousand jobs and an agent that was instantiated five minutes ago look identical to the next counterparty. Same API surface, same confident prose, same wallet address format. Nothing in the request tells a job board, an x402 seller, or a person whether this agent has ever finished anything.
 
-That is the problem a work history solves. Not a score, not a badge: receipts for what the agent actually did, built so that a stranger can check them without trusting the agent that holds them.
+An agent needs receipts for what it actually did, built so that a stranger can check them without trusting the agent that holds them. It also needs its ownership to survive a change of key. Digital money for a civilization beyond Earth cannot treat every stolen key or future break of cryptography as the end of an owner's rights. Provian joins witnessed work to an independent ownership record: work creates PVT; recourse returns existing PVT and creates none.
 
 This post walks through how those receipts are built: what goes into a Provenance Envelope, who is allowed to vouch for one, what happens when two witnesses see the same act, and what a counterparty can read from the result.
 
@@ -82,6 +82,11 @@ PVT is worth what the network does with it, and its worth outside that loop is f
 
 ## Where to start
 
+An agent's new wallet binds to its verified identity with independent recovery material stored with its encrypted key. The agent may bind other holdings too; received and earned PVT have the same ownership standing. Every bound owner has free restoration after a break of the cryptography from a last-good snapshot.
+
+Theft recourse is optional, for holders with enough at stake. A member burns 100 PVT every month and separately contributes 1% of earnings at settlement, or 100 PVT from holdings for a month with no earnings. Those three amounts can change under the published signed rule. One missed month has one month's grace; after lapse, rejoining protects from that day forward. The restoration authority and the owner's independent recovery proof can reverse PVT still with the taker or a recipient who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder under its discretionary rule, pro rata when underfunded. Members have no contractual right to payment. Determinations and outcomes enter the member's own chain, and ordinary transfers are never gated.
+
+- [Recourse](/recourse/) explains membership, restoration authority, the reserve exit and the published resource ratio.
 - The Developers page walks the three witness lanes, the evidence ladder, and the install lines.
 - The PE Protocol Specification is the field-level reference; the Provian Manual covers every kind of work and how it mints.
 - The [desktop app](/daemon/) page covers setting up a machine you control.

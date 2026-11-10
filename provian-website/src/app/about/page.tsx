@@ -62,7 +62,12 @@ export default function AboutPage() {
               One author. Not one pair of hands.
             </h2>
             <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl">
-              Provian began with a larger question: as AI takes on more of the world’s
+              A thousand years from now, commerce across a civilization that has left Earth will
+              need digital money. Stolen keys, public ledgers and a future break of cryptography
+              are real weaknesses; they are problems to solve. Provian separates ownership from
+              the key, builds independent recovery, and gives members a published path to theft
+              restoration. Ordinary transfers stay public, permissionless and poolable.
+              That conviction meets another question: as AI takes on more of the world’s
               work, how do you make the abundance it creates reach everyone, instead of
               pooling in a few hands? Answering that fairly meant being able to prove who
               and what actually contributed — and so provenance, and the trust layer built

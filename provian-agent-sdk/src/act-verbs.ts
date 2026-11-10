@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from './protocol-runtime';
 /**
  * act-verbs — the shell commands a hosted agent runs to ACT through Provian.
  *
@@ -762,6 +763,7 @@ export async function runActVerb(verb: string, args: readonly string[], deps: Ac
       if (token !== 'PVT' && token !== 'USDC' && token !== 'USDT') throw new ActUsageError('--token must be PVT, USDC or USDT');
       const to = need(p, 'to', u);
       if (!ADDRESS.test(to)) throw new ActUsageError('--to must be a 0x address');
+      await currentProtocolDeployment();
       const info = getToken('base', token as AllowlistedToken);
       const amount = positiveAmount(resolveAtomicAmount(p, 'amount', 'amount-atomic', info.decimals), '--amount');
       const recordTx = str(p, 'record-tx');

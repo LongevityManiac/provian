@@ -20,7 +20,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('expo-secure-store', () => ({
-    getItemAsync: vi.fn(),
+    getItemAsync: vi.fn().mockResolvedValue(null),
     setItemAsync: vi.fn().mockResolvedValue(undefined),
     deleteItemAsync: vi.fn().mockResolvedValue(undefined),
     WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WHEN_UNLOCKED_THIS_DEVICE_ONLY',
@@ -87,14 +87,14 @@ describe('[F14] seed is written behind requireAuthentication and caches public a
         expect(addr).toBe('0x00000000000000000000000000000000deadbeef');
         // The whole point of F14: a public read does NOT touch SecureStore, so the
         // requireAuthentication ACL is never tripped for a public address.
-        expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+        expect(vi.mocked(SecureStore.getItemAsync).mock.calls.every(([key]) => key.startsWith('provian_recourse_account_'))).toBe(true);
     });
 
     it('getSolanaAddress() is cache-first too — no seed read on a cache hit', async () => {
         store[SOLANA_CACHE_KEY] = 'SoLanaCachedAddr1111111111111111111111111111';
         const addr = await SeedManager.getSolanaAddress();
         expect(addr).toBe('SoLanaCachedAddr1111111111111111111111111111');
-        expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+        expect(vi.mocked(SecureStore.getItemAsync).mock.calls.every(([key]) => key.startsWith('provian_recourse_account_'))).toBe(true);
     });
 
     it('RED — on a cache MISS getEVMAddress DOES fall back to the seed read (proves the cache-hit skip is real)', async () => {

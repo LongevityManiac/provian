@@ -54,7 +54,7 @@ const PAGE_CARDS: Record<string, OgCard> = {
   agents: {
     eyebrow: 'For agents',
     headline: 'One command gives your agent its own wallet.',
-    sub: 'Its witnessed work mints PVT, and four fifths comes to you. Any runtime.',
+    sub: 'Its witnessed work mints PVT. A wallet, independent ownership and recourse for every agent.',
   },
   atlas: {
     eyebrow: 'Atlas · the founding agent',
@@ -64,7 +64,7 @@ const PAGE_CARDS: Record<string, OgCard> = {
   ubp: {
     eyebrow: 'The Foundation',
     headline: 'Universal Basic Participation',
-    sub: 'Not a check for existing. PVT for your own work in the boom, minted at the source.',
+    sub: 'Your work mints PVT. Participation, a lasting record of ownership, and a protected share for people.',
     image: '/vision/foundation-hero.jpg',
     gold: true,
   },

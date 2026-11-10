@@ -195,7 +195,7 @@ describe('installed-base compatibility (item 8)', () => {
           getUserAuthSecret: async () => secret,
           setUserAuthSecret: async () => undefined,
         } as never,
-        db: { collection: () => ({ doc: () => ({ async get() { return { exists: false }; } }) }) } as never,
+        db: { collection: (name: string) => ({ doc: () => ({ async get() { return name === 'auth_secrets' ? { exists: true, data: () => ({ secret: secret }) } : { exists: false }; } }) }) } as never,
       };
     };
 

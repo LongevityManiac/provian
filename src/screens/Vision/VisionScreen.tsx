@@ -62,13 +62,13 @@ interface CardData {
 }
 
 const CARDS: CardData[] = [
-    { n: 1, image: require('../../../assets/images/vision-envelope.png') },
+    { n: 1, image: require('../../../assets/images/vision-envelope.png'),
+        film: { url: VISION_LINKS.nothingUnwitnessedFilm, labelKey: 'visionScreen.card4Watch' } },
     { n: 2, image: require('../../../assets/images/vision-pvt.png') },
     { n: 3, image: require('../../../assets/images/vision-burn.png') },
     {
         n: 4,
         image: require('../../../assets/images/vision-other-fear.png'),
-        film: { url: VISION_LINKS.nothingUnwitnessedFilm, labelKey: 'visionScreen.card4Watch' },
     },
     { n: 5, image: require('../../../assets/images/vision-agent-economy.png') },
     { n: 6, image: require('../../../assets/images/vision-atlas.png') },

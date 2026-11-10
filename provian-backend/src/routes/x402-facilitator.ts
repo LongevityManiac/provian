@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../core/protocol/runtime';
 /**
  * — the facilitator's report route (the public seller list is `x402-sellers.ts`).
  *
@@ -35,7 +36,10 @@ export function createFacilitatorSettlementRouter(deps: {
       res.status(401).json({ error: 'unauthorized' });
       return;
     }
-    const parsed = parseFacilitatorSettlementBody(req.body);
+    let kernel: string;
+    try { kernel = (await currentProtocolDeployment()).addresses.kernel.toLowerCase(); }
+    catch { res.status(503).json({ error: 'protocol_unavailable' }); return; }
+    const parsed = parseFacilitatorSettlementBody(req.body, kernel);
     if (!parsed.ok) {
       res.status(400).json({ error: 'invalid_settlement', reason: parsed.reason });
       return;

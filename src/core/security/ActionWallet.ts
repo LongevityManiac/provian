@@ -4,6 +4,8 @@ import { secureNonceStore } from './secureNonceStore';
 import { sendChainOperation, readChainOperation, resolveCanonicalNonceConsumption } from './chainNonce';
 import type { SignedNonceAttempt } from './canonicalNonce';
 import { assertBiometricAction, type BiometricAction } from './biometricAction';
+import { ownerChainNetwork } from '../protocol/runtime';
+import { assertCurrentProtocolTransaction, assertCurrentProtocolAddresses, typedDataProtocolAddresses } from '../protocol/transaction';
 
 /** An EVM signer whose approval cannot survive an asynchronous preparation or a later action. */
 export class ActionWallet extends Wallet {
@@ -26,6 +28,10 @@ export class ActionWallet extends Wallet {
 
     override async signTypedData(domain: TypedDataDomain, types: Record<string, TypedDataField[]>, value: Record<string, unknown>): Promise<string> {
         assertBiometricAction(this.action);
+        if (domain.chainId !== undefined && domain.chainId !== null && BigInt(domain.chainId) === 8453n) {
+            await assertCurrentProtocolAddresses(ownerChainNetwork(), typedDataProtocolAddresses(domain.verifyingContract, types, value));
+            assertBiometricAction(this.action);
+        }
         const signed = await super.signTypedData(domain, types, value);
         assertBiometricAction(this.action);
         return signed;
@@ -34,6 +40,10 @@ export class ActionWallet extends Wallet {
     override async signTransaction(tx: TransactionRequest): Promise<string> {
         assertBiometricAction(this.action);
         const signed = await super.signTransaction(tx);
+        const decoded = Transaction.from(signed);
+        if (decoded.chainId === 8453n && decoded.to) {
+            await assertCurrentProtocolTransaction(ownerChainNetwork(), decoded.to, decoded.data);
+        }
         assertBiometricAction(this.action);
         return signed;
     }
@@ -90,6 +100,9 @@ export class ActionWallet extends Wallet {
             },
             assertApproved: () => assertBiometricAction(this.action),
             broadcast: async (saved) => {
+                assertBiometricAction(this.action);
+                const decoded = Transaction.from(saved.raw);
+                if (chainId === 8453n && decoded.to) await assertCurrentProtocolTransaction(ownerChainNetwork(), decoded.to, decoded.data);
                 assertBiometricAction(this.action);
                 response = await provider.broadcastTransaction(saved.raw);
                 if (response.hash !== saved.hash) throw new Error('nonce_broadcast_hash_mismatch');

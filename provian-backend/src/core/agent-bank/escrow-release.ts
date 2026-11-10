@@ -414,7 +414,7 @@ class RealEscrowChainGateway implements EscrowChainGateway {
 
     let contractAddress: string;
     try {
-      contractAddress = resolveEscrowContractForDocument({ ...escrow, currency });
+      contractAddress = (await resolveEscrowContractForDocument({ ...escrow, currency }));
     } catch (err) {
       return { ok: false, result: { status: 'failed', reason: `contract_unconfigured: ${(err as Error).message}` } };
     }

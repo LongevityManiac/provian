@@ -26,6 +26,7 @@
  */
 
 import { hostname } from 'os';
+import { bindRecourseOwnership } from '../recourse';
 import * as fs from 'fs';
 import {
   decryptKeystore,
@@ -300,6 +301,10 @@ async function main(): Promise<void> {
       wallet_id: result.walletId,
       address: result.address,
     });
+    const durableKeystore = loadKeystore(written);
+    if (!durableKeystore) throw new Error('durable keystore unavailable for ownership binding');
+    await bindRecourseOwnership({ relayUrl, walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret },
+      { keystore: durableKeystore, passphrase, keystorePath: written });
   } catch (error) {
     console.error(`  Wallet committed, but durable local finalization failed: ${(error as Error).message}`);
     console.error('  The encrypted pending identity was retained. Re-run the same command to recover safely.\n');

@@ -1,0 +1,154 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {ProvianProtocolPointer} from "./ProvianProtocolPointer.sol";
+import {ProvianHashAccount} from "./ProvianHashAccount.sol";
+
+interface IRegisteredRecourseKernel {
+    function registryOperator() external view returns (address);
+    function restorationAuthority() external view returns (address);
+    function ownerAuthorization() external view returns (address);
+    function bindRestorationOwner(bytes32 identity, bytes32 commitment, bytes32 signingRoot) external;
+}
+interface IRegisteredRecoursePool {
+    function registryOperator() external view returns (address);
+    function bind(bytes32 identity, address account) external;
+}
+interface IRegisteredOwnerAuthorization {
+    function recoveredDestination(bytes32 identity) external view returns (address);
+}
+/// @notice A verified-identity attestation AND the address owner's signature are
+/// required to register. Neither the attestor nor a different wallet can replace
+/// an existing recovery commitment. Identity verification remains the attestor's
+/// responsibility; this contract independently verifies address possession.
+contract ProvianOwnershipRegistry {
+    ProvianProtocolPointer public immutable pointer;
+    address public immutable identityAttestor;
+    address public immutable previousRegistry;
+    bool public immutable afterCryptographicBreak;
+    mapping(address => bytes32) private _ownerOf;
+    mapping(address => uint256) private _boundBlock;
+    function ownerOf(address account) public view returns (bytes32) {
+        bytes32 identity = _ownerOf[account];
+        return identity != bytes32(0) || previousRegistry == address(0) ? identity
+            : ProvianOwnershipRegistry(previousRegistry).ownerOf(account);
+    }
+    function boundBlock(address account) public view returns (uint256) {
+        uint256 bound = _boundBlock[account];
+        return bound != 0 || previousRegistry == address(0) ? bound
+            : ProvianOwnershipRegistry(previousRegistry).boundBlock(account);
+    }
+    mapping(bytes32 => bool) public admittedEvidence;
+    mapping(bytes32 => bool) public consumedEvidence;
+    mapping(bytes32 => bool) public consumedBinding;
+    mapping(bytes32 => uint256) public bindingBlock;
+    struct Binding {
+        bytes32 identity;
+        address account;
+        bytes32 recoveryCommitment;
+        bytes32 signingRoot;
+        address kernel;
+        bytes32 nonce;
+        uint256 expiresAtMs;
+    }
+    error InvalidBinding();
+    event OwnershipBound(bytes32 indexed identity, address indexed account, address indexed kernel,
+        bytes32 recoveryCommitment, bytes32 signingRoot, bytes32 digest);
+    constructor(ProvianProtocolPointer pointer_, address attestor_, bool afterBreak_) {
+        if (address(pointer_).code.length == 0 || attestor_ == address(0)) revert InvalidBinding();
+        pointer = pointer_; identityAttestor = attestor_; afterCryptographicBreak = afterBreak_;
+        if (afterBreak_ && attestor_.codehash != keccak256(type(ProvianHashAccount).runtimeCode)) revert InvalidBinding();
+        // Ordinary succession keeps each historical binding and its original
+        // effective block. A break starts new hash-secured address bindings.
+        if (pointer_.revision() != 0 && !afterBreak_) {
+            address prior = IRegisteredRecourseKernel(pointer_.component(0)).registryOperator();
+            if (prior.code.length == 0 || address(ProvianOwnershipRegistry(prior).pointer()) != address(pointer_)) revert InvalidBinding();
+            previousRegistry = prior;
+        }
+    }
+    function bindingDigest(Binding calldata b) public view returns (bytes32) {
+        bytes memory message = abi.encodePacked("Provian ownership binding\nchain:", Strings.toString(block.chainid),
+            "\nkernel:", Strings.toHexString(b.kernel), "\nidentity:", Strings.toHexString(uint256(b.identity), 32),
+            "\naddress:", Strings.toHexString(b.account), "\nrecovery:", Strings.toHexString(uint256(b.recoveryCommitment), 32),
+            "\nhash-authority:", Strings.toHexString(uint256(b.signingRoot), 32),
+            "\nnonce:", Strings.toHexString(uint256(b.nonce), 32), "\nexpires:", Strings.toString(b.expiresAtMs));
+        return MessageHashUtils.toEthSignedMessageHash(message);
+    }
+    function bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision) external {
+        if (b.identity == bytes32(0) || b.account == address(0)
+            || b.recoveryCommitment == bytes32(0) || b.signingRoot == bytes32(0) || b.nonce == bytes32(0)
+            || b.expiresAtMs < block.timestamp * 1000 || b.expiresAtMs > (block.timestamp + 300) * 1000
+            || (ownerOf(b.account) != bytes32(0) && ownerOf(b.account) != b.identity)) revert InvalidBinding();
+        // A curve-independent attestor admits only curve-independent accounts.
+        // This preserves secure prospective binding after a cryptographic break.
+        if (identityAttestor.codehash == keccak256(type(ProvianHashAccount).runtimeCode)
+            && b.account.codehash != identityAttestor.codehash) revert InvalidBinding();
+        pointer.requireCurrent(revision, 0, b.kernel);
+        (,, address[10] memory components,) = pointer.current();
+        address pool = components[8];
+        if (IRegisteredRecourseKernel(b.kernel).registryOperator() != address(this)
+            || IRegisteredRecoursePool(pool).registryOperator() != address(this)) revert InvalidBinding();
+        bytes32 digest = bindingDigest(b);
+        if (identityAttestor == IRegisteredRecourseKernel(b.kernel).restorationAuthority()
+            || consumedBinding[digest] || !SignatureChecker.isValidSignatureNow(b.account, digest, ownerSignature)
+            || !SignatureChecker.isValidSignatureNow(identityAttestor, digest, identitySignature)) revert InvalidBinding();
+        consumedBinding[digest] = true;
+        bindingBlock[digest] = block.number;
+        _ownerOf[b.account] = b.identity;
+        if (boundBlock(b.account) == 0) _boundBlock[b.account] = block.number;
+        IRegisteredRecourseKernel(b.kernel).bindRestorationOwner(b.identity, b.recoveryCommitment, b.signingRoot);
+        IRegisteredRecoursePool(pool).bind(b.identity, b.account);
+        emit OwnershipBound(b.identity, b.account, b.kernel, b.recoveryCommitment, b.signingRoot, digest);
+    }
+    event RecoveredAddressBound(bytes32 indexed identity, address indexed account, address indexed kernel);
+    /// @notice The immutable executor has just consumed the independent owner
+    /// proof. A recovered address retains that identity for future recourse.
+    function bindRecovered(bytes32 identity, address account) external {
+        address kernel = pointer.component(0);
+        if (msg.sender != IRegisteredRecourseKernel(kernel).ownerAuthorization() || identity == bytes32(0)
+            || account == address(0) || IRegisteredOwnerAuthorization(msg.sender).recoveredDestination(identity) != account
+            || (ownerOf(account) != bytes32(0) && ownerOf(account) != identity)) revert InvalidBinding();
+        _ownerOf[account] = identity;
+        if (boundBlock(account) == 0) _boundBlock[account] = block.number;
+        address pool = pointer.component(8);
+        if (IRegisteredRecoursePool(pool).registryOperator() != address(this)) revert InvalidBinding();
+        IRegisteredRecoursePool(pool).bind(identity, account);
+        emit RecoveredAddressBound(identity, account, kernel);
+    }
+
+    struct TheftEvidence {
+        address kernel; bytes32 operation; bytes32 identity; address lossAccount;
+        uint256 lossBlock; bytes32 checkpointHash; bytes32 membershipHash; uint256 revision;
+        uint256 bindingLogIndex; uint256 lossLogIndex;
+    }
+    event TheftEvidenceAdmitted(bytes32 indexed operation, bytes32 indexed identity, bytes32 digest);
+    function evidenceDigest(TheftEvidence calldata e) public view returns (bytes32) {
+        return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian theft evidence", block.chainid, address(this), e)));
+    }
+    function admitTheftEvidence(TheftEvidence calldata e, bytes calldata signature) external {
+        pointer.requireCurrent(e.revision, 0, e.kernel);
+        if (e.operation == bytes32(0) || e.identity == bytes32(0) || e.checkpointHash == bytes32(0)
+            || e.membershipHash == bytes32(0) || e.lossBlock >= block.number
+            || ownerOf(e.lossAccount) != e.identity || boundBlock(e.lossAccount) > e.lossBlock
+            || (boundBlock(e.lossAccount) == e.lossBlock && e.lossLogIndex <= e.bindingLogIndex)
+            || identityAttestor == IRegisteredRecourseKernel(e.kernel).restorationAuthority()
+            || IRegisteredRecourseKernel(e.kernel).registryOperator() != address(this)
+            || !SignatureChecker.isValidSignatureNow(identityAttestor, evidenceDigest(e), signature)) revert InvalidBinding();
+        bytes32 key = keccak256(abi.encode(e.kernel, e.operation, e.revision));
+        if (consumedEvidence[key]) revert InvalidBinding();
+        admittedEvidence[key] = true;
+        emit TheftEvidenceAdmitted(e.operation, e.identity, evidenceDigest(e));
+    }
+    function consumeTheftEvidence(bytes32 operation, uint256 revision) external returns (bytes32) {
+        address kernel = pointer.component(0);
+        pointer.requireCurrent(revision, 0, kernel);
+        if (msg.sender != IRegisteredRecourseKernel(kernel).ownerAuthorization()
+            || identityAttestor == IRegisteredRecourseKernel(kernel).restorationAuthority()) revert InvalidBinding();
+        bytes32 key = keccak256(abi.encode(kernel, operation, revision));
+        if (!admittedEvidence[key] || consumedEvidence[key]) revert InvalidBinding();
+        consumedEvidence[key] = true;
+        return operation;
+    }
+}

@@ -1,3 +1,4 @@
+jest.mock('../core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 import crypto from 'crypto';
 import express from 'express';

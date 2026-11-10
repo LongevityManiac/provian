@@ -109,7 +109,7 @@ async function main(): Promise<void> {
   const appliedSample = Number(arg('--applied-sample') ?? APPLIED_FINALITY_SWEEP_BATCHES_PER_RUN);
   if (admin.apps.length === 0) admin.initializeApp();
   const db = scriptDb();
-  const target = resolvePvt9Target();
+  const target = await resolvePvt9Target();
   const provider = new JsonRpcProvider(target.rpcUrl, Number(target.chainId), { staticNetwork: true });
   const kernel = new Contract(target.kernelAddress, KERNEL_OBSERVATION_ABI as unknown as string[], provider);
   const claimView = new Contract(target.kernelAddress, KERNEL_CLAIM_SETTLED_ABI as unknown as string[], provider);

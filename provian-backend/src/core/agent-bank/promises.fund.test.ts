@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses, promises: '0x' + '7'.repeat(40) } }; }) }));
+import { currentProtocolDeployment } from '../protocol/runtime';
 /**
  * fundPromise — the funding bar, end to end (/ Stage 1a).
  *

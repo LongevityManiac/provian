@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * The MONEY OUTCOME of the Solana chain-record lane, driven through the lane's PRODUCTION emit
  * (`buildSolanaChainRecordEmit`) and the real identity resolver into the REAL `generatePE` and the

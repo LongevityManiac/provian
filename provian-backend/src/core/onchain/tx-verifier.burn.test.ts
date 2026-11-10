@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
 /**
  * tx-verifier burn tests — verifyEvmPvtBurn (work package burn substrate).
  *
@@ -66,7 +68,7 @@ const BASE = 8453;
 const VALID_HASH = '0x' + 'a'.repeat(64);
 const AGENT = '0x1111111111111111111111111111111111111111';
 /** The live (successor) kernel, read from the real config. */
-const PVT = getPvtAddressForChain('base')!;
+const PVT = '0x8811441914381143b9408c5c32247367f86f173a';
 /** The retired kernel. */
 const PREDECESSOR = '0x4bf02d5c9bc4306c38603ef2aa164f2f2273bcd7';
 const TRANSFER_TOPIC =
@@ -114,15 +116,15 @@ describe('verifyEvmPvtBurn (work package burn substrate)', () => {
     process.env.ENABLE_PVT_PRINCIPAL = 'true';
   });
 
-  it('binds to the real token set: the successor live, the predecessor bounded by the snapshot block', () => {
+  it('binds to the real token set: the successor live, the predecessor bounded by the snapshot block', async () => {
     expect(PVT).toBe('0x8811441914381143b9408c5c32247367f86f173a');
-    expect(getAcceptedPvtBurnTokensForChain('base')).toEqual([
+    expect((await getAcceptedPvtBurnTokensForChain('base'))).toEqual([
       { address: PVT, maxBlock: null },
       { address: PREDECESSOR, maxBlock: PREDECESSOR_PVT9_BURN_CUTOFF_BLOCK },
     ]);
     // Burns only: every other chain has no PVT, and a transfer never sees the predecessor.
-    expect(getAcceptedPvtBurnTokensForChain('arbitrum')).toEqual([]);
-    expect(getPvtAddressForChain('base')).toBe(PVT);
+    expect((await getAcceptedPvtBurnTokensForChain('arbitrum'))).toEqual([]);
+    expect((await getPvtAddressForChain('base'))).toBe(PVT);
   });
 
   it('accepts a genuine PVT burn (Transfer from → 0x0, exact amount, right contract)', async () => {

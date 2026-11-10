@@ -10,6 +10,7 @@ import { privateRetentionCollection } from '../provenance/private-retention';
  * route after this commit and retried through the same stable marker.
  */
 import crypto from 'crypto';
+import { identityHash, RECOURSE_COLLECTIONS } from '../recourse/ownership';
 import type { DocumentReference, Firestore } from 'firebase-admin/firestore';
 import stableStringify from 'json-stable-stringify';
 
@@ -33,6 +34,7 @@ import {
 import type { GenesisActivationApprovalVerifier } from './policy/genesis-policy-engine';
 import {
   NATIVE_WALLET_ADDRESS_INDEX_COLLECTION,
+  AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION,
   nativeWalletAddressIndexId,
   parseNativeWalletRegistrationFence,
   type NativeWalletRegistrationFence,
@@ -461,6 +463,7 @@ export async function commitHumanWalletRegistration(
           agentAddressSnap,
           agentProvenSnap,
           personProvenSnap,
+          retiredAddressSnap,
         ] = await Promise.all([
           txn.get(indexRef),
           txn.get(walletRef),
@@ -473,17 +476,38 @@ export async function commitHumanWalletRegistration(
           txn.get(agentAddressQuery),
           txn.get(agentProvenRef),
           txn.get(personProvenRef),
+          txn.get(params.db.collection(AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION).doc(params.address.toLowerCase())),
         ]);
+        if (retiredAddressSnap.exists) throw new GenesisIngressError('human_wallet_address_retired');
         if (indexSnap.exists) {
           const marker = parseHumanRegistrationMarker(indexSnap.data());
-          if (marker === null
-            || marker.user_id !== params.userId
-            || marker.request_fingerprint !== params.requestFingerprint
-            || marker.address !== params.address
-            || marker.public_key_sha256 !== sha256(params.publicKey)
-          ) {
+          if (marker === null || marker.user_id !== params.userId) {
             throw new GenesisIngressError('human_wallet_registration_index_invalid');
           }
+          const existingWalletSnap = await txn.get(params.db.collection('wallets').doc(marker.wallet_id));
+          const existingWallet = existingWalletSnap.data() as Record<string, unknown> | undefined;
+          const recoveryId = existingWallet?.recourse_request_id;
+          const recovered = typeof recoveryId === 'string';
+          let birthPublicKey = params.publicKey;
+          let registrationTime = marker.created_at_ms;
+          if (recovered) {
+            const recovery = await txn.get(params.db.collection(RECOURSE_COLLECTIONS.recoveries).doc(recoveryId));
+            if (recovery.get('identity') !== identityHash('human', params.userId)
+              || recovery.get('destination') !== params.address.toLowerCase()
+              || existingWallet?.address !== params.address.toLowerCase() || existingWallet?.public_key !== params.publicKey
+              || typeof existingWallet?.birth_public_key !== 'string' || typeof existingWallet?.recovered_at_ms !== 'number'
+              || params.requestFingerprint !== humanWalletRegistrationRequestFingerprint(params.userId, params.address, params.publicKey)) {
+              throw new GenesisIngressError('human_wallet_recovery_registration_invalid');
+            }
+            birthPublicKey = existingWallet.birth_public_key;
+            registrationTime = existingWallet.recovered_at_ms;
+            if (marker.request_fingerprint !== humanWalletRegistrationRequestFingerprint(params.userId, marker.address, birthPublicKey)) {
+              throw new GenesisIngressError('human_wallet_registration_index_invalid');
+            }
+          } else if (marker.request_fingerprint !== params.requestFingerprint || marker.address !== params.address) {
+            throw new GenesisIngressError('human_wallet_registration_index_invalid');
+          }
+          if (marker.public_key_sha256 !== sha256(birthPublicKey)) throw new GenesisIngressError('human_wallet_registration_index_invalid');
           if (humanWalletsSnap.size !== 1
             || humanWalletsSnap.docs[0].id !== marker.wallet_id) {
             throw new GenesisIngressError('human_wallet_uniqueness_conflict');
@@ -513,18 +537,16 @@ export async function commitHumanWalletRegistration(
             || addressIndex?.owner_type !== 'human'
             || addressIndex.owner_id !== params.userId
             || addressIndex.address !== params.address.toLowerCase()
-            || addressIndex.created_at_ms !== marker.created_at_ms) {
+            || addressIndex.created_at_ms !== registrationTime) {
             throw new GenesisIngressError('human_wallet_address_index_invalid');
           }
           // PE METER: the registration's first PE is not stored; it is rebuilt from the marker
           // below and checked against the marker's hash.
-          const existingWalletSnap = await txn.get(params.db.collection('wallets').doc(marker.wallet_id));
-          const existingWallet = existingWalletSnap.data() as Record<string, unknown> | undefined;
           if (!existingWalletSnap.exists
             || existingWallet?.id !== marker.wallet_id
             || existingWallet?.user_id !== marker.user_id
             || existingWallet?.type !== 'human'
-            || existingWallet?.address !== marker.address
+            || existingWallet?.address !== (recovered ? params.address.toLowerCase() : marker.address)
             || existingWallet?.public_key !== params.publicKey
             || existingWallet?.created_at !== marker.created_at_ms) {
             throw new GenesisIngressError('human_wallet_registration_required_record_missing');
@@ -544,7 +566,7 @@ export async function commitHumanWalletRegistration(
           const watcherTarget = {
             direction: 'inbound' as const,
             chainId: registrationFence.chain_id,
-            address: marker.address,
+            address: params.address,
             walletId: marker.wallet_id,
             agentId: marker.user_id,
             eligibilityStartBlock: registrationFence.eligibility_start_block,
@@ -571,22 +593,22 @@ export async function commitHumanWalletRegistration(
               || admission.generation_fenced_at_registration !== true
               || admission.direction !== watcherTarget.direction
               || admission.chain_id !== watcherTarget.chainId
-              || admission.address !== marker.address.toLowerCase()
+              || admission.address !== params.address.toLowerCase()
               || admission.wallet_id !== marker.wallet_id
               || admission.agent_id !== marker.user_id
               || admission.eligibility_start_block !== watcherTarget.eligibilityStartBlock
-              || admission.created_at_ms !== marker.created_at_ms
+              || admission.created_at_ms !== registrationTime
               || admission.membership_generation > checkpoint.membershipGeneration
-              || checkpoint.updatedAtMs < marker.created_at_ms) {
+              || checkpoint.updatedAtMs < registrationTime) {
               throw new Error('binding');
             }
           } catch {
             throw new GenesisIngressError('human_wallet_watcher_registration_invalid');
           }
-          if (marker.public_key_sha256 !== sha256(params.publicKey)) {
+          if (marker.public_key_sha256 !== sha256(birthPublicKey)) {
             throw new GenesisIngressError('human_wallet_registration_pe_invalid');
           }
-          const existingPE = rebuildHumanRegistrationPE(marker, params.publicKey);
+          const existingPE = rebuildHumanRegistrationPE(marker, birthPublicKey);
           throw new ExistingHumanWalletRegistration(
             marker,
             existingWallet,

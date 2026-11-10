@@ -157,6 +157,7 @@ import {
   isValidAnchorPubkeyB64u,
   storeRecoveryEscrow,
   readRecoveryEscrow,
+  readRetiredKeyBackup,
   hasRecoveryEscrow,
   isValidRecoveryAlarmReason,
   raiseRecoveryAlarm,
@@ -2393,22 +2394,22 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
           escrow: {
             status: 'live',
             description: 'Create, fund, and settle escrows on Base. Until the Court opens, Provian’s admin key resolves disputes to the recipient or depositor only. Anyone can trigger the depositor refund after the 30-day timeout.',
-            contract_addresses: baseOnly(escrowV4AddressForChain('base')),
+            contract_addresses: baseOnly((await escrowV4AddressForChain('base'))),
           },
           promises: {
             status: featureLive('promises'),
             description: 'On-chain agent-to-agent Promises follow their feature gate on this relay; local offline P2P Promises in the app are separate and unaffected.',
-            contract_addresses: baseOnly(promiseV3AddressForChain('base')),
+            contract_addresses: baseOnly((await promiseV3AddressForChain('base'))),
           },
           pools: {
             status: featureLive('pools'),
             description: 'Pools follow their feature gate. Provian’s admin key can execute to the creator-fixed target or refund contributors; no other destination is allowed.',
-            contract_addresses: baseOnly(poolV3AddressForChain('base')),
+            contract_addresses: baseOnly((await poolV3AddressForChain('base'))),
           },
           court: {
             status: 'live',
             description: 'The disputes court is reachable for agent wallets and seats a panel once enough qualified arbitrators have registered. Forum-to-Court escalation is unavailable; Forum activity is recorded.',
-            contract_addresses: baseOnly(courtAddressForChain('base')),
+            contract_addresses: baseOnly((await courtAddressForChain('base'))),
           },
           why_it_matters: 'Every institution action seals a Provenance Envelope, so an agent\'s record of payment, bonding, and dispute conduct is attributable and verifiable.',
         },
@@ -2428,10 +2429,10 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
           base: {
             chain_id: 8453,
             usdc: PVT9_BASE_CONFIG.assets.usdc.address,
-            escrow: escrowV4AddressForChain('base') ?? '',
-            promise: promiseV3AddressForChain('base') ?? '',
-            pool: poolV3AddressForChain('base') ?? '',
-            court: courtAddressForChain('base') ?? '',
+            escrow: (await escrowV4AddressForChain('base')) ?? '',
+            promise: (await promiseV3AddressForChain('base')) ?? '',
+            pool: (await poolV3AddressForChain('base')) ?? '',
+            court: (await courtAddressForChain('base')) ?? '',
             pvt: PVT9_BASE_CONFIG.assets.pvt9.address ?? '',
           },
           arbitrum: {
@@ -3795,6 +3796,16 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
     }
   });
 
+  router.get('/:wallet_id/retired-key-backups/:address', authenticateAgent, async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control','no-store');
+    try {
+      if (!req.agentWallet || req.agentWallet.id !== req.params.wallet_id) { res.status(403).json({error:'not_your_wallet'}); return; }
+      const backup=await readRetiredKeyBackup(db,String(req.params.wallet_id),String(req.params.address));
+      if (!backup) { res.status(404).json({error:'no_retired_key_backup'}); return; }
+      res.json(backup);
+    } catch { res.status(400).json({error:'retired_key_backup_unavailable'}); }
+  });
+
   // GET /:wallet_id/recovery-escrow — the LINKED human reads the ciphertext back.
   // Wallet auth (defense in depth — the blob is inert without the phone-held
   // anchor secret) AND the caller must be this agent's linked human.
@@ -3822,6 +3833,12 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
       if (agentWallet.linked_human_user_id !== userId) {
         res.status(403).json({ error: 'not_your_linked_agent' });
         return;
+      }
+      if (req.query.retired_address !== undefined) {
+        if (typeof req.query.retired_address !== 'string') { res.status(400).json({error:'retired_address_invalid'}); return; }
+        const backup=await readRetiredKeyBackup(db,wallet_id,req.query.retired_address);
+        if (!backup) { res.status(404).json({error:'no_retired_key_backup'}); return; }
+        res.setHeader('Cache-Control','no-store'); res.json(backup); return;
       }
       const escrow = await readRecoveryEscrow(db, wallet_id);
       if (!escrow) {

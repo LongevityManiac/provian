@@ -63,7 +63,7 @@ function app() {
       getUserAuthSecret: async () => SECRET,
       setUserAuthSecret: async () => undefined,
     } as never,
-    db: { collection: () => ({ doc: () => ({ async get() { return { exists: false }; } }) }) } as never,
+    db: { collection: (name: string) => ({ doc: () => ({ async get() { return name === 'auth_secrets' ? { exists: true, data: () => ({ secret: SECRET }) } : { exists: false }; } }) }) } as never,
   };
   const a = express();
   a.get('/v1/devices', async (req, res) => {

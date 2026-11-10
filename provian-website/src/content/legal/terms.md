@@ -1,6 +1,6 @@
 # Provian Terms of Service
 
-**Last Updated: October 28, 2026**
+**Last Updated: November 9, 2026**
 
 > **IMPORTANT: PLEASE READ THESE TERMS CAREFULLY. BY USING PROVIAN, YOU AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE, DO NOT USE THIS APPLICATION.**
 
@@ -9,7 +9,7 @@
 ## Plain English Summary
 
 - **Provian is not a bank.** We provide a non-custodial wallet, promise tracking, agent records, and a provenance engine. Ordinary wallet spending requires your keys. Until the Court opens, Provian's admin key resolves disputed escrows by releasing to the recipient or refunding to the depositor. Anyone can trigger the depositor refund after the 30-day dispute timeout. Funds can go only to those parties. Capital pools are for agent wallets only; the admin power over them is described in Section 7.4.
-- **Your keys live on your device.** We cannot access your wallet keys or recover your wallet funds. The escrow admin power is described below; capital pools are for agent wallets only (Section 7.4).
+- **Ownership survives a key change.** Your seed is encrypted on your device and backed up only as ciphertext. Provian cannot access your wallet keys. A bound owner registers an independent recovery commitment. The appointed restoration authority and the owner’s independent proof can return existing PVT under the published rule; neither can do so alone. Recourse Pool membership adds optional theft recourse, with the monthly burn and separate contribution described in Section 20A.
 - **Promises are records, not contracts.** They help you remember agreements, but they're not legally enforceable by Provian.
 - **Proof comes from a witness, never from a claim.** A Provenance Envelope exists only when something other than the actor vouches for the act: the device observing the work, a counterparty, a code forge, the chain, or attested hardware. Provian does not control agents and can't guarantee they will always behave.
 - **Swaps cost 0.25%.** Sends and receives only cost network gas. Promises and agent records are free. Earnings settle on a schedule Provian sets, currently every 30 days per payee for free; settling your own earnings sooner costs a flat $1 USDC service fee, never a price for PVT.
@@ -44,7 +44,7 @@ Provian is a mobile application that provides:
 
 ### What Provian Is NOT
 
-Wallet transactions execute on public blockchains under the wallet owner's keys. An agent's actions and payments are its own, and Provian witnesses them after the fact. Until the Court opens, Provian's admin key resolves disputed escrows by releasing to the recipient or refunding to the depositor. Anyone can trigger the depositor refund after the 30-day dispute timeout. Funds can go only to those parties. Capital pools are for agent wallets only; the admin power over them is described in Section 7.4.
+Ordinary wallet transactions execute on public blockchains under the wallet owner's keys. PVT restoration separately requires both the appointed restoration authority and independent owner proof under Section 20A. An agent's actions and payments are its own, and Provian witnesses them after the fact. Until the Court opens, Provian's admin key resolves disputed escrows by releasing to the recipient or refunding to the depositor. Anyone can trigger the depositor refund after the 30-day dispute timeout. Funds can go only to those parties. Capital pools are for agent wallets only; the admin power over them is described in Section 7.4.
 
 ## 3. Fees
 
@@ -94,7 +94,7 @@ Provian Wallet is a non-custodial wallet. This means:
 - Access to your seed uses operating-system user authentication, including supported biometrics or the device passcode; signing also requires confirmation for that action
 - Provian Technologies LLC does **NOT** have access to your private keys
 - Provian Technologies LLC does **NOT** store, hold, or custody your digital assets
-- Provian Technologies LLC cannot access your wallet keys or recover your wallet funds; the bounded escrow admin power, and the admin power over agent-only capital pools, in Section 7 are separate
+- The appointed restoration authority can return existing PVT under Section 20A with the owner’s independent recovery proof; every use is public, creates no new PVT, and leaves ordinary transfers ungated. This does not recover other assets or grant access to wallet keys. The bounded institution powers in Section 7 remain separate
 
 ### 4.2 Recovery System
 
@@ -179,14 +179,14 @@ When you swap tokens through the Service, you acknowledge that:
 Commons institutions (escrow, performance bonds, the jobs board, on-chain Promises and Capital Pools) run on deployed smart contracts on Base and are available to agent wallets through the agent API. When you interact with any smart contract, through the Service or independently, you acknowledge and accept that:
 
 - Smart contracts are **immutable** once deployed. Bugs or vulnerabilities cannot be patched in existing contracts.
-- Smart contract transactions are **irreversible**. Once a transaction is confirmed on-chain, it cannot be undone by Provian or anyone else.
+- Confirmed transactions remain in the chain history. PVT restoration requires the published rule, the restoration authority and independent owner proof; it creates no PVT.
 - Smart contracts execute automatically based on their code. Provian does not have the ability to override, pause, or reverse smart contract execution (except where admin functions are explicitly built into the contract).
 - Smart contracts may interact with other contracts or protocols in ways that produce unexpected results.
 - Blockchain network conditions (gas prices, congestion, reorganizations) may affect smart contract execution.
 
 ### 7.2 Escrow
 
-Escrow is available through the agent API (and through the Commons hiring board, for people and agents) on the deployed Base contract. Escrowed funds are held by the deployed contract; funding, release, refund, dispute, and settlement follow the contract's rules, and a completed on-chain outcome cannot be reversed by Provian. Until the Court opens, Provian's admin key resolves disputed escrows by releasing to the recipient or refunding to the depositor. Anyone can trigger the depositor refund after the 30-day dispute timeout. Funds can go only to those parties.
+Escrow is available through the agent API (and through the Commons hiring board, for people and agents) on the deployed Base contract. Escrowed funds are held by the deployed contract; funding, release, refund, dispute, and settlement follow the contract's rules, and a completed on-chain outcome remains in the chain history. Until the Court opens, Provian's admin key resolves disputed escrows by releasing to the recipient or refunding to the depositor. Anyone can trigger the depositor refund after the 30-day dispute timeout. Funds can go only to those parties. PVT restoration follows Section 20A.
 
 ### 7.3 On-Chain Promises (Lending)
 
@@ -205,7 +205,7 @@ The Commons Court is reachable by agent wallets through the agent API, but it se
 - Arbitrators are selected from the agent community based on eligibility criteria (a track record of completed escrows with real counterparties, clean standing with no adverse events or defaults, and an active performance bond). Provian does not guarantee arbitrator competence or impartiality.
 - Court verdicts cannot be appealed through Provian. If the voting deadline expires without a majority, the dispute is escalated to admin resolution as a fallback.
 
-> **SMART CONTRACT TRANSACTIONS ARE IRREVERSIBLE AND PROVIAN CANNOT REVERSE, MODIFY, OR OVERRIDE THEIR OUTCOMES. DO NOT TREAT A LEGACY OR SUPERSEDED CONTRACT DEPLOYMENT AS AN AVAILABLE OR SUPPORTED SERVICE.**
+> **Confirmed transactions remain in the chain history. PVT restoration requires the published rule, the restoration authority and independent owner proof; it creates no PVT. Do not treat a retired contract as an available or supported service.**
 
 ## 8. Eligibility
 
@@ -278,7 +278,7 @@ You acknowledge and accept that:
 
 - Cryptocurrency and digital assets are highly volatile and speculative
 - The value of your digital assets may decrease significantly or become worthless
-- Blockchain transactions are irreversible once confirmed
+- Confirmed transactions remain in the chain history. PVT restoration requires the published rule, the restoration authority and independent owner proof; it creates no PVT.
 - Blockchain networks may experience congestion, delays, or failures
 - Smart contracts may contain bugs or vulnerabilities that result in loss of funds
 - Regulatory changes may impact the legality or value of digital assets
@@ -299,7 +299,7 @@ You acknowledge and accept that:
 
 - Smart contracts are immutable and may contain undiscovered bugs
 - Smart contract interactions may result in permanent loss of funds
-- Provian cannot reverse or modify smart contract outcomes
+- The appointed restoration authority can return PVT under the published restoration rule, with the owner's independent recovery proof; this power does not reverse transactions involving other assets or arbitrary smart contracts
 - On-chain fees paid to smart contracts are non-refundable
 - A smart contract you use may produce irreversible outcomes; the Court seats a panel only when enough qualified arbitrators exist, and an unresolved dispute may be escalated to admin resolution
 
@@ -431,7 +431,7 @@ Each witnessed act of an agent produces a contributor-owned Provenance Envelope 
 
 ### 15.4 Security Incident and Compromised-Agent Reporting
 
-If you believe a connected or linked agent has been compromised or is acting maliciously, contact Provian as soon as possible at hello@provian.ai with the agent's identifier, a description of the activity, and any relevant transaction IDs. Provian may investigate and may suspend the agent's API access or record-submission access, but cannot reverse on-chain transactions, recover funds the agent has moved, or stop an agent that acts outside Provian. Provian is not liable for losses arising from actions an agent takes with credentials, funds, or access it holds independently of Provian.
+If you believe a connected or linked agent has been compromised or is acting maliciously, contact Provian as soon as possible at hello@provian.ai with the agent's identifier, a description of the activity, and any relevant transaction IDs. Provian may investigate and may suspend the agent's API access or record-submission access, but cannot guarantee recovery of funds or stop an agent that acts outside Provian. Provian is not liable for losses arising from actions an agent takes with credentials, funds, or access it holds independently of Provian. PVT restoration follows Section 20A.
 
 ## 16. The Commons
 
@@ -488,6 +488,40 @@ SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF CERTAIN DAMAGES. 
 ## 20. Indemnification
 
 You agree to indemnify, defend, and hold harmless Provian Technologies LLC, its officers, directors, employees, agents, and affiliates from and against any claims, damages, losses, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from or relating to: your use of the Service, your violation of these Terms, your violation of any applicable law or regulation, your violation of any third-party rights, any transactions you initiate or authorize, any smart contract interactions you perform, any actions taken by AI agents you connect, operate, or link, any content you submit through the Service, and any disputes with other users.
+
+## 20A. Recourse Pool
+
+### Nature of the arrangement
+
+The Recourse Pool is a member-funded risk-sharing arrangement, not insurance. Provian Technologies is not a party to it, insures nothing and promises nothing. No member has a contractual right to payment. Restoration is a discretionary determination of the pool under its published rule. Joining, making contributions, binding an address, reporting a loss, or providing evidence does not create a debt owed by the pool, Provian Technologies, or the bootstrap administrator.
+
+Membership is optional. A member accepts determinations as final. The member agrees not to pursue Provian Technologies or Frank Drew over a pool determination or its outcome, to the extent permitted by applicable law. These provisions do not waive rights that applicable law makes non-waivable, and describing the arrangement does not create a regulatory authorization or exemption.
+
+### Contributions and membership
+
+Every enrolled calendar month has two distinct requirements. First, the member burns 100 PVT, whether or not the member earns. This participation burn permanently destroys PVT. Second, the member contributes 1% of gross earnings at settlement to the Recourse Pool. At the human and Genesis split of 99/0.5/0.5, this leaves the member 98%, with the existing 0.5% company share and 0.5% Foundation floor unchanged. The Foundation's prospective agent-side rate may be higher. A member with no earnings in a month contributes 100 PVT from holdings to the pool instead. A no-earnings month therefore requires both the 100 PVT participation burn and the separate 100 PVT reserve contribution.
+
+The participation burn, earnings percentage and no-earnings contribution are three separately stated amounts in the signed rule. The bootstrap rule setter can raise or lower them prospectively as loss experience accumulates. The applicable rule is published before it takes effect; a later change does not rewrite an earlier month's obligations. These are uses of an earned token inside the network, not a price, purchase or payment for a service. Burned PVT never becomes reserves or company revenue. Contributed PVT belongs to the on-chain member-funded arrangement.
+
+A missed month's obligations receive one calendar month of grace. Membership remains protected during that grace month, and making up the missed obligations within it preserves continuity. After grace expires, membership ends. No later catch-up restores a lapsed period. A former member can rejoin at any time and is protected from that day forward; a loss during a lapsed period receives no theft restoration. Leaving ends membership prospectively. One membership includes every address bound to the member's identity, with earned and received PVT treated alike. Membership is optional and intended for holders with enough at stake to justify the standing participation burn.
+
+### Requests and determinations
+
+A member may submit a restoration request for a recorded loss to a fresh address bound through the recovery process. The pool considers the ownership and transfer history, available signing-device evidence, destinations and counterparties, and prior restoration outcomes. Evidence informs a discretionary determination; no observation or score guarantees acceptance. There are no member-facing holds, amount limits, waiting periods, caps or second confirmations in this determination process. Frank Drew's key holds the separately appointable restoration authority and executes the published rule's output until the Court opens. The role can pass to the Court or governance. Neither the authority alone nor the owner's recovery proof alone can execute a reversal.
+
+Restoration reaches stolen PVT first. In one transaction, the kernel destroys the determined amount at named addresses and reissues exactly the same amount to the owner's new key. Total supply does not change. This reversal reaches PVT still held by whoever took it and PVT passed to someone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient: there are no chargebacks against that exchange. The authority and the owner's independent recovery proof must authorize the same operation.
+
+The pool restores the part a reversal does not reach. Accepted determinations are allocated pro rata when available reserves are insufficient, and the contract never allocates more than it holds. The published reserve-to-member-balance ratio reports available resources; it is not a promise of a restoration percentage. Neither calculation uses a fiat price. Every determination, reversal and pool outcome is recorded in the member's own chain and every use of restoration authority is on the public record.
+
+Theft and self-directed transfers cannot always be distinguished. That residual risk is borne by the pool and informs its contribution and burn amounts. Members accept determinations as final under the published rule now and by the Court once it opens, with no claim against Provian Technologies or Frank Drew over any determination, subject to rights that applicable law does not permit them to waive. Ordinary transfers remain public, permissionless and ungated.
+
+### Ownership and cryptographic restoration
+
+The ownership registry starts when an address is bound; it does not reconstruct earlier ownership. A wallet signature proves control for binding, and a separate hash commitment anchors recovery. At binding, the relay receives the commitment, not its recovery preimage or independent signing secret. Restoration reveals the consumed preimage on-chain together with a destination-bound hash signature and a replacement commitment. A copied preimage cannot authorize a different destination. Keeping the seed or agent recovery backup is the owner's responsibility. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public.
+
+If wallet cryptography fails, successor restoration uses registered balances at a last-good-block snapshot, the recovery preimage and an independent hash-based authorization of the destination. This process is free and available to every bound owner, including nonmembers. It preserves monetary history and prevents duplicate restoration; it returns existing PVT and does not mint earnings a second time. Membership adds theft recourse; binding alone does not. Provian does not promise that every future cryptographic or infrastructure failure can be repaired.
+
+The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. A member can leave and redeem the member's remaining proportionate reserve interest directly on-chain without the relay. Amounts already allocated to restoration are excluded; participation burns are irreversible and are not reserve interests. Redeeming ends the current membership episode. Other recourse programs may be developed; describing them creates no present membership or restoration right.
 
 ## 21. Dispute Resolution
 

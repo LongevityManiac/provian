@@ -61,6 +61,8 @@
  */
 
 import { createHash } from 'crypto';
+import { currentProtocolDeployment } from './protocol-runtime';
+import type { ProtocolDeployment } from './protocol-pointer';
 import { signPoPChallenge, deriveAddressFromPrivateKey } from './crypto';
 import { keccak256 } from './keccak256';
 import { RECOVERY_SEAL_RECIPE, sealToRecoveryAnchor } from './recovery-seal';
@@ -677,19 +679,15 @@ const getActionTypeStatus: ProvianToolDef = {
 // in-process for an agent that holds its key.
 // ---------------------------------------------------------------------------
 
-/**
- * Base mainnet pins the on-chain plans sign against. Mirrors the checked-in sources of
- * truth — ProvianEscrowV4 from contracts/deployments/base-pvt9-institutions.json, the
- * PVT9 kernel and USDC from config/pvt9-base.json (tools.test.ts binds each to its file).
- */
-export const COMMONS_HIRE_BASE_PINS = {
-  chainId: 8453,
-  escrow: '0x96560fdf49e563efcdc2d502934676dc074732d0',
-  tokens: {
-    pvt: '0x8811441914381143b9408c5c32247367f86f173a',
-    usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-  },
-} as const;
+interface HireDeployment {
+  chainId: 8453; escrow: string; tokens: { pvt: string; usdc: string };
+  pointer: string; revision: string; manifest: string;
+}
+function hireDeployment(deployment: ProtocolDeployment): HireDeployment {
+  return { chainId: 8453, escrow: deployment.addresses.escrow.toLowerCase(),
+    tokens: { pvt: deployment.addresses.kernel.toLowerCase(), usdc: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913' },
+    pointer: deployment.pointer, revision: deployment.revision.toString(), manifest: deployment.manifestHash };
+}
 
 /** ProvianEscrowV4 `Currency` enum (USDC = 0, PVT = 1). */
 const ESCROW_CURRENCY_ENUM = { usdc: 0, pvt: 1 } as const;
@@ -791,11 +789,11 @@ function lower(v: unknown): string {
 }
 
 /** Refuse unless the relay's escrow names exactly the pinned Base escrow for a known currency. */
-function checkPinnedEscrow(e: HireEscrowDetails): { currency: 'pvt' | 'usdc' } | { refusal: string } {
+function checkPinnedEscrow(e: HireEscrowDetails, pins: HireDeployment): { currency: 'pvt' | 'usdc' } | { refusal: string } {
   if (e.currency !== 'pvt' && e.currency !== 'usdc') return { refusal: `unsupported escrow currency '${String(e.currency)}'` };
   if (e.chain !== 'base') return { refusal: `the escrow is on '${String(e.chain)}'; Commons hires settle on Base` };
-  if (lower(e.contract_address) !== COMMONS_HIRE_BASE_PINS.escrow) {
-    return { refusal: `the relay named escrow ${String(e.contract_address)}, not the pinned ProvianEscrowV4 ${COMMONS_HIRE_BASE_PINS.escrow}; refusing to build calls` };
+  if (lower(e.contract_address) !== pins.escrow) {
+    return { refusal: `the relay named escrow ${String(e.contract_address)}, not the pinned ProvianEscrowV4 ${pins.escrow}; refusing to build calls` };
   }
   return { currency: e.currency };
 }
@@ -1069,11 +1067,12 @@ const fundJob: ProvianToolDef = {
     const read = await readHireEscrow(ctx, jobId);
     if ('error' in read) return read.error;
     const e = read.escrow;
-    const pinned = checkPinnedEscrow(e);
+    const pins = hireDeployment(await currentProtocolDeployment());
+    const pinned = checkPinnedEscrow(e, pins);
     if ('refusal' in pinned) return errorResult(pinned.refusal);
     const currency = pinned.currency;
     if (e.status !== 'created') return errorResult(`the escrow is '${String(e.status)}', not 'created' — already funded or closed (record a mined funding with step="record")`);
-    const token = COMMONS_HIRE_BASE_PINS.tokens[currency];
+    const token = pins.tokens[currency];
     if (lower(e.token_address) !== token) return errorResult(`the relay named token ${String(e.token_address)} for a ${currency} escrow; the pinned ${currency.toUpperCase()} is ${token} — refusing`);
     let amount: bigint;
     if (currency === 'pvt') {
@@ -1106,16 +1105,17 @@ const fundJob: ProvianToolDef = {
       currency,
       amount_atomic: amount.toString(),
       decimals: currency === 'pvt' ? 18 : 6,
-      chain_id: COMMONS_HIRE_BASE_PINS.chainId,
+      chain_id: pins.chainId,
+      protocol_pointer: pins.pointer, protocol_revision: pins.revision, protocol_manifest: pins.manifest,
       from: e.depositor_address,
       onchain_escrow_id: escrowId,
       calls: [
-        { label: 'createEscrow', to: COMMONS_HIRE_BASE_PINS.escrow, value: '0', data: encodeHireCall('createEscrow', { escrowId, recipient: e.recipient_address, amount, autoReleaseAt, currency }) },
-        { label: 'approve', to: token, value: '0', data: encodeHireCall('approve', { spender: COMMONS_HIRE_BASE_PINS.escrow, amount }) },
-        { label: 'fundEscrow', to: COMMONS_HIRE_BASE_PINS.escrow, value: '0', data: encodeHireCall('fundEscrow', { escrowId }) },
+        { label: 'createEscrow', to: pins.escrow, value: '0', data: encodeHireCall('createEscrow', { escrowId, recipient: e.recipient_address, amount, autoReleaseAt, currency }) },
+        { label: 'approve', to: token, value: '0', data: encodeHireCall('approve', { spender: pins.escrow, amount }) },
+        { label: 'fundEscrow', to: pins.escrow, value: '0', data: encodeHireCall('fundEscrow', { escrowId }) },
       ],
       next_step:
-        `Sign and broadcast the three calls IN ORDER on Base (chain id 8453) from ${e.depositor_address}, waiting for each receipt to succeed. ` +
+        `Resolve the protocol pointer again before each signature and refuse a changed manifest or retired address. Sign and broadcast the three calls IN ORDER on Base (chain id 8453) from ${e.depositor_address}, waiting for each receipt to succeed. ` +
         'Then call fund_job with step="record" and tx_hash = the fundEscrow transaction hash. If createEscrow or approve reverts, nothing was ' +
         'escrowed; if fundEscrow reverts, revoke the approval (approve the escrow for 0). If a run stops part-way, plan again WITH THE SAME ' +
         'onchain_escrow_id (the default plan for this hire always names it): a createEscrow reverting EscrowAlreadyExists means it already ' +
@@ -1187,7 +1187,8 @@ const releaseJob: ProvianToolDef = {
     const read = await readHireEscrow(ctx, jobId);
     if ('error' in read) return read.error;
     const e = read.escrow;
-    const pinned = checkPinnedEscrow(e);
+    const pins = hireDeployment(await currentProtocolDeployment());
+    const pinned = checkPinnedEscrow(e, pins);
     if ('refusal' in pinned) return errorResult(pinned.refusal);
     if (e.status !== 'funded') return errorResult(`only a funded escrow can be released (escrow is '${String(e.status)}')`);
     if (typeof e.onchain_escrow_id !== 'string' || !BYTES32.test(e.onchain_escrow_id)) return errorResult('the escrow has no on-chain escrow id yet (not funded) — nothing to release');
@@ -1195,11 +1196,12 @@ const releaseJob: ProvianToolDef = {
     if (me && me.toLowerCase() !== lower(e.depositor_address)) return errorResult(`only the depositor ${String(e.depositor_address)} can release before auto-release; this machine's agent is ${me}`);
     return jsonResult({
       job_id: jobId,
-      chain_id: COMMONS_HIRE_BASE_PINS.chainId,
+      chain_id: pins.chainId,
+      protocol_pointer: pins.pointer, protocol_revision: pins.revision, protocol_manifest: pins.manifest,
       from: e.depositor_address,
       onchain_escrow_id: e.onchain_escrow_id,
-      calls: [{ label: 'releaseEscrow', to: COMMONS_HIRE_BASE_PINS.escrow, value: '0', data: encodeHireCall('releaseEscrow', { escrowId: e.onchain_escrow_id }) }],
-      next_step: `Sign and broadcast releaseEscrow on Base from ${String(e.depositor_address)}; once it mines call release_job with step="record".`,
+      calls: [{ label: 'releaseEscrow', to: pins.escrow, value: '0', data: encodeHireCall('releaseEscrow', { escrowId: e.onchain_escrow_id }) }],
+      next_step: `Resolve the protocol pointer again and refuse a changed manifest or retired address. Sign and broadcast releaseEscrow on Base from ${String(e.depositor_address)}; once it mines call release_job with step="record".`,
     });
   },
 };
@@ -1241,7 +1243,8 @@ const disputeJob: ProvianToolDef = {
     const read = await readHireEscrow(ctx, jobId);
     if ('error' in read) return read.error;
     const e = read.escrow;
-    const pinned = checkPinnedEscrow(e);
+    const pins = hireDeployment(await currentProtocolDeployment());
+    const pinned = checkPinnedEscrow(e, pins);
     if ('refusal' in pinned) return errorResult(pinned.refusal);
     if (e.status !== 'funded') return errorResult(`only a funded escrow can be disputed (escrow is '${String(e.status)}')`);
     if (typeof e.onchain_escrow_id !== 'string' || !BYTES32.test(e.onchain_escrow_id)) return errorResult('the escrow has no on-chain escrow id yet (not funded) — nothing to dispute');
@@ -1250,11 +1253,12 @@ const disputeJob: ProvianToolDef = {
     if (me && me.toLowerCase() !== lower(e.depositor_address)) return errorResult(`only the depositor ${String(e.depositor_address)} can dispute (the contract is onlyDepositor); this machine's agent is ${me}`);
     return jsonResult({
       job_id: jobId,
-      chain_id: COMMONS_HIRE_BASE_PINS.chainId,
+      chain_id: pins.chainId,
+      protocol_pointer: pins.pointer, protocol_revision: pins.revision, protocol_manifest: pins.manifest,
       from: e.depositor_address,
       onchain_escrow_id: e.onchain_escrow_id,
-      calls: [{ label: 'disputeEscrow', to: COMMONS_HIRE_BASE_PINS.escrow, value: '0', data: encodeHireCall('disputeEscrow', { escrowId: e.onchain_escrow_id }) }],
-      next_step: `Sign and broadcast disputeEscrow on Base from ${String(e.depositor_address)}; once it mines call dispute_job with step="record", your reason and optional evidence.`,
+      calls: [{ label: 'disputeEscrow', to: pins.escrow, value: '0', data: encodeHireCall('disputeEscrow', { escrowId: e.onchain_escrow_id }) }],
+      next_step: `Resolve the protocol pointer again and refuse a changed manifest or retired address. Sign and broadcast disputeEscrow on Base from ${String(e.depositor_address)}; once it mines call dispute_job with step="record", your reason and optional evidence.`,
     });
   },
 };

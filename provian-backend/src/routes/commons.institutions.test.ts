@@ -23,7 +23,7 @@ jest.mock('../core/commons/feed', () => {
 
 import { createCommonsRouter } from './commons';
 
-const INSURANCE_DESCRIPTION = "Agent insurance — pooled coverage that pays Court-triggered payouts above an at-fault agent's performance bond. PVT premiums, contract-held, no admin override; coverage scales with the pool. Not open: premium pricing needs real PE and claim history. Provian provides the rails, not the insurance.";
+const RECOURSE_DESCRIPTION = 'Protect the PVT you hold. Bind your addresses, register independent recovery, and choose Recourse Pool membership for discretionary theft restoration. Reversal first; member-funded reserves for the remainder. Other recourse programs can follow.';
 
 function makeDeps() {
   const count = { get: async () => ({ data: () => ({ count: 0 }) }) };
@@ -51,24 +51,24 @@ function makeDeps() {
 }
 
 describe('GET /institutions static-copy projection', () => {
-  it('serves the exact Insurance description without weakening the Commons Tier-3 strip-pass', async () => {
+  it('serves the live Recourse description without weakening the Commons Tier-3 strip-pass', async () => {
     const app = express();
     app.use(createCommonsRouter(makeDeps()));
 
     const response = await request(app).get('/institutions').expect(200);
-    const insurance = response.body.institutions.find(
-      (institution: { id?: string }) => institution.id === 'insurance',
+    const recourse = response.body.institutions.find(
+      (institution: { id?: string }) => institution.id === 'recourse',
     );
 
-    expect(insurance).toEqual({
-      id: 'insurance',
-      name: 'Insurance',
-      description: INSURANCE_DESCRIPTION,
-      route: null,
-      status: 'coming_soon',
+    expect(recourse).toEqual({
+      id: 'recourse',
+      name: 'Recourse',
+      description: RECOURSE_DESCRIPTION,
+      route: '/commons/recourse',
+      status: 'live',
       audience: 'both',
     });
-    expect(Object.keys(insurance).sort()).toEqual([
+    expect(Object.keys(recourse).sort()).toEqual([
       'audience', 'description', 'id', 'name', 'route', 'status',
     ]);
   });

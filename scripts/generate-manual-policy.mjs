@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Derive the Manual's complete action index from the signed matrix; never edit policy here.
+// Derive the current-feature action index without changing the signed matrix.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -10,11 +10,18 @@ const path = resolve(root, 'docs/PROVIAN_MANUAL.md');
 const start = '<!-- BEGIN GENERATED ACTION POLICY -->';
 const end = '<!-- END GENERATED ACTION POLICY -->';
 const cell = (value) => String(value ?? 'none').replaceAll('|', '\\|').replaceAll('\n', ' ');
-const lines = [start, '', '### Complete action policy', '',
-  `Source commitment: \`${matrix.content_sha256}\`. ${matrix.rows.length} rows. Weights are basis points; 10,000 bps is 1.0×. These are row bases before witness-class overrides and the factors in §5.`, '',
+// These wire names remain in byte-bound compatibility data, not the current
+// product. Refuse to omit any economically active row.
+const compatibilityOnly = new Set(['agent_insurance_payout_executed', 'agent_insurance_pool_created',
+  'agent_insurance_premium_paid', 'insurance_claim_filed', 'insurance_claim_resolved']);
+for (const row of matrix.rows) if (compatibilityOnly.has(row.action_type)
+  && (row.mint_disposition !== 'record_only' || row.base_action_weight_bps !== 0)) throw new Error('compatibility row creates issuance');
+const currentRows = matrix.rows.filter(row => !compatibilityOnly.has(row.action_type));
+const lines = [start, '', '### Current action index', '',
+  `Source commitment: \`${matrix.content_sha256}\`. ${currentRows.length} current-feature rows. The signed source also retains non-minting compatibility records. Weights are basis points; 10,000 bps is 1.0×. These are row bases before witness-class overrides and the factors in §5.`, '',
   '| Action type | Category | Base bps | Disposition | Evidence | Attestation pricing |',
   '|---|---|---:|---|---|---|',
-  ...[...matrix.rows].sort((a, b) => a.action_type.localeCompare(b.action_type)).map((row) =>
+  ...[...currentRows].sort((a, b) => a.action_type.localeCompare(b.action_type)).map((row) =>
     `| \`${cell(row.action_type)}\` | ${cell(row.category)} | ${cell(row.base_action_weight_bps)} | \`${cell(row.mint_disposition)}\` | \`${cell(row.evidence_requirement)}\` | \`${cell(row.attestation_pricing)}\` |`),
   '', end];
 const current = readFileSync(path, 'utf8');
@@ -32,4 +39,4 @@ if (current.includes(start)) {
 if (process.argv.includes('--check')) {
   if (next !== current) throw new Error('Manual action policy is stale; run node scripts/generate-manual-policy.mjs');
 } else if (next !== current) writeFileSync(path, next);
-console.log(`manual-policy: ${matrix.rows.length} code-derived rows match the signed matrix`);
+console.log(`manual-policy: ${currentRows.length} current-feature rows match the signed matrix`);

@@ -1,3 +1,4 @@
+jest.mock('./core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('./__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import { NOVELTY_COUNTERS_COLLECTION } from './core/meter/batch-pricing-counters';
 /**
  * ACCEPTANCE REPLAY (2a) + x402 RE-MINT TRANSITION (2b).

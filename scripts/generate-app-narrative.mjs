@@ -61,6 +61,11 @@ export function mergeNarrative(target, copy) {
 export function generateAppNarrative(check = false) {
   const english = readJson(resolve(root, 'src/i18n/narrative/en.json'));
   const outputs = [];
+  outputs.push([resolve(root, 'provian-website/src/content/vision.generated.json'),
+    `${JSON.stringify(Array.from({ length: 12 }, (_, index) => ({
+      title: english[`visionScreen.card${index + 1}Title`],
+      paragraphs: english[`visionScreen.card${index + 1}Body`].split('\n\n'),
+    })), null, 2)}\n`]);
   for (const locale of LOCALES) {
     const copy = readJson(resolve(root, `src/i18n/narrative/${locale}.json`));
     validateNarrative(copy, english, locale);

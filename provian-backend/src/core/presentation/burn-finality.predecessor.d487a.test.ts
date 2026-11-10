@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
 /**
  * / a burn on the RETIRED predecessor kernel at or below the migration snapshot block
  * still verifies END TO END: the real `verifyEvmPvtBurn` (the real token set) accepts it at
@@ -39,7 +41,7 @@ import type { AgentBankDeps } from '../agent-bank/types';
 process.env.ENABLE_PVT_PRINCIPAL = 'true';
 
 const PREDECESSOR = '0x4bf02d5c9bc4306c38603ef2aa164f2f2273bcd7';
-const LIVE = getPvtAddressForChain('base')!;
+const LIVE = '0x8811441914381143b9408c5c32247367f86f173a';
 const BURNER = '0x1111111111111111111111111111111111111111';
 const WALLET = 'wallet_aw_pred';
 const TX = `0x${'c'.repeat(64)}`;

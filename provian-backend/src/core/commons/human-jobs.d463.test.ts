@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses } }; }) }));
+import { currentProtocolDeployment } from '../protocol/runtime';
 /**
  * the Commons jobs board is THE hiring board, in all four directions, paying in PVT or
  * USDC on the V4 escrow (the only escrow with the 30-day dispute refund).
@@ -260,13 +262,13 @@ describe('Hardware-backed device requirement', () => {
 });
 
 describe('USDC hires ride the V4 escrow (the one with the dispute refund)', () => {
-  it('resolves base only when the USDC escrow address IS the V4 contract', () => {
-    expect(resolveUsdcHireEscrowChain()).toBe('base');
+  it('resolves the pointer escrow for both currencies regardless of stale environment addresses', async () => {
+    expect((await resolveUsdcHireEscrowChain())).toBe('base');
     process.env.ESCROW_CONTRACT_ADDRESS_BASE = V3_NO_REFUND;
-    expect(resolveUsdcHireEscrowChain()).toBeNull();
+    expect((await resolveUsdcHireEscrowChain())).toBe('base');
     delete process.env.ESCROW_CONTRACT_ADDRESS_BASE;
     delete process.env.ESCROW_CONTRACT_ADDRESS;
-    expect(resolveUsdcHireEscrowChain()).toBeNull();
+    expect((await resolveUsdcHireEscrowChain())).toBe('base');
   });
 
   it('posts a USDC job: budget_usdc stored, no budget_pvt, currency usdc', async () => {
@@ -280,12 +282,12 @@ describe('USDC hires ride the V4 escrow (the one with the dispute refund)', () =
     expect(jobCurrencyOf(job)).toBe('usdc');
   });
 
-  it('RED: a USDC post refuses when the USDC escrow is a contract without the refund (V3)', async () => {
-    process.env.ESCROW_CONTRACT_ADDRESS_BASE = V3_NO_REFUND;
+  it('RED: a USDC post refuses when the current escrow cannot be verified', async () => {
+    jest.mocked(currentProtocolDeployment).mockRejectedValueOnce(new Error('protocol_pointer_unavailable'));
     const db = createFakeFirestore();
     seedProfile(db, PERSON);
     await expect(postHumanJob(makeDeps(db), PERSON, { ...BASE_BODY, currency: 'usdc', budget_usdc: 5 }))
-      .rejects.toThrow(/30-day dispute refund/);
+      .rejects.toThrow('protocol_pointer_unavailable');
     expect(mockGeneratePE).not.toHaveBeenCalled();
   });
 
@@ -332,8 +334,8 @@ describe('USDC hires ride the V4 escrow (the one with the dispute refund)', () =
       job_id: 'hjobU', poster_wallet_id: PERSON, title: 'USDC job', description: 'd', status: 'open', currency: 'usdc', budget_usdc: 1,
     });
     db.store.set(`${COMMONS_COLLECTIONS.HUMAN_JOB_APPLICATIONS}/aU`, { application_id: 'aU', job_id: 'hjobU', applicant_wallet_id: AGENT, status: 'pending' });
-    process.env.ESCROW_CONTRACT_ADDRESS_BASE = V3_NO_REFUND;
-    await expect(acceptApplicant(makeDeps(db), PERSON, PERSON, null, 'hjobU', AGENT)).rejects.toThrow(/USDC hires are not enabled/);
+    jest.mocked(currentProtocolDeployment).mockRejectedValueOnce(new Error('protocol_pointer_unavailable'));
+    await expect(acceptApplicant(makeDeps(db), PERSON, PERSON, null, 'hjobU', AGENT)).rejects.toThrow('protocol_pointer_unavailable');
     expect(mockedCreateEscrow).not.toHaveBeenCalled();
   });
 });

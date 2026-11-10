@@ -107,25 +107,15 @@ export const MINTER_KEY_NEGATIVE_USE_FILES: readonly string[] = [
  * capability OPEN, deliberately, at a named location. `judgeMintCapability` reports exactly
  * that, and `capability_closed` is false whenever this list is non-empty.
  *
- * `src/core/pvt/wp4/operator-runtime.ts` is the ONE module that builds a settlement signer. As
- * of M7 it is reachable from the relay (`POST /v1/internal/settlement/pvt9-run`) as well as from
- * the two scripts, which are thin argv wrappers over it. Two ways reach that route :
- * scheduler auth on the daily runner `provian-pvt9-settlement` (`0 12 * * *`, ), and operator/admin
- * auth + an echoed arming token for a hand run. Either way the standing `PVT9_SETTLEMENT_ARMED`
- * env gate still holds. That is a real posture change and this list is where it is said out
- * loud: the tree CAN mint.
+ * Settlement construction lives in `src/core/pvt/wp4/operator-runtime.ts`;
+ * its CLI and HTTP entry points delegate to that module. Settlement still
+ * requires the explicit arming token, both configured keys and authenticated
+ * scheduler/operator access.
  *
- * What still stands in the way is operational, and each piece is independent: the exact
- * `PVT9_SETTLEMENT_ARMED=yes-settle-real-pvt` token, both keys present as Secret Manager
- * mounts, a funded approver, and — for the route — operator auth plus the same token in the
- * request body.
- *
- * The list has exactly ONE entry, and that is the point. `scripts/pvt9-settlement-run.ts`,
- * `scripts/pvt9-epoch-keeper.ts` and the two routes all reach the capability, and none of them
- * appears here — because none of them constructs a signer or reads a key. They are argv and
- * HTTP wrappers over the one module that does. The sweep is per-file and finds signer
- * CONSTRUCTION, so this list shrinking from the M6 shape while the capability grew is the
- * correct reading: the surface that touches key material got smaller, not larger.
+ * The other named modules construct restricted PE-anchor, identity-attestation
+ * or recovery gas signers. Their checked plans and durable nonce leases do not
+ * grant mint or restoration authority. Declaring them here records their write
+ * capability; any additional construction remains a finding.
  */
 export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
   'src/core/pvt/wp4/operator-runtime.ts',
@@ -136,6 +126,25 @@ export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
   // stores Merkle roots, holds no funds, and has zero kernel coupling (,
   // verified live: admin = the Foundation Safe, minter = this gas-only EOA).
   'src/core/pvt/pe-anchor-runtime.ts',
+  // Ownership binding uses the existing approver only to attest an independently
+  // verified identity/address consent. The gas worker uses the existing minter
+  // signer with the shared durable nonce lease, and accepts only branded registry
+  // binding plans. These are positive signing capabilities, not negative uses.
+  'src/core/recourse/binding-operation.ts',
+  'src/core/recourse/binding-runtime.ts',
+  // The same gas key sponsors only exact owner-proven rotation/intent calldata.
+  // No reversal, reserve allocation or arbitrary transaction enters this worker.
+  'src/core/recourse/owner-operation-runtime.ts',
+  // Free break recovery shares the same durable gas nonce lease. These workers
+  // accept branded snapshot/owner-verified deployment and registration calls.
+  // The operator command sponsors only the checked hash-authority restoration;
+  // the gas key is neither the restoration authority nor the owner's proof.
+  'src/core/recourse/break-deployment-runtime.ts',
+  'src/core/recourse/break-registration.ts',
+  'scripts/recourse-break-authority.ts',
+  // Explicit operator-only authority/attestor/gas signer. The public relay
+  // never loads this entry point; it signs only checked restoration plans.
+  'scripts/recourse-determinations.ts',
 ];
 
 /**

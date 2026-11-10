@@ -133,7 +133,8 @@ import {
   fixFullBlockSince,
   openProvenOutboundRange,
 } from './proven-outbound-ranges';
-import { BASE_NON_USDC_ASSETS, addressTopic, movesValue } from './wallet-exchange';
+import { addressTopic, movesValue } from './wallet-exchange';
+import { observationBaseAssets } from '../protocol/observation-assets';
 
 export { CHAIN_RECORD_SCAN_CHECKPOINT_COLLECTION };
 export const CHAIN_RECORD_INBOUND_SCAN_CHECKPOINT_ID = 'base_inbound_non_usdc';
@@ -189,6 +190,7 @@ function isSetAside(row: ChainRecordScanListing): row is ChainRecordScanSetAside
 }
 
 export interface ChainRecordInboundScanDeps {
+  readonly assets?: () => Promise<Readonly<Record<string, string>>>;
   readonly initialFromBlock?: (head: number) => Promise<number>;
   readonly getCompactWindow?: (args: { readonly fromBlock: number; readonly toBlock: number; readonly watched: ReadonlySet<string> }) => Promise<CompactDiscoveryWindow>;
   readonly db: Firestore;
@@ -322,12 +324,12 @@ async function writeCheckpoint(db: Firestore, nextBlock: number, now: number): P
 
 /** Is this log a candidate receive for `wallet`? The lane decides; this only
  * avoids queueing what can never be one. */
-function isCandidate(log: CanonicalEconomicLog, wallet: ChainRecordScanWallet): boolean {
+function isCandidate(log: CanonicalEconomicLog, wallet: ChainRecordScanWallet, assets: Readonly<Record<string, string>>): boolean {
   return !log.removed
     && log.topics.length === 3
     && log.topics[0] === ERC20_TRANSFER_TOPIC
     && /^0x[0-9a-f]{64}$/.test(log.data)
-    && log.address in BASE_NON_USDC_ASSETS
+    && log.address in assets
     && log.topics[2] === addressTopic(wallet.address)
     && movesValue(log)
     && !CHAIN_RECORD_EXCLUDED_COUNTERPARTIES.has(topicAddress(log.topics[1]))
@@ -449,6 +451,7 @@ export async function runChainRecordInboundScan(
     signed_transactions_seen: 0, proven_outbound_queued: 0,
   };
 
+  const assets = await (deps.assets ?? observationBaseAssets)();
   const head = await deps.getHead();
   const finalizedThrough = head - BASE_WATCHER_CONFIRMATION_FLOOR;
   const stored = await readCheckpoint(deps.db);
@@ -578,7 +581,7 @@ export async function runChainRecordInboundScan(
           return;
         }
         const wallet = recipient === null ? undefined : await watchSet.wallet(recipient);
-        if (!wallet || !isCandidate(log, wallet)) {
+        if (!wallet || !isCandidate(log, wallet, assets)) {
           report.skipped += 1;
           return;
         }
@@ -690,7 +693,7 @@ export async function runChainRecordInboundScan(
           report.logs_seen += logs.length;
           for (const log of logs) {
             if (log.blockNumber < next || log.blockNumber > end) throw new Error('chain_record_scan_log_out_of_range');
-            if (!isCandidate(log, wallet)) {
+            if (!isCandidate(log, wallet, assets)) {
               report.skipped += 1;
               continue;
             }
@@ -1083,24 +1086,28 @@ async function deleteSetAside(db: Firestore, id: string): Promise<void> {
 
 /** Production deps: the agreed two-leg Base reads and the canonical native enumeration. */
 export function buildChainRecordInboundScanDeps(db: Firestore): ChainRecordInboundScanDeps {
-  const assets = Object.keys(BASE_NON_USDC_ASSETS);
   return {
+    assets: observationBaseAssets,
     db,
     initialFromBlock: async (head) => {
       const time = await readAgreedBaseBlockTimestampMs(head);
       return firstBlockAtOrAfter(async (number) => ({ number,
         timestamp: Math.floor((await readAgreedBaseBlockTimestampMs(number)) / 1000) }), { number: head, timestamp: Math.floor(time / 1000) }, Math.floor(time / 1000) - CHAIN_RECORD_SCAN_INITIAL_LOOKBACK_SECONDS);
     },
-    getCompactWindow: ({ fromBlock, toBlock, watched }) => withRateLimitRetry(
-      () => readAdaptivePrimaryDiscoveryWindow({ fromBlock, toBlock, watched, assets }),
-    ),
+    getCompactWindow: async ({ fromBlock, toBlock, watched }) => {
+      const assets = Object.keys(await observationBaseAssets(fromBlock));
+      return withRateLimitRetry(() => readAdaptivePrimaryDiscoveryWindow({ fromBlock, toBlock, watched, assets }));
+    },
     getHead: () => withRateLimitRetry(() => readAgreedBaseHead()),
-    getLogs: ({ fromBlock, toBlock, toAddresses }) => withRateLimitRetry(() => getAgreedBaseLogs({
+    getLogs: async ({ fromBlock, toBlock, toAddresses }) => {
+      const assets = Object.keys(await observationBaseAssets(fromBlock));
+      return withRateLimitRetry(() => getAgreedBaseLogs({
       address: assets,
       topics: [ERC20_TRANSFER_TOPIC, null, toAddresses.map(addressTopic)],
       fromBlock,
       toBlock,
-    })),
+    }));
+    },
     // 2026-10-01: plain native ETH transfers, read from full blocks on both legs.
     getNativeTransfers: ({ fromBlock, toBlock, toAddresses }) => withRateLimitRetry(
       () => readAgreedBaseNativeTransfersTo({ fromBlock, toBlock, toAddresses }),

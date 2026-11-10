@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * the agent's own swap: the relay quotes, the SDK checks the unsigned 0x
  * transaction is exactly the swap asked for (the guard, ported to viem), approves exactly
@@ -6,7 +7,7 @@
  * RED controls: every guard refusal fires BEFORE anything is signed (no eth_sendRawTransaction),
  * and a counterfeit Settler / unreadable registry refuses.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { custom, encodeAbiParameters, encodeFunctionData, keccak256, parseAbi, parseTransaction, decodeFunctionData, type Hex } from 'viem';
 import {
   decodeZeroXAllowanceHolderTx,

@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+vi.mock('../core/protocol/runtime', async () => (await import('../core/protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
+import { describe, it, expect, vi } from 'vitest';
 import { KNOWN_SCAM_CONTRACTS, KNOWN_SCAM_DEPLOYERS } from './scam-contracts';
 import { TOKEN_ADDRESSES, PVT9_TOKEN } from '../core/chains/evm/config';
 import { ZEROX_ALLOWANCE_HOLDER, ZEROX_DEPLOYER, LIFI_DIAMOND } from '../core/swap/evmSwapGuard';

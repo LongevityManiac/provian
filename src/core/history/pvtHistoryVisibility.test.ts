@@ -1,3 +1,4 @@
+vi.mock('../protocol/runtime', async () => (await import('../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * (item C1) — a wallet's PVT history is VISIBLE by default.
  *

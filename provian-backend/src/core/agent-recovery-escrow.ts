@@ -21,6 +21,26 @@
 import type { Firestore } from 'firebase-admin/firestore';
 
 export const AGENT_RECOVERY_ESCROW_COLLECTION = 'agent_recovery_escrows';
+export const AGENT_RETIRED_KEY_BACKUPS_COLLECTION = 'agent_retired_key_backups_v1';
+export function retiredKeyBackupId(walletId: string, address: string): string {
+  if (!/^[a-zA-Z0-9_-]{1,256}$/.test(walletId) || !/^0x[0-9a-f]{40}$/.test(address)) throw Error('retired_key_backup_id_invalid');
+  return `${walletId}_${address.slice(2)}`;
+}
+/** Historical ciphertext is deliberately separate from the active recovery
+ * endpoint. It never selects the retired address as the current PVT account. */
+export async function readRetiredKeyBackup(db: Firestore, walletId: string, address: string): Promise<{
+  wallet_id: string; retired_address: string; rotation_id: string; retired_at: number;
+  sealed_key_blob: string; recovery_anchor_pubkey: string; blob_version: number;
+} | null> {
+  const row = await db.collection(AGENT_RETIRED_KEY_BACKUPS_COLLECTION).doc(retiredKeyBackupId(walletId,address)).get();
+  if (!row.exists) return null;
+  const v=row.data();
+  if (!v || v.wallet_id!==walletId || v.retired_address!==address || typeof v.rotation_id!=='string'
+    || !Number.isSafeInteger(v.retired_at) || !isValidSealedKeyBlobB64u(v.sealed_key_blob)
+    || !isValidAnchorPubkeyB64u(v.recovery_anchor_pubkey) || v.blob_version!==RECOVERY_BLOB_VERSION) throw Error('retired_key_backup_invalid');
+  return {wallet_id:walletId,retired_address:address,rotation_id:v.rotation_id,retired_at:v.retired_at,
+    sealed_key_blob:v.sealed_key_blob,recovery_anchor_pubkey:v.recovery_anchor_pubkey,blob_version:v.blob_version};
+}
 
 /** Wire version of the sealed blob (must match the SDK/mobile sealed-box). */
 export const RECOVERY_BLOB_VERSION = 0x01;

@@ -1,3 +1,5 @@
+import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
+import { assertCurrentProtocolAddresses } from './protocol-transaction';
 import { guardedFetch as fetch, guardedFetcher } from './guarded-fetch';
 /**
  * Agent-side x402 signer.
@@ -279,7 +281,7 @@ export interface SignX402PaymentArgs {
  * unsupported network, asset that is not the network's USDC, bad payTo/amount,
  * or a key that does not match `fromAddress`).
  */
-export function signX402Payment(args: SignX402PaymentArgs): SignedX402Authorization {
+export async function signX402Payment(args: SignX402PaymentArgs): Promise<SignedX402Authorization> {
   const { privateKeyHex, fromAddress, requirement } = args;
 
   if (requirement.scheme !== 'exact') {
@@ -322,6 +324,7 @@ export function signX402Payment(args: SignX402PaymentArgs): SignedX402Authorizat
     );
   }
 
+  if (net.chainId === 8453) await assertCurrentProtocolAddresses(ownerChainNetwork(), [requirement.asset, requirement.payTo]);
   const cleanKey = privateKeyHex.startsWith('0x') ? privateKeyHex.slice(2) : privateKeyHex;
   if (cleanKey.length !== 64) {
     throw new Error('x402 signer: privateKeyHex must be 32 bytes (64 hex chars)');
@@ -603,6 +606,7 @@ export async function getAgentPvtBalance(
   fetchFn: typeof fetch = fetch,
 ): Promise<bigint> {
   fetchFn = guardedFetcher(fetchFn);
+  if (chain === 'base') await currentProtocolDeployment();
   const token = getToken(chain, 'PVT');
   return getErc20Balance(rpcUrl, token.address, address, fetchFn);
 }

@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 import {openTestPrivateRequest} from './private-request.test-support';
 /**
  * every step of a Commons hire, agent side (SDK): post in any direction and
@@ -12,7 +13,7 @@ import {openTestPrivateRequest} from './private-request.test-support';
  * Every money-moving helper carries at least one RED negative control that proves the
  * guard refuses BEFORE any broadcast. Each control names the mutation that reddens it.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { custom, decodeFunctionData, encodeFunctionResult, keccak256, parseAbi, parseTransaction, type Hex } from 'viem';
 import {
   CommonsInstitutions,

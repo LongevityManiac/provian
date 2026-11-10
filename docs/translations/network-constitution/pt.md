@@ -1,4 +1,4 @@
-<!-- source-sha256: aaac01524a0c4cced1b5545dba74ecf46a9d454995013bba12670363522cd350 -->
+<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
 # A Constituição da Rede Provian
 
 **Status: carta fundadora — ainda não ratificada.** Este é o único texto constitucional da Rede Provian. Ele vincula a Provian Technologies por um compromisso publicado. A governança da classe humana não foi ativada nem o ratificou. Ler ou aceitar esta carta não é condição para a participação na rede sem permissão prévia.
@@ -8,6 +8,8 @@ A Provian Technologies, LLC administra diretamente o núcleo atual, assinando po
 A Tese explica a visão. A Moeda Exponencial desenvolve o argumento econômico. As traduções desta carta seguem sua fonte e estrutura em inglês; não são constituições separadas.
 
 ## Preâmbulo
+
+Computação cria dinheiro. A rede conecta contribuição testemunhada à propriedade e ao recurso para humanos e agentes. Uma chave é um instrumento de controle, não toda a história de um proprietário. O registro prospectivo, o compromisso de recuperação independente e o Recourse Pool discricionário dão forma institucional a essa distinção, preservando transferências sem permissão. Daqui a mil anos, o comércio de uma civilização que deixou a Terra precisa de dinheiro digital além dos bancos centrais dos países de origem. Chaves roubadas, um registro público e a possibilidade de quebrar a criptografia são fraquezas reais a resolver, não limites para esse futuro. Separar a propriedade da chave torna a restauração possível.
 
 A Rede Provian é um protocolo aberto para a participação sustentada por evidências em uma economia compartilhada por humanos e agentes. Ela conecta a prova, pertencente ao participante, do trabalho que ele realizou à participação econômica e a relações que podem ser avaliadas por evidências. Seus compromissos servem aos dois tipos de participante.
 
@@ -27,7 +29,7 @@ Não é necessário divulgar trabalho privado para produzir evidências. Resumos
 
 Enquanto o protocolo for operado, cada ato de trabalho produz o PVT uma vez em seu valor mais suportado. Seu PE cunha a base; telemetria e independência se multiplicam no topo. Eventos circulares de custo PVT, negações e não operações, eventos de segurança e identidade, fallbacks de ação desconhecida e sinais cujo valor cai em um PE alvo não são emitidos separadamente.
 
-Nenhuma emissão administrativa contorna o canal de liquidação de PEs; toda emissão o utiliza. Enquanto o protocolo for operado, a oferta se expande conforme trabalho entra na rede, sem limite total fixo de oferta. O núcleo aplica on-chain os tetos de emissão Genesis e combinada em cada época de sete dias: 7 500 000 PVT em concessões Genesis e 10 000 000 PVT no total. Um novo teto só pode ser agendado para uma época futura, e créditos duradouros podem ser transferidos para épocas seguintes. A admissão de um destinatário é integral, nunca reduzida proporcionalmente à capacidade restante.
+A emissão por trabalho novo usa o canal de liquidação de PEs; nenhuma emissão administrativa o contorna. Um sucessor aprovado separadamente pode restaurar saldos registrados a partir de um retrato do último bloco seguro após falha criptográfica. Essa restauração preserva a história monetária anterior e não é emissão por novo trabalho nem permissão para repetir trabalho já liquidado. Enquanto o protocolo for operado, a oferta se expande conforme trabalho entra na rede, sem limite total fixo de oferta. O núcleo aplica on-chain os tetos de emissão Genesis e combinada em cada época de sete dias: 7 500 000 PVT em concessões Genesis e 10 000 000 PVT no total. Um novo teto só pode ser agendado para uma época futura, e créditos duradouros podem ser transferidos para épocas seguintes. A admissão de um destinatário é integral, nunca reduzida proporcionalmente à capacidade restante.
 
 | Destinatário | Regra | Status |
 |---|---|---|
@@ -62,7 +64,7 @@ Esse eleitorado e sua infraestrutura de verificação não constituem uma govern
 
 A participação na rede não exige permissão. Um participante gera PEs válidos e, ao integrar a emissão de PVT, respeita o caminho e a divisão canônicos de emissão. Nenhuma candidatura ou acordo com a empresa concede a participação.
 
-A adesão à Fundação é um mecanismo distinto, destinado a humanos verificados e ao Piso da Fundação, com mecanismos propostos de verificação de pessoas e de distribuição; carteiras de agentes não são elegíveis para essa distribuição humana. O Artigo IX apresenta a proposta.
+A participação na Fundação é um mecanismo distinto para humanos verificados e o piso da Fundação, com verificação de pessoas e distribuição assumidas como compromisso, mas ainda não abertas; carteiras de agentes não recebem essa distribuição humana. O Artigo IX estabelece o compromisso.
 
 ## Artigo VI — Direitos dos participantes
 
@@ -91,13 +93,29 @@ Implementações de referência não são a única expressão permitida do proto
 
 A carta propõe uma governança operacional dos agentes baseada em evidências, com um teto de votação por entidade, previsto no Artigo XII, para resistir à concentração. Nenhum canal de votação desse tipo está ativo; ativação e implementação detalhada exigem aprovação separada.
 
+## Recourse Pool
+
+A adesão é voluntária e separada da participação na rede ou na Fundação. O Recourse Pool é um arranjo de compartilhamento de riscos financiado pelos membros. Nenhum membro tem direito contratual a pagamento. A restauração é uma determinação discricionária segundo a regra publicada. Os membros aceitam as determinações como finais, sem pretensão contra a Provian Technologies ou Frank Drew por elas. A Provian Technologies não é parte do pool, não contribui, não detém nada e nada promete. Não recebe contribuições nem excedentes.
+
+Cada membro queima 100 PVT por mês civil, tenha rendimentos ou não. Separadamente, 1% dos rendimentos brutos é direcionado ao Recourse Pool na liquidação; na divisão humana e Genesis, o membro fica com 98%, mantendo a alocação de 0.5% à empresa e o piso de 0.5% à Fundação. Um membro sem rendimentos no mês contribui, em vez disso, com 100 PVT de suas reservas pessoais para a reserva comum. Esse mês exige tanto a queima de participação quanto a contribuição à reserva. A queima destrói unidades; a reserva as mantém. Os três valores constam da regra assinada e podem subir ou descer prospectivamente conforme a experiência de perdas.
+
+Um mês não cumprido recebe um mês civil de tolerância. Regularizar dentro desse prazo preserva a continuidade; depois a adesão termina. Um ex-membro pode retornar a qualquer momento e fica protegido daquele dia em diante. Nenhuma regularização posterior recupera um período sem adesão. Uma adesão inclui todos os saldos vinculados, ganhos e recebidos. É opcional, para quem tem o suficiente em jogo; um proprietário vinculado que não seja membro não tem recurso contra furto.
+
+A reversão vem primeiro. Em uma única transação, o núcleo destrói a quantidade determinada de PVT nas direções identificadas e reemite exatamente a mesma quantidade para a nova chave do proprietário. A oferta total nunca muda. Tanto a autoridade de restauração, nomeada separadamente, quanto a prova independente de recuperação do proprietário devem autorizar a operação; nenhuma pode mover sozinha os PVT de outra pessoa. A regra alcança os PVT ainda detidos por quem os tomou ou por quem nada deu em troca. PVT recebidos em uma troca testemunhada permanecem com o destinatário. Uma troca honesta não admite estorno.
+
+O Recourse Pool restaura o restante, proporcionalmente entre determinações aceitas quando os recursos são insuficientes, nunca além das reservas disponíveis. A razão entre reservas e saldos dos membros é publicada como medida de recursos, sem preço fiduciário nem promessa de restauração. Um membro pode sair e resgatar diretamente em cadeia sua participação proporcional restante na reserva, sem o relay, excluindo valores já alocados a restaurações. PVT queimados não podem ser resgatados.
+
+A determinação utiliza as próprias evidências do relay sobre propriedade, transferências, contrapartes e testemunhas, incluindo resultados anteriores. Não há retenções, limites, períodos de espera, tetos nem segundas confirmações para membros. A chave de Frank detém a autoridade de restauração, nomeada separadamente, até a abertura do Tribunal; o papel pode passar ao Tribunal ou à governança. Cada determinação e resultado entra na cadeia do membro, e todo uso da autoridade é público. O furto simulado pelo próprio dono permanece um risco probatório e informa os valores prospectivos da regra.
+
+O registro de propriedade acompanha as transferências em cadeia desde a vinculação voluntária, distinguindo PVT cunhados e recebidos. Não reconstrói propriedade anterior. Na vinculação, um compromisso hash independente separa a recuperação da chave da carteira. Uma quebra criptográfica usa um retrato do último bloco seguro e a prova de recuperação de cada proprietário para reemitir uma única vez os saldos registrados em um sucessor seguro, gratuitamente para todo proprietário vinculado. Transferências comuns continuam sem barreiras. Um ponteiro permanente identifica o núcleo e as instituições atuais, verificados independentemente do relay; saldos, janela Genesis, âncoras e trabalho liquidado são preservados enquanto a emissão do antecessor termina. Outros programas de recurso poderão surgir.
+
 ## Artigo IX — A Fundação e o Piso da Fundação
 
 O propósito da Fundação é ampliar a inclusão humana conforme a inteligência produz mais. A dignidade humana não depende de quanto o mercado paga pelo trabalho de alguém. Ganhos diretos, relações de beneficiário e inclusão universal atendem a partes diferentes desse propósito.
 
-A Fundação existe hoje como a tesouraria on-chain para a qual toda liquidação paga, sob as regras do núcleo. O Piso da Fundação proposto é uma distribuição recorrente, uniforme e igual a membros humanos verificados, sem teste de renda nem ponderação por riqueza. Ele divide um fluxo existente da tesouraria e não cria PVT adicional. Propõe-se financiar primeiro as subvenções para a gestão institucional, limitadas à metade da parcela de cada período, preservando a reivindicação majoritária do Piso da Fundação. A elegibilidade é a condição de pessoa verificada, gratuita e mantida por verificações periódicas.
+A Fundação existe hoje como a tesouraria em cadeia que recebe uma parcela de cada liquidação, segundo as regras do núcleo. A Provian se compromete com um piso da Fundação: distribuição recorrente, uniforme e igual aos membros humanos verificados, sem teste de renda ou ponderação por riqueza. O requisito é ser uma pessoa verificada, gratuitamente e com reverificação periódica. Divide um fluxo de tesouraria existente e não cria PVT adicional. Propõe-se financiar primeiro as bolsas de gestão, limitadas à metade da parcela de cada período, preservando a maioria para o piso.
 
-A instituição distribuidora, a verificação de pessoas, a associação e as distribuições recorrentes são propostas, ainda não construídas. Até operar, o contrato envia a parcela à tesouraria designada. A futura governança humana continua sujeita ao Artigo IV.
+A Provian se compromete a estabelecer a instituição distribuidora, a verificação de humanos únicos, a participação de humanos verificados e as distribuições iguais recorrentes. Esses programas ainda não estão abertos. Até a instituição operar, o contrato encaminha a alocação à tesouraria designada. A futura governança humana continua sujeita ao Artigo IV.
 
 # PARTE IV — O COMPROMISSO
 

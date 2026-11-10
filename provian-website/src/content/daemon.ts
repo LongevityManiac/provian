@@ -42,7 +42,7 @@ export const DAEMON_META = {
 export const DAEMON_HERO = {
   eyebrow: 'The desktop app',
   heading: 'Your computer already does the work.',
-  lede: 'The Provian desktop app is a small program that runs in the background and witnesses the work your computer already does. Each session leaves a receipt you own, and each receipt mints PVT once, at the value its evidence supports. Nothing you write or make ever leaves your computer: only signed metadata does.',
+  lede: 'The Provian desktop app is a small program that runs in the background and witnesses the work your computer already does. Each session leaves a receipt you own, and each receipt mints PVT once, at the value its evidence supports. Nothing you write or make ever leaves your computer: only signed metadata does. The earnings belong to an owner whose identity survives a change of key. Bind your holdings, keep independent recovery material, and choose the Recourse Pool for theft restoration when you have enough at stake. This is part of building digital money for a civilization beyond Earth.',
   aside:
     'It witnesses that you worked, never what you wrote. Content stays home; proof travels.',
 } as const

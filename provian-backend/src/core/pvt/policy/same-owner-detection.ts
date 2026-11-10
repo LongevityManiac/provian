@@ -235,6 +235,13 @@ export function classifyPersonProvenAddressRow(raw: RawRegistryDocument): Regist
  */
 export function classifyRetiredAddressRow(raw: RawRegistryDocument): RegistryRead<AddressOwnership> {
   if (raw === null || raw === undefined) return { kind: 'absent' };
+  if (raw.owner_type === 'human') {
+    const ownerId = readString(raw.owner_id), walletId = readString(raw.wallet_id);
+    if (!ownerId || !walletId || raw.schema_version !== 'native-wallet-address-retirement/v1') {
+      return { kind: 'unusable', reason: 'retired_address:human_owner_unreadable' };
+    }
+    return { kind: 'resolved', value: { ownerType: 'human', ownerId, walletId, source: 'retired_address' } };
+  }
   const ownerId = readString(raw.agentId) ?? readString(raw.agent_id);
   const walletId = readString(raw.walletId) ?? readString(raw.wallet_id);
   if (ownerId === null) return { kind: 'unusable', reason: 'retired_address:agent_id_unreadable' };

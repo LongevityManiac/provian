@@ -94,10 +94,10 @@ export function createAgentPoolsRouter(deps: AgentBankDeps): Router {
       const pool = await createPool(deps, body);
       // Wave J-bis + Chunk K H-1: contract address must be resolved per chain.
       const poolCurrency = pool.currency ?? 'usdc';
-      const contractAddress = resolvePoolContractAddress(
+      const contractAddress = (await resolvePoolContractAddress(
         poolCurrency,
         pool.chain as AgentBankChain,
-      );
+      ));
 
       res.status(201).json({
         pool_id: pool.pool_id,

@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * an escrow the migration left on the predecessor EscrowV4 is serviced there: its document
  * pins `escrow_contract_address`, and every read / settle / keeper path resolves through
@@ -27,34 +28,34 @@ describe(' resolveEscrowContractForDocument', () => {
     expect(PREDECESSOR_ESCROW_V4_BASE.toLowerCase()).not.toBe(SUCCESSOR_ESCROW.toLowerCase());
   });
 
-  it('an unpinned escrow resolves to the configured (successor) escrow, USDC and PVT', () => {
-    expect(resolveEscrowContractForDocument(doc())).toBe(SUCCESSOR_ESCROW);
-    expect(resolveEscrowContractForDocument(doc({ currency: 'pvt' })).toLowerCase()).toBe(SUCCESSOR_ESCROW.toLowerCase());
+  it('an unpinned escrow resolves to the configured (successor) escrow, USDC and PVT', async () => {
+    expect((await resolveEscrowContractForDocument(doc()))).toBe(SUCCESSOR_ESCROW);
+    expect((await resolveEscrowContractForDocument(doc({ currency: 'pvt' }))).toLowerCase()).toBe(SUCCESSOR_ESCROW.toLowerCase());
   });
 
-  it('an escrow pinned to the predecessor resolves there (case-insensitive)', () => {
-    expect(resolveEscrowContractForDocument(doc({ escrow_contract_address: PREDECESSOR_ESCROW_V4_BASE.toLowerCase() })))
+  it('an escrow pinned to the predecessor resolves there (case-insensitive)', async () => {
+    expect((await resolveEscrowContractForDocument(doc({ escrow_contract_address: PREDECESSOR_ESCROW_V4_BASE.toLowerCase() }))))
       .toBe(PREDECESSOR_ESCROW_V4_BASE);
   });
 
-  it('a pin equal to the configured escrow resolves to it', () => {
-    expect(resolveEscrowContractForDocument(doc({ escrow_contract_address: SUCCESSOR_ESCROW.toUpperCase().replace('0X', '0x') })))
+  it('a pin equal to the configured escrow resolves to it', async () => {
+    expect((await resolveEscrowContractForDocument(doc({ escrow_contract_address: SUCCESSOR_ESCROW.toUpperCase().replace('0X', '0x') }))))
       .toBe(SUCCESSOR_ESCROW);
   });
 
-  it('RED: a pin to any other address refuses — a document can never steer a release', () => {
-    expect(() => resolveEscrowContractForDocument(doc({ escrow_contract_address: '0x000000000000000000000000000000000000dEaD' })))
-      .toThrow(/pinned to an unrecognized escrow contract/);
+  it('RED: a pin to any other address refuses — a document can never steer a release', async () => {
+    await expect(resolveEscrowContractForDocument(doc({ escrow_contract_address: '0x000000000000000000000000000000000000dEaD' })))
+      .rejects.toThrow(/pinned to an unrecognized escrow contract/);
   });
 
-  it('RED: the predecessor pin is honored on Base only', () => {
+  it('RED: the predecessor pin is honored on Base only', async () => {
     process.env.ESCROW_CONTRACT_ADDRESS_ARBITRUM = '0x73934580ecFD8Bf1F689f73205A2E681fEAa54AF';
-    expect(() => resolveEscrowContractForDocument(doc({ chain: 'arbitrum', escrow_contract_address: PREDECESSOR_ESCROW_V4_BASE })))
-      .toThrow(/pinned to an unrecognized escrow contract/);
+    await expect(resolveEscrowContractForDocument(doc({ chain: 'arbitrum', escrow_contract_address: PREDECESSOR_ESCROW_V4_BASE })))
+      .rejects.toThrow(/pinned to an unrecognized escrow contract/);
   });
 
-  it('RED: a non-string pin refuses (Unknown = Block)', () => {
-    expect(() => resolveEscrowContractForDocument(doc({ escrow_contract_address: null as unknown as string })))
-      .toThrow(/pinned to an unrecognized escrow contract/);
+  it('RED: a non-string pin refuses (Unknown = Block)', async () => {
+    await expect(resolveEscrowContractForDocument(doc({ escrow_contract_address: null as unknown as string })))
+      .rejects.toThrow(/pinned to an unrecognized escrow contract/);
   });
 });

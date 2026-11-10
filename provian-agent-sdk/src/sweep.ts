@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from './protocol-runtime';
 import { guardedFetch } from './guarded-fetch';
 /**
  * Balance sweep for the VOLUNTARY key rotation (rotateKey).
@@ -200,6 +201,7 @@ export async function sweepErc20ToNewKey(params: SweepErc20Params): Promise<Swee
     };
   }
 
+  if (chain === 'base') await currentProtocolDeployment();
   const tokenInfo = getToken(chain, token);
   const transport = resolveTransport(params);
   const publicClient = createPublicClient({ chain: VIEM_CHAINS[chain], transport });

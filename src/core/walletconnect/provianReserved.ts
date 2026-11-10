@@ -140,7 +140,7 @@ const NON_MESSAGE_METHODS: ReadonlySet<string> = new Set(['eth_sendTransaction']
  * kernel from the generated runtime config, every retired PVT token on its forbidden list, the
  * recovery domain's verifyingContract (the Foundation Safe) and the Provian treasury.
  */
-const RESERVED_ADDRESSES: ReadonlySet<string> = new Set(
+const reservedAddresses = (): ReadonlySet<string> => new Set(
     [
         ...Object.values(PROVIAN_BASE_CONTRACTS),
         PVT9_BASE_CONFIG.assets.pvt9.address,
@@ -152,7 +152,7 @@ const RESERVED_ADDRESSES: ReadonlySet<string> = new Set(
 
 /** The reserved address set, for tests and diagnostics. */
 export function provianReservedAddresses(): readonly string[] {
-    return [...RESERVED_ADDRESSES];
+    return [...reservedAddresses()];
 }
 
 // ── Text normalization ──────────────────────────────────────────────────────
@@ -355,7 +355,7 @@ function inspectVerifyingContract(value: unknown): ProvianReservedVerdict {
         return { reserved: true, reason: 'unclassifiable_verifying_contract', detail: 'verifyingContract is not a plain address' };
     }
     const body = value.trim().replace(/^0x/i, '').toLowerCase();
-    if (RESERVED_ADDRESSES.has(`0x${body}`)) {
+    if (reservedAddresses().has(`0x${body}`)) {
         return { reserved: true, reason: 'provian_verifying_contract', detail: `verifyingContract 0x${body}` };
     }
     return { reserved: false };

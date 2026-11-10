@@ -32,7 +32,7 @@
  */
 
 import { BASE_USDC_ADDRESS, ERC20_TRANSFER_TOPIC, type BaseTransactionEvidence, type ChainTransactionEvidence, type CanonicalEconomicLog } from '../onchain/economic-discovery';
-import { PVT9_BASE_CONFIG } from './pvt9-base-config.generated';
+import { currentProtocolDeployment } from '../protocol/runtime';
 
 /** Uniswap routers on Base (moved here from `OUTBOUND_CHAIN_CONFIGS.base.dexRouters`,
  * which now reads this set). */
@@ -53,13 +53,6 @@ export const BASE_SWAP_TARGETS: ReadonlySet<string> = new Set<string>([
   ZEROX_ALLOWANCE_HOLDER_BASE,
 ]);
 
-/** The live PVT9 kernel (the token) from `config/pvt9-base.json`, lowercased;
- * null when the config names none (then PVT is simply not a known asset). */
-export const LIVE_PVT9_TOKEN: string | null = (() => {
-  const address: unknown = PVT9_BASE_CONFIG.assets.pvt9.address;
-  return typeof address === 'string' && /^0x[0-9a-fA-F]{40}$/.test(address) ? address.toLowerCase() : null;
-})();
-
 export const WETH_BASE = '0x4200000000000000000000000000000000000006';
 
 /**
@@ -69,11 +62,24 @@ export const WETH_BASE = '0x4200000000000000000000000000000000000006';
  * (Unknown = Block).
  */
 export const BASE_NON_USDC_ASSETS: Readonly<Record<string, string>> = Object.freeze({
-  ...(LIVE_PVT9_TOKEN ? { [LIVE_PVT9_TOKEN]: 'PVT' } : {}),
   '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2': 'USDT',
   '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': 'DAI',
   [WETH_BASE]: 'WETH',
 });
+
+/** Pure asset table for an independently resolved deployment. No mutable global
+ * token address is shared by concurrent observations. */
+export function baseAssetsForKernel(kernel: string): Readonly<Record<string, string>> {
+  if (!/^0x[0-9a-f]{40}$/.test(kernel) || /^0x0+$/.test(kernel)) throw new Error('protocol_kernel_invalid');
+  return Object.freeze({ ...BASE_NON_USDC_ASSETS, [kernel]: 'PVT' });
+}
+export async function currentBaseAssets(): Promise<Readonly<Record<string, string>>> {
+  return baseAssetsForKernel((await currentProtocolDeployment()).addresses.kernel.toLowerCase());
+}
+export function baseExchangeProfileForKernel(kernel: string): ExchangeProfile {
+  const assets = baseAssetsForKernel(kernel);
+  return { ...BASE_EXCHANGE_PROFILE, isKnownAsset: token => token === BASE_USDC_ADDRESS || token in assets };
+}
 
 export function isKnownBaseAsset(token: string): boolean {
   return token === BASE_USDC_ADDRESS || token in BASE_NON_USDC_ASSETS;
@@ -250,9 +256,12 @@ export async function usdcLegIsWalletExchange(
   if (evidence.transactionHash !== facts.transactionHash.toLowerCase()) {
     throw new Error('wallet_exchange_evidence_mismatch');
   }
+  const { observationBaseAssets } = await import('../protocol/observation-assets');
+  const assets = await observationBaseAssets(evidence.blockNumber);
+  const profile:ExchangeProfile = { ...BASE_EXCHANGE_PROFILE, isKnownAsset: token => token===BASE_USDC_ADDRESS || token in assets };
   if (viaDiamond) {
     return isWalletBridgeSwap(evidence, walletAddress)
-      || classifyWalletExchange(evidence, walletAddress, { ...BASE_EXCHANGE_PROFILE, swapTargets: new Set([LIFI_DIAMOND]) }).exchange;
+      || classifyWalletExchange(evidence, walletAddress, { ...profile, swapTargets: new Set([LIFI_DIAMOND]) }).exchange;
   }
-  return classifyWalletExchange(evidence, walletAddress).exchange;
+  return classifyWalletExchange(evidence, walletAddress, profile).exchange;
 }

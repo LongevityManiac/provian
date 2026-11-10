@@ -4,8 +4,8 @@
  *
  * Two rows, selected BY ID from `GET /v1/commons/institutions` (never by audience — the Market is
  * audience 'both' since):
- * LIVE Escrow (escrow) · Bonds (bonds) · Agent market (market)
- * NOT OPEN Disputes (court) · Voting (governance) · Compute market (compute) · Insurance (insurance)
+ * LIVE Escrow (escrow) · Bonds (bonds) · Agent market (market) · Recourse (recourse)
+ * NOT OPEN Disputes (court) · Voting (governance) · Compute market (compute)
  *
  * no tile does nothing on tap. Every LIVE card opens its screen (Escrow →
  * CommonsInstitutions, Bonds → CommonsBonds, Agent market → CommonsMarket); every NOT OPEN card explains
@@ -14,8 +14,8 @@
  */
 import type { InstitutionInfo } from './CommonsService';
 
-export const LIVE_INSTITUTION_ROW = ['escrow', 'bonds', 'market'] as const;
-export const NOT_OPEN_INSTITUTION_ROW = ['court', 'governance', 'compute', 'insurance'] as const;
+export const LIVE_INSTITUTION_ROW = ['escrow', 'bonds', 'market', 'recourse'] as const;
+export const NOT_OPEN_INSTITUTION_ROW = ['court', 'governance', 'compute'] as const;
 
 export type InstitutionRowId = typeof LIVE_INSTITUTION_ROW[number] | typeof NOT_OPEN_INSTITUTION_ROW[number];
 
@@ -27,7 +27,7 @@ export const INSTITUTION_NAME_KEYS: Record<InstitutionRowId, string> = {
   market: 'commonsDashboard.institutionAgentMarket',
   governance: 'commonsDashboard.institutionVoting',
   compute: 'commonsDashboard.institutionComputeMarket',
-  insurance: 'commonsDashboard.institutionInsurance',
+  recourse: 'commonsDashboard.institutionRecourse',
 };
 
 /** Ionicons glyph per card (the pre- tile icons). */
@@ -38,16 +38,17 @@ export const INSTITUTION_ICONS: Record<InstitutionRowId, 'wallet' | 'shield-chec
   market: 'briefcase',
   governance: 'document-text',
   compute: 'server',
-  insurance: 'umbrella',
+  recourse: 'umbrella',
 };
 
-export type InstitutionScreen = 'CommonsInstitutions' | 'CommonsBonds' | 'CommonsMarket';
+export type InstitutionScreen = 'CommonsInstitutions' | 'CommonsBonds' | 'CommonsMarket' | 'Recourse';
 
 /** The screen each LIVE card opens. */
 export const INSTITUTION_SCREENS: Record<typeof LIVE_INSTITUTION_ROW[number], InstitutionScreen> = {
   escrow: 'CommonsInstitutions',
   bonds: 'CommonsBonds',
   market: 'CommonsMarket',
+  recourse: 'Recourse',
 };
 
 /** What each NOT OPEN card says when tapped (localized in the 12 locales). */
@@ -55,7 +56,6 @@ export const NOT_OPEN_BODY_KEYS: Record<typeof NOT_OPEN_INSTITUTION_ROW[number],
   court: 'commonsDashboard.notOpenDisputesBody',
   governance: 'commonsDashboard.notOpenVotingBody',
   compute: 'commonsDashboard.notOpenComputeBody',
-  insurance: 'commonsDashboard.notOpenInsuranceBody',
 };
 
 export interface InstitutionCard {

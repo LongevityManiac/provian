@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Headless tests for the EVM-backed CommonsInstitutions flows (slices 1b + 2):
  *   - recordTransfer -> POST /transfer/record (verified PE)
@@ -9,7 +10,7 @@
  * The receipt-wait between approve and postBond is exercised by the deferred
  * fork/live slice; here postBond runs with waitForApproval:false.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { custom, keccak256, parseTransaction, getAddress, type Hex } from 'viem';
 import { CommonsInstitutions } from './commons-institutions';
 import { encodeApprove, encodePostBond, encodeRenewBond, grossUpTotalDeposit, requiredBondWei, BOND_POOL_ADDRESSES } from './evm-bond';

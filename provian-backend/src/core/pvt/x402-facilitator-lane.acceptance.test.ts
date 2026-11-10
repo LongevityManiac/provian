@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
 /**
  * — the MONEY OUTCOME of the facilitator lane, driven through its PRODUCTION emit
  * (`buildFacilitatorEmit`) and the chain watchers' production emits (`buildBaseOutboundDeps
@@ -53,6 +55,9 @@ jest.mock('../foundation-membership/client', () => ({
   queueInitialMembershipGrants: async () => {},
 }));
 
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
+import { baseAssetsForKernel } from './wallet-exchange';
+import { baseChainRecordProfile } from './chain-record-chains';
 import type { Firestore } from 'firebase-admin/firestore';
 import { recordPEAccrual } from '../../pvt-accrual';
 import { actRecorded, meterActRow } from './__test-helpers__/meter-acts';
@@ -84,7 +89,7 @@ const A = { wallet: 'wA', agent: 'agentA', address: '0xaaaa000000000000000000000
 const STRANGER = '0x5000000000000000000000000000000000000005';
 const SETTLER = '0x5e77100000000000000000000000000000000b01';
 const FEE = '0xa37fc594e98e951571c771c9e77cdc73f67d3efb';
-const PVT = '0x8811441914381143b9408c5c32247367f86f173a';
+const PVT = protocolDeploymentFixture.addresses.kernel.toLowerCase();
 const DAY = Date.UTC(2026, 9, 4, 12, 0, 0);
 
 function realDeps(): AgentBankDeps {
@@ -369,7 +374,7 @@ describe('B1 — mint-once: one transaction mints once per actor, whichever lane
     const tx1 = nextTx();
     chain.set(tx1, settlementTx(tx1, A.address, H.address, PVT, 10n ** 18n));
     await processFacilitatorSettlement(laneDeps(), claimOf(tx1, A.address, H.address, PVT, (10n ** 18n).toString()));
-    const d1 = deriveChainRecordAct(chain.get(tx1)!, H.address);
+    const d1 = deriveChainRecordAct(chain.get(tx1)!, H.address, null, baseChainRecordProfile(new Set(), new Set(), baseAssetsForKernel(PVT)));
     if (d1.status !== 'act') throw new Error('expected a receive');
     expect(d1.act.actionType).toBe('receive');
     await lane.emitActPE(wallet, d1.act, chain.get(tx1)!, { recordPeId: null, source: 'inbound_scan' });
@@ -379,7 +384,7 @@ describe('B1 — mint-once: one transaction mints once per actor, whichever lane
     // The chain-record lane first, then the facilitator.
     const tx2 = nextTx();
     chain.set(tx2, settlementTx(tx2, A.address, H.address, PVT, 10n ** 18n));
-    const d2 = deriveChainRecordAct(chain.get(tx2)!, H.address);
+    const d2 = deriveChainRecordAct(chain.get(tx2)!, H.address, null, baseChainRecordProfile(new Set(), new Set(), baseAssetsForKernel(PVT)));
     if (d2.status !== 'act') throw new Error('expected a receive');
     await lane.emitActPE(wallet, d2.act, chain.get(tx2)!, { recordPeId: null, source: 'inbound_scan' });
     await processFacilitatorSettlement(laneDeps(), claimOf(tx2, A.address, H.address, PVT, (10n ** 18n).toString()));

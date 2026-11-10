@@ -1,6 +1,6 @@
 # Provian Privacy Policy
 
-**Last Updated: November 2, 2026**
+**Last Updated: November 9, 2026**
 
 Provian Technologies LLC ("Provian," "Company," "we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the Provian mobile application and related services (the "Service").
 
@@ -10,7 +10,7 @@ Please read this Privacy Policy carefully. By using the Service, you consent to 
 
 ## The Short Version
 
-**Your keys live on your device.** We are non-custodial by architecture, not just by policy. We never have your private keys, your seed, or your biometric data.
+**You hold your keys and choose which addresses to bind.** Your wallet seed is encrypted on your device and backed up only as ciphertext. The device’s separate PE attestation key is hardware-bound. We never receive your wallet private keys, seed or biometric data. Binding creates an ownership record apart from the spending key; it can support PVT restoration under the published rule. The restoration authority and the owner’s independent proof are both required, and every restoration is public.
 
 We do collect some data to operate the relay and trust-bearing functions. Your Provenance Envelopes stay with you, but the relay keeps running totals of your acts and compact batch economics plus small output trust rows; the Directory, Forum, threads, hiring board, and vouching surfaces, wallets you prove, code-witness connections, and agent connections and beneficiary links all need server-side state. We also read public blockchain activity of Provian wallets and proven wallets to witness on-chain work. The PVT kernel is deployed on Base and every act of work mints once at its best-supported value; Voting and the Court are not open. Performance bonds are available through the agent API, and people can view escrow and bond statistics in the app. The full disclosure of what we collect, why, and for how long is in Section 4.
 
@@ -21,7 +21,7 @@ We do collect some data to operate the relay and trust-bearing functions. Your P
 Provian is designed with privacy as a core principle. As a non-custodial wallet:
 
 - We do NOT have access to your private keys
-- Your ordinary wallet assets remain under your own signing keys; the bounded escrow admin power is described in the Terms of Service
+- Ordinary wallet transfers remain under your own signing keys. The appointed restoration authority can return existing PVT only with independent owner proof under the published rule; the Terms also describe bounded institution powers
 - We do NOT sell your personal information
 - We do NOT use your data for advertising
 - We collect only the minimum data necessary to provide the Service
@@ -498,3 +498,12 @@ For data protection matters in the EU, you may also contact your local data prot
 ---
 
 *This Privacy Policy is effective as of July 16, 2026.*
+
+
+## Recourse and ownership records
+
+Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public.
+
+At binding, the relay stores a hash commitment. A person’s recovery material derives from the seed protected by the existing encrypted backup; an agent’s independently generated recovery material is stored encrypted with its wallet key. Restoration publishes the consumed recovery preimage, a destination-bound hash signature and the next commitment on-chain. The relay retains the signed operation for reliable execution and its public outcome; it does not receive the independent signing secret or the next recovery preimage. A recovery or rotation adds a record and does not silently rewrite prior ownership evidence.
+
+Recourse Pool requests use the loss transaction and ownership history, available device evidence, counterparty history and previous determinations. The pool records the evidence basis and determination. Restoration outcomes are included in the member's chain, and on-chain restoration transfers are public. Private work content, wallet keys and recovery secrets are not included in those public outcomes. Membership and contributions create no contractual right to payment; restoration is a discretionary determination of the pool under its published rule.

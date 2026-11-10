@@ -93,7 +93,8 @@ import { deleteUserRelayData } from './core/wallet/delete-user-data';
 import { endHumanBeneficiaryLinks } from './core/agent-wallet/end-human-beneficiary-links';
 import { invalidateDeviceCache } from './routes/middleware/device-auth';
 import { leaveCommons } from './core/commons/profiles';
-import { recoverRecoverySigner, recoveryNonceMaterial, RECOVERY_PURPOSE } from './routes/recovery-eip712';
+import { recoveryNonceMaterial, RECOVERY_PURPOSE } from './routes/recovery-eip712';
+import { recoverCurrentRecoverySigner } from './routes/recovery-current-signer';
 import { createAgentWalletRouter } from './routes/agent-wallet';
 import { createAgentLeaderboardRouter } from './routes/agent-leaderboard';
 import { createAgentInviteRouter } from './routes/agent-invite';
@@ -197,6 +198,7 @@ import { enforceGenesisLaunchSequenceAtStartup } from './core/pvt/genesis-launch
 import { buildPeAnchorReadContract } from './core/pvt/pe-anchor-runtime';
 import { createHumanWalletRegistrationHandler } from './routes/human-wallet-registration';
 import { createPersonExternalAddressRouter } from './routes/person-external-address';
+import { createRecourseRouter } from './routes/recourse';
 import { createAgentSolanaAddressRouter, createPersonSolanaAddressRouter } from './routes/solana-address';
 import { createLaunchStateRouter } from './routes/launch-state';
 import { retiredLegacyAgentWalletCreateHandler } from './routes/retired-wallet-creation';
@@ -1629,7 +1631,7 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
     let recoveredAddress: string;
     let nonceMaterial: string;
     try {
-      recoveredAddress = recoverRecoverySigner(recoveryMessage, signature);
+      recoveredAddress = await recoverCurrentRecoverySigner(recoveryMessage, signature);
       // Nonce material binds the typed-data digest so this exact signed payload
       // cannot be replayed within the TTL window.
       nonceMaterial = recoveryNonceMaterial(recoveryMessage);
@@ -3631,7 +3633,7 @@ app.post('/v1/meter/batch/mobile', authenticate, async (req: Request, res: Respo
       res.status(admission.status).json(admission.body);
       return;
     }
-    const secret=await cache.getUserAuthSecret(userId)??(await db.collection('auth_secrets').doc(userId).get()).data()?.secret;
+    const secret=(await db.collection('auth_secrets').doc(userId).get()).data()?.secret;
     const transport=unwrapPrivateBatch(req.body,typeof secret==='string'?secret:undefined);
     const batchDeviceId = (transport.batch as { device_id?: unknown } | undefined)?.device_id;
     if (batchDeviceId !== tokenDeviceId) {
@@ -3829,6 +3831,7 @@ mountPvtPublicReads(app, agentBankDeps);
  * the person's own. Mounted above the `/v1/wallet` catch-all.
  */
 app.use('/v1/wallet', createPersonExternalAddressRouter({ agentBankDeps, authenticate }));
+app.use('/v1/recourse', createRecourseRouter(agentBankDeps, authenticateDeviceOwner));
 /**
  * POST /v1/wallet/solana-address/challenge | /verify, GET /v1/wallet/solana-addresses — a PERSON
  * proves a Solana address (ed25519; follow-up). Same rules as the EVM proof above:
@@ -4599,7 +4602,23 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
         inboundScan = { error: scanError instanceof Error ? scanError.message : String(scanError) };
       }
       progress('scan_complete');
-      return { watch_registry: registryReconcile, inbound_scan: inboundScan };
+      const { runOwnershipLedgerWatcher } = await import('./core/recourse/ledger-watcher');
+      const { runBindingWorker } = await import('./core/recourse/binding-runtime');
+      const { runOwnerOperationWorker } = await import('./core/recourse/owner-operation-runtime');
+      const { runBreakDeploymentWorker } = await import('./core/recourse/break-deployment-runtime');
+      const breakDeployment = await runBreakDeploymentWorker(agentBankDeps.db);
+      const { runBreakRegistrationWorker } = await import('./core/recourse/break-registration');
+      const breakRegistration = await runBreakRegistrationWorker(agentBankDeps.db);
+      const ownerOperation = await runOwnerOperationWorker(agentBankDeps.db);
+      const bindingOperation = await runBindingWorker(agentBankDeps.db);
+      const ownershipLedger = await runOwnershipLedgerWatcher(agentBankDeps.db);
+      const { runRecourseLifecycleWatcher } = await import('./core/recourse/lifecycle-records');
+      const recourseRecords = await runRecourseLifecycleWatcher(agentBankDeps.db);
+      {
+        const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
+        await refreshRecoursePoolRatio(agentBankDeps.db);
+      }
+      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, binding_operation: bindingOperation, owner_operation: ownerOperation, break_deployment: breakDeployment, break_registration: breakRegistration, recourse_records: recourseRecords };
     }, () => releaseChainRecordRunLease(db, { workerId, nowMs: Date.now(), workload: 'discovery' }));
     res.json(report);
   } catch (error) {
@@ -5665,7 +5684,10 @@ import {
   loadPvtPrincipalConfig,
   logEnabledCurrenciesPerChain,
 } from './core/agent-bank/pvt-principal-config';
-logEnabledCurrenciesPerChain(loadPvtPrincipalConfig());
+if (process.env.PROVIAN_BOOT_CHECK !== '1') {
+  void loadPvtPrincipalConfig().then(config => logEnabledCurrenciesPerChain(config))
+    .catch(() => console.warn('[PvtPrincipal] Current protocol deployment unavailable; money paths refuse unverified addresses.'));
+}
 
 // BOOT CHECK (CI guardrail). A module-eval crash — e.g. the interleaved-import
 // temporal-dead-zone that boot-crashed the harness-catalog mount (bc298908c) — is

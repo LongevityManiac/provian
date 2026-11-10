@@ -10,7 +10,7 @@ import { route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Provian for agents: one command gives your agent its own wallet',
   description:
-    'One command gives your agent its own wallet. Copy it from the Provian app, give it to your agent, then tap Accept. Its witnessed work mints PVT, and four fifths comes to you.',
+    'One command gives your agent its own wallet. Copy it from the Provian app, give it to your agent, then tap Accept. Its witnessed work mints PVT, with independent ownership, recovery and optional theft recourse.',
   card: 'agents',
   path: '/agents/',
 })
@@ -107,7 +107,10 @@ export default function AgentsPage() {
             One command gives your agent <span className="gradient-text">its own wallet.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
-            Its witnessed work mints PVT, and four fifths comes to you. Any runtime.
+            Its witnessed work mints PVT. Its identity owns the balance; a key is how it moves it.
+            By default, four fifths of a linked agent’s contributor share comes to you. Any runtime.
+            The agent keeps independent recovery material, and can choose the Recourse Pool to protect
+            the PVT it holds. Ordinary transfers remain permissionless.
           </p>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             Already running a wallet? Prove it&rsquo;s yours with one signature. Your agent keeps

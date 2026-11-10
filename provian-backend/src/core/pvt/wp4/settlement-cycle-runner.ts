@@ -1174,7 +1174,7 @@ async function rebroadcastAttempt(
   const cancel = attempt.kind === 'cancel';
   try {
     const signed = await deps.chain.sign({
-      to: cancel ? config.signerAddress : kernelAddress,
+      to: cancel ? config.signerAddress : (attempt.target ?? kernelAddress),
       data: cancel ? '0x' : batch.calldata,
       valueWei: 0n,
       nonce: attempt.nonce,
@@ -1226,6 +1226,7 @@ interface ResolveContext {
   readonly mode: 'owned' | 'adopted';
   readonly deadline: number;
   readonly kernelAddress: string;
+  readonly settlementTarget?: string;
 }
 
 /**
@@ -1244,6 +1245,7 @@ async function resolveBatch(
   const log = deps.log ?? (() => undefined);
   const adopted = ctx.mode === 'adopted';
   const kernelAddress = ctx.kernelAddress;
+  const executionAddress = ctx.settlementTarget ?? kernelAddress;
   const cycleId = batch.cycle_id;
   const binding: PreparedBatchBinding = {
     epoch: batch.epoch,
@@ -1445,7 +1447,7 @@ async function resolveBatch(
     // refuse here — before signing, before an attempt is recorded, before any broadcast.
     // Cancel transactions are self-sends with empty calldata and are not settlements, so
     // they pass through: `to` is the signer, not the kernel.
-    if (to.toLowerCase() === kernelAddress.toLowerCase()) {
+    if (to.toLowerCase() === executionAddress.toLowerCase()) {
       const approval = await ensureApproved();
       if (!approval.ok) {
         return {
@@ -1465,6 +1467,7 @@ async function resolveBatch(
       attempt: {
         nonce,
         tx_hash: signed.hash,
+        target: to,
         kind,
         max_fee_per_gas_wei: maxFeePerGasWei.toString(),
         max_priority_fee_per_gas_wei: maxPriorityFeePerGasWei.toString(),
@@ -1552,15 +1555,15 @@ async function resolveBatch(
         kind: 'refused', reason: 'batch_approval_refused', detail: preApproval.refused, approval: preApproval.outcome,
       };
     }
-    const probe = await simulateWithRetry(deps, config, kernelAddress, batch.calldata);
+    const probe = await simulateWithRetry(deps, config, executionAddress, batch.calldata);
     if (!probe.ok) {
       await releaseAndDie(`unsettleable at the dry run: ${probe.revertReason ?? 'simulation reverts'}`);
       return { kind: 'refused', reason: 'batch_unsettleable', detail: probe.revertReason ?? 'simulation reverts' };
     }
-    const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: kernelAddress, data: batch.calldata });
+    const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: executionAddress, data: batch.calldata });
     const fees = await chain.feeData();
     const gasLimit = (gasEstimate * BigInt(config.gasHeadroomBps)) / 10_000n;
-    const sent = await record('original', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, kernelAddress, batch.calldata);
+    const sent = await record('original', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, executionAddress, batch.calldata);
     if (!sent.ok) {
       // Signed but never recorded => never broadcast: release it rather than strand it.
       if (sent.notRecorded) await releaseAndDie(`original not recorded: ${sent.refused}`);
@@ -1715,7 +1718,7 @@ async function resolveBatch(
             await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: 'reverted twice with a live binding' });
             return { kind: 'refused', reason: 'batch_unsettleable', detail: 'reverted twice with a live binding' };
           }
-          const probe = await simulateWithRetry(deps, config, kernelAddress, batch.calldata);
+          const probe = await simulateWithRetry(deps, config, executionAddress, batch.calldata);
           if (!probe.ok) {
             await markBatchDead(db, {
               batchId: batch.batch_id, nowMs: now(), reason: `unsettleable after revert: ${probe.revertReason ?? 'simulation reverts'}`,
@@ -1730,9 +1733,9 @@ async function resolveBatch(
           }
           retriesAfterRevert += 1;
           const fees = await chain.feeData();
-          const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: kernelAddress, data: batch.calldata });
+          const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: executionAddress, data: batch.calldata });
           const gasLimit = (gasEstimate * BigInt(config.gasHeadroomBps)) / 10_000n;
-          const sent = await record('retry_after_revert', nonceResult.nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, kernelAddress, batch.calldata);
+          const sent = await record('retry_after_revert', nonceResult.nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, executionAddress, batch.calldata);
           if (!sent.ok) return { kind: 'stopped', reason: sent.stopReason ?? 'transaction_limit', detail: sent.refused };
           continue;
         }
@@ -1817,7 +1820,7 @@ async function resolveBatch(
         // settlement (store + kernel both refuse).
         sent = await cancel();
       } else {
-        sent = await record('replacement', latest.nonce, maxFee, maxPriority, BigInt(latest.gas_limit), kernelAddress, batch.calldata);
+        sent = await record('replacement', latest.nonce, maxFee, maxPriority, BigInt(latest.gas_limit), executionAddress, batch.calldata);
         if (!sent.ok && sent.stopReason === 'batch_approval_refused') {
           if (sent.approval !== undefined && TRANSIENT_APPROVAL_REFUSALS.has(sent.approval.reason)) {
             // — a transient refusal says nothing about the batch: the earlier
@@ -2016,6 +2019,7 @@ export async function reconcileStrandedSettlements(
   params: {
     readonly deadline: number;
     readonly kernelAddress: string;
+    readonly settlementTarget?: string;
     readonly excludeCycleId?: string;
     /** The kernel's `nextFinalizedCursor` as just observed; null skips the coverage check. */
     readonly chainCursor?: bigint | null;
@@ -2062,7 +2066,7 @@ export async function reconcileStrandedSettlements(
     adopted += 1;
     log(`RECONCILE: adopting ${batch.status} batch ${batch.batch_id} (cycle ${batch.cycle_id}, nonce ${batch.reserved_nonce})`);
     const resolution = await resolveBatch(deps, config, {
-      mode: 'adopted', deadline: params.deadline, kernelAddress: params.kernelAddress,
+      mode: 'adopted', deadline: params.deadline, kernelAddress: params.kernelAddress, settlementTarget: params.settlementTarget,
     }, batch);
     if (resolution.kind === 'confirmed') {
       confirmed += 1;
@@ -2315,7 +2319,7 @@ async function probeSettles(
     if (SYSTEMIC_APPROVAL_REFUSALS.has(approval.reason)) throw new SystemicRefusal(approval.detail);
     return false;
   }
-  const simulation = await simulateWithRetry(ctx.deps, ctx.config, ctx.view.kernelAddress, encoded.data);
+  const simulation = await simulateWithRetry(ctx.deps, ctx.config, ctx.view.settlementForwarder?.address ?? ctx.view.kernelAddress, encoded.data);
   return simulation.ok;
 }
 
@@ -2642,7 +2646,7 @@ async function runSettlementCycleAttempt(
     const ownActive = ownSnap.exists && (ownSnap.data() ?? {}).status === 'active';
     reconciliation = await reconcileStrandedSettlements(deps, config, {
       deadline,
-      kernelAddress: preReconcile.kernelAddress,
+      kernelAddress: preReconcile.kernelAddress, settlementTarget: preReconcile.settlementForwarder?.address,
       chainCursor: preReconcile.nextFinalizedCursor,
       ...(ownActive ? { excludeCycleId: config.cycleId } : {}),
     });
@@ -2810,7 +2814,7 @@ async function runSettlementCycleAttempt(
     for (const pending of unresolved) {
       resumedBatches += 1;
       const resolution = await resolveBatch(deps, config, {
-        mode: 'owned', deadline, kernelAddress: observation.kernelAddress,
+        mode: 'owned', deadline, kernelAddress: observation.kernelAddress, settlementTarget: observation.settlementForwarder?.address,
       }, pending);
       if (resolution.kind === 'confirmed') confirmedThisRun += 1;
       if (resolution.kind === 'stopped') {
@@ -2893,7 +2897,7 @@ async function runSettlementCycleAttempt(
               return stop('resumption_abort', `reorged batch ${tip.batch_id} vanished`, { deferredClaims, resumedBatches });
             }
             const resolution = await resolveBatch(deps, config, {
-              mode: 'owned', deadline, kernelAddress: view.kernelAddress,
+              mode: 'owned', deadline, kernelAddress: view.kernelAddress, settlementTarget: view.settlementForwarder?.address,
             }, redriven);
             if (resolution.kind === 'stopped') {
               return stop(resolution.reason, `reorg re-drive: ${resolution.detail}`, { deferredClaims, resumedBatches });
@@ -3153,7 +3157,7 @@ async function runSettlementCycleAttempt(
 
       // ── Resolve to a terminal state (confirmed / dead / refused / stop).
       const resolution = await resolveBatch(deps, config, {
-        mode: 'owned', deadline, kernelAddress: view.kernelAddress,
+        mode: 'owned', deadline, kernelAddress: view.kernelAddress, settlementTarget: view.settlementForwarder?.address,
       }, reserved.batch);
       if (resolution.kind === 'confirmed') {
         confirmedThisRun += 1;

@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * the inbound USDC lineage backfill. Real Firestore graph (route-created
  * wallet, real rotation transition), real watcher claim path and real PE emit;

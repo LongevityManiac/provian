@@ -23,6 +23,12 @@ vi.mock('./scripts/agent-credentials-file', async (orig) => ({
   ...(await orig<object>()),
   persistAgentCredentialsFile: (c: Record<string, string>) => { persistedCreds.push(c); return '/tmp/creds'; },
 }));
+// Ownership binding has its own independent signature/chain tests. This test
+// isolates birth-escrow failure and proves credentials are durable before bind.
+vi.mock('./recourse', () => ({ bindRecourseOwnership: async (config: { walletId: string; apiKey: string }) => {
+  expect(persistedCreds.at(-1)).toMatchObject({ wallet_id: config.walletId, api_key: config.apiKey });
+  return { status: 'bound' };
+} }));
 vi.mock('./keystore', async (orig) => ({
   ...(await orig<object>()),
   persistAgentWalletKey: (k: Record<string, unknown>) => { persistedKeys.push(k); return { path: '/tmp/ks' }; },

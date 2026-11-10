@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Tests for ProvianClient.wrapFetchWithX402 — the agent pays an HTTP 402 with
  * its OWN wallet: detect 402 -> sign EIP-3009 locally with the agent's key ->

@@ -36,7 +36,7 @@ export type EscrowCurrency = 'usdc' | 'pvt';
  * (`{chain}-chunk-ii.json`), the same address on both via deployer-nonce alignment.
  */
 export const ESCROW_USDC_ADDRESSES: Record<SupportedChain, `0x${string}` | undefined> = {
-  base: resolveEscrowUsdcAddress('base'),
+  get base() { return resolveEscrowUsdcAddress('base'); },
   arbitrum: resolveEscrowUsdcAddress('arbitrum'),
   optimism: resolveEscrowUsdcAddress('optimism'),
 };
@@ -54,7 +54,7 @@ export const ESCROW_USDC_ADDRESSES: Record<SupportedChain, `0x${string}` | undef
  * (the Bond convention).
  */
 export const ESCROW_PVT_ADDRESSES: Record<SupportedChain, `0x${string}` | undefined> = {
-  base: BASE_PVT9_ADDRESSES.escrow,
+  get base() { return BASE_PVT9_ADDRESSES.escrow; },
   arbitrum: undefined,
   optimism: undefined,
 };

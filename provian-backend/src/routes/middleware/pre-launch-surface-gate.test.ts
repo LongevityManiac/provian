@@ -365,6 +365,23 @@ describe('pre-launch surface gate', () => {
                       // constants. Read-only; discloses only the public schema (field assignments,
                       // witness/evidence classes, predicate grammar, the SIGNED template digest),
                       // no user/wallet/device data and no key material.
+        // Recovery authenticates the independent owner proof and fresh-key
+        // possession; requiring the lost credential would defeat recovery.
+        // Operation status exposes only its hash-addressed public execution
+        // state. Resource ratios are public chain-derived information.
+        '/v1/recourse/recover-human', '/v1/recourse/recover-agent',
+        '/v1/recourse/owner-operations/recovery', '/v1/recourse/owner-operations/:id',
+        '/v1/recourse/resources',
+        '/v1/recourse/membership-rules/:hash', // Signed public amounts, bound to the permanent pointer.
+        // Break recovery cannot depend on a lost relay credential. Writes
+        // verify the snapshot-bound independent owner proof; these reads expose
+        // public snapshot entitlements and operation/receipt hints only.
+        '/v1/recourse/break-deployments', '/v1/recourse/break-deployments/:id',
+        '/v1/recourse/break-entitlements/:origin/:identity',
+        '/v1/recourse/break-recovery-state/:origin/:identity',
+        '/v1/recourse/break-registrations', '/v1/recourse/break-registrations/:id',
+        '/v1/recourse/break-restorations', '/v1/recourse/break-restorations/:id',
+        '/v1/recourse/break-restorations/:id/receipt',
 
         // (2) the agent rail opened by
         '/v1/agent/wallet', '/v1/pe/propose-type',

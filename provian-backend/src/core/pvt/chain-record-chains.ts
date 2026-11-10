@@ -39,7 +39,6 @@ import {
   MULTICHAIN_COMMERCE_CUT_LINE_MS,
   WETH_BASE,
   ZEROX_ALLOWANCE_HOLDER_BASE,
-  isKnownBaseAsset,
   type ExchangeProfile,
 } from './wallet-exchange';
 
@@ -137,15 +136,16 @@ export const OPTIMISM_CHAIN_RECORD_PROFILE: ChainRecordChainProfile = otherChain
 export function baseChainRecordProfile(
   excludedCounterparties: ReadonlySet<string>,
   institutionTargets: ReadonlySet<string>,
+  assets: Readonly<Record<string, string>> = BASE_NON_USDC_ASSETS,
 ): ChainRecordChainProfile {
   return Object.freeze({
     chain: 'base' as const,
     chainId: 8453 as const,
-    assets: BASE_NON_USDC_ASSETS,
+    assets,
     otherLaneToken: BASE_USDC_ADDRESS,
     swapTargets: BASE_SWAP_TARGETS,
     bridgeTargets: new Set<string>([LIFI_DIAMOND]),
-    isKnownAsset: isKnownBaseAsset,
+    isKnownAsset: (token: string) => token === BASE_USDC_ADDRESS || token in assets,
     weth: WETH_BASE,
     excludedCounterparties,
     institutionTargets,

@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import { listWalletRecoveryTransactions, type RecoverableWalletTransaction } from '../security/ActionWallet';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -222,7 +223,8 @@ class TransactionService {
      * `tx_failed`; a call that would revert is refused before broadcast by the gas estimate.
      */
     async burnPVT(params: { amount: string; operationId?: string }, biometricAction?: BiometricAction): Promise<SendResult & { amountAtomic: string; nonce: number }> {
-        assertWalletEnabled('burnPVT');
+        await currentProtocolDeployment();
+    assertWalletEnabled('burnPVT');
 
         const chainId = PVT9_TOKEN.chainId;
         const provider = this.getProvider(chainId);

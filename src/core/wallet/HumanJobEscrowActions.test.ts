@@ -1,3 +1,4 @@
+vi.mock('../protocol/runtime', async () => (await import('../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * the escrow acts a job party signs (release / dispute / claim the refund). Every guard has a
  * RED control: a violating input must throw (or skip) with ZERO transactions sent.

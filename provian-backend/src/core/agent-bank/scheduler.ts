@@ -702,7 +702,7 @@ export async function processAbandonedBonds(deps: AgentBankDeps): Promise<number
       // actually shows the bond Abandoned (the burn happened) before flipping
       // Firestore status + emitting the burn PE. Fail closed: an unconfirmable read
       // asserts nothing.
-      const bondPoolAddress = bondPoolAddressForChain(bond.chain);
+      const bondPoolAddress = (await bondPoolAddressForChain(bond.chain));
       if (!bondPoolAddress) {
         console.warn(`[Scheduler] No BondPool address for chain ${bond.chain}; skipping abandonment for ${bond.bond_id}`);
         continue;
@@ -906,7 +906,7 @@ export async function processStaleClaims(deps: AgentBankDeps): Promise<number> {
   let processed = 0;
   for (const { ref, data: claim } of claims) {
     try {
-      const bondPoolAddress = bondPoolAddressForChain(claim.chain);
+      const bondPoolAddress = (await bondPoolAddressForChain(claim.chain));
       if (!bondPoolAddress) {
         console.warn(`[Scheduler] No BondPool address for chain ${claim.chain}; skipping stale claim ${claim.claim_id}`);
         continue;

@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from './protocol-runtime';
 import { splitThreadOutputSignature, type OutputSignature } from './output-signature';
 import { guardedFetcher } from './guarded-fetch';
 import { preflightPresentationProofs, type PresentationProofInput } from './pe-export-wire';
@@ -2323,6 +2324,7 @@ export class CommonsInstitutions {
   async fundCommonsJob(jobId: string, wallet: EvmWallet, params: FundCommonsJobParams = {}): Promise<FundCommonsJobResult> {
     if (!jobId) throw new ProvianValidationError('jobId is required');
     const escrow = await this.getCommonsJobEscrow(jobId);
+    if (commonsEscrowChain(escrow) === 'base') await currentProtocolDeployment();
     const plan = planCommonsJobFunding(escrow, wallet, params);
 
     if (params.resumeFromTxHash !== undefined) {
@@ -2542,6 +2544,7 @@ export class CommonsInstitutions {
   async releaseCommonsJob(jobId: string, wallet: EvmWallet, params: CommonsJobChainOpts = {}): Promise<ReleaseCommonsJobResult> {
     if (!jobId) throw new ProvianValidationError('jobId is required');
     const escrow = await this.getCommonsJobEscrow(jobId);
+    if (commonsEscrowChain(escrow) === 'base') await currentProtocolDeployment();
     const target = resolveCommonsEscrowTarget(escrow, wallet, { requireDepositor: true, action: 'release' });
     if (escrow.status !== 'funded') {
       throw new ProvianValidationError(`only a funded escrow can be released (escrow is '${escrow.status}')`);
@@ -2577,6 +2580,7 @@ export class CommonsInstitutions {
       throw new ProvianValidationError(`evidence must be a string of at most ${COMMONS_DISPUTE_EVIDENCE_MAX_LENGTH} chars`);
     }
     const escrow = await this.getCommonsJobEscrow(jobId);
+    if (commonsEscrowChain(escrow) === 'base') await currentProtocolDeployment();
     const target = resolveCommonsEscrowTarget(escrow, wallet, { requireDepositor: true, action: 'dispute' });
     let disputeTxHash: string | null = null;
     if (escrow.status === 'funded') {
@@ -2657,6 +2661,7 @@ export class CommonsInstitutions {
       );
     }
     const escrow = await this.getCommonsJobEscrow(jobId);
+    if (commonsEscrowChain(escrow) === 'base') await currentProtocolDeployment();
     const target = resolveCommonsEscrowTarget(escrow, wallet, { requireDepositor: false, action: 'claim the refund on' });
     const tx = await sendTransaction(wallet, {
       to: target.escrowAddress, data: encodeClaimDisputeTimeout(target.onchainEscrowId), chain: target.chain,
@@ -3104,6 +3109,7 @@ export class CommonsInstitutions {
       throw new ProvianValidationError('amountAtomic must be a positive integer string (atomic 18-decimal PVT units)');
     }
     if (!params.rpcUrl) throw new ProvianValidationError('rpcUrl is required to broadcast the burn');
+    if (chain === 'base') await currentProtocolDeployment();
     const token = getToken(chain, 'PVT');
     const wallet: EvmWallet = {
       privateKeyHex: params.privateKeyHex,
@@ -4762,6 +4768,7 @@ export class CommonsInstitutions {
       throw new ProvianValidationError('autonomyLevel must be 2 or 3');
     }
     const chain: SupportedChain = params.chain ?? 'base';
+    if (chain === 'base') await currentProtocolDeployment();
     const bondPool = bondPoolAddressForChain(chain);
     const pvt = getToken(chain, 'PVT').address;
 
@@ -4979,6 +4986,7 @@ export class CommonsInstitutions {
       throw new ProvianValidationError('bondId is required (from postBond result or GET /v1/bonds/:agentId)');
     }
     const chain: SupportedChain = params.chain ?? 'base';
+    if (chain === 'base') await currentProtocolDeployment();
     const bondPool = bondPoolAddressForChain(chain);
 
     // Resume path (audit Pass-3 #26): a renewBond that SUCCEEDED on-chain (burn +
@@ -5055,6 +5063,7 @@ export class CommonsInstitutions {
       throw new ProvianValidationError('bondId is required (from postBond result or GET /v1/bonds/:agentId)');
     }
     const chain: SupportedChain = params.chain ?? 'base';
+    if (chain === 'base') await currentProtocolDeployment();
     const bondPool = bondPoolAddressForChain(chain);
     const pvt = getToken(chain, 'PVT').address;
 
@@ -5203,7 +5212,8 @@ export class CommonsInstitutions {
     //    ProvianValidationError if unconfigured (incl. any currency:'pvt' today).
     let escrowAddr: `0x${string}`;
     try {
-      escrowAddr = escrowAddressForChain(currency, chain);
+      if (chain === 'base') await currentProtocolDeployment();
+    escrowAddr = escrowAddressForChain(currency, chain);
     } catch (err) {
       throw new ProvianValidationError((err as Error).message);
     }
@@ -5292,7 +5302,8 @@ export class CommonsInstitutions {
     //    ProvianValidationError if unconfigured (Arbitrum/Optimism today).
     let poolAddr: `0x${string}`;
     try {
-      poolAddr = poolAddressForChain(chain);
+      if (chain === 'base') await currentProtocolDeployment();
+    poolAddr = poolAddressForChain(chain);
     } catch (err) {
       throw new ProvianValidationError((err as Error).message);
     }

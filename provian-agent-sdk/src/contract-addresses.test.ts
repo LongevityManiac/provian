@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Single-source-of-truth + retired-address guard tests for the SDK's protocol
  * contract addresses (cascade button-up 2a, then 4c-sdk).
@@ -139,14 +140,14 @@ describe('contract-addresses: resolves to the institution deployment/PVT9 stack,
     expect(resolveBondPoolAddress('optimism')).toBeUndefined();
   });
 
-  it('honors the SAME env-var override the backend uses (env → JSON default)', () => {
+  it('ignores Base environment overrides in favor of independently resolved pointer addresses', () => {
     const override = '0x1111111111111111111111111111111111111111';
     process.env.BOND_POOL_CONTRACT_ADDRESS_BASE = override;
-    expect(resolveBondPoolAddress('base')).toBe(getAddress(override));
+    expect(resolveBondPoolAddress('base')).toBe(getAddress(pvt9.contracts.bondPool.address));
     delete process.env.BOND_POOL_CONTRACT_ADDRESS_BASE;
 
     process.env.ESCROW_CONTRACT_ADDRESS = override; // legacy single-valued fallback
-    expect(resolveEscrowUsdcAddress('base')).toBe(getAddress(override));
+    expect(resolveEscrowUsdcAddress('base')).toBe(getAddress(pvt9.contracts.escrowV4.address));
   });
 
   it('the retired set is exactly the Pass-3 stack (institutions + prior quartet + PVTv8) plus the PVT9 set, checksummed', () => {
@@ -320,12 +321,12 @@ describe('contract-addresses import is filesystem-free (bundle safety)', () => {
     await expect(importWithNoDeployments()).resolves.toBeDefined();
   });
 
-  it('still fails closed when an institution address is actually read (RED control: mock is live)', async () => {
+  it('uses verified pointer addresses without deployment files; historical retirement data still requires its artifact', async () => {
     const mod = await importWithNoDeployments();
     // Touching a value that needs a deployment artifact throws — proving the
     // mock genuinely simulates absence (not a vacuous pass) and that the read is
     // merely deferred, never skipped.
-    expect(() => mod.BASE_PVT9_ADDRESSES.escrow).toThrow(/deployment artifact/);
+    expect(mod.BASE_PVT9_ADDRESSES.escrow).toBe(getAddress(pvt9.contracts.escrowV4.address));
     expect(() => mod.retiredBaseAddresses()).toThrow(/deployment artifact/);
     // A non-institution path that does not touch an artifact stays usable.
     expect(mod.isRetiredAddress('not-an-address')).toBe(false);

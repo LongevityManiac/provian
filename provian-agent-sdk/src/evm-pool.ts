@@ -32,7 +32,7 @@ import { BYTES32_PATTERN } from './evm-escrow';
  * Arbitrum/Optimism are undefined until deployed there.
  */
 export const POOL_ADDRESSES: Record<SupportedChain, `0x${string}` | undefined> = {
-  base: resolvePoolAddress('base'),
+  get base() { return resolvePoolAddress('base'); },
   arbitrum: resolvePoolAddress('arbitrum'),
   optimism: resolvePoolAddress('optimism'),
 };

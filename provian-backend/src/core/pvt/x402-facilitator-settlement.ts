@@ -33,7 +33,7 @@ import {
   type BaseTransactionEvidence,
   type CanonicalEconomicLog,
 } from '../onchain/economic-discovery';
-import { LIVE_PVT9_TOKEN, addressTopic } from './wallet-exchange';
+import { addressTopic } from './wallet-exchange';
 
 // =============================================================================
 // CONSTANTS + CONFIG
@@ -105,10 +105,10 @@ export function facilitatorSolanaRpcUrl(env: Env = process.env): string {
 }
 
 /** The Base assets a facilitator settlement may move: USDC and the live PVT9 token. Nothing else. */
-export function facilitatorBaseAssets(): Readonly<Record<string, 'USDC' | 'PVT'>> {
+export function facilitatorBaseAssets(kernel?: string): Readonly<Record<string, 'USDC' | 'PVT'>> {
   return Object.freeze({
     [BASE_USDC_ADDRESS]: 'USDC',
-    ...(LIVE_PVT9_TOKEN ? { [LIVE_PVT9_TOKEN]: 'PVT' as const } : {}),
+    ...(kernel ? { [kernel]: 'PVT' as const } : {}),
   });
 }
 
@@ -142,7 +142,7 @@ const BODY_KEYS = ['amount', 'asset', 'buyer', 'chain', 'fee', 'scheme', 'seller
  * Parse the facilitator's pointer strictly (Unknown = Block): the exact key set, the chain/scheme
  * pairing, well-formed addresses and hashes, an allowed asset, and positive atomic amounts.
  */
-export function parseFacilitatorSettlementBody(body: unknown): ParsedClaim {
+export function parseFacilitatorSettlementBody(body: unknown, kernel?: string): ParsedClaim {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, reason: 'body_not_object' };
   const raw = body as Record<string, unknown>;
   const keys = Object.keys(raw).sort();
@@ -164,7 +164,7 @@ export function parseFacilitatorSettlementBody(body: unknown): ParsedClaim {
     if (!EVM_ADDRESS.test(s.seller)) return { ok: false, reason: 'seller_invalid' };
     if (!EVM_ADDRESS.test(s.asset)) return { ok: false, reason: 'asset_invalid' };
     const asset = s.asset.toLowerCase();
-    const assets = facilitatorBaseAssets();
+    const assets = facilitatorBaseAssets(kernel);
     if (!(asset in assets)) return { ok: false, reason: 'asset_not_allowed' };
     // EIP-3009 is USDC's own authorization; the Permit2 path may move either allowed asset.
     if (s.scheme === 'eip3009' && asset !== BASE_USDC_ADDRESS) return { ok: false, reason: 'scheme_asset_mismatch' };

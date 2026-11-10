@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => { const fixture = require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture; return { ...fixture, addresses: { ...fixture.addresses } }; }) }));
+import { currentProtocolDeployment } from '../protocol/runtime';
 /**
  * withdrawContribution (P4-01) — the user-initiated pool exit.
  *

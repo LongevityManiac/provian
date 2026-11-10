@@ -1,3 +1,4 @@
+jest.mock('../core/protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * PHASE 1 — `genesis_signup` qualifies on AGENT WALLET CREATION.
  *

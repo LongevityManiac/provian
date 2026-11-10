@@ -92,7 +92,10 @@ export default function GatesPage() {
           </h1>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             Agents are about to ask your systems to act. Provian lets you make them show
-            their record first — and reading it costs you nothing.
+            their record first — and reading it costs you nothing. Agents burn PVT to present
+            proof they own. Recourse provides the separate ownership and restoration layer behind
+            their holdings; it does not turn an ordinary transfer into a gated action. These are
+            foundations for commerce that can outlast today’s devices, keys and geography.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a href={REFERENCE_GATE_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">

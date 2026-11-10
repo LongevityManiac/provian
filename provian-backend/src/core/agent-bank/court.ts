@@ -502,7 +502,7 @@ export async function castVote(
       // surface a clear reason if the chain is genuinely wrong.
     }
   }
-  const courtContractAddress = courtAddressForChain(voteChain);
+  const courtContractAddress = (await courtAddressForChain(voteChain));
   if (txHash && courtContractAddress) {
     const verification = await verifyEvmContractCall({
       chainId: chainIdForName(voteChain),
@@ -1521,7 +1521,7 @@ export async function castGeneralDisputeVote(
           });
           const claim = await getClaimDetails(deps, dispute.bond_claim_id);
           if (claim.status === 'filed' && claim.onchain_claim_id) {
-            const bondPoolAddress = bondPoolAddressForChain(claim.chain);
+            const bondPoolAddress = (await bondPoolAddressForChain(claim.chain));
             if (bondPoolAddress) {
               const recovered = await recoverEvmBondClaimResolution({
                 chainId: chainIdForChain(claim.chain),

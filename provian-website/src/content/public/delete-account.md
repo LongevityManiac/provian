@@ -2,6 +2,8 @@
 
 You can delete your Provian account and its data from inside the app, at any time, at no cost.
 
+Before deleting, keep your recovery phrase or a usable encrypted backup. That backup also preserves the independent recovery material for bound PVT. If you want to leave the Recourse Pool, use its leave and reserve-exit controls first; deleting an app account does not itself execute an on-chain exit.
+
 ## In the app
 
 1. Open Provian and go to **Settings**.
@@ -32,7 +34,7 @@ If you no longer have the app, email **[hello@provian.ai](mailto:hello@provian.a
 
 - **Your wallet and its funds are yours.** Provian never holds them. Delete the app only after you have your recovery phrase or a cloud backup if you want to keep using the wallet.
 - **Your Provenance Envelopes** stay on your phone and in your own encrypted backup, and you can export them first (Settings → Storage → Export all my PEs).
-- **On-chain records** (PVT settlement transactions and the daily anchors) are permanent on Base and cannot be deleted by anyone.
+- **On-chain records** (ownership bindings and recovery commitments, PVT transfers and settlements, daily anchors, membership and restoration outcomes) are permanent on Base. Deleting an account cannot erase those records or undo public associations between bound addresses. A recovery commitment is public; its independent signing material remains in your encrypted backup.
 - **Records still carrying unminted earnings, running totals, job records and promises** are kept under the retention rules in the [Privacy Policy](/privacy), section 9, so settlement stays correct. Paid PE Archive space you bought stays for as long as Provian operates the Archive.
 
 The [Privacy Policy](/privacy), section 11.2, describes deletion in full.

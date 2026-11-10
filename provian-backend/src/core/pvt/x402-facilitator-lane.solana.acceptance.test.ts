@@ -1,3 +1,5 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
 /**
  * follow-up — the MONEY OUTCOME of a SOLANA facilitator settlement, driven through the
  * PRODUCTION Solana emit (`buildFacilitatorSolanaEmit`) into the REAL `generatePE` and the REAL

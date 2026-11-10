@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Regression: the SDK escrow address must be the institution deployment/PVT9 EscrowV4, resolved
  * from the single source of truth — NOT the retired escrow nor the

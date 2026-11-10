@@ -1,3 +1,5 @@
+import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
+const fixturePvt = protocolDeploymentFixture.addresses.kernel.toLowerCase();
 /**
  * — the facilitator lane's pure rules: the pointer parser, the Base receipt reading,
  * the Solana balance-delta reading, and the leg test the outbound USDC watcher shares. Every GREEN
@@ -20,7 +22,7 @@ import {
   type FacilitatorSettlementClaim,
   type SolanaParsedTransaction,
 } from './x402-facilitator-settlement';
-import { LIVE_PVT9_TOKEN } from './wallet-exchange';
+
 
 const SETTLER = '0x5e77100000000000000000000000000000000b01';
 const FEE_RECIPIENT = '0xa37fc594e98e951571c771c9e77cdc73f67d3efb';
@@ -95,14 +97,14 @@ describe('the pointer parser (Unknown = Block)', () => {
     ['a buyer who is the seller', { ...body, seller: BUYER }, 'buyer_is_seller'],
     ['a Base address on Solana', { ...body, chain: 'solana', scheme: 'svm_exact', tx_hash: '5'.repeat(88) }, 'buyer_invalid'],
   ])('RED: refuses %s', (_name, input, reason) => {
-    expect(parseFacilitatorSettlementBody(input)).toEqual({ ok: false, reason });
+    expect(parseFacilitatorSettlementBody(input, fixturePvt)).toEqual({ ok: false, reason });
   });
   it('GREEN: PVT under Permit2 parses (PVT has no EIP-3009)', () => {
-    expect(parseFacilitatorSettlementBody({ ...body, asset: PVT, scheme: 'permit2' }).ok).toBe(true);
+    expect(parseFacilitatorSettlementBody({ ...body, asset: PVT, scheme: 'permit2' }, fixturePvt).ok).toBe(true);
   });
   it('the allowed PVT asset is the LIVE PVT9 token (one source: the generated config)', () => {
-    expect(LIVE_PVT9_TOKEN).toBe(PVT);
-    expect(Object.keys(facilitatorBaseAssets()).sort()).toEqual([BASE_USDC_ADDRESS, PVT].sort());
+    expect(fixturePvt).toBe(PVT);
+    expect(Object.keys(facilitatorBaseAssets(fixturePvt)).sort()).toEqual([BASE_USDC_ADDRESS, PVT].sort());
   });
   it('a Solana pointer parses only with Solana USDC', () => {
     const sol = {

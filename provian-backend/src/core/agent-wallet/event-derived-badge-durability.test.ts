@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import { describe, expect, jest, test } from '@jest/globals';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { AgentBankDeps } from '../agent-bank/types';

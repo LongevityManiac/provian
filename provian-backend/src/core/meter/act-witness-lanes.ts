@@ -49,6 +49,8 @@ export interface ActWitnessEntry {
  * claim. Rows with two or more keep both. Types absent from the table are treated as multi-lane.
  */
 export const ACT_WITNESS_LANES: Readonly<Record<string, ActWitnessEntry>> = Object.freeze({
+  recourse_determination: { witnesses: ['institution_chain'], note: 'finalized determination and restoration events, sealed once to the owner' },
+  recourse_record: { witnesses: ['institution_chain'], note: 'finalized membership, binding and free-restoration events, sealed once to the owner' },
   // ── The observer daemon's lanes (observation types) ─────────────────────────────────
   compute_session: { witnesses: ['device'], note: 'the daemon on the machine that ran it' },
   inference_session: { witnesses: ['device'], note: 'the daemon (model proxy is the minting witness on a proxied device; transcript/OTel supplement inside the same device)' },

@@ -26,7 +26,8 @@ export default function DownloadPage() {
           Provian in your pocket.
         </h1>
         <p className="mt-6 max-w-2xl leading-7 text-text-secondary">
-          Get the app for iPhone or Android below. Your computer and your agents come after.
+          Your work mints. Your ownership lasts beyond a key. Create a bound wallet, connect your
+          agents, and choose Recourse when you have enough at stake. Get the app for iPhone or Android below.
         </p>
 
         {/* Store-review note: belongs with the pending App Store card below. */}

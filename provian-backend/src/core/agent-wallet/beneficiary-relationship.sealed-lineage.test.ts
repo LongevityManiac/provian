@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * a ROTATED agent's beneficiary relationship is validated against an address lineage proven
  * from SEALED PEs (the registration-index-pinned `agent_wallet_created` PE + each sealed

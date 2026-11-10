@@ -1,3 +1,5 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
+import { observationBaseAssets } from '../protocol/observation-assets';
 import { mapBounded } from '../net/map-bounded';
 /**
  * THE CHAIN-RECORD LANE: chain-verified transfer
@@ -165,7 +167,7 @@ import {
   BASE_NON_USDC_ASSETS,
   BASE_SWAP_TARGETS,
   VERIFIED_COMMERCE_CUT_LINE_MS,
-  LIVE_PVT9_TOKEN,
+  baseAssetsForKernel,
   addressTopic,
   classifyWalletExchange,
   isWalletBridgeSwap,
@@ -274,7 +276,6 @@ export const PVT9_MIGRATION_DISTRIBUTOR_BASE = '0xf674f1a915862430c9d0da994f1b9e
 export const CHAIN_RECORD_EXCLUDED_COUNTERPARTIES: ReadonlySet<string> = new Set<string>([
   `0x${'0'.repeat(40)}`,
   PVT9_MIGRATION_DISTRIBUTOR_BASE,
-  ...(LIVE_PVT9_TOKEN ? [LIVE_PVT9_TOKEN] : []),
   PREDECESSOR_PVT9_KERNEL_BASE.toLowerCase(),
   ...Object.values(INSTITUTION_ADDRESSES),
   PREDECESSOR_ESCROW_V4_ADDRESS,
@@ -307,6 +308,22 @@ export function chainRecordProfileFor(chainId: number): ChainRecordChainProfile 
   const profile = OTHER_CHAIN_RECORD_PROFILES[chainId];
   if (!profile) throw new Error(`chain_record_chain_unsupported:${chainId}`);
   return profile;
+}
+
+/** Resolve the full current deployment for each processing attempt. A historical
+ * observation additionally admits predecessor PVT only before its cutoff. */
+export async function currentChainRecordProfileFor(chainId: number, block?:number): Promise<ChainRecordChainProfile> {
+  if (chainId !== BASE_CHAIN_ID) return chainRecordProfileFor(chainId);
+  const deployment = await currentProtocolDeployment();
+  const addresses = Object.values(deployment.addresses).filter((value): value is string => typeof value === 'string').map(value => value.toLowerCase());
+  const assets=block===undefined?baseAssetsForKernel(deployment.addresses.kernel.toLowerCase()):await observationBaseAssets(block);
+  const kernels=Object.entries(assets).filter(([,symbol])=>symbol==='PVT').map(([address])=>address);
+  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)throw Error('protocol_pointer_changed');
+  return baseChainRecordProfile(new Set([...CHAIN_RECORD_EXCLUDED_COUNTERPARTIES, ...addresses,...kernels]),
+    new Set([...CHAIN_RECORD_INSTITUTION_TARGETS, ...[deployment.addresses.escrow, deployment.addresses.promises,
+      deployment.addresses.projectPool, deployment.addresses.bonds, deployment.addresses.court,
+      deployment.addresses.recoursePool, deployment.addresses.settlement].map(value => value.toLowerCase())]),
+    assets);
 }
 
 /** True for every chain id the lane reads. */
@@ -390,6 +407,7 @@ export type ChainRecordDerivation =
   | { readonly status: 'no_act'; readonly reason: string; readonly usdcWitnessPeIds: readonly string[] };
 
 export interface ChainRecordWatcherDeps {
+  readonly profileFor?: (chainId: number, block?:number) => Promise<ChainRecordChainProfile>;
   readonly db: Firestore;
   /** `chainId` absent = Base. */
   readonly verifyTransaction: (txHash: string, chainId?: number) => Promise<ChainTransactionEvidence>;
@@ -471,8 +489,9 @@ export function deriveChainRecordAct(
   evidence: ChainTransactionEvidence,
   walletAddress: string,
   internal: BaseInternalEthEvidence | null = null,
+  profile: ChainRecordChainProfile = chainRecordProfileFor(evidence.chainId),
 ): ChainRecordDerivation {
-  const profile = chainRecordProfileFor(evidence.chainId);
+  if (profile.chainId !== evidence.chainId) throw new Error('chain_record_profile_mismatch');
   const chainId = profile.chainId;
   const assets = profile.assets;
   const excluded = profile.excludedCounterparties;
@@ -1126,11 +1145,14 @@ async function processObservation(
     if (evidence.blockTimestampMs < fenceMs) return refuse('before_wallet_fence');
   }
 
+  let currentProfile: ChainRecordChainProfile;
+  try { currentProfile = await (deps.profileFor ?? currentChainRecordProfileFor)(evidence.chainId,evidence.blockNumber); }
+  catch (error) { return retry(`protocol_profile:${errorText(error)}`); }
   // Derivation is a pure function of final chain facts: a throw can only repeat,
   // so it is terminal, never a retry that pins a queue slot ( ).
   let derivation: ChainRecordDerivation;
   try {
-    derivation = deriveChainRecordAct(evidence, wallet.address);
+    derivation = deriveChainRecordAct(evidence, wallet.address, null, currentProfile);
   } catch (error) {
     return refuse(`derivation_error:${errorText(error)}`);
   }
@@ -1154,7 +1176,7 @@ async function processObservation(
       return retry('internal_eth_block_mismatch');
     }
     try {
-      derivation = deriveChainRecordAct(evidence, wallet.address, internal);
+      derivation = deriveChainRecordAct(evidence, wallet.address, internal, currentProfile);
     } catch (error) {
       return refuse(`derivation_error:${errorText(error)}`);
     }
@@ -1377,6 +1399,7 @@ export async function reopenParkedChainRecordObservations(
 
 export function buildChainRecordWatcherDeps(deps: AgentBankDeps): ChainRecordWatcherDeps {
   return {
+    profileFor: currentChainRecordProfileFor,
     db: deps.db,
     verifyTransaction: (txHash, chainId = BASE_CHAIN_ID) => {
       if (chainId === BASE_CHAIN_ID) return verifyBaseTransactionEvidence({ transactionHash: txHash });

@@ -1181,12 +1181,6 @@ class RelayAPIService {
         return await withBiometricAction(translate('biometricPrompts.reconnectRelay', 'Reconnect to Provian relay'), async (biometricAction) => {
             assertBiometricAction(biometricAction);
 
-            const evmPrivateKey = await SeedManager.getEVMPrivateKey(biometricAction);
-            const signer = new ActionWallet(evmPrivateKey, biometricAction);
-            // No memory wipe of evmPrivateKey: JS strings are immutable, any
-            // .split('').fill('\0') would mutate a copy, not the original string.
-            // The key remains in the managed heap until the function frame is GC'd.
-
             // EIP-712 domain-separated recovery message. The earlier legacy
             // personal_sign path was removed - it had no domain separator
             // (no chainId, contract, or nonce) and was replayable by any captured
@@ -1205,7 +1199,15 @@ class RelayAPIService {
                 timestamp: tsSeconds,
                 purpose: RELAY_RECOVERY_PURPOSE,
             };
-            const signature = await signer.signTypedData(domain, types, message);
+            const mnemonic = await SeedManager.getMnemonic(biometricAction);
+            if (!mnemonic) throw new Error('recourse_seed_unavailable');
+            const { signHumanHashDigest } = await import('../core/recourse/human-hash-message');
+            let signature = await signHumanHashDigest(mnemonic, walletAddress,
+                ethers.TypedDataEncoder.hash(domain, types, message), biometricAction);
+            if (signature === null) {
+                const signer = new ActionWallet(await SeedManager.getEVMPrivateKey(biometricAction), biometricAction);
+                signature = await signer.signTypedData(domain, types, message);
+            }
 
             const body = JSON.stringify({
                 wallet_address: walletAddress,
@@ -1913,6 +1915,49 @@ class RelayAPIService {
      * Idempotent - returns existing wallet if already registered.
      * @returns true if the relay confirmed registration (2xx), false otherwise.
      */
+    async bindRecourseOwnership(address: string, biometricAction: BiometricAction,
+        externalSign?: (message: string) => Promise<string>): Promise<void> {
+        const userId = await this.getUserId();
+        if (!userId) throw new Error('recourse_identity_unavailable');
+        const { bindHumanOwnership } = await import('../core/recourse/ownership');
+        await bindHumanOwnership({ userId, request: async (path, body) => {
+            const response = await this.makeAuthenticatedRequest(`/v1/recourse/${path}`, {
+                method: 'POST', body: JSON.stringify(body),
+            }, undefined, biometricAction);
+            if (!response.ok) throw new Error(`recourse_request_refused:${response.status}`);
+            return response.json();
+        } }, address, biometricAction, externalSign);
+    }
+
+    async readRecourseOwnership(): Promise<unknown> {
+        const response = await this.makeAuthenticatedRequest('/v1/recourse/ownership', { method: 'GET' });
+        if (!response.ok) throw new Error(`recourse_request_refused:${response.status}`);
+        return response.json();
+    }
+
+    /** Recovery proves ownership independently of the retired relay credential. */
+    async recourseRecoveryRequest(path: string, body?: unknown): Promise<unknown> {
+        if (!/^(recover-human|owner-operations\/recovery|owner-operations\/0x[0-9a-f]{64}|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/.test(path)) {
+            throw new Error('recourse_recovery_path_invalid');
+        }
+        const response = await apiFetch(`${await this.getBackendUrl()}/v1/recourse/${path}`, {
+            method: body === undefined ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json' },
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+        if (!response.ok) throw new Error('recourse_recovery_refused');
+        return response.json();
+    }
+
+    async recourseRequest(path: 'pool' | 'ownership' | 'restoration-requests' | 'restoration-intents' | 'binding-challenge' | 'bind',
+        body?: unknown, biometricAction?: BiometricAction): Promise<unknown> {
+        const response = await this.makeAuthenticatedRequest(`/v1/recourse/${path}`, {
+            method: body === undefined ? 'GET' : 'POST',
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        }, undefined, biometricAction);
+        if (!response.ok) throw new Error('recourse_request_refused');
+        return response.json();
+    }
+
     async registerHumanWallet(
         address: string,
         options?: { allowAddressProof?: boolean; identityRetried?: boolean }, biometricAction?: BiometricAction,
@@ -1955,6 +2000,10 @@ class RelayAPIService {
                     }
                 } catch {
                     // Non-fatal: registration succeeded; the id can be resolved later.
+                }
+                if (biometricAction && isBiometricActionValid(biometricAction)) {
+                    try { await this.bindRecourseOwnership(address, biometricAction); }
+                    catch { console.warn('[RelayAPI] Ownership binding remains pending for the next wallet action'); }
                 }
                 return true;
             }

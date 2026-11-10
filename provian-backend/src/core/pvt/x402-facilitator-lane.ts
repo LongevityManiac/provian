@@ -1,3 +1,4 @@
+import { observationBaseAssets } from '../protocol/observation-assets';
 /**
  * — THE FACILITATOR LANE: every settlement Provian's x402 facilitator lands is a
  * relay-witnessed PE for the buyer (`x402_payment`) and the seller (`receive`).
@@ -86,7 +87,6 @@ import { isActiveHumanWallet } from '../wallet/active-human-wallet';
 import {
   FACILITATOR_BASE_CHAIN_ID,
   facilitatorActPeId,
-  facilitatorBaseAssets,
   facilitatorBaseGasAddress,
   facilitatorClaimDigest,
   facilitatorSettlementId,
@@ -319,8 +319,6 @@ export async function processFacilitatorSettlement(
   if (settler === null) return { status: 'unavailable', reason: 'facilitator_settler_not_configured' };
   const feeRecipient = facilitatorBaseGasAddress(env);
   if (feeRecipient === null) return { status: 'unavailable', reason: 'facilitator_base_gas_address_invalid' };
-  if (!(claim.asset in facilitatorBaseAssets())) return { status: 'refused', reason: 'asset_not_allowed' };
-
   let evidence: BaseTransactionEvidence;
   try {
     evidence = await deps.verifyBaseTransaction(claim.txHash);
@@ -329,6 +327,12 @@ export async function processFacilitatorSettlement(
     // A reverted transaction (receipt status 0) is terminal; everything else is "not yet".
     if (message === 'economic_evidence_transaction_failed') return { status: 'refused', reason: 'transaction_failed' };
     return { status: 'pending', reason: message };
+  }
+  if (claim.asset !== BASE_USDC_ADDRESS) {
+    let assets:Readonly<Record<string,string>>;
+    try { assets = await observationBaseAssets(evidence.blockNumber); }
+    catch (error) { return { status:'pending', reason:`protocol_resolution:${errorText(error)}` }; }
+    if (assets[claim.asset]!=='PVT') return { status:'refused', reason:'asset_not_allowed' };
   }
   const verdict = verifyBaseFacilitatorEvidence(evidence, claim, { settler, feeRecipient });
   if (!verdict.ok) return { status: 'refused', reason: verdict.reason };
@@ -636,7 +640,8 @@ export function buildSolanaTransactionReader(
 export function buildFacilitatorEmit(deps: AgentBankDeps): FacilitatorLaneDeps['emit'] {
   return async ({ role, identity, claim, counterparty, paymentLogIndex, evidence }) => {
     const actionType = FACILITATOR_ROLE_ACTS[role];
-    const assetSymbol = facilitatorBaseAssets()[claim.asset];
+    const assetSymbol = claim.asset===BASE_USDC_ADDRESS?'USDC':(await observationBaseAssets(evidence.blockNumber))[claim.asset];
+    if (!assetSymbol || !['USDC','PVT'].includes(assetSymbol)) throw new Error('facilitator_asset_retired');
     const canonicalEventId = canonicalLogIdentity(FACILITATOR_BASE_CHAIN_ID, claim.txHash, paymentLogIndex);
     const witness = chainWatcherWitness(`eip155:${FACILITATOR_BASE_CHAIN_ID}`);
     const derived = [

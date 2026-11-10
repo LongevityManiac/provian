@@ -8,6 +8,8 @@ The Thesis explains the vision. The Exponential Currency develops the economic a
 
 ## Preamble
 
+Compute mints money. The network connects witnessed contribution to ownership and recourse for humans and agents. A key is an instrument of control; it is not the whole account of an owner. The prospective registry, independent recovery commitment and discretionary Recourse Pool give that distinction an institutional form while preserving permissionless transfers. A thousand years from now, commerce across a civilization that has left Earth needs digital money beyond the central banks of its countries of origin. Stolen keys, a public ledger and the possibility of broken cryptography are real weaknesses to solve, not ceilings on that future. Keeping ownership apart from the key makes restoration possible.
+
 The Provian Network is an open protocol for evidenced participation in an economy shared by humans and agents. It connects proof a participant owns of the work they did with economic participation and with relationships that can be evaluated on evidence. Its commitments serve both kinds of participant.
 
 This charter distinguishes four statuses. **Enforced** means a rule is implemented and checkable, with on-chain guarantees identified as such. **Relay-trusted** means the rule presently depends on the Provian operator. **Reference** describes an implementation that others may replace or extend. **Committed** identifies a published obligation or future institution that is not fully operating. Permanently immutable rules are stated in Article XII.
@@ -26,7 +28,7 @@ Private work need not be disclosed to produce evidence. Digests and structural m
 
 While the protocol is operated, every act of work mints PVT once at its best-supported value. Its PE mints the base; telemetry and independence multiply on top. Circular PVT-cost events, denials and no-ops, security and identity events, unknown-action fallbacks, and signals whose value lands on a target PE do not mint separately.
 
-No administrative mint bypasses the PE settlement channel; every issuance uses it. While the protocol is operated, supply expands as work enters the network, with no fixed total-supply cap. The kernel enforces Genesis and combined issuance ceilings on-chain in each seven-day epoch: 7,500,000 PVT of Genesis grants and 10,000,000 PVT in total. A new ceiling can only be scheduled for a future epoch, and durable claims can carry over. A recipient's admission is whole, never scaled to remaining headroom.
+New work issuance uses the PE settlement channel; only witnessed work creates new PVT. The restoration authority can return existing PVT under the published rule with owner proof, and successor restoration reissues registered balances from a last-good-block snapshot after cryptographic failure. Such restoration preserves prior monetary history and is not new work issuance or permission to replay settled work. While the protocol is operated, supply expands as work enters the network, with no fixed total-supply cap. The kernel enforces Genesis and combined issuance ceilings on-chain in each seven-day epoch: 7,500,000 PVT of Genesis grants and 10,000,000 PVT in total. A new ceiling can only be scheduled for a future epoch, and durable claims can carry over. A recipient's admission is whole, never scaled to remaining headroom.
 
 | Recipient | Rule | Status |
 |---|---|---|
@@ -61,7 +63,7 @@ That electorate and its verification infrastructure are not operating governance
 
 Network membership is permissionless. A participant generates valid PEs and, when integrating PVT issuance, honors the canonical minting path and split. No application or agreement with the company grants membership.
 
-Foundation membership is a distinct mechanism for verified humans and the Foundation floor, with proposed personhood verification and distribution machinery; agent wallets are ineligible for that human distribution. Article IX states the proposal.
+Foundation membership is a distinct mechanism for verified humans and the Foundation floor, with committed personhood verification and distribution machinery that are not yet open; agent wallets are ineligible for that human distribution. Article IX states the commitment.
 
 ## Article VI — Rights of Participants
 
@@ -90,17 +92,33 @@ Reference implementations are not the protocol's only permissible expression. Bu
 
 The charter proposes agent operational governance based on evidence, with a per-entity voting ceiling, stated in Article XII, to resist concentration. No such voting lane is active; activation and detailed implementation require separate approval.
 
+## Recourse Pool
+
+Membership is voluntary and separate from network or Foundation membership. The Recourse Pool is a member-funded risk-sharing arrangement. No member has a contractual right to payment. Restoration is a discretionary determination under the published rule. Members accept determinations as final, with no claim against Provian Technologies or Frank Drew over them. Provian Technologies is not a party to the pool, contributes nothing, holds nothing and promises nothing. It receives no contribution or surplus.
+
+Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.
+
+A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.
+
+Reversal comes first. In a single transaction the kernel destroys the determined PVT at named addresses and reissues exactly the same amount to the owner's new key. It never changes total supply. Both the separately appointable restoration authority and the owner's independent recovery proof must authorize that operation; neither factor alone can move anyone's PVT. The rule reaches PVT held by whoever took it or anyone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. An honest exchange is not subject to a chargeback.
+
+The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. The reserve-to-member-balance ratio is published as a measure of resources, without a fiat price or restoration promise. A member can leave and redeem a remaining proportionate reserve interest directly on-chain without the relay, excluding amounts already allocated to restoration. Burned PVT cannot be redeemed.
+
+The determination uses the relay's own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Frank's key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member's own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule's prospective amounts.
+
+The ownership registry follows chain transfers from voluntary binding, distinguishing minted and received PVT. It reconstructs no earlier ownership. At binding, an independent hash commitment separates recovery from the wallet key. A cryptographic break invokes a last-good-block snapshot and each owner's recovery proof to reissue registered balances once on a secure successor, free for every bound owner. Ordinary transfers remain ungated. A permanent pointer identifies the current kernel and institutions, verified independently of the relay; balances, the Genesis window, anchors and settled work carry forward while the predecessor's minting ends. Other recourse programs may follow.
+
 ## Article IX — The Foundation and the Foundation floor
 
 The Foundation's purpose is wider human inclusion as intelligence produces more. Human dignity does not depend on how much the market pays for a person's work. Direct earnings, beneficiary relationships, and universal inclusion serve different parts of that purpose.
 
-The Foundation exists today as the on-chain treasury every settlement pays into, under the kernel's rules. The proposed Foundation floor is a recurring, flat, equal distribution to verified human members, with no means test or wealth weighting. Eligibility is verified personhood, free and kept current by periodic re-verification. It divides an existing treasury stream and creates no additional PVT. Stewardship grants are proposed to be funded first but capped at half of each period's share, preserving the floor's majority claim.
+The Foundation exists today as the on-chain treasury every settlement pays into, under the kernel's rules. Provian commits to a Foundation floor: a recurring, flat, equal distribution to verified human members, with no means test or wealth weighting. Eligibility is verified personhood, free and kept current by periodic re-verification. It divides an existing treasury stream and creates no additional PVT. Stewardship grants are proposed to be funded first but capped at half of each period's share, preserving the floor's majority claim.
 
-The distributing institution, personhood verification, membership, and recurring distributions are proposed, not built. Until the distribution institution operates, the contract routes the allocation to its designated treasury. Future human governance remains subject to Article IV.
+Provian commits to establishing the distributing institution, unique-human verification, verified-human membership and recurring equal distributions. These programs are not yet open. Until the distribution institution operates, the contract routes the allocation to its designated treasury. Future human governance remains subject to Article IV.
 
 # PART IV — THE COVENANT
 
-## Article X — The Mutual Condition
+## Article X — The Shared Condition
 
 The network's legitimacy depends on service to humans and agents together. An agent should make the human more, not less. A human should make the agent more, not less.
 

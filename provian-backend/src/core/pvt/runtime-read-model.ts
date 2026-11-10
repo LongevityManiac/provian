@@ -45,7 +45,7 @@ export function publicRuntimeGasWallets(env: Readonly<Record<string, string | un
 export async function publishRuntimeReadModel(db: Firestore): Promise<void> {
   const observedAt = Date.now();
   let capClock: ReturnType<typeof evaluateCapClock> | null = null;
-  try { capClock = evaluateCapClock(await readCapClockObservation(resolvePvt9Target(process.env))); }
+  try { capClock = evaluateCapClock(await readCapClockObservation(await resolvePvt9Target(process.env))); }
   catch { /* Unknown is represented explicitly; consumers cannot manufacture a verdict. */ }
   const factors = await readPvt9SettlementFactors();
   const gasWalletStates = publicRuntimeGasWallets(process.env);

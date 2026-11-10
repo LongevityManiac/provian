@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 import {
   loadPvtPrincipalConfig,
   _resetPvtPrincipalConfigForTests,
@@ -28,8 +29,8 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
       _resetPvtPrincipalConfigForTests();
     });
 
-    it('returns the canonical disabled state', () => {
-      expect(loadPvtPrincipalConfig()).toEqual({
+    it('returns the canonical disabled state', async () => {
+      expect((await loadPvtPrincipalConfig())).toEqual({
         enabled: false,
         chains: [],
         escrowV4Address: '',
@@ -39,27 +40,27 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
       });
     });
 
-    it('fails closed for every chain string', () => {
+    it('fails closed for every chain string', async () => {
       for (const chain of ['base', 'arbitrum', 'optimism', 'base_sepolia', 'unknown']) {
-        expect(getPvtAddressForChain(chain)).toBeNull();
+        expect((await getPvtAddressForChain(chain))).toBeNull();
         expect(isPvtPrincipalEnabledForChain(chain)).toBe(false);
-        expect(pvtPrincipalInstitutionAddress('escrowV4', chain)).toBeUndefined();
+        expect((await pvtPrincipalInstitutionAddress('escrowV4', chain))).toBeUndefined();
       }
       expect(getPvtPrincipalChainString()).toBeNull();
     });
 
-    it('treats a non-exact flag value ("1", "TRUE", "yes") as disabled', () => {
+    it('treats a non-exact flag value ("1", "TRUE", "yes") as disabled', async () => {
       for (const value of ['1', 'TRUE', 'yes', 'True', ' true']) {
         process.env.ENABLE_PVT_PRINCIPAL = value;
         _resetPvtPrincipalConfigForTests();
         expect(isPvtPrincipalEnabledForChain('base')).toBe(false);
-        expect(getPvtAddressForChain('base')).toBeNull();
+        expect((await getPvtAddressForChain('base'))).toBeNull();
       }
     });
 
-    it('logs only the unconfigured runtime boundary state', () => {
+    it('logs only the unconfigured runtime boundary state', async () => {
       const lines: string[] = [];
-      logEnabledCurrenciesPerChain(loadPvtPrincipalConfig(), (m) => lines.push(m));
+      logEnabledCurrenciesPerChain((await loadPvtPrincipalConfig()), (m) => lines.push(m));
       expect(lines).toEqual([
         '[PvtPrincipal] UNAVAILABLE - PVT-principal has no approved runtime in the current Service; legacy environment flags are ignored.',
       ]);
@@ -79,15 +80,15 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
       }
     });
 
-    it('returns the successor PVT9 kernel (lowercase) for base, null for other chains', () => {
-      expect(getPvtAddressForChain('base')).toBe(PVT9_KERNEL_LOWER);
+    it('returns the successor PVT9 kernel (lowercase) for base, null for other chains', async () => {
+      expect((await getPvtAddressForChain('base'))).toBe(PVT9_KERNEL_LOWER);
       for (const chain of ['arbitrum', 'optimism', 'base_sepolia', 'unknown']) {
-        expect(getPvtAddressForChain(chain)).toBeNull();
+        expect((await getPvtAddressForChain(chain))).toBeNull();
       }
     });
 
-    it('config carries the institution deployment institution addresses + base chain', () => {
-      const config = loadPvtPrincipalConfig();
+    it('config carries the institution deployment institution addresses + base chain', async () => {
+      const config = (await loadPvtPrincipalConfig());
       expect(config.enabled).toBe(true);
       expect(config.chains).toEqual([8453]);
       expect(config.escrowV4Address).toBe(BASE_INSTITUTIONS_ESCROW_V4);
@@ -96,18 +97,18 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
       expect(config.pvtAddressByChainId).toEqual({ 8453: PVT9_KERNEL_LOWER });
     });
 
-    it('pvtPrincipalInstitutionAddress returns institution deployment for base, undefined elsewhere', () => {
-      expect(pvtPrincipalInstitutionAddress('escrowV4', 'base')).toBe(BASE_INSTITUTIONS_ESCROW_V4);
-      expect(pvtPrincipalInstitutionAddress('promiseV3', 'base')).toBe(BASE_INSTITUTIONS_PROMISE_V3);
-      expect(pvtPrincipalInstitutionAddress('poolV3', 'base')).toBe(BASE_INSTITUTIONS_POOL_V3);
-      expect(pvtPrincipalInstitutionAddress('escrowV4', 'arbitrum')).toBeUndefined();
+    it('pvtPrincipalInstitutionAddress returns institution deployment for base, undefined elsewhere', async () => {
+      expect((await pvtPrincipalInstitutionAddress('escrowV4', 'base'))).toBe(BASE_INSTITUTIONS_ESCROW_V4);
+      expect((await pvtPrincipalInstitutionAddress('promiseV3', 'base'))).toBe(BASE_INSTITUTIONS_PROMISE_V3);
+      expect((await pvtPrincipalInstitutionAddress('poolV3', 'base'))).toBe(BASE_INSTITUTIONS_POOL_V3);
+      expect((await pvtPrincipalInstitutionAddress('escrowV4', 'arbitrum'))).toBeUndefined();
     });
 
     it('getPvtPrincipalChainString is "base"', () => {
       expect(getPvtPrincipalChainString()).toBe('base');
     });
 
-    it('IGNORES stale legacy env addresses — canonical institution deployment/PVT9 wins', () => {
+    it('IGNORES stale legacy env addresses — canonical institution deployment/PVT9 wins', async () => {
       Object.assign(process.env, {
         PVT_CONTRACT_ADDRESS: '0x1111111111111111111111111111111111111111',
         PVT_CONTRACT_ADDRESS_BASE: '0x2222222222222222222222222222222222222222',
@@ -120,17 +121,17 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
         PVT_PRINCIPAL_CHAINS: 'base,arbitrum,optimism',
       });
       _resetPvtPrincipalConfigForTests();
-      const config = loadPvtPrincipalConfig();
+      const config = (await loadPvtPrincipalConfig());
       expect(config.escrowV4Address).toBe(BASE_INSTITUTIONS_ESCROW_V4);
       expect(config.pvtAddressByChainId).toEqual({ 8453: PVT9_KERNEL_LOWER });
-      expect(getPvtAddressForChain('base')).toBe(PVT9_KERNEL_LOWER);
+      expect((await getPvtAddressForChain('base'))).toBe(PVT9_KERNEL_LOWER);
       expect(isPvtPrincipalEnabledForChain('arbitrum')).toBe(false);
       expect(isPvtPrincipalEnabledForChain('optimism')).toBe(false);
     });
 
-    it('logs the ENABLED banner naming the canonical addresses', () => {
+    it('logs the ENABLED banner naming the canonical addresses', async () => {
       const lines: string[] = [];
-      logEnabledCurrenciesPerChain(loadPvtPrincipalConfig(), (m) => lines.push(m));
+      logEnabledCurrenciesPerChain((await loadPvtPrincipalConfig()), (m) => lines.push(m));
       expect(lines).toHaveLength(1);
       expect(lines[0]).toContain('[PvtPrincipal] ENABLED');
       expect(lines[0]).toContain('base(8453)');
@@ -145,19 +146,19 @@ describe('PVT-principal config (4b/4d — flag-honoring, Base-only)', () => {
   // makes exactly one half of this assertion fail — so the guard cannot pass
   // vacuously. The evaluated-branch count is asserted so a zero-iteration pass
   // is impossible to mistake for a real one.
-  it('the gate READS the flag (both directions must hold)', () => {
+  it('the gate READS the flag (both directions must hold)', async () => {
     let checks = 0;
 
     delete process.env.ENABLE_PVT_PRINCIPAL;
     _resetPvtPrincipalConfigForTests();
     expect(isPvtPrincipalEnabledForChain('base')).toBe(false);
-    expect(getPvtAddressForChain('base')).toBeNull();
+    expect((await getPvtAddressForChain('base'))).toBeNull();
     checks += 1;
 
     process.env.ENABLE_PVT_PRINCIPAL = 'true';
     _resetPvtPrincipalConfigForTests();
     expect(isPvtPrincipalEnabledForChain('base')).toBe(true);
-    expect(getPvtAddressForChain('base')).toBe(PVT9_KERNEL_LOWER);
+    expect((await getPvtAddressForChain('base'))).toBe(PVT9_KERNEL_LOWER);
     checks += 1;
 
     expect(checks).toBe(2);

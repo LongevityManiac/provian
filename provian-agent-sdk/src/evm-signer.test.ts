@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
  * Headless, deterministic tests for the agent EVM signer (slice 1).
  *

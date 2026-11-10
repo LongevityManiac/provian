@@ -1,3 +1,5 @@
+import { requireConfiguredPvt9Runtime } from '../pvt/pvt9-base-config.generated';
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: requireConfiguredPvt9Runtime().address } }) }));
 import { beforeEach, describe, expect, jest, test } from '@jest/globals';
 import { ethers } from 'ethers';
 import express from 'express';
@@ -36,6 +38,14 @@ jest.mock('./proof-of-possession', () => ({
 }));
 
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
+import { recoverAgentOwnership, agentRecoveryMessage, type AgentRecoveryRequest } from '../recourse/agent-recovery';
+import { verifyHashDestinationProof } from '../recourse/hash-destination-proof';
+import { createHashRotationIdentity } from './key-rotation-transition';
+import { AGENT_RECOVERY_ESCROW_COLLECTION, AGENT_RETIRED_KEY_BACKUPS_COLLECTION, retiredKeyBackupId } from '../agent-recovery-escrow';
+jest.mock('../recourse/hash-destination-proof',()=>({verifyHashDestinationProof:jest.fn()}));
+import { verifyRecoveryAuthorization, type RecoveryAuthorizationInput } from '../recourse/recovery-authorization';
+import { recoveryAuthorizationFixture } from '../recourse/__test-helpers__/recovery-authorization-fixture';
+import { identityHash, recoveryHash, RECOURSE_COLLECTIONS } from '../recourse/ownership';
 import {
   INBOUND_WATCHER_CHECKPOINT_COLLECTION,
   WATCHER_ADDRESS_ADMISSION_COLLECTION,
@@ -181,6 +191,142 @@ describe('agent wallet key-rotation transition (beneficiary routing machinery)',
   beforeEach(() => {
     verifyPop.mockClear();
     verifyClaimsPop.mockClear();
+  });
+
+  async function recoveryFixture(failReceipt = false) {
+    const { app, fake } = buildRoute({ strictTransactionOrder: true,
+      ...(failReceipt ? { failTxnWriteTo: RECOURSE_COLLECTIONS.recoveries } : {}) });
+    const walletId = await createWallet(app);
+    const identity = identityHash('agent', walletId);
+    const preimage = `0x${'17'.repeat(64)}`;
+    fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`, {
+      identity, ownerType: 'agent', ownerId: walletId, walletId,
+      recoveryCommitment: recoveryHash(Buffer.from(preimage.slice(2), 'hex')), signingRoot: `0x${'17'.repeat(32)}`, recoveryGeneration: 0,
+    });
+    const credentials = await generateApiCredentialsAsync();
+    const unsigned = { kernel: requireConfiguredPvt9Runtime().address.toLowerCase(), identity, preimage, destination: NEW_ADDRESS, authorizationNonce: 0, authorizationTxHash: `0x${'de'.repeat(32)}`,
+      nextCommitment: recoveryHash(Buffer.alloc(64, 29)), nextSigningRoot: `0x${'1d'.repeat(32)}`, requestId: `0x${'ab'.repeat(32)}`,
+      expiresAtMs: NOW + 60_000, publicKey: NEW_PUBLIC_KEY,
+      apiKey: credentials.api_key, apiSecret: credentials.api_secret };
+    const input: AgentRecoveryRequest = { ...unsigned, signature: await NEW_SIGNER.signMessage(agentRecoveryMessage(unsigned)) };
+    const { deps } = bankDeps(fake);
+    const chain = { finalizedBlock: async () => 490, blockHash: async () => `0x${'cd'.repeat(32)}`,
+      balance: async () => 0n, transfers: async () => [] };
+    const verifyAuthorization = jest.fn(async (evidence: RecoveryAuthorizationInput) =>
+      verifyRecoveryAuthorization(evidence, recoveryAuthorizationFixture(evidence)));
+    const recover = (request = input) => recoverAgentOwnership(deps, request, chain, NOW, async () => 500, verifyAuthorization);
+    return { fake, walletId, input, recover, verifyAuthorization, chain };
+  }
+
+  test('independent recovery proof rotates unlinked agent credentials, binding and PE atomically', async () => {
+    const { fake, walletId, input, recover } = await recoveryFixture();
+    const first = await recover();
+    expect(first).toEqual({ walletId, destination: NEW_ADDRESS, generation: 1 });
+    expect(await recover()).toEqual(first);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${NEW_ADDRESS}`)).toMatchObject({
+      identity: input.identity, boundBlock: 100, openingBalanceAtomic: '0', recoveryGeneration: 1,
+    });
+    expect(fake.store.get(`agent_wallets/${walletId}`)).toMatchObject({ address: NEW_ADDRESS,
+      api_key_prefix: input.apiKey.slice(0, 24) });
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${input.identity}`)?.recoveryCommitment)
+      .toBe(input.nextCommitment);
+    expect(JSON.stringify([...fake.store])).not.toContain(input.preimage.slice(2));
+    const rows = [...fake.store].filter(([key]) => key.includes('/rotation_history/'));
+    expect(rows).toHaveLength(1);
+    expect(rows[0][1].pe_id).toBeTruthy();
+  });
+
+  test('a recovery receipt failure preserves the old key, credentials and commitment together', async () => {
+    const { fake, walletId, input, recover } = await recoveryFixture(true);
+    const before = { ...fake.store.get(`agent_wallets/${walletId}`) };
+    await expect(recover()).rejects.toThrow();
+    expect(fake.store.get(`agent_wallets/${walletId}`)).toEqual(before);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${input.identity}`)?.recoveryGeneration).toBe(0);
+    expect(fake.store.has(`${RECOURSE_COLLECTIONS.addresses}/${NEW_ADDRESS}`)).toBe(false);
+  });
+  test('recourse archives the old ciphertext atomically instead of destroying unrelated-asset recovery',async()=>{
+    const {fake,walletId,recover}=await recoveryFixture();
+    const escrow={wallet_id:walletId,sealed_key_blob:'opaque ciphertext',recovery_anchor_pubkey:'public anchor',blob_version:1,created_at:1,updated_at:2};
+    fake.store.set(`${AGENT_RECOVERY_ESCROW_COLLECTION}/${walletId}`,escrow);
+    await recover();
+    expect(fake.store.has(`${AGENT_RECOVERY_ESCROW_COLLECTION}/${walletId}`)).toBe(false);
+    expect(fake.store.get(`${AGENT_RETIRED_KEY_BACKUPS_COLLECTION}/${retiredKeyBackupId(walletId,OLD_ADDRESS)}`)).toMatchObject({...escrow,retired_address:OLD_ADDRESS});
+    await recover();
+    expect([...fake.store.keys()].filter(k=>k.startsWith(`${AGENT_RETIRED_KEY_BACKUPS_COLLECTION}/`))).toHaveLength(1);
+  });
+  test('a failed recovery or pre-existing archive cannot orphan or overwrite the old ciphertext',async()=>{
+    for(const conflict of [false,true]){
+      const {fake,walletId,recover}=await recoveryFixture(!conflict);
+      const escrow={wallet_id:walletId,sealed_key_blob:'retained ciphertext',recovery_anchor_pubkey:'anchor',blob_version:1,created_at:1,updated_at:2};
+      fake.store.set(`${AGENT_RECOVERY_ESCROW_COLLECTION}/${walletId}`,escrow);
+      const archive=`${AGENT_RETIRED_KEY_BACKUPS_COLLECTION}/${retiredKeyBackupId(walletId,OLD_ADDRESS)}`;
+      if(conflict)fake.store.set(archive,{immutable:'existing backup'});
+      await expect(recover()).rejects.toThrow();
+      expect(fake.store.get(`${AGENT_RECOVERY_ESCROW_COLLECTION}/${walletId}`)).toEqual(escrow);
+      expect(fake.store.get(archive)).toEqual(conflict?{immutable:'existing backup'}:undefined);
+      expect(fake.store.get(`agent_wallets/${walletId}`)?.address).toBe(OLD_ADDRESS);
+    }
+  });
+  test('hash destination recovery rotates the same agent identity and credentials without inventing a curve point',async()=>{
+    const {fake,walletId,input,recover}=await recoveryFixture();
+    const request={...input,destinationKind:'hash' as const,publicKey:`hash:${NEW_ADDRESS}`,signature:`0x${'31'.repeat(7888)}`};
+    jest.mocked(verifyHashDestinationProof).mockResolvedValue(undefined);
+    await expect(recover(request)).resolves.toMatchObject({walletId,destination:NEW_ADDRESS,generation:1});
+    expect(fake.store.get(`agent_wallets/${walletId}`)?.public_key).toBe(`hash:${NEW_ADDRESS}`);
+    expect(verifyHashDestinationProof).toHaveBeenCalledWith(NEW_ADDRESS,agentRecoveryMessage(request),request.signature);
+    await expect(recover(request)).resolves.toMatchObject({generation:1});
+    await expect(planFor(fake,walletId)).rejects.toThrow('hash_wallet_curve_downgrade');
+  });
+  test('hash credential proof refusal preserves the existing agent, and copied verified-identity fields confer no authority',async()=>{
+    const {fake,walletId,input,recover}=await recoveryFixture();
+    const request={...input,destinationKind:'hash' as const,publicKey:`hash:${NEW_ADDRESS}`,signature:`0x${'32'.repeat(7888)}`};
+    const before={...fake.store.get(`agent_wallets/${walletId}`)};
+    jest.mocked(verifyHashDestinationProof).mockRejectedValueOnce(Error('unverified'));
+    await expect(recover(request)).rejects.toThrow('destination_proof_invalid');expect(fake.store.get(`agent_wallets/${walletId}`)).toEqual(before);
+    jest.mocked(verifyHashDestinationProof).mockResolvedValue(undefined);
+    const identity=await createHashRotationIdentity({destination:NEW_ADDRESS,credentials:await generateApiCredentialsAsync(),message:'scoped',signature:request.signature});
+    await expect(planFor(fake,walletId,{identity:{...identity}})).rejects.toThrow('new_public_key_invalid');
+    const plan=await planFor(fake,walletId,{identity});
+    const {deps}=bankDeps(fake);
+    await expect(executeKeyRotationTransition(deps,plan)).rejects.toThrow('hash_wallet_recovery_authorization_required');
+  });
+  test('a deposit to the revealed recovery destination cannot block credential installation', async () => {
+    const { fake, walletId, input, recover, chain } = await recoveryFixture();
+    chain.balance = async () => 1n;
+    await expect(recover()).resolves.toMatchObject({ walletId, destination: NEW_ADDRESS });
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${NEW_ADDRESS}`)).toMatchObject({
+      identity: input.identity, boundBlock: 100, openingBalanceAtomic: '1', chainBindingStatus: 'confirmed' });
+  });
+
+  test('a revealed preimage and fresh key cannot rotate without finalized owner authorization', async () => {
+    const { fake, walletId, input, recover, verifyAuthorization } = await recoveryFixture();
+    const before = { ...fake.store.get(`agent_wallets/${walletId}`) };
+    verifyAuthorization.mockRejectedValueOnce(new Error('recourse_authorization_intent_missing'));
+    await expect(recover()).rejects.toThrow('recourse_authorization_intent_missing');
+    expect(fake.store.get(`agent_wallets/${walletId}`)).toEqual(before);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${input.identity}`)?.recoveryGeneration).toBe(0);
+  });
+
+  test('on-chain authorization nonce advances independently of relay credential generation', async () => {
+    const { input, recover } = await recoveryFixture();
+    const request = { ...input, authorizationNonce: 3 };
+    request.signature = await NEW_SIGNER.signMessage(agentRecoveryMessage(request));
+    await expect(recover(request)).resolves.toMatchObject({ generation: 1, destination: NEW_ADDRESS });
+  });
+
+  test('a substituted credential pair cannot reuse the destination signature', async () => {
+    const { input, recover } = await recoveryFixture();
+    await expect(recover({ ...input, apiSecret: `pvns_${'99'.repeat(32)}` }))
+      .rejects.toThrow('recourse_destination_proof_invalid');
+  });
+
+  test('a zero-balance retired destination cannot become a fresh recovery key', async () => {
+    const { fake, walletId, input, recover } = await recoveryFixture();
+    fake.store.set(`${AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION}/${NEW_ADDRESS}`, { retired_at_ms: NOW - 1 });
+    const before = { ...fake.store.get(`agent_wallets/${walletId}`) };
+    await expect(recover()).rejects.toThrow('destination_address_retired');
+    expect(fake.store.get(`agent_wallets/${walletId}`)).toEqual(before);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${input.identity}`)?.recoveryGeneration).toBe(0);
   });
 
   test('atomically moves the full identity to the new address and seals a record_only PE', async () => {

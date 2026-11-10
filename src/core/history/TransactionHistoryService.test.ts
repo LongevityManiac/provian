@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+vi.mock('../protocol/runtime', async () => (await import('../protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
+import { describe, it, expect, vi } from 'vitest';
 import { isPvtMintTransfer, ZERO_ADDRESS } from './pvtMintClassifier';
 import { PVT9_TOKEN } from '../chains/evm/config';
 

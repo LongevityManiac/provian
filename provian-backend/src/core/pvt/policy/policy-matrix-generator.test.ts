@@ -111,7 +111,7 @@ describe('PVT policy matrix completeness generator', () => {
     membership.rows[0].maintained_sources.mobile_action_type_union = !membership.rows[0].maintained_sources.mobile_action_type_union;
     expect(matchesSignedPolicy(signed, JSON.stringify(membership))).toBe(false);
   });
-  it('parses all 208 ActionType members despite semicolons in comments', () => {
+  it('parses all 210 ActionType members despite semicolons in comments', () => {
     // -3 — the retired-ladder aliases agent_wallet_funded /
     // agent_first_transaction / agent_sustained_activity were removed from the
     // mobile ActionType union with the matrix deletion (203 → 200); adds
@@ -119,7 +119,7 @@ describe('PVT policy matrix completeness generator', () => {
     const parsed = parseActionTypeUnion(mobileSource);
     // +human_approval; +7 Commons communication types; 2026-09-23 (fact-base item 3):
     // -1 — the union now ends at agent_insurance_payout_executed.
-    expect(parsed.size).toBe(208);
+    expect(parsed.size).toBe(210);
     expect(parsed.has('wallet_created')).toBe(true);
     expect(parsed.has('agent_insurance_payout_executed')).toBe(true);
   });
@@ -182,7 +182,7 @@ describe('PVT policy matrix completeness generator', () => {
       }>;
     };
     expect(artifact.policy_version).toBe(PROPOSED_ACTION_POLICY_MANIFEST.policy_version);
-    expect(artifact.counts.mobile).toBe(208); // -3 retired-ladder aliases; +link_spend; +human_approval; +7 Commons communication types; 2026-09-23: -1 (fact-base item 3)
+    expect(artifact.counts.mobile).toBe(210); // -3 retired-ladder aliases; +link_spend; +human_approval; +7 Commons communication types; 2026-09-23: -1 (fact-base item 3)
     const files = artifact.rows.flatMap((row) => row.maintained_sources.static_emitter_files);
     expect(files.some((file) => file.endsWith('.tsx'))).toBe(true);
     expect(files.some((file) => file.startsWith('provian-agent-sdk/src/'))).toBe(true);

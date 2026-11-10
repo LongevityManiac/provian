@@ -2,7 +2,7 @@
   "name": "@provian/mcp",
   "version": "1.2.3",
   "mcpName": "ai.provian/mcp",
-  "description": "MCP server for the Provian trust layer: create an agent wallet, check Genesis status, browse jobs, present proof of your own PEs, and read public agent records (totals; your PEs stay on your machine) \u2014 over stdio (npx) or the hosted remote endpoint.",
+  "description": "MCP server for the Provian trust layer: create an agent wallet, check Genesis status, browse jobs, present proof of your own PEs, and read public agent records (totals; your PEs stay on your machine) — over stdio (npx) or the hosted remote endpoint.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -44,7 +44,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",
-    "@noble/curves": "1.9.7"
+    "@noble/curves": "1.9.7",
+    "ethers": "6.17.0",
+    "undici": "6.29.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.0.0",

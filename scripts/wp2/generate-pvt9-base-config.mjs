@@ -62,7 +62,7 @@ const FROZEN_LLMS_MACHINE_SURFACES_SHA256 = 'c816e3ee80796f3917c2488bcce959b62b9
  * monetary template declares that same admission rule.
  */
 const FROZEN_ACTION_POLICY_MATRIX_CONTENT_SHA256 =
-  'sha256:d2ccc6cd174019cdab4e897ba5f84998674b2088b32e73b4755b4c306c5a58db';
+  'sha256:1f8e965f7b481ffa2f76e261bfc266b4d34c07b4cc77040dc07a62c920defb01';
 
 /**
  * Byte-for-byte the generator's serializer
@@ -244,8 +244,8 @@ const REVIEWED_REPIN_VERIFIERS = Object.freeze({
 // Advisory handshake invalidation and notify-only events never roll back an
 // economic transition or alter counters when delivery fails.
 const REVIEWED_EXTERNAL_VALUE_BACKEND_PINS = Object.freeze({
-  'provian-backend/src/core/agent-bank/escrow.ts': '013f6515529a4b5a0572ceb8620cf43c6ceab9ea6155245fc48a98912c5ca855',
-  'provian-backend/src/core/agent-bank/scheduler.ts': '589f3d02e25f2f085ea50df3eca51b9f5624be5543ea777d7a3afba69957ce73',
+  'provian-backend/src/core/agent-bank/escrow.ts': '4055840e1ed00ddc119d2ec76ebac91b493100103a8659421623f0d3916f7a33',
+  'provian-backend/src/core/agent-bank/scheduler.ts': '3b3c72c5f347bbf91020785966095ef7d30c81f3a6de99be8c80a4474a0a824b',
 });
 const HISTORICAL_EXTERNAL_VALUE_BACKEND = Object.keys(REVIEWED_EXTERNAL_VALUE_BACKEND_PINS);
 
@@ -1340,10 +1340,15 @@ function auditRuntimeAndDiscovery(overlay) {
     const pvtPrincipalExec = stripCodeComments(pvtPrincipalSource);
     auditInvariant(pvtPrincipalExec.includes('ENABLE_PVT_PRINCIPAL'), 'pvt-principal-config no longer honors ENABLE_PVT_PRINCIPAL');
     auditInvariant(pvtPrincipalSource.includes('enabled: false'), 'pvt-principal-config drops its explicit disabled fallback');
-    // the live kernel + escrow are the successor set; the kernel survives
-    // ONLY as the bounded predecessor-burn acceptance (PREDECESSOR_PVT9_BURN_CUTOFF_BLOCK).
-    auditInvariant(pvtPrincipalExec.includes("const PVT9_KERNEL_BASE = '0x8811441914381143b9408c5C32247367F86F173A'"), 'pvt-principal-config does not bind the successor PVT9 kernel');
-    auditInvariant(pvtPrincipalExec.includes("const BASE_INSTITUTIONS_ESCROW_V4_BASE = '0x96560fDF49e563eFCdc2d502934676DC074732d0'"), 'pvt-principal-config does not bind the escrowV4 address');
+    // Current addresses are authenticated by the permanent pointer, not a
+    // transcribed deployment. Historical burn acceptance retains its cutoff.
+    auditInvariant(pvtPrincipalExec.includes('const deployment = await currentProtocolDeployment()')
+      && pvtPrincipalExec.includes('pvtAddressByChainId: { [BASE_CHAIN_ID]: deployment.addresses.kernel.toLowerCase() }'),
+    'pvt-principal-config does not bind the current pointer kernel');
+    auditInvariant(pvtPrincipalExec.includes('escrowV4Address: deployment.addresses.escrow')
+      && pvtPrincipalExec.includes('promiseV3Address: deployment.addresses.promises')
+      && pvtPrincipalExec.includes('poolV3Address: deployment.addresses.projectPool'),
+    'pvt-principal-config does not bind current pointer institutions');
     auditInvariant(pvtPrincipalExec.includes('PREDECESSOR_PVT9_BURN_CUTOFF_BLOCK'), 'pvt-principal-config lost the bounded predecessor-burn cutoff');
     auditInvariant(!pvtPrincipalExec.includes('PVT_PRINCIPAL_CHAINS'), 'pvt-principal-config reintroduces env-driven chain widening (must stay Base-only)');
   }
@@ -1895,6 +1900,14 @@ function runAdversarialSelfTests() {
   }, 'legacy execution alias');
   addMutation('change original baseline byte pin', 'config/integrity/baseline-pins.json',
     (source) => `${source} `, 'baseline byte pins changed');
+  addMutation('replace pointer-derived principal token with a fixed address',
+    'provian-backend/src/core/agent-bank/pvt-principal-config.ts',
+    source => source.replace('deployment.addresses.kernel.toLowerCase()', "'0x8811441914381143b9408c5C32247367F86F173A'"),
+    'pvt-principal-config does not bind the current pointer kernel');
+  addMutation('replace pointer-derived principal escrow with a fixed address',
+    'provian-backend/src/core/agent-bank/pvt-principal-config.ts',
+    source => source.replace('escrowV4Address: deployment.addresses.escrow', "escrowV4Address: '0x96560fDF49e563eFCdc2d502934676DC074732d0'"),
+    'pvt-principal-config does not bind current pointer institutions');
   cases.push({
     name: 'add second canonical configuration source',
     overlay: new Map([['config/pvt9-shadow.json', readText('config/pvt9-base.json', new Map())]]),

@@ -7,7 +7,7 @@ import { withBiometricAction, assertBiometricAction, type BiometricAction } from
  * standalone export authenticates once and that approval ends with the export.
  */
 
-import SeedManager, { DERIVATION_PATHS } from '../SeedManager';
+import SeedManager from '../SeedManager';
 
 export type ExportableChain = 'evm';
 
@@ -42,7 +42,7 @@ export const PrivateKeyExportService = {
                 privateKeyHex: derived.privateKeyHex,
                 chain,
                 address: derived.address,
-                path: DERIVATION_PATHS.EVM,
+                path: derived.path,
             };
 
             derived.privateKey.fill(0);

@@ -1,4 +1,4 @@
-<!-- source-sha256: aaac01524a0c4cced1b5545dba74ecf46a9d454995013bba12670363522cd350 -->
+<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
 # Hiến pháp Mạng lưới Provian
 
 **Trạng thái: hiến chương sáng lập — chưa được phê chuẩn.** Đây là văn bản hiến pháp duy nhất của Mạng lưới Provian. Văn bản ràng buộc Provian Technologies bằng cam kết công bố công khai. Quản trị của nhóm con người chưa được kích hoạt và chưa phê chuẩn văn bản này. Đọc hoặc chấp nhận hiến chương không phải điều kiện để gia nhập mạng lưới không cần cấp phép.
@@ -8,6 +8,8 @@ Provian Technologies, LLC trực tiếp quản lý nhân hệ thống hiện t�
 Luận đề giải thích tầm nhìn. Đồng tiền cấp số nhân phát triển lập luận kinh tế. Bản dịch hiến chương này tuân theo nguồn và cấu trúc tiếng Anh; chúng không phải các hiến pháp riêng biệt.
 
 ## Lời mở đầu
+
+Tính toán tạo ra tiền. Mạng kết nối đóng góp có nhân chứng với quyền sở hữu và cơ chế khắc phục cho con người và tác nhân. Khóa là công cụ kiểm soát, không phải toàn bộ hồ sơ của chủ sở hữu. Sổ đăng ký từ thời điểm liên kết, cam kết khôi phục độc lập và Recourse Pool tùy nghi tạo hình thức thể chế cho khác biệt đó, đồng thời giữ chuyển khoản không cần xin phép. Một nghìn năm nữa, thương mại của nền văn minh đã rời Trái Đất cần tiền kỹ thuật số vượt ra ngoài ngân hàng trung ương của các quốc gia xuất xứ. Khóa bị đánh cắp, sổ cái công khai và khả năng mật mã bị phá là những điểm yếu thật sự cần giải quyết, không phải giới hạn của tương lai ấy. Tách quyền sở hữu khỏi khóa cho phép khôi phục.
 
 Mạng lưới Provian là giao thức mở cho sự tham gia có bằng chứng trong nền kinh tế chung của con người và tác nhân. Mạng lưới kết nối bằng chứng mà người tham gia sở hữu về công việc họ đã làm với sự tham gia kinh tế và với những quan hệ có thể được đánh giá bằng bằng chứng. Các cam kết phục vụ cả hai loại người tham gia.
 
@@ -27,7 +29,7 @@ Không cần tiết lộ công việc riêng tư để tạo bằng chứng. Gi�
 
 Trong thời gian giao thức còn được vận hành, mỗi hành động làm việc đều tạo ra PVT một lần ở giá trị được hỗ trợ tốt nhất. PE của nó tạo ra phần đế; đo từ xa và tính độc lập được nhân lên trên cùng. Các sự kiện chi phí PVT tuần hoàn, từ chối và không hoạt động, sự kiện bảo mật và nhận dạng, dự phòng hành động không xác định và các tín hiệu có giá trị đến PE mục tiêu không được tạo ra riêng biệt.
 
-Không có phát hành hành chính nào bỏ qua kênh quyết toán PE; mọi phát hành đều dùng kênh đó. Trong thời gian giao thức còn được vận hành, nguồn cung mở rộng khi công việc đi vào mạng lưới, không có trần tổng cung cố định. Hạt nhân áp dụng on-chain mức trần Genesis và tổng phát hành ở mỗi kỳ bảy ngày: 7 500 000 PVT cho các khoản cấp Genesis và tổng cộng 10 000 000 PVT. Một mức trần mới chỉ có thể được lên lịch cho một kỳ tương lai, và yêu cầu bền vững có thể được chuyển sang kỳ sau. Việc tiếp nhận một người nhận là trọn vẹn, không bao giờ giảm theo tỷ lệ để vừa sức chứa còn lại.
+Phát hành cho công việc mới dùng kênh quyết toán PE; không có phát hành hành chính nào bỏ qua kênh đó. Hệ thống kế nhiệm được phê duyệt riêng có thể khôi phục số dư đã đăng ký từ ảnh chụp khối an toàn cuối cùng sau sự cố mật mã. Khôi phục giữ nguyên lịch sử tiền tệ trước đó, không phải phát hành cho công việc mới hay cho phép phát lại công việc đã quyết toán. Trong thời gian giao thức còn được vận hành, nguồn cung mở rộng khi công việc đi vào mạng lưới, không có trần tổng cung cố định. Hạt nhân áp dụng on-chain mức trần Genesis và tổng phát hành ở mỗi kỳ bảy ngày: 7 500 000 PVT cho các khoản cấp Genesis và tổng cộng 10 000 000 PVT. Một mức trần mới chỉ có thể được lên lịch cho một kỳ tương lai, và yêu cầu bền vững có thể được chuyển sang kỳ sau. Việc tiếp nhận một người nhận là trọn vẹn, không bao giờ giảm theo tỷ lệ để vừa sức chứa còn lại.
 
 | Bên nhận | Quy tắc | Trạng thái |
 |---|---|---|
@@ -62,7 +64,7 @@ Cử tri đó và hạ tầng xác minh của họ chưa phải hệ thống qu�
 
 Tư cách thành viên mạng lưới không cần cấp phép. Người tham gia tạo PE hợp lệ và, khi tích hợp phát hành PVT, tôn trọng con đường phát hành và tỷ lệ chia chuẩn. Không đơn đăng ký hay thỏa thuận nào với công ty cấp tư cách thành viên.
 
-Tư cách thành viên Quỹ là cơ chế riêng dành cho con người đã xác minh và Nền tảng của Quỹ, với bộ máy xác minh con người và phân phối được đề xuất; ví tác nhân không đủ điều kiện nhận phân phối dành cho con người đó. Điều IX nêu đề xuất này.
+Tư cách thành viên Quỹ là cơ chế riêng cho con người đã xác minh và mức nền của Quỹ, với xác minh tư cách con người và phân phối đã cam kết nhưng chưa mở; ví tác nhân không đủ điều kiện cho phân phối dành cho con người này. Điều IX nêu cam kết.
 
 ## Điều VI — Quyền của người tham gia
 
@@ -91,13 +93,29 @@ Triển khai tham chiếu không phải cách thể hiện duy nhất được p
 
 Hiến chương đề xuất quản trị vận hành của tác nhân dựa trên bằng chứng, với mức trần bỏ phiếu theo thực thể, được nêu tại Điều XII, để hạn chế tập trung. Chưa có kênh bỏ phiếu như vậy hoạt động; kích hoạt và triển khai chi tiết cần phê duyệt riêng.
 
+## Recourse Pool
+
+Tư cách thành viên là tự nguyện và tách biệt với tư cách thành viên mạng lưới hoặc Quỹ. Recourse Pool là cơ chế chia sẻ rủi ro do thành viên tài trợ. Không thành viên nào có quyền nhận thanh toán theo hợp đồng. Việc khôi phục là quyết định tùy nghi theo quy tắc đã công bố. Thành viên chấp nhận quyết định là cuối cùng, không có yêu cầu chống lại Provian Technologies hoặc Frank Drew về những quyết định đó. Provian Technologies không phải bên tham gia pool, không đóng góp, không nắm giữ gì và không hứa hẹn gì. Công ty không nhận khoản đóng góp hay phần dư.
+
+Mỗi thành viên đốt 100 PVT mỗi tháng dương lịch, có thu nhập hay không. Riêng biệt, 1% thu nhập gộp được chuyển vào Recourse Pool khi quyết toán; theo phân chia dành cho con người và Genesis, thành viên giữ 98%, còn phân bổ 0.5% cho công ty và mức sàn 0.5% cho Quỹ không đổi. Thành viên không có thu nhập trong tháng thay vào đó đóng góp 100 PVT từ số đang nắm giữ vào dự trữ. Tháng đó yêu cầu cả đốt để tham gia lẫn đóng góp vào dự trữ. Đốt tiêu hủy đơn vị; dự trữ giữ chúng. Cả ba mức nằm trong quy tắc có chữ ký và có thể tăng hoặc giảm cho tương lai theo kinh nghiệm tổn thất.
+
+Một tháng bỏ lỡ được gia hạn một tháng dương lịch. Hoàn tất trong thời gian gia hạn giữ tính liên tục; sau đó tư cách thành viên chấm dứt. Cựu thành viên có thể tham gia lại bất cứ lúc nào và được bảo vệ từ ngày đó trở đi. Hoàn tất muộn không khôi phục giai đoạn đã hết tư cách. Một tư cách thành viên bao gồm mọi số dư đã liên kết, cả kiếm được lẫn nhận được. Đây là lựa chọn cho người có đủ tài sản cần bảo vệ; chủ sở hữu đã liên kết nhưng không là thành viên không có recourse đối với trộm cắp.
+
+Đảo ngược được thực hiện trước. Trong một giao dịch, kernel tiêu hủy lượng PVT đã xác định tại các địa chỉ được nêu và phát hành lại đúng lượng đó đến khóa mới của chủ sở hữu. Tổng cung không bao giờ thay đổi. Cả thẩm quyền khôi phục được bổ nhiệm riêng và bằng chứng phục hồi độc lập của chủ sở hữu phải cho phép thao tác; không bên nào tự mình có thể di chuyển PVT của ai. Quy tắc áp dụng đến PVT còn do người lấy giữ hoặc người không trao gì để đổi lấy. PVT nhận qua trao đổi có nhân chứng vẫn thuộc người nhận. Trao đổi trung thực không bị đòi hoàn ngược.
+
+Recourse Pool khôi phục phần còn lại, theo tỷ lệ giữa các quyết định được chấp nhận khi thiếu quỹ, không bao giờ vượt dự trữ có sẵn. Tỷ lệ dự trữ trên số dư thành viên được công bố như thước đo nguồn lực, không kèm giá tiền pháp định hay hứa hẹn khôi phục. Thành viên có thể rời đi và rút phần quyền lợi dự trữ còn lại theo tỷ lệ trực tiếp trên chuỗi không cần relay, trừ khoản đã phân bổ cho khôi phục. PVT đã đốt không thể rút lại.
+
+Quyết định dùng bằng chứng riêng của relay về sở hữu, chuyển khoản, đối tác và nhân chứng, gồm kết quả trước đó. Không có giữ lại, giới hạn, thời gian chờ, mức trần hay xác nhận lần hai áp dụng cho thành viên. Khóa của Frank giữ thẩm quyền khôi phục được bổ nhiệm riêng cho đến khi Tòa mở; vai trò có thể chuyển cho Tòa hoặc quản trị. Mỗi quyết định và kết quả đi vào chuỗi riêng của thành viên, và mọi lần sử dụng thẩm quyền khôi phục đều công khai. Tự dàn dựng vụ trộm vẫn là rủi ro chứng cứ và là cơ sở điều chỉnh mức trong quy tắc cho tương lai.
+
+Sổ đăng ký sở hữu theo dõi chuyển khoản trên chuỗi từ lúc liên kết tự nguyện, phân biệt PVT được đúc và được nhận. Nó không tái dựng sở hữu trước đó. Khi liên kết, cam kết hàm băm độc lập tách phục hồi khỏi khóa ví. Khi mật mã bị phá, ảnh chụp ở khối an toàn cuối cùng và bằng chứng phục hồi của từng chủ sở hữu được dùng để phát hành lại số dư đã đăng ký một lần trên kernel kế nhiệm an toàn, miễn phí cho mọi chủ sở hữu đã liên kết. Chuyển khoản thông thường vẫn không bị chặn. Con trỏ vĩnh viễn xác định kernel và các tổ chức hiện tại, được kiểm chứng độc lập với relay; số dư, cửa sổ Genesis, neo và công việc đã quyết toán được tiếp nối trong khi tiền nhiệm ngừng đúc. Các chương trình recourse khác có thể xuất hiện sau.
+
 ## Điều IX — Quỹ và Nền tảng của Quỹ
 
 Mục đích của Quỹ là mở rộng sự hòa nhập của con người khi trí tuệ tạo ra nhiều hơn. Phẩm giá con người không phụ thuộc vào việc thị trường trả bao nhiêu cho công việc của một người. Thu nhập trực tiếp, quan hệ bên thụ hưởng và sự hòa nhập phổ quát phục vụ các phần khác nhau của mục đích này.
 
-Quỹ hiện tồn tại dưới dạng ngân quỹ trên chuỗi mà mọi lần quyết toán đều chi trả vào, theo quy tắc của nhân hệ thống. Nền tảng của Quỹ được đề xuất là phân phối định kỳ, đồng mức và bình đẳng cho thành viên con người đã xác minh, không xét nhu cầu tài chính hay trọng số tài sản. Nó chia dòng ngân quỹ có sẵn và không tạo thêm PVT. Đề xuất cấp kinh phí cho hoạt động quản lý trước nhưng giới hạn ở một nửa phần của mỗi kỳ, giữ phần yêu cầu chiếm đa số cho Nền tảng của Quỹ. Điều kiện là con người đã xác minh, miễn phí và được duy trì bằng việc xác minh lại định kỳ.
+Quỹ hiện tồn tại như kho bạc trên chuỗi mà mỗi lần quyết toán đóng góp theo quy tắc của kernel. Provian cam kết một mức nền của Quỹ: phân phối định kỳ, đồng đều và bằng nhau cho thành viên con người đã xác minh, không xét điều kiện kinh tế hay trọng số tài sản. Điều kiện là tư cách con người được xác minh, miễn phí và duy trì bằng tái xác minh định kỳ. Nó chia dòng kho bạc hiện có, không tạo thêm PVT. Đề xuất tài trợ trước các khoản hỗ trợ quản lý nhưng giới hạn ở một nửa phần của mỗi kỳ, giữ đa số cho mức nền.
 
-Thiết chế phân phối, xác minh con người, tư cách thành viên và phân phối định kỳ mới được đề xuất, chưa xây dựng. Trước khi vận hành, hợp đồng chuyển phần phân bổ đến ngân quỹ được chỉ định. Quản trị con người trong tương lai vẫn tuân theo Điều IV.
+Provian cam kết xây dựng tổ chức phân phối, xác minh con người duy nhất, tư cách thành viên con người đã xác minh và phân phối bằng nhau định kỳ. Các chương trình này chưa mở. Cho đến khi tổ chức phân phối hoạt động, hợp đồng chuyển phân bổ vào kho bạc được chỉ định. Quản trị của con người trong tương lai vẫn tuân theo Điều IV.
 
 # PHẦN IV — GIAO ƯỚC
 

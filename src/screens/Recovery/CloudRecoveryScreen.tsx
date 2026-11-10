@@ -2,6 +2,9 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { type BiometricAction } from '../../core/security/biometricAction';
 import { withBiometricOrFallback } from '../../core/security/biometricOrFallback';
 import { onWalletUnlocked, preparePeCloudAccess } from '../../core/meter/phoneMeterRuntime';
+import { assertHumanBackupSelection, installHumanAccountSelection, installHumanHashAccountSelection } from '../../core/recourse/human-account';
+import { ownerChainNetwork } from '../../core/protocol/runtime';
+import { discoverHumanAccountForRestore } from '../../core/recourse/human-break-recovery';
 /**
  * CloudRecoveryScreen - PIN-encrypted cloud backup recovery
  *
@@ -285,12 +288,28 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
             await preparePeCloudAccess().catch(() => false);
             return withBiometricOrFallback(t('recovery.confirmWalletReplacement'), action => commitDecryptedRecovery(result, overwriteConfirmation, action));
         }
+        if (result.recourse_account && result.recourse_account.evm !== result.wallet_address.toLowerCase()) {
+            throw new Error('recourse_backup_account_mismatch');
+        }
+        const installSelection = async () => {
+            const current = await discoverHumanAccountForRestore(result.mnemonic, biometricAction);
+            const prior = result.recourse_account;
+            if (prior) assertHumanBackupSelection(prior, current?.selection);
+            if (current?.selection?.kind === 'hash') await installHumanHashAccountSelection(result.mnemonic, current.identity,
+                current.selection.requestId, biometricAction, ownerChainNetwork(), current.selection.generation);
+            else if (current?.selection) await installHumanAccountSelection(result.mnemonic, current.selection, biometricAction);
+        };
         const recoveryResult = await applyCloudRecovery(
             result.mnemonic,
             {
                 hasSeed: () => SeedManager.hasSeed(),
                 seedMatches: (m) => SeedManager.seedMatches(m, biometricAction),
-                importMnemonic: (m, opts) => SeedManager.importMnemonic(m, opts, biometricAction),
+                importMnemonic: async (m, opts) => {
+                    // The verified selector lands before the seed becomes
+                    // usable, so a crash cannot activate its retired account.
+                    await installSelection();
+                    await SeedManager.importMnemonic(m, opts, biometricAction);
+                },
                 verifySeedReadable: () => SeedManager.verifySeedReadable(biometricAction),
             },
             overwriteConfirmation,
@@ -303,6 +322,9 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
         // applyCloudRecovery via the benign alreadyPresent path and completes
         // (review #12).
         try {
+            // Same-seed restore is intentionally a no-op for seed storage; its
+            // newer encrypted account selector must still be restored.
+            await installSelection();
             // getEVMAddress() returns public material only and wipes the derived
             // private key internally.
             const walletAddress = await SeedManager.getEVMAddress(biometricAction);

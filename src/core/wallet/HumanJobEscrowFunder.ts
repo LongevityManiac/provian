@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 /**
@@ -601,6 +602,7 @@ export function providerFundingReader(provider: ethers.Provider): FundingChainRe
 export async function fundHumanJobEscrowOnChain(
     funding: EscrowFundingDetails, biometricAction?: BiometricAction,
 ): Promise<EscrowFundingResult> {
+    await currentProtocolDeployment();
     assertWalletEnabled('fundHumanJobEscrowOnChain');
 
     // Validate the relay record before prompting. The escrow id needs the key (its salt), so the

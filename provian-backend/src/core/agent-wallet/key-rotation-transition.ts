@@ -77,12 +77,15 @@ import {
 import { readAgreedBaseHead } from '../onchain/economic-discovery';
 import {
   AGENT_RECOVERY_ESCROW_COLLECTION,
+  AGENT_RETIRED_KEY_BACKUPS_COLLECTION, retiredKeyBackupId,
   RECOVERY_BLOB_VERSION,
   isValidSealedKeyBlobB64u,
   isValidAnchorPubkeyB64u,
   type RecoveryEscrowRecord,
 } from '../agent-recovery-escrow';
 import { ROTATION_HISTORY_SUBCOLLECTION } from './rotation-history-evidence';
+import { prepareRecoveryTransaction, identityHash, RECOURSE_COLLECTIONS,
+  type RecoveryInput, type PreparedRecovery, type RegisteredAddress } from '../recourse/ownership';
 
 /** Action type + policy: catalogued `record_only`, so a rotation PE mints 0. */
 export const AGENT_KEY_ROTATED_ACTION_TYPE = 'agent_key_rotated' as const;
@@ -98,6 +101,8 @@ export const AGENT_DIRECTORY_COLLECTION = 'agent_directory' as const;
 
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 const PUBLIC_KEY = /^[0-9a-f]{128}$/;
+const hashIdentities = new WeakSet<KeyRotationNewIdentity>();
+const hashPlans = new WeakSet<KeyRotationPlan>();
 const API_PREFIX = /^pvn_live_[0-9a-f]{15}$/;
 const API_HASH = /^[0-9a-f]{128}$/;
 const API_SALT = /^[0-9a-f]{64}$/;
@@ -119,6 +124,18 @@ export interface KeyRotationNewIdentity {
   readonly newAddress: string;
   readonly newPublicKey: string;
   readonly newApiCredentials: ApiCredentials;
+}
+
+/** A hash account is described by its address, never by a fabricated curve
+ * point. Only independently verified current hash-key possession constructs
+ * this in-memory identity; deserialization cannot create the authorization. */
+export async function createHashRotationIdentity(input: { destination: string; credentials: ApiCredentials;
+  message: string; signature: string }): Promise<KeyRotationNewIdentity> {
+  const { verifyHashDestinationProof } = await import('../recourse/hash-destination-proof');
+  await verifyHashDestinationProof(input.destination,input.message,input.signature);
+  const identity = Object.freeze({newAddress:input.destination,newPublicKey:`hash:${input.destination}`,
+    newApiCredentials:Object.freeze({...input.credentials})});
+  hashIdentities.add(identity); return identity;
 }
 
 export interface KeyRotationExpectedOldIdentity {
@@ -232,7 +249,9 @@ export async function prepareKeyRotationTransition(params: {
   const wallet = walletSnap.data() as AgentWalletDocument;
   const oldAddress = assertLowerHexAddress(wallet.address, 'wallet_address_invalid');
   const oldPublicKey = String(wallet.public_key ?? '').toLowerCase();
-  if (!PUBLIC_KEY.test(oldPublicKey)) fail('wallet_public_key_invalid');
+  const oldHash = oldPublicKey === `hash:${oldAddress}`;
+  if (!PUBLIC_KEY.test(oldPublicKey) && !oldHash) fail('wallet_public_key_invalid');
+  if (oldHash && !hashIdentities.has(newIdentity)) fail('hash_wallet_curve_downgrade');
   if (typeof wallet.api_key_prefix !== 'string' || !API_PREFIX.test(wallet.api_key_prefix)) {
     fail('wallet_api_prefix_invalid');
   }
@@ -247,7 +266,7 @@ export async function prepareKeyRotationTransition(params: {
   if (newIdentity.newApiCredentials.api_key_prefix === wallet.api_key_prefix) {
     fail('new_api_prefix_equals_old');
   }
-  if (deriveAddress(newIdentity.newPublicKey.toLowerCase()) !== newAddress) {
+  if (!hashIdentities.has(newIdentity) && deriveAddress(newIdentity.newPublicKey.toLowerCase()) !== newAddress) {
     fail('new_public_key_derivation_mismatch');
   }
 
@@ -261,7 +280,7 @@ export async function prepareKeyRotationTransition(params: {
   const newFence = createNativeWalletRegistrationFence(freshHead);
 
   const peId = rotationPeId(wallet.agent_id, oldAddress, newAddress);
-  return {
+  const plan: KeyRotationPlan = {
     expected: {
       walletId,
       agentId: wallet.agent_id,
@@ -282,6 +301,11 @@ export async function prepareKeyRotationTransition(params: {
     now,
     ...(params.recoveryEscrow !== undefined ? { recoveryEscrow: params.recoveryEscrow } : {}),
   };
+  if (hashIdentities.has(newIdentity)) {
+    Object.freeze(plan.newIdentity); Object.freeze(plan.expected); Object.freeze(plan.newFence); Object.freeze(plan);
+    hashPlans.add(plan);
+  }
+  return plan;
 }
 
 /** The agent registration index (keyed by agent_id) carries the immutable
@@ -304,7 +328,8 @@ function validateNewIdentityShape(newIdentity: KeyRotationNewIdentity): void {
   if (typeof newIdentity.newAddress !== 'string' || !ADDRESS.test(newIdentity.newAddress.toLowerCase())) {
     fail('new_address_invalid');
   }
-  if (typeof newIdentity.newPublicKey !== 'string' || !PUBLIC_KEY.test(newIdentity.newPublicKey.toLowerCase())) {
+  if (typeof newIdentity.newPublicKey !== 'string' || (hashIdentities.has(newIdentity)
+    ? newIdentity.newPublicKey !== `hash:${newIdentity.newAddress}` : !PUBLIC_KEY.test(newIdentity.newPublicKey.toLowerCase()))) {
     fail('new_public_key_invalid');
   }
   const creds = newIdentity.newApiCredentials;
@@ -326,9 +351,11 @@ interface OldIdentityRefs {
   newApiIndexRef: DocumentReference;
   oldAdmissionRef: DocumentReference;
   retirementRef: DocumentReference;
+  destinationRetirementRef: DocumentReference;
   directoryRef: DocumentReference;
   rotationHistoryRef: DocumentReference;
   recoveryEscrowRef: DocumentReference;
+  retiredKeyBackupRef: DocumentReference;
 }
 
 function buildRefs(db: Firestore, plan: KeyRotationPlan): OldIdentityRefs {
@@ -355,10 +382,13 @@ function buildRefs(db: Firestore, plan: KeyRotationPlan): OldIdentityRefs {
       })),
     retirementRef: db.collection(AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION)
       .doc(expected.oldAddress),
+    destinationRetirementRef: db.collection(AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION)
+      .doc(newIdentity.newAddress),
     directoryRef: db.collection(AGENT_DIRECTORY_COLLECTION).doc(expected.walletId),
     rotationHistoryRef: db.collection('agent_wallets').doc(expected.walletId)
       .collection(ROTATION_HISTORY_SUBCOLLECTION).doc(rotationHistoryId(peId)),
     recoveryEscrowRef: db.collection(AGENT_RECOVERY_ESCROW_COLLECTION).doc(expected.walletId),
+    retiredKeyBackupRef: db.collection(AGENT_RETIRED_KEY_BACKUPS_COLLECTION).doc(retiredKeyBackupId(expected.walletId,expected.oldAddress)),
   };
 }
 
@@ -366,6 +396,7 @@ interface TransitionReadState {
   refs: OldIdentityRefs;
   watcherPlan: NativeWalletWatcherRegistrationPlan;
   directoryExists: boolean;
+  retiredEscrow?: RecoveryEscrowRecord;
 }
 
 /**
@@ -382,10 +413,13 @@ async function readAndAssert(
 ): Promise<TransitionReadState> {
   const refs = buildRefs(db, plan);
   const { expected, newIdentity } = plan;
+  const escrow = await txn.get(refs.recoveryEscrowRef);
+  const retiredEscrow = escrow.exists ? escrow.data() as RecoveryEscrowRecord : undefined;
+  if (retiredEscrow && retiredEscrow.wallet_id !== expected.walletId) fail('recovery_escrow_identity_mismatch');
   const [
     walletSnap, trustSnap, oldAddrIdxSnap, newAddrIdxSnap, agentIdxSnap,
     oldApiSnap, newApiSnap, oldAdmissionSnap, retirementSnap, directorySnap,
-    historySnap, newAgentProvenSnap, newPersonProvenSnap,
+    historySnap, destinationRetirementSnap, newAgentProvenSnap, newPersonProvenSnap,
   ] = await Promise.all([
     txn.get(refs.walletRef),
     txn.get(refs.trustWalletRef),
@@ -398,6 +432,7 @@ async function readAndAssert(
     txn.get(refs.retirementRef),
     txn.get(refs.directoryRef),
     txn.get(refs.rotationHistoryRef),
+    txn.get(refs.destinationRetirementRef),
     // the new key's address must not be anyone's proven outside wallet.
     ...externalProofRefs(db, newIdentity.newAddress).map((ref) => txn.get(ref)),
   ]);
@@ -455,6 +490,7 @@ async function readAndAssert(
   }
 
   if (retirementSnap.exists) fail('address_already_retired');
+  if (destinationRetirementSnap.exists) fail('destination_address_retired');
   if (historySnap.exists) fail('rotation_already_applied');
 
   // Fresh registration-fenced admission for the NEW address + membership
@@ -473,7 +509,7 @@ async function readAndAssert(
     plan.now,
   );
 
-  return { refs, watcherPlan, directoryExists: directorySnap.exists };
+  return { refs, watcherPlan, directoryExists: directorySnap.exists, ...(retiredEscrow ? {retiredEscrow} : {}) };
 }
 
 function writeTransition(
@@ -487,6 +523,12 @@ function writeTransition(
   const { expected, newIdentity, newFence, now } = plan;
   const creds = newIdentity.newApiCredentials;
   const nextRotationCount = expected.rotationCount + 1;
+
+  // Retiring a PVT signer must not destroy the encrypted backup of a key that
+  // still controls other assets. Archive in the same atomic transaction before
+  // replacing/removing its active escrow. create() forbids historical rewrite.
+  if (state.retiredEscrow) txn.create(refs.retiredKeyBackupRef,{...state.retiredEscrow,
+    retired_address:expected.oldAddress,rotation_id:plan.rotationId,retired_at:now});
 
   // 1. Wallet identity cut.
   txn.update(refs.walletRef, {
@@ -585,8 +627,23 @@ function writeTransition(
 export async function executeKeyRotationTransition(
   deps: AgentBankDeps,
   plan: KeyRotationPlan,
+  recourse?: { readonly proof: RecoveryInput; readonly binding: RegisteredAddress },
 ): Promise<KeyRotationResult> {
+  if (plan.newIdentity.newPublicKey.startsWith('hash:') && (!hashPlans.has(plan) || !recourse)) {
+    fail('hash_wallet_recovery_authorization_required');
+  }
   let captured: TransitionReadState | null = null;
+  let recovery: PreparedRecovery | null = null;
+  if (recourse && (recourse.proof.identity !== identityHash('agent', plan.expected.walletId)
+    || recourse.proof.destination !== plan.newIdentity.newAddress
+    || recourse.binding.address !== plan.newIdentity.newAddress
+    || recourse.binding.identity !== recourse.proof.identity
+    || recourse.binding.boundBlock !== (recourse.proof.authorization?.accountingBlock ?? recourse.proof.authorization?.block)
+    || recourse.binding.boundBlockHash !== (recourse.proof.authorization?.accountingBlockHash ?? recourse.proof.authorization?.blockHash)
+    || recourse.binding.boundBlock > plan.newFence.observed_head_block
+    || recourse.binding.chainBindingStatus !== 'confirmed')) {
+    throw new Error('recourse_rotation_context_invalid');
+  }
   await generatePE(deps, {
     walletId: plan.expected.walletId,
     agentId: plan.expected.agentId,
@@ -601,13 +658,30 @@ export async function executeKeyRotationTransition(
       rotation_id: plan.rotationId,
       observed_head_block: plan.newFence.observed_head_block,
       eligibility_start_block: plan.newFence.eligibility_start_block,
+      ...(recourse ? { recovery_request: recourse.proof.requestId,
+        recovery_commitment: recourse.proof.nextCommitment } : {}),
     },
     atomicEntityPrecondition: async (txn) => {
       captured = await readAndAssert(deps.db, txn, plan);
+      if (recourse) {
+        recovery = await prepareRecoveryTransaction(deps.db, txn, recourse.proof);
+        if (recovery.replay) throw new Error('recourse_rotation_already_applied');
+        const owner = await txn.get(deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(recourse.proof.identity));
+        if (owner.get('ownerType') !== 'agent' || owner.get('walletId') !== plan.expected.walletId
+          || recovery.generation !== recourse.binding.recoveryGeneration) throw new Error('recourse_rotation_context_invalid');
+      }
     },
     atomicEntityWrite: (txn, peId, context) => {
       if (!captured || !context) fail('transition_read_state_missing');
       writeTransition(txn, plan, captured, peId, context.newHash);
+      if (recourse) {
+        if (!recovery) throw new Error('recourse_recovery_read_state_missing');
+        recovery.write(txn);
+        txn.create(deps.db.collection(RECOURSE_COLLECTIONS.addresses).doc(recourse.binding.address), recourse.binding);
+        // The immutable encrypted archive above retains unrelated-asset access;
+        // never offer the retired key as the current wallet's recovery backup.
+        if (!plan.recoveryEscrow) txn.delete(captured.refs.recoveryEscrowRef);
+      }
     },
   });
 

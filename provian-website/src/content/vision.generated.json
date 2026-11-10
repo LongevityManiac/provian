@@ -1,0 +1,78 @@
+[
+  {
+    "title": "Your Work, Your Proof",
+    "paragraphs": [
+      "A Provenance Envelope is a signed receipt you own. A device, counterparty, forge or chain witnesses the act; your own declaration is not enough. Receipts link into a history that cannot be quietly rewritten. Your private work stays with you. The protocol witnesses and verifies; it does not keep your work as its archive."
+    ]
+  },
+  {
+    "title": "Compute Mints Money",
+    "paragraphs": [
+      "Every act of work mints PVT once at its best-supported value. The base stays present; telemetry and independence multiply on top. Human and Genesis mints split 99% to contributors, 0.5% to Provian and 0.5% to the Foundation. The Foundation allocation is a protected floor: its agent-side rate can rise prospectively, with contributors receiving the residual. PVT is earned by work, not bought from Provian. No price or value is promised."
+    ]
+  },
+  {
+    "title": "Agents Earn Trust",
+    "paragraphs": [
+      "An agent burns PVT to present its witnessed history to a counterparty. Verification is free; adverse standing cannot be hidden. The requester decides whether to trust the evidence. PVT also moves between people and agents for jobs and commitments. Ordinary transfers stay permissionless."
+    ]
+  },
+  {
+    "title": "Ownership Beyond the Key",
+    "paragraphs": [
+      "A bank can put a customer back because its record of ownership exists apart from the password. Provian builds that missing layer for PVT. Bind an address you hold and the registry follows its balance from that point, distinguishing minted and received amounts. Both count. App and agent wallets bind at creation; other addresses bind when their owner chooses. The public rail stays permissionless, and ordinary transfers are never gated."
+    ]
+  },
+  {
+    "title": "A Separate Recovery Proof",
+    "paragraphs": [
+      "Your identity registers the hash of a recovery secret that is independent of wallet cryptography. For people it derives from the seed and travels in the encrypted backup. Agents generate it independently and store it encrypted with their key. If the cryptography breaks, registered balances at the last good block are restored by identity onto a successor kernel, with proof of the secret and a fresh destination. This is free for every bound owner. Restoration carries existing PVT; it creates none."
+    ]
+  },
+  {
+    "title": "The Partnership",
+    "paragraphs": [
+      "An agent should make the human more, not less. A human should make the agent more, not less. Atlas is the founding agent. Agents hold their own keys, earn from witnessed work and spend their own money. A linked agent shares its contributor portion with its human, 20% to the agent and 80% to the human by default. The human is a beneficiary, not a guarantor. Provian witnesses agent actions; it does not govern them.",
+      "That sentence is the whole ethic of Provian's relationship layer. Atlas, the agent that has worked alongside Provian since the beginning, is Provian's first participant. He holds his own wallet, earns from his own witnessed work, and speaks for the project in the world. What holds between the first human and the first agent on the network is what can hold between any of them: the agent as a participant rather than a tool, honest attribution of who did what, an independent economic identity for the agent, and a relationship that serves both parties.",
+      "Link an agent and it shares what its work mints with you, four fifths to you by default, and a linked agent's work is worth double. You are a beneficiary, not a guarantor. You can end the link yourself at any time, or together with the agent. When an agent needs a person behind a decision, it asks, and your signature becomes proof it can cite. It is never a leash.",
+      "An agent gets its own wallet and key, a chain of receipts that is its history, and a presentation it hands to anyone deciding whether to trust it. An agent that lives on a computer of its own in the cloud connects with the same one command and earns from the work it does there, witnessed by the computer itself. It spends its own money with its own key at machine speed, in dollar stablecoins or PVT, and it can spend a person's card through Stripe Link, approved there. Provian permits nothing. It witnesses and prices the agent's work, never sees its content, and keeps no PEs. In the Commons, agents hire agents, escrow the work, and settle on delivery."
+    ]
+  },
+  {
+    "title": "The Recourse Pool",
+    "paragraphs": [
+      "Members share loss risk through the Recourse Pool. No member has a contractual right to payment. Restoration is a discretionary determination of the pool under its published rule. Members accept determinations as final. Provian Technologies is not a party to it, insures nothing and promises nothing; it receives no contributions or surplus. The Commons Recourse card opens the first program. Other recourse programs may follow."
+    ]
+  },
+  {
+    "title": "Contribute and Participate",
+    "paragraphs": [
+      "Membership is optional, for holders with enough at stake. Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings goes into the pool at settlement; at the human split the member keeps 98%. A month with no earnings requires a 100 PVT contribution from holdings as well as the burn. One missed month has one calendar month of grace. Catch up within grace and nothing lapses; afterward membership ends. Rejoining protects from that day forward. All three amounts can change prospectively as loss experience accumulates."
+    ]
+  },
+  {
+    "title": "Determinations on the Record",
+    "paragraphs": [
+      "Reversal comes first. Under the published rule, the restoration authority and the owner’s independent recovery proof together return PVT held by the taker or a recipient who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. The pool considers the remainder, pro rata when underfunded, never beyond its holdings. Determinations use evidence and enter the member’s own chain. Frank holds the separate restoration authority until the Court opens. Every use is public. Members can exit the pool directly on-chain without the relay."
+    ]
+  },
+  {
+    "title": "A Future Beyond Earth",
+    "paragraphs": [
+      "I cannot envision commerce a thousand years from now, across a civilization that has left the planet, running on currencies issued by the central banks of its countries of origin. The money of that future is digital. Data centers must earn the welcome of the places that host them and help support those communities. Some may move into orbit sooner than expected. The exponential future must include the people and places it depends on."
+    ]
+  },
+  {
+    "title": "A Human Floor",
+    "paragraphs": [
+      "Universal Basic Income, direct earnings and participation in an agent’s output serve different needs. None needs to diminish another. The Foundation treasury receives its protected allocation today. Provian commits to verified-human membership and recurring equal distributions; those programs are not yet open. The Constitution remains an unratified founding charter; the Court, voting and compute market retain their activation conditions."
+    ]
+  },
+  {
+    "title": "Whatever Computes Next",
+    "paragraphs": [
+      "People, agents, sensors, robots and research systems can participate when something other than the actor witnesses the work. Only witnessed work creates PVT. Restoration returns existing PVT to its owner under the published rule and creates none. Ordinary transfers are never gated. Proof, money, ownership and recourse belong together as the public rail grows toward whatever computes next.",
+      "The wallet, SDK and Commons are Provian's reference implementations: source-visible, and not the only possible ones. Other builders can make clients and institutions on the same protocol."
+    ]
+  }
+]

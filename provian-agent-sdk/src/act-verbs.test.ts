@@ -1,3 +1,4 @@
+vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 import {openTestPrivateRequest} from './private-request.test-support';
 /**
  * the act verbs a hosted agent runs from its shell.

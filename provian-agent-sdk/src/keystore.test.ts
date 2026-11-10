@@ -14,6 +14,7 @@ import {
   type AgentKeystore,
 } from './keystore';
 import { generateAgentKeyPair } from './wallet';
+import { initializeRecoveryKeystore, withRecoverySecret, withRecoveryMaterial, replaceKeystoreWalletKey } from './keystore';
 import { ProvianError } from './errors';
 
 // Low scrypt cost keeps the suite fast; production uses N=2^17.
@@ -261,5 +262,40 @@ describe('F34: file-supplied scrypt params are bounded before the KDF', () => {
     const w = makeWallet();
     expect(() => encryptKeystore({ ...w, passphrase: PASSPHRASE, kdfParams: { N: 1 << 22, r: 8, p: 1, dklen: 32 } }))
       .toThrowError(/out of the allowed bounds/i);
+  });
+});
+
+describe('independent recovery secret', () => {
+  it('persists before use, survives reopening and rotation, and never appears in ordinary signing data', async () => {
+    const wallet = makeWallet();
+    const legacy = encryptKeystore({ ...wallet, passphrase: PASSPHRASE, kdfParams: FAST_KDF });
+    const file = path.join(tmpDir, 'recovery.json');
+    const upgraded = initializeRecoveryKeystore(legacy, PASSPHRASE, file);
+    const secret = await withRecoverySecret(upgraded, PASSPHRASE, value => Buffer.from(value).toString('hex'));
+    let borrowedSeed: Uint8Array | undefined;
+    const signingSeed = await withRecoveryMaterial(upgraded, PASSPHRASE, (recovery, seed) => {
+      expect(Buffer.from(recovery).toString('hex')).toBe(secret);
+      borrowedSeed = seed;
+      return Buffer.from(seed).toString('hex');
+    });
+    expect(signingSeed).not.toBe(secret);
+    expect(borrowedSeed!.every(value => value === 0)).toBe(true);
+    expect(JSON.stringify(upgraded)).not.toContain(signingSeed);
+    expect(JSON.stringify(decryptKeystore(upgraded, PASSPHRASE))).not.toContain(signingSeed);
+
+    expect(secret).toHaveLength(64);
+    expect(JSON.stringify(upgraded)).not.toContain(secret);
+    expect(JSON.stringify(decryptKeystore(upgraded, PASSPHRASE))).not.toContain(secret);
+    const reopened = loadKeystore(file)!;
+    expect(await withRecoverySecret(initializeRecoveryKeystore(reopened, PASSPHRASE, file), PASSPHRASE,
+      value => Buffer.from(value).toString('hex'))).toBe(secret);
+    const next = makeWallet();
+    const rotated = replaceKeystoreWalletKey(reopened, PASSPHRASE, { ...next, walletId: wallet.walletId });
+    expect(await withRecoveryMaterial(rotated, PASSPHRASE, (_, seed) => Buffer.from(seed).toString('hex'))).toBe(signingSeed);
+    expect(decryptKeystore(rotated, PASSPHRASE).privateKey).toBe(next.privateKey.replace(/^0x/, ''));
+    expect(await withRecoverySecret(rotated, PASSPHRASE, value => Buffer.from(value).toString('hex'))).toBe(secret);
+    await expect(withRecoverySecret({ ...upgraded, wallet_id: 'attacker' }, PASSPHRASE, () => true)).rejects.toThrow();
+    await expect(withRecoverySecret(upgraded, 'wrong password', () => true)).rejects.toThrow();
+    await expect(withRecoverySecret(legacy, PASSPHRASE, () => true)).rejects.toThrow();
   });
 });

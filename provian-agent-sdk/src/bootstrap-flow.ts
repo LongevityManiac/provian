@@ -49,6 +49,7 @@ import { proveSolanaAddressBestEffort, type SolanaProofStepResult } from './sola
 import { resumeAgentWalletRegistration } from './pending-wallet-registration';
 import { loadBootstrapRegistration, withTransientRetry } from './bootstrap-registration';
 import { persistAgentWalletKey } from './keystore';
+import { bindRecourseOwnership } from './recourse';
 import { persistAgentCredentialsFile } from './scripts/agent-credentials-file';
 import { writeCredentialsFile, readCredentialsFile } from './scripts/credentials';
 import { loadOrCreateLocalKeystoreSecret } from './local-keystore-secret';
@@ -901,13 +902,16 @@ export function defaultBootstrapDeps(
       const result = await withTransientRetry(() => resumeAgentWalletRegistration(handle, {
         registrationChannel: input.registrationChannel,
       }));
-      persistAgentWalletKey({
+      const persisted = persistAgentWalletKey({
         privateKey: result.privateKey, address: result.address, publicKey: result.publicKey,
         walletId: result.walletId, passphrase, createdAt: result.createdAt,
       });
       persistAgentCredentialsFile({
         api_key: result.apiKey, api_secret: result.apiSecret, wallet_id: result.walletId, address: result.address,
       });
+      await withTransientRetry(() => bindRecourseOwnership({ relayUrl: input.relayUrl,
+        walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret, fetch: fetchImpl },
+      { keystore: persisted.keystore, passphrase, keystorePath: persisted.path }));
       return {
         ...(result.recoveryAnchorPubkey ? { recoveryAnchorPubkey: result.recoveryAnchorPubkey } : {}),
         ...(result.recoveryEscrowed === true ? { recoveryEscrowed: true } : {}),

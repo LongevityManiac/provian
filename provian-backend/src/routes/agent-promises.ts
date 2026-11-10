@@ -96,10 +96,10 @@ export function createAgentPromisesRouter(deps: AgentBankDeps): Router {
       const promise = await createPromise(deps, body);
       // Wave J-bis + Chunk K H-1: contract address must be resolved per chain.
       const promiseCurrency = promise.currency ?? 'usdc';
-      const contractAddress = resolvePromiseContractAddress(
+      const contractAddress = (await resolvePromiseContractAddress(
         promiseCurrency,
         promise.chain as AgentBankChain,
-      );
+      ));
 
       const deadlineHours = body.deadline_hours;
       const impliedRate = promiseCurrency === 'pvt'

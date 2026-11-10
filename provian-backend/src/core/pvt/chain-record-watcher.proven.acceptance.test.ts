@@ -1,3 +1,5 @@
+jest.mock('../protocol/predecessor-burns', () => ({ predecessorBurnAcceptances: jest.fn(async () => []) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn(async () => require('../../__test-helpers__/protocol-fixture').protocolDeploymentFixture) }));
 /**
  * 2026-10-01 — PROVEN ADDRESSES GET THE SAME COMMERCE TERMS, and a PERSON proves a
  * wallet they already hold. The money outcome, driven through each lane's

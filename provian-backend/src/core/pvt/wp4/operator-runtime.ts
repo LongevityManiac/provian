@@ -1,4 +1,6 @@
 import { assertServerNonceWriterActive } from '../../onchain/server-writer-cutover';
+import { recourseForwarderConfig } from '../../recourse/settlement-forwarder';
+import { currentProtocolDeployment } from '../../protocol/runtime';
 import { CanonicalWallet } from '../../onchain/canonical-wallet';
 /**
  * settlement runtime — THE OPERATOR RUNTIME. The one place in the relay that builds a settlement signer.
@@ -151,37 +153,30 @@ export interface Pvt9Target {
  * Separated from key resolution so the read-only paths — the cap clock, a dry-run inlet, the
  * epoch keeper's OBSERVATION — never touch a secret to answer a question that needs none.
  */
-export function resolvePvt9Target(env: NodeJS.ProcessEnv = process.env): Pvt9Target {
-  const pvt9 = PVT9_BASE_CONFIG.assets.pvt9 as {
-    address: string | null; deployment_status: string;
-  };
-  if (pvt9.address === null || pvt9.deployment_status !== 'deployed') {
-    throw new OperatorRefusal(
-      'pvt9_not_configured',
-      'PVT9 is not configured in this runtime (config/pvt9-base.json). Nothing to settle against.',
-    );
-  }
+export async function resolvePvt9Target(env: NodeJS.ProcessEnv = process.env): Promise<Pvt9Target> {
+  const deployment = await currentProtocolDeployment();
   const rpcUrl = env[RPC_ENV];
   if (rpcUrl === undefined || rpcUrl.trim() === '') {
     throw new OperatorRefusal('rpc_not_configured', `${RPC_ENV} is not set.`);
   }
   return {
-    kernelAddress: pvt9.address,
-    chainId: BigInt(PVT9_BASE_CONFIG.network.chain_id),
+    kernelAddress: deployment.addresses.kernel,
+    chainId: 8453n,
     rpcUrl,
   };
 }
 
 /** Public-chain reader for legacy interval-clock initialization; holds no signer. */
 export function legacySettlementTimeReader(): (batch: import('./durable-settlement-store').SettlementBatchDoc) => Promise<number | null> {
-  const target = resolvePvt9Target();
-  const provider = new JsonRpcProvider(target.rpcUrl, Number(target.chainId), { staticNetwork: true });
   return async batch => {
+    const target = await resolvePvt9Target();
+    const provider = new JsonRpcProvider(target.rpcUrl, Number(target.chainId), { staticNetwork: true });
     await assertEndpointChainId(provider, target.chainId);
     if (!batch.confirmed_tx_hash) throw new Error('payee_clock_legacy_receipt_missing');
     const receipt = await provider.getTransactionReceipt(batch.confirmed_tx_hash);
     if (!receipt || receipt.status !== 1 || !receipt.to) throw new Error('payee_clock_legacy_receipt_invalid');
-    if (receipt.to.toLowerCase() !== target.kernelAddress.toLowerCase()) {
+    if (receipt.to.toLowerCase() !== target.kernelAddress.toLowerCase()
+      && receipt.to.toLowerCase() !== (await recourseForwarderConfig()).address) {
       const historical = PVT9_BASE_CONFIG.validation.forbidden_pvt_addresses as readonly string[];
       if (historical.some(address => address.toLowerCase() === receipt.to!.toLowerCase())) return null;
       throw new Error('payee_clock_legacy_receipt_target_unknown');
@@ -323,7 +318,7 @@ export async function runEpochKeeperRuntime(
   options: EpochKeeperRunOptions,
 ): Promise<EpochKeeperRunResult> {
   const env = options.env ?? process.env;
-  const target = resolvePvt9Target(env);
+  const target = await resolvePvt9Target(env);
   const approverKey = env[APPROVER_KEY_ENV];
   if (approverKey === undefined || approverKey.trim() === '') {
     throw new OperatorRefusal(
@@ -618,7 +613,7 @@ export async function runSettlement(
   const env = options.env ?? process.env;
   const log = options.log ?? (() => {});
   const now = options.now ?? (() => Date.now());
-  const target = resolvePvt9Target(env);
+  const target = await resolvePvt9Target(env);
   const { db } = options;
   const payee = options.payee;
   if (payee !== undefined && !/^0x[0-9a-f]{40}$/.test(payee.address)) {
@@ -752,6 +747,7 @@ export async function runSettlement(
   const approverSigner = new CanonicalWallet(approverKey, provider);
   const chain = createProductionChainAdapter(
     {
+      forwarder: await recourseForwarderConfig(),
       rpcUrl: target.rpcUrl,
       kernelAddress: target.kernelAddress,
       chainId: target.chainId,

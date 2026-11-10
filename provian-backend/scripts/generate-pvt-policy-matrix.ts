@@ -172,7 +172,7 @@ export function withPinnedRetiredEmitters(
   // records the process lane's emitter (ProcessLanePlugin.ts) on the agent_tool_orchestration row.
   // the matrix declares unknown_action_admission as the re-signed
   // template does (record_only_until_signed_row); no row moved.
-  if (hash(matrixBytes) !== 'acdd8f592c75ac2b427c0dac87053f12be41fd4646fd84a22c5c13ac9ebd12a7') {
+  if (hash(matrixBytes) !== '7e3884e1d030172a1d44807205c9d94d10dbf945d000400aa5e52d6667dab46b') {
     throw new Error('Signed matrix bytes changed');
   }
   if (hash(inventoryBytes) !== 'a44e2699bef011362cb2ff526658013b7ac51f7133016b06c23a4d2c5b73f467') {

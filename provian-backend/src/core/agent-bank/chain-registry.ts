@@ -28,7 +28,7 @@
  */
 
 import { ValidationError } from './errors';
-import { pvtPrincipalInstitutionAddress } from './pvt-principal-config';
+import { currentProtocolDeployment } from '../protocol/runtime';
 
 /**
  * Chains the Agent Bank API accepts at launch. Add a chain here only after
@@ -108,7 +108,8 @@ function readChainAddress(envBase: string, chain: AgentBankChain): string | unde
 // ---------------------------------------------------------------------------
 
 /** Escrow V3 (USDC). Legacy: `ESCROW_CONTRACT_ADDRESS`. */
-export function escrowUsdcAddressForChain(chain: AgentBankChain): string | undefined {
+export async function escrowUsdcAddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.escrow;
   return readChainAddress('ESCROW_CONTRACT_ADDRESS', chain);
 }
 
@@ -119,38 +120,41 @@ export function escrowUsdcAddressForChain(chain: AgentBankChain): string | undef
  * Env is the fallback only when PVT-principal is disabled or for a chain the
  * canonical config does not cover. Legacy env: `ESCROW_V4_CONTRACT_ADDRESS`.
  */
-export function escrowV4AddressForChain(chain: AgentBankChain): string | undefined {
-  return pvtPrincipalInstitutionAddress('escrowV4', chain)
-    ?? readChainAddress('ESCROW_V4_CONTRACT_ADDRESS', chain);
+export async function escrowV4AddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.escrow;
+  return readChainAddress('ESCROW_V4_CONTRACT_ADDRESS', chain);
 }
 
 /** Promise V2 (USDC). Legacy: `PROMISE_CONTRACT_ADDRESS`. */
-export function promiseUsdcAddressForChain(chain: AgentBankChain): string | undefined {
+export async function promiseUsdcAddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.promises;
   return readChainAddress('PROMISE_CONTRACT_ADDRESS', chain);
 }
 
 /** Promise V3 (PVT). Canonical institution deployment address wins when PVT-principal is enabled
  * (see `escrowV4AddressForChain`). Legacy env: `PROMISE_V3_CONTRACT_ADDRESS`. */
-export function promiseV3AddressForChain(chain: AgentBankChain): string | undefined {
-  return pvtPrincipalInstitutionAddress('promiseV3', chain)
-    ?? readChainAddress('PROMISE_V3_CONTRACT_ADDRESS', chain);
+export async function promiseV3AddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.promises;
+  return readChainAddress('PROMISE_V3_CONTRACT_ADDRESS', chain);
 }
 
 /** Pool V2 (USDC). Legacy: `POOL_V2_CONTRACT_ADDRESS` then `POOL_CONTRACT_ADDRESS`. */
-export function poolUsdcAddressForChain(chain: AgentBankChain): string | undefined {
+export async function poolUsdcAddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.projectPool;
   return readChainAddress('POOL_V2_CONTRACT_ADDRESS', chain)
     ?? readChainAddress('POOL_CONTRACT_ADDRESS', chain);
 }
 
 /** Pool V3 (PVT). Canonical institution deployment address wins when PVT-principal is enabled
  * (see `escrowV4AddressForChain`). Legacy env: `POOL_V3_CONTRACT_ADDRESS`. */
-export function poolV3AddressForChain(chain: AgentBankChain): string | undefined {
-  return pvtPrincipalInstitutionAddress('poolV3', chain)
-    ?? readChainAddress('POOL_V3_CONTRACT_ADDRESS', chain);
+export async function poolV3AddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.projectPool;
+  return readChainAddress('POOL_V3_CONTRACT_ADDRESS', chain);
 }
 
 /** Court V2. Legacy: `COURT_CONTRACT_ADDRESS`. */
-export function courtAddressForChain(chain: AgentBankChain): string | undefined {
+export async function courtAddressForChain(chain: AgentBankChain): Promise<string | undefined> {
+  if (chain === 'base') return (await currentProtocolDeployment()).addresses.court;
   return readChainAddress('COURT_CONTRACT_ADDRESS', chain);
 }
 

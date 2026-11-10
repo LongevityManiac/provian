@@ -56,6 +56,7 @@ export async function signHumanRecoveryAnchor(privateKey: string, pubkeyB64u: st
 export type PublishOutcome = 'published' | 'already_published' | 'no_session' | 'failed';
 
 export interface PublishDeps {
+    generation?: () => Promise<number>;
     sessionValid: () => boolean;
     requireSession: (reason: string) => Promise<void>;
     getMnemonic: () => Promise<string | null>;
@@ -64,6 +65,7 @@ export interface PublishDeps {
 }
 
 const defaultDeps = (action?: BiometricAction): PublishDeps => ({
+    generation: () => SeedManager.getRecoveryGeneration(),
     sessionValid: () => isBiometricActionValid(action),
     requireSession: async () => { assertBiometricAction(action); },
     getMnemonic: () => SeedManager.getMnemonic(action),
@@ -99,7 +101,15 @@ export async function publishHumanRecoveryAnchor(
     const mnemonic = await deps.getMnemonic();
     if (!mnemonic) return 'failed';
     const anchor = deriveHumanRecoveryAnchor(mnemonic);
-    const signature = await ethers.HDNodeWallet.fromPhrase(mnemonic).signMessage(humanRecoveryAnchorMessage(anchor.publicKeyB64u));
+    const generation = await deps.generation?.() ?? 0;
+    const { humanAccountPaths } = await import('../recourse/human-account');
+    if (!providedDeps) assertBiometricAction(action);
+    let signature: string;
+    try {
+      signature = await ethers.HDNodeWallet.fromPhrase(mnemonic, '', humanAccountPaths(generation).evm)
+        .signMessage(humanRecoveryAnchorMessage(anchor.publicKeyB64u));
+    } finally { anchor.secretKey.fill(0); }
+    if (!providedDeps) assertBiometricAction(action);
     return (await deps.publish(anchor.publicKeyB64u, signature)) ? 'published' : 'failed';
   } catch {
     return 'failed';

@@ -35,6 +35,15 @@ const LEGACY_ENVELOPE: StoredBackup = {
 };
 
 describe('cloud backup envelope round trip', () => {
+    it('keeps the active account and independent recovery generation inside authenticated ciphertext', async () => {
+        const payload: CloudBackupPayload = { ...PAYLOAD, recourse_account: { rootAddress: PAYLOAD.wallet_address,
+            evm: `0x${'22'.repeat(20)}`, sol: 'public-solana-account', generation: 1, recoveryGeneration: 2,
+            recoveryCommitment: `0x${'33'.repeat(32)}`, requestId: `0x${'44'.repeat(32)}` } };
+        const stored = await encryptBackupEnvelope(payload, '123456');
+        expect(JSON.stringify(stored)).not.toContain('recourse_account');
+        expect(await decryptBackupEnvelope(stored, '123456')).toEqual(payload);
+        await expect(decryptBackupEnvelope({ ...stored, ciphertext: `00${stored.ciphertext.slice(2)}` }, '123456')).rejects.toThrow();
+    });
     it('encrypts and decrypts with a long alphanumeric backup password', async () => {
         const stored = await encryptBackupEnvelope(PAYLOAD, 'correct horse battery staple 42');
         expect(stored.version).toBe(2);
