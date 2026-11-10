@@ -231,7 +231,7 @@
     "provian-backend/src/core/jurisdiction/mint-compliance.ts": "65cea72ce5d238f0f135c63cf2bc1b29e58a68fff0483705dac3a0909e7fff5e",
     "provian-backend/src/core/jurisdiction/mint-pipeline.acceptance.test.ts": "1ede11b9aa36d20a92a36c3d3f165a3fdcd521f59fc5c5d53125e7bb92811c97",
     "provian-backend/src/core/jurisdiction/sdn.test.ts": "d19de81b4839a71131f806893782b865c372baa8c8ae10c2624783af7306ef90",
-    "provian-backend/src/core/jurisdiction/sdn.ts": "667e4887924e6123453ade6c12dfdd0d929e774f0d94b03cbf32ffb2dd53c789",
+    "provian-backend/src/core/jurisdiction/sdn.ts": "fc4a61730a063b890bb0495bafac51ad5088fcb7f8e5580d6ea8af2b88cddf37",
     "provian-backend/src/core/meter/__test-helpers__/cloud-run-sizing.ts": "336e2ccb6484bc8b0d5f55fecc07ac5e6e4b7c90754ba9e3540c3bbe84837814",
     "provian-backend/src/core/meter/__test-helpers__/fold-actor-totals.ts": "73f05f43955234fdfe0842e60c969ddfb39ef9b2acf0d78cd1dd22984199f891",
     "provian-backend/src/core/meter/__test-helpers__/presented-pe.ts": "da9ab59cbeb9541355b4705aba2f746615438d02e6ef2d3d4417e3dc07ab5983",
