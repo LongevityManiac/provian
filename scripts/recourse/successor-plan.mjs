@@ -10,6 +10,15 @@ export const SUCCESSOR_CREATION_ORDER=Object.freeze(['ProvianOwnershipRegistry',
 const successorNames={escrowV4:'ProvianRecourseEscrow',promiseV3:'ProvianPromiseV3',poolV3:'ProvianRecourseProjectPool',
  bondPool:'ProvianRecourseBondPool',courtV2:'ProvianRecourseCourt'};
 
+export function successorLocations(deployment,deployer,nonce){
+ deployer=address(deployer);
+ ensure(Number.isSafeInteger(nonce)&&nonce>=0,'nonce_invalid');
+ const addresses=Object.fromEntries(SUCCESSOR_CREATION_ORDER.map((name,i)=>[name,getCreateAddress({from:deployer,nonce:nonce+i}).toLowerCase()]));
+ const destinations=Object.fromEntries(Object.keys(LEGACY_INSTITUTIONS).map(key=>[
+  address(deployment.contracts[key].address),addresses[successorNames[key]]]));
+ return {addresses,destinations};
+}
+
 /** Re-root only the five institution destinations. Human/agent holdings always
  * carry to the same address; no operator-supplied alternative recipient exists. */
 export function remapSuccessionBalances(snapshot,destinations){
@@ -49,12 +58,10 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
  ensure(rule.rule.pointer===pointer&&rule.rule.chainId===8453&&rule.rule.firstMonth===0,'membership_domain');
  const signingBytes='Provian Recourse Pool membership rule\n'+JSON.stringify(rule.rule)+'\n';
  ensure(sha256(toUtf8Bytes(signingBytes))===rule.ruleHash,'membership_changed');
- const addresses=Object.fromEntries(SUCCESSOR_CREATION_ORDER.map((name,i)=>[name,getCreateAddress({from:deployer,nonce:nonce+i}).toLowerCase()]));
- const destinations={};
+ const {addresses,destinations}=successorLocations(deployment,deployer,nonce);
  for(const[key,name]of Object.entries(LEGACY_INSTITUTIONS)){
   const old=address(deployment.contracts[key].address),row=institutions.inventory.find(r=>r.key===key);
   ensure(row&&row.name===name&&row.address===old,'inventory_address');
-  destinations[old]=addresses[successorNames[key]];
  }
  const carried=remapSuccessionBalances(snapshot,destinations),a=addresses,kernel=a.ProvianRecourseKernel,state=carried.state;
  const params={

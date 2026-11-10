@@ -89,12 +89,12 @@ export function snapshotRpcPort(urls, options = {}) {
     if (JSON.stringify(canonical(projection(values[0]))) !== JSON.stringify(canonical(projection(values[1])))) throw Error('snapshot_rpc_disagreement');
     return values[0];
   }
-  async function range(address, from, to) {
-    try { return await agree('eth_getLogs', [{ address, fromBlock: quantity(from), toBlock: quantity(to) }]); }
+  async function range(address, from, to, topics) {
+    try { return await agree('eth_getLogs', [{ address, fromBlock: quantity(from), toBlock: quantity(to), ...(topics ? { topics } : {}) }]); }
     catch (error) {
       if (!(error instanceof RangeError) || from === to) throw error;
       const mid = Math.floor((from + to) / 2);
-      return [...await range(address, from, mid), ...await range(address, mid + 1, to)];
+      return [...await range(address, from, mid, topics), ...await range(address, mid + 1, to, topics)];
     }
   }
   return {
@@ -110,7 +110,7 @@ export function snapshotRpcPort(urls, options = {}) {
     call(to, data, blockHash) { return agree('eth_call', [{ to, data }, { blockHash, requireCanonical: true }]); },
     code(to, blockHash) { return agree('eth_getCode', [to, { blockHash, requireCanonical: true }]); },
     transaction(hash) { return agree('eth_getTransactionByHash', [hash]); },
-    async logs(address, from, to) {
+    async logs(address, from, to, topics) {
       const results = [];
       // Bound in-flight work while preserving canonical range order. Each
       // operator is independently paced, including retries and range splits.
@@ -119,7 +119,7 @@ export function snapshotRpcPort(urls, options = {}) {
         for (let start = batch; start <= Math.min(batch + logWindowSize*4-1, to); start += logWindowSize) {
           windows.push({ start, end: Math.min(start + logWindowSize-1, to) });
         }
-        const pages = await Promise.all(windows.map(window => range(address, window.start, window.end)));
+        const pages = await Promise.all(windows.map(window => range(address, window.start, window.end, topics)));
         for (let index = 0; index < windows.length; ++index) {
           results.push(...pages[index]);
           options.onLogRange?.({ from: windows[index].start, through: windows[index].end, target: to, logs: results.length });

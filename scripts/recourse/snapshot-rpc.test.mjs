@@ -43,3 +43,23 @@ test('quota retries keep the original range and pace each independent operator',
     }
   } finally { vi.useRealTimers(); vi.mocked(guardedFetch).mockReset(); }
 });
+
+test('custody topic filters survive provider range splitting and apply to both operators', async () => {
+  vi.useFakeTimers();
+  const calls = [], topics = ['0x' + '11'.repeat(32), null, ['0x' + '22'.repeat(32)]];
+  vi.mocked(guardedFetch).mockImplementation(async (url, options) => {
+    const filter = JSON.parse(options.body).params[0]; calls.push({ url, filter });
+    return filter.fromBlock !== filter.toBlock
+      ? { status: 400, ok: false, json: async () => ({ error: { message: 'block range too large' } }) }
+      : { status: 200, ok: true, json: async () => ({ result: [] }) };
+  });
+  try {
+    const pending = snapshotRpcPort(['https://mainnet.base.org', 'https://base.drpc.org'])
+      .logs('0x0000000000000000000000000000000000000001', 1, 2, topics);
+    await vi.runAllTimersAsync();
+    expect(await pending).toEqual([]); expect(calls).toHaveLength(6);
+    for (const call of calls) expect(call.filter.topics).toEqual(topics);
+    expect(new Set(calls.map(call => call.url)).size).toBe(2);
+    expect(calls.filter(call => call.filter.fromBlock === call.filter.toBlock)).toHaveLength(4);
+  } finally { vi.useRealTimers(); vi.mocked(guardedFetch).mockReset(); }
+});
