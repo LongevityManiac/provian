@@ -344,7 +344,7 @@ const MUTATION_SETS = {
     // a real ProvianEscrowV4 and were out of scope.
     // InstitutionSafety constructs a real EscrowV4 (fix 2 + the escrow seed), and
     // ProvianCourtV2.t.sol's two end-to-end suites now run on a real EscrowV4 (ported from V3).
-    testMatchPath: 'test/{ProvianEscrowV4*,Institution*,ProvianPVT9AgentBankSinks*,ProvianPVT9SinkCostPolicy*,InstitutionSafety*,ProvianCourtV2.t*}.sol',
+    testMatchPath: 'test/{ProvianEscrowV4*,Institution*,ProvianPVT9AgentBankSinks*,ProvianPVT9SinkCostPolicy*,InstitutionSafety*,ProvianCourtV2.t*,RetiredContractReachability.t*}.sol',
     mutations: [
       // fix 2: the escrow must record WHEN it settled outside the Court.
       {
@@ -856,7 +856,7 @@ const MUTATION_SETS = {
     // the derived-suite check caught four *CostMachinery suites that construct a
     // real ProvianPVT9 (as their kernel clock / issuance index) and were out of scope.
     // KernelArmingInputs constructs a real kernel (the arming-time cap policy + window).
-    testMatchPath: 'test/{ProvianPVT9*,ProvianRecourseKernel,ProvianRecourseHistory,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*}.t.sol',
+    testMatchPath: 'test/{ProvianPVT9*,ProvianRecourseKernel,ProvianRecourseHistory,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*,RetiredContractReachability}.t.sol',
     mutations: [
       // the arming-time cap policy and the pre-epoch-zero Genesis open.
       {

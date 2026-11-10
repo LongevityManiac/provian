@@ -50,6 +50,7 @@
     "contracts/src/interfaces/IPVTBurnable.sol": "a31e920fd97b806a8ebb00646bd685da2f9a8684ab0d5479c471efb814bea4b0",
     "contracts/src/libraries/FullPrecisionMath.sol": "1169dbcc4927d6bb0f4f0d1fb2fb1da48ead4252e2764fe6407d3c499d206a19",
     "contracts/src/test-helpers/MockPVT.sol": "79c28ace44bbbf17b571037d383336a577b6b58f67be70f3c1fb3bde4c04ef60",
+    "contracts/test/RetiredContractReachability.t.sol": "f0283f3401a6306fca66bd648a9844262b56bc944e82e021fb8e8c0332355644",
     "provian-agent-sdk/src/act-verbs-output.test.ts": "f6ec557d354218561d018cd57b0f70be92e13b9c8d74a6974a8d57436915f149",
     "provian-agent-sdk/src/act-verbs.test.ts": "2f77861b71ad2f4ce764dd647962549c90bd788bd8cdea87cf80866ea6093f27",
     "provian-agent-sdk/src/act-verbs.ts": "94352dcb400ad59286ab91348e820a3dc12226908447fa5c6b774493198e5794",

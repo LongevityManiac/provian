@@ -53,6 +53,7 @@ export const MONEY_PATH_ROOTS = Object.freeze([
   // real value or preserve its owner. Include their checks and tooling so a
   // weakened proof or a changed deployment cannot escape review.
   'contracts/src/',
+  'contracts/test/RetiredContractReachability.t.sol',
   'scripts/recourse/',
   'provian-backend/src/core/recourse/',
   'provian-backend/scripts/recourse-',
