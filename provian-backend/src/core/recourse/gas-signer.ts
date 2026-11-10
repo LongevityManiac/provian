@@ -2,6 +2,7 @@ import { Wallet, Transaction, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { readAgreedBaseHead, readAgreedBaseBlockHash } from '../onchain/economic-discovery';
 import { currentProtocolDeployment } from '../protocol/runtime';
+import { estimateBaseTransactionFees } from './base-transaction-fees';
 interface GasPlan { readonly executor:string; readonly calldata:string; readonly manifestHash:string; }
 function quantity(value: unknown): bigint {
   if (typeof value !== 'string' || !/^0x[0-9a-f]+$/i.test(value)) throw new Error('recourse_binding_rpc_invalid');
@@ -41,12 +42,15 @@ export function createRecourseGasSigner<T extends GasPlan>(wallet: Pick<Wallet,'
     const gasLimit = ((estimates[0] > estimates[1] ? estimates[0] : estimates[1]) * 120n + 99n) / 100n;
     if (gasLimit <= 0n || gasLimit > blockGas) throw new Error('recourse_binding_gas_invalid');
     const maxPriorityFeePerGas = 1_000_000n, maxFeePerGas = baseFee * 2n + maxPriorityFeePerGas;
-    if (await number('eth_getBalance', [wallet.address, { blockHash: hash, requireCanonical: true }]) < gasLimit * maxFeePerGas) {
+    const prepared = { chainId: 8453, type: 2, nonce: transactionNonce, to: plan.executor,
+      data: plan.calldata, value: 0, gasLimit, maxFeePerGas, maxPriorityFeePerGas };
+    const fees = await estimateBaseTransactionFees(legs.map(leg => ({ operatorId: leg.operatorId,
+      request: (method, params) => leg.provider.send(method, [...params]) })), prepared, hash);
+    if (await number('eth_getBalance', [wallet.address, { blockHash: hash, requireCanonical: true }]) < fees.totalEstimateWei) {
       throw new Error('recourse_binding_gas_unavailable');
     }
     if (await nonce() !== transactionNonce || await readAgreedBaseBlockHash(height) !== hash) throw new Error('recourse_binding_state_changed');
-    return wallet.signTransaction({ chainId: 8453, type: 2, nonce: transactionNonce, to: plan.executor,
-      data: plan.calldata, value: 0, gasLimit, maxFeePerGas, maxPriorityFeePerGas });
+    return wallet.signTransaction(prepared);
   }, async broadcast(raw) {
     const tx = Transaction.from(raw), hash = keccak256(raw);
     if (tx.from?.toLowerCase() !== wallet.address.toLowerCase() || tx.chainId !== 8453n) throw new Error('recourse_binding_signed_mismatch');
