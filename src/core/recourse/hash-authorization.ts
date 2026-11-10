@@ -16,6 +16,11 @@ async function signingKeys(seed: Uint8Array): Promise<{ publicKey: Uint8Array; s
   const expanded = hkdf(sha256, seed, salt, domain, 48);
   try { return slh_dsa_sha2_128s.keygen(expanded); } finally { expanded.fill(0); }
 }
+/** Public verification material; the derived private key is erased. */
+export async function recoverySigningPublicKey(signingSeed: Uint8Array): Promise<string> {
+  const keys = await signingKeys(signingSeed);
+  try { return `0x${bytesToHex(keys.publicKey)}`; } finally { keys.secretKey.fill(0); }
+}
 /** Signing seed is independent of the disclosed recovery secret. */
 export async function recoverySigningRoot(signingSeed: Uint8Array): Promise<string> {
   const keys = await signingKeys(signingSeed);

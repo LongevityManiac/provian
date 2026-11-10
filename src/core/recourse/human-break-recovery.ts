@@ -5,7 +5,7 @@ import { assertBiometricAction, type BiometricAction } from '../security/biometr
 import { ownerChainNetwork } from '../protocol/runtime';
 import RelayAPIService from '../../services/RelayAPIService';
 import { humanOwnershipIdentity } from './ownership';
-import { humanBreakKey } from './human-secret';
+import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { discoverHumanIdentityHistory, discoverHistoricalCurveGeneration, recoverHumanHistoricalMaterial } from './human-break-history';
 import { discoverHumanHashAccountSelection, type HumanAccountSelection } from './human-account';
 import { readBreakRecoveryContext, prepareBreakRecovery, type PreparedBreakRecovery } from './break-recovery';
@@ -34,6 +34,20 @@ function reply(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 let tail: Promise<unknown> = Promise.resolve();
+async function privateRequest(mnemonic: string, identity: string, generation: number, path: string, body?: unknown): Promise<unknown> {
+  // Chain execution may precede the relay credential cut. Start with the
+  // original registered backup; historical credentials retain private access.
+  // A seed first bound at a later generation can try its observed predecessors.
+  if (!Number.isSafeInteger(generation) || generation < 0 || generation >= 0x80000000) throw Error('recourse_account_index_invalid');
+  for (let candidate = 0; candidate <= generation; candidate++) {
+    const secret = humanRecoverySecret(mnemonic, candidate), signingSeed = humanRecoverySigningSeed(mnemonic, candidate);
+    try { return await RelayAPIService.recourseRecoveryRequest(path, body, { identity, secret, signingSeed }); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== 'recourse_private_unavailable' || candidate === generation) throw error;
+    } finally { secret.fill(0); signingSeed.fill(0); }
+  }
+  throw Error('recourse_private_unavailable');
+}
 /** Restore screens also resume a cut interrupted after its chain receipt but
  * before the relay credentials were installed. */
 export async function discoverHumanAccountForRestore(mnemonic: string, action: BiometricAction,
@@ -50,7 +64,7 @@ export async function discoverHumanAccountForRestore(mnemonic: string, action: B
     const raw = await SecureStore.getItemAsync(`provian_break_recovery_${found.identity.slice(2)}_${origin.slice(2)}`);
     if (raw !== null && (JSON.parse(raw) as Journal).credentialsInstalled !== true) return recoverHumanBreak(mnemonic, action, { network });
     if (raw === null) {
-      const discovery = reply(await RelayAPIService.recourseRecoveryRequest(`break-recovery-state/${origin}/${found.identity}`));
+      const discovery = reply(await privateRequest(mnemonic, found.identity, found.selection.generation, `break-recovery-state/${origin}/${found.identity}`));
       if (discovery.identity !== found.identity || discovery.origin !== origin) throw Error('recourse_break_discovery_invalid');
       // This hint grants no credentials. If the relay cut already happened,
       // the normal recovery endpoint still verifies a fresh hash signature.
@@ -92,7 +106,7 @@ async function perform(mnemonic: string, action: BiometricAction, options: {
   const nextRecoverySigningSeed = humanBreakKey(mnemonic, context, 'recovery-signing', '1');
   try {
     if (!state.transactionHash && !/^0x0{40}$/.test((await readOwnerChainState(identity,network)).destination)) {
-      const discovery = reply(await RelayAPIService.recourseRecoveryRequest(`break-recovery-state/${origin}/${identity}`));
+      const discovery = reply(await privateRequest(mnemonic, identity, legacyGeneration, `break-recovery-state/${origin}/${identity}`));
       if (discovery.identity !== identity || discovery.origin !== origin || !Array.isArray(discovery.candidates)) throw Error('recourse_break_discovery_invalid');
       const initialRoot = await recoverySigningRoot(destinationSigningSeed), nextRoot = await recoverySigningRoot(nextRecoverySigningSeed);
       const nextCommitment = recoveryCommitment(nextRecoverySecret,nextRoot);
@@ -116,7 +130,7 @@ async function perform(mnemonic: string, action: BiometricAction, options: {
       state.destination = completed.prepared.destination; await save(key,state);
     }
     if (!state.transactionHash) {
-      const e = parseBreakEntitlement(await RelayAPIService.recourseRecoveryRequest(`break-entitlements/${origin}/${identity}`));
+      const e = parseBreakEntitlement(await privateRequest(mnemonic, identity, legacyGeneration, `break-entitlements/${origin}/${identity}`));
       if (e.identity !== identity) throw Error('recourse_break_identity_changed');
       const material = await recoverHumanHistoricalMaterial(mnemonic, history, e.commitment, network);
       const persistDestination = async (destination: string) => {
@@ -126,7 +140,7 @@ async function perform(mnemonic: string, action: BiometricAction, options: {
       };
       try {
         const completed = await recoverFreeBreak({ network, signal: options.signal, phase: options.phase,
-          transport: { request: (path, body) => RelayAPIService.recourseRecoveryRequest(path, body) },
+          transport: { request: (path, body) => privateRequest(mnemonic, identity, legacyGeneration, path, body) },
           pendingRestoration: async () => state.prepared?.phase === 'restore_balance' ? state.prepared : null,
           prepareDeployment: () => prepareBreakDeploymentRequest({ network, entitlement: e, expectedBreakOrigin: origin,
             recoverySecret: material.secret, recoverySigningSeed: material.signingSeed, destinationSigningSeed,

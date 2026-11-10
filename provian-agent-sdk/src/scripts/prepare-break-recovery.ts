@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { homedir } from 'os';
-import { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, recoverAgentBreak, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, cancelActiveHashWalletOperation, pendingActiveHashWalletOperations } from '../break-recovery-store';
+import { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, recoverAgentBreak, readAgentBreakEntitlement, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, cancelActiveHashWalletOperation, pendingActiveHashWalletOperations } from '../break-recovery-store';
 import { ownerChainNetwork } from '../protocol-runtime';
 import { readLocalKeystoreSecret } from '../local-keystore-secret';
 import { hashAccountCall } from '../hash-account';
@@ -18,18 +18,22 @@ async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   if (command === '--help') {
     console.log('prepare-break-recovery provision IDENTITY COMMITMENT\nprepare-break-recovery prepare ENTITLEMENT_JSON DESTINATION OUTPUT_JSON\nprepare-break-recovery complete IDENTITY COMMITMENT TRANSACTION_HASH\nprepare-break-recovery account-prepare CALL_JSON OUTPUT_JSON\nprepare-break-recovery account-pending OUTPUT_JSON\nprepare-break-recovery account-cancel OUTPUT_JSON\nprepare-break-recovery account-complete TRANSACTION_HASH\nProvision saves an encrypted hash-account key and prints only its public root. Deploy the matching account, then prepare the authenticated registration or restoration call. Rerun after registration to prepare restoration. Complete independently verifies the finalized restoration and activates the encrypted hash wallet, retaining the old EOA. Calls go to the current executor; restoration needs the independent authority. The provision and prepare commands do not broadcast.');
-    console.log('prepare-break-recovery recover ENTITLEMENT_JSON\nRecover runs free deployment and registration, requests the separate authority restoration, verifies its finalized receipt, and activates the encrypted hash wallet. Rerun after interruption. The old wallet and its other assets remain encrypted.');
+    console.log('prepare-break-recovery recover [ENTITLEMENT_JSON]\nWith no file, recover privately discovers the entitlement using the encrypted backup. Recover runs free deployment and registration, requests the separate authority restoration, verifies its finalized receipt, and activates the encrypted hash wallet. Rerun after interruption. The old wallet and its other assets remain encrypted.');
     return;
   }
   const directory = path.join(homedir(), '.provian');
   const passphrase = readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
   if (!passphrase) throw Error('break_backup_secret_unavailable');
-  if (command === 'recover' && args.length === 1) {
-    const input = fs.readFileSync(path.resolve(args[0]), 'utf8');
-    if (input.length > 128 * 1024) throw Error('break_recovery_entitlement_invalid');
-    const entitlement = JSON.parse(input) as BreakOwnerEntitlement;
-    const result = await recoverAgentBreak({ directory, passphrase, entitlement, network:ownerChainNetwork(),
-      relayUrl:process.env.PROVIAN_RELAY_URL ?? 'https://api.provian.ai',
+  if (command === 'recover' && args.length <= 1) {
+    const network = ownerChainNetwork(), relayUrl = process.env.PROVIAN_RELAY_URL ?? 'https://api.provian.ai';
+    let entitlement: BreakOwnerEntitlement;
+    if (args.length === 0) entitlement = await readAgentBreakEntitlement({ directory, passphrase, network, relayUrl });
+    else {
+      const input = fs.readFileSync(path.resolve(args[0]), 'utf8');
+      if (input.length > 128 * 1024) throw Error('break_recovery_entitlement_invalid');
+      entitlement = JSON.parse(input) as BreakOwnerEntitlement;
+    }
+    const result = await recoverAgentBreak({ directory, passphrase, entitlement, network, relayUrl,
       phase:phase => console.log(JSON.stringify({ phase })) });
     console.log(JSON.stringify({ phase:'hash_wallet_activated', address:result.address, transactionHash:result.transactionHash })); return;
   }

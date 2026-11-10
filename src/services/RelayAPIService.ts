@@ -1936,15 +1936,24 @@ class RelayAPIService {
     }
 
     /** Recovery proves ownership independently of the retired relay credential. */
-    async recourseRecoveryRequest(path: string, body?: unknown): Promise<unknown> {
+    async recourseRecoveryRequest(path: string, body?: unknown, privateAccess?: {
+        identity: string; secret: Uint8Array; signingSeed: Uint8Array;
+    }): Promise<unknown> {
         if (!/^(recover-human|owner-operations\/recovery|owner-operations\/0x[0-9a-f]{64}|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/.test(path)) {
             throw new Error('recourse_recovery_path_invalid');
         }
+        let payload = body;
+        if (path !== 'recover-human') {
+            if (!privateAccess) throw new Error('recourse_private_access_required');
+            const { privateRecourseEnvelope } = await import('../core/recourse/private-access');
+            payload = await privateRecourseEnvelope(privateAccess.identity, privateAccess.secret,
+                privateAccess.signingSeed, path, body ?? null);
+        }
         const response = await apiFetch(`${await this.getBackendUrl()}/v1/recourse/${path}`, {
-            method: body === undefined ? 'GET' : 'POST', headers: { 'Content-Type': 'application/json' },
-            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
         });
-        if (!response.ok) throw new Error('recourse_recovery_refused');
+        if (!response.ok) throw new Error(path !== 'recover-human' && response.status === 404
+            ? 'recourse_private_unavailable' : 'recourse_recovery_refused');
         return response.json();
     }
 

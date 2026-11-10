@@ -20,7 +20,7 @@ const transactionGuard = readFileSync(resolve(root, 'provian-agent-sdk/src/proto
   .replace("'./protocol-pointer'", "'./pointer'").replace("'./recourse-owner-chain'", "'../recourse/owner-chain'");
 const poolChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-chain.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'");
 const poolAbi = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-abi.ts'), 'utf8');
-const recoveryModules = ['break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];
+const recoveryModules = ['private-access-data', 'private-access', 'break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];
 const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${name}.ts`,
   readFileSync(resolve(root, `provian-agent-sdk/src/${name}.ts`), 'utf8')
     .replaceAll("'./recourse-owner-chain'", "'./owner-chain'")
@@ -28,6 +28,7 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")]);
 const outputs = new Map([
   ...appRecoveryModules,
+  ['provian-backend/src/core/recourse/private-access-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/private-access-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/break-entitlement.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-entitlement.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/break-registration-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-registration-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/hash-account-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/hash-account-data.ts'), 'utf8')],

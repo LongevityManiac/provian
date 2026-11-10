@@ -23,6 +23,7 @@ import { prepareRestorationRequest, submitRestorationRequest, RESTORATION_REQUES
 import { queueBindingOperation } from '../core/recourse/binding-operation';
 import { runBindingWorker } from '../core/recourse/binding-runtime';
 import { readPublishedRecourseRule } from '../core/recourse/membership-rule';
+import { authenticatePrivateRecourse } from './middleware/recourse-private';
 
 interface Owner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
 async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
@@ -37,12 +38,13 @@ async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
 /** Bodies are never logged: recovery credentials must not enter request/error telemetry. */
 export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: RequestHandler): Router {
   const router = Router();
-  router.get('/break-recovery-state/:origin/:identity', async (req, res) => {
+  router.use(authenticatePrivateRecourse(deps.db));
+  router.post('/break-recovery-state/:origin/:identity', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await discoverBreakRecovery(deps.db,String(req.params.origin),String(req.params.identity))); }
     catch { res.status(404).json({error:'recourse_break_discovery_unavailable'}); }
   });
-  router.get('/break-entitlements/:origin/:identity', async (req, res) => {
+  router.post('/break-entitlements/:origin/:identity', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await readBreakEntitlement(deps.db, String(req.params.origin), String(req.params.identity))); }
     catch { res.status(404).json({ error: 'recourse_break_entitlement_unavailable' }); }
@@ -95,9 +97,9 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       res.json(await readOwnerOperation(deps.db,queued.id));
     }
     catch { res.status(400).json({ error: 'recourse_owner_operation_refused' }); }
-    finally { req.body = undefined; }
+    finally { req.body = undefined; req.rawBody = undefined; }
   });
-  router.get('/owner-operations/:id', async (req, res) => {
+  router.post('/owner-operations/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await readOwnerOperation(deps.db, String(req.params.id))); }
     catch { res.status(404).json({ error: 'recourse_owner_operation_unavailable' }); }
@@ -111,7 +113,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     } catch { res.status(400).json({ error: 'recourse_break_deployment_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
   });
-  router.get('/break-deployments/:id', async (req, res) => {
+  router.post('/break-deployments/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await readBreakDeployment(deps.db, String(req.params.id))); }
     catch { res.status(404).json({ error: 'recourse_break_deployment_unavailable' }); }
@@ -125,7 +127,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     } catch { res.status(400).json({ error: 'recourse_break_registration_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
   });
-  router.get('/break-registrations/:id', async (req, res) => {
+  router.post('/break-registrations/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await readBreakRegistration(deps.db, String(req.params.id))); }
     catch { res.status(404).json({ error: 'recourse_break_registration_unavailable' }); }
@@ -136,7 +138,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     catch { res.status(400).json({ error: 'recourse_break_restoration_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
   });
-  router.get('/break-restorations/:id', async (req, res) => {
+  router.post('/break-restorations/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await reconcileBreakRestoration(deps.db, String(req.params.id))); }
     catch (error) {

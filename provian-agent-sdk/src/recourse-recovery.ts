@@ -1,4 +1,5 @@
 import { recoverySigningRoot, recoveryCommitment, signRecoveryIntent } from './recourse-hash-authorization';
+import { privateRecourseEnvelope } from './private-access';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -204,9 +205,14 @@ export async function recoverRecourseAgent(input: {
       if (!state.authorizationTxHash) {
         const operation = state.operation;
         const id = recoveryOperationId(operation);
-        let response = await guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/owner-operations/recovery`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(operation), signal: input.signal,
-        });
+        const privateRequest = async (path: string, body: unknown = null) => {
+          const envelope = await withRecoveryMaterial(state.oldKeystore, input.passphrase,
+            (secret, seed) => privateRecourseEnvelope(state.identity, secret, seed, path, body));
+          return guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/${path}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(envelope), signal: input.signal,
+          });
+        };
+        let response = await privateRequest('owner-operations/recovery', operation);
         while (true) {
           if (!response.ok) throw new Error(`Recovery authorization refused (${response.status})`);
           const status: unknown = await response.json();
@@ -224,7 +230,7 @@ export async function recoverRecourseAgent(input: {
           input.signal?.throwIfAborted();
           await new Promise<void>(resolve => setTimeout(resolve, 5000));
           input.signal?.throwIfAborted();
-          response = await guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/owner-operations/${id}`, { signal: input.signal });
+          response = await privateRequest(`owner-operations/${id}`);
         }
       }
       await verifyOwnerOperationReceipt(state.operation, state.authorizationTxHash, ownerChainNetwork());

@@ -8,6 +8,8 @@ import { recoveryCommitment, recoverySigningRoot } from './recourse-hash-authori
 import { recoveryOperationId, type RecoveryOwnerOperation } from './recourse-owner-operation';
 import { requireConfiguredPvt9Runtime } from './pvt9-base-config.generated';
 import { recoverRecourseAgent, withArchivedRecoveryMaterial } from './recourse-recovery';
+// Each recovery now performs both the chain signature and private HTTP proof.
+vi.setConfig({ testTimeout: 20000 });
 const network = vi.hoisted(() => ({ fetch: vi.fn(), state: vi.fn(), verify: vi.fn(), queue: vi.fn() }));
 vi.mock('fs', async importOriginal => {
   const actual = await importOriginal<typeof import('fs')>();
@@ -27,7 +29,7 @@ beforeEach(async () => {
   network.fetch.mockReset(); network.state.mockReset(); network.verify.mockReset(); network.queue.mockReset();
   network.verify.mockResolvedValue(undefined);
   network.queue.mockImplementation(async (_url: string, options: RequestInit) => {
-    const operation = JSON.parse(String(options.body)) as RecoveryOwnerOperation;
+    const operation = JSON.parse(String(options.body)).request as RecoveryOwnerOperation;
     return { ok: true, json: async () => ({ id: recoveryOperationId(operation), status: 'confirmed', transactionHash: `0x${'de'.repeat(32)}` }) };
   });
   directory = fs.mkdtempSync(path.join(os.tmpdir(), 'recourse-recovery-'));
@@ -132,7 +134,7 @@ it('lost authorization response resumes the exact signed operation without repla
   const old = loadKeystore(path.join(directory, 'agent-keystore.json'))!;
   network.queue.mockRejectedValueOnce(new Error('authorization response lost'));
   await expect(recoverRecourseAgent(input())).rejects.toThrow('authorization response lost');
-  const first = JSON.parse(String(network.queue.mock.calls[0][1].body));
+  const first = JSON.parse(String(network.queue.mock.calls[0][1].body)).request;
   network.fetch.mockImplementation(async (_url: string, options: RequestInit) => {
     const request = JSON.parse(String(options.body));
     expect(request.authorizationNonce).toBe(first.nonce);
@@ -141,13 +143,13 @@ it('lost authorization response resumes the exact signed operation without repla
   });
   expect(loadKeystore(path.join(directory, 'agent-keystore.json'))).toEqual(old);
   await recoverRecourseAgent(input());
-  expect(JSON.parse(String(network.queue.mock.calls[1][1].body))).toEqual(first);
+  expect(JSON.parse(String(network.queue.mock.calls[1][1].body)).request).toEqual(first);
   expect(network.state).toHaveBeenCalledTimes(2);
 });
 it('rebuilds an unexecuted stale-revision payload without changing its signed consequence', { timeout: 25000 }, async () => {
   network.queue.mockRejectedValueOnce(new Error('response lost before submission'));
   await expect(recoverRecourseAgent(input())).rejects.toThrow('response lost');
-  const first = JSON.parse(String(network.queue.mock.calls[0][1].body)) as RecoveryOwnerOperation;
+  const first = JSON.parse(String(network.queue.mock.calls[0][1].body)).request as RecoveryOwnerOperation;
   const current = await network.state();
   network.state.mockResolvedValue({ ...current, deployment: { ...current.deployment, revision: 2n } });
   network.fetch.mockImplementation(async (_url: string, options: RequestInit) => {
@@ -155,7 +157,7 @@ it('rebuilds an unexecuted stale-revision payload without changing its signed co
     return { ok: true, json: async () => ({ walletId, destination: request.destination, generation: 1 }) };
   });
   await recoverRecourseAgent(input());
-  const second = JSON.parse(String(network.queue.mock.calls[1][1].body)) as RecoveryOwnerOperation;
+  const second = JSON.parse(String(network.queue.mock.calls[1][1].body)).request as RecoveryOwnerOperation;
   expect(second).toEqual({ ...first, revision: '2' });
 });
 it('prepares and signs one bounded loss scope, then resumes without a second authorization', { timeout: 30000 }, async () => {
@@ -174,7 +176,7 @@ it('prepares and signs one bounded loss scope, then resumes without a second aut
   const request = { ...input(), restoration: { transactionHash, block: 100, apiKey: 'old-api', apiSecret: 'old-secret' } };
   const result = await recoverRecourseAgent(request);
   expect(result.restorationRequestId).toBe(scope.request);
-  const operation = JSON.parse(String(network.queue.mock.calls[0][1].body)) as RecoveryOwnerOperation;
+  const operation = JSON.parse(String(network.queue.mock.calls[0][1].body)).request as RecoveryOwnerOperation;
   expect(operation.restoration).toEqual(scope);
   expect(operation.destination).toBe(result.destination);
   expect(await recoverRecourseAgent(request)).toEqual(result);
@@ -201,10 +203,10 @@ it('re-signs a queued bounded intent after ordinary succession while preserving 
  const request={...input(),restoration:{transactionHash,block:100,apiKey:'old-api',apiSecret:'old-secret'}};
  network.queue.mockRejectedValueOnce(Error('submission response lost'));
  await expect(recoverRecourseAgent(request)).rejects.toThrow('response lost');
- const first=JSON.parse(String(network.queue.mock.calls[0][1].body)) as RecoveryOwnerOperation;
+ const first=JSON.parse(String(network.queue.mock.calls[0][1].body)).request as RecoveryOwnerOperation;
  const oldState=await network.state();network.state.mockResolvedValue({...oldState,deployment:{revision:2n,addresses:{kernel:nextKernel}}});
  await recoverRecourseAgent(request);
- const second=JSON.parse(String(network.queue.mock.calls[1][1].body)) as RecoveryOwnerOperation;
+ const second=JSON.parse(String(network.queue.mock.calls[1][1].body)).request as RecoveryOwnerOperation;
  expect(second.kernel).toBe(nextKernel);expect(second.revision).toBe('2');expect(second.destination).toBe(first.destination);
  expect(second.restoration).toEqual(scope);expect(second.proof.nextCommitment).toBe(first.proof.nextCommitment);
  expect(second.proof.signature).not.toBe(first.proof.signature);

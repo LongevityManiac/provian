@@ -55,7 +55,11 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
     const input=body as {transactionHash:string;block:number};
     return {request:input.transactionHash,lossHash:sha256(toUtf8Bytes(JSON.stringify(input))),maximumLoss:'100',kernel:`0x${'44'.repeat(20)}`};
   },
-  recourseRecoveryRequest: async (path: string, body: unknown) => {
+  recourseRecoveryRequest: async (path: string, body: unknown, privateAccess?: {identity:string;secret:Uint8Array;signingSeed:Uint8Array}) => {
+    if (path.startsWith('owner-operations/')) {
+      expect(privateAccess?.identity).toBe(humanOwnershipIdentity('user-recovery'));
+      expect(privateAccess?.secret.length).toBe(32); expect(privateAccess?.signingSeed.length).toBe(32);
+    }
     state.calls.push({ path, body });
     if (path === 'owner-operations/recovery') {
       if (state.refuseQueue) { state.refuseQueue = false; throw new Error('queue_unavailable'); }

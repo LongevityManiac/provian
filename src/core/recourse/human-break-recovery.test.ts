@@ -6,7 +6,7 @@ import { recoverHumanBreak, discoverHumanAccountForRestore } from './human-break
 
 const f = vi.hoisted(() => ({ storage:new Map<string,string>(), badReceipt:false, badUser:false, badEntitlement:false,
   discoverError:false, requests:[] as string[], phases:[] as string[], credentials:vi.fn(), proof:vi.fn(),
-  secrets:[] as Uint8Array[], cancelled:false, builds:0, historyChanged:false, restored:false, relayRestored:false }));
+  privateGenerations:[] as number[], firstBoundGeneration:0, snapshotSeed:21, secrets:[] as Uint8Array[], cancelled:false, builds:0, historyChanged:false, restored:false, relayRestored:false }));
 const h = (n: number) => `0x${n.toString(16).padStart(64,'0')}`, a = (n: number) => `0x${n.toString(16).padStart(40,'0')}`;
 const identity=h(1), origin=a(2), destination=a(3), kernel=a(4), tx=h(5);
 const prepared = () => ({phase:'restore_balance' as const,kernel,executor:a(6),authority:a(7),manifestHash:h(8),
@@ -18,13 +18,13 @@ vi.mock('expo-crypto', () => ({getRandomBytes:() => new Uint8Array(32).fill(10)}
 vi.mock('../security/biometricAction', () => ({assertBiometricAction:() => { if(f.cancelled) throw Error('biometric_ended'); }}));
 vi.mock('../protocol/runtime', () => ({ownerChainNetwork:() => ({})}));
 vi.mock('./ownership', () => ({humanOwnershipIdentity:(user:string) => user==='owner'?h(1):h(999)}));
-vi.mock('./human-secret', () => ({humanBreakKey:(_m:string,_c:unknown,purpose:string) => {
+vi.mock('./human-secret', () => ({humanRecoverySecret:(_m:string,g:number)=>new Uint8Array(32).fill(30+g),humanRecoverySigningSeed:(_m:string,g:number)=>new Uint8Array(32).fill(40+g),humanBreakKey:(_m:string,_c:unknown,purpose:string) => {
   const key=new Uint8Array(32).fill(purpose==='spending'?11:purpose==='recovery-secret'?12:13);f.secrets.push(key);return key;
 }}));
 vi.mock('./human-break-history', () => ({
   discoverHumanIdentityHistory:async () => ({identity:h(1),points:[{breakOrigin:f.historyChanged?a(99):a(2)}]}),
   discoverHistoricalCurveGeneration:async () => 2,
-  recoverHumanHistoricalMaterial:async () => {const secret=new Uint8Array(32).fill(20),signingSeed=new Uint8Array(32).fill(21);
+  recoverHumanHistoricalMaterial:async () => {const secret=new Uint8Array(32).fill(20),signingSeed=new Uint8Array(32).fill(f.snapshotSeed);
     f.secrets.push(secret,signingSeed); return {secret,signingSeed};},
 }));
 vi.mock('./human-account', () => ({discoverHumanHashAccountSelection:async (_m:string,_i:string,_r:string,_n:unknown,g:number) => {
@@ -32,7 +32,7 @@ vi.mock('./human-account', () => ({discoverHumanHashAccountSelection:async (_m:s
 }}));
 vi.mock('./human-discovery', () => ({discoverHumanAccount:async () => {
   if(f.discoverError)throw Error('recourse_break_restoration_required');
-  return {identity:h(1),selection:{kind:'hash',evm:a(3),hashAccount:{breakOrigin:a(2)}}};
+  return {identity:h(1),selection:{kind:'hash',evm:a(3),generation:2,hashAccount:{breakOrigin:a(2)}}};
 }}));
 vi.mock('./break-recovery', () => ({readBreakRecoveryContext:async () => a(2),
   prepareBreakRecovery:async (input:{persistBeforePublishing:(b:unknown)=>Promise<void>}) => {
@@ -62,7 +62,13 @@ vi.mock('./hash-authorization', () => ({recoverySigningRoot:async (key:Uint8Arra
 vi.mock('./hash-account', () => ({signHashAccountMessage:async ()=> '0xsignature'}));
 vi.mock('../../services/RelayAPIService', () => ({default:{
   getMeterDeviceId:async ()=>'device',setAuthSecret:f.credentials,recordAddressProofAuthorization:f.proof,
-  recourseRecoveryRequest:async (route:string,body?:Record<string,unknown>) => {
+  recourseRecoveryRequest:async (route:string,body?:Record<string,unknown>, privateAccess?: {identity:string;secret:Uint8Array;signingSeed:Uint8Array}) => {
+    if (route !== 'recover-human') {
+      expect(privateAccess?.identity).toBe(h(1));
+      expect(privateAccess?.secret.length).toBe(32); expect(privateAccess?.signingSeed.length).toBe(32);
+      const generation=privateAccess!.secret[0]-30; f.privateGenerations.push(generation);
+      if (generation !== f.firstBoundGeneration || privateAccess!.signingSeed[0] !== 40+generation) throw Error('recourse_private_unavailable');
+    }
     f.requests.push(route);
     if(route.startsWith('break-recovery-state/'))return {identity:h(1),origin:a(2),relayDestination:f.relayRestored?a(3):a(99),
       candidates:[{prepared:prepared(),transactionHash:h(5)}]};
@@ -74,7 +80,7 @@ vi.mock('../../services/RelayAPIService', () => ({default:{
     return {};
   },
 }}));
-beforeEach(()=>{f.storage.clear();f.requests=[];f.secrets=[];f.badReceipt=false;f.badUser=false;f.badEntitlement=false;
+beforeEach(()=>{f.storage.clear();f.requests=[];f.privateGenerations=[];f.firstBoundGeneration=0;f.snapshotSeed=21;f.secrets=[];f.badReceipt=false;f.badUser=false;f.badEntitlement=false;
   f.cancelled=false;f.builds=0;f.historyChanged=false;f.discoverError=false;f.restored=false;f.relayRestored=false;f.credentials.mockClear();f.proof.mockClear();});
 const action={} as BiometricAction,network={deployment:async()=>({manifestHash:h(8)})} as OwnerChainNetwork;
 test('retains exact intent before publication, verifies restoration, installs only matching credentials and wipes derived secrets',async()=>{
@@ -123,4 +129,18 @@ test.each(['identity','origin','biometric'] as const)('rejects changed %s before
   f.badEntitlement=kind==='identity';f.historyChanged=kind==='origin';f.cancelled=kind==='biometric';
   await expect(recoverHumanBreak('test backup',action,{network})).rejects.toThrow();
   expect(f.requests).not.toContain('break-restorations');expect(f.credentials).not.toHaveBeenCalled();
+});
+
+test.each([21,61])('a newer snapshot signing seed %s never replaces the retained relay read credential',async snapshotSeed=>{
+  f.snapshotSeed=snapshotSeed;
+  await recoverHumanBreak('original backup',{} as BiometricAction);
+  expect(f.requests).toContain('break-restorations');
+  expect(f.privateGenerations.length).toBeGreaterThan(1);
+  expect(f.privateGenerations.every(g=>g===0)).toBe(true);
+});
+test('a seed first bound at a later curve generation retries only private authorization refusals',async()=>{
+  f.firstBoundGeneration=1;
+  await recoverHumanBreak('original backup',{} as BiometricAction);
+  expect(f.privateGenerations.slice(0,2)).toEqual([0,1]);
+  expect(f.credentials).toHaveBeenCalled();
 });

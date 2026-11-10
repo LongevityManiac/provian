@@ -18,6 +18,8 @@ import { prepareBreakDeploymentRequest } from './break-deployment-proof';
 import type { BreakDeploymentRequest } from './break-deployment-data';
 import { recoverFreeBreak, type FreeBreakRecoveryPhase } from './free-break-recovery';
 import { guardedFetcher } from './guarded-fetch';
+import { privateRecourseEnvelope } from './private-access';
+import { parseBreakEntitlement } from './break-entitlement';
 import { prepareBreakRecovery, readBreakRecoveryContext, type BreakOwnerEntitlement, type PreparedBreakRecovery } from './break-recovery';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 
@@ -156,6 +158,27 @@ export async function prepareAgentBreakDeployment(input: { directory: string; pa
   });
 }
 
+/** Discover the private entitlement using a current or historical registered
+ * backup credential. The snapshot proof is still verified by preparation. */
+export async function readAgentBreakEntitlement(input: { directory: string; passphrase: string;
+  network: OwnerChainNetwork; relayUrl: string; fetch?: typeof globalThis.fetch; signal?: AbortSignal }): Promise<BreakOwnerEntitlement> {
+  const directory = path.resolve(input.directory), keystore = loadKeystore(path.join(directory, 'agent-keystore.json'));
+  if (!keystore || keystore.version !== 2) throw Error('break_backup_owner_material_missing');
+  const identity = sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', keystore.wallet_id])));
+  const origin = await readBreakRecoveryContext(input.network), relay = new URL(input.relayUrl);
+  if (relay.protocol !== 'https:' || relay.username || relay.password || relay.search || relay.hash) throw Error('break_recovery_relay_invalid');
+  const route = `break-entitlements/${origin}/${identity}`;
+  const payload = await withRecoveryMaterial(keystore, input.passphrase,
+    (secret, seed) => privateRecourseEnvelope(identity, secret, seed, route));
+  const response = await guardedFetcher(input.fetch)(`${relay.toString().replace(/\/+$/, '')}/v1/recourse/${route}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: input.signal,
+  });
+  if (!response.ok) throw Error('break_recovery_relay_refused');
+  const entitlement = parseBreakEntitlement(await response.json());
+  if (entitlement.identity !== identity || await readBreakRecoveryContext(input.network) !== origin) throw Error('break_recovery_context_changed');
+  return entitlement;
+}
+
 /** Network waits do not hold the keystore lock. Each preparation and final
  * installation takes its own short lock and verifies durable encrypted state. */
 export async function recoverAgentBreak(input: { directory: string; passphrase: string; entitlement: BreakOwnerEntitlement;
@@ -168,8 +191,16 @@ export async function recoverAgentBreak(input: { directory: string; passphrase: 
   await provisionBreakRecovery({ directory, passphrase:input.passphrase, identity:e.identity, commitment:e.commitment, context });
   const transport = { async request(route: string, body?: unknown): Promise<unknown> {
       if (!/^(?:recover-agent|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?)$/.test(route)) throw Error('break_recovery_route_invalid');
-      const response = await guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/${route}`, { method:body === undefined ? 'GET' : 'POST',
-        headers:{'Content-Type':'application/json'}, ...(body === undefined ? {} : {body:JSON.stringify(body)}), signal:input.signal });
+      // The retained curve keystore is installed only after the relay credential
+      // cut. Its commitment is registered even when chain recovery has advanced
+      // to a newer snapshot commitment that the relay has not accepted yet.
+      const keystore = loadKeystore(path.join(directory, 'agent-keystore.json'));
+      if (!keystore || keystore.version !== 2
+        || sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', keystore.wallet_id]))) !== e.identity) throw Error('break_backup_identity_changed');
+      const payload = route === 'recover-agent' ? body : await withRecoveryMaterial(keystore, input.passphrase,
+        (secret, seed) => privateRecourseEnvelope(e.identity, secret, seed, route, body ?? null));
+      const response = await guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/${route}`, { method:'POST',
+        headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:input.signal });
       if (!response.ok) throw Error('break_recovery_relay_refused'); return response.json();
     } };
   const result = await recoverFreeBreak({ network:input.network, signal:input.signal, phase:input.phase, transport,

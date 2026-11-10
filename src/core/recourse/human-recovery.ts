@@ -122,7 +122,8 @@ Promise<{ destination: string; requestId: string }> {
     const operation = { ...unsigned, proof: { ...unsigned.proof, ...signed } };
     if (!state.authorizationTxHash) {
       const id = recoveryOperationId(operation);
-      let response = await RelayAPIService.recourseRecoveryRequest('owner-operations/recovery', operation);
+      const privateAccess = { identity: state.identity, secret, signingSeed: seed };
+      let response = await RelayAPIService.recourseRecoveryRequest('owner-operations/recovery', operation, privateAccess);
       while (true) {
         assertBiometricAction(action); options.signal?.throwIfAborted();
         const status = object(response);
@@ -134,7 +135,7 @@ Promise<{ destination: string; requestId: string }> {
           state.authorizationTxHash = status.transactionHash; await save(state); break;
         }
         await new Promise<void>(resolve => setTimeout(resolve, 5000));
-        response = await RelayAPIService.recourseRecoveryRequest(`owner-operations/${id}`);
+        response = await RelayAPIService.recourseRecoveryRequest(`owner-operations/${id}`, undefined, privateAccess);
       }
     }
     await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
