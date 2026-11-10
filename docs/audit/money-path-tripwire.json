@@ -938,6 +938,7 @@
     "provian-backend/src/core/recourse/pool-state.ts": "0b14cc66bc77a7c034fc11da31c77dbd8e222e90ed70bda5fa5f01520f3888c2",
     "provian-backend/src/core/recourse/pool-withdrawal.test.ts": "4f4b708fc663ed48326a441f369972296970c454928342cc0563a4c69af0f6ec",
     "provian-backend/src/core/recourse/pool-withdrawal.ts": "f47a460547959cff1a4b1fd34a1c321419e98471be283ab5cb96b8a8f2e5bf9f",
+    "provian-backend/src/core/recourse/private-storage.test.ts": "09191201e13b1388050e83e408ba2176d02f42c72382e45ccf12d5d05c1312f0",
     "provian-backend/src/core/recourse/recovery-authorization.test.ts": "9904e531e6b912e3328c1e3c093c018a645f54e0eadad85e0441f6822dd4f06e",
     "provian-backend/src/core/recourse/recovery-authorization.ts": "46db8427e1c3db70a270d0bdc9f57fe941dcb52ff798b30b259f62b526595b8e",
     "provian-backend/src/core/recourse/restoration-evidence.test.ts": "281d763a41871a85d24f8a6c653dc8cec4fd3f2485bbbb14b47f851f8f6a077f",
