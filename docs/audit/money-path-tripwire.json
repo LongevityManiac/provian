@@ -1071,6 +1071,8 @@
     "provian-backend/src/core/recourse/private-monthly-earnings.test.ts": "0e9eb7921d7574ca04737d16fa2e8227e75251be567742d7475c188f223deae3",
     "provian-backend/src/core/recourse/private-monthly-earnings.ts": "3363f401d70784c9f7382af8272f897f43353d4b8e2fe413d0becc2b71bc8b33",
     "provian-backend/src/core/recourse/private-storage.test.ts": "09191201e13b1388050e83e408ba2176d02f42c72382e45ccf12d5d05c1312f0",
+    "provian-backend/src/core/recourse/publication-journal.test.ts": "491b63f5496be5f46233a56695f0c71b57a0fe5f3f368cb211e7495e61aa37a5",
+    "provian-backend/src/core/recourse/publication-journal.ts": "ab418623d89a20aaeb4f2b86f801da6b29ba59df818ee88b44a33e6d53436ade",
     "provian-backend/src/core/recourse/recovery-authorization.test.ts": "9904e531e6b912e3328c1e3c093c018a645f54e0eadad85e0441f6822dd4f06e",
     "provian-backend/src/core/recourse/recovery-authorization.ts": "46db8427e1c3db70a270d0bdc9f57fe941dcb52ff798b30b259f62b526595b8e",
     "provian-backend/src/core/recourse/restoration-balance-import.test.ts": "f9da1a285a2fc42fd408c8ee7788eeb01f631045d793399a195048d4488aa567",
