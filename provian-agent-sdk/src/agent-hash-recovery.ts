@@ -149,7 +149,7 @@ export async function recoverHashRecourseAgent(supplied: Input): Promise<{
         if (!currentCredentials || currentCredentials.wallet_id !== keystore.wallet_id
           || currentCredentials.address.toLowerCase() !== selected.account) throw Error('hash_recovery_credentials_binding_changed');
         const response = object(await request('restoration-requests', { identity, transactionHash: loss.transactionHash, block: loss.block,
-          recoveryRequestId: credentials.requestId }, { apiKey: currentCredentials.api_key, apiSecret: currentCredentials.api_secret }));
+          recoveryRequestId: credentials.requestId, restorationRequestId: loss.scope.request }, { apiKey: currentCredentials.api_key, apiSecret: currentCredentials.api_secret }));
         if (response.requestId !== loss.scope.request || typeof response.status !== 'string' || !response.status) throw Error('hash_recovery_loss_reply_invalid');
         loss.submitted = true; persist();
       }

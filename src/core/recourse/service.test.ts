@@ -54,7 +54,7 @@ it('submits auxiliary restoration under its selected binding without changing th
   expect(f.recovery).toHaveBeenCalledWith('approved', { lossTransaction: h('33'), lossBlock: 100, auxiliaryBinding: h('55') });
   expect(f.setAddress).not.toHaveBeenCalled();
   expect(f.calls.filter(c=>c.path!=='ownership')).toEqual([{ path: 'restoration-requests', body: { transactionHash: h('33'), block: 100,
-    recoveryRequestId: h('44'), identity: h('55') } }]);
+    recoveryRequestId: h('44'), restorationRequestId:h('44'), identity: h('55') } }]);
   await submitHumanRestorationRequest(h('33'), 100, h('11'));
   expect(f.setAddress).toHaveBeenCalledWith(a('22'));
   expect(f.recovery).toHaveBeenLastCalledWith('approved', { lossTransaction: h('33'), lossBlock: 100, auxiliaryBinding: undefined });

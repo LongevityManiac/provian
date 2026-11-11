@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'util';
 import type { RestorationTicket } from './determination';
 import { parseRestorationScope, type RestorationScope } from './owner-operation';
 import { createHash } from 'crypto';
@@ -10,7 +11,7 @@ import type { LossMembershipEvidence } from './membership-at-loss';
 
 export const RESTORATION_REQUESTS = 'recourse_restoration_requests_v1';
 export interface RestorationRequestInput {
-  readonly transactionHash: string; readonly block: number; readonly recoveryRequestId: string;
+  readonly transactionHash: string; readonly block: number; readonly recoveryRequestId: string; readonly restorationRequestId: string;
 }
 export interface RestorationEvidencePorts {
   snapshot(identity: string, transactionHash: string, block: number, bindings: readonly RegisteredAddress[]): Promise<LossSnapshot>;
@@ -64,7 +65,7 @@ export async function prepareRestorationRequest(db: Firestore, identity: string,
 export async function submitRestorationRequest(db: Firestore, authenticatedIdentity: string,
   input: RestorationRequestInput, ports: RestorationEvidencePorts = defaultPorts): Promise<{ requestId: string; status: string }> {
   const hash = /^0x[0-9a-f]{64}$/;
-  if (!hash.test(authenticatedIdentity) || !input || !hash.test(input.transactionHash) || !hash.test(input.recoveryRequestId)
+  if (!hash.test(authenticatedIdentity) || !input || !hash.test(input.transactionHash) || !hash.test(input.recoveryRequestId) || !hash.test(input.restorationRequestId)
     || !Number.isSafeInteger(input.block) || input.block < 1) throw new Error('recourse_restoration_request_invalid');
   const ownerRef = db.collection(RECOURSE_COLLECTIONS.identities).doc(authenticatedIdentity);
   const recoveryRef = db.collection(RECOURSE_COLLECTIONS.recoveries).doc(input.recoveryRequestId);
@@ -78,28 +79,37 @@ export async function submitRestorationRequest(db: Firestore, authenticatedIdent
   const bindings = addresses.docs.filter(doc => doc.get('chainBindingStatus') === 'confirmed').map(doc => doc.data() as RegisteredAddress);
   const destinationBinding = bindings.find(binding => binding.address === destination);
   if (!destinationBinding || destinationBinding.recoveryGeneration !== owner.get('recoveryGeneration')) throw new Error('recourse_restoration_destination_invalid');
-  const snapshot = await ports.snapshot(authenticatedIdentity, input.transactionHash, input.block, bindings);
-  if (snapshot.addresses.some(address => address.address === destination)) throw new Error('recourse_restoration_destination_not_fresh');
-  const [membership, pool] = await Promise.all([ports.membership(db, snapshot), ports.pool(authenticatedIdentity)]);
-  if (!membership.active || membership.periodIndex === null) throw new Error('recourse_restoration_not_member_at_loss');
-  const requestId = snapshot.occurrence;
-  const ref = db.collection(RESTORATION_REQUESTS).doc(requestId);
+  // The loss belongs to its original kernel and block. Rebuilding it from
+  // current bindings would change the occurrence or mix retired and live rails.
+  const requestId = input.restorationRequestId, ref = db.collection(RESTORATION_REQUESTS).doc(requestId);
   const prior = await ref.get();
-  if (!prior.exists || !hash.test(String(prior.get('authorizationTxHash')))
-    || ['prepared', 'authorization_queued', 'authorization_failed'].includes(String(prior.get('status')))) throw Error('recourse_restoration_scope_unverified');
-  let continuation: RestorationTicket | null = null;
-  if (prior.get('authorizationTxHash') !== recovery.get('authorizationTxHash')) {
-    if (!prior.exists || prior.get('destination') === destination) throw Error('recourse_restoration_scope_unverified');
-    // A later independently authenticated recovery carries the existing ticket
-    // to the owner's new address; it never authorizes the same loss a second time.
-    const ticket = ports.ticket ?? (await import('./determination')).readRestorationTicket;
-    continuation = await ticket(snapshot.kernel, requestId);
-    const scope = parseRestorationScope(prior.get('scope'));
-    if (continuation.identity !== authenticatedIdentity || continuation.currentDestination !== destination
-      || continuation.destination === destination || continuation.destination !== prior.get('destination')
-      || continuation.request !== scope.request || continuation.lossHash !== scope.lossHash
-      || continuation.maximumLoss !== scope.maximumLoss) throw Error('recourse_restoration_scope_unverified');
+  if (!prior.exists) throw Error('recourse_restoration_scope_unverified');
+  const scope = parseRestorationScope(prior.get('scope')), exact: unknown = prior.get('evidence');
+  if (prior.get('identity') !== authenticatedIdentity || scope.request !== requestId || typeof exact !== 'string'
+    || scope.lossHash !== `0x${createHash('sha256').update(exact).digest('hex')}`
+    || !isDeepStrictEqual(JSON.parse(exact), { snapshot: prior.get('snapshot'), membership: prior.get('membership') })) {
+    throw Error('recourse_restoration_request_conflict');
   }
+  const original: unknown = JSON.parse(exact);
+  if (!original || typeof original !== 'object' || !('snapshot' in original) || !('membership' in original)) throw Error('recourse_restoration_request_conflict');
+  const snapshot = original.snapshot as LossSnapshot, retainedMembership = original.membership as LossMembershipEvidence;
+  if (!snapshot || snapshot.identity !== authenticatedIdentity || snapshot.occurrence !== requestId
+    || snapshot.transactionHash !== input.transactionHash || snapshot.block !== input.block || snapshot.lossAtomic !== scope.maximumLoss
+    || !/^0x[0-9a-f]{40}$/.test(snapshot.kernel) || !hash.test(snapshot.blockHash) || !Array.isArray(snapshot.addresses)
+    || !retainedMembership?.active || retainedMembership.periodIndex === null) throw Error('recourse_restoration_request_conflict');
+  if (snapshot.addresses.some(address => address.address === destination)) throw Error('recourse_restoration_destination_not_fresh');
+  if (!hash.test(String(prior.get('authorizationTxHash')))
+    || ['prepared', 'authorization_queued', 'authorization_failed'].includes(String(prior.get('status')))) throw Error('recourse_restoration_scope_unverified');
+  const [membership, pool] = await Promise.all([ports.membership(db, snapshot), ports.pool(authenticatedIdentity)]);
+  if (!membership.active || membership.periodIndex === null) throw Error('recourse_restoration_not_member_at_loss');
+  const readTicket = ports.ticket ?? ((_kernel: string, request: string) =>
+    import('./current-restoration-ticket').then(module => module.readCurrentRestorationTicket(request)));
+  const ticket = await readTicket(snapshot.kernel, requestId);
+  if (ticket.identity !== authenticatedIdentity || ticket.currentDestination !== destination
+    || ticket.destination !== prior.get('destination') || ticket.request !== scope.request
+    || ticket.lossHash !== scope.lossHash || ticket.maximumLoss !== scope.maximumLoss) throw Error('recourse_restoration_scope_unverified');
+  const continuation = prior.get('authorizationTxHash') !== recovery.get('authorizationTxHash') ? ticket : null;
+  if (continuation && prior.get('destination') === destination) throw Error('recourse_restoration_scope_unverified');
   return db.runTransaction(async tx => {
     const [existing, currentOwner, currentRecovery, currentDestination] = await Promise.all([
       tx.get(ref), tx.get(ownerRef), tx.get(recoveryRef),
@@ -112,7 +122,9 @@ export async function submitRestorationRequest(db: Firestore, authenticatedIdent
       throw new Error('recourse_restoration_scope_unverified');
     }
     const scope = parseRestorationScope(existing.get('scope'));
-    if (existing.get('identity') !== authenticatedIdentity || existing.get('transactionHash') !== input.transactionHash
+    if (existing.get('evidence') !== exact || !isDeepStrictEqual(existing.get('scope'), prior.get('scope'))
+      || !isDeepStrictEqual(existing.get('snapshot'), prior.get('snapshot')) || !isDeepStrictEqual(existing.get('membership'), prior.get('membership'))
+      || existing.get('identity') !== authenticatedIdentity || existing.get('transactionHash') !== input.transactionHash
       || existing.get('block') !== input.block || scope.request !== requestId
       || scope.lossHash !== existing.get('evidenceHash')) throw new Error('recourse_restoration_request_conflict');
     if (currentOwner.get('recoveryGeneration') !== recovery.get('generation')

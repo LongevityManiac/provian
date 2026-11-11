@@ -314,7 +314,7 @@ async function submitRecoveredRestoration(journal: RecoveryJournal, file: string
   const response = await guardedFetcher(input.fetch)(`${journal.relayUrl}/v1/recourse/restoration-requests`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${journal.apiKey}:${journal.apiSecret}` },
     body: JSON.stringify({ identity: journal.identity, transactionHash: journal.restoration.transactionHash,
-      block: journal.restoration.block, recoveryRequestId: journal.requestId }), signal: input.signal,
+      block: journal.restoration.block, recoveryRequestId: journal.requestId, restorationRequestId: journal.restoration.scope.request }), signal: input.signal,
   });
   if (!response.ok) throw Error('Restoration request submission refused');
   const result: unknown = await response.json();

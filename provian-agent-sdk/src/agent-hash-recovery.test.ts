@@ -95,7 +95,7 @@ test('the bounded loss survives a stolen replacement using kind2 continuation, t
  await expect(recoverHashRecourseAgent({...input(),restoration:restoration()})).rejects.toThrow('restoration response lost');
  expect(ownerOperations).toHaveLength(2);expect(ownerOperations[0].restoration).toEqual(loss().scope);expect(ownerOperations[1].restoration).toBeUndefined();
  expect(ownerOperations[0].destination).not.toBe(ownerOperations[1].destination);expect(submissions[0].transactionHash).toBe(loss().transactionHash);
- expect(submissions[0].recoveryRequestId).toBe(cuts[1].requestId);expect(submissions[0].recoveryRequestId).not.toBe(loss().scope.request);
+ expect(submissions[0].restorationRequestId).toBe(loss().scope.request);expect(submissions[0].recoveryRequestId).toBe(cuts[1].requestId);expect(submissions[0].recoveryRequestId).not.toBe(loss().scope.request);
  failSubmission=false;const result=await recoverHashRecourseAgent({...input(),restoration:restoration()});expect(result.restorationRequestId).toBe(loss().scope.request);
  expect(ownerOperations).toHaveLength(2);expect(cuts).toHaveLength(2);expect(submissions[1]).toEqual(submissions[0]);
  const call=http.request.mock.calls.filter(([url])=>String(url).endsWith('/restoration-requests')).at(-1)!;

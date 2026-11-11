@@ -21,9 +21,10 @@ function fixture() {
   }));
   const ports: RestorationEvidencePorts = { snapshot, membership: async () => ({ active: true, periodIndex: 0,
     unpaidAtomic: '0', completedNonissuanceMonths: [], evidenceHash: h(13), lossTimestamp: 100 }),
-    pool: async () => ({ outcomeRevision: '2' } as RecoursePoolState) };
+    pool: async () => ({ outcomeRevision: '2' } as RecoursePoolState),
+    ticket: async () => ({...(fake.store.get(`${RESTORATION_REQUESTS}/${requestId}`)?.scope as import('./owner-operation').RestorationScope),identity,destination,currentDestination:destination}) };
   return { fake, db: fake as unknown as Firestore, ports, snapshot,
-    input: { transactionHash: txHash, block: 20, recoveryRequestId: recoveryId } };
+    input: { transactionHash: txHash, block: 20, recoveryRequestId: recoveryId, restorationRequestId: requestId } };
 }
 test('loads the whole registry portfolio and deduplicates the observed occurrence', async () => {
   const { fake, db, input, ports, snapshot } = fixture();
@@ -40,10 +41,12 @@ test('loads the whole registry portfolio and deduplicates the observed occurrenc
 test('foreign recovery and a known lapse before loss cannot produce an accepted request', async () => {
   const { fake, db, input, ports } = fixture();
   await expect(submitRestorationRequest(db, h(99), input, ports)).rejects.toThrow('recovery_required');
+  await prepareRestorationRequest(db,identity,input,ports);
+  const key=`${RESTORATION_REQUESTS}/${requestId}`;fake.store.set(key,{...fake.store.get(key),destination,authorizationTxHash:h(50),status:'awaiting_determination'});
   await expect(submitRestorationRequest(db, identity, input, { ...ports,
     membership: async () => ({ active: false, periodIndex: null, unpaidAtomic: '0',
       completedNonissuanceMonths: [], evidenceHash: h(13), lossTimestamp: 100 }) })).rejects.toThrow('not_member_at_loss');
-  expect(fake.store.has(`${RESTORATION_REQUESTS}/${requestId}`)).toBe(false);
+  expect(fake.store.get(key)?.recoveryRequestId).toBeUndefined();
 });
 test('a concurrent recovery invalidates the stale destination before request persistence', async () => {
   const { fake, db, input, ports } = fixture();
@@ -96,4 +99,41 @@ test('a later verified recovery carries the existing ticket to the new owner des
  await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).rejects.toThrow('scope_unverified');
  ticket.mockResolvedValue({...prepared,identity,destination:priorDestination,currentDestination:destination,maximumLoss:'101'});
  await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).rejects.toThrow('scope_unverified');
+});
+
+test('submission preserves exact prior-kernel evidence across a break and checks the current imported ticket',async()=>{
+ const f=fixture(),prepared=await prepareRestorationRequest(f.db,identity,f.input,f.ports),key=`${RESTORATION_REQUESTS}/${requestId}`;
+ const retained=f.fake.store.get(key)!,priorDestination=`0x${'44'.repeat(20)}`;
+ f.fake.store.set(key,{...retained,destination:priorDestination,authorizationTxHash:h(49),status:'awaiting_determination'});
+ f.fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${destination}`)!.kernel=`0x${'88'.repeat(20)}`;
+ f.snapshot.mockRejectedValue(Error('mixed_retired_current_bindings'));
+ const ticket=jest.fn().mockResolvedValue({...prepared,identity,destination:priorDestination,currentDestination:destination});
+ expect(await submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).toEqual({requestId,status:'awaiting_determination'});
+ expect(f.snapshot).toHaveBeenCalledTimes(1);
+ expect(ticket).toHaveBeenCalledWith(kernel,requestId);
+ expect(f.fake.store.get(key)).toMatchObject({evidence:retained.evidence,snapshot:retained.snapshot,membership:retained.membership,scope:retained.scope});
+ ticket.mockRejectedValue(Error('imported_ticket_absent'));
+ await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).rejects.toThrow('imported_ticket_absent');
+});
+test('retained evidence tampering and a concurrent scope rewrite cannot complete submission',async()=>{
+ for(const mode of ['bytes','snapshot','concurrent'] as const){
+  const f=fixture();await prepareRestorationRequest(f.db,identity,f.input,f.ports);
+  const key=`${RESTORATION_REQUESTS}/${requestId}`,row=f.fake.store.get(key)!;
+  Object.assign(row,{destination,authorizationTxHash:h(50),status:'awaiting_determination'});
+  if(mode==='bytes')row.evidence=String(row.evidence)+' ';
+  if(mode==='snapshot')row.snapshot={...(row.snapshot as object),lossAtomic:'101'};
+  const ports=mode==='concurrent'?{...f.ports,pool:async()=>{f.fake.store.set(key,{...row,evidence:String(row.evidence)+' '});return {outcomeRevision:'2'}as RecoursePoolState;}}:f.ports;
+  await expect(submitRestorationRequest(f.db,identity,f.input,ports)).rejects.toThrow();
+  expect(f.fake.store.get(key)?.recoveryRequestId).toBeUndefined();
+ }
+});
+
+test('an exact surviving request remains selectable beside obsolete or prepared occurrences for the same transaction',async()=>{
+ const f=fixture();await prepareRestorationRequest(f.db,identity,f.input,f.ports);
+ const key=`${RESTORATION_REQUESTS}/${requestId}`,row=f.fake.store.get(key)!;
+ Object.assign(row,{destination,authorizationTxHash:h(50),status:'awaiting_determination'});
+ f.fake.store.set(`${RESTORATION_REQUESTS}/${h(99)}`,{...row,scope:{...(row.scope as object),request:h(99)},status:'prepared'});
+ expect(await submitRestorationRequest(f.db,identity,f.input,f.ports)).toEqual({requestId,status:'awaiting_determination'});
+ await expect(submitRestorationRequest(f.db,identity,{...f.input,restorationRequestId:h(99)},f.ports)).rejects.toThrow();
+ await expect(submitRestorationRequest(f.db,identity,{...f.input,restorationRequestId:h(98)},f.ports)).rejects.toThrow('scope_unverified');
 });

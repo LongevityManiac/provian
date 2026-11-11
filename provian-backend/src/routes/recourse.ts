@@ -283,15 +283,16 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const owner = await resolveOwner(req, deps);
       const body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body)
-        || !['block,recoveryRequestId,transactionHash', 'block,identity,recoveryRequestId,transactionHash'].includes(Object.keys(body).sort().join(','))
+        || !['block,recoveryRequestId,restorationRequestId,transactionHash', 'block,identity,recoveryRequestId,restorationRequestId,transactionHash'].includes(Object.keys(body).sort().join(','))
         || !('transactionHash' in body) || typeof body.transactionHash !== 'string'
         || !('block' in body) || typeof body.block !== 'number'
-        || !('recoveryRequestId' in body) || typeof body.recoveryRequestId !== 'string') {
+        || !('recoveryRequestId' in body) || typeof body.recoveryRequestId !== 'string'
+        || !('restorationRequestId' in body) || typeof body.restorationRequestId !== 'string') {
         res.status(400).json({ error: 'recourse_restoration_request_invalid' }); return;
       }
       const identity = 'identity' in body ? await ownedBindingIdentity(deps.db, owner, body.identity) : await primaryBindingIdentity(deps.db, owner);
       res.json(await submitRestorationRequest(deps.db, identity, {
-        transactionHash: body.transactionHash, block: body.block, recoveryRequestId: body.recoveryRequestId,
+        transactionHash: body.transactionHash, block: body.block, recoveryRequestId: body.recoveryRequestId, restorationRequestId: body.restorationRequestId,
       }));
     } catch { res.status(400).json({ error: 'recourse_restoration_request_refused' }); }
   });

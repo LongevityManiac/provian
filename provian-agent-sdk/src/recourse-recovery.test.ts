@@ -190,7 +190,7 @@ it('prepares and signs one bounded loss scope, then resumes without a second aut
     if(url.endsWith('/restoration-requests')) {
       submissions++;expect(cut).toBeDefined();
       expect(options.headers).toMatchObject({Authorization:`Bearer ${cut!.apiKey}:${cut!.apiSecret}`});
-      expect(body).toEqual({identity:cut!.identity,transactionHash,block:100,recoveryRequestId:cut!.requestId});
+      expect(body).toEqual({identity:cut!.identity,transactionHash,block:100,recoveryRequestId:cut!.requestId,restorationRequestId:scope.request});
       if(submissions===1)throw Error('restoration response lost after commit');
       return {ok:true,json:async()=>({requestId:submissions===2?`0x${'ff'.repeat(32)}`:scope.request,status:'awaiting_determination'})};
     }

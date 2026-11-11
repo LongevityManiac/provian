@@ -91,7 +91,7 @@ export async function submitHumanRestorationRequest(transactionHash: string, blo
     if (status === 'executed') return;
     if (status !== 'pending') throw Error('recourse_restoration_ticket_changed');
     const response = object(await RelayAPIService.recourseRequest('restoration-requests', { transactionHash, block,
-      recoveryRequestId: recovered.requestId, identity }, action));
+      recoveryRequestId: recovered.requestId, restorationRequestId: recovered.restoration.request, identity }, action));
     if (response.requestId !== recovered.restoration.request || typeof response.status !== 'string'
       || !/^[a-z_]+$/.test(response.status)) throw Error('recourse_restoration_reply_invalid');
   });

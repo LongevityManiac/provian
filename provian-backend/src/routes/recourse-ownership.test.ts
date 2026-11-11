@@ -79,7 +79,7 @@ test('restoration selects an owned auxiliary binding and privately lists all own
   try {
     for (const [route, body, spy] of [
       ['restoration-intents', { transactionHash, block: 100 }, prepare],
-      ['restoration-requests', { transactionHash, block: 100, recoveryRequestId }, submit],
+      ['restoration-requests', { transactionHash, block: 100, recoveryRequestId, restorationRequestId:h('26') }, submit],
     ] as const) {
       expect((await request(app).post(`/v1/recourse/${route}`).send({ ...body, identity: auxiliary })).status).toBe(401);
       for (const identity of [foreign, h('99'), ownerIdentity, null, { identity: auxiliary }]) {
