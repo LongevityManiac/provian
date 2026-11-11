@@ -304,6 +304,16 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'confirmed-transfer-occurrence': {
+    runner: 'native-vitest', sourcePath: 'src/core/provenance/ProvenanceEnvelopeManager.ts',
+    testMatchPath: 'src/core/provenance/__tests__/confirmedTransfer.test.ts',
+    mutations: [{ id: 'OCCURRENCE-CORRUPT-RETRY', description: 'erase a corrupt occurrence index and mistake the next retry for a new act',
+      find: 'getItemHmac<T>(key, { preserveInvalid: true })', replace: 'getItemHmac<T>(key)',
+      expectedKilledBy: 'new occurrence keys never import plaintext or treat a damaged index as a new act' },
+    { id: 'OCCURRENCE-FLUSH-INDEX', description: 'flush the only signed WAL record before repairing its occurrence index',
+      find: 'for (const pe of batch) await this.indexConfirmedTransferOccurrence(pe);', replace: '',
+      expectedKilledBy: 'flushing a recovered WAL rebuilds the occurrence index before clearing its only retry evidence' }],
+  },
   'hash-transfer-review': {
     runner: 'native-vitest', sourcePath: 'src/core/recourse/human-hash-transfer.ts',
     testMatchPath: 'src/core/recourse/human-hash-transfer.test.ts',

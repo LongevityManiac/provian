@@ -5186,6 +5186,25 @@
       "target_failed": "Phê duyệt token chưa hoàn tất. Làm mới trước khi thử lại.",
       "cancelled": "Phê duyệt trước đó đã bị hủy. Làm mới để tiếp tục.",
       "outer_reverted": "Giao dịch mạng thất bại. Tiếp tục cùng phê duyệt đó để thử lại."
+    },
+    "transfer": {
+      "title": "Gửi từ ví đã khôi phục",
+      "network": "Mạng Base · Từ",
+      "gas": "Phí gas mạng được thanh toán bằng ETH từ ví gốc của bạn. Ví đã khôi phục ký giao dịch chuyển.",
+      "to": "Địa chỉ người nhận",
+      "token": "Hợp đồng token",
+      "balance": "Số dư: {{amount}} {{symbol}}",
+      "cancelling": "Đã yêu cầu hủy. Giao dịch gốc vẫn có thể được thực hiện trước; chuỗi quyết định kết quả cuối cùng.",
+      "resume": "Tiếp tục giao dịch này",
+      "confirm": "Xác nhận giao dịch này",
+      "cancel": "Yêu cầu hủy",
+      "edit": "Sửa giao dịch",
+      "recordPending": "Giao dịch đã được xác nhận. Cần hoàn tất bản ghi nguồn gốc.",
+      "record": "Hoàn tất bản ghi",
+      "new": "Giao dịch mới",
+      "amount": "Số tiền",
+      "review": "Xem lại giao dịch",
+      "authorize": "Cho phép đúng giao dịch này"
     }
   }
 }

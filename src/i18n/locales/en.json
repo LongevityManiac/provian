@@ -5186,6 +5186,25 @@
       "target_failed": "The token approval did not complete. Refresh before trying again.",
       "cancelled": "The previous approval was cancelled. Refresh to continue.",
       "outer_reverted": "The network transaction failed. Resume the same approval to try again."
+    },
+    "transfer": {
+      "title": "Send from recovered wallet",
+      "network": "Base network · From",
+      "gas": "Network gas is paid in ETH from your original wallet. The recovered wallet signs the transfer.",
+      "to": "Recipient address",
+      "token": "Token contract",
+      "balance": "Balance: {{amount}} {{symbol}}",
+      "cancelling": "Cancellation requested. The original transfer may still win; the chain decides the final result.",
+      "resume": "Resume this transfer",
+      "confirm": "Confirm this transfer",
+      "cancel": "Request cancellation",
+      "edit": "Edit transfer",
+      "recordPending": "Transfer confirmed. Its provenance record still needs to finish.",
+      "record": "Finish the record",
+      "new": "New transfer",
+      "amount": "Amount",
+      "review": "Review transfer",
+      "authorize": "Authorize this exact transfer"
     }
   }
 }

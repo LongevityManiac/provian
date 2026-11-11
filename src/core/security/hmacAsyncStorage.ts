@@ -108,9 +108,10 @@ export async function setItemHmac<T>(key: string, value: T): Promise<void> {
  *   - The format version is unrecognised
  *
  * Tamper detection logs a security warning and removes the corrupt
- * entry so the next launch starts from a clean slate.
+ * entry so the next launch starts from a clean slate. Occurrence journals use
+ * preserveInvalid to keep corruption distinguishable from a never-created act.
  */
-export async function getItemHmac<T>(key: string): Promise<T | null> {
+export async function getItemHmac<T>(key: string, options: { preserveInvalid?: boolean } = {}): Promise<T | null> {
   const raw = await AsyncStorage.getItem(key);
   if (!raw) return null;
 
@@ -129,11 +130,9 @@ export async function getItemHmac<T>(key: string): Promise<T | null> {
   const hmacKey = await getHmacKey();
   const expectedMac = computeMac(hmacKey, JSON.stringify(parsed.payload));
   if (!constantTimeEqualHex(expectedMac, parsed.mac)) {
-    console.warn(`[hmacAsyncStorage] HMAC mismatch on key "${key}" - discarding tampered value.`);
-    try {
-      await AsyncStorage.removeItem(key);
-    } catch {
-      /* ignore */
+    console.warn(`[hmacAsyncStorage] HMAC mismatch on key "${key}".`);
+    if (!options.preserveInvalid) {
+      try { await AsyncStorage.removeItem(key); } catch { /* ignore */ }
     }
     return null;
   }

@@ -42,6 +42,8 @@ import {
 import { useWalletStore } from '../../store/walletStore';
 import type { Asset } from '../../store/walletStore';
 import TransactionService from '../../core/wallet/TransactionService';
+import SeedManager from '../../core/wallet/SeedManager';
+import { readHumanAccountSelection } from '../../core/recourse/human-account';
 import solanaTransactionService, {
     InsufficientSolForFeesError,
     isSolanaWalletAddress,
@@ -100,6 +102,22 @@ const SendScreen = ({ navigation, route }: any) => {
     const [policyResult, setPolicyResult] = useState<any | null>(null);
 
     const [loading, setLoading] = useState(false);
+    const [routing, setRouting] = useState(true), [routingError, setRoutingError] = useState(false);
+    const [hashAccountAddress, setHashAccountAddress] = useState<string | null>(null);
+    useEffect(() => {
+        let active = true;
+        void (async () => {
+            const root = await SeedManager.getBackupIdentityAddress();
+            const selected = root ? await readHumanAccountSelection(root) : null;
+            if (!active) return;
+            if (selected?.kind === 'hash') {
+                if (selected.evm !== address?.toLowerCase()) throw Error('recourse_transfer_wrong_account');
+                setHashAccountAddress(selected.evm);
+            } else setHashAccountAddress(null);
+            setRouting(false);
+        })().catch(() => { if (active) setRoutingError(true); });
+        return () => { active = false; };
+    }, [address, navigation]);
 
     // Chain selection for multi-chain tokens
     const [selectedChainId, setSelectedChainId] = useState<number | null>(null);
@@ -309,6 +327,10 @@ const SendScreen = ({ navigation, route }: any) => {
             return;
         }
         const asset = selectedAsset; // narrowed non-null
+        if (hashAccountAddress && asset.chain !== 'Solana' && currentChainId === 8453) {
+            navigation.navigate('RecoveredTransfer', { account: hashAccountAddress, auxiliaryBinding: null, symbol: asset.symbol, recipient: recipientAddress, amount });
+            return;
+        }
         if (!amount || !recipient) {
             Alert.alert(t('send.missingInfo'), t('send.enterRecipientAndAmount'));
             return;
@@ -886,6 +908,10 @@ const SendScreen = ({ navigation, route }: any) => {
 };
 
 
+    if (routing) return <SafeAreaView style={styles.container}>
+        <BackButton onPress={() => navigation.goBack()} />
+        {routingError ? <Text style={{ color: COLORS.text }}>{t('recourse.error')}</Text> : <ActivityIndicator color={COLORS.primary} />}
+    </SafeAreaView>;
     if (!selectedAsset) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>

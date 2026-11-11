@@ -125,6 +125,7 @@ import CommonsInstitutions from '../screens/Commons/CommonsInstitutions';
 import CommonsCourt from '../screens/Commons/CommonsCourt';
 import CommonsBonds from '../screens/Commons/CommonsBonds';
 import RecourseMonthlyScreen from '../screens/Commons/RecourseMonthlyScreen';
+import RecoveredTransferScreen from '../screens/Action/RecoveredTransferScreen';
 import RecourseMembershipScreen from '../screens/Commons/RecourseMembershipScreen';
 import RecourseScreen, { RecourseBindScreen } from '../screens/Commons/RecourseScreen';
 import CommonsGovernance from '../screens/Commons/CommonsGovernance';
@@ -428,6 +429,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="RecourseBind" component={RecourseBindScreen} />
                 <Stack.Screen name="RecourseMembership" component={RecourseMembershipScreen} />
                 <Stack.Screen name="RecourseMonthly" component={RecourseMonthlyScreen} />
+                <Stack.Screen name="RecoveredTransfer" component={RecoveredTransferScreen} />
                 <Stack.Screen name="CommonsGovernance" component={CommonsGovernance} />
                 <Stack.Screen name="CommonsForum" component={CommonsForum} />
                 <Stack.Screen name="CommonsForumPost" component={CommonsForumPost} />

@@ -5186,6 +5186,25 @@
       "target_failed": "Idhini ya tokeni haikukamilika. Pakia upya kabla ya kujaribu tena.",
       "cancelled": "Idhini ya awali ilighairiwa. Pakia upya ili kuendelea.",
       "outer_reverted": "Muamala wa mtandao umeshindwa. Endelea na idhini ileile ili kujaribu tena."
+    },
+    "transfer": {
+      "title": "Tuma kutoka pochi iliyorejeshwa",
+      "network": "Mtandao wa Base · Kutoka",
+      "gas": "Gesi ya mtandao inalipwa kwa ETH kutoka pochi yako ya awali. Pochi iliyorejeshwa inatia saini uhamisho.",
+      "to": "Anwani ya mpokeaji",
+      "token": "Mkataba wa tokeni",
+      "balance": "Salio: {{amount}} {{symbol}}",
+      "cancelling": "Ubatilishaji umeombwa. Uhamisho wa awali bado unaweza kutekelezwa; mnyororo huamua matokeo ya mwisho.",
+      "resume": "Endelea na uhamisho huu",
+      "confirm": "Thibitisha uhamisho huu",
+      "cancel": "Omba kubatilisha",
+      "edit": "Hariri uhamisho",
+      "recordPending": "Uhamisho umethibitishwa. Rekodi yake ya asili bado inahitaji kukamilishwa.",
+      "record": "Kamilisha rekodi",
+      "new": "Uhamisho mpya",
+      "amount": "Kiasi",
+      "review": "Kagua uhamisho",
+      "authorize": "Idhinisha uhamisho huu halisi"
     }
   }
 }

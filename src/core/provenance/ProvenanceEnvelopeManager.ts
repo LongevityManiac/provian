@@ -5,14 +5,14 @@ import { Mutex } from 'async-mutex';
 import stableStringify from 'json-stable-stringify';
 import KeyManager from '../security/KeyManager';
 import securityLog from '../security/securityLogger';
-import { setItemHmac, getItemHmacWithLegacyFallback } from '../security/hmacAsyncStorage';
+import { setItemHmac, getItemHmac, getItemHmacWithLegacyFallback } from '../security/hmacAsyncStorage';
 import { ProvenanceEnvelope, ActionType, RiskLevel, AgreementDetails, PromiseStatus, AgreementSettlementDetails, OfflineSettlementPayload, RecoveryEnvelopeDetails, RecoveryAttestation, AIConversationMetadata } from './types';
 import { GENESIS_PREV_HASH } from './constants';
 import { hashEnvelopeCanonical } from './peHash';
 import { normalizeInputOrigins } from './inputOrigins';
 import { withQueuedOutputCitations } from '../meter/outputSigning';
 import PELifecycleManager from './PELifecycleManager';
-import { ingestPE, estimateFromPE } from '../footprint/FootprintService';
+import { ingestPE } from '../footprint/FootprintService';
 import { PEQueryOptions, PEQueryResult } from './lifecycleTypes';
 
 const CHAIN_HEAD_KEY = 'provian_pe_chain_head';
@@ -296,8 +296,48 @@ class ProvenanceEnvelopeManager {
      * SECURITY FIX: F-4 - Uses async-mutex for race-free envelope creation
      */
     async createEnvelope(params: EnvelopeContext, biometricAction?: BiometricAction): Promise<ProvenanceEnvelope> {
+        return this.createEnvelopeInternal(params, biometricAction);
+    }
+
+    /** A finalized first-party transfer is one occurrence even if its screen
+     * loses the completion response. The caller verifies the chain receipt;
+     * the meter still independently verifies txHash before any mint. */
+    async createConfirmedTransferEnvelope(input: Pick<EnvelopeContext, 'txHash' | 'chainId' | 'actorAddress'
+        | 'counterparty' | 'contract' | 'assetSymbol' | 'amount'>, biometricAction: BiometricAction): Promise<ProvenanceEnvelope> {
+        const value = { ...input };
+        if (!value.txHash || !isEvmTxHash(value.txHash) || value.chainId !== 8453
+            || !value.actorAddress || !/^0x[0-9a-f]{40}$/.test(value.actorAddress)
+            || !value.counterparty || !/^0x[0-9a-f]{40}$/.test(value.counterparty)) throw Error('confirmed_transfer_invalid');
+        const params: EnvelopeContext = { ...value, txHash: value.txHash.toLowerCase(), actionType: 'send',
+            intentText: `Send ${value.amount} ${value.assetSymbol} on Base to ${value.counterparty}`,
+            riskScore: 0, riskCategory: 'low', policyDecision: 'none' };
+        return this.createEnvelopeInternal(params, biometricAction, `provian_transfer_pe_8453_${params.txHash!.slice(2)}`);
+    }
+
+    private async createEnvelopeInternal(params: EnvelopeContext, biometricAction?: BiometricAction,
+        occurrenceKey?: string): Promise<ProvenanceEnvelope> {
         // SECURITY FIX: F-4 - Use mutex.runExclusive for atomic envelope creation
         return await this.mutex.runExclusive(async () => {
+            if (occurrenceKey) {
+                const cached = await this.readTransferOccurrence<ProvenanceEnvelope>(occurrenceKey);
+                const raw = await AsyncStorage.getItem(this.WAL_KEY);
+                const wal: ProvenanceEnvelope[] = raw === null ? [] : JSON.parse(raw);
+                if (!Array.isArray(wal)) throw Error('confirmed_transfer_wal_invalid');
+                const prior = cached ?? wal.find(pe => pe.tx_hash === params.txHash && pe.chain_id === params.chainId);
+                if (prior) {
+                    if (prior.action_type !== 'send' || prior.tx_hash !== params.txHash || prior.chain_id !== params.chainId
+                        || prior.actor_address !== params.actorAddress || prior.counterparty_address !== params.counterparty
+                        || prior.contract_address !== params.contract || prior.amount !== params.amount
+                        || prior.asset_symbol !== params.assetSymbol || !prior.signature) throw Error('confirmed_transfer_record_changed');
+                    if (!(await this.verifyPESignature(prior)).isValid) throw Error('confirmed_transfer_signature_invalid');
+                    if (!cached) await setItemHmac(occurrenceKey, prior);
+                    // A crash can occur between the WAL and the memory queue.
+                    if (wal.some(pe => pe.envelope_id === prior.envelope_id)
+                        && !this.pendingQueue.some(pe => pe.envelope_id === prior.envelope_id)) this.pendingQueue.push(prior);
+                    if (this.pendingQueue.length && !this.flushTimer) this.flushTimer = setTimeout(() => this.flushQueue(), this.FLUSH_INTERVAL);
+                    return prior;
+                }
+            }
             // [BUG FIX - KeyManager lazy init + fallback]
             // Address resolution order:
             //   1. Explicitly passed actorAddress (e.g. agent flows)
@@ -499,10 +539,21 @@ class ProvenanceEnvelopeManager {
             envelope.signature = signature;
 
             // 1. Write to WAL (Crash Resilience)
-            await this.addToWAL(envelope);
+            if (occurrenceKey) {
+                // Unlike a best-effort record, a resumed transfer must know its
+                // signed occurrence is durable before acknowledging completion.
+                const raw = await AsyncStorage.getItem(this.WAL_KEY);
+                const wal: ProvenanceEnvelope[] = raw === null ? [] : JSON.parse(raw);
+                if (!Array.isArray(wal)) throw Error('confirmed_transfer_wal_invalid');
+                await setItemHmac(`${occurrenceKey}_pending`, true);
+                wal.push(envelope); const encoded = JSON.stringify(wal);
+                await AsyncStorage.setItem(this.WAL_KEY, encoded);
+                if (await AsyncStorage.getItem(this.WAL_KEY) !== encoded) throw Error('confirmed_transfer_wal_unconfirmed');
+            } else await this.addToWAL(envelope);
 
             // 2. Add to Memory Queue
             this.pendingQueue.push(envelope);
+            if (occurrenceKey) await this.indexConfirmedTransferOccurrence(envelope);
 
             if (this.pendingQueue.length >= this.BATCH_SIZE) {
                 // SECURITY FIX: F-4 - Call flushQueueInternal directly since we already hold the mutex
@@ -514,7 +565,7 @@ class ProvenanceEnvelopeManager {
 
             // Energy Impact - non-blocking, never fails PE creation
             try {
-                envelope.energy_estimate = estimateFromPE(envelope);
+                // FootprintService computes its separate estimate; signed PE bytes stay unchanged.
                 await ingestPE(envelope);
             } catch (err) {
                 console.warn('[Footprint] PE ingestion failed (non-blocking):', err);
@@ -540,6 +591,8 @@ class ProvenanceEnvelopeManager {
         if (this.pendingQueue.length === 0) return;
 
         const batch = [...this.pendingQueue];
+        // Rebuild a lost occurrence index before a flush can erase its WAL.
+        for (const pe of batch) await this.indexConfirmedTransferOccurrence(pe);
         this.pendingQueue = [];
         if (this.flushTimer) {
             clearTimeout(this.flushTimer);
@@ -712,6 +765,27 @@ class ProvenanceEnvelopeManager {
 
     private readonly WAL_KEY = 'provian_pe_wal';
 
+    private async readTransferOccurrence<T>(key: string): Promise<T | null> {
+        if (await AsyncStorage.getItem(key) === null) return null;
+        const value = await getItemHmac<T>(key, { preserveInvalid: true });
+        // These keys were introduced with authentication. There is no legacy
+        // plaintext format to import, and corruption cannot mean "new act".
+        if (value === null) throw Error('confirmed_transfer_index_invalid');
+        return value;
+    }
+
+    private async indexConfirmedTransferOccurrence(pe: ProvenanceEnvelope): Promise<void> {
+        if (pe.action_type !== 'send' || pe.chain_id !== 8453 || !pe.tx_hash || !isEvmTxHash(pe.tx_hash)) return;
+        const key = `provian_transfer_pe_8453_${pe.tx_hash.toLowerCase().slice(2)}`;
+        if (await this.readTransferOccurrence<boolean>(`${key}_pending`) !== true) return;
+        if (!(await this.verifyPESignature(pe)).isValid) throw Error('confirmed_transfer_signature_invalid');
+        const prior = await this.readTransferOccurrence<ProvenanceEnvelope>(key);
+        if (prior && prior.envelope_id !== pe.envelope_id) throw Error('confirmed_transfer_occurrence_changed');
+        await setItemHmac(key, pe);
+        // Keep the authenticated marker. Future recovery/flush checks must not
+        // rely on a best-effort sidecar deletion or on in-memory flags.
+    }
+
     private async addToWAL(envelope: ProvenanceEnvelope): Promise<void> {
         try {
             const currentWal = await this.getWAL();
@@ -739,6 +813,9 @@ class ProvenanceEnvelopeManager {
     // Prevents duplicate PEs if the app crashed after writing to WAL but before clearing it.
     private async recoverFromCrash(): Promise<void> {
         const walItems = await this.getWAL();
+        // This also covers a WAL row already present in the hot tier: dedup
+        // must not erase its only route back to an interrupted transfer index.
+        for (const pe of walItems) await this.indexConfirmedTransferOccurrence(pe);
         if (walItems.length > 0) {
             console.log(`Recovering ${walItems.length} envelopes from crash WAL`);
 

@@ -5186,6 +5186,25 @@
       "target_failed": "Hindi nakumpleto ang pahintulot sa token. I-refresh bago subukang muli.",
       "cancelled": "Kinansela ang naunang pahintulot. I-refresh para magpatuloy.",
       "outer_reverted": "Nabigo ang transaksyon sa network. Ipagpatuloy ang parehong pahintulot para subukang muli."
+    },
+    "transfer": {
+      "title": "Magpadala mula sa naibalik na wallet",
+      "network": "Base network · Mula sa",
+      "gas": "Binabayaran sa ETH mula sa orihinal mong wallet ang gas ng network. Pinipirmahan ng naibalik na wallet ang paglilipat.",
+      "to": "Address ng tatanggap",
+      "token": "Kontrata ng token",
+      "balance": "Balanse: {{amount}} {{symbol}}",
+      "cancelling": "Hiniling ang pagkansela. Maaari pa ring mauna ang orihinal na paglilipat; ang chain ang magtatakda ng huling resulta.",
+      "resume": "Ipagpatuloy ang paglilipat na ito",
+      "confirm": "Kumpirmahin ang paglilipat na ito",
+      "cancel": "Humiling ng pagkansela",
+      "edit": "Baguhin ang paglilipat",
+      "recordPending": "Kumpirmado ang paglilipat. Kailangan pang tapusin ang tala ng pinagmulan nito.",
+      "record": "Tapusin ang tala",
+      "new": "Bagong paglilipat",
+      "amount": "Halaga",
+      "review": "Suriin ang paglilipat",
+      "authorize": "Pahintulutan ang eksaktong paglilipat na ito"
     }
   }
 }

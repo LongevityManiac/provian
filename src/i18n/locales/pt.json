@@ -5186,6 +5186,25 @@
       "target_failed": "A autorização do token não foi concluída. Atualize antes de tentar novamente.",
       "cancelled": "A autorização anterior foi cancelada. Atualize para continuar.",
       "outer_reverted": "A transação de rede falhou. Retome a mesma autorização para tentar novamente."
+    },
+    "transfer": {
+      "title": "Enviar da carteira recuperada",
+      "network": "Rede Base · De",
+      "gas": "O gás da rede é pago em ETH pela sua carteira original. A carteira recuperada assina a transferência.",
+      "to": "Endereço do destinatário",
+      "token": "Contrato do token",
+      "balance": "Saldo: {{amount}} {{symbol}}",
+      "cancelling": "Cancelamento solicitado. A transferência original ainda pode ser executada; a rede determina o resultado final.",
+      "resume": "Retomar esta transferência",
+      "confirm": "Confirmar esta transferência",
+      "cancel": "Solicitar cancelamento",
+      "edit": "Editar transferência",
+      "recordPending": "Transferência confirmada. Seu registro de proveniência ainda precisa ser concluído.",
+      "record": "Concluir o registro",
+      "new": "Nova transferência",
+      "amount": "Valor",
+      "review": "Revisar transferência",
+      "authorize": "Autorizar esta transferência exata"
     }
   }
 }

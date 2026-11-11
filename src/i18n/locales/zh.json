@@ -5187,6 +5187,25 @@
       "target_failed": "代币授权未完成。请刷新后重试。",
       "cancelled": "之前的授权已取消。请刷新以继续。",
       "outer_reverted": "网络交易失败。请继续同一授权以重试。"
+    },
+    "transfer": {
+      "title": "从已恢复的钱包转账",
+      "network": "Base 网络 · 转出地址",
+      "gas": "网络 Gas 费由原钱包以 ETH 支付。已恢复的钱包签署转账。",
+      "to": "收款地址",
+      "token": "代币合约",
+      "balance": "余额：{{amount}} {{symbol}}",
+      "cancelling": "已请求取消。原转账仍可能先执行，最终结果由链上记录决定。",
+      "resume": "继续此转账",
+      "confirm": "确认此转账",
+      "cancel": "请求取消",
+      "edit": "编辑转账",
+      "recordPending": "转账已确认，来源记录仍需完成。",
+      "record": "完成记录",
+      "new": "新转账",
+      "amount": "金额",
+      "review": "核对转账",
+      "authorize": "授权此笔确切转账"
     }
   }
 }

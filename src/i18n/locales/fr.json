@@ -5186,6 +5186,25 @@
       "target_failed": "L’autorisation du jeton n’a pas abouti. Actualisez avant de réessayer.",
       "cancelled": "L’autorisation précédente a été annulée. Actualisez pour continuer.",
       "outer_reverted": "La transaction réseau a échoué. Reprenez la même autorisation pour réessayer."
+    },
+    "transfer": {
+      "title": "Envoyer depuis le portefeuille récupéré",
+      "network": "Réseau Base · Depuis",
+      "gas": "Les frais réseau sont payés en ETH depuis votre portefeuille d’origine. Le portefeuille récupéré signe le transfert.",
+      "to": "Adresse du destinataire",
+      "token": "Contrat du jeton",
+      "balance": "Solde : {{amount}} {{symbol}}",
+      "cancelling": "Annulation demandée. Le transfert initial peut encore aboutir ; la chaîne détermine le résultat final.",
+      "resume": "Reprendre ce transfert",
+      "confirm": "Confirmer ce transfert",
+      "cancel": "Demander l’annulation",
+      "edit": "Modifier le transfert",
+      "recordPending": "Transfert confirmé. Son enregistrement de provenance reste à terminer.",
+      "record": "Terminer l’enregistrement",
+      "new": "Nouveau transfert",
+      "amount": "Montant",
+      "review": "Vérifier le transfert",
+      "authorize": "Autoriser ce transfert exact"
     }
   }
 }

@@ -5186,6 +5186,25 @@
       "target_failed": "Persetujuan token tidak selesai. Muat ulang sebelum mencoba lagi.",
       "cancelled": "Persetujuan sebelumnya dibatalkan. Muat ulang untuk melanjutkan.",
       "outer_reverted": "Transaksi jaringan gagal. Lanjutkan persetujuan yang sama untuk mencoba lagi."
+    },
+    "transfer": {
+      "title": "Kirim dari dompet yang dipulihkan",
+      "network": "Jaringan Base · Dari",
+      "gas": "Gas jaringan dibayar dalam ETH dari dompet asli Anda. Dompet yang dipulihkan menandatangani transfer.",
+      "to": "Alamat penerima",
+      "token": "Kontrak token",
+      "balance": "Saldo: {{amount}} {{symbol}}",
+      "cancelling": "Pembatalan diminta. Transfer awal masih dapat berhasil; rantai menentukan hasil akhirnya.",
+      "resume": "Lanjutkan transfer ini",
+      "confirm": "Konfirmasi transfer ini",
+      "cancel": "Minta pembatalan",
+      "edit": "Ubah transfer",
+      "recordPending": "Transfer dikonfirmasi. Catatan asal-usulnya masih perlu diselesaikan.",
+      "record": "Selesaikan catatan",
+      "new": "Transfer baru",
+      "amount": "Jumlah",
+      "review": "Tinjau transfer",
+      "authorize": "Otorisasi transfer persis ini"
     }
   }
 }
