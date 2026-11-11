@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
 import {ProvianHashAccount} from "../src/ProvianHashAccount.sol";
 import {ProvianRecourseEligibilityVerifier} from "../src/ProvianRecourseEligibilityVerifier.sol";
 import {RecourseMonthlyAccounting} from "../src/RecourseMonthlyAccounting.sol";
@@ -14,6 +15,16 @@ import {ProvianRecoveryHistory} from "../src/ProvianRecoveryHistory.sol";
 import {ProvianProtocolPointer} from "../src/ProvianProtocolPointer.sol";
 import {ProvianRestorationAuthorization} from "../src/ProvianRestorationAuthorization.sol";
 import {RecourseOwnerAuthorization} from "../src/RecourseOwnerAuthorization.sol";
+import {RecourseAddressConsent} from "../src/RecourseAddressConsent.sol";
+import {RecourseIssuanceTickets} from "../src/RecourseIssuanceTickets.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+contract KernelMembershipSignatureFixture {
+    address public immutable signer;
+    constructor(address signer_) { signer = signer_; }
+    function isValidSignature(bytes32 digest, bytes calldata signature) external view returns (bytes4) {
+        return ECDSA.recover(digest, signature) == signer ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
+    }
+}
 contract BreakInstitutionFixture {
     address public pvt;
     function setToken(address token) external { pvt = token; }
@@ -83,7 +94,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         targets[0] = address(kernel); hashes[0] = address(kernel).codehash;
         for (uint256 i = 1; i < 10; ++i) { targets[i] = address(uint160(100+i)); vm.etch(targets[i], hex"00"); hashes[i] = targets[i].codehash; }
         ProvianMemberRecoursePool initialPool = new ProvianMemberRecoursePool(ProvianPVT9(address(kernel)), address(this), address(this), pointer,
-            RecourseMonthlyAccounting.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed membership rule TEST ONLY")),
+            RecourseMembershipRules.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed membership rule TEST ONLY")),
             RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
         targets[8] = address(initialPool); hashes[8] = targets[8].codehash;
         targets[9] = address(initialPool.settlement()); hashes[9] = targets[9].codehash;
@@ -594,7 +605,16 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
             ProvianRecourseKernel.CombinedCapMode.Fixed, 7_500_000 ether, 10_000_000 ether));
         vm.stopPrank();
         pool.bind(ID, THIEF);
-        vm.startPrank(THIEF); kernel.approve(address(pool), type(uint256).max); pool.enroll(ID); vm.stopPrank();
+        vm.etch(THIEF, address(new KernelMembershipSignatureFixture(vm.addr(1))).code);
+        vm.etch(address(0xE), address(new KernelMembershipSignatureFixture(vm.addr(2))).code);
+        vm.prank(THIEF); kernel.approve(address(pool), type(uint256).max);
+        uint256 month = pool.calendarMonth(block.timestamp); bytes32 ruleHash = pool.monthlyRule(month).signedRuleHash;
+        RecourseAddressConsent.ConsentAuthorization memory consent = RecourseAddressConsent.ConsentAuthorization(ID, THIEF, 0, true, 1, ruleHash, block.timestamp + 300);
+        bytes32 consentHash = pool.consentDigest(consent);
+        pool.setAddressConsent(consent, membershipSignature(1, consentHash), membershipSignature(2, consentHash));
+        RecourseAddressConsent.DebitAuthorization memory debit = RecourseAddressConsent.DebitAuthorization(ID, THIEF, month, 100 ether, 0, 0, 1, 1, ruleHash, block.timestamp + 300);
+        bytes32 debitHash = pool.debitDigest(debit);
+        pool.executeMembershipDebit(debit, membershipSignature(1, debitHash), membershipSignature(2, debitHash));
         assertEq(kernel.balanceOf(THIEF), 23 ether);
         ProvianPVT9.StandardRecipient[] memory recipients = new ProvianPVT9.StandardRecipient[](1);
         recipients[0] = ProvianPVT9.StandardRecipient(THIEF, ProvianPVT9.BeneficiaryClass.HumanResolving, 1);
@@ -604,7 +624,16 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         (bool approved,) = address(eligibility).call(abi.encodeWithSelector(eligibility.approveStandardBatch.selector,
             bytes32(uint256(456)), uint64(0), policyHash, uint256(0), uint256(1), recipients, claims));
         assertTrue(approved);
-        pool.settlement().settleStandardPEBatch(bytes32(uint256(456)), 0, kernel.getEpochPolicy(0).policyHash, 0, 1, recipients, claims);
+        bytes32 batchId = bytes32(uint256(456));
+        ProvianPVT9 typed = ProvianPVT9(address(kernel));
+        bytes32 settlementDigest = typed.computeSettlementDigest(ProvianPVT9.SettlementLane.StandardPE, batchId, 0,
+            policyHash, 0, 1, typed.hashStandardClaims(recipients, claims));
+        RecourseIssuanceTickets.IssuanceContext memory context = RecourseIssuanceTickets.IssuanceContext(batchId, 0, 0,
+            policyHash, settlementDigest, 1, month, ruleHash);
+        RecourseIssuanceTickets.IssuanceTicket[] memory tickets = new RecourseIssuanceTickets.IssuanceTicket[](1);
+        tickets[0] = RecourseIssuanceTickets.IssuanceTicket(THIEF, 100 ether, 99 ether, 1 ether, 1, true);
+        bytes memory call = abi.encodeCall(ProvianPVT9.settleStandardPEBatch, (batchId, 0, policyHash, 0, 1, recipients, claims));
+        pool.settlement().settleMemberBatch(call, context, tickets, membershipSignature(2, pool.issuanceDigest(context, tickets)));
         assertEq(kernel.balanceOf(THIEF), 121 ether);
         assertEq(kernel.balanceOf(address(pool)), 1 ether);
         assertEq(pool.accountedBacking(), 1 ether);
@@ -612,6 +641,9 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         assertEq(kernel.balanceOf(address(0xA002)), 0.5 ether);
         assertEq(kernel.totalSupply(), 123 ether);
         assertTrue(kernel.claimSettled(bytes32(uint256(123))));
+    }
+    function membershipSignature(uint256 key, bytes32 digest) private returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest); return abi.encodePacked(r, s, v);
     }
     function checkDeploymentSize() external view {
         require(address(kernel).code.length <= 24576, "runtime_exceeds_chain_limit");

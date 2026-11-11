@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AbiCoder, Interface, keccak256 } from 'ethers';
-import { resolveProtocolDeployment, type PointerRpc } from './protocol-pointer';
+import { resolveProtocolDeployment, resolveHistoricalProtocolDeployment, type PointerRpc } from './protocol-pointer';
 const pointer = `0x${'01'.repeat(20)}`;
 const runtime = '0x60006000f3';
 const runtimeHash = keccak256(runtime);
@@ -38,6 +38,15 @@ function rpc(options: { chain?: string; code?: string; corrupt?: boolean; newer?
   } };
 }
 describe('chain-verified permanent pointer', () => {
+  it('authenticates the old manifest for receipts without substituting current contracts', async () => {
+    const result = await resolveHistoricalProtocolDeployment([rpc({ newer: true }), rpc({ newer: true })], pointer, runtimeHash, 100, blockHash);
+    expect(result.revision).toBe(1n);
+    await expect(resolveHistoricalProtocolDeployment([rpc(), rpc()], pointer, runtimeHash, 100, `0x${'cd'.repeat(32)}`)).rejects.toThrow('invalid_block');
+    await expect(resolveHistoricalProtocolDeployment([rpc(), rpc()], pointer, runtimeHash, 99, blockHash)).rejects.toThrow('invalid_block');
+    await expect(resolveHistoricalProtocolDeployment([rpc({ reorg: true }), rpc({ reorg: true })], pointer, runtimeHash, 100, blockHash)).rejects.toThrow('reorg');
+    await expect(resolveHistoricalProtocolDeployment([rpc({ wrongBinding: true }), rpc({ wrongBinding: true })], pointer, runtimeHash, 100, blockHash)).rejects.toThrow('binding_mismatch');
+    await expect(resolveHistoricalProtocolDeployment([rpc({ code: '0x00' }), rpc({ code: '0x00' })], pointer, runtimeHash, 100, blockHash)).rejects.toThrow('runtime_mismatch');
+  });
   it('resolves all ten runtime-verified components without relay data', async () => {
     const result = await resolveProtocolDeployment([rpc(), rpc()], pointer, runtimeHash);
     expect(result.revision).toBe(1n);

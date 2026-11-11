@@ -3,17 +3,23 @@ pragma solidity ^0.8.24;
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
-/// @notice Public consent concerns a single address recovery lineage. Owner-wide
-/// invoices, earnings totals, grace and portfolio links remain in the relay.
-/// An eligibility attestor has no wallet-debit authority: each debit additionally
-/// requires the owner's exact payer, month, amounts and one-use nonce mandate.
-abstract contract RecourseAddressConsent {
+/// @notice Public state describes one address's consent, never an owner's bill.
+abstract contract RecourseAddressConsentState {
     struct AddressConsent {
         uint256 nonce;
         uint256 generation;
         bool joined;
     }
     struct ConsentPeriod { uint256 startBlock; uint256 endBlock; }
+    mapping(bytes32 => AddressConsent) public addressConsent;
+    mapping(bytes32 => mapping(uint256 => ConsentPeriod)) public consentPeriods;
+    mapping(bytes32 => uint256) public debitNonce;
+}
+
+/// @notice Owner-wide invoices, earnings, grace and portfolio links stay private.
+/// An eligibility attestor has no wallet-debit authority: each debit additionally
+/// requires the owner's exact payer, month, amounts and one-use nonce mandate.
+abstract contract RecourseAddressConsent is RecourseAddressConsentState {
     struct ConsentAuthorization {
         bytes32 binding; address account; uint256 nonce; bool joined;
         uint256 revision; bytes32 ruleHash; uint256 expiresAt;
@@ -22,9 +28,6 @@ abstract contract RecourseAddressConsent {
         bytes32 binding; address payer; uint256 month; uint256 burn; uint256 reserve;
         uint256 nonce; uint256 generation; uint256 revision; bytes32 ruleHash; uint256 expiresAt;
     }
-    mapping(bytes32 => AddressConsent) public addressConsent;
-    mapping(bytes32 => mapping(uint256 => ConsentPeriod)) public consentPeriods;
-    mapping(bytes32 => uint256) public debitNonce;
     error InvalidAddressConsent();
     event AddressConsentChanged(bytes32 indexed binding, uint256 indexed generation, bool joined, uint256 nonce);
     event MembershipDebitExecuted(bytes32 indexed digest, bytes32 indexed binding, address indexed payer,

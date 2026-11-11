@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
 import {Test} from "forge-std/Test.sol";
 import {RecourseMonthlyAccounting} from "../src/RecourseMonthlyAccounting.sol";
 contract MonthlyHarness is RecourseMonthlyAccounting {
@@ -53,25 +54,25 @@ contract RecourseMonthlyAccountingTest is Test {
     function testLatePaymentCannotReopenButRejoinStartsNewInterval() public {
         ledger.assess(ID, 40);
         assertFalse(ledger.protected(ID, 40));
-        vm.expectRevert(RecourseMonthlyAccounting.InvalidMonthlyAccounting.selector);
+        vm.expectRevert(RecourseMembershipRules.InvalidMonthlyAccounting.selector);
         ledger.credit(ID, 40, 10, 100 ether, 100 ether);
         ledger.join(ID, 40);
         assertTrue(ledger.protected(ID, 40));
         assertFalse(ledger.protected(ID, 39));
-        vm.expectRevert(RecourseMonthlyAccounting.InvalidMonthlyAccounting.selector);
+        vm.expectRevert(RecourseMembershipRules.InvalidMonthlyAccounting.selector);
         ledger.credit(ID, 40, 10, 100 ether, 100 ether);
     }
     function testProspectiveRulesDoNotRepriceOldMonthsAndBurnIsNotReserveCredit() public {
-        ledger.rule(RecourseMonthlyAccounting.MonthlyRule(11, 150 ether, 75 ether, 200, bytes32(uint256(2))), 10);
+        ledger.rule(RecourseMembershipRules.MonthlyRule(11, 150 ether, 75 ether, 200, bytes32(uint256(2))), 10);
         ledger.assess(ID, 11);
         assertEq(ledger.invoice(ID, 1, 10).burnDue, 100 ether);
         assertEq(ledger.invoice(ID, 1, 10).reserveDue, 100 ether);
         assertEq(ledger.invoice(ID, 1, 11).burnDue, 150 ether);
         assertEq(ledger.earn(ID, 11, 1000 ether), 20 ether);
-        vm.expectRevert(RecourseMonthlyAccounting.InvalidMonthlyAccounting.selector);
+        vm.expectRevert(RecourseMembershipRules.InvalidMonthlyAccounting.selector);
         ledger.credit(ID, 11, 10, 200 ether, 0);
-        vm.expectRevert(RecourseMonthlyAccounting.InvalidMonthlyAccounting.selector);
-        ledger.rule(RecourseMonthlyAccounting.MonthlyRule(10, 1, 1, 100, bytes32(uint256(2))), 11);
+        vm.expectRevert(RecourseMembershipRules.InvalidMonthlyAccounting.selector);
+        ledger.rule(RecourseMembershipRules.MonthlyRule(10, 1, 1, 100, bytes32(uint256(2))), 11);
     }
     function testSameMonthLeaveRejoinDoesNotDoubleChargeAndDustCarries() public {
         ledger.credit(ID, 10, 10, 100 ether, 0);

@@ -4,10 +4,14 @@ import {ProvianPVT9} from "./ProvianPVT9.sol";
 import {ProvianProtocolPointer} from "./ProvianProtocolPointer.sol";
 import {ProvianRestorationAuthorization} from "./ProvianRestorationAuthorization.sol";
 import {RecoursePoolHistory} from "./RecoursePoolHistory.sol";
-import {RecourseMonthlyAccounting} from "./RecourseMonthlyAccounting.sol";
+import {RecourseAddressConsent} from "./RecourseAddressConsent.sol";
+import {RecourseIssuanceTickets} from "./RecourseIssuanceTickets.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {RecourseReserveAccounting, IRecourseReserveToken} from "./RecourseReserveAccounting.sol";
 import {ProvianMemberSettlement, IMemberContributionCollector} from "./ProvianMemberSettlement.sol";
 
+interface IRecourseIdentityAttestor { function identityAttestor() external view returns (address); }
 interface IPreviousRecoursePool { function pvt() external view returns (address); }
 interface IRecourseKernelAuthority {
     function restorationAuthority() external view returns (address);
@@ -16,7 +20,7 @@ interface IRecourseKernelAuthority {
 /// @notice Members' discretionary risk-sharing reserve. Contributions are not
 /// refundable. Allocated restoration withdrawal works directly on-chain, without
 /// the relay or a live restoration authority. There is no admin or surplus exit.
-contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCollector {
+contract ProvianMemberRecoursePool is RecoursePoolHistory, RecourseAddressConsent, RecourseIssuanceTickets {
     ProvianPVT9 public immutable token;
     ProvianMemberSettlement public immutable settlement;
     ProvianProtocolPointer public immutable pointer;
@@ -24,7 +28,6 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCo
     address public immutable bootstrapAdmin;
     error Unauthorized();
     error InvalidInput();
-    event MembershipChanged(bytes32 indexed identity, bool joined, uint256 generation, uint256 month);
     event RestorationDetermined(bytes32 indexed request, bytes32 indexed identity, bytes32 indexed occurrence, bool accepted, uint256 shortfall, bytes32 evidenceHash, uint256 revision);
     struct Determination { bytes32 request; bytes32 identity; bytes32 occurrence; uint256 shortfall; bytes32 evidenceHash; uint256 expectedRevision; uint256 membershipGeneration; uint256 lossBlock; uint256 lossMonth; }
 
@@ -83,82 +86,93 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCo
         pointer.requireCurrent(revision, 8, address(this));
         pointer.requireCurrent(revision, 0, address(token));
     }
-    function enroll(bytes32 identity) external historyReady {
-        _active(); _owner(identity);
-        uint256 month = calendarMonth(block.timestamp);
-        _joinMonthly(identity, month);
-        membershipPeriods[identity][enrollment[identity].generation] = MembershipPeriod(block.number, 0, month);
-        _collect(identity, month);
-        emit MembershipChanged(identity, true, enrollment[identity].generation, month);
-    }
-    function leave(bytes32 identity) external historyReady {
-        _owner(identity);
-        if (membershipPeriods[identity][enrollment[identity].generation].endBlock != 0) revert InvalidInput();
-        uint256 month = calendarMonth(block.timestamp);
-        _collect(identity, month);
-        _closeMembership(identity, month);
-    }
-    function _closeMembership(bytes32 identity, uint256 month) private {
-        uint256 generation = enrollment[identity].generation;
-        if (generation == 0 || membershipPeriods[identity][generation].endBlock != 0) return;
-        _leaveMonthly(identity, month);
-        membershipPeriods[identity][generation].endBlock = block.number;
-        emit MembershipChanged(identity, false, generation, month);
-    }
     function scheduleMembershipRule(MonthlyRule calldata rule) external historyReady {
         if (msg.sender != bootstrapAdmin) revert Unauthorized();
         _scheduleMonthlyRule(rule, calendarMonth(block.timestamp));
     }
-    function settleMonth(bytes32 identity) external historyReady {
-        _syncRecovery(identity);
-        _collect(identity, calendarMonth(block.timestamp));
+    function _identityAttestor() private view returns (address attestor) {
+        attestor = IRecourseIdentityAttestor(registryOperator).identityAttestor();
+        if (attestor == address(0) || attestor == IRecourseKernelAuthority(address(token)).restorationAuthority()) revert InvalidInput();
     }
-    function membershipState(bytes32 identity) external view returns (bool protectedNow, bool grace, uint256 generation, uint256 endMonthExclusive) {
-        uint256 month = calendarMonth(block.timestamp);
-        Enrollment storage e = enrollment[identity];
-        (protectedNow, grace, endMonthExclusive) = _monthlyStatus(identity, month);
-        return (protectedNow, grace, e.generation, endMonthExclusive);
+    function _consentOwner(bytes32 binding) internal override returns (address) {
+        if (!poolHistoryReady) revert InvalidPoolHistory();
+        _syncRecovery(binding);
+        return primaryAddress[binding];
     }
-    /// @notice Kernel diverts from actual issuance before it reaches any bound
-    /// wallet. No allowance or primary-address balance can defeat this diversion.
-    function divertIssuance(address account, uint256 gross, uint256 contributorAmount) external historyReady returns (uint256 diverted) {
-        if (msg.sender != address(token)) revert Unauthorized();
-        bytes32 identity = ownerOf[account];
-        if (identity == bytes32(0)) return 0;
-        uint256 month = calendarMonth(block.timestamp);
-        uint256 due = _recordMonthlyEarnings(identity, month, gross);
-        diverted = due < contributorAmount ? due : contributorAmount;
-        if (diverted != 0) {
-            _creditIssuanceReserve(identity, diverted);
-            _creditMonthly(identity, month, month, 0, diverted);
-        }
+    function _consentAttestor() internal view override returns (address) { return _identityAttestor(); }
+    function _consentDomain() internal view override returns (address, address) { return (address(pointer), address(token)); }
+    function _consentCurrent(uint256 revision) internal view override {
+        if (!poolHistoryReady) revert InvalidPoolHistory();
+        pointer.requireCurrent(revision, 8, address(this)); pointer.requireCurrent(revision, 0, address(token));
     }
-    function collectMintContribution(address account, uint256, uint256, uint64) external historyReady {
-        if (msg.sender != address(settlement)) revert Unauthorized();
-        bytes32 identity = ownerOf[account];
-        if (identity == bytes32(0)) return;
-        _syncRecovery(identity);
-        _collect(identity, calendarMonth(block.timestamp));
-    }
-    function _collect(bytes32 identity, uint256 month) private {
-        _assessMonthly(identity, month);
-        if (!_protectedMonthly(identity, month)) return;
-        Enrollment storage e = enrollment[identity];
-        for (uint256 m = e.firstUnpaidMonth; m <= month; ++m) _collectInvoice(identity, month, m);
-    }
-    function _collectInvoice(bytes32 identity, uint256 nowMonth, uint256 month) private {
-        address payer = primaryAddress[identity];
-        MonthlyObligation storage o = obligations[identity][enrollment[identity].generation][month];
-        uint256 burn = o.burnDue - o.burnPaid;
-        if (burn != 0 && token.balanceOf(payer) >= burn && token.allowance(payer, address(this)) >= burn) {
+    function _consentRule(uint256 month) internal view override returns (bytes32) { return monthlyRule(month).signedRuleHash; }
+    function _consentMonth() internal view override returns (uint256) { return calendarMonth(block.timestamp); }
+    function _executeMembershipDebit(bytes32 binding, address payer, uint256 burn, uint256 reserve) internal override {
+        if (burn != 0) {
+            uint256 beforeBalance = token.balanceOf(payer);
+            uint256 beforeSupply = token.totalSupply();
             token.burnFrom(payer, burn);
-            _creditMonthly(identity, nowMonth, month, burn, 0);
+            if (token.balanceOf(payer) + burn != beforeBalance || token.totalSupply() + burn != beforeSupply) revert InvalidInput();
         }
-        uint256 reserve = o.reserveDue - o.reservePaid;
-        if (reserve != 0 && token.balanceOf(payer) >= reserve && token.allowance(payer, address(this)) >= reserve) {
-            _contributeReserve(identity, payer, reserve);
-            _creditMonthly(identity, nowMonth, month, 0, reserve);
-        }
+        if (reserve != 0) _contributeReserve(binding, payer, reserve);
+    }
+    function _issuanceDomain() internal view override returns (address, address, address) {
+        return (address(pointer), address(token), address(settlement));
+    }
+    function _issuanceAttestor() internal view override returns (address) { return _identityAttestor(); }
+    function _issuanceCurrent(uint256 revision) internal view override {
+        if (!poolHistoryReady) revert InvalidPoolHistory();
+        pointer.requireCurrent(revision, 8, address(this)); pointer.requireCurrent(revision, 0, address(token));
+        pointer.requireCurrent(revision, 9, address(settlement));
+    }
+    function _issuanceMonth() internal view override returns (uint256) { return calendarMonth(block.timestamp); }
+    function _issuanceRule(uint256 month) internal view override returns (bytes32, uint16) {
+        MonthlyRule memory rule = monthlyRule(month); return (rule.signedRuleHash, rule.earningsBps);
+    }
+    function _issuanceConsent(address account) internal view override returns (bool, uint256) {
+        AddressConsent storage consent = addressConsent[ownerOf[account]];
+        return (consent.joined, consent.nonce);
+    }
+    function _issuanceBatchRecord(bytes32 batchId) internal view override returns (bool, bytes32) {
+        ProvianPVT9.BatchRecord memory record = token.getBatchRecord(batchId);
+        return (record.settled, record.settlementDigest);
+    }
+    function _creditTicketContribution(address account, uint256 amount) internal override {
+        if (amount != 0) _creditIssuanceReserve(ownerOf[account], amount);
+    }
+    /// @notice The kernel callback consumes the installed exact ticket before
+    /// issuing the contributor share. There is no allowance-based issuance path.
+    function divertIssuance(address account, uint256 gross, uint256 contributorAmount) external historyReady returns (uint256) {
+        return _consumeIssuanceTicket(account, gross, contributorAmount);
+    }
+
+    struct LossEligibility {
+        Determination determination; bytes32 ruleHash;
+        uint256 admissionLogIndex; uint256 lossLogIndex; uint256 closureLogIndex;
+    }
+    mapping(bytes32 => bool) public approvedLossEligibility;
+    event LossEligibilityAdmitted(bytes32 indexed request, bytes32 indexed binding, bytes32 digest);
+    function lossEligibilityDigest(LossEligibility calldata evidence) public view returns (bytes32) {
+        return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian private membership at loss",
+            block.chainid, address(pointer), address(token), address(this), evidence)));
+    }
+    /// @notice The independent attestor checks the private owner calendar and
+    /// original canonical consent/binding/loss positions. It cannot allocate
+    /// reserves, replace an owner proof, or change a reversal outcome.
+    function admitLossEligibility(LossEligibility calldata evidence, bytes calldata signature) external historyReady {
+        _active();
+        Determination calldata d = evidence.determination;
+        ConsentPeriod storage period = consentPeriods[d.identity][d.membershipGeneration];
+        if (d.request == bytes32(0) || d.identity == bytes32(0) || d.occurrence == bytes32(0) || d.evidenceHash == bytes32(0)
+            || period.startBlock == 0 || d.lossBlock < period.startBlock || d.lossBlock >= block.number
+            || (d.lossBlock == period.startBlock && evidence.lossLogIndex <= evidence.admissionLogIndex)
+            || (period.endBlock != 0 && (d.lossBlock > period.endBlock
+                || (d.lossBlock == period.endBlock && evidence.lossLogIndex >= evidence.closureLogIndex)))
+            || (period.endBlock == 0 && evidence.closureLogIndex != 0)
+            || d.lossMonth > calendarMonth(block.timestamp) || evidence.ruleHash != monthlyRule(d.lossMonth).signedRuleHash
+            || !SignatureChecker.isValidSignatureNow(_identityAttestor(), lossEligibilityDigest(evidence), signature)) revert InvalidInput();
+        approvedLossEligibility[sha256(abi.encode(d))] = true;
+        emit LossEligibilityAdmitted(d.request, d.identity, lossEligibilityDigest(evidence));
     }
     function withdrawRestoration(bytes32 request, bytes32 identity) external historyReady returns (uint256) {
         _owner(identity);
@@ -204,24 +218,10 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCo
             _syncRecovery(d.identity);
             ProvianRestorationAuthorization authorization = IRecourseKernelAuthority(address(token)).ownerAuthorization();
             bytes32 outcome = sha256(abi.encode(d.request, d.identity, primaryAddress[d.identity], d.shortfall, d.evidenceHash));
-            if (!_memberAtLoss(d) || authorization.reversalOutcome(d.request) != outcome) revert InvalidInput();
+            if (!approvedLossEligibility[sha256(abi.encode(d))] || authorization.reversalOutcome(d.request) != outcome) revert InvalidInput();
         }
         determined[d.request] = true; occurrenceDetermined[d.identity][d.occurrence] = true;
         emit RestorationDetermined(d.request, d.identity, d.occurrence, accepted, d.shortfall, d.evidenceHash, ++outcomeRevision[d.identity]);
-    }
-    function _memberAtLoss(Determination calldata d) private view returns (bool) {
-        MembershipPeriod storage period = membershipPeriods[d.identity][d.membershipGeneration];
-        if (period.startBlock == 0 || d.lossBlock < period.startBlock || d.lossBlock >= block.number
-            || (period.endBlock != 0 && d.lossBlock > period.endBlock)
-            || d.lossMonth < period.startMonth || d.lossMonth > calendarMonth(block.timestamp)) return false;
-        // At most one unpaid prior calendar month is within grace. Payments cannot
-        // be credited after expiry by the monthly accounting module.
-        for (uint256 m = period.startMonth; m + 1 < d.lossMonth; ++m) {
-            MonthlyObligation storage o = obligations[d.identity][d.membershipGeneration][m];
-            if (!o.initialized || o.burnPaid != o.burnDue
-                || o.reservePaid != (o.earnings ? o.reserveDue : o.noEarningsAmount)) return false;
-        }
-        return true;
     }
     function calendarMonth(uint256 timestamp) public pure returns (uint256) {
         uint256 z = timestamp / 1 days + 719468;

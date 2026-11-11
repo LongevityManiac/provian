@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {MemberTokenMock} from "./ProvianMemberRecoursePool.t.sol";
-import {RecourseMonthlyAccounting} from "../src/RecourseMonthlyAccounting.sol";
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
+import {RecourseAddressConsent, RecourseAddressConsentState} from "../src/RecourseAddressConsent.sol";
 import {RecourseReserveAccounting} from "../src/RecourseReserveAccounting.sol";
 import {RecoursePoolHistory} from "../src/RecoursePoolHistory.sol";
 import {ProvianMemberRecoursePool} from "../src/ProvianMemberRecoursePool.sol";
@@ -45,10 +46,9 @@ contract RecoursePoolHistoryTest is Test {
     }
     function recordsFor(uint256 allocation) private {
         add(0,abi.encode(uint256(40 ether),uint256(60 ether)));
-        add(1,abi.encode(uint256(0),RecourseMonthlyAccounting.MonthlyRule(0,100 ether,100 ether,100,sha256("TEST ONLY signed rule"))));
-        add(2,abi.encode(ID,RecourseMonthlyAccounting.Enrollment(true,month,month,month,0,1),address(this),uint256(7),uint256(1),false));
-        add(3,abi.encode(ID,uint256(1),month,RecourseMonthlyAccounting.MonthlyObligation(true,true,100 ether,100 ether,100 ether,100 ether,100 ether,100,9999)));
-        add(4,abi.encode(ID,uint256(1),RecoursePoolHistory.MembershipPeriod(80,0,month)));
+        add(1,abi.encode(uint256(0),RecourseMembershipRules.MonthlyRule(0,100 ether,100 ether,100,sha256("TEST ONLY signed rule"))));
+        add(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(1,1,true),address(this),uint256(7),uint256(1),uint256(9),false));
+        add(4,abi.encode(ID,uint256(1),RecourseAddressConsentState.ConsentPeriod(80,0)));
         add(5,abi.encode(REQUEST,RecourseReserveAccounting.RestorationAllocation(ID,allocation,false)));
         add(7,abi.encode(address(this),ID));
         add(8,abi.encode(REQUEST,ID,OCCURRENCE));
@@ -60,19 +60,20 @@ contract RecoursePoolHistoryTest is Test {
         vm.mockCall(address(pointer),abi.encodeWithSignature("component(uint256)",uint256(8)),abi.encode(PREVIOUS));
         vm.mockCall(PREVIOUS,abi.encodeWithSignature("pvt()"),abi.encode(address(0x5555)));
         pool=new ProvianMemberRecoursePool(ProvianPVT9(address(token)),address(this),address(this),pointer,
-            RecourseMonthlyAccounting.MonthlyRule(0,0,0,0,bytes32(0)),
+            RecourseMembershipRules.MonthlyRule(0,0,0,0,bytes32(0)),
             RecoursePoolHistory.PoolSnapshot(PREVIOUS,100,root,leaves.length,afterBreak));
     }
     function importAt(uint256 index) private {pool.importPoolState(kinds[index],records[index],proof(index));}
     function importExternally(uint256 index) external { importAt(index); }
     function importAll() private {for(uint256 i;i<leaves.length;++i)importAt(i);}
-    function testCompleteImportPreservesInvoicesReplayFencesAndRelayFreeExit() public {
+    function testCompleteImportPreservesConsentReplayFencesAndRelayFreeExit() public {
         recordsFor(40 ether);deploy(false);importAll();
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
         token.mint(address(pool),100 ether);pool.activatePoolHistory();
         assertEq(pool.monthlyRuleCount(),1);assertEq(pool.outcomeRevision(ID),1);
         assertTrue(pool.determined(REQUEST));assertTrue(pool.occurrenceDetermined(ID,OCCURRENCE));
-        (,,,,,,,,uint256 remainder)=pool.obligations(ID,1,month);assertEq(remainder,9999);
+        (uint256 nonce,uint256 generation,bool joined)=pool.addressConsent(ID);
+        assertEq(nonce,1);assertEq(generation,1);assertTrue(joined);assertEq(pool.debitNonce(ID),9);
         assertEq(pool.withdrawRestoration(REQUEST,ID),40 ether);
         assertEq(token.balanceOf(address(this)),40 ether);assertEq(token.balanceOf(address(pool)),60 ether);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(0);
@@ -83,33 +84,63 @@ contract RecoursePoolHistoryTest is Test {
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(1);
         importAt(0);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.bind(ID,address(this));
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.enroll(ID);
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.leave(ID);
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.settleMonth(ID);
+        RecourseAddressConsent.ConsentAuthorization memory consent;
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.setAddressConsent(consent,"","");
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.leaveAddressConsent(ID);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.cancelMembershipDebit(ID,0);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.divertIssuance(address(this),1,1);
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.collectMintContribution(address(this),1,1,1);
+        RecourseAddressConsent.DebitAuthorization memory debit;
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.executeMembershipDebit(debit,"","");
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.withdrawRestoration(REQUEST,ID);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
     }
     function testSemanticDuplicateCannotOverwriteOwnerEvenWithAnotherValidLeaf() public {
         recordsFor(40 ether);
-        add(2,abi.encode(ID,RecourseMonthlyAccounting.Enrollment(true,month,month,month,0,1),address(0xBAD),uint256(8),uint256(1),false));
-        deploy(false);for(uint256 i;i<8;++i)importAt(i);
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(8);
-        assertEq(pool.primaryAddress(ID),address(this));assertEq(pool.importedPoolEntries(),8);
+        add(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(1,1,true),address(0xBAD),uint256(8),uint256(1),uint256(9),false));
+        deploy(false);for(uint256 i;i<leaves.length-1;++i)importAt(i);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(leaves.length-1);
+        assertEq(pool.primaryAddress(ID),address(this));assertEq(pool.importedPoolEntries(),7);
     }
     function testMissingAllocationAmountsCannotActivate() public {
         recordsFor(39 ether);deploy(false);importAll();token.mint(address(pool),100 ether);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
     }
+    function replaceRecord(uint256 index, bytes memory data) private {
+        records[index]=data;
+        leaves[index]=sha256(abi.encode("Provian pool succession",PREVIOUS,uint256(100),kinds[index],sha256(data)));
+    }
+    function testMissingHistoricalConsentPeriodCannotActivate() public {
+        recordsFor(40 ether);
+        replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(3,2,true),address(this),uint256(7),uint256(1),uint256(9),false));
+        replaceRecord(3,abi.encode(ID,uint256(2),RecourseAddressConsentState.ConsentPeriod(90,0)));
+        deploy(false);importAll();token.mint(address(pool),100 ether);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
+    }
+    function testCorruptedConsentReplayNonceCannotImport() public {
+        recordsFor(40 ether);
+        replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(4,1,true),address(this),uint256(7),uint256(1),uint256(9),false));
+        deploy(false);importAt(0);importAt(1);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(2);
+    }
+    function testOpenOlderConsentPeriodCannotImport() public {
+        recordsFor(40 ether);
+        replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(3,2,true),address(this),uint256(7),uint256(1),uint256(9),false));
+        deploy(false);importAt(0);importAt(1);importAt(2);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(3);
+    }
     function testRefundableShareImportKindIsRefused() public {
         recordsFor(40 ether);add(6,abi.encode(uint256(0),ID,uint256(100 ether)));deploy(false);
-        for(uint256 i;i<8;++i)importAt(i);
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(8);
+        for(uint256 i;i<leaves.length-1;++i)importAt(i);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(leaves.length-1);
+    }
+    function testPrivateInvoiceImportKindIsRefused() public {
+        recordsFor(40 ether);add(3,abi.encode(ID,uint256(100 ether)));deploy(false);
+        for(uint256 i;i<leaves.length-1;++i)importAt(i);
+        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(leaves.length-1);
     }
     function testOwnerOmissionCannotImportBackedLiabilities() public {
         recordsFor(40 ether);deploy(false);importAt(0);importAt(1);
-        for(uint256 i=3;i<8;++i){
+        for(uint256 i=3;i<leaves.length;++i){
             vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(i);
         }
         assertEq(pool.importedPoolEntries(),2);

@@ -1,17 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseMembershipRules} from "./RecourseMembershipRules.sol";
 
 /// @notice Calendar-month obligation ledger, independent of keeper execution time.
 /// The integrating pool performs and verifies actual token burns/transfers before
 /// calling credit. Monthly amounts are frozen from their prospective signed rule.
-abstract contract RecourseMonthlyAccounting {
-    struct MonthlyRule {
-        uint256 firstMonth;
-        uint256 participationBurn;
-        uint256 noEarningsContribution;
-        uint16 earningsBps;
-        bytes32 signedRuleHash;
-    }
+abstract contract RecourseMonthlyAccounting is RecourseMembershipRules {
     struct MonthlyObligation {
         bool initialized;
         bool earnings;
@@ -31,25 +25,11 @@ abstract contract RecourseMonthlyAccounting {
         uint256 endMonthExclusive;
         uint256 generation;
     }
-    MonthlyRule[] internal monthlyRules;
     mapping(bytes32 => Enrollment) public enrollment;
     mapping(bytes32 => mapping(uint256 => mapping(uint256 => MonthlyObligation))) public obligations;
-    error InvalidMonthlyAccounting();
-    event MonthlyRuleScheduled(uint256 indexed firstMonth, uint256 burn, uint256 contribution, uint16 bps, bytes32 signedRuleHash);
     event MonthlyObligationRecorded(bytes32 indexed identity, uint256 indexed generation, uint256 indexed month, uint256 burn, uint256 contribution);
     event MonthlyObligationCredited(bytes32 indexed identity, uint256 indexed generation, uint256 indexed month, uint256 burn, uint256 contribution);
 
-    function _scheduleMonthlyRule(MonthlyRule memory rule, uint256 nowMonth) internal {
-        if (rule.signedRuleHash == bytes32(0) || rule.earningsBps > 10000
-            || (monthlyRules.length != 0 && (rule.firstMonth <= nowMonth
-                || rule.firstMonth <= monthlyRules[monthlyRules.length - 1].firstMonth))) revert InvalidMonthlyAccounting();
-        monthlyRules.push(rule);
-        emit MonthlyRuleScheduled(rule.firstMonth, rule.participationBurn, rule.noEarningsContribution, rule.earningsBps, rule.signedRuleHash);
-    }
-    function monthlyRule(uint256 month) public view returns (MonthlyRule memory) {
-        for (uint256 i = monthlyRules.length; i > 0; --i) if (monthlyRules[i - 1].firstMonth <= month) return monthlyRules[i - 1];
-        revert InvalidMonthlyAccounting();
-    }
     function _initializeMonth(bytes32 identity, uint256 month) private {
         Enrollment storage e = enrollment[identity];
         MonthlyObligation storage o = obligations[identity][e.generation][month];

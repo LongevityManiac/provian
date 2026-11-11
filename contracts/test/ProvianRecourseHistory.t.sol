@@ -2,6 +2,8 @@ import {ProvianHashAccount} from "../src/ProvianHashAccount.sol";
 import {ProvianRestorationAuthorization} from "../src/ProvianRestorationAuthorization.sol";
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
+import {RecourseIssuanceTickets} from "../src/RecourseIssuanceTickets.sol";
 import {Test} from "forge-std/Test.sol";
 import {ProvianRecourseKernel} from "../src/ProvianRecourseKernel.sol";
 import {ProvianRecoveryHistory} from "../src/ProvianRecoveryHistory.sol";
@@ -64,7 +66,7 @@ contract ProvianRecourseHistoryTest is Test {
         bytes32 root = sha256(abi.encode("Provian monetary history", address(0x1234), uint256(100), uint8(0), bytes32(uint256(42)), uint256(1)));
         history = new ProvianRecoveryHistory(address(0x1234), 100, root, 1, prior);
         kernel = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(ADMIN, bytes32(uint256(1)), address(0x1234), 100, 0, history, pointer, address(this), false, ProvianRestorationAuthorization(address(0))));
-        ProvianMemberRecoursePool pool = new ProvianMemberRecoursePool(ProvianPVT9(address(kernel)), address(this), address(this), pointer, RecourseMonthlyAccounting.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed rule TEST ONLY")), RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
+        ProvianMemberRecoursePool pool = new ProvianMemberRecoursePool(ProvianPVT9(address(kernel)), address(this), address(this), pointer, RecourseMembershipRules.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed rule TEST ONLY")), RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
         address[10] memory targets; bytes32[10] memory hashes;
         for (uint256 i; i < 10; ++i) { targets[i] = address(uint160(100+i)); vm.etch(targets[i], hex"00"); }
         targets[0] = address(kernel); targets[8] = address(pool); targets[9] = address(pool.settlement());
@@ -123,7 +125,23 @@ contract ProvianRecourseHistoryTest is Test {
         kernel.settleStandardPEBatch(bytes32(uint256(1)), 3, policyHash, 45, 46, recipients, claims);
         assertEq(kernel.totalSupply(), 0);
         claims[0].claimId = bytes32(uint256(43));
-        kernel.settleStandardPEBatch(bytes32(uint256(1)), 3, policyHash, 45, 46, recipients, claims);
+        ProvianMemberRecoursePool pool = ProvianMemberRecoursePool(pointer.component(8));
+        address adapter=address(pool.settlement());
+        vm.prank(ADMIN);kernel.appointOperationalMinter(adapter);
+        vm.mockCall(address(this),abi.encodeWithSignature("identityAttestor()"),abi.encode(vm.addr(2)));
+        (ProvianPVT9.StandardRecipient[] memory typedRecipients,ProvianPVT9.StandardPEClaim[] memory typedClaims)=
+            abi.decode(abi.encode(recipients,claims),(ProvianPVT9.StandardRecipient[],ProvianPVT9.StandardPEClaim[]));
+        ProvianPVT9 typed=ProvianPVT9(address(kernel));
+        bytes32 digest=typed.computeSettlementDigest(ProvianPVT9.SettlementLane.StandardPE,bytes32(uint256(1)),3,policyHash,45,46,
+            typed.hashStandardClaims(typedRecipients,typedClaims));
+        uint256 month=pool.calendarMonth(block.timestamp);
+        RecourseIssuanceTickets.IssuanceContext memory context=RecourseIssuanceTickets.IssuanceContext(bytes32(uint256(1)),0,3,
+            policyHash,digest,1,month,pool.monthlyRule(month).signedRuleHash);
+        RecourseIssuanceTickets.IssuanceTicket[] memory tickets=new RecourseIssuanceTickets.IssuanceTicket[](1);
+        tickets[0]=RecourseIssuanceTickets.IssuanceTicket(address(0x9876),1 ether,0.985 ether,0,0,false);
+        (uint8 v,bytes32 r,bytes32 s)=vm.sign(2,pool.issuanceDigest(context,tickets));
+        pool.settlement().settleMemberBatch(abi.encodeCall(ProvianPVT9.settleStandardPEBatch,
+            (bytes32(uint256(1)),3,policyHash,45,46,typedRecipients,typedClaims)),context,tickets,abi.encodePacked(r,s,v));
         assertEq(kernel.balanceOf(address(0x9876)), 0.985 ether);
         assertEq(kernel.epochTotalIssued(3), 1001 ether); assertEq(kernel.epochGenesisIssued(3), 500 ether);
     }

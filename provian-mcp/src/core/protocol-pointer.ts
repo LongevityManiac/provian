@@ -55,15 +55,28 @@ async function agreement(rpcs: readonly [PointerRpc, PointerRpc], method: string
  * Callers supply two independently operated chain transports and the permanent pointer pin. */
 export async function resolveProtocolDeployment(rpcs: readonly [PointerRpc, PointerRpc],
   pointer: string, pointerRuntimeHash: string, minimumRevision = 0n): Promise<ProtocolDeployment> {
+  return resolveDeployment(rpcs, pointer, pointerRuntimeHash, minimumRevision);
+}
+/** Historical end-of-block evidence only; never authorizes a new operation.
+ * Callers verify finality separately and account for publication log order when
+ * a receipt and a pointer change occur within the same block. */
+export async function resolveHistoricalProtocolDeployment(rpcs: readonly [PointerRpc, PointerRpc],
+  pointer: string, pointerRuntimeHash: string, block: number, blockHash: string): Promise<ProtocolDeployment> {
+  if (!Number.isSafeInteger(block) || block < 0 || !/^0x[0-9a-f]{64}$/.test(blockHash)) throw Error('protocol_pointer_invalid_block');
+  return resolveDeployment(rpcs, pointer, pointerRuntimeHash, 0n, { height: BigInt(block), hash: blockHash });
+}
+async function resolveDeployment(rpcs: readonly [PointerRpc, PointerRpc], pointer: string,
+  pointerRuntimeHash: string, minimumRevision: bigint, historical?: { readonly height: bigint; readonly hash: string }): Promise<ProtocolDeployment> {
   pointer = getAddress(pointer);
   if (quantity(await agreement(rpcs, 'eth_chainId', [])) !== 8453n) throw new Error('protocol_pointer_wrong_chain');
-  const heights = await Promise.all(rpcs.map(async rpc => quantity(await rpc.request('eth_blockNumber', []))));
+  const heights = historical ? [historical.height, historical.height]
+    : await Promise.all(rpcs.map(async rpc => quantity(await rpc.request('eth_blockNumber', []))));
   const height = heights[0] < heights[1] ? heights[0] : heights[1];
   const block = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
   if (!block || typeof block !== 'object' || !('hash' in block) || !('number' in block)
     || quantity(block.number) !== height) throw new Error('protocol_pointer_invalid_block');
   const blockHash = hex(block.hash);
-  if (blockHash.length !== 66) throw new Error('protocol_pointer_invalid_block');
+  if (blockHash.length !== 66 || (historical && blockHash !== historical.hash)) throw new Error('protocol_pointer_invalid_block');
   const pin = { blockHash, requireCanonical: true };
   const code = hex(await agreement(rpcs, 'eth_getCode', [pointer, pin]));
   if (code === '0x' || keccak256(code) !== pointerRuntimeHash.toLowerCase()) throw new Error('protocol_pointer_runtime_mismatch');
@@ -99,8 +112,10 @@ export async function resolveProtocolDeployment(rpcs: readonly [PointerRpc, Poin
     if (actual !== (typeof expected === 'number' ? addresses[expected] : expected)) throw new Error('protocol_component_binding_mismatch');
   }));
   // Reject a newer pointer seen by either provider while the pinned read ran.
-  const latest = await agreement(rpcs, 'eth_call', [{ to: pointer, data }, 'latest']);
-  if (hex(latest) !== encoded) throw new Error('protocol_pointer_changed');
+  if (!historical) {
+    const latest = await agreement(rpcs, 'eth_call', [{ to: pointer, data }, 'latest']);
+    if (hex(latest) !== encoded) throw new Error('protocol_pointer_changed');
+  }
   const canonical = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
   if (!canonical || typeof canonical !== 'object' || !('hash' in canonical)
     || hex(canonical.hash) !== blockHash) throw new Error('protocol_pointer_reorg');

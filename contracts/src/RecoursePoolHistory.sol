@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
-import {RecourseMonthlyAccounting} from "./RecourseMonthlyAccounting.sol";
+import {RecourseMembershipRules} from "./RecourseMembershipRules.sol";
+import {RecourseAddressConsentState} from "./RecourseAddressConsent.sol";
 import {RecourseReserveAccounting,IRecourseReserveToken} from "./RecourseReserveAccounting.sol";
 
 /// @notice Complete, permissionlessly imported pool state at one committed
 /// custody cutoff. No membership operation can race a partial state import.
-abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseReserveAccounting {
+abstract contract RecoursePoolHistory is RecourseMembershipRules, RecourseAddressConsentState, RecourseReserveAccounting {
     mapping(address => bytes32) public ownerOf;
     mapping(bytes32 => address) public primaryAddress;
     mapping(bytes32 => uint256) public recoveryNonce;
     mapping(bytes32 => uint256) public outcomeRevision;
-    struct MembershipPeriod { uint256 startBlock; uint256 endBlock; uint256 startMonth; }
-    mapping(bytes32 => mapping(uint256 => MembershipPeriod)) public membershipPeriods;
     mapping(bytes32 => bool) public determined;
     mapping(bytes32 => mapping(bytes32 => bool)) public occurrenceDetermined;
     mapping(bytes32 => bool) public requiresSnapshotRecovery;
@@ -23,6 +22,7 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
     mapping(bytes32 => bool) private importedSlots;
     uint256 private importedAllocations;
     uint256 private unmatchedPrimaries;
+    uint256 private remainingConsentPeriods;
     bool private importedGlobals;
     error InvalidPoolHistory();
     event PoolStateImported(uint8 indexed kind,bytes32 indexed slot,bytes32 leaf,bytes data);
@@ -36,7 +36,7 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
     }
     modifier historyReady() { if(!poolHistoryReady) revert InvalidPoolHistory(); _; }
     function _slot(uint8 kind,bytes memory key) private pure returns(bytes32) { return sha256(abi.encode(kind,key)); }
-    /// kinds: globals, ordered rules, owner, invoice, membership period,
+    /// kinds: globals, ordered rules, address consent, reserved kind, consent period,
     /// allocation, reserved kind, address binding, determination replay fence.
     function importPoolState(uint8 kind,bytes calldata data,bytes32[] calldata proof) external {
         if(poolHistoryReady||importedPoolEntries>=poolSnapshot.entries||proof.length>256) revert InvalidPoolHistory();
@@ -67,24 +67,25 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
                 ||(index==0?rule.firstMonth!=0:rule.firstMonth<=monthlyRules[index-1].firstMonth)) revert InvalidPoolHistory();
             monthlyRules.push(rule);slot=_slot(kind,abi.encode(index));
         } else if(kind==2){
-            (bytes32 id,Enrollment memory e,address primary,uint256 nonce,uint256 revision,bool recoveryRequired)=abi.decode(data,(bytes32,Enrollment,address,uint256,uint256,bool));
-            if(id==bytes32(0)||(e.generation!=0&&e.startMonth>e.lastAssessedMonth)) revert InvalidPoolHistory();
-            enrollment[id]=e;outcomeRevision[id]=revision;
+            (bytes32 id,AddressConsent memory consent,address primary,uint256 nonce,uint256 revision,uint256 billingNonce,bool recoveryRequired)
+                =abi.decode(data,(bytes32,AddressConsent,address,uint256,uint256,uint256,bool));
+            if(id==bytes32(0)||(consent.joined&&consent.generation==0)
+                ||consent.nonce!=(consent.joined?consent.generation+(consent.generation-1):consent.generation*2)) revert InvalidPoolHistory();
+            addressConsent[id]=consent;outcomeRevision[id]=revision;debitNonce[id]=billingNonce;
+            remainingConsentPeriods+=consent.generation;
             if(poolSnapshot.afterBreak||recoveryRequired){requiresSnapshotRecovery[id]=true;primaryAddress[id]=address(0);recoveryNonce[id]=0;}
             else {primaryAddress[id]=primary;recoveryNonce[id]=nonce;if(primary!=address(0))++unmatchedPrimaries;}
             slot=_slot(kind,abi.encode(id));
-        } else if(kind==3){
-            (bytes32 id,uint256 generation,uint256 month,MonthlyObligation memory o)=abi.decode(data,(bytes32,uint256,uint256,MonthlyObligation));
-            if(id==bytes32(0)||generation==0||!o.initialized||o.burnPaid>o.burnDue||o.reservePaid>o.reserveDue
-                ||o.earningsBps>10000||o.earningsRemainder>=10000) revert InvalidPoolHistory();
-            _requireImportedOwner(id);
-            obligations[id][generation][month]=o;slot=_slot(kind,abi.encode(id,generation,month));
         } else if(kind==4){
-            (bytes32 id,uint256 generation,MembershipPeriod memory period)=abi.decode(data,(bytes32,uint256,MembershipPeriod));
+            (bytes32 id,uint256 generation,ConsentPeriod memory period)=abi.decode(data,(bytes32,uint256,ConsentPeriod));
             if(id==bytes32(0)||generation==0||period.startBlock==0||period.startBlock>poolSnapshot.blockNumber
                 ||(period.endBlock!=0&&(period.endBlock<period.startBlock||period.endBlock>poolSnapshot.blockNumber))) revert InvalidPoolHistory();
             _requireImportedOwner(id);
-            membershipPeriods[id][generation]=period;slot=_slot(kind,abi.encode(id,generation));
+            AddressConsent storage current=addressConsent[id];
+            if(generation>current.generation||(generation<current.generation&&period.endBlock==0)
+                ||(generation==current.generation&&(period.endBlock==0)!=current.joined)) revert InvalidPoolHistory();
+            --remainingConsentPeriods;
+            consentPeriods[id][generation]=period;slot=_slot(kind,abi.encode(id,generation));
         } else if(kind==5){
             (bytes32 request,RestorationAllocation memory allocation)=abi.decode(data,(bytes32,RestorationAllocation));
             if(request==bytes32(0)||allocation.identity==bytes32(0)) revert InvalidPoolHistory();
@@ -104,11 +105,9 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
             determined[request]=true;occurrenceDetermined[id][occurrence]=true;slot=_slot(kind,abi.encode(request));
         } else revert InvalidPoolHistory();
     }
-    function monthlyRuleCount() external view returns (uint256) { return monthlyRules.length; }
-    function monthlyRuleAt(uint256 index) external view returns (MonthlyRule memory) { return monthlyRules[index]; }
     function activatePoolHistory() external {
         if(poolHistoryReady||!importedGlobals||importedPoolEntries!=poolSnapshot.entries||monthlyRules.length==0
-            ||importedAllocations!=allocatedRestorations||unmatchedPrimaries!=0
+            ||importedAllocations!=allocatedRestorations||unmatchedPrimaries!=0||remainingConsentPeriods!=0
             ||reserveToken.balanceOf(address(this))<allocatedRestorations+accountedBacking) revert InvalidPoolHistory();
         poolHistoryReady=true;emit PoolHistoryActivated(poolSnapshot.root,poolSnapshot.entries);
     }

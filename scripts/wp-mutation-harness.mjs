@@ -59,6 +59,25 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'ProvianMemberRecoursePool': {
+    sourcePath: 'contracts/src/ProvianMemberRecoursePool.sol',
+    testMatchPath: 'test/{ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    mutations: [
+      { id: 'POOL-ELIGIBILITY', description: 'authority can allocate without independently attested private membership',
+        find: '!approvedLossEligibility[sha256(abi.encode(d))] || authorization.reversalOutcome(d.request) != outcome',
+        replace: 'authorization.reversalOutcome(d.request) != outcome',
+        expectedKilledBy: 'testDeterminationNeedsAuthorityEligibilityAndExactOwnerReversalOutcome' },
+    ],
+  },
+  'RecoursePoolHistory': {
+    sourcePath: 'contracts/src/RecoursePoolHistory.sol',
+    testMatchPath: 'test/{ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    mutations: [
+      { id: 'POOL-PERIODS', description: 'a migration can activate while omitting old consent periods',
+        find: '||remainingConsentPeriods!=0', replace: '',
+        expectedKilledBy: 'testMissingHistoricalConsentPeriodCannotActivate' },
+    ],
+  },
   'ProvianMemberSettlement': {
     sourcePath: 'contracts/src/ProvianMemberSettlement.sol',
     testMatchPath: 'test/{ProvianMemberSettlementTickets,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
@@ -73,7 +92,7 @@ const MUTATION_SETS = {
   },
   'RecourseIssuanceTickets': {
     sourcePath: 'contracts/src/RecourseIssuanceTickets.sol',
-    testMatchPath: 'test/{RecourseIssuanceTickets,ProvianMemberSettlementTickets}.t.sol',
+    testMatchPath: 'test/{RecourseIssuanceTickets,ProvianMemberSettlementTickets,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
     mutations: [
       { id: 'TICKET-REPLAY', description: 'already settled ticket context can be reinstalled',
         find: '|| cancelledIssuanceBatch[context.batchId] || alreadySettled',
@@ -90,7 +109,7 @@ const MUTATION_SETS = {
   },
   'RecourseAddressConsent': {
     sourcePath: 'contracts/src/RecourseAddressConsent.sol',
-    testMatchPath: 'test/RecourseAddressConsent.t.sol',
+    testMatchPath: 'test/{RecourseAddressConsent,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
     mutations: [
       { id: 'DEBIT-OWNER', description: 'attestor can debit without the owner exact-amount mandate',
         find: '|| (debit.burn == 0 && debit.reserve == 0) || !_signature(owner, digest, ownerSignature)',

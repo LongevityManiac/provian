@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
-import {RecourseMonthlyAccounting} from "../src/RecourseMonthlyAccounting.sol";
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
+import {RecourseAddressConsent} from "../src/RecourseAddressConsent.sol";
+import {RecourseIssuanceTickets} from "../src/RecourseIssuanceTickets.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {RecoursePoolHistory} from "../src/RecoursePoolHistory.sol";
 import {ProvianMemberRecoursePool} from "../src/ProvianMemberRecoursePool.sol";
 import {ProvianHashAccount} from "../src/ProvianHashAccount.sol";
@@ -33,6 +36,11 @@ contract MemberTokenMock {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
     uint256 public totalSupply;
+    bool public dishonestBurn;
+    mapping(bytes32 => ProvianPVT9.BatchRecord) private batches;
+    function getBatchRecord(bytes32 id) external view returns (ProvianPVT9.BatchRecord memory) { return batches[id]; }
+    function finishBatch(bytes32 id, bytes32 digest) external { batches[id].settled = true; batches[id].settlementDigest = digest; }
+    function setDishonestBurn(bool value) external { dishonestBurn = value; }
     constructor() { BOOTSTRAP_ADMIN = msg.sender; restorationAuthority = msg.sender; ownerAuthorization = new MemberAuthorizationMock(); }
     function mint(address who, uint256 amount) external { balanceOf[who] += amount; totalSupply += amount; }
     function mintWork(ProvianMemberRecoursePool pool, address who, uint256 gross, uint256 net) external {
@@ -44,17 +52,24 @@ contract MemberTokenMock {
     function approve(address spender, uint256 amount) external returns (bool) { allowance[msg.sender][spender] = amount; return true; }
     function transfer(address to, uint256 amount) external returns (bool) { balanceOf[msg.sender] -= amount; balanceOf[to] += amount; return true; }
     function transferFrom(address from, address to, uint256 amount) external returns (bool) { allowance[from][msg.sender] -= amount; balanceOf[from] -= amount; balanceOf[to] += amount; return true; }
-    function burnFrom(address from, uint256 amount) external { allowance[from][msg.sender] -= amount; balanceOf[from] -= amount; totalSupply -= amount; }
+    function burnFrom(address from, uint256 amount) external { allowance[from][msg.sender] -= amount; balanceOf[from] -= amount; if (!dishonestBurn) totalSupply -= amount; }
 }
 contract ProvianMemberRecoursePoolTest is Test {
-    MemberTokenMock token;
-    ProvianMemberRecoursePool pool;
-    ProvianProtocolPointer pointer;
+    MemberTokenMock token; ProvianMemberRecoursePool pool; ProvianProtocolPointer pointer;
     bytes32 constant ID = bytes32(uint256(1));
+    uint256 constant OWNER_KEY = 0x112233; uint256 constant ATTESTOR_KEY = 0x334455;
+    address private ownerSigner; address private attestorSigner; uint256 private nextBatch;
+    function identityAttestor() external view returns (address) { return attestorSigner; }
+    function isValidSignature(bytes32 digest, bytes calldata signature) external view returns (bytes4) {
+        return ECDSA.recover(digest, signature) == ownerSigner ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
+    }
     function setUp() public {
-        vm.warp(1705276800); vm.roll(100); // January, then calendar boundaries below.
+        vm.warp(1705276800); vm.roll(100);
+        ownerSigner = vm.addr(OWNER_KEY); attestorSigner = vm.addr(ATTESTOR_KEY);
         token = new MemberTokenMock(); pointer = new ProvianProtocolPointer(address(new ProvianHashAccount(sha256("pointer signing root TEST ONLY"))));
-        pool = new ProvianMemberRecoursePool(ProvianPVT9(address(token)), address(this), address(this), pointer, RecourseMonthlyAccounting.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed test rule")), RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
+        pool = new ProvianMemberRecoursePool(ProvianPVT9(address(token)), address(this), address(this), pointer,
+            RecourseMembershipRules.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed test rule")),
+            RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
         address[10] memory addresses; bytes32[10] memory hashes;
         for (uint256 i; i < 10; ++i) { addresses[i] = address(uint160(1000+i)); vm.etch(addresses[i], hex"00"); }
         addresses[0] = address(token); addresses[8] = address(pool); addresses[9] = address(pool.settlement());
@@ -62,152 +77,158 @@ contract ProvianMemberRecoursePoolTest is Test {
         vm.prank(pointer.authority()); pointer.publish(0, addresses, hashes);
         pool.bind(ID, address(this)); token.approve(address(pool), type(uint256).max);
     }
+    function sign(uint256 key, bytes32 digest) private returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest); return abi.encodePacked(r, s, v);
+    }
+    function join(bytes32 binding, address account, uint256 key) private {
+        (uint256 nonce,,) = pool.addressConsent(binding);
+        RecourseAddressConsent.ConsentAuthorization memory c = RecourseAddressConsent.ConsentAuthorization(binding, account, nonce,
+            true, 1, sha256("signed test rule"), block.timestamp + 300);
+        bytes32 digest = pool.consentDigest(c);
+        pool.setAddressConsent(c, sign(key, digest), sign(ATTESTOR_KEY, digest));
+    }
+    function debit(uint256 month, uint256 burn, uint256 reserve) private {
+        (, uint256 generation,) = pool.addressConsent(ID);
+        RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(ID, address(this), month,
+            burn, reserve, pool.debitNonce(ID), generation, 1, sha256("signed test rule"), block.timestamp + 300);
+        bytes32 digest = pool.debitDigest(d);
+        pool.executeMembershipDebit(d, sign(OWNER_KEY, digest), sign(ATTESTOR_KEY, digest));
+    }
+    function funded() private {
+        token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY);
+        debit(pool.calendarMonth(block.timestamp), 100 ether, 0);
+        vm.warp(1706745600); debit(pool.calendarMonth(block.timestamp)-1, 0, 100 ether);
+        debit(pool.calendarMonth(block.timestamp), 100 ether, 0); vm.roll(101);
+    }
+    function mintWork(address account, uint256 gross, uint256 net, uint256 contribution, bool protectedMember) private {
+        bytes32 batch = bytes32(++nextBatch); bytes32 digest = sha256(abi.encode(batch));
+        RecourseIssuanceTickets.IssuanceContext memory c = RecourseIssuanceTickets.IssuanceContext(batch, 0, 1,
+            sha256("mint rule"), digest, 1, pool.calendarMonth(block.timestamp), sha256("signed test rule"));
+        RecourseIssuanceTickets.IssuanceTicket[] memory tickets = new RecourseIssuanceTickets.IssuanceTicket[](1);
+        (uint256 nonce,,) = pool.addressConsent(pool.ownerOf(account));
+        tickets[0] = RecourseIssuanceTickets.IssuanceTicket(account, gross, net, contribution, nonce, protectedMember);
+        bytes memory signature = sign(ATTESTOR_KEY, pool.issuanceDigest(c, tickets));
+        vm.prank(address(pool.settlement())); pool.installIssuanceTickets(c, tickets, signature);
+        token.mintWork(pool, account, gross, net); token.finishBatch(batch, digest);
+        vm.prank(address(pool.settlement())); pool.finishIssuanceTickets(batch);
+    }
+    function determination(uint256 amount) private view returns (ProvianMemberRecoursePool.Determination memory) {
+        return ProvianMemberRecoursePool.Determination(bytes32(uint256(10)), ID, bytes32(uint256(11)), amount,
+            sha256("loss"), 0, 1, 100, pool.calendarMonth(1705276800));
+    }
+    function eligible(ProvianMemberRecoursePool.Determination memory d) private {
+        (, uint256 end) = pool.consentPeriods(d.identity, d.membershipGeneration);
+        ProvianMemberRecoursePool.LossEligibility memory proof = ProvianMemberRecoursePool.LossEligibility(d,
+            sha256("signed test rule"), 1, 2, end == 0 ? 0 : 3);
+        pool.admitLossEligibility(proof, sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof)));
+    }
+    function outcome(ProvianMemberRecoursePool.Determination memory d, address destination) private {
+        token.ownerAuthorization().setOutcome(d.request, sha256(abi.encode(d.request, d.identity, destination, d.shortfall, d.evidenceHash)));
+    }
+    function determine(ProvianMemberRecoursePool.Determination memory d) private {
+        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1); ds[0] = d; pool.determine(ds);
+    }
     function testCustodyTokenAccessorMatchesReserveToken() public view {
-        assertEq(pool.pvt(), address(token));
-        assertEq(address(pool.token()), pool.pvt());
+        assertEq(pool.pvt(), address(token)); assertEq(address(pool.token()), pool.pvt());
     }
     function testBurnAndNoEarningsContributionAreSeparateAndLeavingRefundsNeither() public {
-        token.mint(address(this), 1000 ether); pool.enroll(ID);
+        token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY);
+        assertEq(token.totalSupply(), 1000 ether); // Consent alone never authorizes a debit.
+        debit(pool.calendarMonth(block.timestamp), 100 ether, 0);
         assertEq(token.totalSupply(), 900 ether); assertEq(pool.availableReserve(), 0);
-        vm.warp(1706745600); pool.settleMonth(ID); // February 1
-        assertEq(token.totalSupply(), 800 ether); // January and February participation burns.
-        assertEq(pool.availableReserve(), 100 ether); // January no-earnings contribution.
-        assertEq(token.balanceOf(address(this)), 700 ether);
-        (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ID, 100 ether));
-        assertFalse(refunded); pool.leave(ID);
-        assertEq(token.balanceOf(address(this)), 700 ether);
-        assertEq(token.totalSupply(), 800 ether);
-        (bool active,,,) = pool.membershipState(ID);
-        assertFalse(active);
-        pool.enroll(ID);
-        (active,,,) = pool.membershipState(ID);
-        assertTrue(active);
-        assertEq(token.totalSupply(), 800 ether); // Same-month rejoining adds no second burn.
+        vm.warp(1706745600); debit(pool.calendarMonth(block.timestamp)-1, 0, 100 ether);
+        debit(pool.calendarMonth(block.timestamp), 100 ether, 0);
+        assertEq(token.totalSupply(), 800 ether); assertEq(pool.availableReserve(), 100 ether);
+        (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ID, 100 ether)); assertFalse(refunded);
+        pool.leaveAddressConsent(ID); join(ID, address(this), OWNER_KEY);
+        assertEq(token.balanceOf(address(this)), 700 ether); assertEq(token.totalSupply(), 800 ether);
     }
-    function testRecoveredAddressContributesOnItsFirstIssuanceWithoutAnotherMemberAction() public {
-        token.mint(address(this), 1000 ether); pool.enroll(ID);
-        address destination = address(0xBEEF);
-        token.ownerAuthorization().recover(ID, destination);
-        pool.bind(ID, destination); // Registry's atomic bindRecovered callback.
-        assertEq(pool.primaryAddress(ID), destination);
-        token.mintWork(pool, destination, 1000 ether, 990 ether);
-        assertEq(token.balanceOf(destination), 980 ether);
-        assertEq(pool.availableReserve(), 10 ether);
+    function testMeasuredDebitRejectsAFalseBurnAndPreservesNonce() public {
+        token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY); token.setDishonestBurn(true);
+        (, uint256 generation,) = pool.addressConsent(ID);
+        RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(ID, address(this), pool.calendarMonth(block.timestamp),
+            100 ether, 0, 0, generation, 1, sha256("signed test rule"), block.timestamp + 300);
+        bytes32 digest = pool.debitDigest(d); bytes memory owner = sign(OWNER_KEY, digest); bytes memory attestor = sign(ATTESTOR_KEY, digest);
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.executeMembershipDebit(d, owner, attestor);
+        assertEq(pool.debitNonce(ID), 0); assertEq(token.balanceOf(address(this)), 1000 ether);
+    }
+    function testRecoveredAddressContributesOnFirstIssuanceWithExistingConsent() public {
+        join(ID, address(this), OWNER_KEY); address destination = address(0xBEEF);
+        token.ownerAuthorization().recover(ID, destination); pool.bind(ID, destination);
+        mintWork(destination, 1000 ether, 990 ether, 10 ether, true);
+        assertEq(token.balanceOf(destination), 980 ether); assertEq(pool.availableReserve(), 10 ether);
     }
     function testEarningsStillBurnAndRetain98PercentGrossAfterFloors() public {
-        token.mint(address(this), 100 ether); pool.enroll(ID);
-        token.mintWork(pool, address(this), 100 ether, 99 ether); // Kernel's contributor allocation of 100 gross.
-        address adapter = address(pool.settlement());
-        vm.prank(adapter); pool.collectMintContribution(address(this), 100 ether, 99 ether, 1);
-        assertEq(token.balanceOf(address(this)), 98 ether);
-        assertEq(pool.availableReserve(), 1 ether);
-        vm.warp(1706745600); pool.settleMonth(ID);
-        assertEq(pool.availableReserve(), 1 ether); // No extra no-earnings contribution for January.
+        token.mint(address(this), 100 ether); join(ID, address(this), OWNER_KEY);
+        debit(pool.calendarMonth(block.timestamp), 100 ether, 0); mintWork(address(this), 100 ether, 99 ether, 1 ether, true);
+        assertEq(token.balanceOf(address(this)), 98 ether); assertEq(pool.availableReserve(), 1 ether);
     }
-    function testGraceExpiresWithoutKeeperAndRejoinNeverCoversLapsedLoss() public {
-        pool.enroll(ID);
-        vm.warp(1706745600);
-        (bool protectedNow, bool grace,,) = pool.membershipState(ID);
-        assertTrue(protectedNow); assertTrue(grace);
-        vm.warp(1709251200); // March 1
-        (protectedNow,,,) = pool.membershipState(ID); assertFalse(protectedNow);
-        pool.settleMonth(ID);
-        token.mint(address(this), 500 ether);
-        pool.enroll(ID);
-        uint256 generation;
-        (protectedNow,,generation,) = pool.membershipState(ID);
-        assertTrue(protectedNow); assertEq(generation, 2);
-        vm.roll(101);
-        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1);
-        ds[0] = ProvianMemberRecoursePool.Determination(bytes32(uint256(10)), ID, bytes32(uint256(11)), 1 ether, sha256("loss"), 0, 1, 100, pool.calendarMonth(block.timestamp));
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
+    function testSeparateBindingsNeedSeparateConsentWithoutExposingPrivateOwner() public {
+        uint256 secondKey = 0x556677; address second = vm.addr(secondKey); bytes32 binding = bytes32(uint256(2));
+        join(ID, address(this), OWNER_KEY); pool.bind(binding, second); join(binding, second, secondKey);
+        mintWork(second, 100 ether, 99 ether, 1 ether, true);
+        assertEq(pool.ownerOf(second), binding); assertEq(pool.ownerOf(address(this)), ID);
+        assertEq(token.balanceOf(second), 98 ether); assertEq(token.balanceOf(address(this)), 0);
     }
-    function testDeterminationAllocationsSurviveMemberExitAndRequireActualMembership() public {
-        token.mint(address(this), 1000 ether); pool.enroll(ID);
-        vm.warp(1706745600); pool.settleMonth(ID); vm.roll(101);
-        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1);
-        ds[0] = ProvianMemberRecoursePool.Determination(bytes32(uint256(10)), ID, bytes32(uint256(11)), 40 ether, sha256("loss"), 0, 1, 100, pool.calendarMonth(block.timestamp)-1);
+    function testPrivateLapseAttestationStopsDiversionWithoutPublicOwnerInvoices() public {
+        join(ID, address(this), OWNER_KEY); mintWork(address(this), 100 ether, 99 ether, 0, false);
+        assertEq(token.balanceOf(address(this)), 99 ether); assertEq(pool.accountedBacking(), 0);
+        (bool invoices,) = address(pool).staticcall(abi.encodeWithSignature("obligations(bytes32,uint256,uint256)", ID, 1, 2024*12));
+        assertFalse(invoices);
+    }
+    function testDonationAndUnpaidBurnCannotPreventCurrentIssuanceDiversion() public {
+        join(ID, address(this), OWNER_KEY); mintWork(address(this), 100 ether, 99 ether, 1 ether, true);
+        token.mint(address(pool), 1000000000 ether); mintWork(address(this), 100, 99, 1, true);
+        assertEq(pool.accountedBacking(), 1 ether + 1); assertEq(token.balanceOf(address(this)), 98 ether + 98);
+    }
+    function testDeterminationNeedsAuthorityEligibilityAndExactOwnerReversalOutcome() public {
+        funded(); ProvianMemberRecoursePool.Determination memory d = determination(40 ether);
+        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1); ds[0] = d;
         vm.prank(address(7)); vm.expectRevert(ProvianMemberRecoursePool.Unauthorized.selector); pool.determine(ds);
-        token.ownerAuthorization().setOutcome(ds[0].request, sha256(abi.encode(ds[0].request, ID, address(this), ds[0].shortfall, ds[0].evidenceHash)));
-        pool.determine(ds);
-        pool.leave(ID);
-        assertEq(pool.availableReserve(), 60 ether);
-        assertEq(pool.withdrawRestoration(ds[0].request, ID), 40 ether);
+        outcome(d, address(this)); vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
+        eligible(d); pool.determine(ds); pool.leaveAddressConsent(ID);
+        assertEq(pool.availableReserve(), 60 ether); assertEq(pool.withdrawRestoration(d.request, ID), 40 ether);
         assertEq(token.balanceOf(address(pool)), 60 ether);
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
     }
-    function testCompleteReversalRecordsFinalAcceptedOutcomeWithoutAllocatingReserves() public {
-        token.mint(address(this),1000 ether);pool.enroll(ID);
-        vm.warp(1706745600);pool.settleMonth(ID);vm.roll(101);
-        ProvianMemberRecoursePool.Determination memory d = ProvianMemberRecoursePool.Determination(
-            bytes32(uint256(10)),ID,bytes32(uint256(11)),0,sha256("loss"),0,1,100,pool.calendarMonth(block.timestamp)-1);
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.recordReversalOnly(d);
-        token.ownerAuthorization().setOutcome(d.request,sha256(abi.encode(d.request,ID,address(this),uint256(0),d.evidenceHash)));
-        pool.recordReversalOnly(d);
-        assertTrue(pool.determined(d.request));assertTrue(pool.occurrenceDetermined(ID,d.occurrence));
-        assertEq(pool.allocatedRestorations(),0);assertEq(pool.availableReserve(),100 ether);
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.recordReversalOnly(d);
+    function testCompleteReversalRecordsFinalOutcomeWithoutAllocatingReserves() public {
+        funded(); ProvianMemberRecoursePool.Determination memory d = determination(0); eligible(d);
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.recordReversalOnly(d);
+        outcome(d, address(this)); pool.recordReversalOnly(d);
+        assertTrue(pool.determined(d.request)); assertEq(pool.allocatedRestorations(), 0); assertEq(pool.availableReserve(), 100 ether);
     }
-    function testPermissionlessDeliveryPaysOnlyTheIndependentlyRecoveredOwnerOnce() public {
-        token.mint(address(this),1000 ether);pool.enroll(ID);
-        vm.warp(1706745600);pool.settleMonth(ID);vm.roll(101);
-        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1);
-        ds[0] = ProvianMemberRecoursePool.Determination(bytes32(uint256(10)),ID,bytes32(uint256(11)),40 ether,sha256("loss"),0,1,100,pool.calendarMonth(block.timestamp)-1);
-        token.ownerAuthorization().setOutcome(ds[0].request,sha256(abi.encode(ds[0].request,ID,address(this),40 ether,ds[0].evidenceHash)));
-        pool.determine(ds);
-        address recovered = address(0xAABB); address stranger = address(0xCCDD);
-        token.ownerAuthorization().recover(ID,recovered);
-        vm.prank(stranger);assertEq(pool.deliverRestoration(ds[0].request,ID),40 ether);
-        assertEq(token.balanceOf(recovered),40 ether);assertEq(token.balanceOf(stranger),0);
-        vm.prank(stranger);vm.expectRevert();pool.deliverRestoration(ds[0].request,ID);
-        assertEq(pool.allocatedRestorations(),0);
+    function testPermissionlessDeliveryPaysOnlyIndependentlyRecoveredOwnerOnce() public {
+        funded(); ProvianMemberRecoursePool.Determination memory d = determination(40 ether); eligible(d); outcome(d, address(this)); determine(d);
+        address recovered = address(0xAABB); address stranger = address(0xCCDD); token.ownerAuthorization().recover(ID, recovered);
+        vm.prank(stranger); assertEq(pool.deliverRestoration(d.request, ID), 40 ether);
+        assertEq(token.balanceOf(recovered), 40 ether); assertEq(token.balanceOf(stranger), 0);
+        vm.prank(stranger); vm.expectRevert(); pool.deliverRestoration(d.request, ID);
     }
-    function testBoundSecondaryIssuanceDivertsWithoutPrimaryFundsOrAllowance() public {
-        token.mint(address(this), 100 ether); pool.enroll(ID);
-        address secondary = address(0x999);
-        pool.bind(ID, secondary);
-        token.mintWork(pool, secondary, 100 ether, 99 ether);
-        assertEq(token.balanceOf(secondary), 98 ether);
-        assertEq(pool.availableReserve(), 1 ether);
-        assertEq(token.balanceOf(address(this)), 0);
-    }
-    function testDonationAndUnpaidBurnCannotPreventCurrentIssuanceDiversion() public {
-        pool.enroll(ID);
-        token.mintWork(pool, address(this), 100 ether, 99 ether);
-        token.mint(address(pool), 1000000000 ether);
-        token.mintWork(pool, address(this), 100, 99);
-        address adapter = address(pool.settlement());
-        vm.prank(adapter); pool.collectMintContribution(address(this), 100, 99, 1);
-        assertEq(pool.accountedBacking(), 1 ether + 1);
-        assertEq(token.balanceOf(address(this)), 98 ether + 98);
-    }
-    function testPoolRestoresOnlyTheExactProvenReversalRemainder() public {
-        token.mint(address(this), 1000 ether); pool.enroll(ID);
-        token.mintWork(pool, address(this), 10000 ether, 9900 ether);
-        vm.roll(102);
-        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1);
-        ds[0] = ProvianMemberRecoursePool.Determination(bytes32(uint256(10)), ID, bytes32(uint256(11)), 40 ether,
-            sha256("canonical remainder TEST ONLY"), 0, 1, 101, pool.calendarMonth(block.timestamp));
+    function testPoolRestoresOnlyExactProvenReversalRemainder() public {
+        funded(); ProvianMemberRecoursePool.Determination memory d = determination(41 ether); eligible(d);
+        ProvianMemberRecoursePool.Determination memory actual = determination(40 ether); outcome(actual, address(this));
+        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1); ds[0] = d;
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
-        token.ownerAuthorization().setOutcome(ds[0].request, sha256(abi.encode(ds[0].request, ID, address(this), uint256(40 ether), ds[0].evidenceHash)));
-        ds[0].shortfall = 41 ether;
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
-        ds[0].shortfall = 40 ether; pool.determine(ds);
-        (bytes32 identity, uint256 assigned, bool withdrawn) = pool.restorationAllocations(ds[0].request);
-        assertEq(identity, ID); assertEq(assigned, 40 ether); assertFalse(withdrawn);
-        assertEq(pool.allocatedRestorations(), 40 ether);
+        eligible(actual); determine(actual); (, uint256 assigned,) = pool.restorationAllocations(actual.request); assertEq(assigned, 40 ether);
     }
     function testRepeatedLeaveCannotMoveHistoricalClosurePastLoss() public {
-        token.mint(address(this), 1000 ether); pool.enroll(ID);
-        vm.roll(101); pool.leave(ID);
-        vm.roll(103);
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.leave(ID);
-        (, uint256 endBlock,) = pool.membershipPeriods(ID, 1);
-        assertEq(endBlock, 101);
-        ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1);
-        ds[0] = ProvianMemberRecoursePool.Determination(bytes32(uint256(10)), ID, bytes32(uint256(11)), 40 ether,
-            sha256("loss while left"), 0, 1, 102, pool.calendarMonth(block.timestamp));
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
+        join(ID, address(this), OWNER_KEY); vm.roll(101); pool.leaveAddressConsent(ID); vm.roll(103);
+        vm.expectRevert(); pool.leaveAddressConsent(ID); (, uint256 end) = pool.consentPeriods(ID, 1); assertEq(end, 101);
+        ProvianMemberRecoursePool.Determination memory d = determination(40 ether); d.lossBlock = 102;
+        ProvianMemberRecoursePool.LossEligibility memory proof = ProvianMemberRecoursePool.LossEligibility(d, sha256("signed test rule"), 1, 2, 3);
+        bytes memory signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.admitLossEligibility(proof, signature);
     }
-
+    function testSameBlockLossBeforeConsentOrAfterClosureCannotBeAttested() public {
+        join(ID, address(this), OWNER_KEY); pool.leaveAddressConsent(ID); vm.roll(101);
+        ProvianMemberRecoursePool.Determination memory d = determination(40 ether);
+        ProvianMemberRecoursePool.LossEligibility memory proof = ProvianMemberRecoursePool.LossEligibility(d, sha256("signed test rule"), 2, 1, 3);
+        bytes memory signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));
+        vm.expectRevert(); pool.admitLossEligibility(proof, signature);
+        proof.lossLogIndex = 4; signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));
+        vm.expectRevert(); pool.admitLossEligibility(proof, signature);
+        proof.lossLogIndex = 2; proof.admissionLogIndex = 1; signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));
+        pool.admitLossEligibility(proof, signature);
+    }
+    function testPoolRuntimeFitsChainLimit() public view { assertLt(address(pool).code.length, 24577); }
 }
