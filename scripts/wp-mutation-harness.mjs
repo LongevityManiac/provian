@@ -304,6 +304,23 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'human-replacement-authority': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-replacement-account.ts',
+    testMatchPath: 'src/core/recourse/human-replacement-account.test.ts',
+    mutations: [{ id: 'REPLACEMENT-RECOVERY-AUTHORITY', description: 'prepare a replacement without matching independent owner authority',
+      find: "if (root !== owner.signingRoot || recoveryCommitment(secret, root) !== owner.commitment)", replace: 'if (false)',
+      expectedKilledBy: 'replacement preparation needs independent recovery material and never the stolen account spending root' }],
+  },
+  'human-replacement-coordinator': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-recovery.ts',
+    testMatchPath: 'src/core/recourse/human-recovery.test.ts',
+    mutations: [{ id: 'REPLACEMENT-SUPERSEDED-AUTHORITY', description: 'publish an operation from a superseded replacement journal',
+      find: "throw Error('recourse_replacement_state_changed');\n        }\n      }", replace: '/* negative control: superseded authority */\n        }\n      }',
+      expectedKilledBy: 'refuses a superseded replacement journal before publishing another owner operation' },
+      { id: 'RECOVERY-QUEUED-OPTIONS', description: 'let caller edits change a queued binding or loss',
+        find: 'const retainedOptions = { ...options };', replace: 'const retainedOptions = options;',
+        expectedKilledBy: 'copies queued recovery options before the caller can select a different binding or loss' }],
+  },
   'replacement-deployment-owner': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/break-deployment-queue.ts',
     testMatchPath: 'src/core/recourse/break-deployment-queue.test.ts',

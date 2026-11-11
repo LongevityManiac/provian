@@ -10,9 +10,11 @@ import { ActionWallet } from '../security/ActionWallet';
 import { invalidateSeedDerivedCaches } from '../security/seedDerivedCache';
 import RelayAPIService from '../../services/RelayAPIService';
 import { ownerChainNetwork } from '../protocol/runtime';
-import { discoverHumanAccount } from './human-discovery';
-import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection } from './human-account';
-import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
+import { discoverHumanIdentityHistory, discoverHistoricalCurveGeneration } from './human-break-history';
+import { readBreakRecoveryContext } from './break-recovery';
+import { prepareHumanReplacementAccount, deployHumanReplacementAccount, signHumanReplacementDestination, type HumanReplacementAccount } from './human-replacement-account';
+import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection, installHumanHashAccountSelection } from './human-account';
+import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './hash-authorization';
 import { readOwnerChainState, verifyOwnerOperationReceipt } from './owner-chain';
 import { ownerOperationIntent, recoveryOperationId, parseRestorationScope, type RestorationScope, type RecoveryOwnerOperation } from './owner-operation';
@@ -23,7 +25,7 @@ interface Journal {
   kernel: string; revision: string; nonce: number; accountGeneration: number;
   intent?: string; authorizationTxHash?: string; userId?: string; installed?: boolean;
   lossTransaction?: string; lossBlock?: number; restoration?: RestorationScope;
-  auxiliary?: true;
+  auxiliary?: true; replacement?: HumanReplacementAccount; legacyGeneration?: number;
 }
 const hex32 = () => `0x${bytesToHex(Crypto.getRandomBytes(32))}`;
 const journalKey = (root: string, binding?: string) => `provian_recourse_recovery_${root.slice(2)}${binding ? `_aux_${binding.slice(2)}` : ''}`;
@@ -44,7 +46,8 @@ type RecoveryOptions = { newRecovery?: boolean; lossTransaction?: string; lossBl
 let recoveryTail: Promise<unknown> = Promise.resolve();
 export function recoverHumanAccount(action: BiometricAction, options: RecoveryOptions = {}):
 Promise<{ destination: string; requestId: string }> {
-  const run = recoveryTail.then(() => performHumanRecovery(action, options));
+  const retainedOptions = { ...options };
+  const run = recoveryTail.then(() => performHumanRecovery(action, retainedOptions));
   recoveryTail = run.catch(() => undefined);
   return run;
 }
@@ -79,13 +82,23 @@ Promise<{ destination: string; requestId: string }> {
   if(journal && options.lossTransaction!==undefined && journal.lossBlock!==options.lossBlock)throw new Error('recourse_loss_block_changed');
   const network = ownerChainNetwork();
   if (!journal) {
-    const found = options.auxiliaryBinding ? { identity: options.auxiliaryBinding } : await discoverHumanAccount(mnemonic, network);
-    if (!found) throw new Error('recourse_binding_required');
-    const state = await readOwnerChainState(found.identity, network);
-    journal = { version: 1, rootAddress: root.evm, identity: found.identity, requestId: hex32(),
+    // Identity discovery does not require the stolen account's spending key.
+    const history = options.auxiliaryBinding ? null : await discoverHumanIdentityHistory(mnemonic, network);
+    const identity = options.auxiliaryBinding ?? history?.identity;
+    if (!identity) throw new Error('recourse_binding_required');
+    let breakOrigin: string | null = null;
+    try { breakOrigin = await readBreakRecoveryContext(network); }
+    catch (error) { if (!(error instanceof Error) || error.message !== 'break_recovery_unavailable') throw error; }
+    if (history && (breakOrigin ?? `0x${'00'.repeat(20)}`) !== history.points[0].breakOrigin) throw Error('recourse_break_history_changed');
+    const replacement = breakOrigin ? await prepareHumanReplacementAccount(mnemonic, identity, network) : undefined;
+    const legacyGeneration = replacement && history ? await discoverHistoricalCurveGeneration(mnemonic, history, network) : undefined;
+    const state = await readOwnerChainState(identity, network);
+    if (replacement && (replacement.nonce !== state.nonce || replacement.breakOrigin !== breakOrigin)) throw Error('recourse_replacement_state_changed');
+    journal = { version: 1, rootAddress: root.evm, identity, requestId: hex32(),
       authSecret: hex32().slice(2), deviceId: await RelayAPIService.getMeterDeviceId(),
       kernel: state.deployment.addresses.kernel.toLowerCase(), revision: state.deployment.revision.toString(),
       nonce: state.nonce, accountGeneration: state.nonce + 1,
+      ...(replacement ? { replacement, legacyGeneration } : {}),
       ...(options.auxiliaryBinding ? { auxiliary: true } : {}),
       ...(options.lossTransaction === undefined ? {} : { lossTransaction: options.lossTransaction, lossBlock: options.lossBlock }) };
     if (options.lossTransaction !== undefined) {
@@ -95,11 +108,14 @@ Promise<{ destination: string; requestId: string }> {
       if (prepared.kernel !== journal.kernel) throw new Error('recourse_owner_protocol_changed');
       journal.restoration = parseRestorationScope({ request: prepared.request, lossHash: prepared.lossHash, maximumLoss: prepared.maximumLoss });
     }
-    humanAccountPaths(journal.accountGeneration);
+    if (!replacement) humanAccountPaths(journal.accountGeneration);
     await save(journal);
   }
   const state = journal;
+  if (state.replacement && (state.replacement.identity !== state.identity || state.replacement.nonce !== state.nonce
+    || state.replacement.accountGeneration !== String(state.accountGeneration))) throw Error('recourse_journal_invalid');
   const next = await (async () => {
+    if (state.replacement) return { evm: state.replacement.account, sol: '' };
     if (!state.auxiliary) return deriveHumanAccount(mnemonic, state.accountGeneration);
     const key = await auxiliaryAccountKey(mnemonic, state.identity, state.accountGeneration);
     try { return { evm: computeAddress(`0x${bytesToHex(key)}`).toLowerCase(), sol: '' }; }
@@ -110,13 +126,27 @@ Promise<{ destination: string; requestId: string }> {
     if (current.destination !== next.evm || current.nonce < state.nonce + 1) throw new Error('recourse_completed_recovery_superseded');
     return { destination: next.evm, requestId: state.requestId };
   }
-  const secret = humanRecoverySecret(mnemonic, state.nonce, state.identity), seed = humanRecoverySigningSeed(mnemonic, state.nonce, state.identity);
-  const nextSecret = humanRecoverySecret(mnemonic, state.nonce + 1, state.identity), nextSeed = humanRecoverySigningSeed(mnemonic, state.nonce + 1, state.identity);
+  const derive = (purpose: 'recovery-secret' | 'recovery-signing', nonce: number) => state.replacement
+    ? humanBreakKey(mnemonic, { identity: state.identity, breakOrigin: state.replacement.breakOrigin, chainId: '8453' }, purpose, String(nonce))
+    : (purpose === 'recovery-secret' ? humanRecoverySecret : humanRecoverySigningSeed)(mnemonic, nonce, state.identity);
+  const secret = derive('recovery-secret', state.nonce), seed = derive('recovery-signing', state.nonce);
+  const nextSecret = derive('recovery-secret', state.nonce + 1), nextSeed = derive('recovery-signing', state.nonce + 1);
   try {
     const signingRoot = await recoverySigningRoot(seed), nextSigningRoot = await recoverySigningRoot(nextSeed);
     const nextCommitment = recoveryCommitment(nextSecret, nextSigningRoot);
     if (!state.authorizationTxHash) {
       const current = await readOwnerChainState(state.identity, network);
+      if (state.replacement) {
+        if (await readBreakRecoveryContext(network) !== state.replacement.breakOrigin) throw Error('recourse_break_history_changed');
+        if (current.nonce === state.nonce && current.commitment === recoveryCommitment(secret, signingRoot) && current.signingRoot === signingRoot) {
+          await deployHumanReplacementAccount(mnemonic, state.replacement, action, network, async plan => {
+            state.replacement = plan; await save(state);
+          }, options.signal);
+        } else if (current.nonce !== state.nonce + 1 || current.destination !== next.evm
+          || current.commitment !== nextCommitment || current.signingRoot !== nextSigningRoot || !state.intent) {
+          throw Error('recourse_replacement_state_changed');
+        }
+      }
       if ((current.deployment.addresses.kernel.toLowerCase() !== state.kernel || current.deployment.revision.toString() !== state.revision)
         && current.nonce === state.nonce && current.commitment === recoveryCommitment(secret, signingRoot) && current.signingRoot === signingRoot) {
         // The pointer's monotonic revision makes the old kind-2 payload
@@ -160,35 +190,43 @@ Promise<{ destination: string; requestId: string }> {
     const expiresAtMs = Date.now() + 300000;
     if (state.auxiliary) {
       const body = { kernel: state.kernel, identity: state.identity, preimage, destination: next.evm, nextCommitment, nextSigningRoot,
-        authorizationTxHash: state.authorizationTxHash, authorizationNonce: state.nonce, requestId: state.requestId, expiresAtMs };
+        authorizationTxHash: state.authorizationTxHash, authorizationNonce: state.nonce, requestId: state.requestId, expiresAtMs, ...(state.replacement ? { destinationKind: 'hash' as const } : {}) };
       const message = ['Provian auxiliary ownership recovery', 'chain:8453', `kernel:${state.kernel}`, `identity:${state.identity}`,
         `recovery:${sha256(preimage)}`, `destination:${next.evm}`, `next:${nextCommitment}`, `next-hash-authority:${nextSigningRoot}`,
-        `authorization:${state.authorizationTxHash}`, `authorization-nonce:${state.nonce}`, `request:${state.requestId}`, `expires:${expiresAtMs}`].join('\n');
-      const key = await auxiliaryAccountKey(mnemonic, state.identity, state.accountGeneration);
+        `authorization:${state.authorizationTxHash}`, `authorization-nonce:${state.nonce}`, `request:${state.requestId}`, `expires:${expiresAtMs}`,
+        ...(state.replacement ? ['destination-signature:hash'] : [])].join('\n');
+      const key = state.replacement ? null : await auxiliaryAccountKey(mnemonic, state.identity, state.accountGeneration);
       try {
-        const signature = await new ActionWallet(`0x${bytesToHex(key)}`, action).signMessage(message);
+        const signature = state.replacement
+          ? await signHumanReplacementDestination(mnemonic, state.replacement, message, action, network)
+          : await new ActionWallet(`0x${bytesToHex(key!)}`, action).signMessage(message);
         const result = object(await RelayAPIService.recourseRequest('recover-address', { ...body, signature }, action));
         if (result.identity !== state.identity || result.destination !== next.evm || typeof result.generation !== 'number'
           || !Number.isSafeInteger(result.generation) || result.generation < 1) throw Error('recourse_recovery_reply_invalid');
         await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
         state.installed = true; await save(state);
         return { destination: next.evm, requestId: state.requestId };
-      } finally { key.fill(0); }
+      } finally { key?.fill(0); }
     }
     const body = { kernel: state.kernel, identity: state.identity, preimage, destination: next.evm, nextCommitment, nextSigningRoot,
       authorizationTxHash: state.authorizationTxHash, authorizationNonce: state.nonce,
-      requestId: state.requestId, deviceId: state.deviceId, authSecret: state.authSecret, expiresAtMs };
+      requestId: state.requestId, deviceId: state.deviceId, authSecret: state.authSecret, expiresAtMs,
+      ...(state.replacement ? { destinationKind: 'hash' as const } : {}) };
     const message = ['Provian human ownership recovery', 'chain:8453', `kernel:${state.kernel}`, `identity:${state.identity}`,
       `recovery:${sha256(preimage)}`, `destination:${next.evm}`, `next:${nextCommitment}`, `next-hash-authority:${nextSigningRoot}`,
       `authorization:${state.authorizationTxHash}`, `authorization-nonce:${state.nonce}`, `device:${state.deviceId}`,
-      `credentials:${sha256(toUtf8Bytes(state.authSecret)).slice(2)}`, `request:${state.requestId}`, `expires:${expiresAtMs}`].join('\n');
-    const bipSeed = await mnemonicToSeedPaced(mnemonic), hd = HDKey.fromMasterSeed(bipSeed);
-    const child = hd.derive(humanAccountPaths(state.accountGeneration).evm);
+      `credentials:${sha256(toUtf8Bytes(state.authSecret)).slice(2)}`, `request:${state.requestId}`, `expires:${expiresAtMs}`,
+      ...(state.replacement ? ['destination-signature:hash'] : [])].join('\n');
     let signature: string;
-    try {
-      if (!child.privateKey) throw new Error('recourse_account_derivation_failed');
-      signature = await new ActionWallet(`0x${bytesToHex(child.privateKey)}`, action).signMessage(message);
-    } finally { bipSeed.fill(0); child.wipePrivateData(); hd.wipePrivateData(); }
+    if (state.replacement) signature = await signHumanReplacementDestination(mnemonic, state.replacement, message, action, network);
+    else {
+      const bipSeed = await mnemonicToSeedPaced(mnemonic), hd = HDKey.fromMasterSeed(bipSeed);
+      const child = hd.derive(humanAccountPaths(state.accountGeneration).evm);
+      try {
+        if (!child.privateKey) throw new Error('recourse_account_derivation_failed');
+        signature = await new ActionWallet(`0x${bytesToHex(child.privateKey)}`, action).signMessage(message);
+      } finally { bipSeed.fill(0); child.wipePrivateData(); hd.wipePrivateData(); }
+    }
     const result = object(await RelayAPIService.recourseRecoveryRequest('recover-human', { ...body, signature }));
     // The private login identifier is supplied by the relay that owns it;
     // account selection and spending authority remain independently chain-verified.
@@ -203,7 +241,8 @@ Promise<{ destination: string; requestId: string }> {
     state.userId = result.userId; await save(state);
     assertBiometricAction(action);
     invalidateSeedDerivedCaches();
-    await installHumanAccountSelection(mnemonic, { rootAddress: root.evm, generation: state.accountGeneration,
+    if (state.replacement) await installHumanHashAccountSelection(mnemonic, state.identity, state.requestId, action, network, state.legacyGeneration);
+    else await installHumanAccountSelection(mnemonic, { rootAddress: root.evm, generation: state.accountGeneration,
       ...next, recoveryGeneration: state.nonce + 1, recoveryCommitment: nextCommitment, requestId: state.requestId }, action);
     await RelayAPIService.setAuthSecret(state.authSecret, state.userId);
     await RelayAPIService.recordAddressProofAuthorization({ address: next.evm, userId: state.userId });
