@@ -12,6 +12,7 @@ function fixture(withInstitution=false){
  entries.push({kind:'reversal-count',count:0,leaf:sha256(AbiCoder.defaultAbiCoder().encode(['string','address','uint256','uint256'],['Provian reversal history count',predecessor,100,0]))});
  if(withInstitution)entries.push({kind:'institution',source:addr(30),destination:addr(31),amount:'5',runtimeHash:h('institution runtime'),
   leaf:breakInstitutionLeaf(predecessor,100,addr(30),addr(31),'5',h('institution runtime'))});
+ entries.push({kind:'institution-count',count:withInstitution?1:0,amount:withInstitution?'5':'0',leaf:sha256(AbiCoder.defaultAbiCoder().encode(['string','address','uint256','uint256','uint256'],['Provian institution restoration count',predecessor,100,withInstitution?1:0,withInstitution?5:0]))});
  const tree=merkle(entries.map(e=>e.leaf));const snapshot={format:'provian-break-ownership-snapshot',predecessor,block:100,root:tree.root,
   counts:{owners:2},entries:entries.map((e,i)=>({...e,proof:tree.proofs[i]}))};
  const restored=new Set([entries[0].identity]);let noOrigin=false;let institutionImported=false;

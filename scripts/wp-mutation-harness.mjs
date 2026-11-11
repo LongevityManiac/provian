@@ -59,6 +59,15 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'break-artifact-verifier': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/break-artifact.ts', testMatchPath: 'src/break-artifact.test.ts',
+    mutations: [{ id: 'BREAK-ARTIFACT-COMPLETE-ROOT', description: 'individual proofs substitute for complete-root reconstruction',
+      find: "if (level[0] !== root) throw Error('break_artifact_incomplete');", replace: 'void level;',
+      expectedKilledBy: 'valid individual proofs with an omitted owner cannot prove that owner absent' },
+      { id: 'BREAK-ARTIFACT-UNCOMMITTED-METADATA', description: 'verified output retains uncommitted account partitions and signing roots',
+        find: 'owners.push(Object.freeze({ ...owner, proof:', replace: 'owners.push(Object.freeze({ ...entry, ...owner, proof:',
+        expectedKilledBy: 'complete root authenticates owner presence and absence but never the serialized account partition' }],
+  },
   'break-artifacts': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/break-artifacts.mjs', testMatchPath: 'scripts/recourse/break-artifacts.test.mjs',
     mutations: [{ id: 'BREAK-ANCESTRY-CARRY', description: 'a new break silently drops earlier unissued entitlement artifacts',

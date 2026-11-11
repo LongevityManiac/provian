@@ -53,6 +53,7 @@ const outputs = new Map([
   ...appRecoveryModules,
   ['provian-backend/src/core/recourse/private-access-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/private-access-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/break-entitlement.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-entitlement.ts'), 'utf8')],
+  ['provian-backend/src/core/recourse/break-artifact.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-artifact.ts'), 'utf8').replace("'./break-entitlement.js'", "'./break-entitlement'")],
   ['provian-backend/src/core/recourse/break-registration-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-registration-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/hash-account-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/hash-account-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/break-restoration-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-restoration-data.ts'), 'utf8').replace("'./recourse-owner-operation'", "'./owner-operation'")],
