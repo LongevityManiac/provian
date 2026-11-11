@@ -15,6 +15,8 @@ import { signEip191Message } from './link-signing';
 import { ownerChainNetwork } from './protocol-runtime';
 import { readOwnerChainState, verifyOwnerOperationReceipt } from './recourse-owner-chain';
 import { ownerOperationIntent, recoveryOperationId, parseRestorationScope, type RestorationScope, type RecoveryOwnerOperation } from './recourse-owner-operation';
+import { readBreakRecoveryContext } from './break-recovery';
+import { recoverHashRecourseAgent } from './agent-hash-recovery';
 
 interface RecoveryJournal {
   version: 1; relayUrl: string; requestId: string; identity: string;
@@ -109,6 +111,14 @@ export async function recoverRecourseAgent(input: {
   restoration?: { transactionHash: string; block: number; apiKey: string; apiSecret: string };
   signal?: AbortSignal;
 }): Promise<{ walletId: string; destination: string; generation: number; restorationRequestId?: string }> {
+  const network = ownerChainNetwork();
+  let afterBreak = true;
+  try { await readBreakRecoveryContext(network); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== 'break_recovery_unavailable') throw error;
+    afterBreak = false;
+  }
+  if (afterBreak) return recoverHashRecourseAgent({ ...input, network });
   const directory = path.resolve(input.directory);
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const release = tryAcquireFileLock(path.join(directory, 'rotation.lock'), { timeoutMs: 0, staleMs: 0, syncOnly: false });
@@ -312,4 +322,24 @@ async function submitRecoveredRestoration(journal: RecoveryJournal, file: string
     || !('status' in result) || typeof result.status !== 'string' || !result.status) throw Error('Restoration request response binding mismatch');
   journal.restorationSubmitted = true;
   saveJournal(file, journal, input.passphrase);
+}
+
+/** Historical loss evidence is only a candidate. A later kernel's surviving
+ * ticket, not this local archive, decides whether its bounded rights carry. */
+export function archivedAgentRestorations(input: { directory: string; passphrase: string; identity: string }): import('./agent-hash-replacement').AgentHashRestoration[] {
+  const directory = path.resolve(input.directory), active = loadKeystore(path.join(directory, 'agent-keystore.json'));
+  if (!active) throw Error('Recovery lookup keystore missing');
+  let names: string[] = [];
+  try { names = fs.readdirSync(path.join(directory, 'recoveries')).filter(name => /^0x[0-9a-f]{64}\.json$/.test(name)).sort(); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  const files = [path.join(directory, 'recourse-recovery.json'), ...names.map(name => path.join(directory, 'recoveries', name))];
+  const result: import('./agent-hash-replacement').AgentHashRestoration[] = [];
+  for (const file of files) {
+    const journal = loadJournal(file, input.passphrase);
+    if (!journal) continue;
+    if (journal.version !== 1 || journal.oldKeystore?.wallet_id !== active.wallet_id || journal.nextKeystore?.wallet_id !== active.wallet_id
+      || (file !== files[0] && path.basename(file) !== `${journal.requestId}.json`)) throw Error('Recovery journal binding mismatch');
+    if (journal.identity === input.identity && journal.restoration) result.push({ ...journal.restoration, scope: { ...parseRestorationScope(journal.restoration.scope) } });
+  }
+  return result;
 }

@@ -6,11 +6,23 @@ import { prepareReplacementDeploymentRequest } from './replacement-deployment-pr
 import { discoverHashAccount } from './hash-account-deployment';
 import type { ReplacementDeploymentRequest } from './break-deployment-data';
 import { withAgentHashRecoveryRecord, withAgentRecoveryMaterial } from './break-recovery-store';
+import type { RecoveryOwnerOperation, RestorationScope } from './recourse-owner-operation';
 
 export interface AgentHashReplacementState {
   readonly nonce: number; readonly sourceAddress: string;
   deploymentDigest?: string;
   deployment?: ReplacementDeploymentRequest;
+  operation?: RecoveryOwnerOperation;
+  ownerIntent?: string;
+  ownerKernel?: string;
+  authorizationTxHash?: string;
+  installed?: boolean;
+  loss?: AgentHashRestoration;
+  continuedLosses?: AgentHashRestoration[];
+}
+export interface AgentHashRestoration {
+  readonly transactionHash: string; readonly block: number; readonly kernel: string; readonly scope: RestorationScope;
+  submitted?: boolean;
 }
 export interface AgentHashReplacementLocator {
   readonly identity: string; readonly commitment: string; readonly context: string;

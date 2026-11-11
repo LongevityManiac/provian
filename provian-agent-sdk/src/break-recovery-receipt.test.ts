@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { AbiCoder, Interface, ZeroAddress, concat, keccak256, sha256 } from 'ethers';
-import { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
+import { verifyBreakRecoveryReceipt, BreakRecoverySpendingKeyChanged } from './break-recovery-receipt';
 import { BREAK_RECOVERY_ABI, type PreparedBreakRecovery } from './break-recovery';
 import { OWNER_EXECUTOR_ABI, OWNER_KERNEL_ABI } from './recourse-owner-operation';
 import { PROTOCOL_COMPONENTS, type ProtocolComponent, type ProtocolDeployment } from './protocol-pointer';
@@ -20,12 +20,12 @@ function fixture(){
  const event=(name:string,values:readonly unknown[],address:string)=>({...events.encodeEventLog(events.getEvent(name)!,values),address,transactionHash,blockHash,removed:false});
  const receipt={transactionHash,blockHash,blockNumber:'0x64',status:'0x1',logs:[event('IdentityRestored',[identity,destination,50],executor),event('OwnerAuthorizationConsumed',[identity,0,ownerIntent,proof.nextCommitment,proof.nextSigningRoot],executor),event('Transfer',[ZeroAddress,destination,50],kernel)]};
  const deployment:ProtocolDeployment={pointer:a(6),revision:2n,manifestHash:h(20),blockHash:h(21),runtimeHashes:[],addresses:Object.fromEntries(PROTOCOL_COMPONENTS.map(k=>[k,kernel])) as Record<ProtocolComponent,string>};
- const state={finalized:'0x65',canonical:blockHash,disagree:false,currentExecutor:executor,badRoot:false,restored:true,nonce:1,rotateDuringReceipt:false,rotateOwnerDuringReceipt:false};
+ const state={finalized:'0x65',canonical:blockHash,disagree:false,currentExecutor:executor,badRoot:false,badRuntime:false,restored:true,nonce:1,rotateDuringReceipt:false,rotateOwnerDuringReceipt:false};
  const all=new Interface([...BREAK_RECOVERY_ABI.fragments,...OWNER_EXECUTOR_ABI.fragments,...OWNER_KERNEL_ABI.fragments,'function recoveredDestination(bytes32) view returns(address)']);
  const rpcs=[0,1].map(index=>({request:async(method:string,params:readonly unknown[]):Promise<unknown>=>{
   if(method==='eth_getTransactionReceipt'){if(state.rotateDuringReceipt)state.badRoot=true;if(state.rotateOwnerDuringReceipt)state.nonce=2;return state.disagree&&index===1?{...receipt,status:'0x0'}:receipt;}
   if(method==='eth_getBlockByNumber')return params[0]==='finalized'?{number:state.finalized}:{number:'0x64',hash:state.canonical};
-  if(method==='eth_getCode')return '0x6000';
+  if(method==='eth_getCode')return state.badRuntime?'0x6001':'0x6000';
   const call=all.parseTransaction({data:(params[0] as {data:string}).data})!;
   const v:Record<string,unknown>={ownerAuthorization:state.currentExecutor,ownerAuthorizationNonce:state.nonce,ownerRecoveryCommitment:proof.nextCommitment,ownerSigningRoot:proof.nextSigningRoot,recoveredDestination:destination,previousAuthorization:executor,kernel,restoredIdentity:state.restored,hashAccountCodeHash:keccak256('0x6000'),keyCommitment:state.badRoot?h(22):destinationRoot};
   if(!(call.name in v))throw Error('unexpected '+call.name);return all.encodeFunctionResult(call.name,[v[call.name]]);
@@ -55,5 +55,16 @@ it('does not install from outer success, another mint, removed logs, or substitu
 it('rechecks owner state and destination root after receipt awaits even when pointer manifest is unchanged',async()=>{
  for(const key of ['rotateDuringReceipt','rotateOwnerDuringReceipt'] as const){const f=fixture();f.state[key]=true;
   await expect(verifyBreakRecoveryReceipt(f.prepared,transactionHash,f.network)).rejects.toThrow(/changed/);
+ }
+});
+
+it('reports a stolen spending key only after every independent restoration and runtime check succeeds',async()=>{
+ const changed=fixture();changed.state.badRoot=true;
+ await expect(verifyBreakRecoveryReceipt(changed.prepared,transactionHash,changed.network)).rejects.toBeInstanceOf(BreakRecoverySpendingKeyChanged);
+ for(const failure of ['runtime','mint','finality','reorg','owner','intent'] as const){const f=fixture();f.state.badRoot=true;
+  if(failure==='runtime')f.state.badRuntime=true;if(failure==='mint')f.receipt.logs.splice(2,1);if(failure==='finality')f.state.finalized='0x63';
+  if(failure==='reorg')f.state.canonical=h(99);if(failure==='owner')f.state.rotateOwnerDuringReceipt=true;
+  const error=await verifyBreakRecoveryReceipt(failure==='intent'?{...f.prepared,ownerIntent:h(99)}:f.prepared,transactionHash,f.network).then(()=>null,error=>error);
+  expect(error).toBeInstanceOf(Error);expect(error).not.toBeInstanceOf(BreakRecoverySpendingKeyChanged);
  }
 });

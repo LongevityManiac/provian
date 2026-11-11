@@ -8,9 +8,12 @@ import { generateAgentKeyPair } from './wallet';
 import { recoveryCommitment, recoverySigningRoot } from './recourse-hash-authorization';
 import { recoveryOperationId, type RecoveryOwnerOperation } from './recourse-owner-operation';
 import { requireConfiguredPvt9Runtime } from './pvt9-base-config.generated';
-import { recoverRecourseAgent, withArchivedRecoveryMaterial } from './recourse-recovery';
+import { recoverRecourseAgent, withArchivedRecoveryMaterial, archivedAgentRestorations } from './recourse-recovery';
 // Each recovery now performs both the chain signature and private HTTP proof.
 vi.setConfig({ testTimeout: 20000 });
+const routing = vi.hoisted(() => ({ context: vi.fn(), recover: vi.fn() }));
+vi.mock('./break-recovery', () => ({ readBreakRecoveryContext: (...args: unknown[]) => routing.context(...args) }));
+vi.mock('./agent-hash-recovery', () => ({ recoverHashRecourseAgent: (...args: unknown[]) => routing.recover(...args) }));
 vi.mock('./recourse-binding-chain', () => ({ readAddressRecoveryBinding: async () => `0x${'92'.repeat(32)}` }));
 const network = vi.hoisted(() => ({ fetch: vi.fn(), state: vi.fn(), verify: vi.fn(), queue: vi.fn() }));
 vi.mock('fs', async importOriginal => {
@@ -28,6 +31,7 @@ let directory: string;
 const passphrase = 'test recovery backup passphrase';
 const walletId = 'wallet_aw_recovery_test';
 beforeEach(async () => {
+  routing.context.mockReset(); routing.recover.mockReset(); routing.context.mockRejectedValue(Error('break_recovery_unavailable'));
   network.fetch.mockReset(); network.state.mockReset(); network.verify.mockReset(); network.queue.mockReset();
   network.verify.mockResolvedValue(undefined);
   network.queue.mockImplementation(async (_url: string, options: RequestInit) => {
@@ -207,6 +211,13 @@ it('prepares and signs one bounded loss scope, then resumes without a second aut
   expect(await recoverRecourseAgent(request)).toEqual(result);
   expect(network.queue).toHaveBeenCalledTimes(1);
   expect(network.fetch).toHaveBeenCalledTimes(5);
+  const lookup={directory,passphrase,identity:operation.identity};
+  expect(archivedAgentRestorations(lookup)).toEqual([{transactionHash,block:100,kernel,scope}]);
+  const archive=path.join(directory,'recoveries');fs.mkdirSync(archive,{mode:0o700});
+  fs.renameSync(path.join(directory,'recourse-recovery.json'),path.join(archive,`${cut!.requestId}.json`));
+  expect(archivedAgentRestorations(lookup)).toEqual([{transactionHash,block:100,kernel,scope}]);
+  expect(archivedAgentRestorations({...lookup,identity:`0x${'ff'.repeat(32)}`})).toEqual([]);
+  await expect(async()=>archivedAgentRestorations({...lookup,passphrase:'wrong passphrase'})).rejects.toThrow();
 });
 it('a prepared loss from a retired kernel never reaches owner signing or queueing', async () => {
   network.fetch.mockResolvedValue({ ok: true, json: async () => ({ request: `0x${'ab'.repeat(32)}`,
@@ -237,4 +248,13 @@ it('re-signs a queued bounded intent after ordinary succession while preserving 
  expect(second.restoration).toEqual(scope);expect(second.proof.nextCommitment).toBe(first.proof.nextCommitment);
  expect(second.proof.signature).not.toBe(first.proof.signature);
  expect(network.fetch.mock.calls.filter(([url])=>String(url).endsWith('/restoration-intents'))).toHaveLength(1);
+});
+
+it('routes post-break recovery without creating a curve journal and fails closed on unavailable verification', async()=>{
+ const original=fs.readFileSync(path.join(directory,'agent-keystore.json'),'utf8');
+ routing.context.mockRejectedValueOnce(Error('RPC disagreement'));
+ await expect(recoverRecourseAgent(input())).rejects.toThrow('RPC disagreement');expect(routing.recover).not.toHaveBeenCalled();expect(network.fetch).not.toHaveBeenCalled();
+ routing.context.mockResolvedValueOnce(`0x${'11'.repeat(20)}`);const result={walletId,destination:`0x${'22'.repeat(20)}`,generation:3};routing.recover.mockResolvedValueOnce(result);
+ expect(await recoverRecourseAgent({...input(),newRecovery:true})).toEqual(result);expect(routing.recover).toHaveBeenCalledWith(expect.objectContaining({newRecovery:true,passphrase,directory}));
+ expect(fs.existsSync(path.join(directory,'recourse-recovery.json'))).toBe(false);expect(fs.readFileSync(path.join(directory,'agent-keystore.json'),'utf8')).toBe(original);
 });

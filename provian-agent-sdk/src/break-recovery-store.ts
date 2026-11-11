@@ -9,7 +9,7 @@ import { tryAcquireFileLock } from './meter/file-lock';
 import { loadKeystore } from './keystore';
 import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { readAddressRecoveryBinding } from './recourse-binding-chain';
-import { withArchivedRecoveryMaterial } from './recourse-recovery';
+import { withArchivedRecoveryMaterial, archivedAgentRestorations } from './recourse-recovery';
 import { assertCurrentProtocolTransaction } from './protocol-transaction';
 import { readHashAccountState, verifyHashAccountVariantReceipt } from './hash-account-chain';
 import { prepareHashAccountOperation, signHashAccountMessage, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account';
@@ -25,6 +25,7 @@ import { privateRecourseEnvelope } from './private-access';
 import { parseBreakEntitlement } from './break-entitlement';
 import { prepareBreakRecovery, readBreakRecoveryContext, type BreakOwnerEntitlement, type PreparedBreakRecovery } from './break-recovery';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
+import { parseRestorationScope } from './recourse-owner-operation';
 
 const AAD = Buffer.from('provian.break-recovery.backup/v1');
 const hash = /^0x[0-9a-f]{64}$/;
@@ -168,6 +169,89 @@ export async function withAgentHashRecoveryRecord<T>(supplied: { directory: stri
 export function withAgentRecoveryMaterial<T>(input: { directory: string; passphrase: string; identity: string; commitment: string },
   use: (secret: Uint8Array, signingSeed: Uint8Array) => Promise<T>): Promise<T> {
   return withSnapshotRecovery(path.resolve(input.directory), input.passphrase, { identity: input.identity, commitment: input.commitment }, use);
+}
+
+/** Only public plans leave the encrypted store. These are recovery candidates,
+ * never authority: the coordinator must match current independent chain state. */
+export async function listAgentHashReplacements(supplied: { directory: string; passphrase: string; identity: string; context: string }): Promise<{
+  plan: import('./agent-hash-replacement').AgentHashReplacementPlan;
+  state: import('./agent-hash-replacement').AgentHashReplacementState;
+}[]> {
+  const input = { ...supplied }, directory = path.resolve(input.directory);
+  recordFile(directory, input.identity, `0x${'00'.repeat(32)}`, input.context);
+  return locked(directory, input.passphrase, async () => {
+    let names: string[];
+    try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error; }
+    const result: { plan: import('./agent-hash-replacement').AgentHashReplacementPlan; state: import('./agent-hash-replacement').AgentHashReplacementState }[] = [];
+    for (const name of names.sort()) {
+      if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name)
+        || !name.startsWith(`${input.identity.slice(2)}-`) || !name.endsWith(`-${input.context.slice(2)}.json`)) continue;
+      const commitment = `0x${name.slice(65, 129)}`;
+      const record = readRecord(recordFile(directory, input.identity, commitment, input.context), input.passphrase, input.identity, commitment, input.context);
+      if (!record?.replacement || !record.destination) continue;
+      const seed = Buffer.from(record.destinationSigningSeed.slice(2), 'hex');
+      try { result.push({ plan: { identity: input.identity, commitment, context: input.context, nonce: record.replacement.nonce,
+        account: record.destination, initialRoot: await recoverySigningRoot(seed), deployed: false }, state: record.replacement }); }
+      finally { seed.fill(0); }
+    }
+    return result;
+  });
+}
+
+/** Resume an initial free restoration whose chain execution preceded its relay
+ * cut or local activation. A public locator alone cannot mark it complete. */
+export async function agentInitialBreakNeedsInstall(supplied: { directory: string; passphrase: string; identity: string;
+  context: string; commitment: string; destination: string }): Promise<boolean> {
+  const input = { ...supplied }, directory = path.resolve(input.directory);
+  return locked(directory, input.passphrase, async () => {
+    let names: string[];
+    try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; }
+    for (const name of names) {
+      if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name)
+        || !name.startsWith(`${input.identity.slice(2)}-`) || !name.endsWith(`-${input.context.slice(2)}.json`)) continue;
+      const commitment = `0x${name.slice(65, 129)}`;
+      const record = readRecord(recordFile(directory, input.identity, commitment, input.context), input.passphrase, input.identity, commitment, input.context);
+      if (!record?.prepared || record.replacement || record.destination !== input.destination) continue;
+      const secret = Buffer.from(record.nextRecoverySecret.slice(2), 'hex'), seed = Buffer.from(record.nextRecoverySigningSeed.slice(2), 'hex');
+      try {
+        if (recoveryCommitment(secret, await recoverySigningRoot(seed)) !== input.commitment) continue;
+        const active = readActiveHashWallet(directory);
+        return !record.credentials?.generation || !record.restoredTransaction || active?.identity !== input.identity
+          || active.commitment !== commitment || active.context !== input.context || active.address !== input.destination
+          || active.transactionHash !== record.restoredTransaction;
+      } finally { secret.fill(0); seed.fill(0); }
+    }
+    return false;
+  });
+}
+
+export async function retainedAgentRestorations(supplied: { directory: string; passphrase: string; identity: string }): Promise<import('./agent-hash-replacement').AgentHashRestoration[]> {
+  const input = { ...supplied }, directory = path.resolve(input.directory);
+  return locked(directory, input.passphrase, async () => {
+    const losses = archivedAgentRestorations(input);
+    let names: string[] = [];
+    try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    for (const name of names.sort()) {
+      if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name) || !name.startsWith(`${input.identity.slice(2)}-`)) continue;
+      const commitment = `0x${name.slice(65, 129)}`, context = `0x${name.slice(130, 170)}`;
+      const record = readRecord(recordFile(directory, input.identity, commitment, context), input.passphrase, input.identity, commitment, context);
+      for (const loss of [record?.replacement?.loss, ...(record?.replacement?.continuedLosses ?? [])]) if (loss) losses.push(loss);
+    }
+    const unique = new Map<string, import('./agent-hash-replacement').AgentHashRestoration>();
+    for (const loss of losses) {
+      const scope = { ...parseRestorationScope(loss.scope) };
+      if (!/^0x[0-9a-f]{64}$/.test(loss.transactionHash) || !Number.isSafeInteger(loss.block) || loss.block < 1
+        || !/^0x[0-9a-f]{40}$/.test(loss.kernel)) throw Error('hash_recovery_loss_history_invalid');
+      const value = { transactionHash: loss.transactionHash, block: loss.block, kernel: loss.kernel, scope };
+      const previous = unique.get(scope.request);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(value)) throw Error('hash_recovery_loss_history_changed');
+      unique.set(scope.request, value);
+    }
+    return [...unique.values()];
+  });
 }
 
 export async function prepareAgentBreakDeployment(input: { directory: string; passphrase: string;

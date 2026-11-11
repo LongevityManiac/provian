@@ -8,6 +8,12 @@ const abi = new Interface([
   'event OwnerAuthorizationConsumed(bytes32 indexed identity,uint256 nonce,bytes32 indexed intent,bytes32 nextCommitment,bytes32 nextSigningRoot)',
   'event Transfer(address indexed from,address indexed to,uint256 value)',
 ]);
+/** The complete finalized restoration and runtime verified, but its spending
+ * key has since changed. Independent recovery may replace that account; this
+ * result never permits installation of the old spending seed. */
+export class BreakRecoverySpendingKeyChanged extends Error {
+  constructor() { super('break_receipt_destination_changed'); }
+}
 /** Installation follows independent canonical proof, never a sponsor's success
  * response. Ordinary successors inherit the owner state; prove their ancestry
  * before accepting a receipt from the predecessor executor. */
@@ -43,8 +49,8 @@ export async function verifyBreakRecoveryReceipt(prepared: PreparedBreakRecovery
     || !await call(state.executor, BREAK_RECOVERY_ABI, 'restoredIdentity', [prepared.identity])) throw Error('break_receipt_state_mismatch');
   const accountHash = String(await call(state.executor, BREAK_RECOVERY_ABI, 'hashAccountCodeHash'));
   const codes = await Promise.all(network.rpcs.map(rpc => rpc.request('eth_getCode', [prepared.destination, tag])));
-  if (typeof codes[0] !== 'string' || codes[0] !== codes[1] || keccak256(codes[0]) !== accountHash
-    || await call(prepared.destination, BREAK_RECOVERY_ABI, 'keyCommitment') !== restored.destinationKeyRoot) throw Error('break_receipt_destination_changed');
+  if (typeof codes[0] !== 'string' || codes[0] !== codes[1] || keccak256(codes[0]) !== accountHash) throw Error('break_receipt_destination_changed');
+  const spendingChanged = await call(prepared.destination, BREAK_RECOVERY_ABI, 'keyCommitment') !== restored.destinationKeyRoot;
   const receipt = await readFinalizedReceipt(transactionHash, network);
   const parsed = receipt.logs.filter(log => log.address === prepared.executor).map(log => abi.parseLog(log)).filter(log => log !== null);
   const identityEvents = parsed.filter(log => log.name === 'IdentityRestored' && log.args.identity === prepared.identity
@@ -64,5 +70,5 @@ export async function verifyBreakRecoveryReceipt(prepared: PreparedBreakRecovery
   if (latest.nonce !== state.nonce || latest.commitment !== state.commitment || latest.signingRoot !== state.signingRoot
     || latest.destination !== state.destination || latest.executor !== state.executor) throw Error('break_receipt_state_changed');
   tag = { blockHash: latest.deployment.blockHash, requireCanonical: true };
-  if (await call(prepared.destination, BREAK_RECOVERY_ABI, 'keyCommitment') !== restored.destinationKeyRoot) throw Error('break_receipt_destination_changed');
+  if (await call(prepared.destination, BREAK_RECOVERY_ABI, 'keyCommitment') !== restored.destinationKeyRoot || spendingChanged) throw new BreakRecoverySpendingKeyChanged();
 }
