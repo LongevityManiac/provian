@@ -28,7 +28,7 @@ import type { OwnerChainNetwork } from './recourse-owner-chain';
 
 const AAD = Buffer.from('provian.break-recovery.backup/v1');
 const hash = /^0x[0-9a-f]{64}$/;
-interface BreakRecord {
+export interface BreakRecord {
   version: 1; identity: string; commitment: string; context: string;
   destinationSigningSeed: string; nextRecoverySecret: string; nextRecoverySigningSeed: string;
   destination?: string; operationHash?: string | null; prepared?: PreparedBreakRecovery;
@@ -37,6 +37,7 @@ interface BreakRecord {
   accountSigningSeed?: string;
   completedAccount?: { transactionHash: string; outcome: string };
   pendingAccount?: { intent: HashAccountIntent; nextSeed: string; operation?: SignedHashAccountOperation; cancellation?: SignedHashAccountOperation; cancellationReserved?: boolean };
+  replacement?: import('./agent-hash-replacement').AgentHashReplacementState;
 }
 function recordFile(directory: string, identity: string, commitment: string, context: string): string {
   if (!hash.test(identity) || !hash.test(commitment) || !/^0x[0-9a-f]{40}$/.test(context) || /^0x0+$/.test(context)) throw Error('break_backup_identity_invalid');
@@ -138,6 +139,35 @@ async function withSnapshotRecovery<T>(directory: string, passphrase: string,
     if (recoveryCommitment(secret, await recoverySigningRoot(signingSeed)) !== e.commitment) throw Error('break_backup_recovery_material_unavailable');
     return use(secret, signingSeed);
   });
+}
+
+/** Internal replacement coordinator access. The same authenticated encrypted
+ * records retain every independent recovery generation for future snapshots.
+ * Callbacks must finish before the transition lock or key material is released. */
+export async function withAgentHashRecoveryRecord<T>(supplied: { directory: string; passphrase: string; identity: string;
+  commitment: string; context: string; create?: boolean }, use: (record: BreakRecord, persist: () => void) => Promise<T>): Promise<T> {
+  const input = { ...supplied };
+  const directory = path.resolve(input.directory), file = recordFile(directory, input.identity, input.commitment, input.context);
+  return locked(directory, input.passphrase, async () => {
+    let record = readRecord(file, input.passphrase, input.identity, input.commitment, input.context);
+    if (!record && input.create) {
+      record = { version: 1, identity: input.identity, commitment: input.commitment, context: input.context,
+        destinationSigningSeed: hexlify(randomBytes(32)), nextRecoverySecret: hexlify(randomBytes(32)), nextRecoverySigningSeed: hexlify(randomBytes(32)) };
+      saveRecord(file, input.passphrase, record);
+    }
+    if (!record) throw Error('hash_replacement_record_missing');
+    const retained = record;
+    let active = true;
+    try { return await use(retained, () => {
+      if (!active) throw Error('hash_replacement_record_lock_expired');
+      if (retained.identity !== input.identity || retained.commitment !== input.commitment || retained.context !== input.context) throw Error('hash_replacement_record_binding_changed');
+      saveRecord(file, input.passphrase, retained);
+    }); } finally { active = false; }
+  });
+}
+export function withAgentRecoveryMaterial<T>(input: { directory: string; passphrase: string; identity: string; commitment: string },
+  use: (secret: Uint8Array, signingSeed: Uint8Array) => Promise<T>): Promise<T> {
+  return withSnapshotRecovery(path.resolve(input.directory), input.passphrase, { identity: input.identity, commitment: input.commitment }, use);
 }
 
 export async function prepareAgentBreakDeployment(input: { directory: string; passphrase: string;

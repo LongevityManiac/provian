@@ -304,6 +304,20 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'agent-hash-replacement': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/agent-hash-replacement.ts',
+    testMatchPath: 'src/agent-hash-replacement.test.ts',
+    mutations: [{ id: 'AGENT-REPLACEMENT-RECOVERY-ROOT', description: 'prepare an agent replacement against a different current independent signing root',
+      find: 'if (root !== owner.signingRoot || recoveryCommitment(secret, root) !== owner.commitment)', replace: 'if (false)',
+      expectedKilledBy: 'changed owner authority, reused destination state and a changed caller plan cannot obtain sponsorship' }],
+  },
+  'agent-hash-record-lifetime': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/break-recovery-store.ts',
+    testMatchPath: 'src/agent-hash-replacement.test.ts',
+    mutations: [{ id: 'AGENT-REPLACEMENT-LOCK-LIFETIME', description: 'allow a stale persist callback to write after releasing the transition lock',
+      find: "if (!active) throw Error('hash_replacement_record_lock_expired');", replace: '',
+      expectedKilledBy: 'record persistence is revoked after the callback and queued inputs retain their original binding' }],
+  },
   'agent-restoration-submission': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/recourse-recovery.ts',
     testMatchPath: 'src/recourse-recovery.test.ts',
