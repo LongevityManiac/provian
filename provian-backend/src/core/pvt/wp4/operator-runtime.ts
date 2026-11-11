@@ -1,4 +1,5 @@
-import { preparePrivateIssuanceProbe } from '../../recourse/settlement-issuance-runtime';
+import { finalizeSettlementIssuance, prepareSettlementIssuanceCancellation } from '../../recourse/settlement-issuance-lifecycle';
+import { preparePrivateIssuanceProbe, preparePrivateIssuanceExecution } from '../../recourse/settlement-issuance-runtime';
 import { simulatePrivateIssuanceProbe } from '../../recourse/settlement-issuance-probe';
 import { assertServerNonceWriterActive } from '../../onchain/server-writer-cutover';
 import { recourseForwarderConfig } from '../../recourse/settlement-forwarder';
@@ -808,6 +809,19 @@ export async function runSettlement(
   }
 
   const cycleDeps: CycleRunnerDeps = {
+    memberExecution: {
+      prepare: async batch => {
+        const record = await preparePrivateIssuanceExecution(db as unknown as Firestore, batch, minter.address, env);
+        if (!record.calldata) throw Error('member settlement envelope missing');
+        return {target: record.batch.target, data: record.calldata};
+      },
+      finalize: (batch, hash) => finalizeSettlementIssuance(db as unknown as Firestore, batch, hash),
+      cancellation: async batch => {
+        const plan = await prepareSettlementIssuanceCancellation(db as unknown as Firestore, batch, minter.address);
+        if (plan.kind !== 'transaction') throw Error('member settlement cancellation requires terminal reconciliation');
+        return {target: plan.target, data: plan.data};
+      },
+    },
     memberBatchProbe: async batch => simulatePrivateIssuanceProbe(
       await preparePrivateIssuanceProbe(db as unknown as Firestore, batch, minter.address, env), minter.address),
     db,

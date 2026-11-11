@@ -1,3 +1,4 @@
+import { MEMBER_SETTLEMENT_ABI } from '../../recourse/issuance-ticket';
 import { PRIVATE_ISSUANCE_BATCHES } from '../../recourse/issuance-lock';
 /**
  * settlement runtime — durable settlement store tests.
@@ -1017,10 +1018,29 @@ describe('private issuance terminal coordination',()=>{
     await freshCycle(db);const reserved=await reserveOne(db);if(reserved.kind!=='reserved')throw Error('reservation failed');
     const batch=reserved.batch,id=H(0x9876);
     fake.store.set(`${SETTLEMENT_BATCHES_COLLECTION}/${batch.batch_id}`,{...batch,membership_issuance_id:id});
-    const record={batch:{id,kernelCall:batch.calldata,context:{batchId:batch.batch_id}},status:'signed',transactionHash:null};
+    const record={batch:{id,kernelCall:batch.calldata,target:ADDR(999),context:{batchId:batch.batch_id}},status:'signed',calldata:'0xcafe',transactionHash:null};
     fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${id}`,record);
     return {fake,db,batch,id,record};
   }
+  it.each(['inner_call','wrong_target','unsigned','terminal','missing'])('refuses a member attempt with %s before durable writes',async(shape)=>{
+    const s=await coordinated();
+    if(shape==='missing')s.fake.store.delete(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`);
+    if(shape==='unsigned'||shape==='terminal')s.fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`,{...s.record,status:shape==='unsigned'?'reserved':'cancelled'});
+    const before=new Map(s.fake.store);
+    const result=await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,
+      attempt:{nonce:s.batch.reserved_nonce,tx_hash:H(777),target:shape==='wrong_target'?ADDR(998):ADDR(999),
+        calldata:shape==='inner_call'?s.batch.calldata:'0xcafe',kind:'original',max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'}});
+    expect(result).toEqual({kind:'refused',reason:'private_issuance_pending'});expect(s.fake.store).toEqual(before);
+  });
+  it.each(['self_send','other_batch'])('refuses a member cancellation using %s',async(shape)=>{
+    const s=await coordinated(),base={nonce:s.batch.reserved_nonce,target:ADDR(999),max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,
+      attempt:{...base,tx_hash:H(777),calldata:'0xcafe',kind:'original'}})).toEqual({kind:'recorded'});
+    const before=new Map(s.fake.store);
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
+      attempt:{...base,tx_hash:H(778),calldata:shape==='self_send'?'0x':MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[H(99),1]),kind:'cancel'}}))
+      .toEqual({kind:'refused',reason:'private_issuance_pending'});expect(s.fake.store).toEqual(before);
+  });
   it.each(['signed','reserved','committed','missing'])('cannot retire or orphan-release a %s coordinator',async(status)=>{
     const s=await coordinated();
     if(status==='missing')s.fake.store.delete(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`);
@@ -1058,7 +1078,7 @@ describe('private issuance terminal coordination',()=>{
   });
   it('cannot apply a parent before private issuance commits the exact winning transaction',async()=>{
     const s=await coordinated(),hash=H(0x777);
-    const attempt={nonce:s.batch.reserved_nonce,tx_hash:hash,kind:'original' as const,max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
+    const attempt={nonce:s.batch.reserved_nonce,tx_hash:hash,target:ADDR(999),calldata:'0xcafe',kind:'original' as const,max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
     await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,attempt});
     await recordMinedReceipt(s.db,{batchId:s.batch.batch_id,txHash:hash,nowMs:NOW+3,status:'success',blockNumber:100,blockHash:H(100),gasUsed:10n,effectiveGasPriceWei:2n});
     for(const status of ['signed','cancelled','committed']){

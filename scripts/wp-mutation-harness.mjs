@@ -278,6 +278,21 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'issuance-attempt-envelope': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
+    testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',
+    mutations: [{ id: 'ISSUANCE-ATTEMPT-ENVELOPE', description: 'record inner kernel bytes instead of retained member authorization',
+      find: 'params.attempt.calldata !== record.calldata', replace: 'false',
+      expectedKilledBy: 'refuses a member attempt with inner_call before durable writes' }],
+  },
+  'issuance-runner-finalization': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/settlement-cycle-runner.ts',
+    testMatchPath: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',
+    mutations: [{ id: 'ISSUANCE-RUNNER-FINALIZATION', description: 'skip private receipt application before parent bookkeeping',
+      find: 'const status = await deps.memberExecution.finalize(batch, winner.tx_hash);',
+      replace: "const status = winner.kind === 'cancel' ? 'cancelled' : 'committed';",
+      expectedKilledBy: 'a failed private receipt application retries without rebroadcast or premature parent application' }],
+  },
   'issuance-parent-terminal': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
     testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',

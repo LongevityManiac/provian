@@ -1,3 +1,4 @@
+import { MEMBER_SETTLEMENT_ABI } from '../../recourse/issuance-ticket';
 import { PRIVATE_ISSUANCE_BATCHES } from '../../recourse/issuance-lock';
 import type { PrivateIssuanceBatchRecord } from '../../recourse/private-issuance-batch';
 import { singleScanQuery } from '../../provenance/private-store';
@@ -1072,6 +1073,8 @@ export interface BatchAttempt {
   readonly tx_hash: string;
   /** Exact execution destination, retained across forwarder deployment and retries. */
   readonly target?: string;
+  /** Exact outer transaction bytes; the parent retains its inner approval bytes. */
+  readonly calldata?: string;
   /**
    * 'cancel' is a plain self-transfer at the SAME nonce as a stuck attempt
    * whose batch binding has died (epoch crossed) — it resolves the nonce
@@ -1325,7 +1328,8 @@ export type RecordAttemptResult =
         | 'batch_not_reserved'
         | 'nonce_rules_violated'
         | 'transaction_limit'
-        | 'batch_closed';
+        | 'batch_closed'
+        | 'private_issuance_pending';
     };
 
 /**
@@ -1385,6 +1389,23 @@ export async function recordAttempt(
     }
     if (batch.status !== 'reserved' && batch.status !== 'submitted') {
       return { kind: 'refused', reason: 'batch_closed' };
+    }
+    if (batch.membership_issuance_id !== undefined) {
+      const coordinated = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.membership_issuance_id));
+      const record = coordinated.data() as unknown as PrivateIssuanceBatchRecord | undefined;
+      if (!coordinated.exists || !record || record.batch?.id !== batch.membership_issuance_id
+        || record.batch.context.batchId !== batch.batch_id || record.batch.kernelCall !== batch.calldata
+        || !['reserved', 'signed'].includes(record.status) || params.attempt.target !== record.batch.target) {
+        return { kind: 'refused', reason: 'private_issuance_pending' };
+      }
+      if (params.attempt.kind === 'cancel') {
+        let decoded;
+        try { decoded = MEMBER_SETTLEMENT_ABI.decodeFunctionData('cancelMemberBatch', params.attempt.calldata ?? '0x'); }
+        catch { return { kind: 'refused', reason: 'private_issuance_pending' }; }
+        if (decoded[0] !== batch.batch_id) return { kind: 'refused', reason: 'private_issuance_pending' };
+      } else if (record.status !== 'signed' || !record.calldata || params.attempt.calldata !== record.calldata) {
+        return { kind: 'refused', reason: 'private_issuance_pending' };
+      }
     }
     if (params.adoptSigner === undefined
       && cycle.consumed.transactions_submitted >= cycle.limits.max_transactions) {

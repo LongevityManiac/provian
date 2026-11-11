@@ -418,6 +418,12 @@ export interface CycleRunReport {
 }
 
 export interface CycleRunnerDeps {
+  readonly memberExecution?: {
+    prepare(batch: SettlementBatchDoc): Promise<{ target: string; data: string }>;
+    finalize(batch: SettlementBatchDoc, transactionHash: string): Promise<'committed' | 'cancelled'>;
+    cancellation(batch: SettlementBatchDoc): Promise<{ target: string; data: string }>;
+  };
+
   /** Reverting member-adapter simulation. Never exports a reusable attestation. */
   readonly memberBatchProbe?: (batch: SettlementBatchDoc) => Promise<{ ok: boolean; revertReason: string | null }>;
 
@@ -433,7 +439,7 @@ export interface CycleRunnerDeps {
    * so a settlement broadcast without an affirmed approval is gas spent on a guaranteed
    * revert. Optional in the TYPE only: an absent or unconfigured gate REFUSES
    * (`approver_unavailable`) and no settlement reaches the wire. Cancel transactions —
-   * self-sends with empty calldata, which are not settlements — are unaffected.
+   * nonce or pool-ticket cancellations, which are not settlements — are unaffected.
    */
   readonly approval?: BatchApprovalDeps;
   /**
@@ -1199,15 +1205,24 @@ async function rebroadcastAttempt(
 ): Promise<void> {
   const cancel = attempt.kind === 'cancel';
   try {
+    const check = async (): Promise<void> => {
+      if (batch.membership_issuance_id !== undefined || (attempt.calldata !== undefined && attempt.calldata !== batch.calldata && attempt.calldata !== '0x')) {
+        if (!deps.memberExecution) throw Error('member execution unavailable');
+        const call = await (cancel ? deps.memberExecution.cancellation(batch) : deps.memberExecution.prepare(batch));
+        if (call.target !== attempt.target || call.data !== attempt.calldata) throw Error('member execution changed');
+      }
+    };
+    await check();
     const signed = await deps.chain.sign({
-      to: cancel ? config.signerAddress : (attempt.target ?? kernelAddress),
-      data: cancel ? '0x' : batch.calldata,
+      to: attempt.target ?? (cancel ? config.signerAddress : kernelAddress),
+      data: attempt.calldata ?? (cancel ? '0x' : batch.calldata),
       valueWei: 0n,
       nonce: attempt.nonce,
       gasLimit: BigInt(attempt.gas_limit),
       maxFeePerGasWei: BigInt(attempt.max_fee_per_gas_wei),
       maxPriorityFeePerGasWei: BigInt(attempt.max_priority_fee_per_gas_wei),
     });
+    await check();
     if (signed.hash.toLowerCase() !== attempt.tx_hash.toLowerCase()) {
       deps.log?.(`batch ${batch.batch_id}: re-signed ${attempt.tx_hash} differs (${signed.hash}); not re-broadcast`);
       return;
@@ -1273,6 +1288,15 @@ async function resolveBatch(
   const kernelAddress = ctx.kernelAddress;
   const executionAddress = ctx.settlementTarget ?? kernelAddress;
   const cycleId = batch.cycle_id;
+  const memberExecution = executionAddress.toLowerCase() !== kernelAddress.toLowerCase() || batch.membership_issuance_id !== undefined;
+  const executionCall = async (): Promise<{ target: string; data: string }> => {
+    if (!memberExecution) return { target: executionAddress, data: batch.calldata };
+    if (!deps.memberExecution) throw Error('member execution unavailable');
+    const call = await deps.memberExecution.prepare(batch);
+    if (call.target.toLowerCase() !== executionAddress.toLowerCase()) throw Error('member execution domain changed');
+    return call;
+  };
+
   const binding: PreparedBatchBinding = {
     epoch: batch.epoch,
     policyHash: batch.policy_hash,
@@ -1471,9 +1495,9 @@ async function resolveBatch(
     // Every transaction addressed to the KERNEL is a settlement, and the kernel calls
     // `_verifyEligibility` on each one. Without an affirmed approval it reverts, so we
     // refuse here — before signing, before an attempt is recorded, before any broadcast.
-    // Cancel transactions are self-sends with empty calldata and are not settlements, so
-    // they pass through: `to` is the signer, not the kernel.
-    if (to.toLowerCase() === executionAddress.toLowerCase()) {
+    // Ticket cancellations and legacy nonce self-sends do not settle claims and
+    // require no eligibility affirmation.
+    if (kind !== 'cancel' && to.toLowerCase() === executionAddress.toLowerCase()) {
       const approval = await ensureApproved();
       if (!approval.ok) {
         return {
@@ -1482,9 +1506,17 @@ async function resolveBatch(
       }
     }
 
+    const checkMemberCall = async (): Promise<void> => {
+      if (!memberExecution) return;
+      if (!deps.memberExecution) throw Error('member execution unavailable');
+      const call = kind === 'cancel' ? await deps.memberExecution.cancellation(batch) : await executionCall();
+      if (call.target.toLowerCase() !== to.toLowerCase() || call.data !== data) throw Error('member execution changed');
+    };
+    await checkMemberCall();
     const signed = await chain.sign({
       to, data, valueWei: 0n, nonce, gasLimit, maxFeePerGasWei, maxPriorityFeePerGasWei,
     });
+    await checkMemberCall();
     const recorded = await recordAttempt(db, {
       cycleId,
       workerId: config.workerId,
@@ -1494,6 +1526,7 @@ async function resolveBatch(
         nonce,
         tx_hash: signed.hash,
         target: to,
+        calldata: data,
         kind,
         max_fee_per_gas_wei: maxFeePerGasWei.toString(),
         max_priority_fee_per_gas_wei: maxPriorityFeePerGasWei.toString(),
@@ -1531,6 +1564,8 @@ async function resolveBatch(
     attempts = [...attempts, {
       nonce,
       tx_hash: signed.hash,
+      target: to,
+      calldata: data,
       kind,
       max_fee_per_gas_wei: maxFeePerGasWei.toString(),
       max_priority_fee_per_gas_wei: maxPriorityFeePerGasWei.toString(),
@@ -1586,10 +1621,11 @@ async function resolveBatch(
       await releaseAndDie(`unsettleable at the dry run: ${probe.revertReason ?? 'simulation reverts'}`);
       return { kind: 'refused', reason: 'batch_unsettleable', detail: probe.revertReason ?? 'simulation reverts' };
     }
-    const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: executionAddress, data: batch.calldata });
+    const execution = await executionCall();
+    const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: execution.target, data: execution.data });
     const fees = await chain.feeData();
     const gasLimit = (gasEstimate * BigInt(config.gasHeadroomBps)) / 10_000n;
-    const sent = await record('original', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, executionAddress, batch.calldata);
+    const sent = await record('original', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, execution.target, execution.data);
     if (!sent.ok) {
       // Signed but never recorded => never broadcast: release it rather than strand it.
       if (sent.notRecorded) await releaseAndDie(`original not recorded: ${sent.refused}`);
@@ -1633,6 +1669,11 @@ async function resolveBatch(
     if (winner !== undefined && winner.mined !== null) {
       const finality = await judgeReceiptFinality(chain, winner.tx_hash, winner.mined);
       if (finality.kind === 'final') {
+        if (memberExecution) {
+          if (!deps.memberExecution) throw Error('member execution unavailable');
+          const status = await deps.memberExecution.finalize(batch, winner.tx_hash);
+          if (status !== (winner.kind === 'cancel' ? 'cancelled' : 'committed')) throw Error('member execution receipt mismatch');
+        }
         if (winner.kind === 'cancel') {
           // The cancel won, FINALLY: the nonce is resolved without a settlement.
           await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: 'cancelled_dead_binding' });
@@ -1759,9 +1800,10 @@ async function resolveBatch(
           }
           retriesAfterRevert += 1;
           const fees = await chain.feeData();
-          const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: executionAddress, data: batch.calldata });
+          const execution = await executionCall();
+          const gasEstimate = await chain.estimateGas({ from: config.signerAddress, to: execution.target, data: execution.data });
           const gasLimit = (gasEstimate * BigInt(config.gasHeadroomBps)) / 10_000n;
-          const sent = await record('retry_after_revert', nonceResult.nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, executionAddress, batch.calldata);
+          const sent = await record('retry_after_revert', nonceResult.nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei, gasLimit, execution.target, execution.data);
           if (!sent.ok) return { kind: 'stopped', reason: sent.stopReason ?? 'transaction_limit', detail: sent.refused };
           continue;
         }
@@ -1836,9 +1878,13 @@ async function resolveBatch(
         || decision.kind === 'already_settled'
         || (decision.kind === 'abort'
           && (decision.reason === 'cursor_partially_consumed' || decision.reason === 'cursor_gap'));
-      const cancel = (): ReturnType<typeof record> => record(
-        'cancel', latest.nonce, maxFee, maxPriority, 21_000n, config.signerAddress, '0x',
-      );
+      const cancel = async (): ReturnType<typeof record> => {
+        if (!memberExecution) return record('cancel', latest.nonce, maxFee, maxPriority, 21_000n, config.signerAddress, '0x');
+        if (!deps.memberExecution) throw Error('member execution unavailable');
+        const call = await deps.memberExecution.cancellation(batch);
+        const gas = await chain.estimateGas({from: config.signerAddress, to: call.target, data: call.data});
+        return record('cancel', latest.nonce, maxFee, maxPriority, gas * BigInt(config.gasHeadroomBps) / 10_000n, call.target, call.data);
+      };
       let sent: Awaited<ReturnType<typeof record>>;
       if (bindingDead) {
         // The binding can never settle, but the nonce may still carry a live transaction:
@@ -1846,7 +1892,8 @@ async function resolveBatch(
         // settlement (store + kernel both refuse).
         sent = await cancel();
       } else {
-        sent = await record('replacement', latest.nonce, maxFee, maxPriority, BigInt(latest.gas_limit), executionAddress, batch.calldata);
+        const execution = await executionCall();
+        sent = await record('replacement', latest.nonce, maxFee, maxPriority, BigInt(latest.gas_limit), execution.target, execution.data);
         if (!sent.ok && sent.stopReason === 'batch_approval_refused') {
           if (sent.approval !== undefined && TRANSIENT_APPROVAL_REFUSALS.has(sent.approval.reason)) {
             // — a transient refusal says nothing about the batch: the earlier
