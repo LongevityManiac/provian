@@ -6,6 +6,8 @@ import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, recordPrivateMembershipConsent, ty
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import type { MembershipDomainCheckpoint } from './membership-succession-checkpoint';
+import { PRIVATE_ISSUANCE_BATCHES } from './issuance-lock';
+import { privateIssuanceBatchId, commitPrivateIssuanceBatch } from './private-issuance-batch';
 
 /** Selection only: the existing branded receipt committer independently checks
  * every amount, domain, nonce, digest, immutable reservation and global fence. */
@@ -28,7 +30,17 @@ export async function reconcilePrivateMembershipReceipt(db: Firestore, ownerIden
     if (!pending.exists || pending.get('status') !== 'pending' || !reservation || reservation.ownerIdentity !== ownerIdentity) throw Error('recourse_membership_pending_invalid');
     if (membershipReceiptMatchesReservation(receipt,reservation)) {
       const rules = await readPrivateCalendarRules(db, { pool: reservation.domain.pool, block: receipt.block, blockHash: receipt.blockHash });
-      await commitPrivateMembershipReceipt(db,ownerIdentity,pendingId,receipt,rules);
+      const batchId = reservation.kind === 'issuance' ? privateIssuanceBatchId(reservation.domain.kernel, reservation.context.batchId) : null;
+      const retainedBatchId: unknown = pending.get('issuanceBatchId');
+      const coordinated = batchId !== null && (await db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batchId).get()).exists;
+      if (retainedBatchId != null && (retainedBatchId !== batchId || !coordinated)) throw Error('recourse_issuance_batch_missing');
+      if (batchId && coordinated) {
+        // Every recipient must reconcile before any one owner branches at a
+        // succession. This includes recipients with no membership account.
+        await commitPrivateIssuanceBatch(db,batchId,receipt,rules);
+      } else {
+        await commitPrivateMembershipReceipt(db,ownerIdentity,pendingId,receipt,rules);
+      }
     }
   }
   const owner = await db.collection(R.owners).doc(ownerIdentity).get(), transitionId: unknown = owner.get('membershipTransition');

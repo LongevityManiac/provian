@@ -104,6 +104,7 @@ export async function registerOwnership(
     address: binding.address, signature: input.signature, message, chain: 'base', proof: fence,
   }, verifyDeps);
   if (!verified.ok) throw new Error('recourse_signature_invalid');
+  await reconcileAddressIssuance(db,[binding.address]);
   const addressRef = db.collection(RECOURSE_COLLECTIONS.addresses).doc(binding.address);
   const identityRef = db.collection(RECOURSE_COLLECTIONS.identities).doc(binding.identity);
   const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(input.authenticatedIdentity);
@@ -330,3 +331,4 @@ Promise<{ readonly destination: string; readonly generation: number }> {
   });
 }
 import { assertNoPendingAddressIssuance } from './issuance-lock';
+import { reconcileAddressIssuance } from './private-issuance-succession';

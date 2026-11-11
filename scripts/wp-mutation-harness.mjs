@@ -203,6 +203,27 @@ const MUTATION_SETS = {
         expectedKilledBy: 'same-domain pointer republication can cancel tickets from the previous revision' },
     ],
   },
+  'issuance-succession-proof': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/issuance-succession-proof.ts',
+    testMatchPath: 'src/core/recourse/issuance-succession-proof.test.ts',
+    mutations: [{ id: 'ISSUANCE-RETIREMENT', description: 'release a batch before its source pair is irreversibly retired',
+      find: "if ((await call(pointer,abi,'retired',[address]))[0] !== true) return fail('not_retired');",
+      replace: 'void address;', expectedKilledBy: 'unretired, unpublished, premature, unfinalized, disagreeing or changed canonical checkpoints grant no release' }],
+  },
+  'private-issuance-succession': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-succession.ts',
+    testMatchPath: 'src/core/recourse/private-issuance-succession.test.ts',
+    mutations: [{ id: 'ISSUANCE-SUCCESSION-FENCE', description: 'release an address already reserved by a different batch',
+      find: "if (fences.some(f => f.get('batchId') !== id)) return fail('fence');", replace: 'void fences;',
+      expectedKilledBy: 'a replacement fence or concurrent coordinator mutation refuses the whole release' }],
+  },
+  'membership-coordinated-receipt': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-reconcile.ts',
+    testMatchPath: 'src/core/recourse/private-issuance-succession.test.ts',
+    mutations: [{ id: 'ISSUANCE-WHOLE-BATCH', description: 'credit one owner and strand other recipients before succession',
+      find: 'if (batchId && coordinated) {', replace: 'if (batchId && coordinated && batchId.length === 0) {',
+      expectedKilledBy: 'one owner receipt catchup commits both owners and all fences before either can branch' }],
+  },
   'membership-debit-revocation': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-revocation.ts',
     testMatchPath: 'src/core/recourse/membership-debit-revocation.test.ts src/core/recourse/private-membership-reservation.test.ts',

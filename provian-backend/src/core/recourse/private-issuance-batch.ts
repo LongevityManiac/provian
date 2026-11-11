@@ -28,7 +28,7 @@ export interface PrivateIssuanceBatch {
   readonly unadmitted: readonly UnadmittedIssuanceRecipient[];
 }
 export interface PrivateIssuanceBatchRecord {
-  readonly batch: PrivateIssuanceBatch; readonly status: 'reserved' | 'signed' | 'committed' | 'cancelled';
+  readonly batch: PrivateIssuanceBatch; readonly status: 'reserved' | 'signed' | 'committed' | 'cancelled' | 'superseded';
   readonly signature: string | null; readonly calldata: string | null; readonly transactionHash: string | null;
 }
 const HASH = /^0x[0-9a-f]{64}$/;
@@ -103,6 +103,7 @@ export async function reservePrivateIssuanceBatch(db: Firestore, input: PrivateI
     for (const r of batch.reservations) writes.push(await preparePrivateMembershipReservation(db, tx, r));
     const record: PrivateIssuanceBatchRecord = { batch, status: 'reserved', signature: null, calldata: null, transactionHash: null };
     for (const write of writes) write();
+    for (const reservation of batch.reservations) tx.update(db.collection(C.reservations).doc(reservation.id), { issuanceBatchId: batch.id });
     for (const ticket of batch.tickets) tx.set(db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(ticket.account), { batchId: batch.id });
     tx.create(ref, record);
     return record;
@@ -120,6 +121,7 @@ export async function retainPrivateIssuanceSignature(db: Firestore, input: Priva
   return db.runTransaction(async tx => {
     const row = await tx.get(ref), record = row.data() as PrivateIssuanceBatchRecord;
     if (!row.exists || digest(record.batch) !== digest(batch)) return fail('replay');
+    if (record.status === 'superseded') return fail('superseded');
     if (record.status !== 'reserved') {
       if (record.signature !== signature || record.calldata !== calldata) return fail('replay');
       return record;
@@ -167,6 +169,7 @@ export async function commitPrivateIssuanceBatch(db: Firestore, id: string, rece
   const ref = db.collection(PRIVATE_ISSUANCE_BATCHES).doc(id), row = await ref.get();
   if (!row.exists) return fail('missing');
   const initial = row.data() as PrivateIssuanceBatchRecord, batch = initial.batch;
+  if (initial.status === 'superseded') return fail('superseded');
   const result = privateIssuanceReceiptEffects(batch, receipt);
   for (const r of batch.reservations) {
     const status = await commitPrivateMembershipReceipt(db, r.ownerIdentity, r.id, receipt, rules);
@@ -175,6 +178,7 @@ export async function commitPrivateIssuanceBatch(db: Firestore, id: string, rece
   return db.runTransaction(async tx => {
     const latest = await tx.get(ref), current = latest.data() as PrivateIssuanceBatchRecord;
     if (!latest.exists || digest(current.batch) !== digest(batch)) return fail('replay');
+    if (current.status === 'superseded') return fail('superseded');
     if (current.status === 'committed' || current.status === 'cancelled') {
       if (current.status !== result.status || current.transactionHash !== receipt.transactionHash) return fail('replay');
       return result.status;

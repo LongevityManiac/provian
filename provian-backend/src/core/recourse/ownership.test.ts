@@ -168,7 +168,7 @@ describe('durable ownership and recovery transitions', () => {
     const db = fake as unknown as Firestore;
     const { PRIVATE_ISSUANCE_ADDRESSES } = await import('./issuance-lock');
     await db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(value.address).set({ batchId: hash });
-    await expect(registerOwnership(db, request, verify)).rejects.toThrow('issuance_reconciliation_pending');
+    await expect(registerOwnership(db, request, verify)).rejects.toThrow('recourse_issuance_succession_missing');
     await db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(value.address).set({ batchId: null });
     const first = await registerOwnership(db, request, verify);
     expect(first.identity).not.toBe(identity);

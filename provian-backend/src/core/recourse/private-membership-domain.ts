@@ -6,12 +6,15 @@ import { readMembershipJournal } from './private-membership-journal';
 import { findMembershipSuccessionCheckpoint } from './membership-succession-checkpoint';
 import { reconcilePrivateMembershipThrough } from './private-membership-reconcile';
 import { readPrivateMembershipSuccession, commitPrivateMembershipSuccession } from './private-membership-succession';
+import { reconcileAddressIssuance } from './private-issuance-succession';
 
 /** Idempotent private catchup, called before a view or a new authorization.
  * Every successor is traversed independently. This sends no transaction and
  * cannot publish a pointer, choose a cutoff or revive a discarded payment. */
 export async function reconcilePrivateMembershipDomain(db: Firestore, ownerIdentity: string): Promise<void> {
   if (!/^0x[0-9a-f]{64}$/.test(ownerIdentity)) throw Error('recourse_membership_domain_owner');
+  const addresses = await db.collection(R.addresses).where('ownerIdentity', '==', ownerIdentity).get();
+  await reconcileAddressIssuance(db,addresses.docs.map(r => String(r.get('address'))));
   for (;;) {
     const accountRow = await db.collection(C.owners).doc(ownerIdentity).get(), owner = await db.collection(R.owners).doc(ownerIdentity).get();
     if (!owner.exists) throw Error('recourse_membership_domain_owner');
