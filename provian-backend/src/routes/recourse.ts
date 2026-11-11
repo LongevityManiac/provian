@@ -10,7 +10,7 @@ import { randomBytes } from 'crypto';
 import { Router, type RequestHandler, type Request } from 'express';
 import type { AgentBankDeps } from '../core/agent-bank/types';
 import { isActiveHumanWallet } from '../core/wallet/active-human-wallet';
-import { identityHash, primaryBindingIdentity, ownershipBindingMessage, registerOwnership, RECOURSE_COLLECTIONS,
+import { identityHash, primaryBindingIdentity, ownedBindingIdentity, ownershipBindingMessage, registerOwnership, RECOURSE_COLLECTIONS,
   type OwnershipBinding } from '../core/recourse/ownership';
 import { currentProtocolDeployment } from '../core/protocol/runtime';
 import { selectExternalProofFence, revalidateExternalProofFence } from '../core/external-address/proof-head';
@@ -22,6 +22,7 @@ import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool
 import { RECOURSE_RATIO_COLLECTION, publicRecourseResources } from '../core/recourse/pool-ratio';
 import { parseAgentRecoveryRequest, recoverAgentOwnership } from '../core/recourse/agent-recovery';
 import { parseHumanRecoveryRequest, recoverHumanOwnership } from '../core/recourse/human-recovery';
+import { parseAuxiliaryRecoveryRequest, recoverAuxiliaryOwnership } from '../core/recourse/auxiliary-recovery';
 import { prepareRestorationRequest, submitRestorationRequest, RESTORATION_REQUESTS } from '../core/recourse/restoration-request';
 import { queueBindingOperation } from '../core/recourse/binding-operation';
 import { runBindingWorker } from '../core/recourse/binding-runtime';
@@ -170,6 +171,12 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   });
   router.use(authenticateOwner);
   router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
+  router.post('/recover-address', async (req, res) => {
+    try {
+      res.json(await recoverAuxiliaryOwnership(deps, await resolveOwner(req, deps), parseAuxiliaryRecoveryRequest(req.body)));
+    } catch { res.status(400).json({ error: 'recourse_recovery_refused' }); }
+    finally { req.body = undefined; req.rawBody = undefined; }
+  });
   router.post('/membership-transitions', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
@@ -251,22 +258,27 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.post('/restoration-intents', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
-      if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).sort().join(',') !== 'block,transactionHash'
+      if (!body || typeof body !== 'object' || Array.isArray(body)
+        || !['block,transactionHash', 'block,identity,transactionHash'].includes(Object.keys(body).sort().join(','))
         || !('transactionHash' in body) || typeof body.transactionHash !== 'string'
         || !('block' in body) || typeof body.block !== 'number') throw new Error('recourse_restoration_request_invalid');
-      res.json(await prepareRestorationRequest(deps.db, await primaryBindingIdentity(deps.db, owner), { transactionHash: body.transactionHash, block: body.block }));
+      const identity = 'identity' in body ? await ownedBindingIdentity(deps.db, owner, body.identity) : await primaryBindingIdentity(deps.db, owner);
+      res.json(await prepareRestorationRequest(deps.db, identity, { transactionHash: body.transactionHash, block: body.block }));
     } catch { res.status(400).json({ error: 'recourse_restoration_request_refused' }); }
   });
   router.post('/restoration-requests', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
       const body: unknown = req.body;
-      if (!body || typeof body !== 'object' || !('transactionHash' in body) || typeof body.transactionHash !== 'string'
+      if (!body || typeof body !== 'object' || Array.isArray(body)
+        || !['block,recoveryRequestId,transactionHash', 'block,identity,recoveryRequestId,transactionHash'].includes(Object.keys(body).sort().join(','))
+        || !('transactionHash' in body) || typeof body.transactionHash !== 'string'
         || !('block' in body) || typeof body.block !== 'number'
         || !('recoveryRequestId' in body) || typeof body.recoveryRequestId !== 'string') {
         res.status(400).json({ error: 'recourse_restoration_request_invalid' }); return;
       }
-      res.json(await submitRestorationRequest(deps.db, await primaryBindingIdentity(deps.db, owner), {
+      const identity = 'identity' in body ? await ownedBindingIdentity(deps.db, owner, body.identity) : await primaryBindingIdentity(deps.db, owner);
+      res.json(await submitRestorationRequest(deps.db, identity, {
         transactionHash: body.transactionHash, block: body.block, recoveryRequestId: body.recoveryRequestId,
       }));
     } catch { res.status(400).json({ error: 'recourse_restoration_request_refused' }); }
@@ -274,9 +286,14 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/restoration-requests', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      const rows = await deps.db.collection(RESTORATION_REQUESTS).where('identity', '==', await primaryBindingIdentity(deps.db, owner)).get();
-      res.json({ requests: rows.docs.map(doc => ({ requestId: doc.id, status: doc.get('status'),
-        transactionHash: doc.get('transactionHash'), destination: doc.get('destination'), createdAtMs: doc.get('createdAtMs') })) });
+      const bindings = await deps.db.collection(RECOURSE_COLLECTIONS.identities).where('ownerIdentity', '==', identityHash(owner.type, owner.id)).get();
+      const groups = await Promise.all(bindings.docs.map(async binding => {
+        const identity = await ownedBindingIdentity(deps.db, owner, binding.id);
+        const rows = await deps.db.collection(RESTORATION_REQUESTS).where('identity', '==', identity).get();
+        return rows.docs.map(doc => ({ requestId: doc.id, identity, status: doc.get('status'),
+          transactionHash: doc.get('transactionHash'), destination: doc.get('destination'), createdAtMs: doc.get('createdAtMs') }));
+      }));
+      res.json({ requests: groups.flat() });
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });
   router.get('/pool', async (req, res) => {

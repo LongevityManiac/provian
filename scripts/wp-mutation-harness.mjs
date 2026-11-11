@@ -285,6 +285,18 @@ const MUTATION_SETS = {
       find: 'address(tx.from)!==address(gasPayer)', replace: 'false',
       expectedKilledBy: 'rejects changed transaction from' }],
   },
+  'auxiliary-recovery': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/auxiliary-recovery.ts',
+    testMatchPath: 'src/core/recourse/auxiliary-recovery.test.ts',
+    mutations: [
+      { id: 'AUXILIARY-PRIMARY-RACE', description: 'allow a binding promoted to primary during recovery to use the auxiliary transaction',
+        find: "|| portfolio.get('primaryBinding') === input.identity", replace: '',
+        expectedKilledBy: 'transaction-time owner substitution is refused after a valid chain proof' },
+      { id: 'AUXILIARY-SECRET-LIFETIME', description: 'wipe the recovery secret before replay transaction checks it',
+        find: 'return await deps.db.runTransaction(async tx => {', replace: 'return deps.db.runTransaction(async tx => {',
+        expectedKilledBy: 'auxiliary recovery appends exactly one owner-chain record and fresh binding without changing login, primary wallet or earning proofs' },
+    ],
+  },
   'settlement-terminal-winner': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/settlement-cycle-runner.ts',
     testMatchPath: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',

@@ -34,6 +34,24 @@ export function identityHash(ownerType: 'human' | 'agent', ownerId: string): str
   return `0x${createHash('sha256').update(JSON.stringify(['provian ownership', ownerType, ownerId])).digest('hex')}`;
 }
 
+export interface RecourseOwner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
+
+/** Select one binding inside the authenticated private portfolio. This grants
+ * no authority to replace login credentials; that requires the primary binding. */
+export async function ownedBindingIdentity(db: Firestore, owner: RecourseOwner, binding: unknown): Promise<string> {
+  if (typeof binding !== 'string' || !HASH.test(binding)) throw Error('recourse_owned_binding_invalid');
+  const ownerIdentity = identityHash(owner.type, owner.id);
+  const [portfolio, proof] = await Promise.all([
+    db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get(),
+    db.collection(RECOURSE_COLLECTIONS.identities).doc(binding).get(),
+  ]);
+  if (!portfolio.exists || portfolio.get('ownerType') !== owner.type || portfolio.get('ownerId') !== owner.id
+    || portfolio.get('walletId') !== owner.walletId || !proof.exists || proof.get('identity') !== binding
+    || proof.get('ownerIdentity') !== ownerIdentity || proof.get('ownerType') !== owner.type
+    || proof.get('ownerId') !== owner.id || proof.get('walletId') !== owner.walletId) throw Error('recourse_owned_binding_invalid');
+  return binding;
+}
+
 /** Resolve the login wallet's binding privately. An auxiliary address can never
  * become the authority for changing the owner's relay login or native wallet. */
 export async function primaryBindingIdentity(db: Firestore,
