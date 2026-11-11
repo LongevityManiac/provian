@@ -59,6 +59,30 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'RecourseAddressConsent': {
+    sourcePath: 'contracts/src/RecourseAddressConsent.sol',
+    testMatchPath: 'test/RecourseAddressConsent.t.sol',
+    mutations: [
+      { id: 'DEBIT-OWNER', description: 'attestor can debit without the owner exact-amount mandate',
+        find: '|| (debit.burn == 0 && debit.reserve == 0) || !_signature(owner, digest, ownerSignature)',
+        replace: '|| (debit.burn == 0 && debit.reserve == 0)',
+        expectedKilledBy: 'testAllowanceOrAttestorAloneCannotDebitAndExactOwnerMandateExecutesOnce' },
+      { id: 'DEBIT-NONCE', description: 'a consumed or cancelled debit nonce can execute again',
+        find: '|| !current.joined || debit.generation != current.generation || debit.nonce != debitNonce[debit.binding]',
+        replace: '|| !current.joined || debit.generation != current.generation',
+        expectedKilledBy: 'testCancellationInvalidatesRetainedSignedBytesBeforePayerSwitch' },
+    ],
+  },
+  'private-membership-calendar': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-calendar.ts',
+    testMatchPath: 'src/core/recourse/private-membership-calendar.test.ts',
+    mutations: [
+      { id: 'CALENDAR-GRACE', description: 'a late keeper fails to close the expired membership episode',
+        find: 'if (state.firstUnpaidMonth + 1 < cursor) return',
+        replace: 'if (false) return',
+        expectedKilledBy: 'late keeper preserves the original deadline and neither late payment nor issuance can revive it' },
+    ],
+  },
   // -------------------------------------------------------------------------
   // the first TypeScript surface in this harness. Same contract as the
   // Solidity targets: mutate ONE conjunct, run the SCOPED suite, decide from

@@ -28,6 +28,8 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
+  ...['src/core/recourse/membership-authorization.ts', 'provian-backend/src/core/recourse/membership-authorization.ts'].map(path =>
+    [path, readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-authorization.ts'), 'utf8')]),
   ['src/core/recourse/address-binding.ts', addressBinding],
   ['provian-backend/src/core/recourse/address-binding.ts', addressBinding],
   ['src/core/recourse/address-credential.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-credential.ts'), 'utf8').replace("'./recourse-address-binding'", "'./address-binding'")],
