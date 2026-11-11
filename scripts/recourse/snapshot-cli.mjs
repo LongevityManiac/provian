@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { guardedFetch } from '../../provian-agent-sdk/dist/guarded-fetch.js';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
 import { readPendingBreak } from './pending-break.mjs';
+import { assembleSuccessionArtifact } from './break-artifacts.mjs';
 import { buildPoolSnapshot } from './pool-snapshot.mjs';
 import { buildBreakOwnershipSnapshot } from './break-snapshot.mjs';
 import { resolveProtocolDeployment } from '../../provian-agent-sdk/dist/protocol-pointer.js';
@@ -179,17 +180,15 @@ async function main() {
   const pendingBreak = poolRuntimeHash ? await readPendingBreak({port,kernel:plan.predecessor,blockHash,artifact:priorArtifact}) : null;
   const pool = poolRuntimeHash ? await buildPoolSnapshot({port,pool:institutions[5],kernel:plan.predecessor,
     block,blockHash,deploymentBlock:plan.poolDeploymentBlock,expectedRuntimeHash:poolRuntimeHash}) : undefined;
-  let snapshot = pool ? {format:'provian-succession-bundle',chainId:8453,block,blockHash,monetary,pool,
-    breakOriginSnapshot:pendingBreak?.snapshot, pendingBreakOwners:pendingBreak?.owners,
-    snapshotTotal:(BigInt(monetary.supply)+BigInt(pendingBreak?.amount??0)).toString()} : monetary;
+  let ownership;
   if (plan.mode === 'cryptographic-break') {
-    const ownership = await buildBreakOwnershipSnapshot({ port, predecessor: plan.predecessor, block, blockHash,
+    ownership = await buildBreakOwnershipSnapshot({ port, predecessor: plan.predecessor, block, blockHash,
       expectedKernelRuntimeHash: expectedRuntimeHash, registryDeploymentBlock: plan.registryDeploymentBlock,
       expectedRegistryRuntimeHash: plan.expectedRegistryRuntimeHash, pendingBreak,
       institutions: institutions.map(source=>({ source, destination: plan.destinations?.[source.toLowerCase()],
         runtimeHash: plan.institutionRuntimeHashes?.[source.toLowerCase()] })) });
-    snapshot = { format: 'provian-break-snapshot', chainId: 8453, block, blockHash, monetary, ownership, pool, snapshotTotal:ownership.snapshotBalance };
   }
+  const snapshot = assembleSuccessionArtifact({ monetary, pool, ownership, pendingBreak, priorArtifact });
   const target = resolve(args[1]);
   writeFileSync(`${target}.tmp`, JSON.stringify(snapshot, null, 2) + '\n', { mode: 0o600 });
   renameSync(`${target}.tmp`, target);

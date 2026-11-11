@@ -59,6 +59,26 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'break-artifacts': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/break-artifacts.mjs', testMatchPath: 'scripts/recourse/break-artifacts.test.mjs',
+    mutations: [{ id: 'BREAK-ANCESTRY-CARRY', description: 'a new break silently drops earlier unissued entitlement artifacts',
+      find: 'ownership: pending.snapshot }, ...older]', replace: 'ownership: pending.snapshot }]',
+      expectedKilledBy: 'the actual snapshot assembly preserves prior artifacts in both ordinary and repeated-break output' }],
+  },
+  'restoration-bridge-ledger': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-bridge-ledger.ts',
+    testMatchPath: 'src/core/recourse/restoration-bridge-ledger.test.ts',
+    mutations: [{ id: 'BRIDGE-DESTINATION-CUTOFF', description: 'a restoration resurrects an already retired token balance',
+      find: "if (ledger.consumed.has(destination)) throw Error('recourse_bridge_destination_consumed');", replace: 'void destination;',
+      expectedKilledBy: 'a later restoration cannot resurrect an account already consumed at its kernel cutoff' },
+      { id: 'BRIDGE-PROTECTION', description: 'a bridge upgrades protected exchange value to reversible funds',
+        find: 'reversible += value.reversible; protectedValue += value.protected;',
+        replace: 'reversible += value.reversible + value.protected; protectedValue += 0n;',
+        expectedKilledBy: 'two unclaimed breaks carry protected and reversible components without creating spendable balances' },
+      { id: 'BRIDGE-EXACT-SOURCE', description: 'an altered per-source partition passes because the aggregate matches',
+        find: 'checkedComponents(value).balance !== source.amount', replace: 'checkedComponents(value).balance < 0n',
+        expectedKilledBy: 'duplicates, partial balances and altered partitions refuse atomically, even with the same aggregate' }],
+  },
   'hash-account-delivery': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/hash-account-delivery.ts',
     testMatchPath: 'src/hash-account-delivery.test.ts',
