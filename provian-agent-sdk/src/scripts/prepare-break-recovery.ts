@@ -5,6 +5,8 @@ import { homedir } from 'os';
 import { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, recoverAgentBreak, readAgentBreakEntitlement, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, cancelActiveHashWalletOperation, pendingActiveHashWalletOperations } from '../break-recovery-store';
 import { ownerChainNetwork } from '../protocol-runtime';
 import { readLocalKeystoreSecret } from '../local-keystore-secret';
+import { deliverActiveHashWalletOperation, reconcileActiveHashWalletOperation } from '../active-hash-delivery';
+import { hashDeliveryId } from '../hash-account-delivery';
 import { hashAccountCall } from '../hash-account';
 import type { HashWalletCall } from '../break-recovery-store';
 import { readBreakRecoveryContext } from '../break-recovery';
@@ -17,13 +19,19 @@ function savePublicOutput(file: string, value: unknown): void {
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   if (command === '--help') {
-    console.log('prepare-break-recovery provision IDENTITY COMMITMENT\nprepare-break-recovery prepare ENTITLEMENT_JSON DESTINATION OUTPUT_JSON\nprepare-break-recovery complete IDENTITY COMMITMENT TRANSACTION_HASH\nprepare-break-recovery account-prepare CALL_JSON OUTPUT_JSON\nprepare-break-recovery account-pending OUTPUT_JSON\nprepare-break-recovery account-cancel OUTPUT_JSON\nprepare-break-recovery account-complete TRANSACTION_HASH\nProvision saves an encrypted hash-account key and prints only its public root. Deploy the matching account, then prepare the authenticated registration or restoration call. Rerun after registration to prepare restoration. Complete independently verifies the finalized restoration and activates the encrypted hash wallet, retaining the old EOA. Calls go to the current executor; restoration needs the independent authority. The provision and prepare commands do not broadcast.');
+    console.log('prepare-break-recovery provision IDENTITY COMMITMENT\nprepare-break-recovery prepare ENTITLEMENT_JSON DESTINATION OUTPUT_JSON\nprepare-break-recovery complete IDENTITY COMMITMENT TRANSACTION_HASH\nprepare-break-recovery account-prepare CALL_JSON OUTPUT_JSON\nprepare-break-recovery account-pending OUTPUT_JSON\nprepare-break-recovery account-cancel OUTPUT_JSON\nprepare-break-recovery account-complete TRANSACTION_HASH\nprepare-break-recovery account-deliver OPERATION_ID [--cancel]\nprepare-break-recovery account-inspect OPERATION_ID [--cancel]\nProvision saves an encrypted hash-account key and prints only its public root. Deploy the matching account, then prepare the authenticated registration or restoration call. Rerun after registration to prepare restoration. Complete independently verifies the finalized restoration and activates the encrypted hash wallet, retaining the old EOA. Calls go to the current executor; restoration needs the independent authority. The provision and prepare commands do not broadcast.');
     console.log('prepare-break-recovery recover [ENTITLEMENT_JSON]\nWith no file, recover privately discovers the entitlement using the encrypted backup. Recover runs free deployment and registration, requests the separate authority restoration, verifies its finalized receipt, and activates the encrypted hash wallet. Rerun after interruption. The old wallet and its other assets remain encrypted.');
+    console.log('account-deliver pays ETH gas from the encrypted agent EOA for an exact retained hash operation; retries reuse signed gas bytes. account-inspect only checks receipts and never broadcasts. OPERATION_ID is printed by account-prepare or account-cancel.');
     return;
   }
   const directory = path.join(homedir(), '.provian');
   const passphrase = readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
   if (!passphrase) throw Error('break_backup_secret_unavailable');
+  if ((command === 'account-deliver' || command === 'account-inspect') && (args.length === 1 || (args.length === 2 && args[1] === '--cancel'))) {
+    const execute = command === 'account-inspect' ? reconcileActiveHashWalletOperation : deliverActiveHashWalletOperation;
+    console.log(JSON.stringify(await execute({ directory, passphrase, operationId: args[0], variant: args[1] === '--cancel' ? 'cancellation' : 'operation',
+      gasTransport: { rpcUrl: process.env.BASE_RPC_URL ?? 'https://mainnet.base.org' } }))); return;
+  }
   if (command === 'recover' && args.length <= 1) {
     const network = ownerChainNetwork(), relayUrl = process.env.PROVIAN_RELAY_URL ?? 'https://api.provian.ai';
     let entitlement: BreakOwnerEntitlement;
@@ -43,16 +51,18 @@ async function main(): Promise<void> {
     const call = JSON.parse(data) as HashWalletCall;
     const operation = await prepareActiveHashWalletOperation({ directory, passphrase, network: ownerChainNetwork(), call });
     savePublicOutput(args[1], { operation, transaction: { chainId: '8453', to: operation.account, value: '0', data: hashAccountCall(operation) } });
-    console.log(JSON.stringify({ phase: 'hash_operation_prepared', broadcast: false })); return;
+    console.log(JSON.stringify({ phase: 'hash_operation_prepared', operationId: hashDeliveryId(operation), broadcast: false })); return;
   }
   if (command === 'account-pending' && args.length === 1) {
-    savePublicOutput(args[0], await pendingActiveHashWalletOperations({ directory, passphrase }));
+    const pending = await pendingActiveHashWalletOperations({ directory, passphrase });
+    savePublicOutput(args[0], { ...pending, operationId: pending.operation ? hashDeliveryId(pending.operation) : null,
+      cancellationId: pending.cancellation ? hashDeliveryId(pending.cancellation) : null });
     console.log(JSON.stringify({ phase: 'pending_operations_saved', broadcast: false })); return;
   }
   if (command === 'account-cancel' && args.length === 1) {
     const operation = await cancelActiveHashWalletOperation({ directory, passphrase, network: ownerChainNetwork() });
     savePublicOutput(args[0], { operation, transaction: { chainId: '8453', to: operation.account, value: '0', data: hashAccountCall(operation) } });
-    console.log(JSON.stringify({ phase: 'cancellation_prepared', broadcast: false, originalMayStillExecute: true })); return;
+    console.log(JSON.stringify({ phase: 'cancellation_prepared', operationId: hashDeliveryId(operation), broadcast: false, originalMayStillExecute: true })); return;
   }
   if (command === 'account-complete' && args.length === 1) {
     const outcome = await completeActiveHashWalletOperation({ directory, passphrase, network: ownerChainNetwork(), transactionHash: args[0] });

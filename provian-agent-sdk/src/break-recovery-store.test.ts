@@ -1,3 +1,4 @@
+import { hashDeliveryId } from './hash-account-delivery';
 import { deriveBoundRecoveryCredential } from './recourse-address-credential';
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
@@ -5,7 +6,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { hexlify, getBytes, hashMessage } from 'ethers';
 import { hashAccountContractDigest } from './hash-account-data';
-import { signActiveHashWalletMessage } from './break-recovery-store';
+import { signActiveHashWalletMessage, readActiveHashWalletDelivery } from './break-recovery-store';
 import { recoveryCommitment, recoverySigningRoot } from './recourse-hash-authorization';
 import { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, readActiveHashWallet, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, cancelActiveHashWalletOperation, pendingActiveHashWalletOperations } from './break-recovery-store';
 import { readHashAccountState, verifyHashAccountVariantReceipt } from './hash-account-chain';
@@ -167,8 +168,11 @@ it('reserves one exact hash-wallet spend, keeps the next seed on retry and advan
  expect(await completeActiveHashWalletOperation({directory,passphrase,network,transactionHash})).toBe('target_failed');
  expect(await completeActiveHashWalletOperation({directory,passphrase,network,transactionHash})).toBe('target_failed');
  expect(fs.readdirSync(path.join(directory,'hash-wallet-history'))).toHaveLength(1);
+ expect(await readActiveHashWalletDelivery({directory,passphrase})).toMatchObject({operation:retry,cancellation:null,completed:{transactionHash,outcome:'target_failed'}});
  vi.mocked(readHashAccountState).mockResolvedValue({root:operation.nextCommitment,nonce:'1',manifestHash:commitment,blockHash:commitment});
  const next=await prepareActiveHashWalletOperation(request);expect(next.signingRoot).toBe(operation.nextCommitment);expect(next.nonce).toBe('1');
+ expect(await readActiveHashWalletDelivery({directory,passphrase,operationId:hashDeliveryId(retry)})).toMatchObject({operation:retry,completed:{transactionHash,outcome:'target_failed'}});
+ expect(await readActiveHashWalletDelivery({directory,passphrase,operationId:hashDeliveryId(next)})).toMatchObject({operation:next,completed:null});
  vi.mocked(assertCurrentProtocolTransaction).mockRejectedValueOnce(Error('retired'));
  await expect(prepareActiveHashWalletOperation(request)).rejects.toThrow('retired');
  // A retirement cannot strand the reserved nonce. Both exact variants remain
@@ -182,6 +186,13 @@ it('reserves one exact hash-wallet spend, keeps the next seed on retry and advan
  vi.mocked(verifyHashAccountVariantReceipt).mockImplementation(async operations=>({operation:operations[1],outcome:'succeeded'}));
  expect(await completeActiveHashWalletOperation({directory,passphrase,network,transactionHash:`0x${'aa'.repeat(32)}`})).toBe('cancelled');
  expect(await pendingActiveHashWalletOperations({directory,passphrase})).toEqual({operation:null,cancellation:null});
+ expect(await readActiveHashWalletDelivery({directory,passphrase})).toMatchObject({operation:next,cancellation:cancel,completed:{transactionHash:`0x${'aa'.repeat(32)}`,outcome:'cancelled'}});
+ expect(await readActiveHashWalletDelivery({directory,passphrase,operationId:hashDeliveryId(retry)})).toMatchObject({operation:retry,completed:{transactionHash,outcome:'target_failed'}});
+ const locator=path.join(directory,'hash-wallet-operations',`${hashDeliveryId(retry).slice(2)}.json`),savedLocator=fs.readFileSync(locator,'utf8');
+ fs.writeFileSync(locator,JSON.stringify({transactionHash:`0x${'aa'.repeat(32)}`}));
+ await expect(readActiveHashWalletDelivery({directory,passphrase,operationId:hashDeliveryId(retry)})).rejects.toThrow('history_invalid');fs.writeFileSync(locator,savedLocator);
+ const archive=path.join(directory,'hash-wallet-history',`${id.slice(2)}-${'aa'.repeat(32)}.json`);fs.writeFileSync(archive,'corrupt');
+ await expect(readActiveHashWalletDelivery({directory,passphrase})).rejects.toThrow();
 }, 30000);
 it('selected hash account signs exact membership bytes without curve fallback or key rotation', async () => {
  const rpc={request:async()=>{throw Error('unexpected RPC');}};

@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypt
 import * as fs from 'fs';
 import * as path from 'path';
 import { concat, hashMessage, hexlify, sha256, toUtf8Bytes } from 'ethers';
+import { hashDeliveryId } from './hash-account-delivery';
 import { atomicReplacePrivateFile } from './durable-private-file';
 import { durableDirectory } from './durable-directory';
 import { tryAcquireFileLock } from './meter/file-lock';
@@ -441,6 +442,15 @@ export async function completeActiveHashWalletOperation(input: { directory: stri
     // stays bounded while all predecessor keys remain recoverable.
     const archive = path.join(directory, 'hash-wallet-history', `${active.identity.slice(2)}-${input.transactionHash.slice(2)}.json`);
     saveRecord(archive, input.passphrase, record);
+    // The index is only a locator: reads must authenticate the encrypted archive
+    // and compare its exact operation id. Persist it before clearing pending.
+    for (const variant of variants) {
+      const index = path.join(directory, 'hash-wallet-operations', `${hashDeliveryId(variant).slice(2)}.json`);
+      durableDirectory(path.dirname(index));
+      const value = JSON.stringify({ transactionHash: input.transactionHash });
+      atomicReplacePrivateFile(index, value);
+      if (fs.readFileSync(index, 'utf8') !== value) throw Error('hash_wallet_history_index_unconfirmed');
+    }
     record.accountSigningSeed = record.pendingAccount.nextSeed;
     delete record.pendingAccount;
     saveRecord(file, input.passphrase, record);
@@ -459,6 +469,50 @@ Promise<{ operation: SignedHashAccountOperation | null; cancellation: SignedHash
     const record = readRecord(recordFile(directory, active.identity, active.commitment, active.context), input.passphrase, active.identity, active.commitment, active.context);
     if (!record || record.destination !== active.address || record.restoredTransaction !== active.transactionHash) throw Error('hash_wallet_record_mismatch');
     return { operation: record.pendingAccount?.operation ?? null, cancellation: record.pendingAccount?.cancellation ?? null };
+  });
+}
+/** A completion can precede the delivery-status write. Recover its original
+ * variants from encrypted history rather than treating the missing pending
+ * record as permission to sign another operation. No spending seed is returned. */
+export async function readActiveHashWalletDelivery(input: { directory: string; passphrase: string; operationId?: string }): Promise<{
+  active: ActiveHashWallet; operation: SignedHashAccountOperation | null; cancellation: SignedHashAccountOperation | null;
+  completed: { transactionHash: string; outcome: 'succeeded' | 'target_failed' | 'cancelled' } | null;
+}> {
+  const directory = path.resolve(input.directory);
+  return locked(directory, input.passphrase, async () => {
+    const active = readActiveHashWallet(directory);
+    if (!active) throw Error('hash_wallet_not_active');
+    const record = readRecord(recordFile(directory, active.identity, active.commitment, active.context), input.passphrase, active.identity, active.commitment, active.context);
+    if (!record || record.destination !== active.address || record.restoredTransaction !== active.transactionHash) throw Error('hash_wallet_record_mismatch');
+    const matches = (pending: BreakRecord['pendingAccount']) => !input.operationId || [pending?.operation, pending?.cancellation]
+      .some(operation => operation && hashDeliveryId(operation) === input.operationId);
+    if (input.operationId !== undefined && !hash.test(input.operationId)) throw Error('hash_wallet_delivery_invalid');
+    if (record.pendingAccount && matches(record.pendingAccount)) return { active, operation: record.pendingAccount.operation ?? null, cancellation: record.pendingAccount.cancellation ?? null, completed: null };
+    let completed = record.completedAccount;
+    if (input.operationId) {
+      const index = path.join(directory, 'hash-wallet-operations', `${input.operationId.slice(2)}.json`);
+      let fd: number;
+      try { fd = fs.openSync(index, fs.constants.O_RDONLY | (process.platform === 'win32' ? 0 : fs.constants.O_NOFOLLOW)); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; return { active, operation: null, cancellation: null, completed: null }; }
+      try {
+        const stat = fs.fstatSync(fd);
+        if (!stat.isFile() || stat.size > 1024 || (process.platform !== 'win32' && (stat.mode & 0o077))) throw Error('hash_wallet_history_invalid');
+        const value = JSON.parse(fs.readFileSync(fd, 'utf8')) as Record<string, unknown>;
+        if (!value || Object.keys(value).join(',') !== 'transactionHash' || typeof value.transactionHash !== 'string' || !hash.test(value.transactionHash)) throw Error('hash_wallet_history_invalid');
+        const saved = readRecord(path.join(directory, 'hash-wallet-history', `${active.identity.slice(2)}-${value.transactionHash.slice(2)}.json`),
+          input.passphrase, active.identity, active.commitment, active.context);
+        if (!saved || !matches(saved.pendingAccount) || saved.completedAccount?.transactionHash !== value.transactionHash) throw Error('hash_wallet_history_invalid');
+        completed = saved.completedAccount;
+      } finally { fs.closeSync(fd); }
+    }
+    if (!completed) return { active, operation: null, cancellation: null, completed: null };
+    if (!hash.test(completed.transactionHash) || !['succeeded', 'target_failed', 'cancelled'].includes(completed.outcome)) throw Error('hash_wallet_history_invalid');
+    const archive = readRecord(path.join(directory, 'hash-wallet-history', `${active.identity.slice(2)}-${completed.transactionHash.slice(2)}.json`),
+      input.passphrase, active.identity, active.commitment, active.context);
+    if (!archive?.pendingAccount || archive.destination !== active.address || archive.restoredTransaction !== active.transactionHash
+      || archive.completedAccount?.transactionHash !== completed.transactionHash || archive.completedAccount.outcome !== completed.outcome) throw Error('hash_wallet_history_invalid');
+    return { active, operation: archive.pendingAccount.operation ?? null, cancellation: archive.pendingAccount.cancellation ?? null,
+      completed: { transactionHash: completed.transactionHash, outcome: completed.outcome as 'succeeded' | 'target_failed' | 'cancelled' } };
   });
 }
 /** Explicit cancellation competes at the same nonce as the reserved call.

@@ -853,3 +853,7 @@ export { readAddressRecoveryBinding } from './recourse-binding-chain';
 
 export { deliverHashAccountOperation, hashDeliveryId } from './hash-account-delivery';
 export type { HashDeliveryPorts, HashDeliveryRecord, HashDeliveryAttempt, HashDeliveryResult, HashDeliveryOutcome } from './hash-account-delivery';
+
+export { deliverActiveHashWalletOperation, reconcileActiveHashWalletOperation } from './active-hash-delivery';
+export type { ActiveHashDeliveryInput } from './active-hash-delivery';
+export { readActiveHashWalletDelivery } from './break-recovery-store';

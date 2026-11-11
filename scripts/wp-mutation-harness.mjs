@@ -304,6 +304,27 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'active-hash-delivery': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/active-hash-delivery.ts',
+    testMatchPath: 'src/active-hash-delivery.test.ts',
+    mutations: [{ id: 'HASH-GAS-RETAINED-CALL', description: 'accept a retained gas transaction with another hash-account call',
+      find: ' || tx.to?.toLowerCase() !== operation.account', replace: '',
+      expectedKilledBy: 'a retained gas transaction with a changed call cannot be recovered' }],
+  },
+  'hash-delivery-journal': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/hash-delivery-journal.ts',
+    testMatchPath: 'src/active-hash-delivery.test.ts',
+    mutations: [{ id: 'HASH-GAS-JOURNAL-BINDING', description: 'allow a completed transport journal to be relocated to another operation or payer',
+      find: "return Buffer.from(JSON.stringify(['provian.hash.delivery.v1', id, sender]));", replace: "return Buffer.from(JSON.stringify(['provian.hash.delivery.v1']));",
+      expectedKilledBy: 'edited plaintext completion and modified ciphertext cannot invent a completed payment' }],
+  },
+  'hash-wallet-completed-history': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/break-recovery-store.ts',
+    testMatchPath: 'src/break-recovery-store.test.ts',
+    mutations: [{ id: 'HASH-COMPLETED-LOCATOR-BINDING', description: 'accept a history locator pointing at another completed operation',
+      find: ' || !matches(saved.pendingAccount)', replace: '',
+      expectedKilledBy: 'reserves one exact hash-wallet spend, keeps the next seed on retry and advances it even when the target fails' }],
+  },
   'bound-spending-authority': {
     runner: 'native-vitest', sourcePath: 'src/core/recourse/human-bound-spending.ts',
     testMatchPath: 'src/core/recourse/human-bound-spending.test.ts',

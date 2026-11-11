@@ -67,6 +67,8 @@ export const MONEY_PATH_ROOTS = Object.freeze([
   'provian-agent-sdk/src/break-',
   'provian-agent-sdk/src/free-break-recovery',
   'provian-agent-sdk/src/hash-account',
+  'provian-agent-sdk/src/hash-delivery',
+  'provian-agent-sdk/src/active-hash-delivery',
   'provian-agent-sdk/src/protocol-',
   'src/core/recourse/',
   'src/core/protocol/',
