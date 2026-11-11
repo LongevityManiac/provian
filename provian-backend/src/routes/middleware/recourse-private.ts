@@ -3,7 +3,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { assertRecoursePrivateAccess, verifyRecoursePrivateAccess } from '../../core/recourse/private-access';
 import { parseRecoveryOwnerOperation } from '../../core/recourse/owner-operation';
 import { OWNER_OPERATIONS } from '../../core/recourse/owner-operation-queue';
-import { parseBreakDeploymentRequest } from '../../core/recourse/break-deployment-data';
+import { parseAccountDeploymentRequest } from '../../core/recourse/break-deployment-data';
 import { BREAK_DEPLOYMENTS } from '../../core/recourse/break-deployment-queue';
 import { parseBreakRegistration } from '../../core/recourse/break-registration-data';
 import { BREAK_REGISTRATIONS } from '../../core/recourse/break-registration';
@@ -16,7 +16,7 @@ const privatePrefix = /^\/(?:owner-operations|break-entitlements|break-recovery-
  * assertion of its owner. No worker or chain reconciliation runs before this. */
 async function targetIdentity(db: Firestore, path: string, request: unknown): Promise<string> {
   if (path === 'owner-operations/recovery') return parseRecoveryOwnerOperation(request).identity;
-  if (path === 'break-deployments') return parseBreakDeploymentRequest(request).identity;
+  if (path === 'break-deployments') return parseAccountDeploymentRequest(request).identity;
   if (path === 'break-registrations') return parseBreakRegistration(request).deployment.identity;
   if (path === 'break-restorations') return breakRestorationDetails(parseBreakRestorationRequest(request)).identity;
   const discovery = /^break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/(0x[0-9a-f]{64})$/.exec(path);
@@ -28,7 +28,7 @@ async function targetIdentity(db: Firestore, path: string, request: unknown): Pr
   const row = await db.collection(collections[operation[1]]).doc(operation[2]).get();
   if (!row.exists) throw Error('recourse_private_access_refused');
   if (operation[1] === 'owner-operations') return parseRecoveryOwnerOperation(row.get('operation')).identity;
-  if (operation[1] === 'break-deployments') return parseBreakDeploymentRequest(row.get('request')).identity;
+  if (operation[1] === 'break-deployments') return parseAccountDeploymentRequest(row.get('request')).identity;
   if (operation[1] === 'break-registrations') return parseBreakRegistration(row.get('request')).deployment.identity;
   const identity: unknown = row.get('identity');
   if (typeof identity !== 'string' || !/^0x[0-9a-f]{64}$/.test(identity)) throw Error('recourse_private_access_refused');

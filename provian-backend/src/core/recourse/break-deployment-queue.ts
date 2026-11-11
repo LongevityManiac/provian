@@ -4,7 +4,7 @@ import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import type { OwnerOperationChain } from './owner-operation-queue';
-import { breakDeploymentDigest, parseBreakDeploymentRequest, type BreakDeploymentRequest } from './break-deployment-data';
+import { accountDeploymentDigest, parseAccountDeploymentRequest, type AccountDeploymentRequest } from './break-deployment-data';
 import { finalizedOwnerTransaction } from './transaction-finality';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
 
@@ -15,13 +15,15 @@ const abi = new Interface([
   'function hashAccountFactory() view returns(address)', 'function hashAccountCodeHash() view returns(bytes32)',
   'function accountAddress(bytes32) view returns(address)', 'function deploy(bytes32) returns(address)',
   'function keyCommitment() view returns(bytes32)', 'function nonce() view returns(uint256)',
+  'function ownerAuthorizationNonce(bytes32) view returns(uint256)', 'function ownerRecoveryCommitment(bytes32) view returns(bytes32)',
+  'function ownerSigningRoot(bytes32) view returns(bytes32)', 'function recoveredDestination(bytes32) view returns(address)',
   'function operationalMinter() view returns(address)', 'function submitter() view returns(address)', 'function pool() view returns(address)',
 ]);
 export const BREAK_DEPLOYMENTS = 'recourse_break_deployments_v1';
 export const BREAK_DEPLOYMENT_SLOTS = 'recourse_break_deployment_slots_v1';
 export const BREAK_DEPLOYMENT_ATTEMPTS = 'recourse_break_deployment_attempts_v1';
 export interface CheckedBreakDeployment {
-  readonly id: string; readonly request: BreakDeploymentRequest; readonly executor: string; readonly calldata: string;
+  readonly id: string; readonly request: AccountDeploymentRequest; readonly executor: string; readonly calldata: string;
   readonly gasPayer: string; readonly manifestHash: string; readonly blockHash: string; readonly alreadyDeployed: boolean;
 }
 const checked = new WeakSet<CheckedBreakDeployment>();
@@ -40,7 +42,7 @@ export function breakDeploymentChain(): OwnerOperationChain {
 /** Signature, snapshot membership and factory binding precede any gas spend.
  * The gas key has no restoration-authority role. */
 export async function checkBreakDeployment(value: unknown, port: OwnerOperationChain = breakDeploymentChain()): Promise<CheckedBreakDeployment> {
-  const request = parseBreakDeploymentRequest(value), id = breakDeploymentDigest(request);
+  const request = parseAccountDeploymentRequest(value), id = accountDeploymentDigest(request);
   if (sha256(request.publicKey) !== request.signingRoot
     || sha256(concat([request.recoverySecret, request.signingRoot])) !== request.commitment) throw Error('break_deployment_owner_proof_invalid');
   const { slh_dsa_sha2_128s } = await import('@noble/post-quantum/slh-dsa.js');
@@ -57,11 +59,20 @@ export async function checkBreakDeployment(value: unknown, port: OwnerOperationC
   if (String(await call(authorization, 'breakOrigin')).toLowerCase() !== request.breakOrigin) throw Error('break_deployment_retired');
   if (String(await call(request.breakOrigin, 'hashAccountFactory')).toLowerCase() !== request.factory
     || String(await call(request.factory, 'accountAddress', [request.initialRoot])).toLowerCase() !== request.account) throw Error('break_deployment_binding_invalid');
-  const [previous, cutoff, root] = await Promise.all(['predecessor', 'lastGoodBlock', 'restorationRoot'].map(method => call(request.breakOrigin, method)));
-  let leaf = sha256(AbiCoder.defaultAbiCoder().encode(['string', 'address', 'uint256', 'bytes32', 'uint256', 'bytes32'],
-    ['Provian restoration', previous, cutoff, request.identity, request.amount, request.commitment]));
-  for (const sibling of request.proof) leaf = sha256(concat(leaf < sibling ? [leaf, sibling] : [sibling, leaf]));
-  if (leaf !== root) throw Error('break_deployment_entitlement_invalid');
+  if (request.kind === 'replacement') {
+    if (request.kernel !== kernel || request.revision !== String(deployment.revision)) throw Error('break_deployment_retired');
+    if (String(await call(authorization, 'ownerAuthorizationNonce', [request.identity])) !== String(request.nonce)
+      || String(await call(authorization, 'ownerRecoveryCommitment', [request.identity])) !== request.commitment
+      || String(await call(authorization, 'ownerSigningRoot', [request.identity])) !== request.signingRoot) throw Error('break_deployment_owner_changed');
+    const destination = String(await call(authorization, 'recoveredDestination', [request.identity])).toLowerCase();
+    if (destination === ZeroAddress || destination === request.account) throw Error('break_deployment_destination_invalid');
+  } else {
+    const [previous, cutoff, root] = await Promise.all(['predecessor', 'lastGoodBlock', 'restorationRoot'].map(method => call(request.breakOrigin, method)));
+    let leaf = sha256(AbiCoder.defaultAbiCoder().encode(['string', 'address', 'uint256', 'bytes32', 'uint256', 'bytes32'],
+      ['Provian restoration', previous, cutoff, request.identity, request.amount, request.commitment]));
+    for (const sibling of request.proof) leaf = sha256(concat(leaf < sibling ? [leaf, sibling] : [sibling, leaf]));
+    if (leaf !== root) throw Error('break_deployment_entitlement_invalid');
+  }
   const code = await port.agree('eth_getCode', [request.account, tag]);
   if (typeof code !== 'string' || !/^0x(?:[0-9a-f]{2})*$/.test(code)) throw Error('break_deployment_rpc_invalid');
   // CREATE2 binds the initial root. A subsequently rotated account has already
@@ -94,7 +105,7 @@ export async function readBreakDeployment(db: Firestore, id: string): Promise<Br
 }
 export async function queueBreakDeployment(db: Firestore, value: unknown, port?: OwnerOperationChain,
   finalized: typeof finalizedOwnerTransaction = finalizedOwnerTransaction): Promise<BreakDeploymentStatus> {
-  const request = parseBreakDeploymentRequest(value), id = breakDeploymentDigest(request);
+  const request = parseAccountDeploymentRequest(value), id = accountDeploymentDigest(request);
   const ref = db.collection(BREAK_DEPLOYMENTS).doc(id);
   const prior = await ref.get();
   if (prior.exists && prior.get('status') !== 'failed') return readBreakDeployment(db, id);
@@ -111,7 +122,9 @@ export async function queueBreakDeployment(db: Firestore, value: unknown, port?:
   }
   const plan = await checkBreakDeployment(request, port);
   const slotRef = db.collection(BREAK_DEPLOYMENT_SLOTS).doc(sha256(AbiCoder.defaultAbiCoder().encode(
-    ['address', 'bytes32'], [request.breakOrigin, request.identity])));
+    request.kind === 'deploy' ? ['address', 'bytes32'] : ['string', 'address', 'uint256', 'bytes32', 'uint256'],
+    request.kind === 'deploy' ? [request.breakOrigin, request.identity]
+      : ['replacement', request.kernel, request.revision, request.identity, request.nonce])));
   await db.runTransaction(async tx => {
     const [current, slot] = await Promise.all([tx.get(ref), tx.get(slotRef)]);
     if (current.exists && current.get('status') !== 'failed') return;

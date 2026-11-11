@@ -7,7 +7,7 @@ import { executeBreakDeployment, type BreakDeploymentSigner, type BreakDeploymen
 import { BREAK_REGISTRATIONS, checkBreakRegistration, assertCheckedBreakRegistration, queueBreakRegistration,
   executeBreakRegistration } from './break-registration';
 import { BREAK_DEPLOYMENTS, BREAK_DEPLOYMENT_ATTEMPTS, queueBreakDeployment, checkBreakDeployment, assertCheckedBreakDeployment } from './break-deployment-queue';
-import { breakDeploymentDigest, type BreakDeploymentRequest } from './break-deployment-data';
+import { breakDeploymentDigest, replacementDeploymentDigest, type ReplacementDeploymentRequest, type BreakDeploymentRequest } from './break-deployment-data';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import type { ProtocolDeployment } from '../protocol/pointer';
 // Jest's CommonJS VM cannot load this ESM package. The test bridge executes the
@@ -28,6 +28,7 @@ const abi = new Interface(['function ownerAuthorization() view returns(address)'
   'function restorationRoot() view returns(bytes32)', 'function hashAccountFactory() view returns(address)',
   'function accountAddress(bytes32) view returns(address)', 'function deploy(bytes32) returns(address)',
   'function operationalMinter() view returns(address)', 'function submitter() view returns(address)', 'function pool() view returns(address)',
+  'function ownerAuthorizationNonce(bytes32) view returns(uint256)', 'function recoveredDestination(bytes32) view returns(address)',
   'function hashAccountCodeHash() view returns(bytes32)', 'function restoredIdentity(bytes32) view returns(bool)',
   'function ownerRecoveryCommitment(bytes32) view returns(bytes32)', 'function ownerSigningRoot(bytes32) view returns(bytes32)',
   'function registerBreakOwner(bytes32,uint256,bytes32,bytes32,bytes32[])']);
@@ -46,7 +47,7 @@ beforeAll(() => {
 });
 function port(mode = 'valid', gasPayer = a(13)): OwnerOperationChain {
   return { async deployment() { return { addresses: { kernel: a(1), settlement: a(9), recoursePool: a(10) },
-    blockHash: h(11), manifestHash: h(12) } as ProtocolDeployment; }, async agree(method, params) {
+    blockHash: h(11), manifestHash: h(12), revision: 4n } as ProtocolDeployment; }, async agree(method, params) {
     expect(params.at(-1)).toEqual({ blockHash: h(11), requireCanonical: true });
     if (method === 'eth_getCode') return mode.startsWith('registration') ? '0x6000' : '0x';
     const call = abi.parseTransaction({ data: (params[0] as { data: string }).data })!;
@@ -55,12 +56,12 @@ function port(mode = 'valid', gasPayer = a(13)): OwnerOperationChain {
       return '0x';
     }
     const account = (call.name === 'accountAddress' || call.name === 'deploy') && call.args[0] !== h(6) ? a(6) : a(5);
-    const values: Record<string, unknown> = { ownerAuthorization: a(2), kernel: a(1), breakOrigin: a(3),
+    const values: Record<string, unknown> = { ownerAuthorizationNonce: mode === 'replacement-nonce' ? 2 : 1, recoveredDestination: mode === 'replacement-destination' ? a(5) : a(44), ownerAuthorization: a(2), kernel: a(1), breakOrigin: a(3),
       hashAccountFactory: mode === 'factory' ? a(99) : a(4), accountAddress: account, predecessor: a(8), lastGoodBlock: 100,
       restorationRoot: mode === 'proof' ? h(99) : leaf, operationalMinter: a(9), submitter: gasPayer, pool: a(10),
       deploy: mode === 'simulation' ? a(99) : account, hashAccountCodeHash: keccak256('0x6000'),
       restoredIdentity: mode === 'registration-restored', ownerRecoveryCommitment: mode === 'registration-owner' ? h(99)
-        : mode === 'registration-done' ? request.commitment : h(0), ownerSigningRoot: request.signingRoot };
+        : mode === 'registration-done' || mode.startsWith('replacement') ? request.commitment : h(0), ownerSigningRoot: request.signingRoot };
     return abi.encodeFunctionResult(call.name, [values[call.name]]);
   } };
 }
@@ -103,10 +104,10 @@ test('registration worker persists the exact proof call before broadcast and nev
   expect(signer.sign).toHaveBeenCalledTimes(1);
 });
 
-async function workerFixture() {
+async function workerFixture(replacement = false) {
   const wallet = new Wallet(`0x${'12'.repeat(32)}`), address = wallet.address.toLowerCase();
   const fake = createFakeFirestore({ strictTransactionOrder: true }), db = fake as unknown as Firestore;
-  const chain = port('valid', address), queued = await queueBreakDeployment(db, request, chain);
+  const chain = port(replacement ? 'replacement' : 'valid', address), queued = await queueBreakDeployment(db, replacement ? replacementRequest() : request, chain);
   const signer: BreakDeploymentSigner = { address,
     sign: jest.fn(plan => wallet.signTransaction({ chainId: 8453, type: 2, nonce: 3, to: plan.executor, data: plan.calldata,
       value: 0, gasLimit: 3_000_000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
@@ -199,4 +200,47 @@ test('changing the intended account, root, amount or identity invalidates the re
     await expect(checkBreakDeployment({ ...request, ...patch }, port())).rejects.toThrow('owner_proof_invalid');
   }
   await expect(checkBreakDeployment({ ...request, proof: [], admin: true }, port())).rejects.toThrow('request_invalid');
+});
+
+function replacementRequest(overrides: Partial<ReplacementDeploymentRequest> = {}): ReplacementDeploymentRequest {
+  const { amount: _amount, proof: _proof, ...common } = request;
+  const replacement: ReplacementDeploymentRequest = { ...common, kind: 'replacement', kernel: a(1), revision: '4', nonce: 1, ...overrides };
+  const signature = execFileSync(process.execPath, ['--input-type=module', '-e',
+    "import {slh_dsa_sha2_128s as s} from '@noble/post-quantum/slh-dsa.js'; const k=s.keygen(new Uint8Array(48).fill(1)); console.log('0x'+Buffer.from(s.sign(Buffer.from(process.argv[1].slice(2),'hex'),k.secretKey,{extraEntropy:false})).toString('hex'));", replacementDeploymentDigest(replacement)], { encoding: 'utf8' }).trim();
+  return { ...replacement, signature };
+}
+test('replacement deployment requires current independent owner authority and refuses retired, replayed or same-account requests', async () => {
+  const replacement = replacementRequest();
+  expect(await checkBreakDeployment(replacement, port('replacement'))).toMatchObject({executor:a(4),gasPayer:a(13),alreadyDeployed:false});
+  await expect(checkBreakDeployment(replacement, port('replacement-nonce'))).rejects.toThrow('owner_changed');
+  await expect(checkBreakDeployment(replacement, port('replacement-destination'))).rejects.toThrow('destination_invalid');
+  await expect(checkBreakDeployment(replacementRequest({revision:'3'}),port('replacement'))).rejects.toThrow('retired');
+  await expect(checkBreakDeployment(replacement,port('valid'))).rejects.toThrow('owner_changed');
+  await expect(checkBreakDeployment({...replacement,account:a(6)},port('replacement'))).rejects.toThrow('owner_proof_invalid');
+});
+test('one sponsored replacement destination is retained per authorization nonce without blocking a later recovery', async () => {
+  const db=createFakeFirestore() as unknown as Firestore;
+  const first=replacementRequest();await queueBreakDeployment(db,first,port('replacement'));
+  const other=replacementRequest({initialRoot:h(88),account:a(6)});
+  await expect(queueBreakDeployment(db,other,port('replacement'))).rejects.toThrow('destination_selected');
+  const later=replacementRequest({initialRoot:h(88),account:a(6),nonce:2});
+  expect(await queueBreakDeployment(db,later,port('replacement-nonce'))).toMatchObject({status:'queued'});
+});
+
+test('replacement worker keeps a signed attempt across owner advance but releases an obsolete unsigned reservation', async () => {
+ const signed=await workerFixture(true);
+ (signed.signer.broadcast as jest.Mock).mockRejectedValueOnce(Error('response_lost'));
+ await expect(executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).rejects.toThrow('response_lost');
+ const raw=String(signed.fake.store.get(`${BREAK_DEPLOYMENTS}/${signed.id}`)!.signedTransaction);
+ signed.ports.check=jest.fn(async()=>{throw Error('break_deployment_owner_changed');});
+ expect(await executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).toBe('submitted');
+ expect(signed.signer.sign).toHaveBeenCalledTimes(1);expect(signed.signer.broadcast).toHaveBeenLastCalledWith(raw);expect(signed.ports.check).not.toHaveBeenCalled();
+ (signed.ports.finalized as jest.Mock).mockResolvedValue({transactionHash:keccak256(raw),blockHash:h(40),block:100,status:1});
+ expect(await executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).toBe('confirmed');
+ const unsigned=await workerFixture(true);
+ (unsigned.signer.sign as jest.Mock).mockRejectedValueOnce(Error('signer_crashed'));
+ await expect(executeBreakDeployment(unsigned.db,unsigned.id,unsigned.signer,unsigned.ports)).rejects.toThrow('signer_crashed');
+ unsigned.ports.check=value=>checkBreakDeployment(value,port('replacement-nonce',unsigned.signer.address));
+ expect(await executeBreakDeployment(unsigned.db,unsigned.id,unsigned.signer,unsigned.ports)).toBe('failed');
+ expect(unsigned.signer.broadcast).not.toHaveBeenCalled();expect(unsigned.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${unsigned.signer.address}`)?.pending_operation).toBeNull();
 });

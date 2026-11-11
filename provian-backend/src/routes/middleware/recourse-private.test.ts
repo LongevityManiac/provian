@@ -9,6 +9,8 @@ import { privateRecourseIntent } from '../../core/recourse/private-access';
 import { OWNER_EXECUTOR_ABI } from '../../core/recourse/owner-operation';
 import { OWNER_OPERATIONS } from '../../core/recourse/owner-operation-queue';
 import { BREAK_DEPLOYMENTS } from '../../core/recourse/break-deployment-queue';
+import * as deploymentQueue from '../../core/recourse/break-deployment-queue';
+import * as deploymentRuntime from '../../core/recourse/break-deployment-runtime';
 import { BREAK_REGISTRATIONS } from '../../core/recourse/break-registration';
 import { BREAK_RESTORATIONS } from '../../core/recourse/break-restoration-queue';
 import { BREAK_RESTORATION_TUPLE } from '../../core/recourse/break-restoration-data';
@@ -143,3 +145,31 @@ test('the production router mounts the private gate before its actual status han
   f.fake.store.set(`${OWNER_OPERATIONS}/${id}`, { ...row, operation: inputs(other).operation, status: 'queued', transactionHash: null });
   expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path))).status).toBe(404);
 });
+
+test('mounted replacement submission and status retain private owner authentication and scrub request material', async () => {
+  const f=fixture(),app=express(),path='break-deployments';
+  const {amount:_amount,proof:_proof,...common}=inputs(identity).deployment;
+  const replacement={...common,kind:'replacement',kernel:a(1),revision:'1',nonce:1};
+  const status={id,status:'queued' as const,transactionHash:null};
+  f.fake.store.set(`${BREAK_DEPLOYMENTS}/${id}`,{request:replacement,...status});
+  const queued=jest.spyOn(deploymentQueue,'queueBreakDeployment').mockResolvedValue(status);
+  const worker=jest.spyOn(deploymentRuntime,'runBreakDeploymentWorker').mockResolvedValue(null);
+  app.use(express.json({limit:'256kb'}));
+  app.use('/v1/recourse',createRecourseRouter({db:f.fake as unknown as Firestore} as AgentBankDeps,
+    (_req,res)=>{res.status(401).json({error:'owner_auth_required'});}));
+  try {
+    expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path,replacement))).status).toBe(200);
+    expect(queued).toHaveBeenCalledWith(f.fake,replacement);expect(worker).toHaveBeenCalledTimes(1);
+    queued.mockClear();worker.mockClear();
+    const foreign={...replacement,identity:other};
+    expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path,foreign))).status).toBe(404);
+    expect((await http(app).post(`/v1/recourse/${path}`).send({request:replacement})).status).toBe(404);
+    const signed=envelope(path,replacement);
+    expect((await http(app).post(`/v1/recourse/${path}`).send({...signed,request:{...replacement,nonce:2}})).status).toBe(404);
+    expect(queued).not.toHaveBeenCalled();expect(worker).not.toHaveBeenCalled();
+    const lookup=`${path}/${id}`;
+    expect((await http(app).post(`/v1/recourse/${lookup}`).send(envelope(lookup))).body).toEqual(status);
+    f.fake.store.set(`${BREAK_DEPLOYMENTS}/${id}`,{request:foreign,...status});
+    expect((await http(app).post(`/v1/recourse/${lookup}`).send(envelope(lookup))).status).toBe(404);
+  } finally {queued.mockRestore();worker.mockRestore();}
+},30000);

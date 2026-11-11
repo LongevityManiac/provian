@@ -304,6 +304,13 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'replacement-deployment-owner': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/break-deployment-queue.ts',
+    testMatchPath: 'src/core/recourse/break-deployment-queue.test.ts',
+    mutations: [{ id: 'REPLACEMENT-CURRENT-NONCE', description: 'sponsor a replacement using an obsolete owner authorization nonce',
+      find: "String(await call(authorization, 'ownerAuthorizationNonce', [request.identity])) !== String(request.nonce)", replace: 'false',
+      expectedKilledBy: 'replacement deployment requires current independent owner authority and refuses retired, replayed or same-account requests' }],
+  },
   'confirmed-transfer-occurrence': {
     runner: 'native-vitest', sourcePath: 'src/core/provenance/ProvenanceEnvelopeManager.ts',
     testMatchPath: 'src/core/provenance/__tests__/confirmedTransfer.test.ts',
