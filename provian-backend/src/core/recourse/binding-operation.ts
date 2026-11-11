@@ -1,4 +1,6 @@
-import { Interface, Wallet, getBytes, hashMessage, verifyMessage } from 'ethers';
+import { Interface, getBytes, hashMessage } from 'ethers';
+import { configuredIdentityAttestor, assertIdentityAttestation, type IdentityAttestor } from './identity-attestor';
+export { configuredIdentityAttestor, type IdentityAttestor } from './identity-attestor';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
@@ -26,19 +28,6 @@ export const REGISTRY_ABI = new Interface([
 const KERNEL = new Interface(['function registryOperator() view returns(address)', 'function restorationAuthority() view returns(address)']);
 const POOL = new Interface(['function registryOperator() view returns(address)']);
 const TOKEN = new Interface(['function balanceOf(address) view returns(uint256)']);
-export interface IdentityAttestor {
-  readonly address: string;
-  signMessage(message: string): Promise<string>;
-  signBytes?(message: Uint8Array): Promise<string>;
-}
-/** The existing independently held settlement approver attests identity. It is
- * never the restoration authority and this role cannot debit a holder. */
-export function configuredIdentityAttestor(env: NodeJS.ProcessEnv = process.env): IdentityAttestor {
-  const key = env.PVT9_SETTLEMENT_APPROVER_KEY;
-  if (!key) throw new Error('recourse_identity_attestor_unavailable');
-  const wallet = new Wallet(key);
-  return { address: wallet.address.toLowerCase(), signMessage: message => wallet.signMessage(message), signBytes: message => wallet.signMessage(message) };
-}
 function chainPort(): OwnerOperationChain {
   const legs = getOperatorBoundRpcLegs('base');
   if (legs[0].operatorId === legs[1].operatorId) throw new Error('recourse_rpc_operators_not_independent');
@@ -211,12 +200,12 @@ export async function checkBindingOperation(db: Firestore, binding: OwnershipBin
     const consentBytes = getBytes(addressMembershipSigningHash(domain, consent));
     identitySignature = await attestor.signBytes(bindingBytes);
     const attestorSignature = await attestor.signBytes(consentBytes);
-    if (verifyMessage(bindingBytes, identitySignature).toLowerCase() !== identitySigner
-      || verifyMessage(consentBytes, attestorSignature).toLowerCase() !== identitySigner) throw Error('recourse_binding_attestation_invalid');
+    await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, bindingBytes, identitySignature);
+    await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, consentBytes, attestorSignature);
     memberConsent = Object.freeze({ consent: Object.freeze(consent), ownerSignature: memberInput.ownerSignature, attestorSignature });
   } else {
     identitySignature = await attestor.signMessage(message);
-    if (verifyMessage(message, identitySignature).toLowerCase() !== identitySigner) throw Error('recourse_binding_attestation_invalid');
+    await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, message, identitySignature);
   }
   const calldata = bindingOperationCalldata(binding, ownerSignature, identitySignature, String(deployment.revision), memberConsent);
   if (await chain.agree('eth_call', [{ to: registry, data: calldata }, pin]) !== '0x') throw new Error('recourse_binding_simulation_invalid');

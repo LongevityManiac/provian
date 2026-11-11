@@ -59,6 +59,36 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'identity-attestor': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/identity-attestor.ts',
+    testMatchPath: 'src/core/recourse/identity-attestor.test.ts',
+    mutations: [{ id: 'ATTESTOR-MAGIC', description: 'contract refusal accepts an invalid identity signature',
+      find: "result.toLowerCase() !== CONTRACT.encodeFunctionResult('isValidSignature', ['0x1626ba7e'])", replace: 'false',
+      expectedKilledBy: 'curve and contract signatures use exactly the consumer message digest and pinned block' }],
+  },
+  'membership-preparation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-preparation.ts',
+    testMatchPath: 'src/core/recourse/membership-preparation.test.ts',
+    mutations: [{ id: 'PREPARING-RECOVERY', description: 'recovery strands a preparing membership transition',
+      find: 'operation = await refreshRecoveredMembershipTransition(db, operation.id);\n    operation = await openPrivateMembershipConsents',
+      replace: 'operation = await openPrivateMembershipConsents',
+      expectedKilledBy: 'recovery during interrupted preparation refreshes the replacement before opening consents' }],
+  },
+  'membership-consent-operation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-consent-operation.ts',
+    testMatchPath: 'src/core/recourse/membership-consent-operation.test.ts',
+    mutations: [{ id: 'UNSIGNED-RECOVERY', description: 'obsolete unsigned request permanently holds the shared sponsor nonce',
+      find: "['retired', 'finished', 'stale', 'owner']", replace: "['retired', 'finished', 'stale']",
+      expectedKilledBy: 'recovery releases an interrupted unsigned gas reservation without erasing signed work' }],
+  },
+  'sponsored-operation-worker': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/sponsored-operation-worker.ts',
+    testMatchPath: 'src/core/recourse/membership-consent-operation.test.ts',
+    mutations: [{ id: 'DURABLE-RECEIPT', description: 'finalized gas transaction exits the retry queue before private receipt application',
+      find: 'if (terminal.status === 1 && adapter.reconcileConfirmed) await adapter.reconcileConfirmed(request, keccak256(raw));',
+      replace: 'void request;',
+      expectedKilledBy: 'sponsored receipt failure retains exact bytes and nonce until durable reconciliation succeeds' }],
+  },
   'private-membership-succession': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-succession.ts',
     testMatchPath: 'src/core/recourse/private-membership-succession.test.ts',

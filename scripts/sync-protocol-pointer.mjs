@@ -28,6 +28,10 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
+  ['provian-backend/src/core/recourse/hash-authorization.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-hash-authorization.ts'), 'utf8')
+    .replace("import { hkdf } from '@noble/hashes/hkdf';\nimport { sha256 } from '@noble/hashes/sha256';\nimport { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';",
+      "import { hkdf, sha256, bytesToHex, hexToBytes, utf8ToBytes } from './hash-primitives';")],
+  ['provian-backend/src/core/recourse/hash-account.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/hash-account.ts'), 'utf8').replace("'./recourse-hash-authorization'", "'./hash-authorization'")],
   ['provian-backend/src/core/recourse/issuance-ticket.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-issuance-ticket.ts'), 'utf8')
     .replace("'./recourse-membership-authorization'", "'./membership-authorization'")],
   ...['src/core/recourse/member-binding.ts', 'provian-backend/src/core/recourse/member-binding.ts'].map(path =>

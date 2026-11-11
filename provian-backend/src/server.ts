@@ -4611,6 +4611,8 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
       const breakRegistration = await runBreakRegistrationWorker(agentBankDeps.db);
       const ownerOperation = await runOwnerOperationWorker(agentBankDeps.db);
       const bindingOperation = await runBindingWorker(agentBankDeps.db);
+      const { runMembershipConsentWorker } = await import('./core/recourse/membership-runtime');
+      const membershipConsent = await runMembershipConsentWorker(agentBankDeps.db);
       const ownershipLedger = await runOwnershipLedgerWatcher(agentBankDeps.db);
       const { runRecourseLifecycleWatcher } = await import('./core/recourse/lifecycle-records');
       const recourseRecords = await runRecourseLifecycleWatcher(agentBankDeps.db);
@@ -4618,7 +4620,7 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
         const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
         await refreshRecoursePoolRatio(agentBankDeps.db);
       }
-      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, binding_operation: bindingOperation, owner_operation: ownerOperation, break_deployment: breakDeployment, break_registration: breakRegistration, recourse_records: recourseRecords };
+      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, binding_operation: bindingOperation, membership_consent: membershipConsent, owner_operation: ownerOperation, break_deployment: breakDeployment, break_registration: breakRegistration, recourse_records: recourseRecords };
     }, () => releaseChainRecordRunLease(db, { workerId, nowMs: Date.now(), workload: 'discovery' }));
     res.json(report);
   } catch (error) {

@@ -24,6 +24,9 @@ export interface SponsoredOperationAdapter<R, P extends SponsoredOperationPlan> 
   satisfied(plan: P): boolean;
   obsolete(error: unknown): boolean;
   finalized: typeof finalizedOwnerTransaction;
+  /** Optional durable consumer receipt application. Complete this before the
+   * operation leaves the retry queue or releases its reserved nonce. */
+  reconcileConfirmed?(request: R, transactionHash: string): Promise<void>;
 }
 function validateTransaction(raw: string, signer: string, target: string, data: string): void {
   const tx = Transaction.from(raw);
@@ -118,7 +121,10 @@ export async function executeSponsoredOperation<R, P extends SponsoredOperationP
     }
     // Success confirms this exact call, not current owner credentials. Consumers
     // must independently verify their present state before installing any key.
-    if (terminal !== null) return finish(terminal.status === 1 ? 'confirmed' : 'failed');
+    if (terminal !== null) {
+      if (terminal.status === 1 && adapter.reconcileConfirmed) await adapter.reconcileConfirmed(request, keccak256(raw));
+      return finish(terminal.status === 1 ? 'confirmed' : 'failed');
+    }
     await renew();
     // An already signed nonce must be reconciled even after a pointer change.
     // Only these previously persisted zero-value operation bytes can be retried.

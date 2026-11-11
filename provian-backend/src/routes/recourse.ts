@@ -28,6 +28,10 @@ import { runBindingWorker } from '../core/recourse/binding-runtime';
 import { readPublishedRecourseRule } from '../core/recourse/membership-rule';
 import { authenticatePrivateRecourse } from './middleware/recourse-private';
 import { addressRecoveryBinding } from '../core/recourse/address-binding';
+import { prepareMembershipTransition, ownedMembershipTransition } from '../core/recourse/membership-preparation';
+import { queueMembershipConsent, MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
+import { readSponsoredOperation } from '../core/recourse/sponsored-operation-queue';
+import { runMembershipConsentWorker } from '../core/recourse/membership-runtime';
 
 interface Owner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
 async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
@@ -164,6 +168,43 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   });
   router.use(authenticateOwner);
   router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
+  router.post('/membership-transitions', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), body: unknown = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).join(',') !== 'kind'
+        || !('kind' in body) || (body.kind !== 'join' && body.kind !== 'leave')) throw Error('recourse_membership_input');
+      res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { kind: body.kind }));
+    } catch { res.status(400).json({ error: 'recourse_membership_unavailable' }); }
+  });
+  router.get('/membership-transitions/:id', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps);
+      res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { id: String(req.params.id) }));
+    } catch { res.status(404).json({ error: 'recourse_membership_unavailable' }); }
+  });
+  router.post('/membership-consents', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), body: unknown = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body)
+        || Object.keys(body).sort().join(',') !== 'consent,domain,ownerSignature,transitionId') throw Error('recourse_membership_input');
+      const input = parseMembershipConsentRequest({ ...body, attestorSignature: '0x00' });
+      const { attestorSignature: _unused, ...request } = input;
+      const result = await queueMembershipConsent(deps.db, identityHash(owner.type, owner.id), request);
+      try { await runMembershipConsentWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
+      res.status(202).json(result);
+    } catch { res.status(400).json({ error: 'recourse_membership_consent_refused' }); }
+    finally { req.body = undefined; req.rawBody = undefined; }
+  });
+  router.get('/membership-consents/:id', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), id = String(req.params.id);
+      if (!/^0x[0-9a-f]{64}$/.test(id)) throw Error('recourse_membership_unknown');
+      const row = await deps.db.collection(MEMBERSHIP_CONSENT_OPERATIONS).doc(id).get();
+      const request = parseMembershipConsentRequest(row.get('request'));
+      await ownedMembershipTransition(deps.db, identityHash(owner.type, owner.id), request.transitionId);
+      res.json(await readSponsoredOperation(deps.db, MEMBERSHIP_CONSENT_OPERATIONS, id));
+    } catch { res.status(404).json({ error: 'recourse_membership_unavailable' }); }
+  });
   router.post('/restoration-intents', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
