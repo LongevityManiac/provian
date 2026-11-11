@@ -1,4 +1,5 @@
-import { finalizeSettlementIssuance, prepareSettlementIssuanceCancellation } from '../../recourse/settlement-issuance-lifecycle';
+import { readSettlementTransaction } from '../../recourse/settlement-transaction-evidence';
+import { finalizeSettlementIssuance, prepareSettlementIssuanceCancellation, reconcileSettlementIssuance } from '../../recourse/settlement-issuance-lifecycle';
 import { preparePrivateIssuanceProbe, preparePrivateIssuanceExecution } from '../../recourse/settlement-issuance-runtime';
 import { simulatePrivateIssuanceProbe } from '../../recourse/settlement-issuance-probe';
 import { assertServerNonceWriterActive } from '../../onchain/server-writer-cutover';
@@ -102,6 +103,7 @@ import {
   releaseSignerLease,
   retireNeverBroadcastOrphans,
   type SettlementDb,
+  recordObservedMemberTransaction,
 } from './durable-settlement-store';
 import {
   readAgreedBaseBlockHash,
@@ -810,6 +812,13 @@ export async function runSettlement(
 
   const cycleDeps: CycleRunnerDeps = {
     memberExecution: {
+      recoverTerminal: async batch => {
+        const record = await reconcileSettlementIssuance(db as unknown as Firestore,batch);
+        if (!record) return 'none';
+        if (record.status === 'reserved' || record.status === 'signed') return 'pending';
+        if (record.status !== 'superseded') await recordObservedMemberTransaction(db,await readSettlementTransaction(record,minter.address));
+        return record.status;
+      },
       prepare: async batch => {
         const record = await preparePrivateIssuanceExecution(db as unknown as Firestore, batch, minter.address, env);
         if (!record.calldata) throw Error('member settlement envelope missing');
@@ -818,7 +827,8 @@ export async function runSettlement(
       finalize: (batch, hash) => finalizeSettlementIssuance(db as unknown as Firestore, batch, hash),
       cancellation: async batch => {
         const plan = await prepareSettlementIssuanceCancellation(db as unknown as Firestore, batch, minter.address);
-        if (plan.kind !== 'transaction') throw Error('member settlement cancellation requires terminal reconciliation');
+        if (plan.kind === 'terminal') return {target:minter.address.toLowerCase(),data:'0x'};
+        if (plan.kind !== 'transaction') throw Error('member settlement cancellation has no coordinator');
         return {target: plan.target, data: plan.data};
       },
     },

@@ -278,6 +278,27 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'settlement-observed-evidence': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-transaction-evidence.ts',
+    testMatchPath: 'src/core/recourse/settlement-transaction-evidence.test.ts',
+    mutations: [{ id: 'OBSERVED-SENDER', description: 'accept transaction metadata from another gas payer',
+      find: 'address(tx.from)!==address(gasPayer)', replace: 'false',
+      expectedKilledBy: 'rejects changed transaction from' }],
+  },
+  'settlement-terminal-winner': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/settlement-cycle-runner.ts',
+    testMatchPath: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',
+    mutations: [{ id: 'TERMINAL-EXACT-WINNER', description: 'an orphan success hides the authenticated terminal winner',
+      find: 'a.tx_hash===batch.terminal_transaction_hash&&', replace: '',
+      expectedKilledBy: 'a discovered finalized winner applies once despite an earlier orphan=true' }],
+  },
+  'settlement-observed-fee': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
+    testMatchPath: 'src/core/recourse/settlement-transaction-evidence.test.ts',
+    mutations: [{ id: 'OBSERVED-FEE-RESERVATION', description: 'an observed transaction consumes another local fee reservation',
+      find: 'attempt.observed ? 0n : BigInt(attempt.max_fee_per_gas_wei)', replace: 'BigInt(attempt.max_fee_per_gas_wei)',
+      expectedKilledBy: 'an observed settlement applies actual fees and counters without consuming an unrelated local fee reservation' }],
+  },
   'issuance-terminal-position': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
     testMatchPath: 'src/core/recourse/private-issuance-batch.test.ts',

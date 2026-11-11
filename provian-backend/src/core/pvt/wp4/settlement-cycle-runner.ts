@@ -422,6 +422,7 @@ export interface CycleRunReport {
 
 export interface CycleRunnerDeps {
   readonly memberExecution?: {
+    recoverTerminal(batch: SettlementBatchDoc): Promise<'none' | 'pending' | 'committed' | 'cancelled' | 'superseded'>;
     prepare(batch: SettlementBatchDoc): Promise<{ target: string; data: string }>;
     finalize(batch: SettlementBatchDoc, transactionHash: string): Promise<'committed' | 'cancelled'>;
     cancellation(batch: SettlementBatchDoc): Promise<{ target: string; data: string }>;
@@ -1300,6 +1301,15 @@ async function resolveBatch(
     return call;
   };
 
+  const terminal = memberExecution ? await deps.memberExecution?.recoverTerminal(batch) : undefined;
+  if (memberExecution && !terminal) throw Error('member reconciliation unavailable');
+  const isTerminal = terminal === 'committed' || terminal === 'cancelled' || terminal === 'superseded';
+  if (isTerminal) {
+    const fresh = await db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.batch_id).get();
+    if (!fresh.exists) throw Error('member settlement parent missing');
+    batch = fresh.data() as unknown as SettlementBatchDoc;
+  }
+
   const binding: PreparedBatchBinding = {
     epoch: batch.epoch,
     policyHash: batch.policy_hash,
@@ -1591,6 +1601,57 @@ async function resolveBatch(
     lastSubmitAt = now();
     return { ok: true, hash: signed.hash };
   };
+
+  if (isTerminal) {
+    // Terminal private effects and gas ownership are separate facts. Resolve any
+    // still-held gas nonce without sending another call to a retired contract.
+    for (;;) {
+      const safeBlock=await readSafeBlock(chain);
+      if(safeBlock===null||now()>ctx.deadline)return {kind:'stopped',reason:'awaiting_finality',detail:'terminal member gas reconciliation pending'};
+      const consumed=await chain.getTransactionCount(config.signerAddress,safeBlock);
+      const held=Math.max(batch.reserved_nonce,batch.cancellation_nonce?.nonce ?? -1,...attempts.map(a=>a.nonce));
+      if(consumed>held){
+        if(await deps.memberExecution!.recoverTerminal(batch)!==terminal)throw Error('member terminal outcome changed');
+        if(terminal!=='committed'){await retire('private issuance terminal and gas resolved');return {kind:'dead',reason:'private_issuance_terminal'};}
+        const settled=attempts.find(a=>a.tx_hash===batch.terminal_transaction_hash&&a.kind!=='cancel'&&a.mined?.status==='success');
+        if(!settled||!settled.mined)throw Error('terminal member receipt missing');
+        const finality=await judgeReceiptFinality(chain,settled.tx_hash,settled.mined);
+        if(finality.kind!=='final')return {kind:'stopped',reason:'awaiting_finality',detail:'terminal member receipt not canonical and final'};
+        const applied=await applyConfirmedBatch(db,{cycleId,batchId:batch.batch_id,txHash:settled.tx_hash,nowMs:now(),
+          final:{blockNumber:finality.blockNumber,blockHash:finality.blockHash}});
+        if(applied.kind==='refused')return {kind:'stopped',reason:'resumption_abort',detail:`terminal apply refused: ${applied.reason}`};
+        await writeLedgerSettlement(db,{batchId:batch.batch_id,nowMs:now()});return {kind:'confirmed'};
+      }
+      const unresolved=attempts.filter(a=>a.nonce>=consumed);
+      const nonce=unresolved.length?Math.min(...unresolved.map(a=>a.nonce)):held;
+      if(nonce>consumed)return {kind:'stopped',reason:'resumption_abort',detail:'earlier signer nonce must resolve before terminal member gas'};
+      const latest=unresolved.filter(a=>a.nonce===nonce).at(-1);
+      if(latest){
+        const receipt=await chain.getReceipt(latest.tx_hash);
+        if(receipt){
+          await recordMinedReceipt(db,{batchId:batch.batch_id,txHash:latest.tx_hash,nowMs:now(),...receipt});
+          // A canonical receipt eventually advances the safe count. An orphan
+          // is cleared before replacing; no known mined transaction is replayed.
+          const mined={status:receipt.status,block_number:receipt.blockNumber,block_hash:receipt.blockHash,
+            gas_used:receipt.gasUsed.toString(),effective_gas_price_wei:receipt.effectiveGasPriceWei.toString()};
+          const finality=await judgeReceiptFinality(chain,latest.tx_hash,mined);
+          if(finality.kind!=='dropped'){await sleep(config.receiptPollIntervalMs);continue;}
+          await clearMinedReceipt(db,{batchId:batch.batch_id,txHash:latest.tx_hash,nowMs:now()});
+        }
+        if(now()-lastSubmitAt<config.replaceAfterMs){await sleep(config.receiptPollIntervalMs);continue;}
+      }
+      if(replacementsThisRun>=config.maxReplacementsPerBatch)return {kind:'stopped',reason:'replacement_budget_exhausted',detail:'terminal member gas replacement budget'};
+      const call=await deps.memberExecution!.cancellation(batch);
+      if(call.target.toLowerCase()!==config.signerAddress.toLowerCase()||call.data!=='0x')throw Error('terminal gas cancellation changed');
+      const fees=await chain.feeData();
+      const bump=(previous:string|undefined,floor:bigint):bigint=>{const n=previous?BigInt(previous)*BigInt(10_000+config.feeBumpBps)/10_000n:0n;return n>floor?n:floor;};
+      const sent=await record('cancel',nonce,bump(latest?.max_fee_per_gas_wei,fees.maxFeePerGasWei),
+        bump(latest?.max_priority_fee_per_gas_wei,fees.maxPriorityFeePerGasWei),21_000n,call.target,call.data);
+      if(!sent.ok)return {kind:'stopped',reason:sent.stopReason??'resumption_abort',detail:sent.refused};
+      replacementsThisRun+=1;
+      await sleep(config.receiptPollIntervalMs);
+    }
+  }
 
   const cancelConsumedMemberNonce = async (reason: string, safeBlock: number): ReturnType<typeof record> => {
     if (!deps.memberExecution) throw Error('member execution unavailable');

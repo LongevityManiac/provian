@@ -33,6 +33,7 @@ import {
   claimKeyOf,
   registerClaimsBulk,
   type NewClaimInput,
+  type BatchAttempt,
   type SettlementBatchDoc,
   type SettlementCycleDoc,
   type SettlementDb,
@@ -3362,7 +3363,9 @@ describe('member settlement probes',()=>{
     const simulate=jest.spyOn(h.chain,'simulate');
     const memberBatchProbe=jest.fn(async()=>{throw Error('recourse_issuance_probe_inconclusive');});
     await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
-    await expect(runSettlementCycle({...h.deps,...(mode==='missing'?{}:{memberBatchProbe})},h.config)).rejects.toThrow(
+    const unused=async():Promise<never>=>{throw Error('unexpected member execution');};
+    const memberExecution={recoverTerminal:async()=> 'none' as const,prepare:unused,finalize:unused,cancellation:unused};
+    await expect(runSettlementCycle({...h.deps,memberExecution,...(mode==='missing'?{}:{memberBatchProbe})},h.config)).rejects.toThrow(
       mode==='missing'?'member settlement probe unavailable':'member settlement probe inconclusive');
     expect(simulate).not.toHaveBeenCalled();expect(h.chain.broadcasts).toBe(0);
     expect(memberBatchProbe).toHaveBeenCalledTimes(mode==='missing'?0:2);
@@ -3394,9 +3397,21 @@ describe('member settlement transaction envelope',()=>{
       const status=winner.kind==='cancel'?'cancelled':'committed';
       h.store.set(key,{...h.store.get(key)!,status,transactionHash:hash});return status;
     });
-    const cancellation=jest.fn(async(batch:SettlementBatchDoc)=>({target,data:MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[batch.batch_id,1])}));
-    const deps={...h.deps,memberBatchProbe:async()=>({ok:true,revertReason:null}),memberExecution:{prepare,finalize,cancellation}};
-    return {...h,deps,prepare,finalize,cancellation,target};
+    const recoverTerminal:jest.MockedFunction<NonNullable<CycleRunnerDeps['memberExecution']>['recoverTerminal']>=jest.fn(async(batch)=>{
+      const row=h.store.get(`pvt9_settlement_batches_v1/${batch.batch_id}`),id=row?.membership_issuance_id;
+      if(typeof id!=='string')return 'none';
+      const privateRow=h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${id}`),status=privateRow?.status;
+      if((status==='committed'||status==='cancelled')&&typeof privateRow?.transactionHash==='string')
+        h.store.set(`pvt9_settlement_batches_v1/${batch.batch_id}`,{...row,terminal_transaction_hash:privateRow.transactionHash});
+      return status==='committed'||status==='cancelled'||status==='superseded'?status:'pending';
+    });
+    const cancellation=jest.fn(async(batch:SettlementBatchDoc)=>{
+      const status=await recoverTerminal(batch);
+      return ['committed','cancelled','superseded'].includes(status)?{target:SIGNER,data:'0x'}
+        :{target,data:MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[batch.batch_id,1])};
+    });
+    const deps={...h.deps,memberBatchProbe:async()=>({ok:true,revertReason:null}),memberExecution:{prepare,finalize,cancellation,recoverTerminal}};
+    return {...h,deps,prepare,finalize,cancellation,recoverTerminal,target};
   }
   it.each(['original','replacement'])('records, estimates and broadcasts exact outer bytes for %s',async(mode)=>{
     const h=forwarded(),estimate=jest.spyOn(h.chain,'estimateGas'),sign=jest.spyOn(h.chain,'sign');
@@ -3429,6 +3444,54 @@ describe('member settlement transaction envelope',()=>{
     expect(MEMBER_SETTLEMENT_ABI.decodeFunctionData('cancelMemberBatch',cancel.calldata!)[0]).toBe(first.batch_id);
     expect(h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`)?.status).toBe('cancelled');
     expect(h.chain.claimSettled.size).toBe(0);expect(h.cancellation).toHaveBeenCalled();
+  });
+  it('a crash after private commit resumes parent writeback without another transaction',async()=>{
+    const h=forwarded();h.chain.trackNonces=true;
+    const finalize=h.finalize.getMockImplementation()!;
+    h.finalize.mockImplementationOnce(async(batch,hash)=>{await finalize(batch,hash);throw Error('after private commit');});
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle(h.deps,h.config)).rejects.toThrow('after private commit');
+    expect(batchDocs(h.store)[0].applied).toBe(false);
+    await runSettlementCycle(h.deps,h.config);
+    expect(batchDocs(h.store)[0].applied).toBe(true);expect(h.chain.broadcasts).toBe(1);
+    expect(ledgerRow(h.store,'pe-0001').settled).toBe(true);
+  });
+  it.each([false,true])('a discovered finalized winner applies once despite an earlier orphan=%s',async(orphan)=>{
+    const h=forwarded();h.chain.trackNonces=true;
+    const sign=h.chain.sign.bind(h.chain);jest.spyOn(h.chain,'sign').mockRejectedValueOnce(Error('before local attempt')).mockImplementation(sign);
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle(h.deps,h.config)).rejects.toThrow('before local attempt');
+    const first=batchDocs(h.store)[0],call=await h.prepare(first),nonce=first.reserved_nonce;
+    const signed=await sign({to:call.target,data:call.data,nonce,valueWei:0n,gasLimit:1_000_000n,maxFeePerGasWei:10n,maxPriorityFeePerGasWei:1n});
+    await h.chain.broadcast(signed.raw);const receipt=(await h.chain.getReceipt(signed.hash))!;
+    const key=`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`;h.store.set(key,{...h.store.get(key)!,status:'committed',transactionHash:signed.hash});
+    h.recoverTerminal.mockImplementation(async(batch)=>{
+      const parentKey=`pvt9_settlement_batches_v1/${batch.batch_id}`,row=h.store.get(parentKey)!;
+      if((row.attempts as BatchAttempt[]).length===0)h.store.set(parentKey,{...row,status:'mined',terminal_transaction_hash:signed.hash,attempts:[{
+        nonce,tx_hash:signed.hash,target:call.target,calldata:call.data,kind:'original',observed:true,max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'1000000',submitted_at_ms:0,
+        mined:{status:'success',block_number:receipt.blockNumber,block_hash:receipt.blockHash,gas_used:receipt.gasUsed.toString(),effective_gas_price_wei:receipt.effectiveGasPriceWei.toString()},
+      }]});
+      const current=h.store.get(parentKey)!,recorded=current.attempts as BatchAttempt[];
+      if(orphan&&!recorded.some(a=>a.tx_hash===H(99001))){
+        const valid=recorded.find(a=>a.tx_hash===signed.hash)!;
+        h.store.set(parentKey,{...current,attempts:[{...valid,tx_hash:H(99001),mined:{...valid.mined!,block_hash:H(99002)}},...recorded]});
+      }
+      return 'committed';
+    });
+    await runSettlementCycle(h.deps,h.config);
+    expect(batchDocs(h.store)[0].applied).toBe(true);expect(ledgerRow(h.store,'pe-0001').settled).toBe(true);expect(h.chain.broadcasts).toBe(1);
+  });
+  it('authenticated retirement clears a held gas nonce with a self-transfer and never calls the retired adapter',async()=>{
+    const h=forwarded();h.chain.trackNonces=true;h.chain.behaviors=Array(8).fill('drop');
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await runSettlementCycle(h.deps,{...h.config,maxReplacementsPerBatch:0});
+    const first=batchDocs(h.store)[0],key=`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`;
+    h.store.set(key,{...h.store.get(key)!,status:'superseded'});h.chain.behaviors=['mine-success'];
+    h.candidateSource.ineligible.add('pe-0001');await h.deps.sleep(200_000);
+    await runSettlementCycle(h.deps,{...h.config,cycleId:'retired-gas',workerId:'retired-adopter'});
+    const finished=batchDocs(h.store).find(b=>b.batch_id===first.batch_id)!;
+    expect(finished.status).toBe('dead');expect(finished.attempts.at(-1)).toMatchObject({kind:'cancel',target:SIGNER,calldata:'0x',nonce:first.reserved_nonce});
+    expect(h.chain.claimSettled.size).toBe(0);expect(h.finalize).not.toHaveBeenCalled();
   });
   it('a finalized revert cancels the original authorization at a new nonce before requeueing',async()=>{
     const h=forwarded();h.chain.trackNonces=true;h.chain.behaviors=['mine-revert','mine-success'];

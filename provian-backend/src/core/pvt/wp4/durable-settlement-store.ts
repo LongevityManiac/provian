@@ -1,3 +1,5 @@
+import { assertSettlementTransaction, type VerifiedSettlementTransaction } from '../../recourse/settlement-transaction-evidence';
+import { membershipJournalHash } from '../../recourse/private-membership-journal';
 import { MEMBER_SETTLEMENT_ABI } from '../../recourse/issuance-ticket';
 import { PRIVATE_ISSUANCE_BATCHES } from '../../recourse/issuance-lock';
 import type { PrivateIssuanceBatchRecord } from '../../recourse/private-issuance-batch';
@@ -1075,6 +1077,8 @@ export interface BatchAttempt {
   readonly target?: string;
   /** Exact outer transaction bytes; the parent retains its inner approval bytes. */
   readonly calldata?: string;
+  /** Finalized transaction discovered on chain, without a local send reservation. */
+  readonly observed?: true;
   /**
    * 'cancel' calls the member adapter to permanently retire issuance authority;
    * legacy batches use a same-nonce self-transfer. Member cancellations also
@@ -1152,6 +1156,8 @@ export interface SettlementBatchDoc {
   readonly membership_issuance_id?: string;
   /** Durable decision: no further settlement signatures after cancellation begins. */
   readonly retirement_reason?: string;
+  /** Exact winner attached only by authenticated terminal transaction evidence. */
+  readonly terminal_transaction_hash?: string;
   /** Reserved before signing when the previous gas nonce was consumed at finality. */
   readonly cancellation_nonce?: { readonly nonce: number; readonly prior_nonce: number; readonly consumed_through: number };
   readonly cancellation_nonce_history?: readonly { readonly nonce: number; readonly prior_nonce: number; readonly consumed_through: number }[];
@@ -1356,7 +1362,7 @@ export async function requestMemberBatchRetirement(db: SettlementDb, params: {
     const ref = db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(params.batchId.toLowerCase());
     const snap = await txn.get(ref), batch = snap.data() as unknown as SettlementBatchDoc | undefined;
     if (!snap.exists || !batch || !batch.membership_issuance_id || batch.applied
-      || !['reserved', 'submitted'].includes(batch.status)) throw Error('member retirement parent unavailable');
+      || !['reserved', 'submitted', 'mined'].includes(batch.status)) throw Error('member retirement parent unavailable');
     const cycleSnap = await txn.get(db.collection(SETTLEMENT_CYCLES_COLLECTION).doc(batch.cycle_id));
     const cycle = cycleSnap.data() as unknown as SettlementCycleDoc | undefined;
     if (!cycle || cycle.signer !== params.signer.toLowerCase()
@@ -1365,7 +1371,8 @@ export async function requestMemberBatchRetirement(db: SettlementDb, params: {
     const issuance = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.membership_issuance_id));
     const record = issuance.data() as unknown as PrivateIssuanceBatchRecord | undefined;
     if (!record || record.batch.context.batchId !== batch.batch_id || record.batch.kernelCall !== batch.calldata
-      || !['reserved', 'signed'].includes(record.status)) throw Error('member retirement coordinator unavailable');
+      || !['reserved', 'signed', 'committed', 'cancelled', 'superseded'].includes(record.status)
+      || (batch.status === 'mined' && !['committed','cancelled','superseded'].includes(record.status))) throw Error('member retirement coordinator unavailable');
     txn.set(ref, {...batch, retirement_reason: batch.retirement_reason ?? params.reason, updated_at: params.nowMs});
   });
 }
@@ -1445,20 +1452,26 @@ export async function recordAttempt(
       || cycle.lease.expires_at_ms <= params.nowMs) {
       return { kind: 'refused', reason: 'batch_not_reserved' };
     }
-    if (batch.status !== 'reserved' && batch.status !== 'submitted') {
+    if (batch.status !== 'reserved' && batch.status !== 'submitted' && batch.status !== 'mined') {
       return { kind: 'refused', reason: 'batch_closed' };
     }
+    if (batch.status === 'mined' && batch.membership_issuance_id === undefined) return { kind: 'refused', reason: 'batch_closed' };
     if (batch.membership_issuance_id !== undefined) {
       if (!await holdsSignerLease(db, txn, cycle.signer, params.workerId, params.nowMs)) return { kind: 'refused', reason: 'batch_not_reserved' };
       if (params.attempt.kind !== 'cancel' && batch.retirement_reason !== undefined) return { kind: 'refused', reason: 'private_issuance_pending' };
       const coordinated = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.membership_issuance_id));
       const record = coordinated.data() as unknown as PrivateIssuanceBatchRecord | undefined;
       if (!coordinated.exists || !record || record.batch?.id !== batch.membership_issuance_id
-        || record.batch.context.batchId !== batch.batch_id || record.batch.kernelCall !== batch.calldata
-        || !['reserved', 'signed'].includes(record.status) || params.attempt.target !== record.batch.target) {
+        || record.batch.context.batchId !== batch.batch_id || record.batch.kernelCall !== batch.calldata) {
         return { kind: 'refused', reason: 'private_issuance_pending' };
       }
-      if (params.attempt.kind === 'cancel') {
+      const terminalGas = ['committed','cancelled','superseded'].includes(record.status) && params.attempt.kind === 'cancel'
+        && params.attempt.target === cycle.signer && params.attempt.calldata === '0x';
+      if (!terminalGas && (!['reserved','signed'].includes(record.status) || params.attempt.target !== record.batch.target || batch.status === 'mined'))
+        return { kind: 'refused', reason: 'private_issuance_pending' };
+      if (terminalGas) {
+        if (batch.retirement_reason === undefined) return { kind: 'refused', reason: 'private_issuance_pending' };
+      } else if (params.attempt.kind === 'cancel') {
         if (batch.retirement_reason === undefined) return { kind: 'refused', reason: 'private_issuance_pending' };
         let decoded;
         try { decoded = MEMBER_SETTLEMENT_ABI.decodeFunctionData('cancelMemberBatch', params.attempt.calldata ?? '0x'); }
@@ -1527,6 +1540,30 @@ export async function recordAttempt(
  * the batch to `mined` still unresolved — and nothing is applied until the runner has proven
  * the receipt's block canonical at the safe-head depth (`applyConfirmedBatch`).
  */
+/** Attach independently verified terminal chain evidence without pretending
+ * the worker submitted it. A serialized/caller-authored proof has no authority. */
+export async function recordObservedMemberTransaction(db:SettlementDb,proof:VerifiedSettlementTransaction):Promise<void> {
+  assertSettlementTransaction(proof);
+  await db.runTransaction(async txn=>{
+    const ref=db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(proof.batchId);
+    const [parent,privateRow]=await Promise.all([txn.get(ref),txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(proof.coordinatorId))]);
+    const batch=parent.data() as unknown as SettlementBatchDoc|undefined;
+    const record=privateRow.data() as unknown as PrivateIssuanceBatchRecord|undefined;
+    if(!batch||!record||batch.membership_issuance_id!==proof.coordinatorId||record.batch.id!==proof.coordinatorId
+      ||record.batch.context.batchId!==batch.batch_id||record.batch.kernelCall!==batch.calldata
+      ||record.batch.target!==proof.attempt.target||record.status!==proof.status||record.transactionHash!==proof.attempt.tx_hash
+      ||!record.receipt||membershipJournalHash(record.receipt)!==membershipJournalHash(proof.receipt))throw Error('observed settlement binding changed');
+    if(batch.status==='dead'||(batch.applied&&batch.confirmed_tx_hash!==proof.attempt.tx_hash))throw Error('observed settlement parent closed');
+    const prior=batch.attempts.find(a=>a.tx_hash===proof.attempt.tx_hash);
+    if(prior&&(prior.nonce!==proof.attempt.nonce||prior.target!==proof.attempt.target||prior.calldata!==proof.attempt.calldata
+      ||prior.gas_limit!==proof.attempt.gas_limit||prior.max_fee_per_gas_wei!==proof.attempt.max_fee_per_gas_wei
+      ||prior.max_priority_fee_per_gas_wei!==proof.attempt.max_priority_fee_per_gas_wei
+      ||(prior.kind==='cancel')!==(proof.status==='cancelled')))throw Error('observed settlement attempt changed');
+    const attempts=prior?batch.attempts.map(a=>a.tx_hash===proof.attempt.tx_hash?{...a,mined:proof.attempt.mined}:a):[...batch.attempts,proof.attempt].sort((a,b)=>a.nonce-b.nonce);
+    txn.set(ref,{...batch,attempts,terminal_transaction_hash:proof.attempt.tx_hash,...(!batch.applied&&proof.status==='committed'?{status:'mined'}:{})});
+  });
+}
+
 export async function recordMinedReceipt(
   db: SettlementDb,
   params: {
@@ -1686,7 +1723,7 @@ export async function applyConfirmedBatch(
       return { kind: 'refused', reason: 'cursor_mismatch' };
     }
     const actualFee = BigInt(attempt.mined.gas_used) * BigInt(attempt.mined.effective_gas_price_wei);
-    const worstCaseFee = BigInt(attempt.max_fee_per_gas_wei) * BigInt(attempt.gas_limit);
+    const worstCaseFee = attempt.observed ? 0n : BigInt(attempt.max_fee_per_gas_wei) * BigInt(attempt.gas_limit);
     const reserved = BigInt(cycle.consumed.fee_wei_reserved);
     const clockRefs = batch.lane === 'standard'
       ? (batch.payees ?? []).map(p => db.collection(PAYEE_SETTLEMENT_CLOCK_COLLECTION).doc(p)) : [];
