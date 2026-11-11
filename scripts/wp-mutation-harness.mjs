@@ -59,6 +59,22 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'successor-activation': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/successor-activation.mjs', testMatchPath: 'scripts/recourse/successor-activation.test.mjs',
+    mutations: [
+      { id: 'ACTIVATION-PLAN', description: 'rehashing arbitrary activation calldata replaces reconstructed call',
+        find: "ensure(equal(plan, assemble(original, plan.checkpoint, publication, inputs)), 'plan_changed');", replace: ';', expectedKilledBy: 'rehashing a changed executable call does not replace independent reconstruction' },
+      { id: 'ACTIVATION-COMPONENTS', description: 'current verifier/member bindings are ignored',
+        find: "ensure(lower(await read(named[name], new Interface(artifacts[name].abi), method)) === lower(value), 'component_binding_changed');",
+        replace: "await read(named[name], new Interface(artifacts[name].abi), method);", expectedKilledBy: 'postpublication verifier changes refuse' },
+      { id: 'ACTIVATION-SCHEDULES', description: 'postpublication non-kernel policy scheduling survives restored getter values',
+        find: "!event.name.endsWith('Scheduled') &&", replace: '', expectedKilledBy: 'institution policy events refuse even if getters have returned to their expected values' },
+      { id: 'ACTIVATION-OLD-MINT', description: 'retired-token minting is accepted during activation',
+        find: "&& (event.name !== 'Transfer' || event.args.from !== ZeroAddress), 'predecessor_activity');", replace: ", 'predecessor_activity');", expectedKilledBy: 'old-token issuance after publication cannot hide behind re-held endpoints' },
+      { id: 'ACTIVATION-PINS', description: 'skip canonical activation interval pins after all reads',
+        find: "for (const [number, hash] of pins) ensure(await port.blockHash(number) === hash, 'reorg');", replace: ';', expectedKilledBy: 'reorg red control refuses' },
+    ],
+  },
   'publication-recovery': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-recovery.mjs', testMatchPath: 'scripts/recourse/publication-recovery.test.mjs',
     mutations: [

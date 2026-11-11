@@ -1241,6 +1241,8 @@
     "scripts/recourse/snapshot.d.mts": "5d9f499572cf2eedbb623d3312091a148cee9b4e6ca95dd53025c1bf0178bc7f",
     "scripts/recourse/snapshot.mjs": "3c01890aec324c13f98d9218af7f5c79335cb0ad39f6f9e6f779cc94c1fd75cd",
     "scripts/recourse/snapshot.test.mjs": "4c5ec612a7ee4301d4bc4523a24ae918f0763702a53e8cc8804bd94cb956d594",
+    "scripts/recourse/successor-activation.mjs": "2d9b01d2cdff915ede0509b3ccf8fcb4d216a2549be0204de05e58a6a6894fe1",
+    "scripts/recourse/successor-activation.test.mjs": "78b6dfc658e70d00892759a8255cc950bc67e8550c587cd5a3e5f2397d5e59b3",
     "scripts/recourse/successor-deploy-cli.mjs": "08b0d366ae50619e8fb896904f8a81e90bfce51d0d25f72fa809930c34ecb7a2",
     "scripts/recourse/successor-deploy.test.mjs": "edd65da25568abd4ee3876b3c907cdd5ff2853647ca59f3ffb3a1f8ade6efcfc",
     "scripts/recourse/successor-plan-cli.mjs": "efbd3f45c18e6075326c1b8cb190ff1664d61e237746699ef0fd9498e3ef3c48",
