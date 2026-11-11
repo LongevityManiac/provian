@@ -84,3 +84,14 @@ test('a later restoration cannot resurrect an account already consumed at its ke
   expectComponents(cut.balances.get(key(old)), parts(0n));
   expectComponents(cut.balances.get(key(pending)), parts(10n, 10n));
 });
+
+test('ordinary succession carries the whole historical balance between kernel domains, never an entitlement', () => {
+  const old = account(10), current = account(11), initial = ledger([old, parts(100n, 30n, 50n)], [current, parts(9n)]);
+  const bridge = { kind: 'succession' as const, kernel: a(10), origin: a(20), sources: [{ ref: old, amount: 100n }], destination: current };
+  const carried = apply(initial, bridge);
+  expectComponents(carried.balances.get(key(current)), parts(109n, 30n, 50n));
+  expectComponents(carried.balances.get(key(old)), parts(0n));
+  expect(() => apply(initial, { ...bridge, destination: account(10, 2) })).toThrow('destination_invalid');
+  expect(() => apply(ledger([entitlement(20), parts(100n)]), { ...bridge, sources: [{ ref: entitlement(20), amount: 100n }] })).toThrow('destination_invalid');
+  expect(() => apply(carried, bridge)).toThrow('source_reused');
+});

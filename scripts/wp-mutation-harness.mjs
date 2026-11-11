@@ -59,6 +59,23 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'restoration-succession-trace': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-succession-trace.ts', testMatchPath: 'src/core/recourse/restoration-succession-trace.test.ts',
+    mutations: [{ id: 'TRACE-ACTUAL-SUCCESSOR', description: 'a phantom final-generation break turns current holdings into unreachable rights',
+      find: 'sourceGeneration.index + 1 >= checkpoint.generations.length', replace: 'false', expectedKilledBy: 'observation of the current generation cannot invent a future break and turn reachable PVT into a pool shortfall' },
+      { id: 'TRACE-CURRENT-KERNEL', description: 'retired real balances become current reversal sources',
+      find: 'row.ref.kernel !== checkpoint.executionKernel', replace: 'false', expectedKilledBy: 'historical real balances cannot become current sources even without a restoration' },
+      { id: 'TRACE-EXCHANGE', description: 'witnessed or unresolved consideration is treated as gratuitous',
+        find: 'incomingProtected = carried;', replace: 'incomingReversible = carried;', expectedKilledBy: 'witnessed and unresolved exchange protection survives every carry and cannot become a reversal source' },
+      { id: 'TRACE-CLOSING', description: 'missing history is accepted without endpoint balance reconciliation',
+        find: 'value.balance !== amount(row.closingAtomic)', replace: 'false', expectedKilledBy: 'wrong-closing refuses instead of inflating a reversal or pool shortfall' },
+      { id: 'TRACE-LOSS', description: 'a different ledger silently substitutes an absent original loss',
+        find: 'if (seen.size !== expected.size)', replace: 'if (false)', expectedKilledBy: 'a reconciled ledger cannot silently substitute an absent original loss event' },
+      { id: 'TRACE-CLEAN-ISSUANCE', description: 'new work replenishes a spent theft trail',
+        find: 'min(source?.reversible ?? 0n, quantity)', replace: 'min(source?.balance ?? 0n, quantity)', expectedKilledBy: 'new work after spending the entire recovered trail cannot taint an unrelated later recipient' },
+      { id: 'TRACE-REFUND-LIMIT', description: 'all reached value can reverse despite a lower refund-net loss',
+        find: 'reversible = min(reachable, outstanding)', replace: 'reversible = reachable', expectedKilledBy: 'refund-net loss limits allocate only the exact outstanding amount across current sources' }],
+  },
   'restoration-executor-runtime': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-executor-runtime.ts', testMatchPath: 'src/core/recourse/restoration-executor-runtime.test.ts',
     mutations: [{ id: 'EXECUTOR-CODE', description: 'changed executable byte is accepted as reviewed implementation',
@@ -149,8 +166,10 @@ const MUTATION_SETS = {
   },
   'restoration-bridge-ledger': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-bridge-ledger.ts',
-    testMatchPath: 'src/core/recourse/restoration-bridge-ledger.test.ts',
-    mutations: [{ id: 'BRIDGE-DESTINATION-CUTOFF', description: 'a restoration resurrects an already retired token balance',
+    testMatchPath: 'src/core/recourse/restoration-bridge-ledger.test.ts src/core/recourse/restoration-succession-trace.test.ts',
+    mutations: [{ id: 'BRIDGE-SUCCESSION-DOMAIN', description: 'ordinary succession can relabel value within the same token generation',
+      find: 'bridge.destination.kernel === bridge.kernel', replace: 'false', expectedKilledBy: 'ordinary succession carries the whole historical balance between kernel domains, never an entitlement' },
+      { id: 'BRIDGE-DESTINATION-CUTOFF', description: 'a restoration resurrects an already retired token balance',
       find: "if (ledger.consumed.has(destination)) throw Error('recourse_bridge_destination_consumed');", replace: 'void destination;',
       expectedKilledBy: 'a later restoration cannot resurrect an account already consumed at its kernel cutoff' },
       { id: 'BRIDGE-PROTECTION', description: 'a bridge upgrades protected exchange value to reversible funds',

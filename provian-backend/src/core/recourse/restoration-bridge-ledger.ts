@@ -14,7 +14,7 @@ export interface RestorationBridgeLedger {
   readonly consumed: ReadonlySet<string>;
 }
 export interface RestorationBalanceBridge {
-  readonly kind: 'snapshot' | 'restoration';
+  readonly kind: 'snapshot' | 'restoration' | 'succession';
   readonly kernel: string;
   readonly origin: string;
   readonly sources: readonly { readonly ref: RestorationBalanceRef; readonly amount: bigint }[];
@@ -59,13 +59,16 @@ export function applyRestorationBalanceBridge(ledger: RestorationBridgeLedger, b
     if (bridge.destination.kind !== 'account' || bridge.destination.kernel !== bridge.kernel || bridge.sources.length !== 1) {
       throw Error('recourse_bridge_destination_invalid');
     }
+  } else if (bridge.kind === 'succession') {
+    if (bridge.destination.kind !== 'account' || bridge.destination.kernel === bridge.kernel || bridge.sources.length !== 1
+      || bridge.sources[0].ref.kind !== 'account') throw Error('recourse_bridge_destination_invalid');
   } else throw Error('recourse_bridge_domain_invalid');
   for (const source of bridge.sources) {
     const key = restorationBalanceKey(source.ref);
     if (key === destination || sources.has(key) || ledger.consumed.has(key)) throw Error('recourse_bridge_source_reused');
     sources.add(key);
     if (source.ref.kind === 'retired'
-      || source.ref.kind === 'account' && (bridge.kind !== 'snapshot' || source.ref.kernel !== bridge.kernel)
+      || source.ref.kind === 'account' && (bridge.kind === 'restoration' || source.ref.kernel !== bridge.kernel)
       || source.ref.kind === 'entitlement' && (bridge.kind === 'restoration'
         ? source.ref.origin !== bridge.origin : source.ref.origin === bridge.origin)) throw Error('recourse_bridge_source_invalid');
     if (source.ref.kind === 'entitlement' && bridge.destination.kind === 'entitlement'
