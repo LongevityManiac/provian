@@ -73,6 +73,7 @@ test('authenticated path traversal and forged curve headers are refused before c
       if (variant === 'path') payload.files['../escaped'] = Buffer.from('escape').toString('base64');
       else if(variant==='missing-hash-key')payload.files['active-hash-wallet.json']=Buffer.from(JSON.stringify({identity:h(1),commitment:h(2),context:a(2),address:a(3),transactionHash:h(4)})).toString('base64');
       else { const keystore = JSON.parse(Buffer.from(payload.files['agent-keystore.json'], 'base64').toString('utf8')); keystore.address = a(99); payload.files['agent-keystore.json'] = Buffer.from(JSON.stringify(keystore)).toString('base64'); }
+      payload.files=Object.fromEntries(Object.entries(payload.files).sort(([a],[b])=>a.localeCompare(b)));
       const cipher = createCipheriv('aes-256-gcm', key, Buffer.from(envelope.iv, 'hex')); cipher.setAAD(aad);
       envelope.ciphertext = Buffer.concat([cipher.update(JSON.stringify(payload)), cipher.final()]).toString('hex'); envelope.tag = cipher.getAuthTag().toString('hex'); fs.writeFileSync(destination, JSON.stringify(envelope), { mode: 0o600 });
       await expect(importAgentRecoveryBackup({ source: destination, directory: restored, backupPassphrase })).rejects.toThrow(); expect(fs.existsSync(restored)).toBe(false); expect(fs.existsSync(path.join(parent, 'escaped'))).toBe(false);
