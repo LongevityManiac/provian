@@ -1,5 +1,6 @@
 import { Interface } from 'ethers';
 import { readCurrentRestorationTicket } from './current-restoration-ticket';
+import { readRestorationTicket } from './determination';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 jest.mock('../protocol/runtime',()=>({currentProtocolDeployment:jest.fn()}));
@@ -30,4 +31,10 @@ test('a surviving current imported ticket binds exact consent and destination wi
 });
 test.each(['kernel','request','identity','destination','current','reversed','determined','pointer','rpc','same-rpc','reorg','height'])('refuses changed or completed current ticket: %s',async failure=>{
  mode=failure;await expect(readCurrentRestorationTicket(h(7))).rejects.toThrow();
+});
+test('determination reads the current ticket even when the loss belongs to an older kernel', async () => {
+ expect(await readRestorationTicket(a(77),h(7))).toMatchObject({request:h(7),destination:a(10),currentDestination:a(12)});
+});
+test.each(['reorg','height','pointer','determined','reversed'])('determination cannot certify stale or completed consent: %s', async failure => {
+ mode=failure;await expect(readRestorationTicket(a(77),h(7))).rejects.toThrow();
 });

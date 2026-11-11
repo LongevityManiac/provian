@@ -1,15 +1,13 @@
 import { isDeepStrictEqual } from 'util';
-import { readRestorationLineage } from './restoration-lineage';
 import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
-import { Interface } from 'ethers';
-import { currentProtocolDeployment } from '../protocol/runtime';
-import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
-import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import { RESTORATION_REQUESTS } from './restoration-request';
-import { parseRestorationScope, type RestorationScope } from './owner-operation';
+import type { RestorationScope } from './owner-operation';
+import { readCurrentRestorationTicket } from './current-restoration-ticket';
 import { collectRestorationEvidence, restorationEvidencePort, assertRestorationEvidence, type CheckedRestorationEvidence } from './restoration-evidence';
 import { traceRestoration, type TracedTransfer, type RestorationTrace } from './restoration-trace';
+import { traceRestorationSuccession } from './restoration-succession-trace';
+import { readSuccessionCheckpoint } from './restoration-succession-record';
 import { readRecoursePoolState, type RecoursePoolState } from './pool-state';
 import type { LossSnapshot } from './loss-snapshot';
 import type { LossMembershipEvidence } from './membership-at-loss';
@@ -22,33 +20,11 @@ function freeze<T>(value: T): T {
   return value;
 }
 export interface RestorationTicket extends RestorationScope { readonly identity: string; readonly destination: string; readonly currentDestination:string; }
-const abi = new Interface([
-  'function ownerAuthorization() view returns(address)',
-  'function restorationIntent(bytes32) view returns(tuple(bytes32 request,bytes32 identity,address destination,bytes32 lossHash,uint256 maximumLoss))',
-  'function reversalExecuted(bytes32) view returns(bool)', 'function recoveredDestination(bytes32) view returns(address)',
-]);
-export async function readRestorationTicket(kernel: string, request: string): Promise<RestorationTicket> {
-  const deployment = await currentProtocolDeployment();
-  const lineage=await readRestorationLineage(kernel);
-  if(lineage.manifestHash!==deployment.manifestHash)throw Error('recourse_determination_checkpoint_changed');
-  kernel=lineage.kernel;
-  const legs = getOperatorBoundRpcLegs('base');
-  if (legs[0].operatorId === legs[1].operatorId) throw new Error('recourse_rpc_operators_not_independent');
-  const call = async (target: string, method: string, args: readonly unknown[]) => {
-    const values: unknown[] = await Promise.all(legs.map(leg => leg.provider.send('eth_call', [{ to: target,
-      data: abi.encodeFunctionData(method, args) }, { blockHash: deployment.blockHash, requireCanonical: true }])));
-    if (typeof values[0] !== 'string' || !rpcChainFactsEqual(values[0], values[1])) throw new Error('recourse_determination_rpc_disagreement');
-    return abi.decodeFunctionResult(method, values[0]);
-  };
-  const executor = String((await call(kernel, 'ownerAuthorization', []))[0]).toLowerCase();
-  const row = (await call(executor, 'restorationIntent', [request]))[0];
-  const scope = parseRestorationScope({ request: String(row.request), lossHash: String(row.lossHash), maximumLoss: String(row.maximumLoss) });
-  const identity = String(row.identity).toLowerCase(), destination = String(row.destination).toLowerCase();
-  const currentDestination=String((await call(executor,'recoveredDestination',[identity]))[0]).toLowerCase();
-  if (scope.request !== request || (await call(executor, 'reversalExecuted', [request]))[0]
-    || !/^0x[0-9a-f]{40}$/.test(currentDestination)||/^0x0+$/.test(currentDestination)) throw new Error('recourse_determination_ticket_unavailable');
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw new Error('recourse_determination_checkpoint_changed');
-  return { ...scope, identity, destination, currentDestination };
+/** Consent is read from the current pointer with the shared canonical-header
+ * fence. The evidence collector separately authenticates the loss kernel's full
+ * ancestry; a ticket by itself never certifies historical balance continuity. */
+export async function readRestorationTicket(_lossKernel: string, request: string): Promise<RestorationTicket> {
+  return readCurrentRestorationTicket(request);
 }
 export interface DeterminationPorts {
   ticket(kernel: string, request: string): Promise<RestorationTicket>;
@@ -116,7 +92,9 @@ export function assessRestoration(packet: DeterminationPacket, judgment: Restora
   if (!packets.has(packet) || judgment.packetHash !== packet.packetHash || typeof judgment.reasoning !== 'string' || !judgment.reasoning.trim()
     || !['accepted_theft', 'declined_not_theft', 'declined_insufficient_evidence'].includes(judgment.finding)) throw new Error('recourse_determination_judgment_invalid');
   const hashes = new Set([packet.snapshot.evidenceHash, packet.membership.evidenceHash,
-    ...packet.evidence.checkpoint.transfers.map(event => event.witnessHash), ...packet.evidence.checkpoint.ownerAliases.map(alias => alias.evidenceHash)]);
+    ...packet.evidence.checkpoint.transfers.map(event => event.witnessHash), ...packet.evidence.checkpoint.ownerAliases.map(alias => alias.evidenceHash),
+    ...(packet.evidence.succession?.events.flatMap(event => event.kind === 'bridge' ? [event.evidenceHash] : []) ?? []),
+    ...(packet.evidence.succession?.owners.map(row => row.evidenceHash) ?? [])]);
   const referencesValid = (refs: readonly string[]) => Array.isArray(refs) && refs.length > 0 && refs.every(ref => hashes.has(ref));
   if (!referencesValid(judgment.evidenceHashes) || !Array.isArray(judgment.receipts)) throw new Error('recourse_determination_evidence_unknown');
   const findings = new Map<string, ReceiptFinding>();
@@ -134,7 +112,12 @@ export function assessRestoration(packet: DeterminationPacket, judgment: Restora
     const finding = findings.get(`${event.transactionHash}:${event.logIndex}`);
     return finding ? { ...event, receipt: finding.conclusion === 'theft_taker' ? 'gratuitous' : finding.conclusion } : event;
   });
-  const trace = traceRestoration(packet.snapshot, { ...packet.evidence.checkpoint, transfers });
+  const revised = new Map(transfers.map(event => [`${event.transactionHash}:${event.logIndex}`, event]));
+  const succession = packet.evidence.succession ? readSuccessionCheckpoint(packet.evidence.succession) : null;
+  const trace = succession ? traceRestorationSuccession(packet.snapshot, { ...succession,
+    events: succession.events.map(event => event.kind === 'transfer' ? { ...event,
+      transfer: revised.get(`${event.transfer.transactionHash}:${event.transfer.logIndex}`)! } : event) })
+    : traceRestoration(packet.snapshot, { ...packet.evidence.checkpoint, transfers });
   if (BigInt(trace.reversibleAtomic) + BigInt(trace.shortfallAtomic) > BigInt(packet.ticket.maximumLoss)) throw new Error('recourse_determination_loss_exceeded');
   const accepted = judgment.finding === 'accepted_theft';
   if (!accepted && judgment.receipts.length !== 0) throw new Error('recourse_determination_decline_has_sources');

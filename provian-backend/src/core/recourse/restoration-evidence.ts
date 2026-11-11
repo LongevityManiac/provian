@@ -13,12 +13,16 @@ import { createRecourseChainPort, type RecourseChainPort } from './chain-ledger'
 import type { LossSnapshot } from './loss-snapshot';
 import type { TransferEvent } from './ownership';
 import { traceRestoration, type TraceCheckpoint, type TracedTransfer, type RestorationTrace } from './restoration-trace';
+import { collectSuccessionCheckpoint, type SuccessionCollectionPort } from './restoration-succession-collector';
+import { successionCollectionPort } from './restoration-succession-collector-chain';
+import { recordSuccessionCheckpoint, type RecordedSuccessionCheckpoint } from './restoration-succession-record';
 
 const ZERO = `0x${'0'.repeat(40)}`;
 const abi = new Interface(['function registryOperator() view returns(address)', 'function ownerOf(address) view returns(bytes32)',
   'function outgoingSequence(address) view returns(uint256)', 'function ownerAuthorization() view returns(address)', 'function restorationRevision() view returns(uint256)', 'function transfer(address,uint256)', 'function transferCurrent(address,uint256,uint256)']);
 const digest = (value: unknown): string => `0x${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 export interface RestorationEvidencePort {
+  succession?: SuccessionCollectionPort;
   readonly chain: RecourseChainPort;
   transaction(hash: string): Promise<BaseTransactionEvidence>;
   call(target: string, method: 'registryOperator' | 'ownerOf' | 'outgoingSequence' | 'ownerAuthorization' | 'restorationRevision', args: readonly unknown[], blockHash: string): Promise<string>;
@@ -35,7 +39,7 @@ export function restorationEvidencePort(db: Firestore): RestorationEvidencePort 
   const legs = getOperatorBoundRpcLegs('base');
   if (legs[0].operatorId === legs[1].operatorId) throw new Error('recourse_rpc_operators_not_independent');
   const chain=createRecourseChainPort();
-  return { chain, lineage:readRestorationLineage, migrationMint:(migration,account,through)=>readMigrationMint(migration,account,through,chain), transaction: hash => verifyBaseTransactionEvidence({ transactionHash: hash }),
+  const port: RestorationEvidencePort = { chain, lineage:readRestorationLineage, migrationMint:(migration,account,through)=>readMigrationMint(migration,account,through,chain), transaction: hash => verifyBaseTransactionEvidence({ transactionHash: hash }),
     currentKernel: async () => (await currentProtocolDeployment()).addresses.kernel.toLowerCase(),
     async privateOwner(binding) {
       const row = await db.collection(RECOURSE_COLLECTIONS.identities).doc(binding).get();
@@ -77,6 +81,8 @@ export function restorationEvidencePort(db: Firestore): RestorationEvidencePort 
       if (typeof results[0] !== 'string' || !rpcChainFactsEqual(results[0], results[1])) throw new Error('recourse_evidence_rpc_disagreement');
       return String(abi.decodeFunctionResult(method, results[0])[0]).toLowerCase();
     } };
+  port.succession = successionCollectionPort(db, port);
+  return port;
 }
 /** A positively identified exchange carrier is protected. A direct transfer's
  * shape alone does not establish the absence of a separately witnessed invoice
@@ -95,7 +101,8 @@ export function classifyRestorationReceipt(kernel: string, event: TransferEvent,
     && exchange.carrier.log.address === kernel && exchange.carrier.log.logIndex === event.logIndex) return 'witnessed_exchange';
   return 'unresolved';
 }
-export interface CheckedRestorationEvidence { readonly executionKernel:string; readonly restorationRevision:string; readonly checkpoint: TraceCheckpoint; readonly trace: RestorationTrace; }
+export interface CheckedRestorationEvidence { readonly executionKernel:string; readonly restorationRevision:string; readonly checkpoint: TraceCheckpoint; readonly trace: RestorationTrace;
+  readonly succession?: RecordedSuccessionCheckpoint; }
 const checked = new WeakSet<CheckedRestorationEvidence>();
 export function assertRestorationEvidence(value: CheckedRestorationEvidence): void {
   if (!checked.has(value)) throw new Error('recourse_evidence_unverified');
@@ -105,6 +112,24 @@ export function assertRestorationEvidence(value: CheckedRestorationEvidence): vo
  * independently reconciled. No request-supplied source, amount or classification
  * is used. Canonical duplicate observations must agree byte for byte. */
 export async function collectRestorationEvidence(snapshot: LossSnapshot, port: RestorationEvidencePort, throughBlock?:number): Promise<CheckedRestorationEvidence> {
+  if (port.succession) {
+    if (port.succession.evidence !== port) throw Error('recourse_evidence_port_mismatch');
+    const collected = await collectSuccessionCheckpoint(snapshot, port.succession, throughBlock);
+    const succession = recordSuccessionCheckpoint(collected.checkpoint);
+    // This projection supplies the existing review rows and current execution
+    // observations. Accounting always uses the full namespaced checkpoint.
+    const checkpoint: TraceCheckpoint = { block: succession.block, blockHash: succession.blockHash,
+      transfers: succession.events.flatMap(event => event.kind === 'transfer' ? [event.transfer] : [])
+        .sort((a, b) => a.block - b.block || a.logIndex - b.logIndex),
+      accounts: succession.balances.flatMap(row => row.ref.kind === 'account' && row.ref.kernel === collected.executionKernel
+        ? [{ address: row.ref.address, openingAtomic: row.openingAtomic ?? '0', closingAtomic: row.closingAtomic,
+          outgoingSequence: row.outgoingSequence!, encumberedAtomic: row.encumberedAtomic ?? '0' }] : []),
+      ownerAliases: succession.owners.flatMap(row => row.ref.kind === 'account' && row.ref.kernel === collected.executionKernel
+        ? [{ address: row.ref.address, evidenceHash: row.evidenceHash }] : []) };
+    const result = { executionKernel: collected.executionKernel, restorationRevision: collected.restorationRevision,
+      checkpoint, succession, trace: collected.trace };
+    checked.add(result); return result;
+  }
   const executionKernel=await port.currentKernel();
   const lineage=port.lineage ? await port.lineage(snapshot.kernel) : null;
   if ((lineage && lineage.kernel!==executionKernel) || (!lineage && snapshot.kernel!==executionKernel)) throw new Error('recourse_evidence_kernel_retired');
