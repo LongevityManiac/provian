@@ -249,7 +249,7 @@ No. It is free for every bound owner. A last-good-block snapshot records registe
 
 ### Does binding reveal anything new?
 
-Binding does not publish the registry link. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public. Binding is the owner's choice, made for a separate ownership record and recovery route. Ordinary transfers remain permissionless and ungated; restoration authority requires both the published rule and the owner's independent proof.
+Binding does not publish the registry link. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public. Binding is the owner's choice, made for a separate ownership record and recovery route. Ordinary transfers remain permissionless and ungated; restoration authority requires both the published rule and the owner's independent proof.
 
 ### Is this the whole Recourse institution?
 

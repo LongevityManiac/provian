@@ -1527,7 +1527,7 @@ The permanent pointer identifies the current kernel, verifiers and institutions.
 
 The primary sources are `contracts/src/ProvianMemberRecoursePool.sol`, `ProvianMemberSettlement.sol`, `ProvianRecourseKernel.sol`, `ProvianRecoveryHistory.sol`, `ProvianRestorationAuthorization.sol`, and `provian-backend/src/core/recourse/`. Owner authorization uses a hash-based signature over the exact operation and successor commitment. Revealing a recovery preimage cannot let a copied transaction substitute another destination. The wallet key, recovery secret and independent signing seed have separate purposes.
 
-The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public. The owner chooses binding for continuity and recovery. Other recourse programs are a future direction.
+The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public. The owner chooses binding for continuity and recovery. Other recourse programs are a future direction.
 
 ## 9. The wallet app
 

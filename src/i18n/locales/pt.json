@@ -5109,7 +5109,7 @@
     "leave": "Sair do Recourse Pool",
     "join": "Entrar no Recourse Pool",
     "addresses": "Seus endereços vinculados",
-    "bindingInfo": "Uma adesão inclui todos os saldos vinculados, tanto ganhos quanto recebidos. Vincular é uma escolha sua. O relay sabe quais carteiras são suas e o público não, assim como um banco. A restauração após uma quebra criptográfica é gratuita para todo proprietário vinculado, mesmo sem adesão.",
+    "bindingInfo": "Uma adesão inclui todos os saldos vinculados, tanto ganhos quanto recebidos. Vincular é uma escolha sua. O relay sabe quais carteiras são suas e o público não, assim como um banco. A restauração após uma quebra criptográfica é gratuita para todo proprietário vinculado, mesmo sem adesão. Uma recuperação ou restauração pode vincular publicamente um endereço antigo ao seu substituto. Os vínculos com seus outros endereços e o total dos seus ativos permanecem privados.",
     "bind": "Vincular um endereço que você possui",
     "resources": "Reservas constituídas pelos membros",
     "available": "Disponível para restauração: {{amount}} PVT",

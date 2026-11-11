@@ -34,7 +34,7 @@ If you no longer have the app, email **[hello@provian.ai](mailto:hello@provian.a
 
 - **Your wallet and its funds are yours.** Provian never holds them. Delete the app only after you have your recovery phrase or a cloud backup if you want to keep using the wallet.
 - **Your Provenance Envelopes** stay on your phone and in your own encrypted backup, and you can export them first (Settings → Storage → Export all my PEs).
-- **On-chain records** (recovery commitments, PVT transfers and settlements, daily anchors, and restoration transactions) are permanent on Base. Deleting an account cannot erase those records. The owner-to-address registry link stays private inside the relay: the relay knows which wallets are yours and the public does not, the same as a bank. Independent recovery signing material remains in your encrypted backup.
+- **On-chain records** (recovery commitments, PVT transfers and settlements, daily anchors, and restoration transactions) are permanent on Base. Deleting an account cannot erase those records. The owner-to-address registry link stays private inside the relay: the relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. Independent recovery signing material remains in your encrypted backup.
 - **Records still carrying unminted earnings, running totals, job records and promises** are kept under the retention rules in the [Privacy Policy](/privacy), section 9, so settlement stays correct. Paid PE Archive space you bought stays for as long as Provian operates the Archive.
 
 The [Privacy Policy](/privacy), section 11.2, describes deletion in full.

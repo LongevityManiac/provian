@@ -5109,7 +5109,7 @@
     "leave": "Umalis sa Recourse Pool",
     "join": "Sumali sa Recourse Pool",
     "addresses": "Mga nakaugnay mong address",
-    "bindingInfo": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro.",
+    "bindingInfo": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro. Maaaring ilantad ng pagbawi o pagpapanumbalik ang ugnayan ng lumang address at ng kapalit nito. Nananatiling pribado ang mga ugnayan sa iba mong address at ang kabuuan ng iyong mga hawak.",
     "bind": "Iugnay ang address na pag-aari mo",
     "resources": "Reserbang mula sa mga miyembro",
     "available": "Magagamit sa pagsasauli: {{amount}} PVT",

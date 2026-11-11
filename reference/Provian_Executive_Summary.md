@@ -26,7 +26,7 @@ Each identity registers a hash of a recovery secret. A person's secret derives f
 
 If the wallet cryptography fails, restoration uses registered balances at a last-good-block snapshot, proof of the preimage and a secure successor. It carries monetary history forward so earlier work cannot mint again. It does not reverse old-chain transfers or make unregistered ownership recoverable.
 
-Binding is voluntary. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public.
+Binding is voluntary. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public.
 
 ## The Recourse Pool
 

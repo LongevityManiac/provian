@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const PRIVACY_DOCUMENT: LegalDocument = {
-  "version": "sha256:eee520ce8d4dbd61d18b484558f4265872f3c8ca6dffeb6a1393dd59bdd3024f",
+  "version": "sha256:dd28e5aeef4ed655d5e1da4262459bcba70eed8b42c95a8cd0a4d63c8447a0fe",
   "title": "Provian Privacy Policy",
   "lastUpdated": "November 9, 2026",
   "footer": "This Privacy Policy is effective as of July 16, 2026.",
@@ -2069,7 +2069,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public."
+          "text": "Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public."
         }
       ]
     },

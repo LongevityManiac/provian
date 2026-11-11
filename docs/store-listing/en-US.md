@@ -29,7 +29,7 @@ Ship code, work with an AI, complete a job or keep a promise. A device, counterp
 PVT is earned by work, not bought from Provian. Provian runs no exchange, sets no price and promises no value or returns.
 
 OWNERSHIP BEYOND A KEY
-App and agent wallets bind to their owners at creation. Bind other addresses you hold: the registry follows their PVT, minted or received, from binding onward. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank.
+App and agent wallets bind to their owners at creation. Bind other addresses you hold: the registry follows their PVT, minted or received, from binding onward. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private.
 
 An independent recovery commitment distinguishes ownership from control of a wallet key. For people, the secret derives from the seed and rides the encrypted backup. If the cryptography breaks, every bound owner can restore registered balances from the last good block to a successor, free, without pool membership.
 

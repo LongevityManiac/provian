@@ -5109,7 +5109,7 @@
     "leave": "Ondoka Recourse Pool",
     "join": "Jiunge na Recourse Pool",
     "addresses": "Anwani zako zilizounganishwa",
-    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama.",
+    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani.",
     "bind": "Unganisha anwani unayomiliki",
     "resources": "Akiba iliyotolewa na wanachama",
     "available": "Inapatikana kwa urejeshaji: PVT {{amount}}",

@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:7e36dfa621c61c57a234b3f3bf507f2f9a13491f46991da7389859d3dd3d416b",
+  "version": "sha256:4cb5526b16c73b6381c11c072fb59043ce82819050d5891b7bfd7f49f09dc7f1",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2108,7 +2108,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "The ownership registry starts when an address is bound; it does not reconstruct earlier ownership. A wallet signature proves control for binding, and a separate hash commitment anchors recovery. At binding, the relay receives the commitment, not its recovery preimage or independent signing secret. Restoration reveals the consumed preimage on-chain together with a destination-bound hash signature and a replacement commitment. A copied preimage cannot authorize a different destination. Keeping the seed or agent recovery backup is the owner's responsibility. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner's holdings across addresses. Individual addresses, transfers and balances remain public."
+          "text": "The ownership registry starts when an address is bound; it does not reconstruct earlier ownership. A wallet signature proves control for binding, and a separate hash commitment anchors recovery. At binding, the relay receives the commitment, not its recovery preimage or independent signing secret. Restoration reveals the consumed preimage on-chain together with a destination-bound hash signature and a replacement commitment. A copied preimage cannot authorize a different destination. Keeping the seed or agent recovery backup is the owner's responsibility. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public."
         }
       ]
     },

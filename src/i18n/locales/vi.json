@@ -5109,7 +5109,7 @@
     "leave": "Rời Recourse Pool",
     "join": "Tham gia Recourse Pool",
     "addresses": "Các địa chỉ đã liên kết",
-    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn. Relay biết ví nào là của bạn, còn công chúng thì không, giống như ngân hàng. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên.",
+    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn. Relay biết ví nào là của bạn, còn công chúng thì không, giống như ngân hàng. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên. Việc khôi phục hoặc hoàn trả có thể công khai liên kết giữa địa chỉ cũ và địa chỉ thay thế. Liên kết với các địa chỉ khác của bạn và tổng tài sản vẫn riêng tư.",
     "bind": "Liên kết địa chỉ bạn sở hữu",
     "resources": "Dự trữ do thành viên đóng góp",
     "available": "Có sẵn để khôi phục: {{amount}} PVT",
