@@ -116,3 +116,12 @@ test('retiring parent cannot acquire or retain an issuance signature even while 
     expect(s.fake.store).toEqual(before);
   }
 });
+
+test('an all-unadmitted terminal batch rejects changed finalized event positions without rewriting effect fences',async()=>{
+ const s=setup();await reservePrivateIssuanceBatch(s.db,s.batch);s.issuance();
+ await commitPrivateIssuanceBatch(s.db,s.batch.id,await s.f.read(),s.rules);
+ const before=new Map(s.fake.store);
+ s.f.state.effects=s.f.state.effects.map((event,i)=>({...event,logIndex:`0x${(i+10).toString(16)}`}));
+ await expect(commitPrivateIssuanceBatch(s.db,s.batch.id,await s.f.read(),s.rules)).rejects.toThrow('receipt_changed');
+ expect(s.fake.store).toEqual(before);
+});

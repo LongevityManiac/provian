@@ -278,6 +278,21 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'issuance-terminal-position': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
+    testMatchPath: 'src/core/recourse/private-issuance-batch.test.ts',
+    mutations: [{ id: 'ISSUANCE-TERMINAL-POSITION', description: 'accept changed receipt positions while retaining prior effect fences',
+      find: 'return retained !== undefined && digest(retained) === digest(actual);', replace: 'return true;',
+      expectedKilledBy: 'an all-unadmitted terminal batch rejects changed finalized event positions without rewriting effect fences' }],
+  },
+  'issuance-terminal-evidence': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance-lifecycle.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance-lifecycle.test.ts',
+    mutations: [{ id: 'ISSUANCE-TERMINAL-RECEIPT', description: 'cached terminal status bypasses canonical receipt verification',
+      find: "if(await finalizeSettlementIssuance(db,parent,record.transactionHash)!==status)return fail('receipt_state');",
+      replace: 'void record.transactionHash;',
+      expectedKilledBy: 'cached terminal status is revalidated against the actual finalized receipt on every reconciliation' }],
+  },
   'issuance-cancellation-nonce': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
     testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',

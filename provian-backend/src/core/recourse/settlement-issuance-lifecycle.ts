@@ -6,6 +6,8 @@ import { getAgreedBaseLogs } from '../onchain/economic-discovery';
 import { PRIVATE_ISSUANCE_BATCHES } from './issuance-lock';
 import { commitPrivateIssuanceBatch, privateIssuanceReceiptEffects, type PrivateIssuanceBatchRecord } from './private-issuance-batch';
 import { reconcilePrivateIssuanceSuccession } from './private-issuance-succession';
+import { readIssuanceSuccession, assertIssuanceSuccession, type VerifiedIssuanceSuccession } from './issuance-succession-proof';
+import { membershipJournalHash } from './private-membership-journal';
 import { MEMBERSHIP_BATCH_ABI, MEMBERSHIP_RECEIPT_ABI, readMembershipReceipt } from './membership-receipt';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { MEMBER_SETTLEMENT_ABI } from './issuance-ticket';
@@ -16,6 +18,13 @@ import { finalizedIssuanceDeployment } from './settlement-issuance-runtime';
 import { createRecourseChainPort } from './chain-ledger';
 
 const fail = (reason:string):never => { throw Error(`recourse_issuance_lifecycle_${reason}`); };
+// The observation head and current manifest may advance; the retired pair and
+// exact cutoff must not. Both proofs independently authenticate that history.
+function retirementIdentity(proof:VerifiedIssuanceSuccession):string {
+  return membershipJournalHash({pointer:proof.pointer,batchId:proof.batchId,cutoff:proof.cutoff,
+    successor:{kernel:proof.successor.kernel,pool:proof.successor.pool},afterBreak:proof.afterBreak,
+    previousManifestHash:proof.previousManifestHash,settled:proof.settled,cancelled:proof.cancelled});
+}
 
 /** Always reload the durable parent; a caller's earlier snapshot may predate
  * reservation. A missing referenced coordinator is corruption, not no work. */
@@ -51,7 +60,23 @@ export async function reconcileSettlementIssuance(db:Firestore,parent:Settlement
   let record=await readSettlementIssuance(db,parent);
   if(!record)return null;
   const status=await reconcilePrivateIssuanceSuccession(db,record.batch.id);
-  if(status!=='current')return readSettlementIssuance(db,parent);
+  if(status!=='current'){
+    record=await readSettlementIssuance(db,parent);
+    if(!record||record.status!==status)return fail('terminal_changed');
+    if(status==='committed'||status==='cancelled'){
+      if(!record.transactionHash)return fail('receipt_missing');
+      // A cached terminal bit is not canonical-chain evidence on a later run.
+      if(await finalizeSettlementIssuance(db,parent,record.transactionHash)!==status)return fail('receipt_state');
+    }else{
+      const proof=await readIssuanceSuccession(record.batch.domain,parent.batch_id);
+      if(!proof)return fail('succession_missing');
+      assertIssuanceSuccession(proof);
+      const retained=await db.collection(PRIVATE_ISSUANCE_BATCHES).doc(record.batch.id).get();
+      const prior=retained.get('succession') as VerifiedIssuanceSuccession|undefined;
+      if(!prior||!prior.cutoff||!prior.successor||proof.settled||proof.cancelled||retirementIdentity(prior)!==retirementIdentity(proof))return fail('succession_changed');
+    }
+    return record;
+  }
   const {deployment,block}=await finalizedIssuanceDeployment(),batch=record.batch;
   if(batch.domain.pointer!==deployment.pointer.toLowerCase()||batch.domain.kernel!==deployment.addresses.kernel.toLowerCase()
     ||batch.domain.pool!==deployment.addresses.recoursePool.toLowerCase()||batch.target!==deployment.addresses.settlement.toLowerCase())return fail('domain');

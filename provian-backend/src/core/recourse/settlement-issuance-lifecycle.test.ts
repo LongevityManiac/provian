@@ -1,3 +1,4 @@
+import { configure } from './__test-helpers__/membership-receipt-fixture';
 import { issuanceBatchFixture } from './__test-helpers__/issuance-batch-fixture';
 import { a,h,tx,old,pointer } from './__test-helpers__/membership-receipt-fixture';
 import { readSettlementIssuance,finalizeSettlementIssuance,reconcileSettlementIssuance,prepareSettlementIssuanceCancellation } from './settlement-issuance-lifecycle';
@@ -88,4 +89,31 @@ test('wrong signer, changed domain or reorg prevents a new cancellation or priva
   await expect(prepareSettlementIssuanceCancellation(s.db,s.parent,mode==='signer'?a(901):a(900))).rejects.toThrow('recourse_issuance_lifecycle_');
   expect(s.fake.store.get(`${A}/${a(3)}`)?.batchId).toBe(s.batch.id);
  }
+});
+
+test('cached terminal status is revalidated against the actual finalized receipt on every reconciliation',async()=>{
+ for(const status of ['committed','cancelled'] as const){
+  const s=await setup();
+  if(status==='committed')s.issuance();
+  else s.f.state.effects=[{logIndex:'0x5',...MEMBERSHIP_RECEIPT_ABI.encodeEventLog(MEMBERSHIP_RECEIPT_ABI.getEvent('IssuanceBatchCancelled')!,[s.parent.batch_id])}];
+  expect(await finalizeSettlementIssuance(s.db,s.parent,tx)).toBe(status);
+  (reconcilePrivateIssuanceSuccession as jest.Mock).mockResolvedValue(status);
+  expect((await reconcileSettlementIssuance(s.db,s.parent))?.status).toBe(status);
+  const before=new Map(s.fake.store);s.f.state.reorg=true;s.f.state.reads=2;
+  await expect(reconcileSettlementIssuance(s.db,s.parent)).rejects.toThrow('reorg');
+  expect(s.fake.store).toEqual(before);
+ }
+});
+
+test('same transaction re-mined at changed canonical position cannot reuse stale private receipt',async()=>{
+ const s=await setup();s.issuance();
+ await finalizeSettlementIssuance(s.db,s.parent,tx);
+ (reconcilePrivateIssuanceSuccession as jest.Mock).mockResolvedValue('committed');
+ const replaceHash=(value:unknown):unknown=>{
+  if(Array.isArray(value))return value.map(replaceHash);
+  if(value!==null&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,['hash','blockHash','parentHash'].includes(k)&&v===h(100)?h(101):replaceHash(v)]));
+  return value;
+ };
+ configure(s.f.legs.map(leg=>({...leg,send:async(method,params)=>replaceHash(await leg.send(method,params))})));
+ await expect(reconcileSettlementIssuance(s.db,s.parent)).rejects.toThrow('receipt_changed');
 });

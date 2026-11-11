@@ -30,9 +30,13 @@ export interface PrivateIssuanceBatch {
 export interface PrivateIssuanceBatchRecord {
   readonly batch: PrivateIssuanceBatch; readonly status: 'reserved' | 'signed' | 'committed' | 'cancelled' | 'superseded';
   readonly signature: string | null; readonly calldata: string | null; readonly transactionHash: string | null;
+  readonly receipt?: VerifiedMembershipReceipt;
 }
 const HASH = /^0x[0-9a-f]{64}$/;
 const fail = (reason: string): never => { throw Error(`recourse_issuance_batch_${reason}`); };
+function sameFinalizedReceipt(retained:VerifiedMembershipReceipt|undefined,actual:VerifiedMembershipReceipt):boolean {
+  return retained !== undefined && digest(retained) === digest(actual);
+}
 export function privateIssuanceBatchId(kernel: string, batchId: string): string { return digest([kernel, batchId]); }
 function validate(input: PrivateIssuanceBatch): void {
   const domain = parseMembershipAuthorizationDomain(input.domain), context = parseMembershipIssuanceContext(input.context);
@@ -176,6 +180,8 @@ export async function commitPrivateIssuanceBatch(db: Firestore, id: string, rece
   const initial = row.data() as PrivateIssuanceBatchRecord, batch = initial.batch;
   if (initial.status === 'superseded') return fail('superseded');
   const result = privateIssuanceReceiptEffects(batch, receipt);
+  if ((initial.status === 'committed' || initial.status === 'cancelled')
+    && !sameFinalizedReceipt(initial.receipt,receipt)) return fail('receipt_changed');
   for (const r of batch.reservations) {
     const status = await commitPrivateMembershipReceipt(db, r.ownerIdentity, r.id, receipt, rules);
     if (status !== result.status) return fail('receipt_effect');
@@ -185,7 +191,8 @@ export async function commitPrivateIssuanceBatch(db: Firestore, id: string, rece
     if (!latest.exists || digest(current.batch) !== digest(batch)) return fail('replay');
     if (current.status === 'superseded') return fail('superseded');
     if (current.status === 'committed' || current.status === 'cancelled') {
-      if (current.status !== result.status || current.transactionHash !== receipt.transactionHash) return fail('replay');
+      if (current.status !== result.status || current.transactionHash !== receipt.transactionHash
+        || !sameFinalizedReceipt(current.receipt,receipt)) return fail('replay');
       return result.status;
     }
     const fences = await Promise.all(batch.tickets.map(t => tx.get(db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(t.account))));
