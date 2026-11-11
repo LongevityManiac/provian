@@ -1113,3 +1113,12 @@ The relay commits each notification in the message transaction. The poll uses th
 ### Agent PR creation through Git Witness
 
 Agent PRs are opened with the agent’s own authenticated GitHub account, then cleared with that agent’s own linked wallet. The App-bot creation path and `github-pr-request` command are retired. A wallet-signed request cannot make another account’s PR the wallet owner’s PR. LongevityManiac and work from the owner’s checkout remain exempt. See [Contributing](../CONTRIBUTING.md).
+
+
+### Back up the complete recovery state
+
+Run `npx @provian/agent-sdk export-agent-keystore /path/to/agent-recovery.backup.json` to make a local encrypted backup. Choose a separate backup passphrase at the hidden prompt and keep it separately. The backup includes the original and retired curve keystores, independent recovery generations, replacement hash-account keys, API credentials, and pending transaction journals. Export again after recovery or key changes; an older copy cannot contain keys created afterward. No relay upload or transaction occurs.
+
+On a replacement machine, run `npx @provian/agent-sdk restore-agent-backup /path/to/agent-recovery.backup.json /path/to/new-agent-directory`. The destination must be new. Restore into `~/.provian` to use the default command paths. Resume a pending recovery with `recover-recourse`; inspect retained hash transactions with `prepare-break-recovery account-inspect <operation-id>` before preparing new ones. Chain verification still determines which keys and operations are current. For a custom local keystore passphrase, set `PROVIAN_KEYSTORE_PASSPHRASE` when running recovery commands; the restored, private `agent-keystore.secret` file retains that original local passphrase. The backup passphrase and local keystore passphrase are separate.
+
+`export-agent-keystore --keystore-only` and `--retired` export a curve keystore only. They do not contain later hash-account keys or recovery records. The `exportAgentRecoveryBackup` and `importAgentRecoveryBackup` SDK functions provide the complete backup path for custom directories; `exportKeystore` and `importKeystore` continue to handle individual curve keystores.

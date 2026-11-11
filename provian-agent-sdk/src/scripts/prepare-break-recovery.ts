@@ -25,7 +25,7 @@ async function main(): Promise<void> {
     return;
   }
   const directory = path.join(homedir(), '.provian');
-  const passphrase = readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
+  const passphrase = process.env.PROVIAN_KEYSTORE_PASSPHRASE ?? readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
   if (!passphrase) throw Error('break_backup_secret_unavailable');
   if ((command === 'account-deliver' || command === 'account-inspect') && (args.length === 1 || (args.length === 2 && args[1] === '--cancel'))) {
     const execute = command === 'account-inspect' ? reconcileActiveHashWalletOperation : deliverActiveHashWalletOperation;

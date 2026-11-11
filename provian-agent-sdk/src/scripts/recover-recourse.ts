@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     return;
   }
   const directory = path.join(homedir(), '.provian');
-  const passphrase = readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
+  const passphrase = process.env.PROVIAN_KEYSTORE_PASSPHRASE ?? readLocalKeystoreSecret(path.join(directory, 'agent-keystore.secret'));
   if (!passphrase) throw new Error('Recovery backup unavailable');
   const result = await recoverRecourseAgent({ directory, passphrase,
     relayUrl: process.env.PROVIAN_RELAY_URL ?? 'https://api.provian.ai',

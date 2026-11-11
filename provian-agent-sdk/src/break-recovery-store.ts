@@ -465,6 +465,24 @@ export function readActiveHashWallet(directory: string): ActiveHashWallet | null
   } finally { fs.closeSync(fd); }
 }
 
+/** Offline backup validation. Call while holding the transition lock or on an
+ * unpublished restore directory. A locator is never a substitute for its key. */
+export function validateAgentHashBackup(directory: string, passphrase: string): void {
+  let names: string[] = [];
+  try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  for (const name of names) {
+    if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name)) throw Error('break_backup_invalid');
+    const identity = `0x${name.slice(0, 64)}`, commitment = `0x${name.slice(65, 129)}`, context = `0x${name.slice(130, 170)}`;
+    if (!readRecord(recordFile(directory, identity, commitment, context), passphrase, identity, commitment, context)) throw Error('break_backup_history_missing');
+  }
+  const active = readActiveHashWallet(directory);
+  if (active) {
+    const record = readRecord(recordFile(directory, active.identity, active.commitment, active.context), passphrase, active.identity, active.commitment, active.context);
+    if (!record || record.destination !== active.address || record.restoredTransaction !== active.transactionHash) throw Error('break_backup_active_wallet_invalid');
+  }
+}
+
 export interface HashWalletCall { readonly target: string; readonly value: string; readonly callGas: string; readonly data: string; }
 /** Message signatures use the selected hash account's independent spending
  * material. A selected account that cannot verify never falls back to a curve

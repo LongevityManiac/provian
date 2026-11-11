@@ -857,3 +857,5 @@ export type { HashDeliveryPorts, HashDeliveryRecord, HashDeliveryAttempt, HashDe
 export { deliverActiveHashWalletOperation, reconcileActiveHashWalletOperation } from './active-hash-delivery';
 export type { ActiveHashDeliveryInput } from './active-hash-delivery';
 export { readActiveHashWalletDelivery } from './break-recovery-store';
+
+export { exportAgentRecoveryBackup, importAgentRecoveryBackup } from './agent-recovery-backup';

@@ -55,7 +55,8 @@
     "export-pes": "dist/scripts/export-pes.js",
     "verify-export": "dist/scripts/verify-export.js",
     "witness": "dist/scripts/witness.js",
-    "prepare-break-recovery": "dist/scripts/prepare-break-recovery.js"
+    "prepare-break-recovery": "dist/scripts/prepare-break-recovery.js",
+    "restore-agent-backup": "dist/scripts/restore-agent-backup.js"
   },
   "files": [
     "dist",
