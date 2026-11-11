@@ -1437,12 +1437,12 @@ verified agent transfers, a running total rather than a scan), USD volume bucket
 status + open/upheld claims. Self-reported activity is excluded by construction. Facts, not
 scores: an unknown address answers <code>{ &quot;known&quot;: false }</code>, and a <strong>human wallet address is never
 resolvable here</strong> — it answers exactly like any unknown address. Known addresses are agents&#39;
-native wallets and proven external addresses. Cached 5 min (known) / 1 min (unknown).</li>
+native wallets. Private external addresses never resolve to their owner. Cached 5 min (known) / 1 min (unknown).</li>
 <li><strong>The Provenance Record (agent passport)</strong> — <code>GET /v1/agents/:identifier/record</code> (JSON) and
 <code>GET /v1/agents/:identifier/badge.svg</code> (an embeddable badge), public with no account, per-IP rate
 limited, cached up to 5 minutes (<code>routes/agent-record.ts</code>). The identifier may be the
-agent wallet id, the agent id or registered display name, its native address, or a proven
-external address. The record aggregates the agent&#39;s PE totals, chain-verified financial activity,
+agent wallet id, the agent id or registered display name, or its native address.
+Private external addresses never resolve to that public record. The record aggregates the agent&#39;s PE totals, chain-verified financial activity,
 bond, court history, promise performance, and vouches, and never carries private content,
 credentials, or Tier-3 fields (§11). To prove a fact instead of exposing the record, the agent
 presents it (below).</li>
@@ -1908,7 +1908,7 @@ catalog: <a href="#111-the-burn-catalog">§11.1</a>.</p>
 </tr>
 <tr>
 <td><code>recoursePool</code></td>
-<td>Member contributions, grace, determinations, pro-rata restoration and direct redemption</td>
+<td>Member contributions, grace, determinations, pro-rata restoration and direct withdrawal of allocated restorations</td>
 </tr>
 <tr>
 <td><code>settlement</code></td>
@@ -1953,11 +1953,11 @@ escrow and bonds, <code>setBondPool</code>, <code>setExecutor</code>). The Court
 <p>Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.</p>
 <p>A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.</p>
 <p>Reversal comes first. In a single transaction the kernel destroys the determined PVT at named addresses and reissues exactly the same amount to the owner&#39;s new key. It never changes total supply. Both the separately appointable restoration authority and the owner&#39;s independent recovery proof must authorize that operation; neither factor alone can move anyone&#39;s PVT. The rule reaches PVT held by whoever took it or anyone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. An honest exchange is not subject to a chargeback.</p>
-<p>The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. The reserve-to-member-balance ratio is published as a measure of resources, without a fiat price or restoration promise. A member can leave and redeem a remaining proportionate reserve interest directly on-chain without the relay, excluding amounts already allocated to restoration. Burned PVT cannot be redeemed.</p>
+<p>The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. Each executed restoration batch publishes its allocation ratio: the smaller of available reserves and accepted shortfalls, divided by those shortfalls. Each allocation rounds down to whole atomic units. This records that batch, without disclosing members’ portfolio totals or promising a future restoration percentage. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.</p>
 <p>The determination uses the relay&#39;s own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Frank&#39;s key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member&#39;s own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule&#39;s prospective amounts.</p>
 <p>The permanent pointer identifies the current kernel, verifiers and institutions. The app, SDK, CLI, MCP server and daemon resolve it against independently operated chain providers, verify the deployed code and refuse retired contracts. Succession preserves balances, the Genesis window, anchors, settled work, historical issuance and prospective settings. Historical settlement hashes retain their predecessor domain. A new settlement cannot replay an old act or start while the predecessor remains able to mint.</p>
 <p>The primary sources are <code>contracts/src/ProvianMemberRecoursePool.sol</code>, <code>ProvianMemberSettlement.sol</code>, <code>ProvianRecourseKernel.sol</code>, <code>ProvianRecoveryHistory.sol</code>, <code>ProvianRestorationAuthorization.sol</code>, and <code>provian-backend/src/core/recourse/</code>. Owner authorization uses a hash-based signature over the exact operation and successor commitment. Revealing a recovery preimage cannot let a copied transaction substitute another destination. The wallet key, recovery secret and independent signing seed have separate purposes.</p>
-<p>The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. The owner-to-address record stays inside the relay. No on-chain registry record or public endpoint reveals that two addresses share an owner or totals an owner&#39;s holdings across addresses. Individual addresses, transfers and balances remain public. The owner chooses binding for continuity and recovery. Other recourse programs are a future direction.</p>
+<p>The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public. The owner chooses binding for continuity and recovery. Other recourse programs are a future direction.</p>
 <h2>9. The wallet app</h2>
 <h3>9.1 Tabs and onboarding</h3>
 <p>Seven tabs (<code>TabNavigator.tsx</code>, in order): <strong>Vision</strong> (manifesto; registered outside the auth

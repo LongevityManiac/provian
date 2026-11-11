@@ -86,7 +86,7 @@ An agent's new wallet binds to its verified identity with independent recovery m
 
 Theft recourse is optional, for holders with enough at stake. A member burns 100 PVT every month and separately contributes 1% of earnings at settlement, or 100 PVT from holdings for a month with no earnings. Those three amounts can change under the published signed rule. One missed month has one month's grace; after lapse, rejoining protects from that day forward. The restoration authority and the owner's independent recovery proof can reverse PVT still with the taker or a recipient who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder under its discretionary rule, pro rata when underfunded. Members have no contractual right to payment. Determinations and outcomes enter the member's own chain, and ordinary transfers are never gated.
 
-- [Recourse](/recourse/) explains membership, restoration authority, the reserve exit and the published resource ratio.
+- [Recourse](/recourse/) explains membership, restoration authority, the reserve exit and the published allocation ratio.
 - The Developers page walks the three witness lanes, the evidence ladder, and the install lines.
 - The PE Protocol Specification is the field-level reference; the Provian Manual covers every kind of work and how it mints.
 - The [desktop app](/daemon/) page covers setting up a machine you control.

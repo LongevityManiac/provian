@@ -14,6 +14,7 @@ export const RECOURSE_POOL_ABI = new Interface([
   "event ReserveContributed(bytes32 indexed identity, uint256 amount)",
   "event RestorationAllocated(bytes32 indexed request, bytes32 indexed identity, uint256 requested, uint256 assigned)",
   "event RestorationDetermined(bytes32 indexed request, bytes32 indexed identity, bytes32 indexed occurrence, bool accepted, uint256 shortfall, bytes32 evidenceHash, uint256 revision)",
+  "event RestorationRatio(uint256 availableReserve, uint256 acceptedShortfall, uint256 distributable)",
   "event RestorationWithdrawn(bytes32 indexed request, address indexed destination, uint256 amount)",
   "function accountedBacking() view returns (uint256)",
   "function activatePoolHistory()",

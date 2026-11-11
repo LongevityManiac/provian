@@ -20,6 +20,7 @@ abstract contract RecourseReserveAccounting {
     mapping(bytes32 => RestorationAllocation) public restorationAllocations;
     error InvalidReserveAccounting();
     event ReserveContributed(bytes32 indexed identity, uint256 amount);
+    event RestorationRatio(uint256 availableReserve, uint256 acceptedShortfall, uint256 distributable);
     event RestorationAllocated(bytes32 indexed request, bytes32 indexed identity, uint256 requested, uint256 assigned);
     event RestorationWithdrawn(bytes32 indexed request, address indexed destination, uint256 amount);
 
@@ -61,6 +62,7 @@ abstract contract RecourseReserveAccounting {
         }
         uint256 reserve = availableReserve();
         uint256 distributable = reserve < liabilities ? reserve : liabilities;
+        emit RestorationRatio(reserve, liabilities, distributable);
         for (uint256 i; i < requests.length; ++i) {
             uint256 amount = shortfalls[i].mulDiv(distributable, liabilities);
             restorationAllocations[requests[i]] = RestorationAllocation(identities[i], amount, false);

@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:4cb5526b16c73b6381c11c072fb59043ce82819050d5891b7bfd7f49f09dc7f1",
+  "version": "sha256:8b1d0d416c78e9fa7ea677b630c82526522cdfd3519054cf80f0a4aaa24ce334",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2088,7 +2088,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "The pool restores the part a reversal does not reach. Accepted determinations are allocated pro rata when available reserves are insufficient, and the contract never allocates more than it holds. The published reserve-to-member-balance ratio reports available resources; it is not a promise of a restoration percentage. Neither calculation uses a fiat price. Every determination, reversal and pool outcome is recorded in the member's own chain and every use of restoration authority is on the public record."
+          "text": "The pool restores the part a reversal does not reach. Accepted determinations are allocated pro rata when available reserves are insufficient, and the contract never allocates more than it holds. Each executed batch publishes its allocation ratio: the smaller of available reserves and accepted shortfalls, divided by those shortfalls. Each allocation rounds down to whole atomic units. This records that batch, not a future restoration percentage or members’ portfolio totals. No fiat price enters the calculation. Every determination, reversal and pool outcome is recorded in the member's own chain and every use of restoration authority is on the public record."
         }
       ]
     },

@@ -1,79 +1,60 @@
-jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: requireConfiguredPvt9Runtime().address, recoursePool: `0x${'12'.repeat(20)}` }, runtimeHashes: Array(10).fill(keccak256('0x6000')) }) }));
-import { AbiCoder, Interface, keccak256 } from 'ethers';
+import { Interface, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { getAgreedBaseLogs, readAgreedBaseBlockHash, readAgreedBaseHead } from '../onchain/economic-discovery';
-import { requireConfiguredPvt9Runtime } from '../pvt/pvt9-base-config.generated';
 import { RECOURSE_POOL_ABI } from './pool-state';
-import { refreshRecoursePoolRatio, RECOURSE_RATIO_COLLECTION } from './pool-ratio';
+import { refreshRecoursePoolRatio, publicRecourseResources, RECOURSE_RATIO_COLLECTION } from './pool-ratio';
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: `0x${'11'.repeat(20)}`, recoursePool: `0x${'12'.repeat(20)}` }, runtimeHashes: Array(10).fill(require('ethers').keccak256('0x6000')) }) }));
 jest.mock('../onchain/rpc-provider', () => ({ getOperatorBoundRpcLegs: jest.fn() }));
 jest.mock('../onchain/economic-discovery', () => ({ getAgreedBaseLogs: jest.fn(), readAgreedBaseBlockHash: jest.fn(), readAgreedBaseHead: jest.fn() }));
-const pool = `0x${'12'.repeat(20)}`, account = `0x${'13'.repeat(20)}`, identity = `0x${'14'.repeat(32)}`;
-const blockHash = `0x${'15'.repeat(32)}`, kernel = requireConfiguredPvt9Runtime().address.toLowerCase();
-const token = new Interface(['function balanceOf(address) view returns (uint256)']);
-const old = { ...process.env };
-let wrongBirth = false, disagree = false, enrolled = true;
+const pool = `0x${'12'.repeat(20)}`, blockHash = `0x${'15'.repeat(32)}`, kernel = `0x${'11'.repeat(20)}`, txHash = `0x${'16'.repeat(32)}`;
+const abi = new Interface(['event RestorationRatio(uint256 availableReserve,uint256 acceptedShortfall,uint256 distributable)']);
+let wrongBirth = false, disagree = false;
+const log = (available = 10, accepted = 100, distributable = 10) => ({ address: pool, removed: false, blockNumber: 11, blockHash, logIndex: 5, transactionHash: txHash,
+  ...abi.encodeEventLog(abi.getEvent('RestorationRatio')!, [available, accepted, distributable]) });
 beforeEach(() => {
-  jest.resetAllMocks(); wrongBirth = false; disagree = false; enrolled = true;
-  process.env.PVT_RECOURSE_POOL_ADDRESS = pool;
-  process.env.PVT_RECOURSE_POOL_RUNTIME_HASH = keccak256('0x6000');
-  process.env.PVT_RECOURSE_POOL_DEPLOYMENT_BLOCK = '10';
+  jest.resetAllMocks(); wrongBirth = false; disagree = false;
   (readAgreedBaseHead as jest.Mock).mockResolvedValue(100);
   (readAgreedBaseBlockHash as jest.Mock).mockResolvedValue(blockHash);
-  const event = RECOURSE_POOL_ABI.encodeEventLog(RECOURSE_POOL_ABI.getEvent('AddressBound')!, [identity, account]);
-  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([{ ...event, address: pool, removed: false, blockNumber: 11, blockHash }]);
+  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([log()]);
   (getOperatorBoundRpcLegs as jest.Mock).mockReturnValue([0, 1].map(index => ({ operatorId: `rpc-${index}`,
     provider: { send: jest.fn(async (method: string, params: readonly unknown[]) => {
       if (method === 'eth_getCode') return typeof params[1] === 'string' && BigInt(params[1]) < 10n && !wrongBirth ? '0x' : '0x6000';
       expect(params[1]).toEqual({ blockHash, requireCanonical: true });
-      const call = params[0] as { to: string; data: string };
-      if (call.to === kernel) {
-        const address = String(token.parseTransaction({ data: call.data })!.args[0]).toLowerCase();
-        return token.encodeFunctionResult('balanceOf', [address === pool ? 10 : disagree && index === 1 ? 101 : 100]);
-      }
+      const call = params[0] as { to: string; data: string }; expect(call.to).toBe(pool);
       const parsed = RECOURSE_POOL_ABI.parseTransaction({ data: call.data })!;
-      const values: Record<string, readonly unknown[]> = { token: [kernel], ownerOf: [identity],
-        membershipState: [enrolled, false, 1, 0], availableReserve: [10] };
+      const values: Record<string, readonly unknown[]> = { token: [kernel], availableReserve: [disagree && index === 1 ? 4 : 3], allocatedRestorations: [10] };
+      // No member address, balance or identity getter may be consulted.
+      expect(Object.keys(values)).toContain(parsed.name);
       return RECOURSE_POOL_ABI.encodeFunctionResult(parsed.name, values[parsed.name]);
     }) } })));
 });
-afterAll(() => {
-  for (const name of ['PVT_RECOURSE_POOL_ADDRESS', 'PVT_RECOURSE_POOL_RUNTIME_HASH', 'PVT_RECOURSE_POOL_DEPLOYMENT_BLOCK']) {
-    if (old[name] === undefined) delete process.env[name]; else process.env[name] = old[name];
-  }
+test('publishes executed allocation ratio separately from current reserves without portfolio fields or queries', async () => {
+  const fake = createFakeFirestore(); await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  const row = fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)!;
+  expect(row).toMatchObject({ reserveAtomic: '3', allocatedAtomic: '10', block: 100,
+    ratio: { numerator: '10', denominator: '100', availableAtAllocationAtomic: '10', block: 11, logIndex: 5, transactionHash: txHash } });
+  expect(Object.keys(row).sort()).toEqual(['allocatedAtomic','block','blockHash','kernel','observedAtMs','pool','ratio','reserveAtomic','schema']);
+  expect(publicRecourseResources({ ...row, privateOwner: 'secret', memberBalanceAtomic: '123', ratio: { ...row.ratio as object, members: ['secret'] } }, pool)).toEqual(row);
+  expect(() => publicRecourseResources({ ...row, schema: undefined, memberBalanceAtomic: '123' }, pool)).toThrow('invalid');
 });
-test('publishes a same-block aggregate without member identities or addresses', async () => {
-  const fake = createFakeFirestore();
-  await refreshRecoursePoolRatio(fake as unknown as Firestore);
-  const row = fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`);
-  expect(row).toMatchObject({ memberCount: 1, addressCount: 1, reserveAtomic: '10', memberBalanceAtomic: '100',
-    ratio: { numerator: '10', denominator: '100' }, block: 100, blockHash });
-  expect(JSON.stringify(row)).not.toContain(identity);
-  expect(JSON.stringify(row)).not.toContain(account);
+test('before this pool executes a batch its ratio is absent, not a guessed portfolio ratio', async () => {
+  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([]);
+  const fake = createFakeFirestore(); await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  expect(fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)).toMatchObject({ ratio: null, reserveAtomic: '3' });
 });
-test('a closed member contributes no denominator and an empty population has no ratio', async () => {
-  enrolled = false;
-  const fake = createFakeFirestore();
-  await refreshRecoursePoolRatio(fake as unknown as Firestore);
-  expect(fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)).toMatchObject({ memberCount: 0, memberBalanceAtomic: '0', ratio: null });
-});
-test('a late deployment boundary or balance disagreement cannot publish an understated denominator', async () => {
+test('runtime boundary or reserve disagreement cannot publish', async () => {
   const fake = createFakeFirestore(); wrongBirth = true;
-  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('recourse_pool_deployment_block_invalid');
+  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('deployment_block_invalid');
   wrongBirth = false; disagree = true;
-  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('recourse_pool_rpc_disagreement');
+  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('rpc_disagreement');
   expect(fake.store.size).toBe(0);
 });
-
-test('successor imports count every carried member address without a rebuilt deployment block', async () => {
-  delete process.env.PVT_RECOURSE_POOL_DEPLOYMENT_BLOCK;
-  const abi = new Interface(['event PoolStateImported(uint8 indexed kind,bytes32 indexed slot,bytes32 leaf,bytes data)']);
-  const data = AbiCoder.defaultAbiCoder().encode(['address','bytes32'],[account,identity]);
-  const event = abi.encodeEventLog(abi.getEvent('PoolStateImported')!,[7,`0x${'aa'.repeat(32)}`,`0x${'bb'.repeat(32)}`,data]);
-  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([{ ...event, address: pool, removed: false, blockNumber: 11, blockHash }]);
-  const fake = createFakeFirestore(); await refreshRecoursePoolRatio(fake as unknown as Firestore);
-  expect(fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)).toMatchObject({ memberCount: 1, memberBalanceAtomic: '100', addressCount: 1 });
-  disagree = true;
-  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('rpc_disagreement');
+test('zero denominator, altered ratio, wrong emitter, omitted position, removed and reordered events refuse', async () => {
+  for (const events of [[log(10,0,0)], [log(10,100,11)], [{ ...log(), address: kernel }], [{ ...log(), logIndex: undefined }],
+    [{ ...log(), removed: true }], [log(), log()], [{ ...log(), blockNumber: 101 }]]) {
+    const fake = createFakeFirestore(); (getAgreedBaseLogs as jest.Mock).mockResolvedValue(events);
+    await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow(); expect(fake.store.size).toBe(0);
+  }
 });

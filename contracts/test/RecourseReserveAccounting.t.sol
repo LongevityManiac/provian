@@ -15,6 +15,7 @@ contract ReserveHarness is RecourseReserveAccounting {
     function withdraw(bytes32 request, bytes32 id) external returns (uint256) { return _withdrawRestoration(request, id, msg.sender); }
 }
 contract RecourseReserveAccountingTest is Test {
+    event RestorationRatio(uint256 availableReserve, uint256 acceptedShortfall, uint256 distributable);
     ReserveTestToken token;
     ReserveHarness pool;
     bytes32 constant ALICE = bytes32(uint256(1));
@@ -31,6 +32,8 @@ contract RecourseReserveAccountingTest is Test {
     }
     function testOnlyAllocatedRestorationsExitAndContributionsCannotBeRedeemed() public {
         losses.push(40 ether); losses.push(60 ether);
+        vm.expectEmit(false, false, false, true, address(pool));
+        emit RestorationRatio(400 ether, 100 ether, 100 ether);
         pool.allocate(requests, identities, losses);
         assertEq(pool.availableReserve(), 300 ether);
         (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ALICE, 100 ether));
@@ -44,6 +47,8 @@ contract RecourseReserveAccountingTest is Test {
     }
     function testUnderfundingIsProRataAndNewContributionsRemainInReserve() public {
         losses.push(400 ether); losses.push(1200 ether);
+        vm.expectEmit(false, false, false, true, address(pool));
+        emit RestorationRatio(400 ether, 1600 ether, 400 ether);
         pool.allocate(requests, identities, losses);
         assertEq(pool.availableReserve(), 0);
         assertEq(pool.allocatedRestorations(), 400 ether);
@@ -77,6 +82,12 @@ contract RecourseReserveAccountingTest is Test {
         assertLe(a + b, distributable);
         assertLt(distributable - a - b, 2);
         assertLe(a, first); assertLe(b, second);
+    }
+    function testZeroShortfallCannotPublishUndefinedRatio() public {
+        losses.push(0); losses.push(1);
+        vm.expectRevert(RecourseReserveAccounting.InvalidReserveAccounting.selector);
+        pool.allocate(requests, identities, losses);
+        assertEq(pool.allocatedRestorations(), 0);
     }
     function testDonationCannotBlockSmallContributionOrCreateRefundRights() public {
         token.mint(address(pool), 1000000000 ether);

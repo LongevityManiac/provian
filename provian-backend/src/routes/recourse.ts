@@ -19,7 +19,7 @@ import { prepareMemberBindingConsent } from '../core/recourse/member-binding-req
 import type { MemberBindingConsent } from '../core/recourse/member-binding';
 import { readPrivateMembershipView } from '../core/recourse/private-membership-view';
 import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool-state';
-import { RECOURSE_RATIO_COLLECTION } from '../core/recourse/pool-ratio';
+import { RECOURSE_RATIO_COLLECTION, publicRecourseResources } from '../core/recourse/pool-ratio';
 import { parseAgentRecoveryRequest, recoverAgentOwnership } from '../core/recourse/agent-recovery';
 import { parseHumanRecoveryRequest, recoverHumanOwnership } from '../core/recourse/human-recovery';
 import { prepareRestorationRequest, submitRestorationRequest, RESTORATION_REQUESTS } from '../core/recourse/restoration-request';
@@ -64,7 +64,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const config = await recoursePoolConfig();
       const snapshot = await deps.db.collection(RECOURSE_RATIO_COLLECTION).doc(config.address).get();
       if (!snapshot.exists) throw new Error('recourse_resources_unavailable');
-      res.json(snapshot.data());
+      res.json(publicRecourseResources(snapshot.data(), config.address));
     } catch { res.status(503).json({ error: 'recourse_resources_unavailable' }); }
   });
   // The independent secret plus fresh-key proof authenticate recovery. Requiring

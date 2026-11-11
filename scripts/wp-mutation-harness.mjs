@@ -1364,6 +1364,9 @@ const MUTATION_SETS = {
     "sourcePath": "contracts/src/RecourseReserveAccounting.sol",
     "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
     "mutations": [
+      { id: 'RESERVE-RATIO', description: 'published allocation ratio differs from the amounts actually used',
+        find: 'emit RestorationRatio(reserve, liabilities, distributable);', replace: 'emit RestorationRatio(reserve, liabilities, reserve);',
+        expectedKilledBy: 'testOnlyAllocatedRestorationsExitAndContributionsCannotBeRedeemed' },
         {
             "id": "RESERVE-1",
             "description": "allocated restoration counted as available reserve",

@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase-admin/firestore';
-import { AbiCoder, Interface, keccak256 } from 'ethers';
+import { Interface, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { getAgreedBaseLogs, readAgreedBaseBlockHash, readAgreedBaseHead } from '../onchain/economic-discovery';
 import { currentProtocolDeployment } from '../protocol/runtime';
@@ -7,12 +7,37 @@ import { recoursePoolConfig, RECOURSE_POOL_ABI } from './pool-state';
 
 export const RECOURSE_RATIO_COLLECTION = 'recourse_public_resources_v1';
 const births = new Map<string, number>();
-const historyAbi = new Interface(['event PoolStateImported(uint8 indexed kind,bytes32 indexed slot,bytes32 leaf,bytes data)']);
-const TOKEN = new Interface(['function balanceOf(address) view returns (uint256)']);
+const RATIO = new Interface(['event RestorationRatio(uint256 availableReserve,uint256 acceptedShortfall,uint256 distributable)']);
+export interface RecourseResources {
+  readonly schema: 'provian-recourse-resources/v2'; readonly pool: string; readonly kernel: string;
+  readonly block: number; readonly blockHash: string; readonly reserveAtomic: string; readonly allocatedAtomic: string;
+  readonly ratio: null | { readonly numerator: string; readonly denominator: string; readonly availableAtAllocationAtomic: string;
+    readonly block: number; readonly blockHash: string; readonly transactionHash: string; readonly logIndex: number };
+  readonly observedAtMs: number;
+}
+/** Explicit allowlist also refuses pre-privacy snapshots already in storage. */
+export function publicRecourseResources(value: unknown, pool: string): RecourseResources {
+  const fail = (): never => { throw Error('recourse_resources_invalid'); };
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return fail();
+  const r = value as Record<string, unknown>, hash = /^0x[0-9a-f]{64}$/, address = /^0x[0-9a-f]{40}$/;
+  const uint = (v: unknown): string => typeof v === 'string' && /^(0|[1-9][0-9]*)$/.test(v) ? v : fail();
+  const n = (v: unknown): number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : fail();
+  const h = (v: unknown): string => typeof v === 'string' && hash.test(v) ? v : fail();
+  if (r.schema !== 'provian-recourse-resources/v2' || r.pool !== pool || typeof r.kernel !== 'string' || !address.test(r.kernel)) return fail();
+  let ratio: RecourseResources['ratio'] = null;
+  if (r.ratio !== null) {
+    if (!r.ratio || typeof r.ratio !== 'object' || Array.isArray(r.ratio)) return fail();
+    const v = r.ratio as Record<string, unknown>;
+    ratio = { numerator: uint(v.numerator), denominator: uint(v.denominator), availableAtAllocationAtomic: uint(v.availableAtAllocationAtomic),
+      block: n(v.block), blockHash: h(v.blockHash), transactionHash: h(v.transactionHash), logIndex: n(v.logIndex) };
+    if (BigInt(ratio.denominator) === 0n || BigInt(ratio.numerator) !== (BigInt(ratio.availableAtAllocationAtomic) < BigInt(ratio.denominator)
+      ? BigInt(ratio.availableAtAllocationAtomic) : BigInt(ratio.denominator)) || ratio.block > n(r.block)) return fail();
+  }
+  return { schema: 'provian-recourse-resources/v2', pool, kernel: r.kernel, block: n(r.block), blockHash: h(r.blockHash),
+    reserveAtomic: uint(r.reserveAtomic), allocatedAtomic: uint(r.allocatedAtomic), ratio, observedAtMs: n(r.observedAtMs) };
+}
 
-/** Public aggregate only. Every member/address and balance comes from the pool's
- * complete binding-event history and the same canonical block. The ratio is a
- * resource measure, separate from the accepted-determination payout divisor. */
+/** Publishes the executed batch ratio, never members' portfolio balances. */
 export async function refreshRecoursePoolRatio(db: Firestore): Promise<void> {
   const config = await recoursePoolConfig();
   const block = await readAgreedBaseHead();
@@ -53,46 +78,31 @@ export async function refreshRecoursePoolRatio(db: Firestore): Promise<void> {
   births.set(birthKey, from);
   const kernel = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
   if (String((await call(config.address, RECOURSE_POOL_ABI, 'token'))[0]).toLowerCase() !== kernel) throw new Error('recourse_pool_token_mismatch');
-  const identities = new Map<string, Set<string>>();
+  let ratio: RecourseResources['ratio'] = null;
   for (let start = from; start <= block; start += 500) {
+    const end = Math.min(start + 499, block);
     const logs = await getAgreedBaseLogs({ address: config.address,
-      topics: [[RECOURSE_POOL_ABI.getEvent('AddressBound')!.topicHash, historyAbi.getEvent('PoolStateImported')!.topicHash]], fromBlock: start, toBlock: Math.min(start + 499, block) });
+      topics: [RATIO.getEvent('RestorationRatio')!.topicHash], fromBlock: start, toBlock: end });
     for (const log of logs) {
-      if (log.removed || await readAgreedBaseBlockHash(log.blockNumber) !== log.blockHash) throw new Error('recourse_pool_reorg');
-      let identity: string, address: string;
-      if (log.topics[0] === historyAbi.getEvent('PoolStateImported')!.topicHash) {
-        const decoded = historyAbi.parseLog({ topics: [...log.topics], data: log.data });
-        if (!decoded) throw new Error('recourse_pool_event_invalid');
-        if (decoded.args.kind !== 7n) continue;
-        const binding = AbiCoder.defaultAbiCoder().decode(['address', 'bytes32'], decoded.args.data);
-        address = String(binding[0]).toLowerCase(); identity = String(binding[1]).toLowerCase();
-      } else {
-        const decoded = RECOURSE_POOL_ABI.parseLog({ topics: [...log.topics], data: log.data });
-        if (!decoded || decoded.name !== 'AddressBound') throw new Error('recourse_pool_event_invalid');
-        identity = String(decoded.args[0]).toLowerCase(); address = String(decoded.args[1]).toLowerCase();
-      }
-      const addresses = identities.get(identity) ?? new Set<string>();
-      addresses.add(address); identities.set(identity, addresses);
-    }
-  }
-  let total = 0n, members = 0, addressCount = 0;
-  const counted = new Set<string>();
-  for (const [identity, addresses] of identities) {
-    const member = await call(config.address, RECOURSE_POOL_ABI, 'membershipState', [identity]);
-    if (!member[0]) continue;
-    members++;
-    for (const address of addresses) {
-      if (counted.has(address) || String((await call(config.address, RECOURSE_POOL_ABI, 'ownerOf', [address]))[0]).toLowerCase() !== identity) throw new Error('recourse_pool_owner_conflict');
-      counted.add(address); addressCount++;
-      total += BigInt((await call(kernel, TOKEN, 'balanceOf', [address]))[0]);
+      if (log.removed || log.address !== config.address || log.blockNumber < start || log.blockNumber > end
+        || !Number.isSafeInteger(log.logIndex) || log.logIndex < 0
+        || (ratio && (log.blockNumber < ratio.block || (log.blockNumber === ratio.block && log.logIndex <= ratio.logIndex)))
+        || await readAgreedBaseBlockHash(log.blockNumber) !== log.blockHash) throw Error('recourse_pool_ratio_event_invalid');
+      const event = RATIO.parseLog({ topics: [...log.topics], data: log.data });
+      if (!event) throw Error('recourse_pool_ratio_event_invalid');
+      ratio = { numerator: String(event.args.distributable), denominator: String(event.args.acceptedShortfall),
+        availableAtAllocationAtomic: String(event.args.availableReserve), block: log.blockNumber, blockHash: log.blockHash,
+        transactionHash: log.transactionHash, logIndex: log.logIndex };
+      publicRecourseResources({ schema: 'provian-recourse-resources/v2', pool: config.address, kernel, block, blockHash,
+        reserveAtomic: '0', allocatedAtomic: '0', ratio, observedAtMs: Date.now() }, config.address);
     }
   }
   const reserve = BigInt((await call(config.address, RECOURSE_POOL_ABI, 'availableReserve'))[0]);
-  if (await readAgreedBaseBlockHash(block) !== blockHash) throw new Error('recourse_pool_reorg');
-  const row = { pool: config.address, kernel, block, blockHash, memberCount: members, addressCount,
-    reserveAtomic: reserve.toString(), memberBalanceAtomic: total.toString(),
-    ratio: total === 0n ? null : { numerator: reserve.toString(), denominator: total.toString() },
-    observedAtMs: Date.now() };
+  const allocated = BigInt((await call(config.address, RECOURSE_POOL_ABI, 'allocatedRestorations'))[0]);
+  if (await readAgreedBaseBlockHash(block) !== blockHash || (await currentProtocolDeployment()).addresses.recoursePool.toLowerCase() !== config.address)
+    throw new Error('recourse_pool_reorg');
+  const row = publicRecourseResources({ schema: 'provian-recourse-resources/v2', pool: config.address, kernel, block, blockHash,
+    reserveAtomic: reserve.toString(), allocatedAtomic: allocated.toString(), ratio, observedAtMs: Date.now() }, config.address);
   await db.runTransaction(async tx => {
     const ref = db.collection(RECOURSE_RATIO_COLLECTION).doc(config.address);
     const prior = await tx.get(ref);
