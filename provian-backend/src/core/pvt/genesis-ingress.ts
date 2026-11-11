@@ -492,7 +492,7 @@ export async function commitHumanWalletRegistration(
           let registrationTime = marker.created_at_ms;
           if (recovered) {
             const recovery = await txn.get(params.db.collection(RECOURSE_COLLECTIONS.recoveries).doc(recoveryId));
-            if (recovery.get('identity') !== identityHash('human', params.userId)
+            if (recovery.get('ownerIdentity') !== identityHash('human', params.userId)
               || recovery.get('destination') !== params.address.toLowerCase()
               || existingWallet?.address !== params.address.toLowerCase() || existingWallet?.public_key !== params.publicKey
               || typeof existingWallet?.birth_public_key !== 'string' || typeof existingWallet?.recovered_at_ms !== 'number'

@@ -10,6 +10,8 @@ import { slip10DeriveEd25519Seed } from '../chains/solana/slip10';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
+import { addressRecoveryBinding } from './address-binding';
+import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
 
 export interface HumanAccountSelection {
   readonly rootAddress: string; readonly generation: number; readonly evm: string; readonly sol: string;
@@ -96,8 +98,10 @@ export async function installHumanAccountSelection(mnemonic: string, next: Human
   const derived = await deriveHumanAccount(mnemonic, next.generation);
   if (derived.evm !== next.evm || derived.sol !== next.sol) throw new Error('recourse_account_binding_mismatch');
   const recoveryGeneration = next.recoveryGeneration ?? next.generation;
-  const secret = humanRecoverySecret(mnemonic, recoveryGeneration);
-  const signingSeed = humanRecoverySigningSeed(mnemonic, recoveryGeneration);
+  if (!PROTOCOL_POINTER_PIN.address) throw Error('protocol_pointer_not_deployed');
+  const binding = addressRecoveryBinding({ chainId: String(PROTOCOL_POINTER_PIN.chainId), pointer: PROTOCOL_POINTER_PIN.address, origin: root.evm });
+  const secret = humanRecoverySecret(mnemonic, recoveryGeneration, binding);
+  const signingSeed = humanRecoverySigningSeed(mnemonic, recoveryGeneration, binding);
   let commitment: string;
   try { commitment = recoveryCommitment(secret, await recoverySigningRoot(signingSeed)); }
   finally { secret.fill(0); signingSeed.fill(0); }

@@ -503,14 +503,14 @@ const getAgentRecord: ProvianToolDef = {
     'transacting, computed from the relay\'s running totals (the relay keeps no PE; the PEs themselves live with ' +
     'their owner): PE count and families, attestation-tier mix, chain-verified transfer/x402 summary, bond ' +
     'status, court history, promise performance, vouches, wallet age, and linked/unlinked status. Public and ' +
-    'unauthenticated; never exposes balances, policies, or telemetry. Works with a wallet id or a proven ' +
-    'external address.',
+    'unauthenticated; never exposes balances, policies, or telemetry. Works with a wallet id or its published ' +
+    'native address. Private external addresses never resolve to their owner.',
   inputSchema: {
     type: 'object',
     properties: {
       agent_id: {
         type: 'string',
-        description: 'Agent wallet id (wallet_aw_…) or a proven external Base address (0x…).',
+        description: 'Agent wallet id (wallet_aw_…) or its published native Base address (0x…).',
       },
     },
     required: ['agent_id'],

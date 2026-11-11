@@ -19,10 +19,10 @@ interface IRegisteredRecoursePool {
 interface IRegisteredOwnerAuthorization {
     function recoveredDestination(bytes32 identity) external view returns (address);
 }
-/// @notice A verified-identity attestation AND the address owner's signature are
-/// required to register. Neither the attestor nor a different wallet can replace
-/// an existing recovery commitment. Identity verification remains the attestor's
-/// responsibility; this contract independently verifies address possession.
+/// @notice Each public identifier names one original address and its individual
+/// recovery lineage. The owner-to-address portfolio exists only in the relay.
+/// An identity attestation AND address possession are required to register;
+/// neither signer can replace an existing recovery commitment alone.
 contract ProvianOwnershipRegistry {
     ProvianProtocolPointer public immutable pointer;
     address public immutable identityAttestor;
@@ -30,6 +30,12 @@ contract ProvianOwnershipRegistry {
     bool public immutable afterCryptographicBreak;
     mapping(address => bytes32) private _ownerOf;
     mapping(address => uint256) private _boundBlock;
+    /// @dev The ABI's historical `identity` name means an address binding here,
+    /// never a relay owner ID. Independently bound addresses cannot share it.
+    function addressBinding(address origin) public view returns (bytes32) {
+        if (origin == address(0)) revert InvalidBinding();
+        return sha256(abi.encode("Provian address recovery binding", block.chainid, address(pointer), origin));
+    }
     function ownerOf(address account) public view returns (bytes32) {
         bytes32 identity = _ownerOf[account];
         return identity != bytes32(0) || previousRegistry == address(0) ? identity
@@ -77,10 +83,11 @@ contract ProvianOwnershipRegistry {
         return MessageHashUtils.toEthSignedMessageHash(message);
     }
     function bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision) external {
+        bytes32 existing = ownerOf(b.account);
         if (b.identity == bytes32(0) || b.account == address(0)
             || b.recoveryCommitment == bytes32(0) || b.signingRoot == bytes32(0) || b.nonce == bytes32(0)
             || b.expiresAtMs < block.timestamp * 1000 || b.expiresAtMs > (block.timestamp + 300) * 1000
-            || (ownerOf(b.account) != bytes32(0) && ownerOf(b.account) != b.identity)) revert InvalidBinding();
+            || (existing == bytes32(0) ? b.identity != addressBinding(b.account) : existing != b.identity)) revert InvalidBinding();
         // A curve-independent attestor admits only curve-independent accounts.
         // This preserves secure prospective binding after a cryptographic break.
         if (identityAttestor.codehash == keccak256(type(ProvianHashAccount).runtimeCode)

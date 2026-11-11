@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import type { AgentBankDeps } from '../agent-bank/types';
 import { generateApiCredentialsAsync, verifyApiCredentialAsync } from '../agent-wallet/api-key';
 import { prepareKeyRotationTransition, executeKeyRotationTransition, createHashRotationIdentity } from '../agent-wallet/key-rotation-transition';
-import { identityHash, recoveryHash, RECOURSE_COLLECTIONS, type RegisteredAddress } from './ownership';
+import { identityHash, primaryBindingIdentity, recoveryHash, RECOURSE_COLLECTIONS, type RegisteredAddress } from './ownership';
 import { createRecourseChainPort, type RecourseChainPort } from './chain-ledger';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { readAgreedBaseHead } from '../onchain/economic-discovery';
@@ -73,7 +73,8 @@ Promise<{ readonly walletId: string; readonly destination: string; readonly gene
   const owner = await deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(input.identity).get();
   const walletId: unknown = owner.get('walletId');
   if (!owner.exists || owner.get('ownerType') !== 'agent' || typeof walletId !== 'string'
-    || input.identity !== identityHash('agent', walletId)) throw new Error('recourse_recovery_proof_invalid');
+    || owner.get('ownerIdentity') !== identityHash('agent', walletId)
+    || input.identity !== await primaryBindingIdentity(deps.db, { type: 'agent', id: walletId, walletId })) throw new Error('recourse_recovery_proof_invalid');
   const preimage = Buffer.from(input.preimage.slice(2), 'hex');
   try {
     const receipt = await deps.db.collection(RECOURSE_COLLECTIONS.recoveries).doc(input.requestId).get();
@@ -111,7 +112,7 @@ Promise<{ readonly walletId: string; readonly destination: string; readonly gene
     const plan = await prepareKeyRotationTransition({ db: deps.db, walletId, newIdentity,
       rotationId: `recourse_${input.requestId.slice(2)}`, now: nowMs, readBaseHead: async () => block });
     if (await chain.blockHash(block) !== blockHash) throw new Error('recourse_admission_reorg');
-    const binding: RegisteredAddress = { identity: input.identity, address: input.destination, kernel,
+    const binding: RegisteredAddress = { identity: input.identity, ownerIdentity: identityHash('agent', walletId), address: input.destination, kernel,
       boundBlock: authorization.accountingBlock ?? authorization.block, boundAtMs: nowMs, boundBlockHash: authorization.accountingBlockHash ?? authorization.blockHash, openingBalanceAtomic: openingBalance.toString(),
       bindingDigest: ethers.hashMessage(message), recoveryGeneration: generation + 1, chainBindingStatus: 'confirmed', ledgerNeedsCatchup: true };
     await executeKeyRotationTransition(deps, plan, { binding, proof: { identity: input.identity, preimage,

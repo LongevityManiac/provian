@@ -4,7 +4,6 @@ import { mnemonicToSeedSync } from '@scure/bip39';
 import { Wallet, concat, sha256, hexlify, toUtf8Bytes } from 'ethers';
 import { recoverHumanAccount } from './human-recovery';
 import { recoveryOperationId } from './owner-operation';
-import { humanOwnershipIdentity } from './ownership';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import type { BiometricAction } from '../security/biometricAction';
 
@@ -24,7 +23,7 @@ vi.mock('expo-crypto', () => ({ getRandomBytes: (size: number) => new Uint8Array
 vi.mock('../security/biometricAction', () => ({ assertBiometricAction: (value: unknown) => { if (value !== 'approved') throw new Error('biometric_required'); } }));
 vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 'test test test test test test test test test test test junk' } }));
 vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({}) }));
-vi.mock('./human-discovery', () => ({ discoverHumanAccount: async () => ({ identity: humanOwnershipIdentity('user-recovery'), selection: null }) }));
+vi.mock('./human-discovery', () => ({ discoverHumanAccount: async () => ({ identity: h('91'), selection: null }) }));
 vi.mock('./human-account', async original => {
   const actual = await original<typeof import('./human-account')>();
   return { ...actual, installHumanAccountSelection: async (_mnemonic: string, selection: unknown) => { state.installed.push(selection); } };
@@ -39,8 +38,8 @@ vi.mock('./hash-authorization', () => ({
 }));
 vi.mock('./owner-chain', () => ({
   readOwnerChainState: async () => ({ nonce: state.nonce, destination: state.destination,
-    commitment: sha256(concat([humanRecoverySecret(mnemonic, state.nonce), sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce)))])),
-    signingRoot: sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce))),
+    commitment: sha256(concat([humanRecoverySecret(mnemonic, state.nonce, h('91')), sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, h('91'))))])),
+    signingRoot: sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, h('91')))),
     deployment: { addresses: { kernel: `0x${'44'.repeat(20)}` }, revision: state.revision } }),
   verifyOwnerOperationReceipt: async () => { if (state.failReceipt) throw new Error('invalid_receipt'); },
 }));
@@ -57,7 +56,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
   },
   recourseRecoveryRequest: async (path: string, body: unknown, privateAccess?: {identity:string;secret:Uint8Array;signingSeed:Uint8Array}) => {
     if (path.startsWith('owner-operations/')) {
-      expect(privateAccess?.identity).toBe(humanOwnershipIdentity('user-recovery'));
+      expect(privateAccess?.identity).toBe(h('91'));
       expect(privateAccess?.secret.length).toBe(32); expect(privateAccess?.signingSeed.length).toBe(32);
     }
     state.calls.push({ path, body });
@@ -70,7 +69,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
     }
     if (state.loseResponse) { state.loseResponse = false; throw new Error('response_lost'); }
     const input = body as { destination: string };
-    return { userId: 'user-recovery', destination: input.destination, generation: 1 };
+    return { identity: h('91'), userId: 'user-recovery', destination: input.destination, generation: 1 };
   },
 } }));
 beforeEach(() => {

@@ -1,3 +1,5 @@
+import { addressRecoveryBinding } from './address-binding';
+import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { sha256 } from 'ethers';
 import { assertHumanBackupSelection, deriveHumanAccount, installHumanHashAccountSelection, installHumanAccountSelection, readHumanAccountSelection } from './human-account';
@@ -57,7 +59,7 @@ it('preserves an independently selected Solana generation when PVT changes to a 
   const root = await deriveHumanAccount(phrase, 0), legacy = await deriveHumanAccount(phrase, 4);
   const requestId = `0x${'66'.repeat(32)}`;
   await installHumanAccountSelection(phrase, { rootAddress: root.evm, generation: 4, ...legacy,
-    recoveryCommitment: sha256(humanRecoverySecret(phrase, 4)), requestId }, action);
+    recoveryCommitment: sha256(humanRecoverySecret(phrase, 4, addressRecoveryBinding({ chainId: '8453', pointer: PROTOCOL_POINTER_PIN.address!, origin: root.evm }))), requestId }, action);
   const selected = await installHumanHashAccountSelection(phrase, identity, requestId, action, network);
   expect(selected).toMatchObject({ generation: 4, sol: legacy.sol, evm: account, recoveryGeneration: 2, kind: 'hash' });
   expect(selected.sol).not.toBe(root.sol);

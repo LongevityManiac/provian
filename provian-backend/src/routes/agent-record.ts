@@ -100,7 +100,7 @@ interface ProvenanceRecordResponse {
     wallet_age_days: number | null;
     address: string | null;
     linked_to_human: boolean;
-    external_address: RecordSubject['externalLink'];
+    external_address: null;
   };
   provenance: {
     pe_count: number;
@@ -383,7 +383,7 @@ function buildRecordResponse(params: {
       // Boolean ONLY — the linked human's identity is Tier-3 (never expose
       // linked_human_user_id / _wallet_id / _address).
       linked_to_human: resolved.hasHumanLink,
-      external_address: subject.externalLink,
+      external_address: null,
     },
     provenance: {
       pe_count: peCount,
@@ -428,8 +428,8 @@ async function loadRecord(
   cache: RedisCache,
   identifier: string,
 ): Promise<ProvenanceRecordResponse> {
-  // v2 excludes platform:test identities from every public lookup.
-  const cacheKey = `agent_record:v2:${identifier}`;
+  // A new cache namespace prevents old address-group disclosures from reappearing.
+  const cacheKey = `agent_record:v3:${identifier}`;
   const cached = await cache.get<ProvenanceRecordResponse>(cacheKey);
   if (cached) return cached;
 

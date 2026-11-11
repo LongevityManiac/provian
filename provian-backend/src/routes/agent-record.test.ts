@@ -288,11 +288,8 @@ describe('GET /v1/agents/:identifier/record', () => {
       linked_to_human: true,
     });
     expect(res.body.agent.wallet_age_days).toBe(90);
-    expect(res.body.agent.external_address).toMatchObject({
-      address: EXTERNAL_ADDRESS,
-      chain: 'base',
-      initial_reputation_tier: 'L1',
-    });
+    expect(res.body.agent.external_address).toBeNull();
+    expect(JSON.stringify(res.body)).not.toContain(EXTERNAL_ADDRESS);
 
     // Provenance: accrual-preferred count, families, tier mix
     expect(res.body.provenance.pe_count).toBe(4);
@@ -331,7 +328,7 @@ describe('GET /v1/agents/:identifier/record', () => {
     expect(text).not.toMatch(/\$\d/);
   });
 
-  it('resolves the same record by agent_id, native address, and proven external address', async () => {
+  it('resolves public agent identifiers but never reverse-resolves a private external address', async () => {
     const app = buildApp(fake);
 
     const byAgentId = await request(app).get(`/v1/agents/${AGENT_ID}/record`);
@@ -345,9 +342,18 @@ describe('GET /v1/agents/:identifier/record', () => {
     expect(byNative.body.matched_by).toBe('native_address');
 
     const byExternal = await request(app).get(`/v1/agents/${EXTERNAL_ADDRESS}/record`);
-    expect(byExternal.status).toBe(200);
-    expect(byExternal.body.agent.wallet_id).toBe(WALLET_ID);
-    expect(byExternal.body.matched_by).toBe('proven_external_address');
+    expect(byExternal.status).toBe(404);
+    expect(byExternal.body.found).toBe(false);
+    expect(JSON.stringify(byExternal.body)).not.toContain(WALLET_ID);
+  });
+
+  it('does not read cached public portfolio links from the former namespace', async () => {
+    const cache = createCache();
+    await cache.set(`agent_record:v2:${WALLET_ID}`, { found: true, agent: { address: NATIVE_ADDRESS,
+      external_address: { address: EXTERNAL_ADDRESS } } }, 300);
+    const res = await request(buildApp(fake, cache)).get(`/v1/agents/${WALLET_ID}/record`);
+    expect(res.status).toBe(200); expect(res.body.agent.external_address).toBeNull();
+    expect(JSON.stringify(res.body)).not.toContain(EXTERNAL_ADDRESS);
   });
 
   it('RED: platform:test identities and all their activity are absent from every public lookup key', async () => {

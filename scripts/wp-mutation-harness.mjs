@@ -1102,6 +1102,17 @@ const MUTATION_SETS = {
       },
     ],
   },
+  ProvianOwnershipRegistry: {
+    sourcePath: 'contracts/src/ProvianOwnershipRegistry.sol',
+    testMatchPath: 'test/ProvianOwnershipRegistry.t.sol',
+    mutations: [{
+      id: 'BINDING-1',
+      description: 'unrelated original addresses may share a public owner identifier',
+      find: '(existing == bytes32(0) ? b.identity != addressBinding(b.account) : existing != b.identity)',
+      replace: '(existing != bytes32(0) && existing != b.identity)',
+      expectedKilledBy: 'testPrivateOwnerCannotBePublishedAsSharedAddressBindingEvenWithBothSignatures',
+    }],
+  },
   ProvianProtocolPointer: {
     "sourcePath": "contracts/src/ProvianProtocolPointer.sol",
     "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry,RecoursePoolHistory}.t.sol",

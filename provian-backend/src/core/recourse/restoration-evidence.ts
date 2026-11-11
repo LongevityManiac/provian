@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { Interface } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { resolveAddressOwnership } from '../pvt/policy/same-owner-detection';
-import { identityHash } from './ownership';
+import { identityHash, RECOURSE_COLLECTIONS } from './ownership';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
@@ -26,6 +26,9 @@ export interface RestorationEvidencePort {
   lineage?(lossKernel:string): Promise<RestorationLineage>;
   migrationMint?(migration:RestorationMigration,account:string,through:number): Promise<MigrationBalance|null>;
   encumberedBalance?(account:string,kernel:string,blockHash:string): Promise<string>;
+  /** Private owner of one public recovery binding; never included in calldata. */
+  privateOwner(binding: string): Promise<string | null>;
+  /** `identity` here is the relay's private owner key, not a public binding. */
   verifiedIdentity(account: string): Promise<{ readonly identity: string; readonly evidenceHash: string } | null>;
 }
 export function restorationEvidencePort(db: Firestore): RestorationEvidencePort {
@@ -34,6 +37,14 @@ export function restorationEvidencePort(db: Firestore): RestorationEvidencePort 
   const chain=createRecourseChainPort();
   return { chain, lineage:readRestorationLineage, migrationMint:(migration,account,through)=>readMigrationMint(migration,account,through,chain), transaction: hash => verifyBaseTransactionEvidence({ transactionHash: hash }),
     currentKernel: async () => (await currentProtocolDeployment()).addresses.kernel.toLowerCase(),
+    async privateOwner(binding) {
+      const row = await db.collection(RECOURSE_COLLECTIONS.identities).doc(binding).get();
+      if (!row.exists) return null;
+      const kind: unknown = row.get('ownerType'), id: unknown = row.get('ownerId');
+      if (row.get('identity') !== binding || (kind !== 'human' && kind !== 'agent') || typeof id !== 'string'
+        || row.get('ownerIdentity') !== identityHash(kind, id)) throw Error('recourse_evidence_owner_unusable');
+      return identityHash(kind, id);
+    },
     async encumberedBalance(account, kernel, blockHash) {
       const deployment = await currentProtocolDeployment();
       if (deployment.addresses.kernel.toLowerCase() !== kernel) throw new Error('recourse_evidence_kernel_retired');
@@ -103,6 +114,8 @@ export async function collectRestorationEvidence(snapshot: LossSnapshot, port: R
   const openingHash = await port.chain.blockHash(snapshot.block - 1);
   if (block < snapshot.block || !blockHash || !openingHash || await port.chain.blockHash(snapshot.block) !== snapshot.blockHash) throw new Error('recourse_evidence_checkpoint_invalid');
   const registry = await port.call(executionKernel, 'registryOperator', [], blockHash);
+  const privateOwner = await port.privateOwner(snapshot.identity);
+  if (privateOwner === null) throw Error('recourse_evidence_owner_unusable');
   const migrations=lineage?.migrations ?? [];
   const segments=[{kernel:snapshot.kernel,from:snapshot.block,through:migrations[0]?.cutoff??block},
     ...migrations.map((migration,index)=>({kernel:migration.kernel,from:migration.cutoff+1,through:migrations[index+1]?.cutoff??block}))];
@@ -118,8 +131,10 @@ export async function collectRestorationEvidence(snapshot: LossSnapshot, port: R
     visited.add(account);
     const identity = await port.call(registry, 'ownerOf', [account], blockHash);
     const verified = await port.verifiedIdentity(account);
-    if (verified && identity !== `0x${'0'.repeat(64)}` && verified.identity !== identity) throw new Error('recourse_evidence_owner_conflict');
-    if (identity === snapshot.identity || verified?.identity === snapshot.identity) ownerAliases.push({ address: account,
+    const boundOwner = identity === `0x${'0'.repeat(64)}` ? null : await port.privateOwner(identity);
+    if (identity !== `0x${'0'.repeat(64)}` && boundOwner === null) throw Error('recourse_evidence_owner_unusable');
+    if (verified && boundOwner !== null && verified.identity !== boundOwner) throw new Error('recourse_evidence_owner_conflict');
+    if (identity === snapshot.identity || boundOwner === privateOwner || verified?.identity === privateOwner) ownerAliases.push({ address: account,
       evidenceHash: digest({ registry, account, identity, blockHash, verified }) });
     const [opening, closing, sequence] = await Promise.all([
       port.chain.balance(snapshot.kernel, account, openingHash), port.chain.balance(executionKernel, account, blockHash),

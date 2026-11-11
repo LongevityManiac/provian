@@ -634,7 +634,7 @@ export async function executeKeyRotationTransition(
   }
   let captured: TransitionReadState | null = null;
   let recovery: PreparedRecovery | null = null;
-  if (recourse && (recourse.proof.identity !== identityHash('agent', plan.expected.walletId)
+  if (recourse && (recourse.binding.ownerIdentity !== identityHash('agent', plan.expected.walletId)
     || recourse.proof.destination !== plan.newIdentity.newAddress
     || recourse.binding.address !== plan.newIdentity.newAddress
     || recourse.binding.identity !== recourse.proof.identity
@@ -667,7 +667,10 @@ export async function executeKeyRotationTransition(
         recovery = await prepareRecoveryTransaction(deps.db, txn, recourse.proof);
         if (recovery.replay) throw new Error('recourse_rotation_already_applied');
         const owner = await txn.get(deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(recourse.proof.identity));
+        const portfolio = await txn.get(deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(identityHash('agent', plan.expected.walletId)));
         if (owner.get('ownerType') !== 'agent' || owner.get('walletId') !== plan.expected.walletId
+          || owner.get('ownerIdentity') !== recourse.binding.ownerIdentity || owner.get('primaryBinding') !== true
+          || portfolio.get('primaryBinding') !== recourse.proof.identity
           || recovery.generation !== recourse.binding.recoveryGeneration) throw new Error('recourse_rotation_context_invalid');
       }
     },

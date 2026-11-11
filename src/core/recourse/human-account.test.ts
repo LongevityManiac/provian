@@ -1,3 +1,5 @@
+import { addressRecoveryBinding } from './address-binding';
+import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
@@ -16,7 +18,8 @@ vi.mock('expo-secure-store', () => ({ WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'device-on
 vi.mock('../security/biometricAction', () => ({ assertBiometricAction: (action: unknown) => { if (action !== 'approved') throw new Error('biometric_required'); } }));
 const mnemonic = 'test test test test test test test test test test test junk';
 const action = 'approved' as unknown as BiometricAction;
-const commitment = async (generation: number) => recoveryCommitment(humanRecoverySecret(mnemonic, generation), await recoverySigningRoot(humanRecoverySigningSeed(mnemonic, generation)));
+const nativeBinding = addressRecoveryBinding({ chainId: '8453', pointer: PROTOCOL_POINTER_PIN.address!, origin: '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266' });
+const commitment = async (generation: number) => recoveryCommitment(humanRecoverySecret(mnemonic, generation, nativeBinding), await recoverySigningRoot(humanRecoverySigningSeed(mnemonic, generation, nativeBinding)));
 beforeEach(() => { memory.clear(); fault.unreadable = false; });
 it('preserves the canonical generation-zero account and derives distinct hardened successors', async () => {
   const root = await deriveHumanAccount(mnemonic, 0);
@@ -25,7 +28,7 @@ it('preserves the canonical generation-zero account and derives distinct hardene
   expect(next.evm).not.toBe(root.evm); expect(next.sol).not.toBe(root.sol);
   expect(humanAccountPaths(1)).toEqual({ evm: "m/44'/60'/1'/0/0", sol: "m/44'/501'/1'/0'" });
   const curve = HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic)).derive(humanAccountPaths(0).evm);
-  expect(bytesToHex(humanRecoverySecret(mnemonic))).not.toBe(bytesToHex(curve.privateKey!));
+  expect(bytesToHex(humanRecoverySecret(mnemonic, 0, nativeBinding))).not.toBe(bytesToHex(curve.privateKey!));
   expect(await commitment(1)).not.toBe(await commitment(0));
   expect(() => humanAccountPaths(-1)).toThrow(); expect(() => humanAccountPaths(0x80000000)).toThrow();
 });

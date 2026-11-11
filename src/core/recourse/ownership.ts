@@ -1,12 +1,11 @@
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
-import { sha256 } from '@noble/hashes/sha256';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
 import SeedManager from '../wallet/SeedManager';
 import { ActionWallet } from '../security/ActionWallet';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 import { currentProtocolDeployment, ownerChainNetwork } from '../protocol/runtime';
 import { waitForRecourseBinding } from './binding-chain';
+import { addressRecoveryBinding } from './address-binding';
 
 import { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
 export { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
@@ -15,18 +14,16 @@ export interface RecourseBindingPort {
   userId: string;
 }
 export { humanRecoverySecret } from './human-secret';
-export function humanOwnershipIdentity(userId: string): string {
-  return `0x${bytesToHex(sha256(utf8ToBytes(JSON.stringify(['provian ownership', 'human', userId]))))}`;
-}
 /** Reuses the owner's existing biometric action; no second prompt or new backup secret. */
 export async function prepareHumanOwnershipBinding(port: RecourseBindingPort, address: string,
   action: BiometricAction): Promise<OwnershipBinding> {
   assertBiometricAction(action);
   const mnemonic = await SeedManager.getMnemonic(action);
   if (!mnemonic) throw new Error('recourse_seed_unavailable');
-  const generation = await SeedManager.getRecoveryGeneration();
-  const secret = humanRecoverySecret(mnemonic, generation);
-  const seed = humanRecoverySigningSeed(mnemonic, generation);
+  const deployment = await currentProtocolDeployment();
+  const identity = addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: address.toLowerCase() });
+  const secret = humanRecoverySecret(mnemonic, 0, identity);
+  const seed = humanRecoverySigningSeed(mnemonic, 0, identity);
   let signingRoot: string, commitment: string;
   try { signingRoot = await recoverySigningRoot(seed); commitment = recoveryCommitment(secret, signingRoot); }
   finally { secret.fill(0); seed.fill(0); }
@@ -34,8 +31,7 @@ export async function prepareHumanOwnershipBinding(port: RecourseBindingPort, ad
   if (!raw || typeof raw !== 'object' || !('binding' in raw) || !('message' in raw)
     || !raw.binding || typeof raw.binding !== 'object') throw new Error('recourse_challenge_invalid');
   const binding = raw.binding as OwnershipBinding;
-  const deployment = await currentProtocolDeployment();
-  if (binding.identity !== humanOwnershipIdentity(port.userId) || binding.address !== address.toLowerCase()
+  if (binding.identity !== identity || binding.address !== address.toLowerCase()
     || binding.kernel !== deployment.addresses.kernel.toLowerCase() || binding.recoveryCommitment !== commitment || binding.signingRoot !== signingRoot
     || binding.expiresAtMs < Date.now() || binding.expiresAtMs > Date.now() + 5 * 60_000
     || raw.message !== bindingMessage(binding)) throw new Error('recourse_challenge_invalid');

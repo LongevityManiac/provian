@@ -4,7 +4,6 @@ import { concat, hashMessage, hexlify, sha256, toUtf8Bytes } from 'ethers';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 import { ownerChainNetwork } from '../protocol/runtime';
 import RelayAPIService from '../../services/RelayAPIService';
-import { humanOwnershipIdentity } from './ownership';
 import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { discoverHumanIdentityHistory, discoverHistoricalCurveGeneration, recoverHumanHistoricalMaterial } from './human-break-history';
 import { discoverHumanHashAccountSelection, type HumanAccountSelection } from './human-account';
@@ -40,7 +39,7 @@ async function privateRequest(mnemonic: string, identity: string, generation: nu
   // A seed first bound at a later generation can try its observed predecessors.
   if (!Number.isSafeInteger(generation) || generation < 0 || generation >= 0x80000000) throw Error('recourse_account_index_invalid');
   for (let candidate = 0; candidate <= generation; candidate++) {
-    const secret = humanRecoverySecret(mnemonic, candidate), signingSeed = humanRecoverySigningSeed(mnemonic, candidate);
+    const secret = humanRecoverySecret(mnemonic, candidate, identity), signingSeed = humanRecoverySigningSeed(mnemonic, candidate, identity);
     try { return await RelayAPIService.recourseRecoveryRequest(path, body, { identity, secret, signingSeed }); }
     catch (error) {
       if (!(error instanceof Error) || error.message !== 'recourse_private_unavailable' || candidate === generation) throw error;
@@ -182,7 +181,8 @@ async function perform(mnemonic: string, action: BiometricAction, options: {
       assertBiometricAction(action);
       const signature = await signHashAccountMessage(account.account, hashMessage(message), signingSeed);
       const result = reply(await RelayAPIService.recourseRecoveryRequest('recover-human', { ...body, signature }));
-      if (typeof result.userId !== 'string' || humanOwnershipIdentity(result.userId) !== identity
+      if (result.identity !== identity || typeof result.userId !== 'string' || result.userId.length === 0 || result.userId.length > 256
+        || (state.userId !== undefined && result.userId !== state.userId)
         || result.destination !== account.account || !Number.isSafeInteger(result.generation) || Number(result.generation) < 1) throw Error('recourse_break_reply_invalid');
       await verifyBreakRecoveryReceipt(prepared, state.transactionHash, network);
       const selection = await discoverHumanHashAccountSelection(mnemonic, identity, state.requestId, network, legacyGeneration);

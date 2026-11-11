@@ -182,7 +182,6 @@ function serializeCommonsProfile(profile: import('../core/commons/types').Common
     attestation_tier_raw: profile.attestation_tier_raw,
     identity_verification_level: profile.identity_verification_level,
     agent_framework: profile.agent_framework,
-    owner_wallet_id: profile.owner_wallet_id,
     capabilities: profile.capabilities,
     skills: profile.skills,
     location: profile.location,

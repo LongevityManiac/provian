@@ -7,8 +7,10 @@ import { assertExternalProofFenceEvidence, type ExternalProofFenceEvidence } fro
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { NATIVE_WALLET_ADDRESS_INDEX_COLLECTION, nativeWalletAddressIndexId } from '../pvt/native-wallet-registration';
 import { PROVEN_ADDRESSES_COLLECTION, HUMAN_PROVEN_ADDRESSES_COLLECTION } from '../external-address/link';
+import { addressRecoveryBinding } from './address-binding';
 
 export const RECOURSE_COLLECTIONS = Object.freeze({
+  owners: 'recourse_private_owners_v1',
   identities: 'recourse_identities_v1',
   addresses: 'recourse_addresses_v1',
   recoveries: 'recourse_recoveries_v1',
@@ -32,7 +34,27 @@ export function identityHash(ownerType: 'human' | 'agent', ownerId: string): str
   return `0x${createHash('sha256').update(JSON.stringify(['provian ownership', ownerType, ownerId])).digest('hex')}`;
 }
 
+/** Resolve the login wallet's binding privately. An auxiliary address can never
+ * become the authority for changing the owner's relay login or native wallet. */
+export async function primaryBindingIdentity(db: Firestore,
+  owner: { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }): Promise<string> {
+  const privateOwner = identityHash(owner.type, owner.id);
+  const row = await db.collection(RECOURSE_COLLECTIONS.owners).doc(privateOwner).get();
+  const binding: unknown = row.get('primaryBinding');
+  if (!row.exists || typeof binding !== 'string' || !HASH.test(binding)
+    || row.get('ownerType') !== owner.type || row.get('ownerId') !== owner.id || row.get('walletId') !== owner.walletId) {
+    throw Error('recourse_primary_binding_required');
+  }
+  const proof = await db.collection(RECOURSE_COLLECTIONS.identities).doc(binding).get();
+  if (!proof.exists || proof.get('identity') !== binding || proof.get('ownerIdentity') !== privateOwner
+    || proof.get('primaryBinding') !== true || proof.get('ownerType') !== owner.type
+    || proof.get('ownerId') !== owner.id || proof.get('walletId') !== owner.walletId) throw Error('recourse_primary_binding_invalid');
+  return binding;
+}
+
 export interface RegisteredAddress {
+  /** Private portfolio key; never encoded in a contract call or public response. */
+  readonly ownerIdentity?: string;
   readonly identity: string;
   readonly address: string;
   readonly kernel: string;
@@ -67,10 +89,12 @@ export async function registerOwnership(
   verifyDeps?: ExternalVerifyDeps,
 ): Promise<RegisteredAddress> {
   const { binding, fence } = input;
-  if (binding.kernel !== (await currentProtocolDeployment()).addresses.kernel.toLowerCase()) throw new Error('recourse_kernel_invalid');
+  const deployment = await currentProtocolDeployment();
+  if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('recourse_kernel_invalid');
   const message = ownershipBindingMessage(binding);
   assertExternalProofFenceEvidence(fence);
-  if (binding.identity !== input.authenticatedIdentity || binding.identity !== identityHash(input.owner.type, input.owner.id)
+  if (input.authenticatedIdentity !== identityHash(input.owner.type, input.owner.id)
+    || binding.identity !== addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: binding.address })
     || input.balanceAtomic < 0n
     || !Number.isSafeInteger(input.admissionBlock) || input.admissionBlock < fence.observedHeadBlock
     || !HASH.test(input.admissionBlockHash)
@@ -82,17 +106,19 @@ export async function registerOwnership(
   if (!verified.ok) throw new Error('recourse_signature_invalid');
   const addressRef = db.collection(RECOURSE_COLLECTIONS.addresses).doc(binding.address);
   const identityRef = db.collection(RECOURSE_COLLECTIONS.identities).doc(binding.identity);
+  const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(input.authenticatedIdentity);
   const baseline = {
-    identity: binding.identity, address: binding.address, kernel: binding.kernel,
+    ownerIdentity: input.authenticatedIdentity, identity: binding.identity, address: binding.address, kernel: binding.kernel,
     boundBlock: input.admissionBlock, boundBlockHash: input.admissionBlockHash, boundAtMs: input.nowMs,
     openingBalanceAtomic: input.balanceAtomic.toString(), bindingDigest: ethers.hashMessage(message),
   };
   return db.runTransaction(async transaction => {
-    const [addressSnap, identitySnap, native, agentProven, humanProven] = await Promise.all([
+    const [addressSnap, identitySnap, native, agentProven, humanProven, ownerSnap] = await Promise.all([
       transaction.get(addressRef), transaction.get(identityRef),
       transaction.get(db.collection(NATIVE_WALLET_ADDRESS_INDEX_COLLECTION).doc(nativeWalletAddressIndexId(binding.address))),
       transaction.get(db.collection(PROVEN_ADDRESSES_COLLECTION).doc(binding.address)),
       transaction.get(db.collection(HUMAN_PROVEN_ADDRESSES_COLLECTION).doc(binding.address)),
+      transaction.get(ownerRef),
     ]);
     // Recourse extends the existing proof registry; it never creates a competing owner.
     const ownsNative = native.exists && native.get('owner_type') === input.owner.type
@@ -106,6 +132,14 @@ export async function registerOwnership(
     if ((native.exists && !ownsNative) || ((agentProven.exists || humanProven.exists) && !ownsProven)) {
       throw new Error('recourse_address_owned_elsewhere');
     }
+    if (ownerSnap.exists && (ownerSnap.get('ownerType') !== input.owner.type || ownerSnap.get('ownerId') !== input.owner.id
+      || ownerSnap.get('walletId') !== input.owner.walletId)) throw new Error('recourse_owner_record_mismatch');
+    if (ownsNative && ownerSnap.get('primaryBinding') !== undefined && ownerSnap.get('primaryBinding') !== binding.identity) {
+      throw new Error('recourse_primary_binding_already_registered');
+    }
+    if (identitySnap.exists && identitySnap.get('ownerIdentity') !== input.authenticatedIdentity) {
+      throw new Error('recourse_address_owned_elsewhere');
+    }
     const generation = identitySnap.exists ? identitySnap.get('recoveryGeneration') as unknown : 0;
     if (typeof generation !== 'number' || !Number.isSafeInteger(generation) || generation < 0) throw new Error('recourse_recovery_generation_invalid');
     if (identitySnap.exists && (identitySnap.get('recoveryCommitment') !== binding.recoveryCommitment || identitySnap.get('signingRoot') !== binding.signingRoot)) {
@@ -113,17 +147,27 @@ export async function registerOwnership(
     }
     if (addressSnap.exists) {
       const existing = addressSnap.data() as RegisteredAddress;
-      if (existing.identity !== binding.identity || existing.kernel !== binding.kernel) {
+      if (existing.identity !== binding.identity || existing.kernel !== binding.kernel || existing.ownerIdentity !== input.authenticatedIdentity) {
         throw new Error('recourse_address_already_bound');
       }
       if (existing.recoveryGeneration !== generation) throw new Error('recourse_address_retired');
+      if (ownsNative && ownerSnap.get('primaryBinding') === undefined) {
+        transaction.update(ownerRef, { primaryBinding: binding.identity });
+        transaction.update(identityRef, { primaryBinding: true });
+      }
       return existing;
     }
     if (!identitySnap.exists) transaction.create(identityRef, {
-      identity: binding.identity, recoveryCommitment: binding.recoveryCommitment, signingRoot: binding.signingRoot,
+      identity: binding.identity, ownerIdentity: input.authenticatedIdentity, originAddress: binding.address,
+      primaryBinding: ownsNative, recoveryCommitment: binding.recoveryCommitment, signingRoot: binding.signingRoot,
       ownerType: input.owner.type, ownerId: input.owner.id, walletId: input.owner.walletId,
       createdAtMs: input.nowMs, boundBlock: input.admissionBlock, recoveryGeneration: 0,
     });
+    if (!ownerSnap.exists) transaction.create(ownerRef, {
+      ownerIdentity: input.authenticatedIdentity, ownerType: input.owner.type, ownerId: input.owner.id,
+      walletId: input.owner.walletId, ...(ownsNative ? { primaryBinding: binding.identity } : {}), createdAtMs: input.nowMs,
+    });
+    else if (ownsNative && ownerSnap.get('primaryBinding') === undefined) transaction.update(ownerRef, { primaryBinding: binding.identity });
     const row: RegisteredAddress = { ...baseline, recoveryGeneration: generation, chainBindingStatus: 'pending' };
     transaction.create(addressRef, row);
     return row;
@@ -255,6 +299,7 @@ export async function prepareRecoveryTransaction(db: Firestore, transaction: Tra
     // Copy public fields: the closure must not retain the transient preimage.
     const { identity, destination, nextCommitment, nextSigningRoot, nowMs, authorizationTxHash } = input;
     const authorizationGeneration = input.authorization?.generation;
+    const ownerIdentity: unknown = identitySnap.get('ownerIdentity');
     return { destination, generation: generation + 1, replay: false, write: (transaction) => {
     transaction.update(identityRef, { recoveryCommitment: nextCommitment, signingRoot: nextSigningRoot, recoveryGeneration: generation + 1,
       ...(authorizationGeneration === undefined ? {} : { lastAuthorizationNonce: authorizationGeneration }),
@@ -263,6 +308,7 @@ export async function prepareRecoveryTransaction(db: Firestore, transaction: Tra
     transaction.create(nextRef, { identity, commitment: nextCommitment });
     transaction.create(recoveryRef, {
       identity, destination, nextCommitment, nextSigningRoot,
+      ...(typeof ownerIdentity === 'string' ? { ownerIdentity } : {}),
       consumedCommitment: hash, generation: generation + 1, createdAtMs: nowMs,
       ...(authorizationTxHash ? { authorizationTxHash, authorizationNonce: authorizationGeneration! - 1 } : {}),
     });

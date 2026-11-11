@@ -1,8 +1,9 @@
-jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: requireConfiguredPvt9Runtime().address, recoursePool: `0x${'12'.repeat(20)}` }, runtimeHashes: Array(10).fill('0x0000000000000000000000000000000000000000000000000000000000000000') }) }));
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ pointer: `0x${'34'.repeat(20)}`, addresses: { kernel: requireConfiguredPvt9Runtime().address, recoursePool: `0x${'12'.repeat(20)}` }, runtimeHashes: Array(10).fill('0x0000000000000000000000000000000000000000000000000000000000000000') }) }));
+import { addressRecoveryBinding } from './address-binding';
 import { requireConfiguredPvt9Runtime } from '../pvt/pvt9-base-config.generated';
 import { NATIVE_WALLET_ADDRESS_INDEX_COLLECTION, nativeWalletAddressIndexId } from '../pvt/native-wallet-registration';
 import { Wallet } from 'ethers';
-import { identityHash, ownershipBindingMessage, recoveryHash, registeredBalanceAt, consumeRecovery,
+import { identityHash, primaryBindingIdentity, ownershipBindingMessage, recoveryHash, registeredBalanceAt, consumeRecovery,
   registerOwnership, RECOURSE_COLLECTIONS,
   type OwnershipBinding, type RegisteredAddress, type TransferEvent } from './ownership';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -73,6 +74,24 @@ describe('ownership registry evidence', () => {
 });
 
 describe('durable ownership and recovery transitions', () => {
+  test('primary login recovery requires the private owner index and matching primary binding', async () => {
+    const fake = createFakeFirestore(), db = fake as unknown as Firestore;
+    const owner = { type: 'agent' as const, id: 'wallet_aw_primary', walletId: 'wallet_aw_primary' };
+    const ownerIdentity = identityHash(owner.type, owner.id), primary = `0x${'71'.repeat(32)}`, secondary = `0x${'72'.repeat(32)}`;
+    const ownerPath = `${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`;
+    const primaryPath = `${RECOURSE_COLLECTIONS.identities}/${primary}`;
+    fake.store.set(ownerPath, { ownerIdentity, ownerType: owner.type, ownerId: owner.id, walletId: owner.walletId, primaryBinding: primary });
+    const base = { ownerIdentity, ownerType: owner.type, ownerId: owner.id, walletId: owner.walletId };
+    fake.store.set(primaryPath, { ...base, identity: primary, primaryBinding: true });
+    fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${secondary}`, { ...base, identity: secondary, primaryBinding: false });
+    expect(await primaryBindingIdentity(db, owner)).toBe(primary);
+    fake.store.set(ownerPath, { ...fake.store.get(ownerPath), primaryBinding: secondary });
+    await expect(primaryBindingIdentity(db, owner)).rejects.toThrow('primary_binding_invalid');
+    fake.store.set(ownerPath, { ...fake.store.get(ownerPath), primaryBinding: primary });
+    fake.store.set(primaryPath, { ...fake.store.get(primaryPath), ownerIdentity: hash });
+    await expect(primaryBindingIdentity(db, owner)).rejects.toThrow('primary_binding_invalid');
+    await expect(primaryBindingIdentity(db, { ...owner, walletId: 'another-wallet' })).rejects.toThrow('primary_binding_required');
+  });
   const secret = Buffer.alloc(64, 17);
   const replacement = recoveryHash(Buffer.alloc(64, 19));
   const identity = identityHash('agent', 'unlinked-agent');
@@ -131,7 +150,8 @@ describe('durable ownership and recovery transitions', () => {
   test('verified binding persists opening balance once and refuses hash substitution', async () => {
     const fake = createFakeFirestore();
     const wallet = Wallet.createRandom();
-    const value: OwnershipBinding = { identity, address: wallet.address.toLowerCase(), kernel: binding.kernel,
+    const publicBinding = addressRecoveryBinding({ chainId: '8453', pointer: `0x${'34'.repeat(20)}`, origin: wallet.address.toLowerCase() });
+    const value: OwnershipBinding = { identity: publicBinding, address: wallet.address.toLowerCase(), kernel: binding.kernel,
       recoveryCommitment: recoveryHash(secret), signingRoot: hash, nonce: hash, expiresAtMs: 2000 };
     const fence = {
       schemaVersion: 'external-proof-fence/v1' as const, chainId: 8453 as const,
@@ -147,6 +167,11 @@ describe('durable ownership and recovery transitions', () => {
     const verify = { getCode: async () => '0x', isValidSignature: async () => '0x00000000' };
     const db = fake as unknown as Firestore;
     const first = await registerOwnership(db, request, verify);
+    expect(first.identity).not.toBe(identity);
+    expect(first.ownerIdentity).toBe(identity);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${publicBinding}`)?.ownerIdentity).toBe(identity);
+    await expect(registerOwnership(db, { ...request, binding: { ...value, identity } }, verify))
+      .rejects.toThrow('recourse_binding_context_invalid');
     // A signed address need not first join a separate earning program.
     expect(first.boundAtMs).toBe(1000);
     const index = `${NATIVE_WALLET_ADDRESS_INDEX_COLLECTION}/${nativeWalletAddressIndexId(value.address)}`;
@@ -162,6 +187,17 @@ describe('durable ownership and recovery transitions', () => {
       binding: { ...value, recoveryCommitment: replacement } }, verify)).rejects.toThrow('recourse_signature_invalid');
     await expect(registerOwnership(db, { ...request, authenticatedIdentity: binding.identity }, verify))
       .rejects.toThrow('recourse_binding_context_invalid');
-    expect(fake.store.size).toBe(3);
+    expect(fake.store.size).toBe(4);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.owners}/${identity}`)?.primaryBinding).toBe(publicBinding);
+    const secondary = Wallet.createRandom();
+    const secondaryBinding = { ...value, address: secondary.address.toLowerCase(),
+      identity: addressRecoveryBinding({ chainId: '8453', pointer: `0x${'34'.repeat(20)}`, origin: secondary.address.toLowerCase() }),
+      recoveryCommitment: replacement, signingRoot: `0x${'37'.repeat(32)}` };
+    const another = await registerOwnership(db, { ...request, binding: secondaryBinding,
+      signature: await secondary.signMessage(ownershipBindingMessage(secondaryBinding)) }, verify);
+    expect(another.identity).not.toBe(first.identity);
+    expect(another.ownerIdentity).toBe(first.ownerIdentity);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.owners}/${identity}`)?.primaryBinding).toBe(first.identity);
+    expect(fake.store.get(`${RECOURSE_COLLECTIONS.identities}/${secondaryBinding.identity}`)?.primaryBinding).toBe(false);
   });
 });

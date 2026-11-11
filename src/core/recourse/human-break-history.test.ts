@@ -15,7 +15,7 @@ const abi = new Interface(['function registryOperator() view returns(address)', 
   'function ownerAuthorizationNonce(bytes32) view returns(uint256)', 'function ownerRecoveryCommitment(bytes32) view returns(bytes32)',
   'function ownerSigningRoot(bytes32) view returns(bytes32)']);
 function fixture(mode = 'valid'): OwnerChainNetwork {
-  const commitment = sha256(humanRecoverySecret(phrase, 4));
+  const commitment = sha256(humanRecoverySecret(phrase, 4, h(11)));
   const rpc = (index: number) => ({ async request(method: string, params: readonly unknown[]) {
     if (method === 'eth_getBlockByNumber') return { hash: mode === 'disagree' && index === 1 ? h(99) : h(100), number: '0x64', extra: index };
     const request = params[0] as { to: string; data: string }, parsed = abi.parseTransaction({ data: request.data })!;
@@ -27,7 +27,7 @@ function fixture(mode = 'valid'): OwnerChainNetwork {
       ownerAuthorization: old ? a(8) : a(7), kernel: old ? a(2) : a(1), breakOrigin: old ? ZeroAddress : a(3),
       predecessor: a(2), lastGoodBlock: 100,
       ownerRecoveryCommitment: old ? commitment : ZeroHash, ownerAuthorizationNonce: 4,
-      ownerSigningRoot: sha256(humanRecoverySigningSeed(phrase, 4)),
+      ownerSigningRoot: sha256(humanRecoverySigningSeed(phrase, 4, h(11))),
     };
     return abi.encodeFunctionResult(parsed.name, [values[parsed.name]]);
   } });
@@ -36,14 +36,14 @@ function fixture(mode = 'valid'): OwnerChainNetwork {
 it('rediscovers the original owner only at authenticated last-good registry state and reconstructs its exact historic commitment', async () => {
   const network = fixture(), history = await discoverHumanIdentityHistory(phrase, network);
   expect(history?.identity).toBe(h(11)); expect(history?.points.map(point => point.blockHash)).toEqual([h(200), h(100)]);
-  const material = await recoverHumanHistoricalMaterial(phrase, history!, sha256(humanRecoverySecret(phrase, 4)), network);
-  expect(material.secret).toEqual(humanRecoverySecret(phrase, 4));
-  expect(material.signingSeed).toEqual(humanRecoverySigningSeed(phrase, 4));
+  const material = await recoverHumanHistoricalMaterial(phrase, history!, sha256(humanRecoverySecret(phrase, 4, h(11))), network);
+  expect(material.secret).toEqual(humanRecoverySecret(phrase, 4, h(11)));
+  expect(material.signingSeed).toEqual(humanRecoverySigningSeed(phrase, 4, h(11)));
   material.secret.fill(0); material.signingSeed.fill(0);
 });
 it('refuses disagreeing historical blocks and unrelated or wrong-backup commitments', async () => {
   await expect(discoverHumanIdentityHistory(phrase, fixture('disagree'))).rejects.toThrow('disagreement');
   const network = fixture(), history = await discoverHumanIdentityHistory(phrase, network);
   await expect(recoverHumanHistoricalMaterial(phrase, history!, h(77), network)).rejects.toThrow('commitment_mismatch');
-  await expect(recoverHumanHistoricalMaterial('another backup', history!, sha256(humanRecoverySecret(phrase, 4)), network)).rejects.toThrow('commitment_mismatch');
+  await expect(recoverHumanHistoricalMaterial('abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about', history!, sha256(humanRecoverySecret(phrase, 4, h(11))), network)).rejects.toThrow('commitment_mismatch');
 });

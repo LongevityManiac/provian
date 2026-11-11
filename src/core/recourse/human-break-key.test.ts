@@ -9,7 +9,7 @@ it('the unchanged seed backup reconstructs each break key with independent domai
   expect(key()).toBe(key());
   const values = [key(), key(context, 'recovery-secret'), key(context, 'recovery-signing'), key(context, 'spending', '1'),
     key({ ...context, identity: `0x${'33'.repeat(32)}` }), key({ ...context, breakOrigin: `0x${'44'.repeat(20)}` }),
-    key({ ...context, chainId: '1' }), bytesToHex(humanRecoverySecret(phrase)), bytesToHex(humanRecoverySigningSeed(phrase))];
+    key({ ...context, chainId: '1' }), bytesToHex(humanRecoverySecret(phrase, 0, context.identity)), bytesToHex(humanRecoverySigningSeed(phrase, 0, context.identity))];
   expect(new Set(values).size).toBe(values.length);
   const old = humanBreakKey(phrase, context, 'spending', '0'); old.fill(0);
   expect(key()).not.toBe(bytesToHex(old));

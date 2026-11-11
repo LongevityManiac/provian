@@ -1,3 +1,5 @@
+import { withBoundRecoveryMaterial } from './recourse-agent-credential';
+import { readAddressRecoveryBinding } from './recourse-binding-chain';
 import { recoverySigningRoot, recoveryCommitment, signRecoveryIntent } from './recourse-hash-authorization';
 import { privateRecourseEnvelope } from './private-access';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from 'crypto';
@@ -64,6 +66,10 @@ export async function withArchivedRecoveryMaterial<T>(input: {
   directory: string; passphrase: string; identity: string; commitment: string;
 }, use: (secret: Uint8Array, signingSeed: Uint8Array) => Promise<T>): Promise<{ found: false } | { found: true; value: T }> {
   const directory = path.resolve(input.directory);
+  if (!/^0x[0-9a-f]{64}$/.test(input.identity) || /^0x0+$/.test(input.identity)
+    || !/^0x[0-9a-f]{64}$/.test(input.commitment)) throw Error('Recovery lookup binding invalid');
+  const active = loadKeystore(path.join(directory, 'agent-keystore.json'));
+  if (!active) throw Error('Recovery lookup keystore missing');
   const archive = path.join(directory, 'recoveries');
   let names: string[] = [];
   try { names = fs.readdirSync(archive).filter(name => /^0x[0-9a-f]{64}\.json$/.test(name)).sort(); }
@@ -74,12 +80,15 @@ export async function withArchivedRecoveryMaterial<T>(input: {
     if (!journal) continue;
     if (journal.version !== 1 || !journal.oldKeystore || !journal.nextKeystore
       || journal.oldKeystore.wallet_id !== journal.nextKeystore.wallet_id
-      || journal.identity !== hash(Buffer.from(JSON.stringify(['provian ownership', 'agent', journal.oldKeystore.wallet_id])))
+      || journal.oldKeystore.wallet_id !== active.wallet_id
+      || !/^0x[0-9a-f]{64}$/.test(journal.identity) || /^0x0+$/.test(journal.identity)
       || (file !== files[0] && path.basename(file) !== `${journal.requestId}.json`)) throw Error('Recovery journal binding mismatch');
-    if (journal.identity !== input.identity) continue;
+    // A primary-key rotation also archives the private root of every auxiliary
+    // address credential. Match the requested address's exact snapshot
+    // commitment, not the primary binding named by that rotation journal.
     for (const keystore of [journal.oldKeystore, journal.nextKeystore]) {
       if (keystore.version !== 2) continue;
-      const result = await withRecoveryMaterial(keystore, input.passphrase, async (secret, signingSeed) => {
+      const result = await withBoundRecoveryMaterial(keystore, input.passphrase, input.identity, async (secret, signingSeed) => {
         if (recoveryCommitment(secret, await recoverySigningRoot(signingSeed)) !== input.commitment) return { found: false } as const;
         return { found: true, value: await use(secret, signingSeed) } as const;
       });
@@ -136,7 +145,7 @@ export async function recoverRecourseAgent(input: {
       const next = generateAgentKeyPair(), secret = randomBytes(32);
       try {
         journal = { version: 1, relayUrl, requestId: `0x${randomBytes(32).toString('hex')}`,
-          identity: hash(Buffer.from(JSON.stringify(['provian ownership', 'agent', oldKeystore.wallet_id]))),
+          identity: await readAddressRecoveryBinding(oldKeystore.address.toLowerCase(), ownerChainNetwork()),
           oldKeystore, nextKeystore: encryptKeystore({ ...next, walletId: oldKeystore.wallet_id,
             passphrase: input.passphrase, recoverySecret: Buffer.from(secret).toString('hex') }),
           apiKey: `pvn_live_${randomBytes(16).toString('hex')}`, apiSecret: `pvns_${randomBytes(32).toString('hex')}`, installed: false,
@@ -145,7 +154,7 @@ export async function recoverRecourseAgent(input: {
       saveJournal(file, journal, input.passphrase);
     }
     if (journal.version !== 1 || journal.relayUrl !== relayUrl || journal.oldKeystore.wallet_id !== journal.nextKeystore.wallet_id
-      || journal.identity !== hash(Buffer.from(JSON.stringify(['provian ownership', 'agent', journal.oldKeystore.wallet_id])))) throw new Error('Recovery journal binding mismatch');
+      || !/^0x[0-9a-f]{64}$/.test(journal.identity) || /^0x0+$/.test(journal.identity)) throw new Error('Recovery journal binding mismatch');
     if (input.restoration && (journal.restoration?.transactionHash !== input.restoration.transactionHash
       || journal.restoration.block !== input.restoration.block)) throw new Error('Another recovery request is pending');
     const active = loadKeystore(path.join(directory, 'agent-keystore.json'));
@@ -156,7 +165,7 @@ export async function recoverRecourseAgent(input: {
       return { walletId: journal.nextKeystore.wallet_id, destination: journal.nextKeystore.address.toLowerCase(), generation: journal.generation, ...(journal.restoration ? { restorationRequestId: journal.restoration.scope.request } : {}) };
     }
     if (journal.generation === undefined) {
-      const { nextCommitment, nextSigningRoot } = await withRecoveryMaterial(journal.nextKeystore, input.passphrase, async (secret, seed) => {
+      const { nextCommitment, nextSigningRoot } = await withBoundRecoveryMaterial(journal.nextKeystore, input.passphrase, journal.identity, async (secret, seed) => {
         const nextSigningRoot = await recoverySigningRoot(seed);
         return { nextSigningRoot, nextCommitment: recoveryCommitment(secret, nextSigningRoot) };
       });
@@ -182,7 +191,7 @@ export async function recoverRecourseAgent(input: {
       if (!state.operation) {
         const chain = await readOwnerChainState(state.identity, ownerChainNetwork());
         if (state.restoration && !state.previousExecutionKernel && state.restoration.kernel !== chain.deployment.addresses.kernel.toLowerCase()) throw new Error('Restoration snapshot kernel changed');
-        state.operation = await withRecoveryMaterial(state.oldKeystore, input.passphrase, async (secret, seed) => {
+        state.operation = await withBoundRecoveryMaterial(state.oldKeystore, input.passphrase, state.identity, async (secret, seed) => {
           const signingRoot = await recoverySigningRoot(seed);
           if (chain.commitment !== recoveryCommitment(secret, signingRoot) || chain.signingRoot !== signingRoot) {
             throw new Error('Recovery backup does not match the current owner commitment');
@@ -206,7 +215,7 @@ export async function recoverRecourseAgent(input: {
         const operation = state.operation;
         const id = recoveryOperationId(operation);
         const privateRequest = async (path: string, body: unknown = null) => {
-          const envelope = await withRecoveryMaterial(state.oldKeystore, input.passphrase,
+          const envelope = await withBoundRecoveryMaterial(state.oldKeystore, input.passphrase, state.identity,
             (secret, seed) => privateRecourseEnvelope(state.identity, secret, seed, path, body));
           return guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/${path}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(envelope), signal: input.signal,
@@ -234,7 +243,7 @@ export async function recoverRecourseAgent(input: {
         }
       }
       await verifyOwnerOperationReceipt(state.operation, state.authorizationTxHash, ownerChainNetwork());
-      const result: unknown = await withRecoveryMaterial(state.oldKeystore, input.passphrase, async (secret, seed) => {
+      const result: unknown = await withBoundRecoveryMaterial(state.oldKeystore, input.passphrase, state.identity, async (secret, seed) => {
         const signingRoot = await recoverySigningRoot(seed);
         const preimage = Buffer.concat([secret, Buffer.from(signingRoot.slice(2), 'hex')]);
         try {

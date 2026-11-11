@@ -107,7 +107,7 @@ interface RouteLayer {
  * route.stack - preceding entries are middleware. Each Commons handler
  * mounts a single function, so route.stack[0] is the right one.
  */
-function findHandler(router: Router, method: 'post' | 'put', path: string) {
+function findHandler(router: Router, method: 'post' | 'put' | 'get', path: string) {
   // Express Router internals: stack is private but stable across versions.
   const stack = (router as unknown as { stack: RouteLayer[] }).stack;
   const layer = stack.find((l) => l.route?.path === path && l.route?.methods?.[method]);
@@ -145,6 +145,25 @@ describe('Commons routes - PVT-first key ordering on profile responses', () => {
 
   beforeAll(() => {
     router = createCommonsRouter(mockDeps);
+  });
+
+  it('omits historical private owner links from both public profile surfaces', async () => {
+    const profiles = jest.requireMock('../core/commons/profiles') as {
+      getProfile: jest.Mock; browseRegistry: jest.Mock;
+    };
+    const planted = { wallet_id: 'wallet_public', participant_type: 'human',
+      display_name: 'Public profile', owner_wallet_id: 'wallet_private_owner_SENTINEL' };
+    profiles.getProfile.mockResolvedValue(planted);
+    profiles.browseRegistry.mockResolvedValue({ profiles: [planted], total: 1 });
+    expect(JSON.stringify(planted)).toContain('wallet_private_owner_SENTINEL');
+    for (const path of ['/registry', '/agent/:walletId']) {
+      const { req, res, captured } = makeMockReqRes();
+      await findHandler(router, 'get', path)(req, res);
+      expect(captured.status).toBeUndefined();
+      expect(JSON.stringify(captured.body)).toContain('wallet_public');
+      expect(JSON.stringify(captured.body)).not.toContain('owner_wallet_id');
+      expect(JSON.stringify(captured.body)).not.toContain('wallet_private_owner_SENTINEL');
+    }
   });
 
   it('POST /register returns profile with service_rate_pvt before service_rate_usdc', async () => {

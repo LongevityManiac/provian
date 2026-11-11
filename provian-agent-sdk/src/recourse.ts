@@ -1,8 +1,9 @@
 import { recoverRecourseAgent } from './recourse-recovery';
 import { recoverySigningRoot, recoveryCommitment } from './recourse-hash-authorization';
-import { createHash } from 'crypto';
 import { guardedFetcher } from './guarded-fetch';
-import { initializeRecoveryKeystore, withDecryptedKey, withRecoveryMaterial, type AgentKeystore } from './keystore';
+import { initializeRecoveryKeystore, withDecryptedKey, type AgentKeystore } from './keystore';
+import { withBoundRecoveryMaterial } from './recourse-agent-credential';
+import { addressRecoveryBinding } from './recourse-address-binding';
 import { signEip191Message } from './link-signing';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
 import { waitForRecourseBinding } from './recourse-binding-chain';
@@ -34,16 +35,17 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
 }): Promise<unknown> {
   if (input.keystore.wallet_id !== config.walletId) throw new Error('recourse_wallet_mismatch');
   const keystore = initializeRecoveryKeystore(input.keystore, input.passphrase, input.keystorePath);
-  const { commitment, signingRoot } = await withRecoveryMaterial(keystore, input.passphrase, async (secret, seed) => {
+  const address = (input.external?.address ?? keystore.address).toLowerCase();
+  const deployment = await currentProtocolDeployment();
+  const identity = addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: address });
+  const { commitment, signingRoot } = await withBoundRecoveryMaterial(keystore, input.passphrase, identity, async (secret, seed) => {
     const signingRoot = await recoverySigningRoot(seed);
     return { signingRoot, commitment: recoveryCommitment(secret, signingRoot) };
   });
-  const address = (input.external?.address ?? keystore.address).toLowerCase();
   const raw = await request(config, 'binding-challenge', { address, recoveryCommitment: commitment, signingRoot });
   if (!raw || typeof raw !== 'object' || !('binding' in raw) || !('message' in raw)
     || !raw.binding || typeof raw.binding !== 'object') throw new Error('recourse_challenge_invalid');
   const binding = raw.binding as RecourseBinding;
-  const identity = `0x${createHash('sha256').update(JSON.stringify(['provian ownership', 'agent', config.walletId])).digest('hex')}`;
   if (binding.identity !== identity || binding.address !== address || binding.recoveryCommitment !== commitment || binding.signingRoot !== signingRoot
     || binding.kernel !== (await currentProtocolDeployment()).addresses.kernel.toLowerCase()
     || binding.expiresAtMs < Date.now() || binding.expiresAtMs > Date.now() + 5 * 60_000

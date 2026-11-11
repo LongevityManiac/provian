@@ -52,7 +52,7 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         addresses[0] = address(kernel); hashes[0] = address(kernel).codehash;
         addresses[8] = address(pool); hashes[8] = address(pool).codehash;
         vm.prank(pointer.authority()); pointer.publish(0, addresses, hashes);
-        binding = ProvianOwnershipRegistry.Binding(sha256("owner identity TEST ONLY"), vm.addr(OWNER_KEY),
+        binding = ProvianOwnershipRegistry.Binding(registry.addressBinding(vm.addr(OWNER_KEY)), vm.addr(OWNER_KEY),
             sha256("recovery commitment TEST ONLY"), sha256("signing root TEST ONLY"), address(kernel), sha256("nonce TEST ONLY"), 1_200_000);
     }
     function testHashAttestorAndOwnerCanBindWithoutCurveSignatures() public {
@@ -69,6 +69,7 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         vm.prank(pointer.authority()); pointer.publish(1, targets, hashes);
         binding.kernel = address(kernel);
         binding.account = address(owner);
+        binding.identity = registry.addressBinding(address(owner));
         bytes32 digest = registry.bindingDigest(binding);
         (, bytes memory ownerSig) = slhSign(1, owner.signatureDigest(digest));
         (, bytes memory attestorSig) = slhSign(2, attestor.signatureDigest(digest));
@@ -158,6 +159,7 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
     function testContractWalletAndExpiryAndRetiredRevision() public {
         RegistryContractWalletFixture wallet = new RegistryContractWalletFixture();
         binding.account = address(wallet);
+        binding.identity = registry.addressBinding(address(wallet));
         bytes32 digest = registry.bindingDigest(binding); wallet.approve(digest);
         registry.bind(binding, hex"1234", sig(EVIDENCE_KEY, digest), 1);
         assertEq(registry.ownerOf(address(wallet)), binding.identity);
@@ -224,6 +226,37 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         ProvianHashAccount attestor=new ProvianHashAccount(sha256("new hash attestor TEST ONLY"));
         ProvianOwnershipRegistry next=new ProvianOwnershipRegistry(pointer,address(attestor),true);
         assertEq(next.previousRegistry(),address(0));assertEq(next.ownerOf(binding.account),bytes32(0));
+    }
+
+    function testPrivateOwnerCannotBePublishedAsSharedAddressBindingEvenWithBothSignatures() public {
+        bind();
+        bytes32 first = binding.identity;
+        uint256 secondKey = 0x123457;
+        binding.account = vm.addr(secondKey);
+        binding.nonce = sha256("independent address nonce TEST ONLY");
+        bytes32 digest = registry.bindingDigest(binding);
+        bytes memory ownerSig = sig(secondKey, digest);
+        bytes memory attestorSig = sig(EVIDENCE_KEY, digest);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector);
+        registry.bind(binding, ownerSig, attestorSig, 1);
+        assertEq(registry.ownerOf(binding.account), bytes32(0));
+        binding.identity = registry.addressBinding(binding.account);
+        binding.recoveryCommitment = sha256("independent commitment TEST ONLY");
+        binding.signingRoot = sha256("independent root TEST ONLY");
+        digest = registry.bindingDigest(binding);
+        registry.bind(binding, sig(secondKey, digest), sig(EVIDENCE_KEY, digest), 1);
+        assertTrue(binding.identity != first);
+        assertEq(registry.ownerOf(binding.account), binding.identity);
+    }
+
+    function testAddressBindingUsesOnlyPublicDomainAndOneOriginalAddress() public {
+        assertEq(registry.addressBinding(binding.account), sha256(abi.encode(
+            "Provian address recovery binding", uint256(8453), address(pointer), binding.account)));
+        bytes32 original = registry.addressBinding(binding.account);
+        vm.chainId(31337);
+        assertTrue(registry.addressBinding(binding.account) != original);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector);
+        registry.addressBinding(address(0));
     }
 
 }

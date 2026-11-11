@@ -1,6 +1,6 @@
 import { Interface } from 'ethers';
 import { expect, test } from 'vitest';
-import { isRecourseBindingConfirmed } from './recourse-binding-chain';
+import { isRecourseBindingConfirmed, readAddressRecoveryBinding } from './recourse-binding-chain';
 import type { RecourseBinding } from './recourse-binding';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import type { ProtocolDeployment, PointerRpc } from './protocol-pointer';
@@ -46,4 +46,37 @@ test('current-chain binding can finish an ordinary registration while fund recov
 test('an old finalized address binding cannot confer finality on fresh unfinalized consent', async () => {
   expect(await isRecourseBindingConfirmed(binding, fixture('rebind'), false)).toBe(true);
   expect(await isRecourseBindingConfirmed(binding, fixture('rebind'))).toBe(false);
+});
+
+function historyFixture(change = ''): OwnerChainNetwork {
+  const history = new Interface(['function registryOperator() view returns(address)', 'function ownerAuthorization() view returns(address)',
+    'function ownerOf(address) view returns(bytes32)', 'function breakOrigin() view returns(address)',
+    'function predecessor() view returns(address)', 'function lastGoodBlock() view returns(uint256)']);
+  let reads = 0;
+  const deployment = { addresses: { kernel: address('55') }, blockHash: hash('99'), manifestHash: hash('88') } as ProtocolDeployment;
+  const rpc = (second: boolean): PointerRpc => ({ async request(method, args) {
+    if (method === 'eth_getBlockByNumber') {
+      expect(args).toEqual(['0x64', false]);
+      return { number: change === 'wrong-height' ? '0x65' : '0x64', hash: hash(change === 'disagree' && second ? 'ee' : 'ff'), providerExtra: second };
+    }
+    const request = args[0] as { to: string; data: string }, pin = args[1] as { blockHash: string; requireCanonical: boolean };
+    const parsed = history.parseTransaction(request)!;
+    expect(pin.requireCanonical).toBe(true);
+    if ([address('66'), address('aa')].includes(request.to.toLowerCase())) expect(pin.blockHash).toBe(hash('ff'));
+    const old = pin.blockHash === hash('ff');
+    if (parsed.name === 'ownerOf') expect(String(parsed.args[0]).toLowerCase()).toBe(binding.address);
+    const values: Record<string, unknown> = { registryOperator: old ? address('aa') : address('bb'), ownerAuthorization: address('cc'),
+      ownerOf: old && change !== 'cycle' ? binding.identity : hash('00'), breakOrigin: change === 'missing' ? address('00') : address('dd'),
+      predecessor: address('66'), lastGoodBlock: 100n };
+    return history.encodeFunctionResult(parsed.name, [values[parsed.name]]);
+  } });
+  return { rpcs: [rpc(false), rpc(true)], deployment: async () => ({ ...deployment,
+    manifestHash: change === 'changed' && reads++ > 0 ? hash('ee') : deployment.manifestHash }) };
+}
+test('backup lookup follows the immutable last-good cutoff without revealing a portfolio identifier', async () => {
+  expect(await readAddressRecoveryBinding(binding.address, historyFixture())).toBe(binding.identity);
+  expect(await readAddressRecoveryBinding(binding.address, fixture())).toBe(binding.identity);
+});
+test.each(['wrong-height', 'disagree', 'cycle', 'missing', 'changed'])('history discovery refuses %s evidence', async change => {
+  await expect(readAddressRecoveryBinding(binding.address, historyFixture(change))).rejects.toThrow();
 });

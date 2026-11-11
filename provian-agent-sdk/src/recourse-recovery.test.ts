@@ -1,3 +1,4 @@
+import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -10,6 +11,7 @@ import { requireConfiguredPvt9Runtime } from './pvt9-base-config.generated';
 import { recoverRecourseAgent, withArchivedRecoveryMaterial } from './recourse-recovery';
 // Each recovery now performs both the chain signature and private HTTP proof.
 vi.setConfig({ testTimeout: 20000 });
+vi.mock('./recourse-binding-chain', () => ({ readAddressRecoveryBinding: async () => `0x${'92'.repeat(32)}` }));
 const network = vi.hoisted(() => ({ fetch: vi.fn(), state: vi.fn(), verify: vi.fn(), queue: vi.fn() }));
 vi.mock('fs', async importOriginal => {
   const actual = await importOriginal<typeof import('fs')>();
@@ -36,7 +38,7 @@ beforeEach(async () => {
   saveKeystore(encryptKeystore({ ...generateAgentKeyPair(), walletId, passphrase,
     recoverySecret: '17'.repeat(32), kdfParams: { N: 1024, r: 8, p: 1, dklen: 32 } }), path.join(directory, 'agent-keystore.json'));
   const current = loadKeystore(path.join(directory, 'agent-keystore.json'))!;
-  const material = await withRecoveryMaterial(current, passphrase, async (secret, seed) => {
+  const material = await withBoundRecoveryMaterial(current, passphrase, `0x${'92'.repeat(32)}`, async (secret, seed) => {
     const signingRoot = await recoverySigningRoot(seed);
     return { signingRoot, commitment: recoveryCommitment(secret, signingRoot) };
   });
@@ -71,11 +73,20 @@ it('retains one destination and credential pair after a lost response, then inst
   expect(fs.readFileSync(path.join(directory, 'agent-credentials.json'), 'utf8')).toBe(refreshed);
   expect(network.fetch).toHaveBeenCalledTimes(2);
   const identity = String(requests[0].identity);
-  const oldCommitment = await withRecoveryMaterial(old, passphrase, async (secret, seed) => recoveryCommitment(secret, await recoverySigningRoot(seed)));
+  const oldCommitment = await withBoundRecoveryMaterial(old, passphrase, identity, async (secret, seed) => recoveryCommitment(secret, await recoverySigningRoot(seed)));
   const use = vi.fn(async (secret: Uint8Array) => Buffer.from(secret).toString('hex'));
   const lookup = { directory, passphrase, identity, commitment: oldCommitment };
-  expect(await withArchivedRecoveryMaterial(lookup, use)).toEqual({ found: true, value: '17'.repeat(32) });
+  const expectedSecret = await withBoundRecoveryMaterial(old, passphrase, identity, secret => Buffer.from(secret).toString('hex'));
+  expect(expectedSecret).not.toBe('17'.repeat(32));
+  expect(await withArchivedRecoveryMaterial(lookup, use)).toEqual({ found: true, value: expectedSecret });
   expect(await withArchivedRecoveryMaterial({ ...lookup, commitment: String(requests[0].nextCommitment) }, use)).toEqual({ found: true, value: expect.any(String) });
+  const auxiliary = `0x${'95'.repeat(32)}`;
+  const auxiliaryMaterial = await withBoundRecoveryMaterial(old, passphrase, auxiliary, async (secret, seed) => ({
+    commitment: recoveryCommitment(secret, await recoverySigningRoot(seed)), secret: Buffer.from(secret).toString('hex'),
+  }));
+  expect(await withArchivedRecoveryMaterial({ ...lookup, identity: auxiliary, commitment: auxiliaryMaterial.commitment }, use))
+    .toEqual({ found: true, value: auxiliaryMaterial.secret });
+  expect(auxiliaryMaterial.secret).not.toBe(expectedSecret);
   use.mockClear();
   expect(await withArchivedRecoveryMaterial({ ...lookup, identity: `0x${'ff'.repeat(32)}` }, use)).toEqual({ found: false });
   expect(await withArchivedRecoveryMaterial({ ...lookup, commitment: `0x${'ff'.repeat(32)}` }, use)).toEqual({ found: false });
@@ -83,7 +94,7 @@ it('retains one destination and credential pair after a lost response, then inst
   const archive = path.join(directory, 'recoveries'); fs.mkdirSync(archive, { mode: 0o700 });
   const archivedFile = path.join(archive, `${requests[0].requestId}.json`);
   fs.renameSync(path.join(directory, 'recourse-recovery.json'), archivedFile);
-  expect(await withArchivedRecoveryMaterial(lookup, use)).toEqual({ found: true, value: '17'.repeat(32) });
+  expect(await withArchivedRecoveryMaterial(lookup, use)).toEqual({ found: true, value: expectedSecret });
   await expect(withArchivedRecoveryMaterial({ ...lookup, passphrase: 'wrong' }, use)).rejects.toThrow();
   fs.renameSync(archivedFile, path.join(archive, `0x${'fe'.repeat(32)}.json`));
   await expect(withArchivedRecoveryMaterial(lookup, use)).rejects.toThrow('binding mismatch');

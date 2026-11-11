@@ -6,6 +6,51 @@ const kernelAbi = new Interface(['function registryOperator() view returns(addre
 const registryAbi = new Interface(['function ownerOf(address) view returns(bytes32)', 'function boundBlock(address) view returns(uint256)',
   'function consumedBinding(bytes32) view returns(bool)']);
 const executorAbi = new Interface(['function ownerRecoveryCommitment(bytes32) view returns(bytes32)', 'function ownerSigningRoot(bytes32) view returns(bytes32)']);
+const historyAbi = new Interface(['function breakOrigin() view returns(address)',
+  'function predecessor() view returns(address)', 'function lastGoodBlock() view returns(uint256)']);
+/** Resolve just this address's recovery lineage. No owner identifier or other
+ * portfolio address is requested from or disclosed to the chain. */
+export async function readAddressRecoveryBinding(account: string, network: OwnerChainNetwork): Promise<string> {
+  if (!/^0x[0-9a-f]{40}$/.test(account) || /^0x0+$/.test(account)) throw Error('recourse_address_invalid');
+  const deployment = await network.deployment();
+  let kernel = deployment.addresses.kernel, pin = { blockHash: deployment.blockHash, requireCanonical: true };
+  const call = async (to: string, abi: Interface, name: string, args: readonly unknown[] = []) => {
+    const replies = await Promise.all(network.rpcs.map(rpc => rpc.request('eth_call', [{ to, data: abi.encodeFunctionData(name, args) }, pin])));
+    if (typeof replies[0] !== 'string' || replies[0] !== replies[1]) throw Error('recourse_binding_chain_disagreement');
+    return abi.decodeFunctionResult(name, replies[0])[0];
+  };
+  const seen = new Set<string>();
+  while (true) {
+    const point = `${kernel.toLowerCase()}:${pin.blockHash}`;
+    if (seen.has(point)) throw Error('recourse_binding_history_cycle');
+    seen.add(point);
+    const registry = String(await call(kernel, kernelAbi, 'registryOperator'));
+    const binding = String(await call(registry, registryAbi, 'ownerOf', [account]));
+    if (!/^0x[0-9a-f]{64}$/.test(binding)) throw Error('recourse_binding_chain_invalid');
+    if (!/^0x0+$/.test(binding)) {
+      if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_binding_kernel_retired');
+      return binding;
+    }
+    // After a break, the former registry is trusted only at its immutable
+    // last-good cutoff, never at the compromised curve-era head.
+    const executor = String(await call(kernel, kernelAbi, 'ownerAuthorization'));
+    const origin = String(await call(executor, historyAbi, 'breakOrigin'));
+    if (/^0x0+$/i.test(origin)) throw Error('recourse_binding_required');
+    const predecessor = String(await call(origin, historyAbi, 'predecessor'));
+    const cutoff = BigInt(await call(origin, historyAbi, 'lastGoodBlock'));
+    if (/^0x0+$/i.test(predecessor) || cutoff === 0n) throw Error('recourse_binding_chain_invalid');
+    const blocks = await Promise.all(network.rpcs.map(rpc => rpc.request('eth_getBlockByNumber', [`0x${cutoff.toString(16)}`, false])));
+    const hashes = blocks.map(block => {
+      if (!block || typeof block !== 'object' || !('hash' in block) || !('number' in block)
+        || typeof block.hash !== 'string' || !/^0x[0-9a-f]{64}$/.test(block.hash)
+        || typeof block.number !== 'string' || !/^0x[0-9a-f]+$/.test(block.number)
+        || BigInt(block.number) !== cutoff) throw Error('recourse_binding_chain_invalid');
+      return block.hash;
+    });
+    if (hashes[0] !== hashes[1]) throw Error('recourse_binding_chain_disagreement');
+    kernel = predecessor; pin = { blockHash: hashes[0], requireCanonical: true };
+  }
+}
 function height(value: unknown): bigint {
   if (!value || typeof value !== 'object' || !('number' in value) || typeof value.number !== 'string'
     || !/^0x[0-9a-f]+$/i.test(value.number)) throw new Error('recourse_binding_chain_invalid');

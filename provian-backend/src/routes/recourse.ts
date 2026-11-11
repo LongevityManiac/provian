@@ -10,7 +10,7 @@ import { randomBytes } from 'crypto';
 import { Router, type RequestHandler, type Request } from 'express';
 import type { AgentBankDeps } from '../core/agent-bank/types';
 import { isActiveHumanWallet } from '../core/wallet/active-human-wallet';
-import { identityHash, ownershipBindingMessage, registerOwnership, RECOURSE_COLLECTIONS,
+import { identityHash, primaryBindingIdentity, ownershipBindingMessage, registerOwnership, RECOURSE_COLLECTIONS,
   type OwnershipBinding } from '../core/recourse/ownership';
 import { currentProtocolDeployment } from '../core/protocol/runtime';
 import { selectExternalProofFence, revalidateExternalProofFence } from '../core/external-address/proof-head';
@@ -24,6 +24,7 @@ import { queueBindingOperation } from '../core/recourse/binding-operation';
 import { runBindingWorker } from '../core/recourse/binding-runtime';
 import { readPublishedRecourseRule } from '../core/recourse/membership-rule';
 import { authenticatePrivateRecourse } from './middleware/recourse-private';
+import { addressRecoveryBinding } from '../core/recourse/address-binding';
 
 interface Owner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
 async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
@@ -159,13 +160,14 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     finally { req.body = undefined; req.rawBody = undefined; }
   });
   router.use(authenticateOwner);
+  router.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   router.post('/restoration-intents', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).sort().join(',') !== 'block,transactionHash'
         || !('transactionHash' in body) || typeof body.transactionHash !== 'string'
         || !('block' in body) || typeof body.block !== 'number') throw new Error('recourse_restoration_request_invalid');
-      res.json(await prepareRestorationRequest(deps.db, identityHash(owner.type, owner.id), { transactionHash: body.transactionHash, block: body.block }));
+      res.json(await prepareRestorationRequest(deps.db, await primaryBindingIdentity(deps.db, owner), { transactionHash: body.transactionHash, block: body.block }));
     } catch { res.status(400).json({ error: 'recourse_restoration_request_refused' }); }
   });
   router.post('/restoration-requests', async (req, res) => {
@@ -177,7 +179,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         || !('recoveryRequestId' in body) || typeof body.recoveryRequestId !== 'string') {
         res.status(400).json({ error: 'recourse_restoration_request_invalid' }); return;
       }
-      res.json(await submitRestorationRequest(deps.db, identityHash(owner.type, owner.id), {
+      res.json(await submitRestorationRequest(deps.db, await primaryBindingIdentity(deps.db, owner), {
         transactionHash: body.transactionHash, block: body.block, recoveryRequestId: body.recoveryRequestId,
       }));
     } catch { res.status(400).json({ error: 'recourse_restoration_request_refused' }); }
@@ -185,7 +187,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/restoration-requests', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      const rows = await deps.db.collection(RESTORATION_REQUESTS).where('identity', '==', identityHash(owner.type, owner.id)).get();
+      const rows = await deps.db.collection(RESTORATION_REQUESTS).where('identity', '==', await primaryBindingIdentity(deps.db, owner)).get();
       res.json({ requests: rows.docs.map(doc => ({ requestId: doc.id, status: doc.get('status'),
         transactionHash: doc.get('transactionHash'), destination: doc.get('destination'), createdAtMs: doc.get('createdAtMs') })) });
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
@@ -193,21 +195,22 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/pool', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      res.json(await readRecoursePoolState(identityHash(owner.type, owner.id)));
+      res.json(await readRecoursePoolState(await primaryBindingIdentity(deps.db, owner)));
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });
   router.post('/binding-challenge', async (req, res) => {
     try {
-      const owner = await resolveOwner(req, deps);
+      await resolveOwner(req, deps);
       const body: unknown = req.body;
       if (!body || typeof body !== 'object' || !('address' in body) || typeof body.address !== 'string'
         || !('signingRoot' in body) || typeof body.signingRoot !== 'string'
         || !('recoveryCommitment' in body) || typeof body.recoveryCommitment !== 'string') {
         res.status(400).json({ error: 'recourse_binding_invalid' }); return;
       }
-      const binding: OwnershipBinding = { identity: identityHash(owner.type, owner.id),
+      const deployment = await currentProtocolDeployment();
+      const binding: OwnershipBinding = { identity: addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: body.address.toLowerCase() }),
         address: body.address.toLowerCase(), signingRoot: body.signingRoot.toLowerCase(), recoveryCommitment: body.recoveryCommitment.toLowerCase(),
-        kernel: (await currentProtocolDeployment()).addresses.kernel.toLowerCase(), nonce: `0x${randomBytes(32).toString('hex')}`,
+        kernel: deployment.addresses.kernel.toLowerCase(), nonce: `0x${randomBytes(32).toString('hex')}`,
         expiresAtMs: Date.now() + 5 * 60_000 };
       res.json({ binding, message: ownershipBindingMessage(binding) });
     } catch (error: unknown) {
@@ -224,8 +227,9 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       }
       // Canonical encoding rejects malformed fields before RPC or persistence.
       ownershipBindingMessage(body.binding);
-      if (body.binding.kernel !== (await currentProtocolDeployment()).addresses.kernel.toLowerCase()
-        || body.binding.identity !== identityHash(owner.type, owner.id)) {
+      const deployment = await currentProtocolDeployment();
+      if (body.binding.kernel !== deployment.addresses.kernel.toLowerCase()
+        || body.binding.identity !== addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: body.binding.address })) {
         res.status(400).json({ error: 'recourse_binding_invalid' }); return;
       }
       const fence = await selectExternalProofFence();
@@ -252,12 +256,13 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/ownership', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      const identity = identityHash(owner.type, owner.id);
+      const portfolio = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(identityHash(owner.type, owner.id)).get();
+      const identity = portfolio.get('primaryBinding') === undefined ? null : await primaryBindingIdentity(deps.db, owner);
       const [identityRecord, addresses] = await Promise.all([
-        deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(identity).get(),
-        deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('identity', '==', identity).get(),
+        identity === null ? null : deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(identity).get(),
+        deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', identityHash(owner.type, owner.id)).get(),
       ]);
-      res.json({ identity, recoveryCommitment: identityRecord.get('recoveryCommitment') ?? null,
+      res.json({ identity, recoveryCommitment: identityRecord?.get('recoveryCommitment') ?? null,
         addresses: addresses.docs.map(doc => doc.data()) });
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });

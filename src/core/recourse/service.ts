@@ -11,7 +11,7 @@ import { bindingMessage, prepareHumanOwnershipBinding, type OwnershipBinding } f
 import type { ExternalWalletProofApi } from '../../screens/Agent/LinkExternalWalletScreen';
 import { recoverHumanAccount } from './human-recovery';
 import { readRecoursePoolChain } from './pool-chain';
-import { humanOwnershipIdentity } from './ownership';
+import { readAddressRecoveryBinding } from './binding-chain';
 import { useWalletStore } from '../../store/walletStore';
 
 export interface RecourseView {
@@ -46,7 +46,9 @@ export async function submitHumanRestorationRequest(transactionHash: string, blo
 export async function readRecourseView(): Promise<RecourseView> {
   const userId = await RelayAPIService.getUserId();
   if (!userId) throw new Error('recourse_identity_unavailable');
-  const identity = humanOwnershipIdentity(userId);
+  const account = useWalletStore.getState().address;
+  if (!account) throw Error('recourse_address_unavailable');
+  const identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork());
   const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
   return { identity, historyState: 'pending', enrolled: pool.enrolled, grace: pool.grace, earningsBps: pool.earningsBps,
     month: pool.month, endMonthExclusive: pool.endMonthExclusive,

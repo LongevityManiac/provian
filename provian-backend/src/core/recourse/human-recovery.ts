@@ -13,7 +13,7 @@ import { prepareNativeWalletWatcherRegistration, writeNativeWalletWatcherRegistr
   WATCHER_ADDRESS_ADMISSION_COLLECTION, watcherAddressAdmissionDocId, type NativeWalletWatcherRegistrationPlan } from '../pvt/watcher-address-admission';
 import { PROVEN_ADDRESSES_COLLECTION, HUMAN_PROVEN_ADDRESSES_COLLECTION } from '../external-address/link';
 import { HUMAN_WALLET_REGISTRATION_INDEX_COLLECTION, humanWalletRegistrationIndexId } from '../pvt/genesis-ingress';
-import { identityHash, recoveryHash, prepareRecoveryTransaction, RECOURSE_COLLECTIONS,
+import { identityHash, primaryBindingIdentity, recoveryHash, prepareRecoveryTransaction, RECOURSE_COLLECTIONS,
   type PreparedRecovery, type RegisteredAddress } from './ownership';
 import { verifyRecoveryAuthorization } from './recovery-authorization';
 import { createRecourseChainPort, type RecourseChainPort } from './chain-ledger';
@@ -71,7 +71,7 @@ export interface HumanRecoveryPorts {
  * append-only recovery PE commit together. Birth/grant records never reissue. */
 export async function recoverHumanOwnership(deps: AgentBankDeps, input: HumanRecoveryRequest, nowMs = Date.now(),
   ports: HumanRecoveryPorts = { chain: createRecourseChainPort(), head: readAgreedBaseHead, verify: verifyRecoveryAuthorization }):
-Promise<{ userId: string; walletId: string; destination: string; generation: number }> {
+Promise<{ identity: string; userId: string; walletId: string; destination: string; generation: number }> {
   const message = humanRecoveryMessage(input);
   if (input.expiresAtMs < nowMs || input.expiresAtMs > nowMs + 300000) throw new Error('recourse_destination_proof_invalid');
   if (input.destinationKind === 'hash') await (ports.verifyHashDestination ?? verifyHashDestinationProof)(input.destination, message, input.signature);
@@ -80,7 +80,8 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
   const owner = await deps.db.collection(RECOURSE_COLLECTIONS.identities).doc(input.identity).get();
   const userId: unknown = owner.get('ownerId'), walletId: unknown = owner.get('walletId');
   if (!owner.exists || owner.get('ownerType') !== 'human' || typeof userId !== 'string' || typeof walletId !== 'string'
-    || identityHash('human', userId) !== input.identity) throw new Error('recourse_recovery_proof_invalid');
+    || owner.get('ownerIdentity') !== identityHash('human', userId)
+    || input.identity !== await primaryBindingIdentity(deps.db, { type: 'human', id: userId, walletId })) throw new Error('recourse_recovery_proof_invalid');
   const walletRef = deps.db.collection('wallets').doc(walletId), userRef = deps.db.collection('users').doc(userId);
   const authRef = deps.db.collection('auth_secrets').doc(userId);
   const recoveryRef = deps.db.collection(RECOURSE_COLLECTIONS.recoveries).doc(input.requestId);
@@ -92,7 +93,7 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
       || replay.get('authorizationTxHash') !== input.authorizationTxHash || replay.get('consumedCommitment') !== recoveryHash(Buffer.from(input.preimage.slice(2), 'hex'))
       || wallet.get('address') !== input.destination || auth.get('secret') !== input.authSecret) throw new Error('recourse_recovery_replay');
     await deps.cache.setUserAuthSecret(userId, input.authSecret);
-    return { userId, walletId, destination: input.destination, generation: Number(replay.get('generation')) };
+    return { identity: input.identity, userId, walletId, destination: input.destination, generation: Number(replay.get('generation')) };
   }
   const preimage = Buffer.from(input.preimage.slice(2), 'hex');
   try {
@@ -117,6 +118,8 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
       newRetired: ref(AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION, input.destination),
       agentProven: ref(PROVEN_ADDRESSES_COLLECTION, input.destination), humanProven: ref(HUMAN_PROVEN_ADDRESSES_COLLECTION, input.destination),
       birth: ref(HUMAN_WALLET_REGISTRATION_INDEX_COLLECTION, humanWalletRegistrationIndexId(userId)),
+      privateOwner: ref(RECOURSE_COLLECTIONS.owners, identityHash('human', userId)),
+      primaryBinding: ref(RECOURSE_COLLECTIONS.identities, input.identity),
       oldAdmission: ref(WATCHER_ADDRESS_ADMISSION_COLLECTION, watcherAddressAdmissionDocId({ direction: 'inbound', chainId: 8453,
         address: oldAddress, walletId, agentId: userId, eligibilityStartBlock: 0 })),
     };
@@ -138,6 +141,8 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
           || !user.exists || docs.oldIndex.get('owner_type') !== 'human' || docs.oldIndex.get('owner_id') !== userId
           || docs.oldIndex.get('wallet_id') !== walletId || docs.newIndex.exists || docs.oldRetired.exists || docs.newRetired.exists
           || docs.agentProven.exists || docs.humanProven.exists || docs.birth.get('wallet_id') !== walletId
+          || docs.privateOwner.get('primaryBinding') !== input.identity
+          || docs.primaryBinding.get('ownerIdentity') !== identityHash('human', userId) || docs.primaryBinding.get('primaryBinding') !== true
           || docs.birth.get('user_id') !== userId) throw new Error('recourse_human_state_changed');
         const existingDevices: unknown = user.get('devices');
         if (existingDevices !== undefined && !Array.isArray(existingDevices)) throw new Error('recourse_human_state_changed');
@@ -171,7 +176,7 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
         tx.create(refs.oldRetired, { schema_version: 'native-wallet-address-retirement/v1', chain_id: 8453, address: oldAddress,
           wallet_id: walletId, owner_type: 'human', owner_id: userId, new_address: input.destination, retired_at_ms: nowMs, rotation_pe_id: peId });
         writeNativeWalletWatcherRegistration(tx, watcher, nowMs); tx.delete(refs.oldAdmission);
-        const binding: RegisteredAddress = { identity: input.identity, address: input.destination, kernel: currentKernel,
+        const binding: RegisteredAddress = { identity: input.identity, ownerIdentity: identityHash('human', userId), address: input.destination, kernel: currentKernel,
           boundBlock: authorization.accountingBlock ?? authorization.block, boundBlockHash: authorization.accountingBlockHash ?? authorization.blockHash, boundAtMs: nowMs,
           openingBalanceAtomic: balance.toString(), bindingDigest: ethers.hashMessage(message), recoveryGeneration: prepared.generation,
           chainBindingStatus: 'confirmed', ledgerNeedsCatchup: true };
@@ -180,6 +185,6 @@ Promise<{ userId: string; walletId: string; destination: string; generation: num
     });
     if (!prepared) throw new Error('recourse_human_state_missing');
     await deps.cache.setUserAuthSecret(userId, input.authSecret);
-    return { userId, walletId, destination: input.destination, generation: prepared.generation };
+    return { identity: input.identity, userId, walletId, destination: input.destination, generation: prepared.generation };
   } finally { preimage.fill(0); }
 }

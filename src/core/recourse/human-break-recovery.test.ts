@@ -17,7 +17,6 @@ vi.mock('expo-secure-store', () => ({ WHEN_UNLOCKED_THIS_DEVICE_ONLY:1,
 vi.mock('expo-crypto', () => ({getRandomBytes:() => new Uint8Array(32).fill(10)}));
 vi.mock('../security/biometricAction', () => ({assertBiometricAction:() => { if(f.cancelled) throw Error('biometric_ended'); }}));
 vi.mock('../protocol/runtime', () => ({ownerChainNetwork:() => ({})}));
-vi.mock('./ownership', () => ({humanOwnershipIdentity:(user:string) => user==='owner'?h(1):h(999)}));
 vi.mock('./human-secret', () => ({humanRecoverySecret:(_m:string,g:number)=>new Uint8Array(32).fill(30+g),humanRecoverySigningSeed:(_m:string,g:number)=>new Uint8Array(32).fill(40+g),humanBreakKey:(_m:string,_c:unknown,purpose:string) => {
   const key=new Uint8Array(32).fill(purpose==='spending'?11:purpose==='recovery-secret'?12:13);f.secrets.push(key);return key;
 }}));
@@ -75,7 +74,7 @@ vi.mock('../../services/RelayAPIService', () => ({default:{
     if(route.startsWith('break-entitlements/'))return {identity:f.badEntitlement?h(99):h(1),amount:'200',commitment:h(20),proof:[]};
     if(route==='recover-human'){
       expect(body).toMatchObject({destinationKind:'hash',authorizationNonce:0,destination:a(3),authorizationTxHash:h(5)});
-      return {userId:f.badUser?'other':'owner',destination:a(3),generation:1};
+      return {identity:h(1),userId:f.badUser?'':'owner',destination:a(3),generation:1};
     }
     return {};
   },

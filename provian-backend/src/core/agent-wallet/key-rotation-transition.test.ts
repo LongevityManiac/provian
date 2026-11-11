@@ -197,10 +197,11 @@ describe('agent wallet key-rotation transition (beneficiary routing machinery)',
     const { app, fake } = buildRoute({ strictTransactionOrder: true,
       ...(failReceipt ? { failTxnWriteTo: RECOURSE_COLLECTIONS.recoveries } : {}) });
     const walletId = await createWallet(app);
-    const identity = identityHash('agent', walletId);
+    const ownerIdentity = identityHash('agent', walletId), identity = `0x${'a9'.repeat(32)}`;
     const preimage = `0x${'17'.repeat(64)}`;
+    fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`, { ownerIdentity, ownerType: 'agent', ownerId: walletId, walletId, primaryBinding: identity });
     fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`, {
-      identity, ownerType: 'agent', ownerId: walletId, walletId,
+      identity, ownerIdentity, primaryBinding: true, ownerType: 'agent', ownerId: walletId, walletId,
       recoveryCommitment: recoveryHash(Buffer.from(preimage.slice(2), 'hex')), signingRoot: `0x${'17'.repeat(32)}`, recoveryGeneration: 0,
     });
     const credentials = await generateApiCredentialsAsync();

@@ -22,7 +22,7 @@ export async function discoverHumanAccount(mnemonic: string, network: OwnerChain
     const requestId = sha256(toUtf8Bytes(JSON.stringify(['Provian recovered hash account', identity, history.points[0].breakOrigin, state.nonce, state.destination])));
     return { identity, selection: await discoverHumanHashAccountSelection(mnemonic, identity, requestId, network, generation) };
   }
-  const secret = humanRecoverySecret(mnemonic, state.nonce), seed = humanRecoverySigningSeed(mnemonic, state.nonce);
+  const secret = humanRecoverySecret(mnemonic, state.nonce, identity), seed = humanRecoverySigningSeed(mnemonic, state.nonce, identity);
   try {
     const signingRoot = await recoverySigningRoot(seed);
     if (state.signingRoot !== signingRoot || state.commitment !== recoveryCommitment(secret, signingRoot)) {

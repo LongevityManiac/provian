@@ -72,7 +72,7 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
       let body='';for await(const chunk of req){body+=chunk.toString();if(Buffer.byteLength(body)>4096)throw Error('exercise_request_too_large');}
       const input=JSON.parse(body);
       const address=getAddress(req.url==='/submit-binding'?input.binding?.account:input.address).toLowerCase();
-      const identity=sha256(toUtf8Bytes('EXERCISE ONLY: wallet identity '+address));
+      const identity=await registry.addressBinding(address);
       const sequencePath=resolve(directory,`sequence-${address}.json`);
       if(req.url==='/exercise'){
         return await mutationLock.run(async()=>{

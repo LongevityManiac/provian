@@ -838,3 +838,8 @@ export { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRe
 export { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
 
 export type { ActiveHashWallet, HashWalletCall } from './break-recovery-store';
+
+export { addressRecoveryBinding } from './recourse-address-binding';
+export type { AddressRecoveryDomain } from './recourse-address-binding';
+export { deriveAddressRecoveryCredential, deriveBoundRecoveryCredential } from './recourse-address-credential';
+export { readAddressRecoveryBinding } from './recourse-binding-chain';

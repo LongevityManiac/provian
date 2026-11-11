@@ -190,37 +190,13 @@ describe('GET /v1/reputation/address/:address', () => {
     }
   });
 
-  it('summarizes a proven external address, scoped to that address’s events', async () => {
+  it('does not reveal the owner of a privately proven external address', async () => {
     const res = await request(buildApp(fake)).get(`/v1/reputation/address/${EXTERNAL_ADDRESS}`);
-    expect(res.status).toBe(200);
-    expect(res.body.known).toBe(true);
-    expect(res.body.pricing).toBe('free_beta');
-    expect(res.body.identity).toMatchObject({
-      address_type: 'proven_external',
-      agent_wallet_id: WALLET_ID,
-      display_name: 'Atlas',
-      linked_to_human: true,
-    });
-    expect(typeof res.body.identity.proven_at).toBe('number');
-    expect(res.body.identity.record_url).toContain(`/v1/agents/${EXTERNAL_ADDRESS}/record`);
-
-    // Address-scoped: the native-address transfer is NOT here, and the
-    // unverified 8,888,888 self-report never counts.
-    expect(res.body.financial.usdc.inbound_count).toBe(1);
-    expect(res.body.financial.usdc.inbound_volume_bucket).toBe('100_1k');
-    expect(res.body.financial.x402.settlements_observed).toBe(1);
-    expect(res.body.financial.usdc.outbound_count).toBe(1);
-    expect(res.body.financial.usdc.outbound_volume_bucket).toBe('under_10');
-    expect(res.body.financial.verified_transfers.count).toBe(0);
-    expect(res.body.financial.first_activity_at).toBeLessThan(res.body.financial.last_activity_at);
-
-    expect(res.body.flags).toEqual({
-      bonded: true,
-      bond_healthy: true,
-      open_bond_claims: 1,
-      court_claims_upheld_against: 1,
-    });
-    expect(res.headers['cache-control']).toBe('public, max-age=300');
+    expect(res.status).toBe(200); expect(res.body.known).toBe(false);
+    expect(res.body.identity).toBeUndefined(); expect(res.body.financial).toBeUndefined();
+    expect(res.body.flags).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toContain(WALLET_ID);
+    expect(JSON.stringify(res.body)).not.toContain(NATIVE_ADDRESS);
   });
 
   it('summarizes a native agent-wallet address with its own events only', async () => {
@@ -235,11 +211,23 @@ describe('GET /v1/reputation/address/:address', () => {
   });
 
   it('lowercases mixed-case input before every equality lookup', async () => {
-    const mixed = '0x' + 'eE'.repeat(20);
+    const mixed = '0x' + 'aA'.repeat(20);
     const res = await request(buildApp(fake)).get(`/v1/reputation/address/${mixed}`);
     expect(res.status).toBe(200);
     expect(res.body.known).toBe(true);
-    expect(res.body.address).toBe(EXTERNAL_ADDRESS);
+    expect(res.body.address).toBe(NATIVE_ADDRESS);
+  });
+
+  it('does not serve an old cached external-address owner link', async () => {
+    const cache = createCache();
+    await cache.set(`reputation:${EXTERNAL_ADDRESS}`, {
+      known: true, identity: { agent_wallet_id: WALLET_ID, address: NATIVE_ADDRESS },
+    }, 300);
+    const res = await request(buildApp(fake, cache)).get(`/v1/reputation/address/${EXTERNAL_ADDRESS}`);
+    expect(res.status).toBe(200);
+    expect(res.body.known).toBe(false);
+    expect(res.body.identity).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toContain(WALLET_ID);
   });
 
   it('keeps human wallet addresses unknown (privacy boundary)', async () => {

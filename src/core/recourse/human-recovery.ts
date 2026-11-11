@@ -11,7 +11,6 @@ import { invalidateSeedDerivedCaches } from '../security/seedDerivedCache';
 import RelayAPIService from '../../services/RelayAPIService';
 import { ownerChainNetwork } from '../protocol/runtime';
 import { discoverHumanAccount } from './human-discovery';
-import { humanOwnershipIdentity } from './ownership';
 import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection } from './human-account';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './hash-authorization';
@@ -93,8 +92,8 @@ Promise<{ destination: string; requestId: string }> {
     if (current.destination !== next.evm || current.nonce < state.nonce + 1) throw new Error('recourse_completed_recovery_superseded');
     return { destination: next.evm, requestId: state.requestId };
   }
-  const secret = humanRecoverySecret(mnemonic, state.nonce), seed = humanRecoverySigningSeed(mnemonic, state.nonce);
-  const nextSecret = humanRecoverySecret(mnemonic, state.nonce + 1), nextSeed = humanRecoverySigningSeed(mnemonic, state.nonce + 1);
+  const secret = humanRecoverySecret(mnemonic, state.nonce, state.identity), seed = humanRecoverySigningSeed(mnemonic, state.nonce, state.identity);
+  const nextSecret = humanRecoverySecret(mnemonic, state.nonce + 1, state.identity), nextSeed = humanRecoverySigningSeed(mnemonic, state.nonce + 1, state.identity);
   try {
     const signingRoot = await recoverySigningRoot(seed), nextSigningRoot = await recoverySigningRoot(nextSeed);
     const nextCommitment = recoveryCommitment(nextSecret, nextSigningRoot);
@@ -156,7 +155,10 @@ Promise<{ destination: string; requestId: string }> {
       signature = await new ActionWallet(`0x${bytesToHex(child.privateKey)}`, action).signMessage(message);
     } finally { bipSeed.fill(0); child.wipePrivateData(); hd.wipePrivateData(); }
     const result = object(await RelayAPIService.recourseRecoveryRequest('recover-human', { ...body, signature }));
-    if (typeof result.userId !== 'string' || humanOwnershipIdentity(result.userId) !== state.identity
+    // The private login identifier is supplied by the relay that owns it;
+    // account selection and spending authority remain independently chain-verified.
+    if (result.identity !== state.identity || typeof result.userId !== 'string' || result.userId.length === 0 || result.userId.length > 256
+      || (state.userId !== undefined && result.userId !== state.userId)
       || result.destination !== next.evm || typeof result.generation !== 'number'
       || !Number.isSafeInteger(result.generation) || result.generation < 1) {
       throw new Error('recourse_recovery_reply_invalid');

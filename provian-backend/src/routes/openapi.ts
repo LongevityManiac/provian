@@ -1206,11 +1206,11 @@ export function buildOpenAPISpec(): Record<string, unknown> {
           tags: ['Provenance Record'],
           summary: "Agent's public Provenance Record (the Agent Passport)",
           description:
-            'Aggregate, Tier-3-safe public track record: PE count + families, attestation-tier mix, chain-verified USDC/x402/transfer summary (volume buckets, never exact amounts), bond status, court history, promise performance, vouches, wallet age, and human-link status (boolean only). Accepts a wallet id, agent id, display name, native wallet address, or proven external address — case-insensitive. Financial summaries count chain-verified events only; self-reported activity is excluded. Every valid PE is proof its contributor owns. The PVT kernel is live on Base; every act of work mints PVT once at its best-supported value, with no guaranteed amount or value. Unknown identifier returns 404 with found:false — never a guessed record. Rate limited per IP; cached ~5 minutes. See the Provian Manual.',
+            'Aggregate, Tier-3-safe public track record: PE count + families, attestation-tier mix, chain-verified USDC/x402/transfer summary (volume buckets, never exact amounts), bond status, court history, promise performance, vouches, wallet age, and human-link status (boolean only). Accepts a wallet id, agent id, display name, native wallet address — case-insensitive. Private external addresses never resolve to an owner. Financial summaries count chain-verified events only; self-reported activity is excluded. Every valid PE is proof its contributor owns. The PVT kernel is live on Base; every act of work mints PVT once at its best-supported value, with no guaranteed amount or value. Unknown identifier returns 404 with found:false — never a guessed record. Rate limited per IP; cached ~5 minutes. See the Provian Manual.',
           security: [],
           parameters: [{
             name: 'identifier', in: 'path', required: true, schema: { type: 'string' },
-            description: 'Wallet id (wallet_aw_…), agent id, display name, or 0x address (native or proven external)',
+            description: 'Wallet id (wallet_aw_…), agent id, display name, or native 0x wallet address',
           }],
           responses: {
             '200': { description: 'The Provenance Record (record_type: provenance_record)' },
@@ -1717,7 +1717,7 @@ export function buildOpenAPISpec(): Record<string, unknown> {
           tags: ['Reputation'],
           summary: 'Chain-verified financial summary for a Base address known to Provian',
           description:
-            'For x402 services vetting payers and job boards vetting agents. Known = a proven external address (linked by the agent\'s own signature) or a native agent wallet; human wallet addresses are never resolvable on this surface. Returns verified inbound/outbound USDC counts + volume buckets, x402 settlements observed, first/last activity, link status, and bond/court flags — facts, not a score. Unknown address returns { known: false } with HTTP 200: no information, not bad reputation. Self-reported activity never counts. Rate limited per IP; Cache-Control set; pricing: free_beta. See the Provian Manual.',
+            'For x402 services vetting payers and job boards vetting agents. Known = a native agent wallet; private external and human wallet addresses are never resolvable on this surface. Returns verified inbound/outbound USDC counts + volume buckets, x402 settlements observed, first/last activity, link status, and bond/court flags — facts, not a score. Unknown address returns { known: false } with HTTP 200: no information, not bad reputation. Self-reported activity never counts. Rate limited per IP; Cache-Control set; pricing: free_beta. See the Provian Manual.',
           security: [],
           parameters: [{
             name: 'address', in: 'path', required: true,

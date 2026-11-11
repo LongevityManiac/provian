@@ -39,8 +39,9 @@ async function fixture(failCredentialWrite = false) {
   };
   const birth = await runRegistration(oldAddress, true);
   expect(birth.status).toBe(201);
-  const walletId = String(birth.body.walletId), identity = identityHash('human', userId), preimage = `0x${'17'.repeat(64)}`;
-  fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`, { identity, ownerType: 'human', ownerId: userId, walletId,
+  const walletId = String(birth.body.walletId), ownerIdentity = identityHash('human', userId), identity = h('a9'), preimage = `0x${'17'.repeat(64)}`;
+  fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`, { ownerIdentity, ownerType: 'human', ownerId: userId, walletId, primaryBinding: identity });
+  fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`, { identity, ownerIdentity, primaryBinding: true, ownerType: 'human', ownerId: userId, walletId,
     recoveryCommitment: recoveryHash(Buffer.from(preimage.slice(2), 'hex')), signingRoot: h('17'), recoveryGeneration: 0 });
   const unsigned = { kernel: `0x${'77'.repeat(20)}`, identity, preimage, destination, nextCommitment: h('33'), nextSigningRoot: h('44'),
     requestId: h('55'), authorizationTxHash: h('66'), authorizationNonce: 0, deviceId: 'new-device', authSecret: '77'.repeat(32), expiresAtMs: now + 60000 };
@@ -55,7 +56,7 @@ test('human recovery atomically changes credentials and indexes, accepts dust, a
   const markerPath = `${HUMAN_WALLET_REGISTRATION_INDEX_COLLECTION}/${humanWalletRegistrationIndexId(userId)}`;
   const marker = JSON.stringify(f.fake.store.get(markerPath));
   const result = await recoverHumanOwnership(f.deps, f.input, f.now + 1000, f.ports);
-  expect(result).toEqual({ userId, walletId: f.walletId, destination, generation: 1 });
+  expect(result).toEqual({ identity: f.input.identity, userId, walletId: f.walletId, destination, generation: 1 });
   expect(await recoverHumanOwnership(f.deps, f.input, f.now + 2000, f.ports)).toEqual(result);
   expect(f.fake.store.has(`${NATIVE_WALLET_ADDRESS_INDEX_COLLECTION}/${nativeWalletAddressIndexId(oldAddress)}`)).toBe(false);
   expect(f.fake.store.get(`${AGENT_WALLET_ADDRESS_RETIREMENT_COLLECTION}/${oldAddress}`)).toMatchObject({ owner_type: 'human', owner_id: userId });
@@ -75,6 +76,16 @@ test('wrong fresh-key signature or missing finalized authorization changes no hu
   f.ports.verify.mockRejectedValueOnce(new Error('recourse_authorization_intent_missing'));
   await expect(recoverHumanOwnership(f.deps, f.input, f.now, f.ports)).rejects.toThrow('intent_missing');
   expect(JSON.stringify([...f.fake.store])).toBe(before);
+});
+
+test('an auxiliary address recovery proof cannot replace the primary login credentials', async () => {
+  const f = await fixture();
+  const path = `${RECOURSE_COLLECTIONS.identities}/${f.input.identity}`;
+  f.fake.store.set(path, { ...f.fake.store.get(path), primaryBinding: false });
+  await expect(recoverHumanOwnership(f.deps, f.input, f.now + 1000, f.ports)).rejects.toThrow('primary_binding_invalid');
+  expect(f.fake.store.get(`auth_secrets/${userId}`)?.secret).toBe('old-secret');
+  expect(f.fake.store.get(`wallets/${f.walletId}`)?.address).toBe(oldAddress);
+  expect(f.fake.store.has(`${RECOURSE_COLLECTIONS.recoveries}/${f.input.requestId}`)).toBe(false);
 });
 test('a finalized break restoration resets its origin-scoped authorization nonce and still requires a hash-account credential proof', async () => {
   const f = await fixture();

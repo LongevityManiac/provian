@@ -4,8 +4,8 @@
  * GET /v1/reputation/address/:address
  *
  * Chain-verified financial summary for a Base address KNOWN to Provian: a
- * proven external address (linked by the agent's own signature) or a native
- * sovereign agent-wallet address. Built for consumers deciding whether to
+ * native sovereign agent-wallet address. Private external addresses do not
+ * resolve to their owner's public identity. Built for consumers deciding whether to
  * transact with the address — x402 services vetting payers, job boards
  * vetting agents.
  *
@@ -62,12 +62,12 @@ interface ReputationResponse {
   pricing: string;
   identity?: {
     /** How Provian knows this address. */
-    address_type: 'native_agent_wallet' | 'proven_external';
+    address_type: 'native_agent_wallet';
     agent_wallet_id: string | null;
     display_name: string | null;
     /** Whether the agent behind this address is beneficiary-linked to a human. */
     linked_to_human: boolean;
-    /** When the external link was proven (proven external addresses only). */
+    /** Reserved compatibility field; private address proofs are never published. */
     proven_at: number | null;
     record_url: string;
   };
@@ -124,18 +124,17 @@ function buildKnownResponse(params: {
 }): ReputationResponse {
   const { address, subject, financial, bond, claims } = params;
   const resolved = subject.resolved!;
-  const isExternal = subject.matched_by === 'proven_external_address';
 
   return {
     known: true,
     address,
     pricing: PRICING,
     identity: {
-      address_type: isExternal ? 'proven_external' : 'native_agent_wallet',
+      address_type: 'native_agent_wallet',
       agent_wallet_id: resolved.walletId,
       display_name: resolved.displayName,
       linked_to_human: resolved.hasHumanLink,
-      proven_at: isExternal ? subject.externalLink?.proven_at ?? null : null,
+      proven_at: null,
       record_url: `${getPublicApiBaseUrl()}/v1/agents/${encodeURIComponent(address)}/record`,
     },
     financial,
@@ -188,7 +187,7 @@ export function createReputationRouter(deps: ReputationDeps): Router {
       // runs on the lowercased form regardless of the caller's casing.
       const address = raw.toLowerCase();
 
-      const cacheKey = `reputation:${address}`;
+      const cacheKey = `reputation:v2:${address}`;
       const cached = await cache.get<ReputationResponse>(cacheKey);
       if (cached) {
         res.set('Cache-Control', `public, max-age=${cached.known ? KNOWN_CACHE_TTL_SECONDS : UNKNOWN_CACHE_TTL_SECONDS}`);

@@ -1,7 +1,8 @@
-vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: requireConfiguredPvt9Runtime().address } }), ownerChainNetwork: () => ({}) }));
+vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: async () => ({ pointer: `0x${'34'.repeat(20)}`, addresses: { kernel: requireConfiguredPvt9Runtime().address } }), ownerChainNetwork: () => ({}) }));
 vi.mock('./recourse-binding-chain', () => ({ waitForRecourseBinding: (...args: unknown[]) => h.confirm(...args) }));
 import { recoverySigningRoot, recoveryCommitment as commitmentHash } from './recourse-hash-authorization';
-import { createHash } from 'crypto';
+import { addressRecoveryBinding } from './recourse-address-binding';
+import { deriveBoundRecoveryCredential } from './recourse-address-credential';
 import { beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import type { AgentKeystore } from './keystore';
 import { requireConfiguredPvt9Runtime } from './pvt9-base-config.generated';
@@ -20,12 +21,14 @@ vi.mock('./keystore', () => ({
 vi.mock('./link-signing', () => ({ signEip191Message: (...args: unknown[]) => h.sign(...args) }));
 const walletId = 'agent-test';
 const address = `0x${'12'.repeat(20)}`;
-const identity = `0x${createHash('sha256').update(JSON.stringify(['provian ownership', 'agent', walletId])).digest('hex')}`;
+const identity = addressRecoveryBinding({ chainId: '8453', pointer: `0x${'34'.repeat(20)}`, origin: address });
 let signingRoot: string;
 let recoveryCommitment: string;
 beforeAll(async () => {
-  signingRoot = await recoverySigningRoot(new Uint8Array(32).fill(8));
-  recoveryCommitment = commitmentHash(new Uint8Array(32).fill(7), signingRoot);
+  const root = new Uint8Array(64); root.fill(7, 0, 32); root.fill(8, 32);
+  const derived = deriveBoundRecoveryCredential(root, identity, '0');
+  signingRoot = await recoverySigningRoot(derived.signingSeed);
+  recoveryCommitment = commitmentHash(derived.recoverySecret, signingRoot);
 });
 const config = { relayUrl: 'https://relay.example', apiKey: 'key', apiSecret: 'secret', walletId };
 const input = { keystore: { wallet_id: walletId, address } as AgentKeystore,

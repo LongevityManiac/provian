@@ -1,3 +1,4 @@
+import { deriveBoundRecoveryCredential } from './recourse-address-credential';
 import { afterEach, expect, test, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,12 +16,13 @@ vi.mock('./break-recovery', async original => ({ ...await original<typeof import
   readBreakRecoveryContext: async () => `0x${'22'.repeat(20)}` }));
 vi.mock('./guarded-fetch', () => ({ guardedFetcher: (fetch: typeof globalThis.fetch) => fetch }));
 vi.mock('./free-break-recovery', () => ({ recoverFreeBreak: vi.fn() }));
+vi.mock('./recourse-binding-chain', () => ({ readAddressRecoveryBinding: async () => `0x${'93'.repeat(32)}` }));
 const directories: string[] = [];
 afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); });
 test('backup discovery sends a verifiable private POST and refuses substituted identities and unsafe origins', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'private-break-discovery-')); directories.push(directory);
   const walletId = 'wallet_aw_private_discovery', passphrase = 'TEST ONLY backup secret';
-  const identity = sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', walletId])));
+  const identity = `0x${'93'.repeat(32)}`;
   saveKeystore(encryptKeystore({ ...generateAgentKeyPair(), walletId, passphrase, recoverySecret: '33'.repeat(32),
     recoverySigningSeed: '44'.repeat(32), kdfParams: { N: 1024, r: 8, p: 1, dklen: 32 } }), join(directory, 'agent-keystore.json'));
   let substitute = false;
@@ -49,10 +51,12 @@ test('backup discovery sends a verifiable private POST and refuses substituted i
 test.each(['55', '66'])('chain-ahead snapshot %s still authenticates with the relay-registered predecessor', async newer => {
   const directory = mkdtempSync(join(tmpdir(), 'private-break-discovery-')); directories.push(directory);
   const walletId = 'wallet_aw_private_discovery', passphrase = 'TEST ONLY backup secret';
-  const identity = sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', walletId])));
+  const identity = `0x${'93'.repeat(32)}`;
   saveKeystore(encryptKeystore({ ...generateAgentKeyPair(), walletId, passphrase, recoverySecret: '33'.repeat(32),
     recoverySigningSeed: '44'.repeat(32), kdfParams: { N: 1024, r: 8, p: 1, dklen: 32 } }), join(directory, 'agent-keystore.json'));
-  const registered = recoveryCommitment(new Uint8Array(32).fill(0x33), await recoverySigningRoot(new Uint8Array(32).fill(0x44)));
+  const root = new Uint8Array(64); root.fill(0x33, 0, 32); root.fill(0x44, 32);
+  const derived = deriveBoundRecoveryCredential(root, identity, '0');
+  const registered = recoveryCommitment(derived.recoverySecret, await recoverySigningRoot(derived.signingSeed));
   const entitlement = { identity, amount: '100', commitment: `0x${newer.repeat(32)}`, proof: [] };
   const fetch = vi.fn(async (_url: string | URL | Request, options?: RequestInit) => {
     const body = JSON.parse(String(options?.body));

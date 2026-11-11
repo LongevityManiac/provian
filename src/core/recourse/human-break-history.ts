@@ -109,7 +109,7 @@ export async function recoverHumanHistoricalMaterial(mnemonic: string, history: 
       const context = { identity: history.identity, breakOrigin: point.breakOrigin, chainId: '8453' };
       candidates.push(() => [humanBreakKey(mnemonic, context, 'recovery-secret', String(nonce)),
         humanBreakKey(mnemonic, context, 'recovery-signing', String(nonce))]);
-    } else if (nonce < 0x80000000n) candidates.push(() => [humanRecoverySecret(mnemonic, Number(nonce)), humanRecoverySigningSeed(mnemonic, Number(nonce))]);
+    } else if (nonce < 0x80000000n) candidates.push(() => [humanRecoverySecret(mnemonic, Number(nonce), history.identity), humanRecoverySigningSeed(mnemonic, Number(nonce), history.identity)]);
     for (const derive of candidates) {
       const [secret, signingSeed] = derive();
       let retained = false;

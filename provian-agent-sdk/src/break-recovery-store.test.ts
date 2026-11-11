@@ -1,3 +1,4 @@
+import { deriveBoundRecoveryCredential } from './recourse-address-credential';
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -21,8 +22,13 @@ vi.mock('fs',async importOriginal=>{
  const actual=await importOriginal<typeof import('fs')>();
  return {...actual,fsyncSync:vi.fn(actual.fsyncSync)};
 });
-let commitment: string;
-beforeAll(async () => { commitment = recoveryCommitment(new Uint8Array(32).fill(0x44), await recoverySigningRoot(new Uint8Array(32).fill(0x55))); });
+let commitment: string, derivedSecret: string, derivedSeed: string;
+beforeAll(async () => {
+ const root=new Uint8Array(64);root.fill(0x44,0,32);root.fill(0x55,32);
+ const derived=deriveBoundRecoveryCredential(root,id,'0');
+ derivedSecret=hexlify(derived.recoverySecret);derivedSeed=hexlify(derived.signingSeed);
+ commitment = recoveryCommitment(derived.recoverySecret, await recoverySigningRoot(derived.signingSeed));
+});
 const id=`0x${'11'.repeat(32)}`,context=`0x${'66'.repeat(20)}`,destination=`0x${'33'.repeat(20)}`,passphrase='TEST ONLY break backup';
 let directory:string;
 beforeEach(()=>{directory=fs.mkdtempSync(path.join(os.tmpdir(),'provian-break-backup-'));vi.clearAllMocks();vi.mocked(prepareBreakRecovery).mockReset();vi.mocked(readBreakRecoveryContext).mockResolvedValue(context);});
@@ -59,7 +65,7 @@ it('persists the same destination and replacement keys before publication, retai
  const original=fs.readFileSync(keystoreFile,'utf8'),seen:string[]=[];let fail=true;
  vi.mocked(prepareBreakRecovery).mockImplementation(async (args:BreakRecoveryInput):Promise<PreparedBreakRecovery>=>{
   expect(args.expectedBreakOrigin).toBe(context);
-  expect(hexlify(args.recoverySecret)).toBe(`0x${'44'.repeat(32)}`);expect(hexlify(args.recoverySigningSeed)).toBe(`0x${'55'.repeat(32)}`);
+  expect(hexlify(args.recoverySecret)).toBe(derivedSecret);expect(hexlify(args.recoverySigningSeed)).toBe(derivedSeed);
   seen.push(hexlify(args.destinationSigningSeed));
   await args.persistBeforePublishing({kernel:destination,identity:id,destination,operationHash:commitment,
    destinationSigningSeed:args.destinationSigningSeed,nextRecoverySecret:args.nextRecoverySecret,nextRecoverySigningSeed:args.nextRecoverySigningSeed});
@@ -89,7 +95,7 @@ it('activates only after verified restoration, durably retains every key and can
     nextCommitment=recoveryCommitment(args.nextRecoverySecret,await recoverySigningRoot(args.nextRecoverySigningSeed));
     expectedSecret=hexlify(args.nextRecoverySecret);expectedSigningSeed=hexlify(args.nextRecoverySigningSeed);
   } else if(args.entitlement.commitment===commitment) {
-    expect(hexlify(args.recoverySecret)).toBe(`0x${'44'.repeat(32)}`);expect(hexlify(args.recoverySigningSeed)).toBe(`0x${'55'.repeat(32)}`);
+    expect(hexlify(args.recoverySecret)).toBe(derivedSecret);expect(hexlify(args.recoverySigningSeed)).toBe(derivedSeed);
   } else {
     expect(hexlify(args.recoverySecret)).toBe(expectedSecret);expect(hexlify(args.recoverySigningSeed)).toBe(expectedSigningSeed);
   }

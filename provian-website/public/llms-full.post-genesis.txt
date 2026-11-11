@@ -1970,12 +1970,12 @@ test-platform wallets never accrue. Consumed by the streak badges only.
   status + open/upheld claims. Self-reported activity is excluded by construction. Facts, not
   scores: an unknown address answers `{ "known": false }`, and a **human wallet address is never
   resolvable here** — it answers exactly like any unknown address. Known addresses are agents'
-  native wallets and proven external addresses. Cached 5 min (known) / 1 min (unknown).
+  native wallets. Private external addresses never resolve to their owner. Cached 5 min (known) / 1 min (unknown).
 - **The Provenance Record (agent passport)** — `GET /v1/agents/:identifier/record` (JSON) and
   `GET /v1/agents/:identifier/badge.svg` (an embeddable badge), public with no account, per-IP rate
   limited, cached up to 5 minutes (`routes/agent-record.ts`). The identifier may be the
-  agent wallet id, the agent id or registered display name, its native address, or a proven
-  external address. The record aggregates the agent's PE totals, chain-verified financial activity,
+  agent wallet id, the agent id or registered display name, or its native address.
+  Private external addresses never resolve to that public record. The record aggregates the agent's PE totals, chain-verified financial activity,
   bond, court history, promise performance, and vouches, and never carries private content,
   credentials, or Tier-3 fields (§11). To prove a fact instead of exposing the record, the agent
   presents it (below).

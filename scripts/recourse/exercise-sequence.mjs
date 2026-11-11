@@ -46,7 +46,7 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet) {
   const pointer = new Contract(a.ProvianProtocolPointer, abi('ProvianProtocolPointer'), provider);
   const revision = await pointer.revision();
   if (revision !== 1n) throw Error('exercise_revision_changed');
-  const identity = selectedOwner ? labelHash('wallet identity '+selectedOwner) : labelHash('fixture member');
+  const identity = await registry.addressBinding(owner.address);
   const request = labelHash('restoration '+identity);
   const report = { schema: 'provian.isolated-recourse-sequence.v1', chainId: 31337, instanceId: m.instanceId,
     productionChanged: false, fixtureOnly: true, externallyBoundOwner: selectedOwner !== null,

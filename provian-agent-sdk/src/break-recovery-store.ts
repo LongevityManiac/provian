@@ -5,7 +5,9 @@ import { concat, hashMessage, hexlify, sha256, toUtf8Bytes } from 'ethers';
 import { atomicReplacePrivateFile } from './durable-private-file';
 import { durableDirectory } from './durable-directory';
 import { tryAcquireFileLock } from './meter/file-lock';
-import { loadKeystore, withRecoveryMaterial } from './keystore';
+import { loadKeystore } from './keystore';
+import { withBoundRecoveryMaterial } from './recourse-agent-credential';
+import { readAddressRecoveryBinding } from './recourse-binding-chain';
 import { withArchivedRecoveryMaterial } from './recourse-recovery';
 import { assertCurrentProtocolTransaction } from './protocol-transaction';
 import { readHashAccountState, verifyHashAccountVariantReceipt } from './hash-account-chain';
@@ -131,7 +133,7 @@ async function withSnapshotRecovery<T>(directory: string, passphrase: string,
   if (archived.found) return archived.value;
   const keystore = loadKeystore(path.join(directory, 'agent-keystore.json'));
   if (!keystore || keystore.version !== 2) throw Error('break_backup_owner_material_missing');
-  return withRecoveryMaterial(keystore, passphrase, async (secret, signingSeed) => {
+  return withBoundRecoveryMaterial(keystore, passphrase, e.identity, async (secret, signingSeed) => {
     if (recoveryCommitment(secret, await recoverySigningRoot(signingSeed)) !== e.commitment) throw Error('break_backup_recovery_material_unavailable');
     return use(secret, signingSeed);
   });
@@ -164,11 +166,11 @@ export async function readAgentBreakEntitlement(input: { directory: string; pass
   network: OwnerChainNetwork; relayUrl: string; fetch?: typeof globalThis.fetch; signal?: AbortSignal }): Promise<BreakOwnerEntitlement> {
   const directory = path.resolve(input.directory), keystore = loadKeystore(path.join(directory, 'agent-keystore.json'));
   if (!keystore || keystore.version !== 2) throw Error('break_backup_owner_material_missing');
-  const identity = sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', keystore.wallet_id])));
+  const identity = await readAddressRecoveryBinding(keystore.address.toLowerCase(), input.network);
   const origin = await readBreakRecoveryContext(input.network), relay = new URL(input.relayUrl);
   if (relay.protocol !== 'https:' || relay.username || relay.password || relay.search || relay.hash) throw Error('break_recovery_relay_invalid');
   const route = `break-entitlements/${origin}/${identity}`;
-  const payload = await withRecoveryMaterial(keystore, input.passphrase,
+  const payload = await withBoundRecoveryMaterial(keystore, input.passphrase, identity,
     (secret, seed) => privateRecourseEnvelope(identity, secret, seed, route));
   const response = await guardedFetcher(input.fetch)(`${relay.toString().replace(/\/+$/, '')}/v1/recourse/${route}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: input.signal,
@@ -196,8 +198,8 @@ export async function recoverAgentBreak(input: { directory: string; passphrase: 
       // to a newer snapshot commitment that the relay has not accepted yet.
       const keystore = loadKeystore(path.join(directory, 'agent-keystore.json'));
       if (!keystore || keystore.version !== 2
-        || sha256(toUtf8Bytes(JSON.stringify(['provian ownership', 'agent', keystore.wallet_id]))) !== e.identity) throw Error('break_backup_identity_changed');
-      const payload = route === 'recover-agent' ? body : await withRecoveryMaterial(keystore, input.passphrase,
+        || await readAddressRecoveryBinding(keystore.address.toLowerCase(), input.network) !== e.identity) throw Error('break_backup_identity_changed');
+      const payload = route === 'recover-agent' ? body : await withBoundRecoveryMaterial(keystore, input.passphrase, e.identity,
         (secret, seed) => privateRecourseEnvelope(e.identity, secret, seed, route, body ?? null));
       const response = await guardedFetcher(input.fetch)(`${relayUrl}/v1/recourse/${route}`, { method:'POST',
         headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:input.signal });
@@ -230,7 +232,7 @@ export async function recoverAgentBreakCredentials(input: {directory: string; pa
     if(!record?.prepared?.ownerIntent || !record.destination)throw Error('break_backup_restoration_missing');
     await verifyBreakRecoveryReceipt(record.prepared,input.transactionHash,input.network);
     const old=loadKeystore(path.join(directory,'agent-keystore.json'));
-    if(!old || sha256(toUtf8Bytes(JSON.stringify(['provian ownership','agent',old.wallet_id])))!==input.identity)throw Error('break_backup_identity_changed');
+    if(!old || await readAddressRecoveryBinding(old.address.toLowerCase(),input.network)!==input.identity)throw Error('break_backup_identity_changed');
     if(!record.credentials){record.credentials={requestId:hexlify(randomBytes(32)),apiKey:`pvn_live_${randomBytes(16).toString('hex')}`,
       apiSecret:`pvns_${randomBytes(32).toString('hex')}`};saveRecord(file,input.passphrase,record);}
     const credentials=record.credentials;

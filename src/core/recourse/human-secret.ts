@@ -1,21 +1,26 @@
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { utf8ToBytes } from '@noble/hashes/utils';
+import { deriveBoundRecoveryCredential } from './address-credential';
 
-export function humanRecoverySecret(mnemonic: string, generation = 0): Uint8Array {
+export function humanRecoverySecret(mnemonic: string, generation: number, binding: string): Uint8Array {
   if (!Number.isSafeInteger(generation) || generation < 0 || generation >= 0x80000000) throw new Error('recourse_account_index_invalid');
-  return hkdf(sha256, utf8ToBytes(mnemonic.normalize('NFKD')),
-    utf8ToBytes('provian.ownership.recovery.salt'), utf8ToBytes(generation === 0
-      ? 'provian.ownership.recovery.secret' : `provian.ownership.recovery.secret:${generation}`), 32);
+  const material = utf8ToBytes(mnemonic.normalize('NFKD'));
+  try {
+    const derived = deriveBoundRecoveryCredential(material, binding, String(generation));
+    derived.signingSeed.fill(0); return derived.recoverySecret;
+  } finally { material.fill(0); }
 }
 
 /** This key is independently domain-derived; revealing the recovery secret does
  * not reveal the hash-signing seed. Both remain recoverable from the seed backup. */
-export function humanRecoverySigningSeed(mnemonic: string, generation = 0): Uint8Array {
+export function humanRecoverySigningSeed(mnemonic: string, generation: number, binding: string): Uint8Array {
   if (!Number.isSafeInteger(generation) || generation < 0 || generation >= 0x80000000) throw new Error('recourse_account_index_invalid');
-  return hkdf(sha256, utf8ToBytes(mnemonic.normalize('NFKD')),
-    utf8ToBytes('provian.ownership.hash-authorization.salt'),
-    utf8ToBytes(`provian.ownership.hash-authorization.seed:${generation}`), 32);
+  const material = utf8ToBytes(mnemonic.normalize('NFKD'));
+  try {
+    const derived = deriveBoundRecoveryCredential(material, binding, String(generation));
+    derived.recoverySecret.fill(0); return derived.signingSeed;
+  } finally { material.fill(0); }
 }
 
 export interface HumanBreakKeyContext {

@@ -33,7 +33,7 @@ function network(disagree = false): OwnerChainNetwork {
 it('an old backup discovers the current account when proof generation advanced beyond its spending account', async () => {
   const next = await deriveHumanAccount(phrase, 1), net = network();
   vi.mocked(readOwnerChainState).mockResolvedValue({ deployment: await net.deployment(), executor: `0x${'44'.repeat(20)}`,
-    nonce: 2, destination: next.evm, signingRoot: sha256(humanRecoverySigningSeed(phrase, 2)), commitment: sha256(humanRecoverySecret(phrase, 2)) });
+    nonce: 2, destination: next.evm, signingRoot: sha256(humanRecoverySigningSeed(phrase, 2, hash)), commitment: sha256(humanRecoverySecret(phrase, 2, hash)) });
   const found = await discoverHumanAccount(phrase, net);
   expect(found?.selection).toMatchObject({ ...next, generation: 1, recoveryGeneration: 2 });
 });

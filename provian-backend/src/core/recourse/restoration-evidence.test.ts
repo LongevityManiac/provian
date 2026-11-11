@@ -13,6 +13,24 @@ test('independently discovered same-owner destination cannot create a restoratio
   const f=fixture();f.state.alias=true;
   expect((await collectRestorationEvidence(f.snapshot,f.port)).trace).toMatchObject({sources:[],shortfallAtomic:'0',returnedAtomic:'100'});
 });
+test('different public address bindings still offset returns to the same private owner', async () => {
+  const f = fixture(), secondary = hash(91), privateOwner = hash(92);
+  const port = { ...f.port,
+    privateOwner: async (binding: string) => [identity, secondary].includes(binding) ? privateOwner : null,
+    call: async (...args: Parameters<typeof f.port.call>) => args[1] === 'ownerOf' && args[2][0] === recipient
+      ? secondary : f.port.call(...args),
+    verifiedIdentity: async (account: string) => account === recipient ? { identity: privateOwner, evidenceHash: hash(93) } : null,
+  };
+  const result = await collectRestorationEvidence(f.snapshot, port);
+  expect(result.trace).toMatchObject({ shortfallAtomic: '0', returnedAtomic: '100' });
+  await expect(collectRestorationEvidence(f.snapshot, { ...port,
+    privateOwner: async (binding: string) => binding === secondary ? hash(94) : privateOwner,
+  })).rejects.toThrow('owner_conflict');
+  await expect(collectRestorationEvidence(f.snapshot, { ...port, privateOwner: async () => null })).rejects.toThrow('owner_unusable');
+  await expect(collectRestorationEvidence(f.snapshot, { ...port, verifiedIdentity: async () => null,
+    privateOwner: async (binding: string) => binding === secondary ? null : privateOwner,
+  })).rejects.toThrow('owner_unusable');
+});
 test('missing balances, altered receipt occurrence and changed current kernel fail before any determination',async()=>{
   const f=fixture();f.state.closing=99n;await expect(collectRestorationEvidence(f.snapshot,f.port)).rejects.toThrow('history_incomplete');
   expect(()=>classifyRestorationReceipt(token,f.event,{...f.transaction,blockHash:hash(7)})).toThrow('transaction_mismatch');
