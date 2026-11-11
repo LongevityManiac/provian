@@ -59,6 +59,41 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'publication-recovery': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-recovery.mjs', testMatchPath: 'scripts/recourse/publication-recovery.test.mjs',
+    mutations: [
+      { id: 'RECOVERY-ROOT', description: 'accept an unknown current authority root',
+        find: "ensure(root === expectedRoot, 'unknown_current_root');", replace: ';', expectedKilledBy: 'wrong-root negative control refuses' },
+      { id: 'RECOVERY-MISSING', description: 'skip a missing consumed authority operation',
+        find: "ensure(index === nonce, 'unknown_consumed_operation');", replace: ';', expectedKilledBy: 'missing negative control refuses' },
+      { id: 'RECOVERY-HISTORICAL-PROOF', description: 'trust stored public operation without authenticating its signature during cleanup',
+        find: 'const record = await verifyDurableHashAuthority(saved, plan.hashAuthorityPlan, runtimeHash);\n  const cancel = await store.read(publicationOperationSlot(account, nonce, true));',
+        replace: 'const record = structuredClone(saved);\n  const cancel = await store.read(publicationOperationSlot(account, nonce, true));', expectedKilledBy: 'historical recovery permits only authenticated cleanup material' },
+      { id: 'RECOVERY-LATE-HEAD', description: 'ignore authority advancement during semantic observation',
+        find: "))[0] === expected, 'authority_advanced');", replace: "))[0] !== undefined, 'authority_advanced');", expectedKilledBy: 'authority advancement during semantic observation requires a fresh complete reconciliation' },
+    ],
+  },
+  'publication-runtime': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-runtime.mjs', testMatchPath: 'scripts/recourse/publication-runtime.test.mjs',
+    mutations: [
+      { id: 'DELIVERY-FRESHNESS', description: 'lease ownership replaces fresh publication validation',
+        find: "if (exposure?.kind === 'call')", replace: 'if (false)', expectedKilledBy: 'source drift during durable awaits refuses' },
+      { id: 'DELIVERY-SAVED-CALL', description: 'unrelated retained calls survive restart authentication',
+        find: "ensure(known.some(record => equal(callOf(record), attempt.authorityTransaction)), 'unknown_retained_operation');", replace: ';', expectedKilledBy: 'a retained gas call outside authenticated authority records refuses' },
+      { id: 'DELIVERY-RAW-PERSIST', description: 'broadcast without retaining signed gas bytes',
+        find: 'await journal.append({ kind, raw, hash: transaction.hash });', replace: ';', expectedKilledBy: 'actual journal and gas persistence deliver retirement and publication' },
+    ],
+  },
+  'publication-rpc-boundaries': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/changeover-rpc.mjs', testMatchPath: 'scripts/recourse/publication-runtime.test.mjs scripts/recourse/changeover-rpc.test.mjs',
+    mutations: [
+      { id: 'EXPOSURE-CALL', description: 'header awaits can expose a newly stale executable proof',
+        find: "await assertLease();\n   await agree('eth_call',[call,tag]);", replace: "await agree('eth_call',[call,tag]);", expectedKilledBy: 'source drift during latest-header prevents next executable proof RPC' },
+      { id: 'EXPOSURE-ESTIMATE', description: 'simulation awaits can expose a newly stale executable proof to the estimator',
+        find: "await assertLease();\n   const estimates=(await both('eth_estimateGas',[call,tag])).map(quantity);",
+        replace: "const estimates=(await both('eth_estimateGas',[call,tag])).map(quantity);", expectedKilledBy: 'source drift during simulation prevents next executable proof RPC' },
+    ],
+  },
   'publication-outcome': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-outcome.mjs', testMatchPath: 'scripts/recourse/publication-outcome.test.mjs',
     mutations: [

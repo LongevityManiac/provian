@@ -20,6 +20,9 @@ const position = log => [Number(BigInt(log.blockNumber)), Number(BigInt(log.tran
 const compare = (a, b) => { const x = position(a), y = position(b); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
 const manifest = (pointer, revision, components, hashes) => keccak256(AbiCoder.defaultAbiCoder().encode(
   ['uint256', 'address', 'uint256', 'address[10]', 'bytes32[10]'], [8453, pointer, revision, components, hashes]));
+/** Identity only; callers must independently authenticate the plan first. */
+export const publicationGoal = (plan, inputs) => ({ pointer: inputs.pin.address, authority: inputs.successor.pointerAuthority, revision: '1',
+  componentsDigest: sha256(toUtf8Bytes(JSON.stringify({ components: plan.components, hashes: plan.componentHashes }))) });
 
 /** Canonical semantic evidence for the first publication. It deliberately says
  * nothing about which hash-authority signature won or whether a sponsor nonce
@@ -128,8 +131,7 @@ export async function inspectPublicationOutcome(incoming, inputs) {
     retired.push((await read('retired', [target]))[0]);
   }
   if (publication) ensure(retired.every(value => value === true), 'retirement_incomplete');
-  const goal = { pointer: pin.address, authority: successor.pointerAuthority, revision: '1',
-    componentsDigest: sha256(toUtf8Bytes(JSON.stringify({ components: plan.components, hashes: plan.componentHashes }))) };
+  const goal = publicationGoal(plan, inputs);
   const achieved = plan.stage === 'retire' ? retired.every(value => value === true) : Boolean(publication);
   await checkPins();
   return { status: revision > 1n ? 'superseded' : achieved ? 'achieved' : 'pending', stage: plan.stage, goal,

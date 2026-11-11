@@ -58,7 +58,9 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
    const heads=await both('eth_getBlockByNumber',['latest',false]);
    const height=Math.min(...heads.map(h=>number(object(h).number))),tag=toQuantity(height);
    const header=object(await agree('eth_getBlockByNumber',[tag,false]));
+   await assertLease();
    await agree('eth_call',[call,tag]);
+   await assertLease();
    const estimates=(await both('eth_estimateGas',[call,tag])).map(quantity);
    const estimate=estimates.reduce((a,b)=>a>b?a:b),gasLimit=(estimate*120n+99n)/100n;
    ensure(gasLimit>0n&&gasLimit<=maxGas,'gas_bound');
