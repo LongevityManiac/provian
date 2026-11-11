@@ -1,4 +1,5 @@
 import { test, expect, vi, beforeEach } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { Interface, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { preparePointerPublication, verifyPointerPublication } from './pointer-publication.mjs';
 const checks = vi.hoisted(() => ({ successor: vi.fn(), interval: vi.fn(), reconstruct: vi.fn() }));
@@ -95,4 +96,13 @@ test('independent reconstruction rejects rehashed component and retirement subst
 test('supplied institution file cannot replace freshly reconstructed cutoff inventory', async () => {
   const f = fixture();
   await expect(preparePointerPublication({ ...f, institutions: { digest: h(99) } })).rejects.toThrow(/institution_inventory_changed/);
+});
+test('actual unsigned CLI help needs no provider and execution flags are refused', () => {
+  const cli = new URL('./pointer-publication-cli.mjs', import.meta.url).pathname;
+  const env = { ...process.env, BASE_RPC_URL: 'not-a-provider', BASE_RPC_URL_SECONDARY: 'not-a-provider' };
+  expect(execFileSync(process.execPath, [cli, '--help'], { env, encoding: 'utf8' })).toContain('Read-only unsigned preparation');
+  for (const args of [['prepare', '/missing-input', '--execute'], ['inspect', '/missing-input', '--execute']]) {
+    const result = spawnSync(process.execPath, [cli, ...args], { env, encoding: 'utf8' });
+    expect(result.status).toBe(1); expect(result.stderr.trim()).toBe('pointer_publication_cli_usage');
+  }
 });
