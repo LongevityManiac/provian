@@ -59,14 +59,16 @@
     "generate:oss-notices": "node scripts/generate-oss-notices.mjs",
     "refresh:oss-notices:ios": "node scripts/oss-notices/refresh-ios.mjs",
     "refresh:oss-notices:android": "node scripts/oss-notices/refresh-android.mjs",
-    "check:copy": "npm run check:mcp-parity && npm run check:armed-copy && npm run check:earning-copy && npm run check:reader-ids && npm run check:legal-app && npm run check:oss-notices && npm run check:help-faq && npm run check:manual && npm run check:localization",
+    "check:copy": "npm run check:mcp-parity && npm run check:armed-copy && npm run check:earning-copy && npm run check:reader-ids && npm run check:legal-app && npm run check:oss-notices && npm run check:help-faq && npm run check:manual && npm run check:localization && npm run check:store-listings",
     "check:installed-base-compat": "(cd provian-backend && npx jest --silent src/installed-base-compat.test.ts) && (cd provian-agent-sdk && npx vitest run src/installed-base-compat.test.ts)",
     "narrative:generate": "node scripts/generate-app-narrative.mjs && node scripts/generate-pe-generation-model.mjs",
     "narrative:check": "node scripts/generate-app-narrative.mjs --check && node scripts/generate-pe-generation-model.mjs --check",
     "check:repo-boundary": "node scripts/check-repo-boundary.mjs --self-test",
     "check:sdk-typecheck": "node scripts/check-sdk-typecheck.mjs",
     "check:pvt9-runtime": "node scripts/check-pvt9-runtime.mjs",
-    "check:localization": "node scripts/check-localization.mjs --self-test && node scripts/check-push-copy.mjs"
+    "check:localization": "node scripts/check-localization.mjs --self-test && node scripts/check-push-copy.mjs",
+    "generate:store-listings": "node scripts/generate-store-listing-locales.mjs",
+    "check:store-listings": "node scripts/generate-store-listing-locales.mjs --check"
   },
   "dependencies": {
     "@coinbase/cbpay-js": "^2.4.0",
