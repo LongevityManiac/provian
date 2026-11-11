@@ -103,6 +103,23 @@ const MUTATION_SETS = {
       { id: 'RECEIPT-OWNER', description: 'another binding authorizes this restoration',
         find: 'start.consumed.args.identity !== owner.identity', replace: 'false', expectedKilledBy: 'wrong-binding cannot substitute another execution' }],
   },
+  'predecessor-retirement': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/predecessor-retirement.mjs', testMatchPath: 'scripts/recourse/predecessor-retirement.test.mjs',
+    mutations: [{ id: 'RETIREMENT-EXACT-STAGE', description: 'a rehashed edited transaction list substitutes for the independently derived stage',
+      find: "ensure(JSON.stringify(plan) === JSON.stringify(planFromState(original, plan.checkpoint, artifacts)), 'plan_changed');", replace: '',
+      expectedKilledBy: 'a rehashed target edit cannot authorize a different operation' },
+      { id: 'RETIREMENT-INTERVENING-RESUME', description: 'a resume hidden behind final held flags escapes verification',
+        find: "event.name !== 'AdministrativeHoldResumed'", replace: 'true', expectedKilledBy: 'intervening kernel-resume refuses even when the final state is retired' },
+      { id: 'RETIREMENT-FINAL-SHUTDOWN', description: 'confirmed receipts substitute for actual finalized shutdown state',
+        find: "if (complete) ensure(retired, 'incomplete');", replace: '', expectedKilledBy: 'an incomplete or falsely confirmed retirement stage cannot produce a snapshot cutoff' }],
+  },
+  'predecessor-retirement-cli': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/predecessor-retirement-cli.mjs', testMatchPath: 'scripts/recourse/predecessor-retirement.test.mjs',
+    mutations: [{ id: 'RETIREMENT-READ-ONLY', description: 'default preflight reaches the durable signing runtime',
+      find: 'if (!execute) return', replace: 'if (false) return', expectedKilledBy: 'read-only retirement never opens the durable writer; execution confirms only after finalized shutdown' },
+      { id: 'RETIREMENT-RECEIPT-RECONCILIATION', description: 'retired final flags skip a nonempty journal receipt check',
+        find: 'if (plan.steps.length === 0)', replace: 'if (verified.retired)', expectedKilledBy: 'retired flags cannot skip receipt reconciliation for a nonempty original journal' }],
+  },
   'restoration-succession-collector': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-succession-collector.ts', testMatchPath: 'src/core/recourse/restoration-succession-collector.test.ts',
     mutations: [{ id: 'COLLECTOR-MINT-EXCLUSION', description: 'a carried balance is also counted as fresh token issuance',

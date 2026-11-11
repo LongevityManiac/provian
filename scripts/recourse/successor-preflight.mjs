@@ -10,7 +10,7 @@ const ensure = (value, reason) => { if (!value) throw Error(`successor_preflight
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export function readSuccessorArtifacts(root) {
   const names = [...new Set([...SUCCESSOR_CREATION_ORDER, ...Object.values(LEGACY_INSTITUTIONS),
-    'ProvianHashAccount', 'ProvianProtocolPointer', 'ProvianMemberSettlement', 'ProvianPVT9'])];
+    'ProvianHashAccount', 'ProvianProtocolPointer', 'ProvianMemberSettlement', 'ProvianPVT9', 'ProvianPVT9EligibilityVerifier'])];
   return Object.fromEntries(names.map(name => {
     const artifact = JSON.parse(readFileSync(resolve(root, `contracts/out/${name}.sol/${name}.json`), 'utf8'));
     const sources = Object.entries(artifact.metadata?.sources ?? {});
