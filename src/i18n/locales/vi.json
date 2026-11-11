@@ -5109,7 +5109,7 @@
     "leave": "Rời Recourse Pool",
     "join": "Tham gia Recourse Pool",
     "addresses": "Các địa chỉ đã liên kết",
-    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn và có thể làm lộ quan hệ giữa các địa chỉ công khai. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên.",
+    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn. Relay biết ví nào là của bạn, còn công chúng thì không, giống như ngân hàng. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên.",
     "bind": "Liên kết địa chỉ bạn sở hữu",
     "resources": "Dự trữ do thành viên đóng góp",
     "available": "Có sẵn để khôi phục: {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Liên kết ví với Recourse",
       "intro": "Kết nối địa chỉ bạn đang sở hữu với hồ sơ quyền sở hữu. Cam kết khôi phục được đăng ký cùng địa chỉ.",
-      "how": "Ký thông điệp liên kết quyền sở hữu trong ví đó. Không có tài sản nào được chuyển. Liên kết có thể làm lộ quan hệ giữa các địa chỉ công khai; lựa chọn là của bạn.",
+      "how": "Ký thông điệp liên kết quyền sở hữu trong ví đó. Không có tài sản nào được chuyển. Mối liên hệ giữa ví và chủ sở hữu được giữ riêng tư bên trong relay.",
       "linkedTitle": "Địa chỉ đã liên kết",
       "linkedNone": "Chưa liên kết địa chỉ bên ngoài nào.",
       "linkedSince": "Đã liên kết ngày {{date}}",

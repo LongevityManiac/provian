@@ -257,7 +257,7 @@ The determination uses the relay's own ownership, transfer, counterparty and wit
 
 Provian Technologies is not a party to the Recourse Pool, contributes nothing, holds nothing and promises nothing. It receives no member contributions or surplus. The pool restores by its rule. Other recourse programs can grow from this institution.
 
-Binding is a security choice. Public addresses expose transactions, and associating addresses with an identity can reveal additional connections. The owner chooses the independent ownership record and recovery route. Ordinary transfers stay public, permissionless and ungated. Restoration returns existing PVT under the published rule and independent owner proof; every use of that authority is public.
+Binding is a security choice. Individual addresses, balances and transfers stay public. The owner-to-address link stays private inside the relay. The relay knows which wallets are yours and the public does not, the same as a bank. The owner chooses the independent ownership record and recovery route. Ordinary transfers stay public, permissionless and ungated. Restoration returns existing PVT under the published rule and independent owner proof; every use of that authority is public.
 
 A permanent on-chain pointer names the current kernel and institutions. Clients verify it independently of the relay and refuse retired contracts. A succession carries balances, the Genesis window, anchors and settled work forward, and ends the predecessor's minting. The currency keeps its history even when its contracts change.
 
@@ -636,7 +636,7 @@ Provian was built by one human, with AI. Its claim is that the intelligence econ
 
 Compute mints money. Witnessed participation receives new units. Institutional use gives those units work to do. The prospective registry records bound holdings independently of the key that currently controls them. Recovery commitments provide continuity. The Recourse Pool lets members fund discretionary restoration from their own participation.
 
-None of those parts abolishes risk. Public rails reveal activity. Bindings add relationships. Keys and implementations can fail. Evidence can be incomplete. A reserve can be underfunded. A member can try to deceive the pool. The architecture gives each problem a place to be handled instead of treating the weakness as the final boundary of digital money.
+None of those parts abolishes risk. Public rails reveal individual transactions and balances. The registry keeps the owner-to-address link private inside the relay: the relay knows which wallets are yours and the public does not, the same as a bank. Keys and implementations can fail. Evidence can be incomplete. A reserve can be underfunded. A member can try to deceive the pool. The architecture gives each problem a place to be handled instead of treating the weakness as the final boundary of digital money.
 
 That is the connection between the thousand-year argument and the work in front of us. A civilization extending beyond Earth will need digital money and institutions that can travel with it. Building recourse is part of making that money fit to carry forward what people and agents own.
 

@@ -5109,7 +5109,7 @@
     "leave": "Leave Recourse Pool",
     "join": "Join Recourse Pool",
     "addresses": "Your bound addresses",
-    "bindingInfo": "One membership includes all bound holdings, earned and received alike. Binding is your choice and can reveal associations between public addresses. Cryptographic-break restoration is free for every bound owner, including nonmembers.",
+    "bindingInfo": "One membership includes all bound holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. Cryptographic-break restoration is free for every bound owner, including nonmembers.",
     "bind": "Bind an address you hold",
     "resources": "Member-funded reserves",
     "available": "Available for restoration: {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Bind a wallet to Recourse",
       "intro": "Connect an address you already hold to your ownership record. Your recovery commitment is registered with it.",
-      "how": "Sign the ownership-binding message in that wallet. No funds move. The binding can reveal associations between public addresses; the choice is yours.",
+      "how": "Sign the ownership-binding message in that wallet. No funds move. The wallet-to-owner link stays private inside the relay.",
       "linkedTitle": "Bound addresses",
       "linkedNone": "No outside address is bound yet.",
       "linkedSince": "Bound {{date}}",

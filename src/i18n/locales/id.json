@@ -5109,7 +5109,7 @@
     "leave": "Keluar dari Recourse Pool",
     "join": "Bergabung dengan Recourse Pool",
     "addresses": "Alamat tertaut Anda",
-    "bindingInfo": "Satu keanggotaan mencakup semua saldo tertaut, baik hasil kerja maupun yang diterima. Menautkan adalah pilihan Anda dan dapat mengungkap hubungan antaralamat publik. Pemulihan setelah kriptografi dibobol gratis bagi setiap pemilik tertaut, termasuk bukan anggota.",
+    "bindingInfo": "Satu keanggotaan mencakup semua saldo tertaut, baik hasil kerja maupun yang diterima. Menautkan adalah pilihan Anda. Relay mengetahui dompet mana yang milik Anda, sedangkan publik tidak, sama seperti bank. Pemulihan setelah kriptografi dibobol gratis bagi setiap pemilik tertaut, termasuk bukan anggota.",
     "bind": "Tautkan alamat yang Anda miliki",
     "resources": "Cadangan dari kontribusi anggota",
     "available": "Tersedia untuk pemulihan: {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Tautkan dompet ke Recourse",
       "intro": "Hubungkan alamat yang sudah Anda miliki ke catatan kepemilikan. Komitmen pemulihan Anda didaftarkan bersamanya.",
-      "how": "Tandatangani pesan pengikatan kepemilikan di dompet tersebut. Tidak ada dana yang dipindahkan. Pengikatan dapat mengungkap hubungan antaralamat publik; Anda yang memilih.",
+      "how": "Tandatangani pesan pengikatan kepemilikan di dompet tersebut. Tidak ada dana yang dipindahkan. Hubungan antara dompet dan pemiliknya tetap privat di dalam relay.",
       "linkedTitle": "Alamat tertaut",
       "linkedNone": "Belum ada alamat eksternal yang tertaut.",
       "linkedSince": "Ditautkan pada {{date}}",

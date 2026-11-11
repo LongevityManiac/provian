@@ -5109,7 +5109,7 @@
     "leave": "Ondoka Recourse Pool",
     "join": "Jiunge na Recourse Pool",
     "addresses": "Anwani zako zilizounganishwa",
-    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako na kunaweza kuonyesha uhusiano kati ya anwani za umma. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama.",
+    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama.",
     "bind": "Unganisha anwani unayomiliki",
     "resources": "Akiba iliyotolewa na wanachama",
     "available": "Inapatikana kwa urejeshaji: PVT {{amount}}",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Unganisha pochi na Recourse",
       "intro": "Unganisha anwani ambayo tayari unamiliki na rekodi yako ya umiliki. Ahadi yako ya urejeshaji inasajiliwa pamoja nayo.",
-      "how": "Saini ujumbe wa kuunganisha umiliki ndani ya pochi hiyo. Hakuna fedha zinazohamishwa. Kuunganisha kunaweza kuonyesha uhusiano kati ya anwani za umma; chaguo ni lako.",
+      "how": "Saini ujumbe wa kuunganisha umiliki ndani ya pochi hiyo. Hakuna fedha zinazohamishwa. Uhusiano kati ya pochi na mmiliki wake unabaki wa faragha ndani ya relay.",
       "linkedTitle": "Anwani zilizounganishwa",
       "linkedNone": "Hakuna anwani ya nje iliyounganishwa bado.",
       "linkedSince": "Iliunganishwa {{date}}",

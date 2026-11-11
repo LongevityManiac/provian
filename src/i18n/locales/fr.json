@@ -5109,7 +5109,7 @@
     "leave": "Quitter Recourse Pool",
     "join": "Rejoindre Recourse Pool",
     "addresses": "Vos adresses liées",
-    "bindingInfo": "Une adhésion inclut tous les avoirs liés, gagnés comme reçus. Lier vos adresses est votre choix et peut révéler des relations entre adresses publiques. La restitution après une rupture cryptographique est gratuite pour tout propriétaire lié, même sans adhésion.",
+    "bindingInfo": "Une adhésion inclut tous les avoirs liés, gagnés comme reçus. Lier vos adresses est votre choix. Le relais sait quels portefeuilles sont les vôtres et le public ne le sait pas, comme dans une banque. La restitution après une rupture cryptographique est gratuite pour tout propriétaire lié, même sans adhésion.",
     "bind": "Lier une adresse que vous détenez",
     "resources": "Réserves constituées par les membres",
     "available": "Disponible pour restitution : {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Lier un portefeuille à Recourse",
       "intro": "Reliez une adresse que vous détenez déjà à votre registre de propriété. Votre engagement de récupération y est enregistré.",
-      "how": "Signez le message de liaison de propriété dans ce portefeuille. Aucun fonds ne bouge. La liaison peut révéler des relations entre adresses publiques ; le choix vous appartient.",
+      "how": "Signez le message de liaison de propriété dans ce portefeuille. Aucun fonds ne bouge. Le lien entre le portefeuille et son propriétaire reste privé au sein du relais.",
       "linkedTitle": "Adresses liées",
       "linkedNone": "Aucune adresse externe n’est encore liée.",
       "linkedSince": "Liée le {{date}}",

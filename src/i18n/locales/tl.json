@@ -5109,7 +5109,7 @@
     "leave": "Umalis sa Recourse Pool",
     "join": "Sumali sa Recourse Pool",
     "addresses": "Mga nakaugnay mong address",
-    "bindingInfo": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay; maaari nitong ipakita ang kaugnayan ng mga pampublikong address. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro.",
+    "bindingInfo": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro.",
     "bind": "Iugnay ang address na pag-aari mo",
     "resources": "Reserbang mula sa mga miyembro",
     "available": "Magagamit sa pagsasauli: {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Iugnay ang wallet sa Recourse",
       "intro": "Ikonekta ang address na pag-aari mo na sa tala ng pagmamay-ari. Kasabay nitong irerehistro ang commitment mo sa pagbawi.",
-      "how": "Lagdaan ang mensahe ng pag-uugnay ng pagmamay-ari sa wallet na iyon. Walang ililipat na pondo. Maaaring ipakita ng pag-uugnay ang kaugnayan ng mga pampublikong address; ikaw ang magpapasiya.",
+      "how": "Lagdaan ang mensahe ng pag-uugnay ng pagmamay-ari sa wallet na iyon. Walang ililipat na pondo. Nananatiling pribado sa loob ng relay ang ugnayan ng wallet at may-ari nito.",
       "linkedTitle": "Mga nakaugnay na address",
       "linkedNone": "Wala pang nakaugnay na panlabas na address.",
       "linkedSince": "Naiugnay noong {{date}}",

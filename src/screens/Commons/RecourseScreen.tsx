@@ -81,7 +81,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>
-          <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound holdings, earned and received alike. Binding is your choice and can reveal associations between public addresses. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
+          <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
           {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
             {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}</View>)}
           {button(t('recourse.bind', 'Bind an address you hold'), () => navigation.navigate('RecourseBind'))}

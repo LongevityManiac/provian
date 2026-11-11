@@ -5109,7 +5109,7 @@
     "leave": "Salir de Recourse Pool",
     "join": "Unirse a Recourse Pool",
     "addresses": "Tus direcciones vinculadas",
-    "bindingInfo": "Una membresía incluye todas las tenencias vinculadas, tanto ganadas como recibidas. Tú decides vincularlas; hacerlo puede revelar relaciones entre direcciones públicas. La restitución tras una ruptura criptográfica es gratuita para todo propietario vinculado, aunque no sea miembro.",
+    "bindingInfo": "Una membresía incluye todas las tenencias vinculadas, tanto ganadas como recibidas. Tú decides vincularlas. El relay sabe qué carteras son tuyas y el público no, igual que un banco. La restitución tras una ruptura criptográfica es gratuita para todo propietario vinculado, aunque no sea miembro.",
     "bind": "Vincular una dirección que posees",
     "resources": "Reservas aportadas por los miembros",
     "available": "Disponible para restitución: {{amount}} PVT",
@@ -5123,7 +5123,7 @@
     "binding": {
       "title": "Vincular una cartera a Recourse",
       "intro": "Conecta una dirección que ya posees a tu registro de propiedad. Tu compromiso de recuperación se registra con ella.",
-      "how": "Firma el mensaje de vinculación de propiedad en esa cartera. No se mueven fondos. La vinculación puede revelar relaciones entre direcciones públicas; tú decides.",
+      "how": "Firma el mensaje de vinculación de propiedad en esa cartera. No se mueven fondos. La relación entre la cartera y su propietario permanece privada dentro del relay.",
       "linkedTitle": "Direcciones vinculadas",
       "linkedNone": "Todavía no hay ninguna dirección externa vinculada.",
       "linkedSince": "Vinculada el {{date}}",
