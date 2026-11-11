@@ -1226,6 +1226,8 @@
     "scripts/recourse/prepare-permanent-pointer.mjs": "7c605e69f819175640ed58980fffb124f6da60a5741febbc9de99b3eba4b68ed",
     "scripts/recourse/publication-gas-closure.mjs": "fbbab6e36647e12700710eba48447c21be33d345662e069d75ad78cff25e395a",
     "scripts/recourse/publication-gas-closure.test.mjs": "b56bec31f3e0dafb7fb54de53fe3e50990d86040790f5264cc2610ef7c075711",
+    "scripts/recourse/publication-outcome.mjs": "3193ff991336185a65c7cf59ad1390f6f6f70ff1b73a1935551c34a593b9b266",
+    "scripts/recourse/publication-outcome.test.mjs": "2e9601134c51cd6da5a24163b45ac380166dea1fab36e882182af1cf97c2516a",
     "scripts/recourse/snapshot-cli.mjs": "cbc9157d070ae3204e07098809a1fade379082eadd37b9e8b7b553a61c09d204",
     "scripts/recourse/snapshot-history.mjs": "55d04fa7ada4acc65f00188ffd410a0e316060200de0a4aa7103b583b2593c0c",
     "scripts/recourse/snapshot-history.test.mjs": "089176702dccd5e740e7aa7b239d261ddee3f59db3ee13649daf9ae6e85efc38",

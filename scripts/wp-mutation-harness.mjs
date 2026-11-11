@@ -59,6 +59,24 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'publication-outcome': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-outcome.mjs', testMatchPath: 'scripts/recourse/publication-outcome.test.mjs',
+    mutations: [
+      { id: 'OUTCOME-PLAN', description: 'skip independent reconstruction of the retained publication plan',
+        find: 'await verifyPointerPublication(plan, { ...inputs, port: { ...port, finalizedBlock: async () => original } });', replace: ';', expectedKilledBy: 'plan red control refuses' },
+      { id: 'OUTCOME-REVISION', description: 'missing revision events are accepted',
+        find: "ensure(revision === BigInt(changes.length), 'revision_history');", replace: ';', expectedKilledBy: 'missing-event red control refuses' },
+      { id: 'OUTCOME-PARENT-PIN', description: 'publication parent overwrites a retained original checkpoint',
+        find: "ensure(!checkpoints.has(before.number) || checkpoints.get(before.number) === before.hash, 'reorg');", replace: ';', expectedKilledBy: 'publication parent cannot overwrite the retained original checkpoint during a reorg' },
+      { id: 'OUTCOME-EVENT-ORDER', description: 'same-block earlier mutations escape inspection',
+        find: 'if (publication && compare(row, publication.row) > 0) continue;',
+        replace: 'if (publication && position(row)[0] === position(publication.row)[0]) continue;', expectedKilledBy: 'before-same-tx rejects state changes before publication' },
+      { id: 'OUTCOME-USDC', description: 'prepublication incoming USDC custody is ignored',
+        find: "ensure(event?.name === 'Transfer' && !custody.includes(lower(event.args.to)), 'prepublication_usdc_custody');", replace: ';', expectedKilledBy: 'incoming USDC custody before publication refuses' },
+      { id: 'OUTCOME-FINAL-PINS', description: 'skip canonical checks after asynchronous state reads',
+        find: '  await checkPins();\n  return { status:', replace: '  return { status:', expectedKilledBy: 'rechecks canonical checkpoint after all asynchronous reads' },
+    ],
+  },
   'restoration-binding-log': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-binding-log.ts', testMatchPath: 'src/core/recourse/restoration-binding-log.test.ts src/core/recourse/determination-execution.test.ts',
     mutations: [{ id: 'BINDING-LOG-POSITIVE', description: 'missing historical binding is treated as a block before the loss',
