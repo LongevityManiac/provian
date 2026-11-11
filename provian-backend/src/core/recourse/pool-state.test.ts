@@ -56,6 +56,13 @@ test('same-block member state and reserve agree across independent operators', a
     reserveAtomic: '100', outstandingAtomic: '50', participationBurnAtomic: '100',
     noEarningsContributionAtomic: '100', earningsBps: 100, block: 100, blockHash });
 });
+test('signing reuses its authenticated checkpoint across a newer head and still refuses a changed manifest', async () => {
+  const checkpoint = await currentProtocolDeployment();
+  (currentProtocolDeployment as jest.Mock).mockResolvedValue({ ...checkpoint, blockHash: `0x${'78'.repeat(32)}` });
+  expect((await readRecoursePoolState(identity, checkpoint)).blockHash).toBe(blockHash);
+  (currentProtocolDeployment as jest.Mock).mockResolvedValue({ ...checkpoint, manifestHash: `0x${'78'.repeat(32)}` });
+  await expect(readRecoursePoolState(identity, checkpoint)).rejects.toThrow('deployment_changed');
+});
 test('disagreement, altered runtime and wrong token each refuse the pool', async () => {
   disagreement = true;
   await expect(readRecoursePoolState(identity)).rejects.toThrow('recourse_pool_rpc_disagreement');

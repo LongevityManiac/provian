@@ -1,6 +1,8 @@
-import { AbiCoder, Interface, getBytes, sha256 } from 'ethers';
+import { AbiCoder, getBytes, sha256 } from 'ethers';
+import { readMembershipWiring } from './membership-wiring';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { OwnerOperationChain } from './owner-operation-queue';
+import type { ProtocolDeployment } from '../protocol/pointer';
 import { breakDeploymentChain } from './break-deployment-queue';
 import { MEMBERSHIP_AUTHORIZATION_ABI as POOL, addressMembershipSigningHash, addressMembershipDigest,
   parseAddressMembershipConsent, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
@@ -22,7 +24,7 @@ export interface MembershipConsentRequest {
   readonly transitionId: string; readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent;
   readonly ownerSignature: string; readonly attestorSignature: string;
 }
-export interface MembershipConsentPorts { readonly chain: OwnerOperationChain; state(binding: string): Promise<RecoursePoolState> }
+export interface MembershipConsentPorts { readonly chain: OwnerOperationChain; state(binding: string, checkpoint: ProtocolDeployment): Promise<RecoursePoolState> }
 const ports = (): MembershipConsentPorts => ({ chain: breakDeploymentChain(), state: readRecoursePoolState });
 const fail = (reason: string): never => { throw Error(`recourse_membership_consent_${reason}`); };
 export function parseMembershipConsentRequest(value: unknown): MembershipConsentRequest {
@@ -42,10 +44,6 @@ export function membershipConsentOperationId(request: Pick<MembershipConsentRequ
 export function membershipConsentCalldata(request: MembershipConsentRequest): string {
   return POOL.encodeFunctionData('setAddressConsent', [request.consent, request.ownerSignature, request.attestorSignature]);
 }
-const wiring = new Interface(['function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
-  'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)',
-  'function operationalMinter() view returns(address)', 'function kernel() view returns(address)',
-  'function pool() view returns(address)', 'function submitter() view returns(address)']);
 async function consentContext(db: Firestore, request: Pick<MembershipConsentRequest, 'transitionId' | 'domain' | 'consent'>,
   p: MembershipConsentPorts) {
   const { domain, consent } = request, deployment = await p.chain.deployment();
@@ -65,26 +63,14 @@ async function consentContext(db: Firestore, request: Pick<MembershipConsentRequ
     || !address.exists || address.get('ownerIdentity') !== ownerIdentity || address.get('identity') !== consent.binding
     || address.get('kernel') !== domain.kernel || address.get('chainBindingStatus') !== 'confirmed'
     || address.get('recoveryGeneration') !== binding.get('recoveryGeneration')) return fail('owner');
-  const state = await p.state(consent.binding);
+  const state = await p.state(consent.binding, deployment);
   if (state.pool !== domain.pool || state.kernel !== domain.kernel || state.currentAddress !== consent.account
     || state.blockHash !== deployment.blockHash) return fail('changed');
   const expected = nextPrivateAddressConsent(operation, consent.binding, { revision: consent.revision, ruleHash: state.signedRuleHash, timestamp: state.timestamp });
   if (!expected || Object.entries(expected).some(([key, value]) => key !== 'expiresAt' && consent[key as keyof AddressMembershipConsent] !== value)
     || consent.nonce !== state.consentNonce || consent.joined === state.addressConsent
     || BigInt(consent.expiresAt) < BigInt(state.timestamp) || BigInt(consent.expiresAt) > BigInt(expected.expiresAt)) return fail('stale');
-  const pin = { blockHash: deployment.blockHash, requireCanonical: true };
-  const call = async (to: string, name: string): Promise<string> => {
-    const raw = await p.chain.agree('eth_call', [{ to, data: wiring.encodeFunctionData(name) }, pin]);
-    if (typeof raw !== 'string') return fail('rpc');
-    return String(wiring.decodeFunctionResult(name, raw)[0]).toLowerCase();
-  };
-  const registry = await call(domain.kernel, 'registryOperator'), settlement = deployment.addresses.settlement.toLowerCase();
-  const [poolRegistry, pointer, identityAttestor, restorationAuthority, minter, settlementKernel, settlementPool, gasPayer] = await Promise.all([
-    call(domain.pool, 'registryOperator'), call(registry, 'pointer'), call(registry, 'identityAttestor'), call(domain.kernel, 'restorationAuthority'),
-    call(domain.kernel, 'operationalMinter'), call(settlement, 'kernel'), call(settlement, 'pool'), call(settlement, 'submitter')]);
-  if (poolRegistry !== registry || pointer !== domain.pointer || identityAttestor === restorationAuthority || /^0x0+$/.test(identityAttestor)
-    || minter !== settlement || settlementKernel !== domain.kernel || settlementPool !== domain.pool || /^0x0+$/.test(gasPayer)) return fail('wiring');
-  return { deployment, ownerIdentity, identityAttestor, gasPayer, pin };
+  return { deployment, ownerIdentity, ...await readMembershipWiring(p.chain, deployment) };
 }
 export interface CheckedMembershipConsent {
   readonly id: string; readonly executor: string; readonly calldata: string; readonly gasPayer: string; readonly manifestHash: string;

@@ -1,6 +1,7 @@
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { readRecoursePoolChain, type RecoursePoolState } from './pool-chain';
+import type { ProtocolDeployment } from '../protocol/pointer';
 export { RECOURSE_POOL_ABI } from './pool-abi';
 export type { RecoursePoolState } from './pool-chain';
 
@@ -12,10 +13,16 @@ export async function recoursePoolConfig(): Promise<RecoursePoolConfig> {
 
 /** Only public address consent, current rules and reserves. Authenticated private
  * calendar data is combined separately; it cannot be reconstructed from chain. */
-export async function readRecoursePoolState(identity: string): Promise<RecoursePoolState> {
+export async function readRecoursePoolState(identity: string, checkpoint?: ProtocolDeployment): Promise<RecoursePoolState> {
   const legs = getOperatorBoundRpcLegs('base');
   if (!legs[0].operatorId || !legs[1].operatorId || legs[0].operatorId === legs[1].operatorId) throw Error('recourse_rpc_operators_not_independent');
-  return readRecoursePoolChain(identity, { deployment: currentProtocolDeployment, rpcs: [
+  // Reuse the caller's authenticated checkpoint for one coherent signing
+  // decision. The reader still re-resolves the current manifest afterward.
+  let initial = checkpoint;
+  return readRecoursePoolChain(identity, { deployment: async () => {
+    if (initial) { const selected = initial; initial = undefined; return selected; }
+    return currentProtocolDeployment();
+  }, rpcs: [
     { request: (method, params) => legs[0].provider.send(method, [...params]) },
     { request: (method, params) => legs[1].provider.send(method, [...params]) },
   ] });

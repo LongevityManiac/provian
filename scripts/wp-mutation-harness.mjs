@@ -59,6 +59,20 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'membership-debit-preparation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-preparation.ts',
+    testMatchPath: 'src/core/recourse/membership-debit-preparation.test.ts',
+    mutations: [{ id: 'DEBIT-CHECKPOINT', description: 'new debit reserves a nonce absent from its canonical reconciliation checkpoint',
+      find: 'debitMatchesCheckpoint(state, await readHistoricalRecoursePoolState(binding, account.checkpoint));', replace: 'void state;',
+      expectedKilledBy: 'a consumed or recovery-changed nonce must finalize into the private checkpoint before new signing' }],
+  },
+  'membership-debit-operation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-operation.ts',
+    testMatchPath: 'src/core/recourse/membership-debit-operation.test.ts',
+    mutations: [{ id: 'DEBIT-EXACT-RESERVATION', description: 'valid replacement signature changes an already reserved financial amount',
+      find: "if (planned.id !== request.reservationId || !isDeepStrictEqual(planned, r)) return fail('reservation');", replace: 'void planned;',
+      expectedKilledBy: 'altered payment cannot obtain attestation: burn' }],
+  },
   'identity-attestor': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/identity-attestor.ts',
     testMatchPath: 'src/core/recourse/identity-attestor.test.ts',

@@ -31,7 +31,9 @@ import { addressRecoveryBinding } from '../core/recourse/address-binding';
 import { prepareMembershipTransition, ownedMembershipTransition } from '../core/recourse/membership-preparation';
 import { queueMembershipConsent, MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
 import { readSponsoredOperation } from '../core/recourse/sponsored-operation-queue';
-import { runMembershipConsentWorker } from '../core/recourse/membership-runtime';
+import { runMembershipConsentWorker, runMembershipDebitWorker } from '../core/recourse/membership-runtime';
+import { prepareMembershipDebit, parseMembershipPaymentSelection } from '../core/recourse/membership-debit-preparation';
+import { queueMembershipDebit, ownedMembershipDebit, parseMembershipDebitRequest, MEMBERSHIP_DEBIT_OPERATIONS } from '../core/recourse/membership-debit-operation';
 
 interface Owner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
 async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
@@ -204,6 +206,37 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       await ownedMembershipTransition(deps.db, identityHash(owner.type, owner.id), request.transitionId);
       res.json(await readSponsoredOperation(deps.db, MEMBERSHIP_CONSENT_OPERATIONS, id));
     } catch { res.status(404).json({ error: 'recourse_membership_unavailable' }); }
+  });
+  router.post('/membership-debit-challenges', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), body: unknown = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body)
+        || !['payer', 'payer,payment'].includes(Object.keys(body).sort().join(',')) || !('payer' in body) || typeof body.payer !== 'string') throw Error('recourse_membership_input');
+      res.json(await prepareMembershipDebit(deps.db, identityHash(owner.type, owner.id), body.payer,
+        'payment' in body ? parseMembershipPaymentSelection(body.payment) : undefined));
+    } catch { res.status(400).json({ error: 'recourse_membership_payment_unavailable' }); }
+  });
+  router.post('/membership-debits', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), body: unknown = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body)
+        || Object.keys(body).sort().join(',') !== 'debit,domain,ownerSignature,reservationId') throw Error('recourse_membership_input');
+      const { attestorSignature: _unused, ...input } = parseMembershipDebitRequest({ ...body, attestorSignature: '0x00' });
+      const result = await queueMembershipDebit(deps.db, identityHash(owner.type, owner.id), input);
+      try { await runMembershipDebitWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
+      res.status(202).json(result);
+    } catch { res.status(400).json({ error: 'recourse_membership_payment_refused' }); }
+    finally { req.body = undefined; req.rawBody = undefined; }
+  });
+  router.get('/membership-debits/:id', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), id = String(req.params.id);
+      if (!/^0x[0-9a-f]{64}$/.test(id)) throw Error('recourse_membership_unknown');
+      const row = await deps.db.collection(MEMBERSHIP_DEBIT_OPERATIONS).doc(id).get();
+      const input = parseMembershipDebitRequest(row.get('request'));
+      await ownedMembershipDebit(deps.db, identityHash(owner.type, owner.id), input.reservationId);
+      res.json(await readSponsoredOperation(deps.db, MEMBERSHIP_DEBIT_OPERATIONS, id));
+    } catch { res.status(404).json({ error: 'recourse_membership_payment_unavailable' }); }
   });
   router.post('/restoration-intents', async (req, res) => {
     try {

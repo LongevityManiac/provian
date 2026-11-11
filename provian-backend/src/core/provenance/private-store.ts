@@ -22,6 +22,7 @@ import {recoverRetainedFields,privateRetentionKey,PRIVATE_RETENTION_STATE_COLLEC
 export const PRIVATE_STORE_COLLECTIONS=new Set([
  'recourse_private_membership_journal_v1', 'recourse_private_membership_transitions_v1', 'recourse_private_memberships_v1', 'recourse_private_membership_reservations_v1', 'recourse_private_membership_receipts_v1', 'recourse_private_membership_effects_v1',
  'recourse_membership_consent_operations_v1', 'recourse_membership_consent_operations_v1_attempts',
+ 'recourse_membership_debit_operations_v1', 'recourse_membership_debit_operations_v1_attempts',
  'recourse_private_owners_v1', 'recourse_identities_v1', 'recourse_owner_operations_v1', 'recourse_binding_operations_v1','recourse_addresses_v1','recourse_recoveries_v1','recourse_transfer_events_v1','recourse_commitments_v1',
  'recourse_restoration_requests_v1', 'recourse_determination_workflows_v1', 'recourse_determination_coordination_v1', 'recourse_execution_transactions_v1',
  'recourse_lifecycle_records_v1', 'recourse_lifecycle_cursors_v1', 'recourse_lifecycle_pending_v1',
