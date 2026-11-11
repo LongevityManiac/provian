@@ -59,6 +59,20 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'private-membership-journal': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-journal.ts',
+    testMatchPath: 'src/core/recourse/private-membership-journal.test.ts',
+    mutations: [{ id: 'JOURNAL-CONTENT', description: 'edited historical episode accepted under its prior immutable hash',
+      find: 'id !== membershipJournalHash(body)', replace: 'false',
+      expectedKilledBy: 'missing entry, edited episode and swapped owner refuse instead of rewriting history' }],
+  },
+  'membership-at-loss': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-at-loss.ts',
+    testMatchPath: 'src/core/recourse/membership-at-loss.test.ts',
+    mutations: [{ id: 'LOSS-CUTOFF', description: 'post-loss payment or rejoin retroactively qualifies historical loss',
+      find: 'journal.filter(entry => beforeMembershipPosition(entry.position, loss))', replace: 'journal',
+      expectedKilledBy: 'later payment cannot change earlier loss evidence, but a timely prior payment does qualify' }],
+  },
   'private-membership-scan': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-scan.ts',
     testMatchPath: 'src/core/recourse/private-membership-scan.test.ts',

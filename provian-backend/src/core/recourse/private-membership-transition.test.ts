@@ -1,3 +1,4 @@
+import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { beginPrivateMembershipTransition, openPrivateMembershipConsents, recordPrivateMembershipConsent,
@@ -28,8 +29,8 @@ function setup(joined = false) {
     fake.store.set(`${R.addresses}/${a(n)}`, { ownerIdentity: ownerId, address: a(n), identity: h(n), kernel: old[0], recoveryGeneration: 0, chainBindingStatus: 'confirmed' });
     fake.store.set(`${R.identities}/${h(n)}`, { ownerIdentity: ownerId, identity: h(n), recoveryGeneration: 0 });
   }
-  if (joined) fake.store.set(accountKey, { ownerIdentity: ownerId, version: 0, needsScan: false, pendingReservation: null,
-    checkpoint: { pool: old[8], block: 99, blockHash: h(99) }, episode: joinPrivateMembership(null, month, rules) });
+  if (joined) fake.store.set(accountKey, seedMembershipJournal(fake.store, { ownerIdentity: ownerId, version: 0, needsScan: false, pendingReservation: null,
+    checkpoint: { pool: old[8], block: 99, blockHash: h(99) }, episode: joinPrivateMembership(null, month, rules) }, { chainId: '8453', kernel: old[0], pool: old[8], block: 98, blockHash: h(98), logIndex: 1, timestamp: now - 1 }));
   (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(async (id: string) => ({ pool: old[8], kernel: old[0],
     block: 99, blockHash: h(99), timestamp: now, currentAddress: id === h(3) ? a(3) : a(4),
     addressConsent: joined, consentNonce: joined ? '1' : '0', consentGeneration: joined ? '1' : '0' }));

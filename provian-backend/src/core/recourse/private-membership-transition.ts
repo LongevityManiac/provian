@@ -1,3 +1,4 @@
+import { prepareMembershipJournalAppend } from './private-membership-journal';
 import { createHash, randomUUID } from 'crypto';
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
@@ -157,9 +158,12 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
     const next: PrivateMembershipTransition = { ...operation, closure, status: complete ? 'complete' : 'consenting' };
     if (account && operation.kind === 'leave') {
       const episode = leavePrivateMembership(account.episode, month, rules);
+      const journal = await prepareMembershipJournalAppend(db, tx, { ownerIdentity: op.ownerIdentity, account, episode,
+        kind: 'closure', evidenceId: digest([id, 'private-closure']), position: { chainId: '8453', kernel: op.kernel, pool: op.pool, ...closure! } });
+      journal.write();
       tx.create(db.collection(C.receipts).doc(digest([id, 'private-closure'])), { ownerIdentity: op.ownerIdentity, transitionId: id,
         status: 'closed', position: closure, previousEpisode: account.episode, episode, previousVersion: account.version });
-      tx.update(db.collection(C.owners).doc(op.ownerIdentity), { episode, closure, version: account.version + 1 });
+      tx.update(db.collection(C.owners).doc(op.ownerIdentity), { episode, closure, journalHead: journal.head, version: account.version + 1 });
     }
     tx.update(ref, { status: next.status, closure });
     if (complete) tx.update(db.collection(R.owners).doc(operation.ownerIdentity), { membershipTransition: null });
@@ -235,6 +239,11 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
       episode = joinPrivateMembership(account?.episode ?? null, utcCalendarMonth(last.timestamp), rules);
       admission = last;
     }
+    const journal = complete && operation.kind === 'join' && episode && admission
+      ? await prepareMembershipJournalAppend(db, tx, { ownerIdentity: operation.ownerIdentity, account, episode,
+        kind: 'admission', evidenceId: digest([id, receipt.transactionHash]),
+        position: { chainId: '8453', kernel: operation.kernel, pool: operation.pool, ...admission } }) : null;
+    if (journal) journal.write();
     tx.create(receiptRef, { ownerIdentity: operation.ownerIdentity, transitionId: id, receiptHash: digest(receipt), receipt,
       previousEpisode: account?.episode ?? null, episode: episode ?? null, previousVersion: account?.version ?? null,
       previousAdmission: account?.admission ?? null, previousClosure: account?.closure ?? null, admission });
@@ -246,6 +255,7 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
       if (episode) {
         const state: PrivateMembershipAccount = { ownerIdentity: operation.ownerIdentity, version: (account?.version ?? -1) + 1,
           episode, checkpoint: account?.checkpoint ?? { pool: operation.pool, block: operation.checkpoint.block, blockHash: operation.checkpoint.blockHash },
+          ...(journal ? { journalHead: journal.head } : account?.journalHead ? { journalHead: account.journalHead } : {}),
           pendingReservation: null, needsScan: true, admission, closure: operation.kind === 'join' ? null : operation.closure };
         tx.set(db.collection(C.owners).doc(operation.ownerIdentity), state);
       }

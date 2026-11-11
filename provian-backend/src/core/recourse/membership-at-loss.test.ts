@@ -1,34 +1,51 @@
-import { membershipAtLoss, type PoolMembershipEvent, type HistoricalMonthlyInvoice } from './membership-at-loss';
+import { privateMembershipAtLoss } from './membership-at-loss';
+import { joinPrivateMembership, leavePrivateMembership, creditPrivateMembership, type PrivateMembershipEpisode, type PrivateCalendarRules } from './private-membership-calendar';
+import { membershipJournalHash, type MembershipJournalEntry } from './private-membership-journal';
 import { utcCalendarMonth } from './calendar-month';
-const identity = `0x${'11'.repeat(32)}`, blockHash = `0x${'22'.repeat(32)}`, transactionHash = `0x${'33'.repeat(32)}`;
-const time = (s: string) => Date.parse(s) / 1000;
-const jan = time('2026-01-01'), feb = time('2026-02-01'), mar = time('2026-03-01');
-const point = (block: number, timestamp: number, logIndex = 0) => ({ block, timestamp, logIndex, blockHash, transactionHash });
-const enrolled: PoolMembershipEvent = { ...point(1, jan), enrolled: true, generation: 1 };
-const invoice = (timestamp: number, changes: Partial<HistoricalMonthlyInvoice> = {}): HistoricalMonthlyInvoice => ({
-  month: utcCalendarMonth(timestamp), burnDue: '100', contributionDue: '100', burnPaid: '0', contributionPaid: '0', earnings: false, ...changes });
-test('one calendar month of grace expires without keeper or forced closure', () => {
-  expect(membershipAtLoss(identity, [enrolled], point(100, feb), [invoice(jan)])).toMatchObject({ active: true, periodIndex: 0, unpaidAtomic: '200' });
-  expect(membershipAtLoss(identity, [enrolled], point(100, mar), [invoice(jan), invoice(feb)])).toMatchObject({ active: false, periodIndex: null });
+const h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
+const a = (n: number) => `0x${n.toString(16).padStart(40, '0')}`;
+const jan = Date.UTC(2026, 0, 1) / 1000, feb = Date.UTC(2026, 1, 1) / 1000, mar = Date.UTC(2026, 2, 1) / 1000;
+const month = utcCalendarMonth(jan);
+const rules: PrivateCalendarRules = () => ({ ruleHash: h(1), rule: { schema: 'provian-recourse-membership/v1', chainId: 8453,
+  pointer: a(1), firstMonth: 0, participationBurnAtomic: '100', noEarningsContributionAtomic: '100', earningsBps: 100 } });
+const point = (block: number, timestamp: number, logIndex = 0) => ({ chainId: '8453' as const, kernel: a(1), pool: a(2), block, blockHash: h(block), timestamp, logIndex });
+const entry = (episode: PrivateMembershipEpisode, block: number, timestamp: number, logIndex = 0, salt = h(77)): MembershipJournalEntry => {
+  const body = { ownerIdentity: h(9), previousId: null, salt, kind: 'admission' as const, beforeEpisodeHash: membershipJournalHash(null), episode,
+    position: point(block, timestamp, logIndex), evidenceId: h(8) };
+  return { id: membershipJournalHash(body), ...body };
+};
+const consent = { generation: 3, active: true, admissionLogIndex: 0, closureLogIndex: 0 };
+const joined = () => joinPrivateMembership(null, month, rules);
+test('one month grace expires without a keeper and public period uses address generation', () => {
+  const history = [entry(joined(), 1, jan)];
+  expect(privateMembershipAtLoss(h(5), history, point(50, feb), consent, rules)).toMatchObject({ active: true, periodIndex: 2, unpaidAtomic: '200' });
+  expect(privateMembershipAtLoss(h(5), history, point(80, mar), consent, rules)).toMatchObject({ active: false, periodIndex: null });
 });
-test('each completed month requires separate burn and contribution even when earning', () => {
-  const earned = invoice(jan, { earnings: true, contributionDue: '10', contributionPaid: '10' });
-  expect(membershipAtLoss(identity, [enrolled], point(100, mar), [earned, invoice(feb)]).active).toBe(false);
-  expect(membershipAtLoss(identity, [enrolled], point(100, mar), [{ ...earned, burnPaid: '100' }, invoice(feb)]).active).toBe(true);
-  const noEarningsBurnOnly = invoice(jan, { burnPaid: '100' });
-  expect(membershipAtLoss(identity, [enrolled], point(100, mar), [noEarningsBurnOnly, invoice(feb)]).active).toBe(false);
+test('later payment cannot change earlier loss evidence, but a timely prior payment does qualify', () => {
+  const admitted = entry(joined(), 1, jan), paid = creditPrivateMembership(joined(), month + 1, month,
+    { burnAtomic: '100', reserveAtomic: '100' }, rules);
+  const loss = point(100, mar), before = privateMembershipAtLoss(h(5), [admitted], loss, consent, rules);
+  expect(privateMembershipAtLoss(h(5), [admitted, entry(paid, 101, mar)], loss, consent, rules)).toEqual(before);
+  expect(privateMembershipAtLoss(h(5), [admitted, entry(paid, 99, feb)], loss, consent, rules).active).toBe(true);
 });
-test('same-block membership closure and prospective rejoin use exact event order', () => {
-  const closed: PoolMembershipEvent = { ...point(100, feb, 2), enrolled: false, generation: 1 };
-  expect(membershipAtLoss(identity, [enrolled, closed], point(100, feb, 3), []).active).toBe(false);
-  expect(membershipAtLoss(identity, [enrolled], point(100, feb, 1), [invoice(jan)]).active).toBe(true);
-  expect(() => membershipAtLoss(identity, [enrolled, closed], point(100, feb, 1), [])).toThrow('history_invalid');
-  const reopened = { ...point(101, mar), enrolled: true, generation: 2 };
-  expect(membershipAtLoss(identity, [enrolled, closed, reopened], point(102, mar), [])).toMatchObject({ active: true, periodIndex: 1 });
+test('exact same-block order excludes the loss position itself and later admission, closure and rejoin', () => {
+  const closed = leavePrivateMembership(joined(), month + 1, rules), rejoined = joinPrivateMembership(closed, month + 1, rules);
+  const history = [entry(joined(), 1, jan), entry(closed, 50, feb, 2), entry(rejoined, 50, feb, 4)];
+  expect(privateMembershipAtLoss(h(5), history, point(50, feb, 2), consent, rules).active).toBe(true);
+  expect(privateMembershipAtLoss(h(5), history, point(50, feb, 3), consent, rules).active).toBe(false);
+  expect(privateMembershipAtLoss(h(5), history, point(50, feb, 4), consent, rules).active).toBe(false);
+  expect(privateMembershipAtLoss(h(5), history, point(50, feb, 5), consent, rules).active).toBe(true);
 });
-test('missing invoices, duplicate events, overpayments and inconsistent block hashes fail closed', () => {
-  expect(() => membershipAtLoss(identity, [enrolled], point(100, feb), [])).toThrow('invoices_incomplete');
-  expect(() => membershipAtLoss(identity, [enrolled, enrolled], point(100, feb), [invoice(jan)])).toThrow('history_invalid');
-  expect(() => membershipAtLoss(identity, [enrolled], point(100, feb), [invoice(jan, { burnPaid: '101' })])).toThrow('invoice_invalid');
-  expect(() => membershipAtLoss(identity, [enrolled, { ...point(100, feb, 1), blockHash: identity, enrolled: false, generation: 1 }], point(100, feb, 2), [])).toThrow('history_invalid');
+test('public single-address consent is required and a future rejoin cannot qualify a lapsed loss', () => {
+  const history = [entry(joined(), 1, jan), entry(joinPrivateMembership(joined(), month + 2, rules), 100, mar, 5)];
+  expect(privateMembershipAtLoss(h(5), history, point(100, mar, 4), consent, rules).active).toBe(false);
+  expect(privateMembershipAtLoss(h(5), history, point(100, mar, 6), { ...consent, active: false }, rules).active).toBe(false);
+  expect(privateMembershipAtLoss(h(5), [], point(100, mar, 6), consent, rules).active).toBe(false);
+});
+test('private random salt blinds identical calendar commitments; mismatched chain domain or position refuses', () => {
+  const loss = point(50, feb), first = privateMembershipAtLoss(h(5), [entry(joined(), 1, jan)], loss, consent, rules);
+  const second = privateMembershipAtLoss(h(5), [entry(joined(), 1, jan, 0, h(78))], loss, consent, rules);
+  expect(first.evidenceHash).not.toBe(second.evidenceHash);
+  expect(() => privateMembershipAtLoss(h(5), [entry(joined(), 1, jan)], { ...loss, kernel: a(3) }, consent, rules)).toThrow('history_invalid');
+  expect(() => privateMembershipAtLoss(h(5), [entry(joined(), 50, feb, 1)], { ...loss, logIndex: 2, blockHash: h(3) }, consent, rules)).toThrow('history_invalid');
 });

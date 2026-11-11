@@ -1,3 +1,4 @@
+import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { joinPrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
@@ -23,7 +24,7 @@ const context = { batchId: h(600), lane: 0 as const, epoch: '1', policyHash: h(6
   month: String(month), membershipRuleHash: h(9) };
 function store() {
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true });
-  const key = `${C.owners}/${h(500)}`; fake.store.set(key, { ...account() });
+  const key = `${C.owners}/${h(500)}`; fake.store.set(key, seedMembershipJournal(fake.store, account(), { chainId: '8453', kernel: old[0], pool: old[8], block: 98, blockHash: h(98), logIndex: 1, timestamp: now - 1 }));
   for (const n of [500, 501]) fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${h(n)}`, { ownerIdentity: h(n) });
   for (const n of [3, 4]) {
     const binding = n === 3 ? h(2) : h(4);

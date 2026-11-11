@@ -1,3 +1,4 @@
+import { prepareMembershipJournalAppend } from './private-membership-journal';
 import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import { creditPrivateMembership, recordPrivateMembershipIssuance,
@@ -21,6 +22,7 @@ export interface PrivateMembershipCheckpoint {
 }
 export interface PrivateMembershipAccount {
   readonly ownerIdentity: string; readonly version: number;
+  readonly journalHead?: string;
   readonly episode: PrivateMembershipEpisode;
   /** Set only by the complete canonical event scanner, never a status query. */
   readonly checkpoint: PrivateMembershipCheckpoint;
@@ -203,7 +205,8 @@ export async function commitPrivateMembershipReceipt(db: Firestore, ownerIdentit
   if (!HASH.test(ownerIdentity) || !HASH.test(reservationId)) return invalid('identity');
   const accountRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.owners).doc(ownerIdentity);
   const reservationRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.reservations).doc(reservationId);
-  const receiptRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.receipts).doc(digest([ownerIdentity, reservationId, receipt.transactionHash]));
+  const receiptHashId = digest([ownerIdentity, reservationId, receipt.transactionHash]);
+  const receiptRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.receipts).doc(receiptHashId);
   return db.runTransaction(async transaction => {
     const [accountRow, reserved, existing] = await Promise.all([transaction.get(accountRef), transaction.get(reservationRef), transaction.get(receiptRef)]);
     if (!accountRow.exists || !reserved.exists) return invalid('missing_account');
@@ -221,12 +224,18 @@ export async function commitPrivateMembershipReceipt(db: Firestore, ownerIdentit
       .doc(digest([reservation.domain.kernel, reservation.domain.pool, receipt.transactionHash, logIndex]))) : [];
     const effects = await Promise.all(effectRefs.map(ref => transaction.get(ref)));
     if (effects.some(row => row.exists)) return invalid('effect_replay');
+    const journal = result.status === 'committed' ? await prepareMembershipJournalAppend(db, transaction, {
+      ownerIdentity, account, episode: result.episode, kind: reservation.kind, evidenceId: receiptHashId,
+      position: { chainId: '8453', kernel: reservation.domain.kernel, pool: reservation.domain.pool,
+        block: receipt.block, blockHash: receipt.blockHash, timestamp: receipt.timestamp, logIndex: Math.max(...result.logIndexes) },
+    }) : null;
+    if (journal) journal.write();
     effectRefs.forEach((ref, i) => transaction.create(ref, { ownerIdentity, reservationId,
       transactionHash: receipt.transactionHash, logIndex: result.logIndexes[i], block: receipt.block, blockHash: receipt.blockHash }));
     transaction.create(receiptRef, { ownerIdentity, reservationId, receiptHash: digest(receipt), receipt, ...result,
       previousEpisode: account.episode, previousVersion: account.version });
     transaction.update(reservationRef, { status: result.status, transactionHash: receipt.transactionHash });
-    transaction.update(accountRef, { episode: result.episode, pendingReservation: null, needsScan: true, version: account.version + 1 });
+    transaction.update(accountRef, { ...(journal ? { journalHead: journal.head } : {}), episode: result.episode, pendingReservation: null, needsScan: true, version: account.version + 1 });
     return result.status;
   });
 }

@@ -13,7 +13,7 @@ export interface RestorationRequestInput {
 }
 export interface RestorationEvidencePorts {
   snapshot(identity: string, transactionHash: string, block: number, bindings: readonly RegisteredAddress[]): Promise<LossSnapshot>;
-  membership(snapshot: LossSnapshot): Promise<LossMembershipEvidence & { readonly lossTimestamp: number }>;
+  membership(db: Firestore, snapshot: LossSnapshot): Promise<LossMembershipEvidence & { readonly lossTimestamp: number }>;
   pool(identity: string): Promise<RecoursePoolState>;
 }
 const defaultPorts: RestorationEvidencePorts = { snapshot: snapshotReportedLoss, membership: readLossMembership, pool: readRecoursePoolState };
@@ -32,7 +32,7 @@ export async function prepareRestorationRequest(db: Firestore, identity: string,
   if (!owner.exists) throw new Error('recourse_restoration_owner_unknown');
   const bindings = addresses.docs.filter(doc => doc.get('chainBindingStatus') === 'confirmed').map(doc => doc.data() as RegisteredAddress);
   const snapshot = await ports.snapshot(identity, input.transactionHash, input.block, bindings);
-  const membership = await ports.membership(snapshot);
+  const membership = await ports.membership(db, snapshot);
   if (!membership.active || membership.periodIndex === null) throw new Error('recourse_restoration_not_member_at_loss');
   const lossHash = `0x${createHash('sha256').update(JSON.stringify({ snapshot, membership })).digest('hex')}`;
   const scope = parseRestorationScope({ request: snapshot.occurrence, lossHash, maximumLoss: snapshot.lossAtomic });
@@ -77,7 +77,7 @@ export async function submitRestorationRequest(db: Firestore, authenticatedIdent
   if (!destinationBinding || destinationBinding.recoveryGeneration !== owner.get('recoveryGeneration')) throw new Error('recourse_restoration_destination_invalid');
   const snapshot = await ports.snapshot(authenticatedIdentity, input.transactionHash, input.block, bindings);
   if (snapshot.addresses.some(address => address.address === destination)) throw new Error('recourse_restoration_destination_not_fresh');
-  const [membership, pool] = await Promise.all([ports.membership(snapshot), ports.pool(authenticatedIdentity)]);
+  const [membership, pool] = await Promise.all([ports.membership(db, snapshot), ports.pool(authenticatedIdentity)]);
   if (!membership.active || membership.periodIndex === null) throw new Error('recourse_restoration_not_member_at_loss');
   const requestId = snapshot.occurrence;
   const ref = db.collection(RESTORATION_REQUESTS).doc(requestId);
