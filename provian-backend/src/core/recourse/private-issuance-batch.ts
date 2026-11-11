@@ -79,7 +79,7 @@ export async function reservePrivateIssuanceBatch(db: Firestore, input: PrivateI
       return record;
     }
     const parent = settlement.data() as SettlementBatchDoc;
-    if (!settlement.exists || parent.calldata !== batch.kernelCall || parent.status !== 'reserved' || parent.applied !== false || parent.attempts.length !== 0
+    if (!settlement.exists || parent.calldata !== batch.kernelCall || parent.status !== 'reserved' || parent.applied !== false || parent.retirement_reason !== undefined || parent.attempts.length !== 0
       || parent.membership_issuance_id !== undefined) return fail('parent');
     const plan = planSettlementIssuance(parent, batch.policy);
     if (plan.settlementDigest !== batch.context.settlementDigest || plan.lane !== batch.context.lane
@@ -125,7 +125,7 @@ export async function retainPrivateIssuanceSignature(db: Firestore, input: Priva
     const record = row.data() as PrivateIssuanceBatchRecord;
     if (!row.exists || digest(record.batch) !== digest(batch)) return fail('replay');
     if (!parent.exists || parent.get('membership_issuance_id') !== batch.id || parent.get('calldata') !== batch.kernelCall
-      || !['reserved','submitted','mined'].includes(String(parent.get('status'))) || parent.get('applied') !== false) return fail('parent');
+      || !['reserved','submitted','mined'].includes(String(parent.get('status'))) || parent.get('applied') !== false || parent.get('retirement_reason') !== undefined) return fail('parent');
     if (record.status === 'superseded') return fail('superseded');
     if (record.status !== 'reserved') {
       if (record.signature !== signature || record.calldata !== calldata) return fail('replay');

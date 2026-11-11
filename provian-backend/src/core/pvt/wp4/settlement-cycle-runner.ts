@@ -86,6 +86,7 @@ import {
   markBatchFinalityVerified,
   readLedgerPage,
   createLedgerPageSource,
+  requestMemberBatchRetirement,
   recordAttempt,
   recordMinedReceipt,
   releaseCycleLease,
@@ -1317,13 +1318,17 @@ async function resolveBatch(
    * released and — when this run owns the cycle and it is the head allocation — its nonce is
    * returned. An adopted batch's cycle no longer allocates nonces: the next cycle re-seeds.
    */
+  const retire = async (reason: string): Promise<void> => {
+    const result = await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason });
+    if (!result.marked) throw Error('batch retirement requires private reconciliation');
+  };
   const releaseAndDie = async (reason: string): Promise<void> => {
+    await retire(reason);
     if (!adopted) {
       await releaseUnusedNonce(db, {
         cycleId, workerId: config.workerId, nowMs: now(), nonce: batch.reserved_nonce,
       });
     }
-    await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason });
   };
 
   /**
@@ -1425,7 +1430,7 @@ async function resolveBatch(
   // cycle no longer allocates, so there is nothing to release: the next cycle re-seeds from the
   // chain and re-uses the nonce. The kernel's own mint-once guards remain the independent net.
   if (
-    config.broadcastableGasCeiling !== undefined
+    !memberExecution && config.broadcastableGasCeiling !== undefined
     && attempts.length > 0
     && attempts.every((a) => a.mined === null)
     && BigInt(attempts[attempts.length - 1].gas_limit) > BigInt(config.broadcastableGasCeiling)
@@ -1442,7 +1447,7 @@ async function resolveBatch(
       if (released) {
         const reason = `oversized_unbroadcastable: gasLimit ${attempts[attempts.length - 1].gas_limit} `
           + `> ceiling ${config.broadcastableGasCeiling}; nonce ${batch.reserved_nonce} unmined on chain — rebuilding`;
-        await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason });
+        await retire(reason);
         log(`batch ${batch.batch_id}: ${reason}`);
         return { kind: 'dead', reason: 'oversized_unbroadcastable_rebuild' };
       }
@@ -1506,6 +1511,9 @@ async function resolveBatch(
       }
     }
 
+    if (memberExecution && kind === 'cancel') await requestMemberBatchRetirement(db, {
+      batchId: batch.batch_id, signer: config.signerAddress, workerId: config.workerId, nowMs: now(), reason: 'member cancellation requested',
+    });
     const checkMemberCall = async (): Promise<void> => {
       if (!memberExecution) return;
       if (!deps.memberExecution) throw Error('member execution unavailable');
@@ -1577,15 +1585,25 @@ async function resolveBatch(
     return { ok: true, hash: signed.hash };
   };
 
+  // A retained private reservation survives even if gas signing/recording crashed.
+  // Cancel it at its still-reserved nonce before releasing any owner or claim.
+  if (memberExecution && attempts.length === 0) {
+    const retained = await db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.batch_id).get();
+    if (retained.data()?.membership_issuance_id !== undefined) {
+      if (!deps.memberExecution) throw Error('member execution unavailable');
+      const call = await deps.memberExecution.cancellation(batch), fees = await chain.feeData();
+      const gas = await chain.estimateGas({from: config.signerAddress, to: call.target, data: call.data});
+      const sent = await record('cancel', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei,
+        gas * BigInt(config.gasHeadroomBps) / 10_000n, call.target, call.data);
+      if (!sent.ok) return {kind: 'stopped', reason: sent.stopReason ?? 'resumption_abort', detail: sent.refused};
+    }
+  }
+
   // A never-submitted reservation ('reserved', no attempts).
   if (attempts.length === 0) {
     if (adopted) {
       // Record-before-broadcast: no recorded attempt means nothing reached the wire.
-      await markBatchDead(db, {
-        batchId: batch.batch_id,
-        nowMs: now(),
-        reason: 'adopted_never_broadcast: reserved with no recorded attempt in a cycle no worker runs',
-      });
+      await retire('adopted_never_broadcast: reserved with no recorded attempt in a cycle no worker runs');
       return { kind: 'dead', reason: 'adopted_never_broadcast' };
     }
     const view = await chain.observe();
@@ -1676,7 +1694,7 @@ async function resolveBatch(
         }
         if (winner.kind === 'cancel') {
           // The cancel won, FINALLY: the nonce is resolved without a settlement.
-          await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: 'cancelled_dead_binding' });
+          await retire('cancelled_dead_binding');
           return { kind: 'dead', reason: 'cancelled_dead_binding' };
         }
         const applied = await applyConfirmedBatch(db, {
@@ -1782,14 +1800,12 @@ async function resolveBatch(
       switch (decision.kind) {
         case 'submit': {
           if (retriesAfterRevert >= 1) {
-            await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: 'reverted twice with a live binding' });
+            await retire('reverted twice with a live binding');
             return { kind: 'refused', reason: 'batch_unsettleable', detail: 'reverted twice with a live binding' };
           }
           const probe = await simulateBatchWithRetry(deps, config, kernelAddress, executionAddress, batch);
           if (!probe.ok) {
-            await markBatchDead(db, {
-              batchId: batch.batch_id, nowMs: now(), reason: `unsettleable after revert: ${probe.revertReason ?? 'simulation reverts'}`,
-            });
+            await retire(`unsettleable after revert: ${probe.revertReason ?? 'simulation reverts'}`);
             return { kind: 'refused', reason: 'batch_unsettleable', detail: probe.revertReason ?? 'simulation reverts' };
           }
           const nonceResult = await allocateNonce(db, {
@@ -1813,7 +1829,7 @@ async function resolveBatch(
           return { kind: 'stopped', reason: 'epoch_gate_closed', detail: `hold after revert: ${decision.reason}` };
         case 'rebuild':
           // Nonce already consumed by the mined revert — safe to mark dead.
-          await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: decision.reason });
+          await retire(decision.reason);
           return { kind: 'dead', reason: decision.reason };
         case 'abort':
           return { kind: 'stopped', reason: 'resumption_abort', detail: `abort after revert: ${decision.reason}` };
@@ -1886,7 +1902,8 @@ async function resolveBatch(
         return record('cancel', latest.nonce, maxFee, maxPriority, gas * BigInt(config.gasHeadroomBps) / 10_000n, call.target, call.data);
       };
       let sent: Awaited<ReturnType<typeof record>>;
-      if (bindingDead) {
+      const durable = await db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.batch_id).get();
+      if (bindingDead || latest.kind === 'cancel' || durable.data()?.retirement_reason !== undefined) {
         // The binding can never settle, but the nonce may still carry a live transaction:
         // resolve it with a CANCEL at the same nonce. A mined cancel is never applied as a
         // settlement (store + kernel both refuse).

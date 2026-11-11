@@ -278,6 +278,13 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'issuance-retirement-intent': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
+    testMatchPath: 'src/core/recourse/private-issuance-batch.test.ts',
+    mutations: [{ id: 'ISSUANCE-RETIREMENT-INTENT', description: 'retain executable authorization after cancellation starts',
+      find: " || parent.get('retirement_reason') !== undefined", replace: '',
+      expectedKilledBy: 'retiring parent cannot acquire or retain an issuance signature even while its status remains reserved' }],
+  },
   'issuance-attempt-envelope': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
     testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',

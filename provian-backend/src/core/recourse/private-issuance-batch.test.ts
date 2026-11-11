@@ -104,3 +104,15 @@ test('restart after owner credit but before final fence release credits only onc
  expect(s.fake.store.get(`${C.owners}/${h(500)}`)?.version).toBe(1);
  expect([...s.fake.store.keys()].filter(k=>k.startsWith(C.effects+'/'))).toHaveLength(2);
 });
+
+test('retiring parent cannot acquire or retain an issuance signature even while its status remains reserved',async()=>{
+  for(const acquired of [false,true]){
+    const s=setup();if(acquired)await reservePrivateIssuanceBatch(s.db,s.batch);
+    const key=`${SETTLEMENT_BATCHES_COLLECTION}/${h(600)}`;
+    s.fake.store.set(key,{...s.fake.store.get(key)!,retirement_reason:'cancel requested'});
+    const before=new Map(s.fake.store);
+    if(acquired)await expect(retainPrivateIssuanceSignature(s.db,s.batch,'0x1234')).rejects.toThrow('parent');
+    else await expect(reservePrivateIssuanceBatch(s.db,s.batch)).rejects.toThrow('parent');
+    expect(s.fake.store).toEqual(before);
+  }
+});

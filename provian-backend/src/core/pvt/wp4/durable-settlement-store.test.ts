@@ -35,6 +35,7 @@ import {
   listUnresolvedBatches,
   markBatchDead,
   readLedgerPage,
+  requestMemberBatchRetirement,
   recordAttempt,
   recordMinedReceipt,
   registerClaim,
@@ -1015,7 +1016,7 @@ describe(' review · chain-evidence settlement (the kernel read paid at the safe
 describe('private issuance terminal coordination',()=>{
   async function coordinated(){
     const fake=createFakeFirestore({strictTransactionOrder:true,rejectUndefinedValues:true}),db=fake as unknown as SettlementDb;
-    await freshCycle(db);const reserved=await reserveOne(db);if(reserved.kind!=='reserved')throw Error('reservation failed');
+    await freshCycle(db);await acquireSignerLease(db,{signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW,leaseTtlMs:60_000});const reserved=await reserveOne(db);if(reserved.kind!=='reserved')throw Error('reservation failed');
     const batch=reserved.batch,id=H(0x9876);
     fake.store.set(`${SETTLEMENT_BATCHES_COLLECTION}/${batch.batch_id}`,{...batch,membership_issuance_id:id});
     const record={batch:{id,kernelCall:batch.calldata,target:ADDR(999),context:{batchId:batch.batch_id}},status:'signed',calldata:'0xcafe',transactionHash:null};
@@ -1036,10 +1037,28 @@ describe('private issuance terminal coordination',()=>{
     const s=await coordinated(),base={nonce:s.batch.reserved_nonce,target:ADDR(999),max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
     expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,
       attempt:{...base,tx_hash:H(777),calldata:'0xcafe',kind:'original'}})).toEqual({kind:'recorded'});
+    await requestMemberBatchRetirement(s.db,{batchId:s.batch.batch_id,signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW+3,reason:'refused'});
     const before=new Map(s.fake.store);
     expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
       attempt:{...base,tx_hash:H(778),calldata:shape==='self_send'?'0x':MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[H(99),1]),kind:'cancel'}}))
       .toEqual({kind:'refused',reason:'private_issuance_pending'});expect(s.fake.store).toEqual(before);
+  });
+  it('retirement is durable before signing, forbids settlement and permits first cancellation at the reserved nonce',async()=>{
+    const s=await coordinated(),base={nonce:s.batch.reserved_nonce,target:ADDR(999),max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
+    await requestMemberBatchRetirement(s.db,{batchId:s.batch.batch_id,signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW+2,reason:'signing interrupted'});
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
+      attempt:{...base,tx_hash:H(777),calldata:'0xcafe',kind:'original'}})).toEqual({kind:'refused',reason:'private_issuance_pending'});
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
+      attempt:{...base,tx_hash:H(778),calldata:MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[s.batch.batch_id,1]),kind:'cancel'}})).toEqual({kind:'recorded'});
+  });
+  it('a live cycle cannot sign or retire after losing the shared signer lease',async()=>{
+    const s=await coordinated();
+    s.fake.store.set(`pvt9_settlement_signer_leases_v1/${ADDR(0xbeef)}`,{signer:ADDR(0xbeef),owner:'other',expires_at_ms:NOW+99_000});
+    const before=new Map(s.fake.store);
+    await expect(requestMemberBatchRetirement(s.db,{batchId:s.batch.batch_id,signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW+2,reason:'cancel'})).rejects.toThrow('lease unavailable');
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
+      attempt:{nonce:s.batch.reserved_nonce,target:ADDR(999),tx_hash:H(777),calldata:'0xcafe',kind:'original',max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'}})).toEqual({kind:'refused',reason:'batch_not_reserved'});
+    expect(s.fake.store).toEqual(before);
   });
   it.each(['signed','reserved','committed','missing'])('cannot retire or orphan-release a %s coordinator',async(status)=>{
     const s=await coordinated();

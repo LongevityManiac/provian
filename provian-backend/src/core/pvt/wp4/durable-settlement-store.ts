@@ -1026,7 +1026,7 @@ async function holdsSignerLease(
 ): Promise<boolean> {
   const snap = await txn.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(signer.toLowerCase()));
   const lease = snap.exists ? (snap.data() ?? {}) : {};
-  return lease.owner === workerId
+  return lease.owner === workerId && (lease.pending_operation === undefined || lease.pending_operation === null)
     && typeof lease.expires_at_ms === 'number' && lease.expires_at_ms > nowMs;
 }
 
@@ -1150,6 +1150,8 @@ export interface SettlementBatchDoc {
   readonly calldata: string;
   /** Private recipient classifications and exact outer member-settlement call. */
   readonly membership_issuance_id?: string;
+  /** Durable decision: no further settlement signatures after cancellation begins. */
+  readonly retirement_reason?: string;
   readonly members: readonly BatchMemberRecord[];
   /**
    * `mined` is a success receipt seen but NOT yet at the safe-head depth. It is an
@@ -1342,6 +1344,29 @@ export type RecordAttemptResult =
  *  - 'retry_after_revert': a NEW nonce, permitted only when the latest
  *    attempt has a recorded MINED-FAILED receipt (its nonce is consumed).
  */
+/** Persist cancellation intent under the shared gas-signer lease before signing.
+ * An expired cycle can be adopted, but an active other worker cannot be displaced. */
+export async function requestMemberBatchRetirement(db: SettlementDb, params: {
+  batchId: string; signer: string; workerId: string; nowMs: number; reason: string;
+}): Promise<void> {
+  await db.runTransaction(async txn => {
+    const ref = db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(params.batchId.toLowerCase());
+    const snap = await txn.get(ref), batch = snap.data() as unknown as SettlementBatchDoc | undefined;
+    if (!snap.exists || !batch || !batch.membership_issuance_id || batch.applied
+      || !['reserved', 'submitted'].includes(batch.status)) throw Error('member retirement parent unavailable');
+    const cycleSnap = await txn.get(db.collection(SETTLEMENT_CYCLES_COLLECTION).doc(batch.cycle_id));
+    const cycle = cycleSnap.data() as unknown as SettlementCycleDoc | undefined;
+    if (!cycle || cycle.signer !== params.signer.toLowerCase()
+      || (cycle.status === 'active' && cycle.lease.owner !== params.workerId && cycle.lease.expires_at_ms > params.nowMs)
+      || !await holdsSignerLease(db, txn, params.signer, params.workerId, params.nowMs)) throw Error('member retirement lease unavailable');
+    const issuance = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.membership_issuance_id));
+    const record = issuance.data() as unknown as PrivateIssuanceBatchRecord | undefined;
+    if (!record || record.batch.context.batchId !== batch.batch_id || record.batch.kernelCall !== batch.calldata
+      || !['reserved', 'signed'].includes(record.status)) throw Error('member retirement coordinator unavailable');
+    txn.set(ref, {...batch, retirement_reason: batch.retirement_reason ?? params.reason, updated_at: params.nowMs});
+  });
+}
+
 export async function recordAttempt(
   db: SettlementDb,
   params: {
@@ -1391,6 +1416,8 @@ export async function recordAttempt(
       return { kind: 'refused', reason: 'batch_closed' };
     }
     if (batch.membership_issuance_id !== undefined) {
+      if (!await holdsSignerLease(db, txn, cycle.signer, params.workerId, params.nowMs)) return { kind: 'refused', reason: 'batch_not_reserved' };
+      if (params.attempt.kind !== 'cancel' && batch.retirement_reason !== undefined) return { kind: 'refused', reason: 'private_issuance_pending' };
       const coordinated = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.membership_issuance_id));
       const record = coordinated.data() as unknown as PrivateIssuanceBatchRecord | undefined;
       if (!coordinated.exists || !record || record.batch?.id !== batch.membership_issuance_id
@@ -1399,6 +1426,7 @@ export async function recordAttempt(
         return { kind: 'refused', reason: 'private_issuance_pending' };
       }
       if (params.attempt.kind === 'cancel') {
+        if (batch.retirement_reason === undefined) return { kind: 'refused', reason: 'private_issuance_pending' };
         let decoded;
         try { decoded = MEMBER_SETTLEMENT_ABI.decodeFunctionData('cancelMemberBatch', params.attempt.calldata ?? '0x'); }
         catch { return { kind: 'refused', reason: 'private_issuance_pending' }; }
@@ -1414,9 +1442,11 @@ export async function recordAttempt(
     const latest = batch.attempts.length > 0 ? batch.attempts[batch.attempts.length - 1] : null;
     const kind = params.attempt.kind;
     if (kind === 'original') {
-      if (latest !== null) return { kind: 'refused', reason: 'nonce_rules_violated' };
+      if (latest !== null || params.attempt.nonce !== batch.reserved_nonce) return { kind: 'refused', reason: 'nonce_rules_violated' };
     } else if (kind === 'replacement' || kind === 'cancel') {
-      if (latest === null || latest.nonce !== params.attempt.nonce || latest.mined !== null) {
+      const firstMemberCancel = kind === 'cancel' && batch.membership_issuance_id !== undefined
+        && batch.retirement_reason !== undefined && latest === null && params.attempt.nonce === batch.reserved_nonce;
+      if (!firstMemberCancel && (latest === null || latest.nonce !== params.attempt.nonce || latest.mined !== null)) {
         return { kind: 'refused', reason: 'nonce_rules_violated' };
       }
     } else {

@@ -3430,6 +3430,28 @@ describe('member settlement transaction envelope',()=>{
     expect(h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`)?.status).toBe('cancelled');
     expect(h.chain.claimSettled.size).toBe(0);expect(h.cancellation).toHaveBeenCalled();
   });
+  it('cancels a retained authorization after a crash before the first recorded gas attempt',async()=>{
+    const h=forwarded(),sign=h.chain.sign.bind(h.chain);
+    jest.spyOn(h.chain,'sign').mockRejectedValueOnce(Error('signing interrupted')).mockImplementation(sign);
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle(h.deps,h.config)).rejects.toThrow('signing interrupted');
+    const first=batchDocs(h.store)[0];expect(first.attempts).toHaveLength(0);
+    h.candidateSource.ineligible.add('pe-0001');
+    await runSettlementCycle(h.deps,h.config);
+    const cancelled=batchDocs(h.store).find(b=>b.batch_id===first.batch_id)!;
+    expect(cancelled.status).toBe('dead');expect(cancelled.attempts).toHaveLength(1);
+    expect(cancelled.attempts[0]).toMatchObject({kind:'cancel',nonce:first.reserved_nonce,target:h.target});
+    expect(h.chain.claimSettled.size).toBe(0);
+    expect(h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`)?.status).toBe('cancelled');
+  });
+  it('replaces a dropped cancellation with another cancellation even if the claim becomes eligible again',async()=>{
+    const h=forwarded();h.chain.behaviors=['drop','drop','mine-success'];
+    h.chain.onBroadcast=(count)=>{if(count===1)h.candidateSource.ineligible.add('pe-0001');if(count===2)h.candidateSource.ineligible.delete('pe-0001');};
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await runSettlementCycle(h.deps,h.config);
+    const first=batchDocs(h.store)[0];expect(first.attempts.map(a=>a.kind)).toEqual(['original','cancel','cancel']);
+    expect(first.retirement_reason).toBeDefined();expect(first.status).toBe('dead');
+  });
   it('a changed authorization during gas signing never records or broadcasts the signed transaction',async()=>{
     const h=forwarded(),sign=h.chain.sign.bind(h.chain);
     jest.spyOn(h.chain,'sign').mockImplementation(async(tx)=>{const result=await sign(tx);h.prepare.mockRejectedValue(Error('domain changed'));return result;});
