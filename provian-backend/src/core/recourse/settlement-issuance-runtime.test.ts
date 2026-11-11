@@ -1,7 +1,7 @@
 import { Interface } from 'ethers';
 import { issuanceBatchFixture } from './__test-helpers__/issuance-batch-fixture';
 import { a,h,old,pointer } from './__test-helpers__/membership-receipt-fixture';
-import { preparePrivateIssuanceExecution } from './settlement-issuance-runtime';
+import { preparePrivateIssuanceExecution, preparePrivateIssuanceProbe } from './settlement-issuance-runtime';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { resolveHistoricalProtocolDeployment } from '../protocol/pointer';
 import { createRecourseChainPort } from './chain-ledger';
@@ -79,6 +79,14 @@ function setup(member=false){
  return {...s,state,sign,agree};
 }
 beforeEach(()=>jest.resetAllMocks());
+test('a reverting probe needs no parent reservation and creates no reusable signature or financial lock',async()=>{
+ const s=setup(true);s.fake.store.delete(`${P}/${h(600)}`);
+ const before=new Map(s.fake.store);
+ const probe=await preparePrivateIssuanceProbe(s.db,s.parent,gas,{});
+ const decoded=MEMBER_SETTLEMENT_ABI.decodeFunctionData('probeMemberBatch',probe.data);
+ expect(decoded[0]).toBe(s.parent.calldata);expect(decoded[2].map((t:{protectedMember:boolean})=>t.protectedMember)).toEqual([true,false]);
+ expect(s.sign).not.toHaveBeenCalled();expect(s.fake.store).toEqual(before);
+});
 test('all classifications and parent link persist before raw-byte signing; restart reuses exact outer bytes',async()=>{
  const s=setup(true),record=await preparePrivateIssuanceExecution(s.db,s.parent,gas,{});
  expect(record.status).toBe('signed');expect(record.batch.tickets.map(t=>[t.protectedMember,t.contribution])).toEqual([[true,'1'],[false,'0']]);

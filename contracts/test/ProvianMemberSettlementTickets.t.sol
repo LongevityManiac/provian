@@ -13,6 +13,8 @@ contract EnvelopeKernelMock {
     uint256 public totalSupply;
     EnvelopePoolMock public pool;
     address public adapter;
+    bool public spoofProbeResult;
+    function setSpoofProbeResult(bool enabled) external { spoofProbeResult = enabled; }
     function configure(EnvelopePoolMock p, address a) external { require(address(pool) == address(0)); pool = p; adapter = a; }
     function getBatchRecord(bytes32 id) external view returns (ProvianPVT9.BatchRecord memory) { return batches[id]; }
     function settleStandardPEBatch(bytes32 batch, uint64 epoch, bytes32 rule, uint256 start, uint256 end,
@@ -28,6 +30,7 @@ contract EnvelopeKernelMock {
     function _standard(bytes32 batch, uint64 epoch, bytes32 rule, uint256 start, uint256 end,
         ProvianPVT9.StandardRecipient[] calldata recipients, ProvianPVT9.StandardPEClaim[] calldata claims) private {
         require(msg.sender == adapter && !batches[batch].settled);
+        if (spoofProbeResult) revert ProvianMemberSettlement.ProbeResult(true, hex"");
         uint256 cursor;
         for (uint256 i; i < recipients.length; ++i) {
             uint256 gross;
@@ -153,6 +156,48 @@ contract ProvianMemberSettlementTicketsTest is Test {
         vm.expectRevert(); adapter.settleMemberBatch(call, c, t, signature);
         assertEq(kernel.totalSupply(), 0); assertEq(pool.contributions(), 0);
         assertFalse(kernel.getBatchRecord(c.batchId).settled);
+    }
+    function testProbeSuccessAlwaysRevertsBothLanesAndCannotLeaveReusableTickets() public {
+        for (uint256 i; i < 2; ++i) {
+            (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(i == 1);
+            (bool ok, bytes memory reason) = address(adapter).call(abi.encodeCall(adapter.probeMemberBatch, (call, c, t)));
+            assertFalse(ok);
+            assertEq(reason, abi.encodeWithSelector(ProvianMemberSettlement.ProbeResult.selector, true, hex""));
+            assertEq(kernel.balanceOf(MEMBER), 0); assertEq(kernel.balanceOf(address(pool)), 0);
+            assertEq(kernel.totalSupply(), 0); assertEq(pool.contributions(), 0);
+            assertFalse(kernel.getBatchRecord(c.batchId).settled); assertFalse(pool.cancelledIssuanceBatch(c.batchId));
+            assertFalse(adapter.probeActive());
+            // Catching the revert in this same transaction must not retain
+            // tickets or permit an unsigned normal settlement.
+            vm.expectRevert(); adapter.settleMemberBatch(call, c, t, hex"");
+            assertEq(kernel.totalSupply(), 0);
+        }
+        (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(false);
+        adapter.settleMemberBatch(call, c, t, sign(c, t));
+        assertEq(kernel.balanceOf(MEMBER), 9800); assertEq(pool.contributions(), 100);
+    }
+    function testUnsignedProbeEntrypointsRefuseExternalExecution() public {
+        (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(false);
+        vm.expectRevert(ProvianMemberSettlement.Unauthorized.selector); adapter.executeProbe(call, c, t);
+        vm.expectRevert(RecourseIssuanceTickets.InvalidIssuanceTicket.selector); pool.installIssuanceTickets(c, t, hex"");
+        vm.prank(MEMBER); vm.expectRevert(ProvianMemberSettlement.Unauthorized.selector); adapter.probeMemberBatch(call, c, t);
+        vm.expectRevert(); adapter.settleMemberBatch(call, c, t, hex"");
+        assertEq(kernel.totalSupply(), 0);
+    }
+    function testProbeWrapsKernelFailureWithoutAcceptingItsSpoofedSuccessMarker() public {
+        (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(false);
+        kernel.setSpoofProbeResult(true);
+        bytes memory nested = abi.encodeWithSelector(ProvianMemberSettlement.ProbeResult.selector, true, hex"");
+        vm.expectRevert(abi.encodeWithSelector(ProvianMemberSettlement.ProbeResult.selector, false, nested));
+        adapter.probeMemberBatch(call, c, t);
+        assertEq(kernel.totalSupply(), 0); assertEq(pool.contributions(), 0);
+    }
+    function testProbeEnforcesFinalRecordCheckAfterKernelExecution() public {
+        (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(false);
+        c.settlementDigest = sha256("wrong final digest");
+        vm.expectRevert(abi.encodeWithSelector(ProvianMemberSettlement.ProbeResult.selector, false, abi.encodeWithSelector(ProvianMemberSettlement.InvalidConfiguration.selector)));
+        adapter.probeMemberBatch(call, c, t);
+        assertEq(kernel.totalSupply(), 0); assertEq(pool.contributions(), 0);
     }
     function testCancellationRequiresSubmitterAndCannotCancelCompletedBatch() public {
         (bytes memory call, RecourseIssuanceTickets.IssuanceContext memory c, RecourseIssuanceTickets.IssuanceTicket[] memory t) = fixture(false);

@@ -20,7 +20,7 @@ import { reconcileAddressIssuance, reconcilePrivateIssuanceSuccession } from './
 import { privateIssuanceBatchId, reservePrivateIssuanceBatch, retainPrivateIssuanceSignature,
   type PrivateIssuanceBatchRecord, type PrivateIssuanceBatch, type UnadmittedIssuanceRecipient } from './private-issuance-batch';
 import { planSettlementIssuance, type SettlementIssuancePolicy } from './settlement-issuance';
-import { membershipIssuanceSigningHash, type MembershipIssuanceTicket } from './issuance-ticket';
+import { MEMBER_SETTLEMENT_ABI, membershipIssuanceSigningHash, type MembershipIssuanceTicket } from './issuance-ticket';
 import { configuredIdentityAttestor, assertIdentityAttestation } from './identity-attestor';
 import { membershipJournalHash as hash } from './private-membership-journal';
 import { utcCalendarMonth } from './calendar-month';
@@ -132,10 +132,31 @@ export async function preparePrivateIssuanceExecution(db:Firestore,parent:Settle
     record=retained.exists?retained.data() as PrivateIssuanceBatchRecord:null;
     if(!record||record.batch.kernelCall!==parent.calldata||record.batch.context.batchId!==parent.batch_id)return fail('parent');
   }
+  if(!record)record=await reservePrivateIssuanceBatch(db,await planPrivateIssuanceExecution(db,parent,gasPayer,env));
+  if(record.status==='superseded'||record.status==='committed'||record.status==='cancelled')return fail('terminal');
+  const check=await assertCurrentPrivateIssuance(db,record,gasPayer);
+  if(record.status==='signed'){
+    if(!record.signature||!record.calldata)return fail('signature');
+    await assertIdentityAttestation(breakDeploymentChain(),check.identityAttestor,check.deployment.blockHash,
+      getBytes(membershipIssuanceSigningHash(record.batch.domain,record.batch.context,record.batch.tickets)),record.signature);
+    return retainPrivateIssuanceSignature(db,record.batch,record.signature);
+  }
+  const attestor=configuredIdentityAttestor(env);
+  if(attestor.address!==check.identityAttestor||!attestor.signBytes)return fail('attestor');
+  const message=getBytes(membershipIssuanceSigningHash(record.batch.domain,record.batch.context,record.batch.tickets));
+  const signature=await attestor.signBytes(message);
+  const after=await assertCurrentPrivateIssuance(db,record,gasPayer);
+  if(after.identityAttestor!==attestor.address)return fail('attestor');
+  await assertIdentityAttestation(breakDeploymentChain(),attestor.address,after.deployment.blockHash,message,signature);
+  return retainPrivateIssuanceSignature(db,record.batch,signature);
+}
+
+/** Unsigned classification shared by reservation and reverting probes. This
+ * planner creates no financial reservation or usable attestor authorization. */
+async function planPrivateIssuanceExecution(db:Firestore,parent:SettlementBatchDoc,gasPayer:string,
+  env:NodeJS.ProcessEnv):Promise<PrivateIssuanceBatch>{
   let selected=await finalizedDeployment(),policy=await epochPolicy(parent,selected.deployment);
   const id=privateIssuanceBatchId(policy.kernel,parent.batch_id);
-  if(record&&record.batch.id!==id)return fail('stale');
-  if(!record){
     const firstPlan=planSettlementIssuance(parent,policy);
     await reconcileAddressIssuance(db,firstPlan.recipients.map(r=>r.account));
     const owners=new Set<string>();
@@ -186,22 +207,17 @@ export async function preparePrivateIssuanceExecution(db:Firestore,parent:Settle
     if(tickets.some((ticket,i)=>ticket.protectedMember&&!consents[i]))return fail('unreconciled_membership');
     const batch:PrivateIssuanceBatch={id,domain,context,policy,kernelCall:parent.calldata,target:deployment.addresses.settlement.toLowerCase(),
       checkpoint:{block,blockHash:deployment.blockHash},tickets,reservations,unadmitted};
-    record=await reservePrivateIssuanceBatch(db,batch);
-  }
-  if(record.status==='superseded'||record.status==='committed'||record.status==='cancelled')return fail('terminal');
-  const check=await assertCurrentPrivateIssuance(db,record,gasPayer);
-  if(record.status==='signed'){
-    if(!record.signature||!record.calldata)return fail('signature');
-    await assertIdentityAttestation(breakDeploymentChain(),check.identityAttestor,check.deployment.blockHash,
-      getBytes(membershipIssuanceSigningHash(record.batch.domain,record.batch.context,record.batch.tickets)),record.signature);
-    return retainPrivateIssuanceSignature(db,record.batch,record.signature);
-  }
-  const attestor=configuredIdentityAttestor(env);
-  if(attestor.address!==check.identityAttestor||!attestor.signBytes)return fail('attestor');
-  const message=getBytes(membershipIssuanceSigningHash(record.batch.domain,record.batch.context,record.batch.tickets));
-  const signature=await attestor.signBytes(message);
-  const after=await assertCurrentPrivateIssuance(db,record,gasPayer);
-  if(after.identityAttestor!==attestor.address)return fail('attestor');
-  await assertIdentityAttestation(breakDeploymentChain(),attestor.address,after.deployment.blockHash,message,signature);
-  return retainPrivateIssuanceSignature(db,record.batch,signature);
+    return batch;
+}
+
+/** This calldata can only run inside an unconditionally reverting frame. */
+export async function preparePrivateIssuanceProbe(db:Firestore,parent:SettlementBatchDoc,gasPayer:string,
+  env:NodeJS.ProcessEnv=process.env):Promise<{target:string;data:string;blockHash:string;manifestHash:string}>{
+  const batch=await planPrivateIssuanceExecution(db,parent,gasPayer,env);
+  const deployment=await currentProtocolDeployment();
+  if(batch.domain.kernel!==deployment.addresses.kernel.toLowerCase()||batch.target!==deployment.addresses.settlement.toLowerCase()
+    ||batch.domain.pool!==deployment.addresses.recoursePool.toLowerCase()||batch.context.revision!==String(deployment.revision)
+    ||batch.context.month!==String(utcCalendarMonth(await blockTimestamp(deployment))))return fail('stale');
+  return {target:batch.target,data:MEMBER_SETTLEMENT_ABI.encodeFunctionData('probeMemberBatch',[batch.kernelCall,batch.context,batch.tickets]),
+    blockHash:deployment.blockHash,manifestHash:deployment.manifestHash};
 }

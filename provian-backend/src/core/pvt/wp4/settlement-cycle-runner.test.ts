@@ -3348,3 +3348,20 @@ describe('PE meter claims through the settlement cycle', () => {
     expect(harness.verifier.approveCalls).toBe(0);
   });
 });
+
+describe('member settlement probes',()=>{
+  it.each(['missing','inconclusive'])('refuses %s member probes without raw simulation, broadcast or claim quarantine',async(mode)=>{
+    const h=makeHarness({settleSimulate:{attempts:2,delayMs:1}}), observe=h.chain.observe.bind(h.chain);
+    jest.spyOn(h.chain,'observe').mockImplementation(async()=>({...await observe(),operationalMinter:ADDR(0x999),
+      settlementForwarder:{address:ADDR(0x999),submitter:SIGNER}}));
+    const simulate=jest.spyOn(h.chain,'simulate');
+    const memberBatchProbe=jest.fn(async()=>{throw Error('recourse_issuance_probe_inconclusive');});
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle({...h.deps,...(mode==='missing'?{}:{memberBatchProbe})},h.config)).rejects.toThrow(
+      mode==='missing'?'member settlement probe unavailable':'member settlement probe inconclusive');
+    expect(simulate).not.toHaveBeenCalled();expect(h.chain.broadcasts).toBe(0);
+    expect(memberBatchProbe).toHaveBeenCalledTimes(mode==='missing'?0:2);
+    expect(ledgerRow(h.store,'pe-0001').settled).toBe(false);
+    expect(ledgerRow(h.store,'pe-0001').hold).toBeFalsy();
+  });
+});

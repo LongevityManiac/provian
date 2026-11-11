@@ -13,6 +13,8 @@ const TICKETS = 'tuple(address account,uint256 gross,uint256 contributor,uint256
 export const MEMBER_SETTLEMENT_ABI = new Interface([
   `function settleMemberBatch(bytes kernelCall,${CONTEXT} context,${TICKETS} tickets,bytes attestorSignature)`,
   'function cancelMemberBatch(bytes32 batchId,uint256 revision)',
+  `function probeMemberBatch(bytes kernelCall,${CONTEXT} context,${TICKETS} tickets)`,
+  'error ProbeResult(bool success,bytes result)',
 ]);
 export const MEMBERSHIP_ISSUANCE_ABI = new Interface([
   `function issuanceDigest(${CONTEXT},${TICKETS}) view returns(bytes32)`,

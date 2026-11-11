@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
+interface IIssuanceProbeAdapter { function probeActive() external view returns (bool); }
+
 /// @notice Exact recipient tickets exist only during one settlement transaction.
 /// The relay attests the private owner-wide eligibility and rounding remainder;
 /// the chain independently bounds diversion by actual gross and contributor mint.
@@ -52,13 +54,20 @@ abstract contract RecourseIssuanceTickets {
     /// direct kernel caller. The kernel's own batch replay fence remains binding.
     function installIssuanceTickets(IssuanceContext calldata context, IssuanceTicket[] calldata tickets,
         bytes calldata attestorSignature) external {
-        _adapter(); _issuanceCurrent(context.revision);
+        _adapter();
+        // The immutable adapter sets this transient flag only in its self-call
+        // probe, whose outer frame always reverts. Ordinary settlement never
+        // sets it; an empty signature alone grants no authorization.
+        if (!(attestorSignature.length == 0 && IIssuanceProbeAdapter(msg.sender).probeActive())
+            && !SignatureChecker.isValidSignatureNow(_issuanceAttestor(), issuanceDigest(context, tickets), attestorSignature)) {
+            revert InvalidIssuanceTicket();
+        }
+        _issuanceCurrent(context.revision);
         (bytes32 ruleHash, uint16 bps) = _issuanceRule(context.month);
         (bool alreadySettled,) = _issuanceBatchRecord(context.batchId);
         if (context.batchId == bytes32(0) || context.settlementDigest == bytes32(0) || context.policyHash == bytes32(0)
             || context.lane > 1 || context.month != _issuanceMonth() || context.membershipRuleHash != ruleHash
-            || bps > 10000 || tickets.length == 0 || _get(0, 0) != 0 || cancelledIssuanceBatch[context.batchId] || alreadySettled
-            || !SignatureChecker.isValidSignatureNow(_issuanceAttestor(), issuanceDigest(context, tickets), attestorSignature)) {
+            || bps > 10000 || tickets.length == 0 || _get(0, 0) != 0 || cancelledIssuanceBatch[context.batchId] || alreadySettled) {
             revert InvalidIssuanceTicket();
         }
         _put(0, 0, uint256(context.batchId)); _put(1, 0, tickets.length); _put(2, 0, 0);

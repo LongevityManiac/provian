@@ -418,6 +418,9 @@ export interface CycleRunReport {
 }
 
 export interface CycleRunnerDeps {
+  /** Reverting member-adapter simulation. Never exports a reusable attestation. */
+  readonly memberBatchProbe?: (batch: SettlementBatchDoc) => Promise<{ ok: boolean; revertReason: string | null }>;
+
   /** One due snapshot for this invocation; on-demand and Genesis bypass it. */
   readonly standardPayeeDue?: (address: string) => Promise<boolean>;
   readonly db: SettlementDb;
@@ -1158,6 +1161,29 @@ async function simulateWithRetry(
   return probe;
 }
 
+/** A member adapter cannot execute raw kernel bytes or unsigned real tickets.
+ * Unknown probe state propagates as an infrastructure refusal, never a claim
+ * failure that bisection could quarantine. */
+async function simulateBatchWithRetry(
+  deps: CycleRunnerDeps, config: CycleRunnerConfig, kernelAddress: string,
+  executionAddress: string, batch: SettlementBatchDoc,
+): Promise<{ ok: boolean; revertReason: string | null }> {
+  if (executionAddress.toLowerCase() === kernelAddress.toLowerCase()) {
+    return simulateWithRetry(deps, config, kernelAddress, batch.calldata);
+  }
+  if (!deps.memberBatchProbe) throw new SystemicRefusal('member settlement probe unavailable');
+  const attempts = config.settleSimulate?.attempts ?? 5;
+  const delayMs = config.settleSimulate?.delayMs ?? 1_000;
+  for (let i = 0; i < attempts; ++i) {
+    try { return await deps.memberBatchProbe(batch); }
+    catch (error) {
+      if (i + 1 === attempts) throw new SystemicRefusal(`member settlement probe inconclusive: ${String(error)}`);
+      await deps.sleep(delayMs);
+    }
+  }
+  throw new SystemicRefusal('member settlement probe has no attempts');
+}
+
 /**
  * Re-send a RECORDED attempt byte-identically. Signing is deterministic, so the same fields
  * re-sign to the same transaction; the re-signed hash must equal the recorded one or nothing is
@@ -1555,7 +1581,7 @@ async function resolveBatch(
         kind: 'refused', reason: 'batch_approval_refused', detail: preApproval.refused, approval: preApproval.outcome,
       };
     }
-    const probe = await simulateWithRetry(deps, config, executionAddress, batch.calldata);
+    const probe = await simulateBatchWithRetry(deps, config, kernelAddress, executionAddress, batch);
     if (!probe.ok) {
       await releaseAndDie(`unsettleable at the dry run: ${probe.revertReason ?? 'simulation reverts'}`);
       return { kind: 'refused', reason: 'batch_unsettleable', detail: probe.revertReason ?? 'simulation reverts' };
@@ -1718,7 +1744,7 @@ async function resolveBatch(
             await markBatchDead(db, { batchId: batch.batch_id, nowMs: now(), reason: 'reverted twice with a live binding' });
             return { kind: 'refused', reason: 'batch_unsettleable', detail: 'reverted twice with a live binding' };
           }
-          const probe = await simulateWithRetry(deps, config, executionAddress, batch.calldata);
+          const probe = await simulateBatchWithRetry(deps, config, kernelAddress, executionAddress, batch);
           if (!probe.ok) {
             await markBatchDead(db, {
               batchId: batch.batch_id, nowMs: now(), reason: `unsettleable after revert: ${probe.revertReason ?? 'simulation reverts'}`,
@@ -2319,7 +2345,8 @@ async function probeSettles(
     if (SYSTEMIC_APPROVAL_REFUSALS.has(approval.reason)) throw new SystemicRefusal(approval.detail);
     return false;
   }
-  const simulation = await simulateWithRetry(ctx.deps, ctx.config, ctx.view.settlementForwarder?.address ?? ctx.view.kernelAddress, encoded.data);
+  const simulation = await simulateBatchWithRetry(ctx.deps, ctx.config, ctx.view.kernelAddress,
+    ctx.view.settlementForwarder?.address ?? ctx.view.kernelAddress, probeDocFor(ctx, plan, probeId, encoded.data));
   return simulation.ok;
 }
 

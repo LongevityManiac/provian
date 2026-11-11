@@ -266,6 +266,25 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testMissingHistoricalConsentPeriodCannotActivate' },
     ],
   },
+  'member-settlement-probe': {
+    sourcePath: 'contracts/src/ProvianMemberSettlement.sol',
+    testMatchPath: 'test/{ProvianMemberSettlementTickets,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    mutations: [
+      { id: 'PROBE-ROLLBACK', description: 'successful unsigned probe commits kernel and pool effects',
+        find: 'revert ProbeResult(success, result);', replace: 'return;',
+        expectedKilledBy: 'testProbeSuccessAlwaysRevertsBothLanesAndCannotLeaveReusableTickets' },
+      { id: 'PROBE-SELF', description: 'external caller can directly execute unsigned settlement',
+        find: 'if (msg.sender != address(this)) revert Unauthorized();', replace: '',
+        expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
+    ],
+  },
+  'issuance-probe-rpc': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance-probe.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance-probe.test.ts',
+    mutations: [{ id: 'PROBE-REORG', description: 'an orphaned simulation block is accepted with an unchanged manifest',
+      find: "if (canonical.some(header => object(header)?.hash !== input.blockHash || object(header)?.number !== height)) return fail('reorg');",
+      replace: 'void canonical;', expectedKilledBy: 'same-manifest reorg after both calls refuses the old block result' }],
+  },
   'ProvianMemberSettlement': {
     sourcePath: 'contracts/src/ProvianMemberSettlement.sol',
     testMatchPath: 'test/{ProvianMemberSettlementTickets,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',

@@ -17,8 +17,11 @@ contract ProvianMemberSettlement {
     address public immutable submitter;
     IMemberContributionCollector public immutable pool;
 
+    bytes32 private constant PROBE_SLOT = keccak256("Provian reverting settlement probe");
+
     error Unauthorized();
     error InvalidConfiguration();
+    error ProbeResult(bool success, bytes result);
 
     constructor(ProvianPVT9 kernel_, address submitter_, IMemberContributionCollector pool_, ProvianProtocolPointer pointer_) {
         if (address(pointer_).code.length == 0) revert InvalidConfiguration();
@@ -36,7 +39,39 @@ contract ProvianMemberSettlement {
     /// exact tickets are installed, consumed and closed in this transaction.
     function settleMemberBatch(bytes calldata kernelCall, RecourseIssuanceTickets.IssuanceContext calldata context,
         RecourseIssuanceTickets.IssuanceTicket[] calldata tickets, bytes calldata attestorSignature) external {
+        if (msg.sender != submitter || probeActive()) revert Unauthorized();
+        _validate(kernelCall, context);
+        RecourseIssuanceTickets(address(pool)).installIssuanceTickets(context, tickets, attestorSignature);
+        _execute(kernelCall, context);
+    }
+
+    /// @notice Exercise the actual settlement path without a reusable attestor
+    /// authorization. Both successful and failed probes revert all state.
+    function probeMemberBatch(bytes calldata kernelCall, RecourseIssuanceTickets.IssuanceContext calldata context,
+        RecourseIssuanceTickets.IssuanceTicket[] calldata tickets) external {
         if (msg.sender != submitter) revert Unauthorized();
+        (bool success, bytes memory result) = address(this).call(abi.encodeCall(this.executeProbe, (kernelCall, context, tickets)));
+        revert ProbeResult(success, result);
+    }
+
+    /// @dev Callable only inside probeMemberBatch's unconditionally reverting
+    /// frame. Neither the submitter nor any other external caller can commit it.
+    function executeProbe(bytes calldata kernelCall, RecourseIssuanceTickets.IssuanceContext calldata context,
+        RecourseIssuanceTickets.IssuanceTicket[] calldata tickets) external {
+        if (msg.sender != address(this)) revert Unauthorized();
+        _validate(kernelCall, context);
+        bytes32 slot = PROBE_SLOT;
+        assembly ("memory-safe") { tstore(slot, 1) }
+        RecourseIssuanceTickets(address(pool)).installIssuanceTickets(context, tickets, hex"");
+        _execute(kernelCall, context);
+    }
+
+    function probeActive() public view returns (bool active) {
+        bytes32 slot = PROBE_SLOT;
+        assembly ("memory-safe") { active := tload(slot) }
+    }
+
+    function _validate(bytes calldata kernelCall, RecourseIssuanceTickets.IssuanceContext calldata context) private view {
         pointer.requireCurrent(context.revision, 9, address(this));
         pointer.requireCurrent(context.revision, 0, address(kernel));
         pointer.requireCurrent(context.revision, 8, address(pool));
@@ -47,14 +82,15 @@ contract ProvianMemberSettlement {
             || context.lane > 1) revert InvalidConfiguration();
         (bytes32 batchId, uint64 epoch, bytes32 policyHash) = abi.decode(kernelCall[4:100], (bytes32, uint64, bytes32));
         if (batchId != context.batchId || epoch != context.epoch || policyHash != context.policyHash) revert InvalidConfiguration();
-        RecourseIssuanceTickets ticketPool = RecourseIssuanceTickets(address(pool));
-        ticketPool.installIssuanceTickets(context, tickets, attestorSignature);
+    }
+
+    function _execute(bytes calldata kernelCall, RecourseIssuanceTickets.IssuanceContext calldata context) private {
         (bool success, bytes memory reason) = address(kernel).call(kernelCall);
         if (!success) assembly ("memory-safe") { revert(add(reason, 32), mload(reason)) }
-        ProvianPVT9.BatchRecord memory record = kernel.getBatchRecord(batchId);
-        if (!record.settled || uint8(record.lane) != context.lane || record.epoch != epoch
-            || record.policyHash != policyHash || record.settlementDigest != context.settlementDigest) revert InvalidConfiguration();
-        ticketPool.finishIssuanceTickets(batchId);
+        ProvianPVT9.BatchRecord memory record = kernel.getBatchRecord(context.batchId);
+        if (!record.settled || uint8(record.lane) != context.lane || record.epoch != context.epoch
+            || record.policyHash != context.policyHash || record.settlementDigest != context.settlementDigest) revert InvalidConfiguration();
+        RecourseIssuanceTickets(address(pool)).finishIssuanceTickets(context.batchId);
     }
 
     function cancelMemberBatch(bytes32 batchId, uint256 revision) external {

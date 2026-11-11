@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {ProvianMemberSettlement} from "../src/ProvianMemberSettlement.sol";
 import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
 import {ProvianHashAccount} from "../src/ProvianHashAccount.sol";
 import {ProvianRecourseEligibilityVerifier} from "../src/ProvianRecourseEligibilityVerifier.sol";
@@ -633,6 +634,18 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         RecourseIssuanceTickets.IssuanceTicket[] memory tickets = new RecourseIssuanceTickets.IssuanceTicket[](1);
         tickets[0] = RecourseIssuanceTickets.IssuanceTicket(THIEF, 100 ether, 99 ether, 1 ether, 1, true);
         bytes memory call = abi.encodeCall(ProvianPVT9.settleStandardPEBatch, (batchId, 0, policyHash, 0, 1, recipients, claims));
+        ProvianMemberSettlement adapter = pool.settlement();
+        vm.expectRevert(abi.encodeWithSelector(ProvianMemberSettlement.ProbeResult.selector, true, hex""));
+        adapter.probeMemberBatch(call, context, tickets);
+        assertEq(kernel.balanceOf(THIEF), 23 ether);
+        assertEq(kernel.totalSupply(), 23 ether);
+        assertEq(kernel.balanceOf(address(pool)), 0);
+        assertEq(pool.accountedBacking(), 0);
+        assertEq(kernel.nextFinalizedCursor(), 0);
+        assertEq(kernel.epochTotalIssued(0), 0);
+        assertFalse(kernel.claimSettled(bytes32(uint256(123))));
+        assertFalse(kernel.getBatchRecord(batchId).settled);
+        vm.expectRevert(); adapter.settleMemberBatch(call, context, tickets, hex"");
         pool.settlement().settleMemberBatch(call, context, tickets, membershipSignature(2, pool.issuanceDigest(context, tickets)));
         assertEq(kernel.balanceOf(THIEF), 121 ether);
         assertEq(kernel.balanceOf(address(pool)), 1 ether);

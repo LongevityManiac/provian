@@ -1,3 +1,5 @@
+import { preparePrivateIssuanceProbe } from '../../recourse/settlement-issuance-runtime';
+import { simulatePrivateIssuanceProbe } from '../../recourse/settlement-issuance-probe';
 import { assertServerNonceWriterActive } from '../../onchain/server-writer-cutover';
 import { recourseForwarderConfig } from '../../recourse/settlement-forwarder';
 import { currentProtocolDeployment } from '../../protocol/runtime';
@@ -806,6 +808,8 @@ export async function runSettlement(
   }
 
   const cycleDeps: CycleRunnerDeps = {
+    memberBatchProbe: async batch => simulatePrivateIssuanceProbe(
+      await preparePrivateIssuanceProbe(db as unknown as Firestore, batch, minter.address, env), minter.address),
     db,
     ...(standardPayeeDue ? { standardPayeeDue } : {}),
     chain,
