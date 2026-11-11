@@ -75,6 +75,18 @@ async function receiptStatus(operation: SignedHashAccountOperation, sender: stri
 /** Caller serializes access to this journal. One invocation makes one delivery
  * attempt; only a proven finalized outer revert permits a new gas nonce. */
 export async function deliverHashAccountOperation(operation: SignedHashAccountOperation, ports: HashDeliveryPorts): Promise<HashDeliveryResult> {
+  const result = await runDelivery(operation, ports, true);
+  if (!result) throw Error('hash_delivery_missing_result');
+  return result;
+}
+/** Inspect retained gas attempts and finalize a winner without broadcasting
+ * either variant. Cancellation uses this to resolve an already-consumed nonce. */
+export function reconcileHashAccountOperation(operation: SignedHashAccountOperation,
+  ports: Omit<HashDeliveryPorts, 'send'>): Promise<HashDeliveryResult | null> {
+  return runDelivery(operation, { ...ports, async send() { throw Error('hash_delivery_read_only'); } }, false);
+}
+async function runDelivery(operation: SignedHashAccountOperation, ports: HashDeliveryPorts,
+  broadcast: boolean): Promise<HashDeliveryResult | null> {
   const id = hashDeliveryId(operation), data = hashAccountCall(operation);
   if (!/^0x[0-9a-f]{40}$/.test(ports.sender)) return fail();
   let record = await ports.read(id);
@@ -93,6 +105,7 @@ export async function deliverHashAccountOperation(operation: SignedHashAccountOp
     const status = await receiptStatus(operation, ports.sender, last.hash, ports.network);
     if (status === 'pending') return { status: 'pending', transactionHash: last.hash };
     if (status === 'unmined') {
+      if (!broadcast) return { status: 'pending', transactionHash: last.hash };
       await assertCurrentProtocolTransaction(ports.network, operation.target, operation.data);
       const replayed = await ports.send(last.id, { to: operation.account, data, value: '0', chainId: 8453 });
       if (replayed !== last.hash) throw Error('hash_delivery_replay_changed');
@@ -119,6 +132,7 @@ export async function deliverHashAccountOperation(operation: SignedHashAccountOp
       return { status: 'pending', transactionHash: recovered };
     }
   }
+  if (!broadcast) return null;
   // New sends and retries independently refuse retired inner targets/spenders.
   await assertCurrentProtocolTransaction(ports.network, operation.target, operation.data);
   if (!last || last.reverted) {

@@ -14,7 +14,7 @@ import { useWalletStore } from '../../store/walletStore';
 import { humanAccountPaths } from './human-account';
 import { readHumanHashSpendingDelivery, completeHumanHashSpending } from './human-hash-spending';
 import { hashAccountCall, type SignedHashAccountOperation } from './hash-account';
-import { deliverHashAccountOperation, hashDeliveryId, type HashDeliveryRecord, type HashDeliveryResult } from './hash-account-delivery';
+import { deliverHashAccountOperation, reconcileHashAccountOperation, hashDeliveryId, type HashDeliveryRecord, type HashDeliveryResult } from './hash-account-delivery';
 import { discoverBoundHumanHashAccount } from './human-bound-hash-account';
 
 /** The spending journal is the durable authority for the winning variant.
@@ -30,6 +30,16 @@ let tail: Promise<unknown> = Promise.resolve();
  * All signed gas bytes stay in the existing encrypted nonce coordinator. */
 export function deliverHumanHashSpending(account: string, action: BiometricAction, expectedOperationId: string,
   variant: 'operation' | 'cancellation' = 'operation'): Promise<HashDeliveryResult> {
+  return runHumanHashDelivery(account, action, expectedOperationId, variant, false).then(result => {
+    if (!result) throw Error('recourse_hash_delivery_missing_result'); return result;
+  });
+}
+export function reconcileHumanHashSpending(account: string, action: BiometricAction, expectedOperationId: string,
+  variant: 'operation' | 'cancellation' = 'operation'): Promise<HashDeliveryResult | null> {
+  return runHumanHashDelivery(account, action, expectedOperationId, variant, true);
+}
+function runHumanHashDelivery(account: string, action: BiometricAction, expectedOperationId: string,
+  variant: 'operation' | 'cancellation', reconcileOnly: boolean): Promise<HashDeliveryResult | null> {
   const run = tail.then(async () => {
     assertBiometricAction(action);
     const spending = await readHumanHashSpendingDelivery(account);
@@ -50,7 +60,8 @@ export function deliverHumanHashSpending(account: string, action: BiometricActio
       if (!key.privateKey) throw Error('recourse_gas_key_unavailable');
       const privateKey = '0x' + bytesToHex(key.privateKey), provider = TransactionService.providerFor(8453);
       const sender = new ActionWallet(privateKey, action, provider).address.toLowerCase();
-      return await deliverHashAccountOperation(operation, {
+      const deliver = reconcileOnly ? reconcileHashAccountOperation : deliverHashAccountOperation;
+      return await deliver(operation, {
         sender, network: ownerChainNetwork(),
         async read(id) {
           const raw = await SecureStore.getItemAsync(`provian_hash_delivery_${id.slice(2)}`);

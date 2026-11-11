@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { sha256 } from 'ethers';
 import type { BiometricAction } from '../security/biometricAction';
 import { hashAccountCall, type SignedHashAccountOperation } from './hash-account';
-import { deliverHumanHashSpending, pendingHumanHashDeliveryOperation } from './human-hash-delivery';
+import { deliverHumanHashSpending, reconcileHumanHashSpending, pendingHumanHashDeliveryOperation } from './human-hash-delivery';
 const f = vi.hoisted(() => ({ store: new Map<string, string>(), account: '', operation: null as unknown,
   completed: null as { hash: string; outcome: 'succeeded' | 'cancelled' } | null, failCompletion: false, active: true,
   sender: '', tx: '', block: '', mined: false, rotations: 0, sends: 0, rpc: vi.fn(), auxiliaryBinding:null as string|null, boundAccount:'' }));
@@ -87,4 +87,12 @@ test('auxiliary gas delivery requires the seed-derived current account and leave
   f.boundAccount=operation.account;
   await deliverHumanHashSpending(operation.account,action,hashDeliveryId(operation));
   expect(f.sends).toBe(1);expect(f.account).toBe(a('99'));
+});
+
+test('receipt-only native reconciliation cannot broadcast and finalizes an already-mined original',async()=>{
+ expect(await reconcileHumanHashSpending(operation.account,action,hashDeliveryId(operation))).toBeNull();expect(f.sends).toBe(0);
+ await deliverHumanHashSpending(operation.account,action,hashDeliveryId(operation));expect(f.sends).toBe(1);
+ expect((await reconcileHumanHashSpending(operation.account,action,hashDeliveryId(operation)))?.status).toBe('pending');expect(f.sends).toBe(1);
+ f.mined=true;
+ expect((await reconcileHumanHashSpending(operation.account,action,hashDeliveryId(operation)))?.status).toBe('complete');expect(f.sends).toBe(1);expect(f.rotations).toBe(1);
 });

@@ -304,6 +304,20 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'hash-transfer-review': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-hash-transfer.ts',
+    testMatchPath: 'src/core/recourse/human-hash-transfer.test.ts',
+    mutations: [{ id: 'TRANSFER-REVIEW-SNAPSHOT', description: 'let a caller mutate the reviewed transfer while queued',
+      find: 'const intent = { ...reviewed };', replace: 'const intent = reviewed;',
+      expectedKilledBy: 'caller edits after enqueue cannot change the transfer that was reviewed' }],
+  },
+  'hash-delivery-reconcile': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/hash-account-delivery.ts',
+    testMatchPath: 'src/hash-account-delivery.test.ts',
+    mutations: [{ id: 'RECONCILE-UNMINED-NO-SEND', description: 'attempt a broadcast while inspecting an unmined transaction',
+      find: "if (!broadcast) return { status: 'pending', transactionHash: last.hash };", replace: '',
+      expectedKilledBy: 'receipt-only reconciliation never broadcasts an absent, unmined or reverted attempt and still finalizes a real winner' }],
+  },
   'bound-hash-account': {
     runner: 'native-vitest', sourcePath: 'src/core/recourse/human-bound-hash-account.ts',
     testMatchPath: 'src/core/recourse/human-bound-hash-account.test.ts',

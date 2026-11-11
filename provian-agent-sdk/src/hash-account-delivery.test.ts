@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { sha256 } from 'ethers';
-import { deliverHashAccountOperation, hashDeliveryId, type HashDeliveryPorts, type HashDeliveryRecord } from './hash-account-delivery';
+import { deliverHashAccountOperation, reconcileHashAccountOperation, hashDeliveryId, type HashDeliveryPorts, type HashDeliveryRecord } from './hash-account-delivery';
 import { hashAccountCall, type SignedHashAccountOperation } from './hash-account-data';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 const guard = vi.hoisted(() => vi.fn(async () => ({})));
@@ -109,4 +109,16 @@ it('a reorg during finality lookup cannot release an orphaned outer revert for a
   await expect(deliverHashAccountOperation(operation, f.ports)).rejects.toThrow('reorg');
   expect(f.read()?.attempts[0].reverted).toBe(false); expect(f.ports.send).toHaveBeenCalledTimes(1);
   expect(f.ports.complete).not.toHaveBeenCalled();
+});
+
+it('receipt-only reconciliation never broadcasts an absent, unmined or reverted attempt and still finalizes a real winner', async () => {
+ const f=fixture();
+ expect(await reconcileHashAccountOperation(operation,f.ports)).toBeNull();expect(f.ports.send).not.toHaveBeenCalled();expect(f.ports.write).not.toHaveBeenCalled();
+ await deliverHashAccountOperation(operation,f.ports);
+ expect((await reconcileHashAccountOperation(operation,f.ports))?.status).toBe('pending');expect(f.ports.send).toHaveBeenCalledTimes(1);
+ f.state.mined=true;f.state.finalized=true;f.state.reverted=true;
+ expect((await reconcileHashAccountOperation(operation,f.ports))?.status).toBe('outer_reverted');
+ expect(await reconcileHashAccountOperation(operation,f.ports)).toBeNull();expect(f.ports.send).toHaveBeenCalledTimes(1);
+ const winner=fixture();await deliverHashAccountOperation(operation,winner.ports);winner.state.mined=true;winner.state.finalized=true;
+ expect((await reconcileHashAccountOperation(operation,winner.ports))?.status).toBe('complete');expect(winner.ports.send).toHaveBeenCalledTimes(1);
 });
