@@ -28,11 +28,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "c8d437ec61f125e8150ddf17d553af5cefa64cc2d389924b14883b75b47c3248",
     "a86c31c7600e5dcb1f10630870e39c8a7f8e56c954f161f959c60775b7af8d4f"
   ],
-  "provian-website/public/docs-md/the-provian-thesis.md": [
-    "0b1e2ae8d62c665708395ba0f5ec4660b234789e55fffe22a6d7d3bfac34d238",
-    "e5d70060ad542691f60f8ad7c6ed894c12a18a5c604a6f519bcbabee8f15390e",
-    "d8f610bf03561d0a57d470a60e5aaac3f2748c44158661ff7489fd00298a17f7"
-  ],
   "docs/translations/network-constitution/sw.md": [
     "d82343bfb965680508fab2f0dc2f463f4af8f27ca8c15eb01c08482595b59a2c",
     "4d1c920339c5f70f56993ee3aec500cb441649abfcefd78e8cbf790076f72e5e"
@@ -98,11 +93,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
   ],
   "reference/Provian_Tokenomics_PVT_v3.md": [
     "862082c647b5739c082b0ff3a5d20ca385c33ec43cc3c162e2f521dc9b072c1c"
-  ],
-  "reference/TheProvianThesis_v24.md": [
-    "0b1e2ae8d62c665708395ba0f5ec4660b234789e55fffe22a6d7d3bfac34d238",
-    "e5d70060ad542691f60f8ad7c6ed894c12a18a5c604a6f519bcbabee8f15390e",
-    "d8f610bf03561d0a57d470a60e5aaac3f2748c44158661ff7489fd00298a17f7"
   ],
   "reference/The_Exponential_Currency.md": [
     "2b9b415b00f6261a1ae2747e114cf0ac938edf4a5048051345a12643131dd1e3",
