@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Pahintulutan ang iyong kahilingan sa pagpapanumbalik",
     "allocationRequest": "ID ng kahilingan sa pagpapanumbalik",
     "withdrawAllocation": "I-withdraw ang nakatalagang pagpapanumbalik",
-    "membershipUnavailable": "Pansamantalang hindi available ang pribadong katayuan ng pagiging miyembro. I-refresh matapos makumpleto ang mga nakabinbing aksyon."
+    "membershipUnavailable": "Pansamantalang hindi available ang pribadong katayuan ng pagiging miyembro. I-refresh matapos makumpleto ang mga nakabinbing aksyon.",
+    "memberBindingConsent": "Pahintulot sa Recourse Pool para sa address na ito",
+    "memberBindingBytes": "Lagdaan ang ikalawang mensaheng ito bilang 32 byte na ipinakita sa hex, hindi bilang teksto. Isinasama nito ang address na ito sa kasalukuyan mong pagiging miyembro ng Recourse Pool.",
+    "memberBindingSignature": "Lagda ng pahintulot sa pool"
   }
 }

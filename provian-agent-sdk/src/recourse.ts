@@ -1,3 +1,7 @@
+import { getBytes, Wallet } from 'ethers';
+import { readRecoursePoolChain } from './recourse-pool-chain';
+import { parseMemberBindingChallenge, type MemberBindingConsent } from './recourse-member-binding';
+import { addressMembershipSigningHash } from './recourse-membership-authorization';
 import { recoverRecourseAgent } from './recourse-recovery';
 import { recoverySigningRoot, recoveryCommitment } from './recourse-hash-authorization';
 import { guardedFetcher } from './guarded-fetch';
@@ -31,7 +35,7 @@ async function request(config: RecourseConfig, path: string, body?: unknown): Pr
 /** Durably encrypt an independent secret before registering only its hash. */
 export async function bindRecourseOwnership(config: RecourseConfig, input: {
   readonly keystore: AgentKeystore; readonly passphrase: string; readonly keystorePath: string;
-  readonly external?: { readonly address: string; readonly sign: (message: string) => Promise<string> };
+  readonly external?: { readonly address: string; readonly sign: (message: string) => Promise<string>; readonly signBytes?: (message: Uint8Array) => Promise<string> };
 }): Promise<unknown> {
   if (input.keystore.wallet_id !== config.walletId) throw new Error('recourse_wallet_mismatch');
   const keystore = initializeRecoveryKeystore(input.keystore, input.passphrase, input.keystorePath);
@@ -52,7 +56,20 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
     || raw.message !== recourseBindingMessage(binding)) throw new Error('recourse_challenge_invalid');
   const signature = input.external ? await input.external.sign(raw.message as string)
     : await withDecryptedKey(keystore, input.passphrase, key => signEip191Message(key.privateKey, raw.message as string));
-  const result = await request(config, 'bind', { binding, signature });
+  let memberConsent: MemberBindingConsent | undefined;
+  if ('memberConsent' in raw && raw.memberConsent !== null && raw.memberConsent !== undefined) {
+    const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
+    const challenge = parseMemberBindingChallenge(raw.memberConsent, binding, {
+      domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: pool.pool },
+      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp,
+    });
+    const bytes = getBytes(addressMembershipSigningHash(challenge.domain, challenge.consent));
+    if (input.external && !input.external.signBytes) throw Error('recourse_external_membership_signer_required');
+    const ownerSignature = input.external ? await input.external.signBytes!(bytes)
+      : await withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
+    memberConsent = { consent: challenge.consent, ownerSignature };
+  }
+  const result = await request(config, 'bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
   await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal);
   return result;
 }

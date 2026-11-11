@@ -158,6 +158,17 @@ class ExternalWalletProofClient {
         return result;
     }
 
+    /** Sign the validated 32-byte membership authorization, without UTF-8 re-encoding. */
+    async requestPersonalSignBytes(session: SessionTypes.Struct, account: ExternalWalletAccount,
+        messageHex: string): Promise<string> {
+        if (!/^0x[0-9a-f]{64}$/.test(messageHex)) throw new Error('walletconnect_invalid_message');
+        const client = await this.getClient();
+        const result: unknown = await client.request({ topic: session.topic, chainId: account.chainId,
+            request: { method: EXTERNAL_PROOF_METHOD, params: [messageHex, account.address] } });
+        if (!isHexSignature(result)) throw new Error('walletconnect_bad_signature');
+        return result;
+    }
+
     /** End the session once the proof is done (or abandoned). Best-effort. */
     async disconnect(session: SessionTypes.Struct | null): Promise<void> {
         if (!session || !this.client) return;

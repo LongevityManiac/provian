@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Idhinisha ombi lako la urejeshaji",
     "allocationRequest": "Kitambulisho cha ombi la urejeshaji",
     "withdrawAllocation": "Toa mgao wa urejeshaji",
-    "membershipUnavailable": "Hali binafsi ya uanachama haipatikani kwa muda. Onyesha upya baada ya shughuli zinazosubiri kukamilika."
+    "membershipUnavailable": "Hali binafsi ya uanachama haipatikani kwa muda. Onyesha upya baada ya shughuli zinazosubiri kukamilika.",
+    "memberBindingConsent": "Idhini ya Recourse Pool kwa anwani hii",
+    "memberBindingBytes": "Saini ujumbe huu wa pili kama baiti 32 zilizoonyeshwa kwa heksadesimali, si kama maandishi. Unajumuisha anwani hii katika uanachama wako wa sasa wa Recourse Pool.",
+    "memberBindingSignature": "Saini ya idhini ya mfuko"
   }
 }

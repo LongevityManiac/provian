@@ -1,4 +1,7 @@
-vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: async () => ({ pointer: `0x${'34'.repeat(20)}`, addresses: { kernel: requireConfiguredPvt9Runtime().address } }), ownerChainNetwork: () => ({}) }));
+import { Wallet, getBytes, verifyMessage } from 'ethers';
+import { addressMembershipSigningHash } from './recourse-membership-authorization';
+vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: async () => ({ pointer: `0x${'34'.repeat(20)}`, revision: 1n, addresses: { kernel: requireConfiguredPvt9Runtime().address } }), ownerChainNetwork: () => ({}) }));
+vi.mock('./recourse-pool-chain', () => ({ readRecoursePoolChain: async () => ({ pool: `0x${'56'.repeat(20)}`, consentNonce: '0', signedRuleHash: `0x${'78'.repeat(32)}`, timestamp: Math.floor(Date.now()/1000) }) }));
 vi.mock('./recourse-binding-chain', () => ({ waitForRecourseBinding: (...args: unknown[]) => h.confirm(...args) }));
 import { recoverySigningRoot, recoveryCommitment as commitmentHash } from './recourse-hash-authorization';
 import { addressRecoveryBinding } from './recourse-address-binding';
@@ -16,11 +19,12 @@ vi.mock('./keystore', () => ({
     try { return await callback(secret, new Uint8Array(32).fill(8)); } finally { secret.fill(0); }
   },
   withDecryptedKey: async (_key: AgentKeystore, _pass: string, callback: (key: { privateKey: string }) => unknown) =>
-    callback({ privateKey: 'test-key-never-transmitted' }),
+    callback({ privateKey: `0x${'11'.repeat(32)}` }),
 }));
 vi.mock('./link-signing', () => ({ signEip191Message: (...args: unknown[]) => h.sign(...args) }));
 const walletId = 'agent-test';
-const address = `0x${'12'.repeat(20)}`;
+const testWallet = new Wallet(`0x${'11'.repeat(32)}`);
+const address = testWallet.address.toLowerCase();
 const identity = addressRecoveryBinding({ chainId: '8453', pointer: `0x${'34'.repeat(20)}`, origin: address });
 let signingRoot: string;
 let recoveryCommitment: string;
@@ -34,21 +38,24 @@ const config = { relayUrl: 'https://relay.example', apiKey: 'key', apiSecret: 's
 const input = { keystore: { wallet_id: walletId, address } as AgentKeystore,
   passphrase: 'local-only', keystorePath: '/test/encrypted' };
 let change: Partial<RecourseBinding>;
+let member = false;
 beforeEach(() => {
-  vi.clearAllMocks(); h.initialized = false; change = {};
+  vi.clearAllMocks(); h.initialized = false; change = {}; member = false;
   h.sign.mockResolvedValue('0xsignature');
   h.fetch.mockImplementation(async (url: string, options: RequestInit) => {
     expect(h.initialized).toBe(true);
     const text = String(options.body);
     expect(text).not.toContain('local-only');
-    expect(text).not.toContain('test-key-never-transmitted');
+    expect(text).not.toContain('11'.repeat(32));
     expect(text).not.toContain('07'.repeat(32));
     if (url.endsWith('/binding-challenge')) {
       expect(JSON.parse(text)).toEqual({ address, recoveryCommitment, signingRoot });
       const binding: RecourseBinding = { address, identity, recoveryCommitment, signingRoot,
         kernel: requireConfiguredPvt9Runtime().address.toLowerCase(), nonce: `0x${'ab'.repeat(32)}`,
         expiresAtMs: Date.now() + 60_000, ...change };
-      return { ok: true, json: async () => ({ binding, message: recourseBindingMessage(binding) }) };
+      const memberConsent = member ? { domain: { chainId: '8453', pointer: `0x${'34'.repeat(20)}`, kernel: binding.kernel, pool: `0x${'56'.repeat(20)}` },
+        consent: { binding: identity, account: address, nonce: '0', joined: true, revision: '1', ruleHash: `0x${'78'.repeat(32)}`, expiresAt: String(Math.floor(binding.expiresAtMs/1000)) } } : null;
+      return { ok: true, json: async () => ({ binding, message: recourseBindingMessage(binding), memberConsent }) };
     }
     return { ok: true, json: async () => ({ bound: true }) };
   });
@@ -70,5 +77,25 @@ it('refuses expired challenge and mismatched local wallet', async () => {
   change = { expiresAtMs: Date.now() - 1 };
   await expect(bindRecourseOwnership(config, input)).rejects.toThrow('recourse_challenge_invalid');
   await expect(bindRecourseOwnership({ ...config, walletId: 'other' }, input)).rejects.toThrow('recourse_wallet_mismatch');
+  expect(h.sign).not.toHaveBeenCalled();
+});
+
+it('signs exact member consent bytes with the sovereign key and sends only the scoped mandate', async () => {
+  member = true;
+  await bindRecourseOwnership(config, input);
+  const body = JSON.parse(h.fetch.mock.calls[1][1].body), domain = { chainId: '8453', pointer: `0x${'34'.repeat(20)}`,
+    kernel: body.binding.kernel, pool: `0x${'56'.repeat(20)}` };
+  const hash = addressMembershipSigningHash(domain, body.memberConsent.consent);
+  expect(verifyMessage(getBytes(hash), body.memberConsent.ownerSignature)).toBe(testWallet.address);
+  expect(verifyMessage(hash, body.memberConsent.ownerSignature)).not.toBe(testWallet.address);
+});
+it('external member bindings require the explicit byte signer and never borrow the local wallet', async () => {
+  member = true;
+  const sign = vi.fn(async () => '0xexternal');
+  await expect(bindRecourseOwnership(config, { ...input, external: { address, sign } })).rejects.toThrow('external_membership_signer_required');
+  expect(h.fetch).toHaveBeenCalledTimes(1);
+  const signBytes = vi.fn((bytes: Uint8Array) => testWallet.signMessage(bytes));
+  await bindRecourseOwnership(config, { ...input, external: { address, sign, signBytes } });
+  expect(signBytes).toHaveBeenCalledOnce(); expect(signBytes.mock.calls[0][0]).toHaveLength(32);
   expect(h.sign).not.toHaveBeenCalled();
 });

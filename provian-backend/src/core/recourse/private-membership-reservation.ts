@@ -99,6 +99,7 @@ export async function reservePrivateMembership(db: Firestore, input: PrivateMemb
     const account = accountRow.data() as PrivateMembershipAccount;
     const privateOwner = await transaction.get(db.collection(RECOURSE_COLLECTIONS.owners).doc(reservation.ownerIdentity));
     if (!privateOwner.exists || privateOwner.get('ownerIdentity') !== reservation.ownerIdentity) return invalid('ownership');
+    if (privateOwner.get('membershipScanRequired') === true) return invalid('membership_scan_required');
     if (privateOwner.get('membershipTransition') != null) return invalid('membership_transition_pending');
 
     const addresses = reservation.kind === 'debit' ? [reservation.debit.payer] : reservation.recipients.map(row => row.account);

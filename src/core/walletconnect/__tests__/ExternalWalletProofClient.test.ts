@@ -148,3 +148,19 @@ describe('ExternalWalletProofClient', () => {
         }
     });
 });
+
+it('signs membership bytes exactly, refusing text and non-signature results', async () => {
+    const mod = await load(), wallet = ethers.Wallet.createRandom(), bytes = `0x${'ab'.repeat(32)}`;
+    const account = { address: wallet.address.toLowerCase(), chainId: 'eip155:8453' }, session = { topic: 'member' } as never;
+    h.requestResult = await wallet.signMessage(ethers.getBytes(bytes));
+    const signature = await mod.externalWalletProofClient.requestPersonalSignBytes(session, account, bytes);
+    expect(h.requestArgs[0]).toMatchObject({ request: { method: 'personal_sign', params: [bytes, account.address] } });
+    expect(ethers.verifyMessage(ethers.getBytes(bytes), signature)).toBe(wallet.address);
+    expect(ethers.verifyMessage(bytes, signature)).not.toBe(wallet.address);
+    const calls = h.requestArgs.length;
+    for (const invalid of ['message', '0xab', ethers.hexlify(ethers.toUtf8Bytes(bytes))])
+        await expect(mod.externalWalletProofClient.requestPersonalSignBytes(session, account, invalid)).rejects.toThrow('invalid_message');
+    expect(h.requestArgs).toHaveLength(calls);
+    h.requestResult = 'approved';
+    await expect(mod.externalWalletProofClient.requestPersonalSignBytes(session, account, bytes)).rejects.toThrow('bad_signature');
+});

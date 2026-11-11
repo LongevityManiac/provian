@@ -7,7 +7,8 @@ import { withBiometricAction } from '../security/biometricAction';
 import SeedManager from '../wallet/SeedManager';
 import TransactionService from '../wallet/TransactionService';
 import { translate } from '../../i18n/translate';
-import { bindingMessage, prepareHumanOwnershipBinding, type OwnershipBinding } from './ownership';
+import { bindingMessage, humanBindingMemberChallenge, prepareHumanOwnershipBinding, type OwnershipBinding } from './ownership';
+import { addressMembershipSigningHash } from './membership-authorization';
 import type { ExternalWalletProofApi } from '../../screens/Agent/LinkExternalWalletScreen';
 import { recoverHumanAccount } from './human-recovery';
 import { readRecoursePoolChain } from './pool-chain';
@@ -142,8 +143,10 @@ export function recourseExternalProofApi(): ExternalWalletProofApi {
           const binding = await prepareHumanOwnershipBinding({ userId,
             request: (path, body) => RelayAPIService.recourseRequest(path, body, action) }, value, action);
           pending.set(binding.nonce, binding);
+          const member = humanBindingMemberChallenge(binding);
           return { ok: true as const, challenge: { challengeId: binding.nonce, address: binding.address,
-            expiresAt: binding.expiresAtMs, message: bindingMessage(binding) } };
+            expiresAt: binding.expiresAtMs, message: bindingMessage(binding),
+            ...(member ? { memberConsentMessageHex: addressMembershipSigningHash(member.domain, member.consent) } : {}) } };
         });
       } catch { return { ok: false, error: 'challenge_failed' }; }
     },
@@ -153,7 +156,10 @@ export function recourseExternalProofApi(): ExternalWalletProofApi {
       try {
         const deployment = await currentProtocolDeployment();
         if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('protocol_pointer_changed');
-        await RelayAPIService.recourseRequest('bind', { binding, signature: input.signature });
+        const member = humanBindingMemberChallenge(binding);
+        if (Boolean(member) !== Boolean(input.memberSignature)) throw new Error('recourse_member_signature_required');
+        await RelayAPIService.recourseRequest('bind', { binding, signature: input.signature,
+          ...(member ? { memberConsent: { consent: member.consent, ownerSignature: input.memberSignature } } : {}) });
         await waitForRecourseBinding(binding, ownerChainNetwork());
         pending.delete(input.challengeId);
         return { ok: true, provenAddress: binding.address };

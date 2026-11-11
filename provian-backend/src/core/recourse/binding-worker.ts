@@ -4,7 +4,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { acquireSignerLease, releaseSignerLease, listAllUnresolvedBatches, SETTLEMENT_CYCLES_COLLECTION,
   SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
 import { finalizedOwnerTransaction } from './transaction-finality';
-import { BINDING_OPERATIONS, REGISTRY_ABI, assertCheckedBindingOperation, checkBindingOperation,
+import { BINDING_OPERATIONS, bindingOperationCalldata, assertCheckedBindingOperation, checkBindingOperation,
   readConfirmedBinding, confirmBindingRegistration, type CheckedBindingOperation, type IdentityAttestor } from './binding-operation';
 import { ownershipBindingMessage, RECOURSE_COLLECTIONS, type OwnershipBinding } from './ownership';
 
@@ -65,7 +65,7 @@ Promise<'submitted' | 'confirmed' | 'failed'> {
         throw error;
       }
       if (prior) {
-        await confirmBindingRegistration(db, prior);
+        await confirmBindingRegistration(db, prior, row.get('memberConsent') as CheckedBindingOperation['memberConsent']);
         return finish('confirmed', 'binding_executed_by_other_submitter', true);
       }
       // This worker must not allocate the nonce of an unbroadcast settlement.
@@ -76,7 +76,7 @@ Promise<'submitted' | 'confirmed' | 'failed'> {
       }
       if (binding.expiresAtMs <= Date.now()) return finish('failed', 'binding_expired', true);
       let plan: CheckedBindingOperation;
-      try { plan = await ports.check(db, binding, String(row.get('ownerSignature')), attestor); }
+      try { plan = await ports.check(db, binding, String(row.get('ownerSignature')), attestor, undefined, row.get('memberConsent') as CheckedBindingOperation['memberConsent']); }
       catch (error) {
         if (error instanceof Error && ['recourse_binding_operation_retired', 'recourse_binding_operation_owner_mismatch'].includes(error.message)) {
           return finish('failed', error.message, true);
@@ -105,9 +105,8 @@ Promise<'submitted' | 'confirmed' | 'failed'> {
     if (typeof raw !== 'string' || keccak256(raw) !== row.get('transactionHash') || row.get('gasSigner') !== signer.address) {
       throw new Error('recourse_binding_record_invalid');
     }
-    const calldata = REGISTRY_ABI.encodeFunctionData('bind', [[binding.identity, binding.address,
-      binding.recoveryCommitment, binding.signingRoot, binding.kernel, binding.nonce, binding.expiresAtMs],
-      row.get('ownerSignature'), row.get('identitySignature'), BigInt(String(row.get('revision')))]);
+    const calldata = bindingOperationCalldata(binding, String(row.get('ownerSignature')), String(row.get('identitySignature')),
+      String(row.get('revision')), row.get('memberConsent') as CheckedBindingOperation['memberConsent']);
     validateTransaction(raw, signer.address, String(row.get('executor')), calldata);
     try {
       const terminal = await ports.finalized(raw);
@@ -119,7 +118,7 @@ Promise<'submitted' | 'confirmed' | 'failed'> {
           throw error;
         }
         if (registration) {
-          await confirmBindingRegistration(db, registration);
+          await confirmBindingRegistration(db, registration, row.get('memberConsent') as CheckedBindingOperation['memberConsent']);
           return finish('confirmed', 'binding_finalized');
         }
         if (terminal.status === 1) throw new Error('recourse_binding_event_unconfirmed');

@@ -9,6 +9,8 @@ const sdk = require(path.join(root, 'provian-agent-sdk/src/recourse-membership-a
 const [mode, chainId, pointer, kernel, pool, payload] = process.argv.slice(2);
 const domain = { chainId, pointer, kernel, pool };
 const result = mode === 'consent' ? sdk.addressMembershipDigest(domain, JSON.parse(payload))
-  : mode === 'debit' ? sdk.exactMembershipDebitDigest(domain, JSON.parse(payload)) : null;
+  : mode === 'debit' ? sdk.exactMembershipDebitDigest(domain, JSON.parse(payload))
+  : mode === 'member-binding' ? require(path.join(root, 'provian-agent-sdk/src/recourse-member-binding.ts')).memberBindingDigest(
+    domain, JSON.parse(payload).registry, JSON.parse(payload).binding, JSON.parse(payload).consent) : null;
 if (!result) throw Error('invalid_fixture_mode');
 process.stdout.write(result);

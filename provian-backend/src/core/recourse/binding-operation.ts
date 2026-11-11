@@ -1,4 +1,4 @@
-import { Interface, Wallet, hashMessage, verifyMessage } from 'ethers';
+import { Interface, Wallet, getBytes, hashMessage, verifyMessage } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
@@ -6,6 +6,13 @@ import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import { ownershipBindingMessage, RECOURSE_COLLECTIONS, type OwnershipBinding } from './ownership';
 import type { OwnerOperationChain } from './owner-operation-queue';
 
+import { memberBindingSigningHash, MEMBER_BINDING_TUPLE, MEMBER_CONSENT_TUPLE, type MemberBindingConsent } from './member-binding';
+import { addressMembershipSigningHash, parseAddressMembershipConsent } from './membership-authorization';
+import { requiresMemberBinding } from './member-binding-requirement';
+
+import { createHash } from 'crypto';
+import { readMembershipReceipt, MEMBERSHIP_RECEIPT_ABI } from './membership-receipt';
+import { PRIVATE_MEMBERSHIP_COLLECTIONS } from './private-membership-reservation';
 export const BINDING_OPERATIONS = 'recourse_binding_operations_v1';
 export const REGISTRY_ABI = new Interface([
   'function identityAttestor() view returns(address)', 'function pointer() view returns(address)',
@@ -13,6 +20,7 @@ export const REGISTRY_ABI = new Interface([
   'function consumedBinding(bytes32) view returns(bool)',
   'function bindingBlock(bytes32) view returns(uint256)',
   'function bind((bytes32 identity,address account,bytes32 recoveryCommitment,bytes32 signingRoot,address kernel,bytes32 nonce,uint256 expiresAtMs),bytes,bytes,uint256)',
+  `function bindWithConsent(${MEMBER_BINDING_TUPLE},bytes,bytes,uint256,${MEMBER_CONSENT_TUPLE},bytes,bytes)`,
   'event OwnershipBound(bytes32 indexed identity,address indexed account,address indexed kernel,bytes32 recoveryCommitment,bytes32 signingRoot,bytes32 digest)',
 ]);
 const KERNEL = new Interface(['function registryOperator() view returns(address)', 'function restorationAuthority() view returns(address)']);
@@ -21,6 +29,7 @@ const TOKEN = new Interface(['function balanceOf(address) view returns(uint256)'
 export interface IdentityAttestor {
   readonly address: string;
   signMessage(message: string): Promise<string>;
+  signBytes?(message: Uint8Array): Promise<string>;
 }
 /** The existing independently held settlement approver attests identity. It is
  * never the restoration authority and this role cannot debit a holder. */
@@ -28,7 +37,7 @@ export function configuredIdentityAttestor(env: NodeJS.ProcessEnv = process.env)
   const key = env.PVT9_SETTLEMENT_APPROVER_KEY;
   if (!key) throw new Error('recourse_identity_attestor_unavailable');
   const wallet = new Wallet(key);
-  return { address: wallet.address.toLowerCase(), signMessage: message => wallet.signMessage(message) };
+  return { address: wallet.address.toLowerCase(), signMessage: message => wallet.signMessage(message), signBytes: message => wallet.signMessage(message) };
 }
 function chainPort(): OwnerOperationChain {
   const legs = getOperatorBoundRpcLegs('base');
@@ -96,23 +105,61 @@ export async function readConfirmedBinding(binding: OwnershipBinding, chain = ch
   confirmed.add(proof);
   return proof;
 }
-export async function confirmBindingRegistration(db: Firestore, proof: ConfirmedBinding): Promise<void> {
+export async function confirmBindingRegistration(db: Firestore, proof: ConfirmedBinding, member?: MemberBindingConsent): Promise<void> {
   if (!confirmed.has(proof)) throw new Error('recourse_binding_confirmation_unverified');
+  let effect: { pool: string; logIndex: number; receipt: Awaited<ReturnType<typeof readMembershipReceipt>> } | null = null;
+  if (member) {
+    const pool = (await currentProtocolDeployment()).addresses.recoursePool.toLowerCase();
+    const receipt = await readMembershipReceipt(proof.transactionHash, pool);
+    const matches = receipt.events.filter(event => {
+      if (event.name !== 'AddressConsentChanged' || event.pool !== pool || event.kernel !== proof.kernel) return false;
+      const log = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...event.topics], data: event.data });
+      return log?.args.binding === proof.identity && log.args.joined === true && String(log.args.nonce) === member.consent.nonce;
+    });
+    if (matches.length !== 1 || receipt.block !== proof.block || receipt.blockHash !== proof.blockHash
+      || matches[0].logIndex <= proof.logIndex || member.consent.binding !== proof.identity || member.consent.account !== proof.address) throw Error('recourse_binding_member_effect_missing');
+    effect = { pool, logIndex: matches[0].logIndex, receipt };
+  }
   const ref = db.collection(RECOURSE_COLLECTIONS.addresses).doc(proof.address);
   await db.runTransaction(async tx => {
     const row = await tx.get(ref);
     if (!row.exists || row.get('identity') !== proof.identity || row.get('kernel') !== proof.kernel) throw new Error('recourse_binding_record_changed');
-    if (row.get('chainBindingStatus') === 'confirmed') return;
-    if (row.get('checkpoint') !== undefined) throw new Error('recourse_binding_provisional_ledger');
-    tx.update(ref, { chainBindingStatus: 'confirmed', chainBindingTransaction: proof.transactionHash,
-      boundBlock: proof.block, boundLogIndex: proof.logIndex, boundBlockHash: proof.blockHash, openingBalanceAtomic: proof.balanceAtomic,
-      bindingDigest: proof.digest, ledgerNeedsCatchup: true });
+    let effectRef: FirebaseFirestore.DocumentReference | null = null;
+    let ownerRef: FirebaseFirestore.DocumentReference | null = null;
+    if (effect) {
+      const ownerIdentity: unknown = row.get('ownerIdentity');
+      if (typeof ownerIdentity !== 'string') throw Error('recourse_binding_private_owner_invalid');
+      ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity);
+      effectRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.effects).doc(`0x${createHash('sha256')
+        .update(JSON.stringify([proof.kernel, effect.pool, proof.transactionHash, effect.logIndex])).digest('hex')}`);
+      const [owner, prior] = await Promise.all([tx.get(ownerRef), tx.get(effectRef)]);
+      if (!owner.exists || owner.get('ownerIdentity') !== ownerIdentity) throw Error('recourse_binding_private_owner_invalid');
+      if (prior.exists) {
+        if (prior.get('bindingDigest') !== proof.digest || prior.get('ownerIdentity') !== ownerIdentity) throw Error('recourse_binding_member_effect_replay');
+        effectRef = null; ownerRef = null;
+      }
+    }
+    if (row.get('chainBindingStatus') !== 'confirmed') {
+      if (row.get('checkpoint') !== undefined) throw new Error('recourse_binding_provisional_ledger');
+      tx.update(ref, { chainBindingStatus: 'confirmed', chainBindingTransaction: proof.transactionHash,
+        boundBlock: proof.block, boundLogIndex: proof.logIndex, boundBlockHash: proof.blockHash, openingBalanceAtomic: proof.balanceAtomic,
+        bindingDigest: proof.digest, ledgerNeedsCatchup: true });
+    }
+    if (effect && effectRef && ownerRef) {
+      tx.create(effectRef, { ownerIdentity: row.get('ownerIdentity'), bindingDigest: proof.digest,
+        transactionHash: proof.transactionHash, logIndex: effect.logIndex, block: proof.block, blockHash: proof.blockHash, receipt: effect.receipt });
+      // Keep any prior money reservation's immutable before-state intact. This
+      // separate flag blocks NEW signing until the owner scanner catches up.
+      tx.update(ownerRef, { membershipScanRequired: true });
+    }
   });
 }
+
 export interface CheckedBindingOperation {
   readonly id: string; readonly executor: string; readonly calldata: string; readonly manifestHash: string;
   readonly binding: OwnershipBinding; readonly ownerSignature: string; readonly identitySignature: string;
   readonly revision: string; readonly attestor: string;
+  readonly memberConsent?: MemberBindingConsent & { readonly attestorSignature: string };
 }
 const checked = new WeakSet<CheckedBindingOperation>();
 export function assertCheckedBindingOperation(plan: CheckedBindingOperation): void {
@@ -121,7 +168,7 @@ export function assertCheckedBindingOperation(plan: CheckedBindingOperation): vo
 /** Only a previously admitted identity/address binding can obtain this
  * attestation. The actual registry simulates BOTH signatures before queueing. */
 export async function checkBindingOperation(db: Firestore, binding: OwnershipBinding, ownerSignature: string,
-  attestor: IdentityAttestor, chain = chainPort()): Promise<CheckedBindingOperation> {
+  attestor: IdentityAttestor, chain = chainPort(), memberInput?: MemberBindingConsent): Promise<CheckedBindingOperation> {
   const message = ownershipBindingMessage(binding), id = hashMessage(message);
   const deployment = await chain.deployment();
   if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('recourse_binding_operation_retired');
@@ -149,34 +196,52 @@ export async function checkBindingOperation(db: Firestore, binding: OwnershipBin
   ]);
   if (identitySigner !== attestor.address.toLowerCase() || identitySigner === authority
     || registry !== poolRegistry || pointer !== deployment.pointer.toLowerCase()) throw new Error('recourse_binding_attestor_mismatch');
-  const identitySignature = await attestor.signMessage(message);
-  if (verifyMessage(message, identitySignature).toLowerCase() !== identitySigner) throw new Error('recourse_binding_attestation_invalid');
-  const calldata = REGISTRY_ABI.encodeFunctionData('bind', [[binding.identity, binding.address,
-    binding.recoveryCommitment, binding.signingRoot, binding.kernel, binding.nonce, binding.expiresAtMs],
-    ownerSignature, identitySignature, deployment.revision]);
+  const privateOwner: unknown = owner.get('ownerIdentity');
+  if (typeof privateOwner !== 'string' || address.get('ownerIdentity') !== privateOwner) throw Error('recourse_binding_operation_owner_mismatch');
+  const memberRequired = await requiresMemberBinding(db, privateOwner, deployment, chain);
+  if (memberRequired !== Boolean(memberInput)) throw Error('recourse_binding_member_consent_required');
+  const domain = { chainId: '8453', pointer, kernel: binding.kernel, pool: deployment.addresses.recoursePool.toLowerCase() };
+  let memberConsent: CheckedBindingOperation['memberConsent'];
+  let identitySignature: string;
+  if (memberInput) {
+    const consent = parseAddressMembershipConsent(memberInput.consent);
+    if (!attestor.signBytes || consent.revision !== String(deployment.revision) || typeof memberInput.ownerSignature !== 'string'
+      || !/^0x(?:[0-9a-fA-F]{2})+$/.test(memberInput.ownerSignature)) throw Error('recourse_binding_member_consent_invalid');
+    const bindingBytes = getBytes(memberBindingSigningHash(domain, registry, binding, consent));
+    const consentBytes = getBytes(addressMembershipSigningHash(domain, consent));
+    identitySignature = await attestor.signBytes(bindingBytes);
+    const attestorSignature = await attestor.signBytes(consentBytes);
+    if (verifyMessage(bindingBytes, identitySignature).toLowerCase() !== identitySigner
+      || verifyMessage(consentBytes, attestorSignature).toLowerCase() !== identitySigner) throw Error('recourse_binding_attestation_invalid');
+    memberConsent = Object.freeze({ consent: Object.freeze(consent), ownerSignature: memberInput.ownerSignature, attestorSignature });
+  } else {
+    identitySignature = await attestor.signMessage(message);
+    if (verifyMessage(message, identitySignature).toLowerCase() !== identitySigner) throw Error('recourse_binding_attestation_invalid');
+  }
+  const calldata = bindingOperationCalldata(binding, ownerSignature, identitySignature, String(deployment.revision), memberConsent);
   if (await chain.agree('eth_call', [{ to: registry, data: calldata }, pin]) !== '0x') throw new Error('recourse_binding_simulation_invalid');
   if ((await chain.deployment()).manifestHash !== deployment.manifestHash) throw new Error('recourse_binding_operation_retired');
   const plan = Object.freeze({ id, executor: registry, calldata, manifestHash: deployment.manifestHash,
     binding: Object.freeze({ ...binding }), ownerSignature, identitySignature,
-    revision: deployment.revision.toString(), attestor: identitySigner });
+    revision: deployment.revision.toString(), attestor: identitySigner, ...(memberConsent ? { memberConsent } : {}) });
   checked.add(plan);
   return plan;
 }
 export async function queueBindingOperation(db: Firestore, binding: OwnershipBinding, signature: string,
-  attestor: IdentityAttestor = configuredIdentityAttestor(), chain?: OwnerOperationChain): Promise<string> {
+  attestor: IdentityAttestor = configuredIdentityAttestor(), chain?: OwnerOperationChain, memberConsent?: MemberBindingConsent): Promise<string> {
   const id = hashMessage(ownershipBindingMessage(binding));
   const ref = db.collection(BINDING_OPERATIONS).doc(id);
   if ((await ref.get()).exists) return id;
   const prior = await readConfirmedBinding(binding, chain);
   if (prior) {
-    await confirmBindingRegistration(db, prior);
+    await confirmBindingRegistration(db, prior, memberConsent);
     await db.runTransaction(async tx => {
       if (!(await tx.get(ref)).exists) tx.create(ref, { id, binding, ownerSignature: signature,
         status: 'confirmed', transactionHash: prior.transactionHash, finalizedAtMs: Date.now() });
     });
     return id;
   }
-  const plan = await checkBindingOperation(db, binding, signature, attestor, chain);
+  const plan = await checkBindingOperation(db, binding, signature, attestor, chain, memberConsent);
   await db.runTransaction(async tx => {
     const [existing, owner] = await Promise.all([tx.get(ref),
       tx.get(db.collection(RECOURSE_COLLECTIONS.identities).doc(binding.identity))]);
@@ -187,4 +252,13 @@ export async function queueBindingOperation(db: Firestore, binding: OwnershipBin
     tx.create(ref, { ...plan, status: 'queued', transactionHash: null, createdAtMs: Date.now() });
   });
   return id;
+}
+
+/** Reconstruct persisted bytes for both initial submission and crash retry. */
+export function bindingOperationCalldata(binding: OwnershipBinding, ownerSignature: string, identitySignature: string,
+  revision: string, member?: CheckedBindingOperation['memberConsent']): string {
+  const args = [[binding.identity, binding.address, binding.recoveryCommitment, binding.signingRoot, binding.kernel, binding.nonce, binding.expiresAtMs],
+    ownerSignature, identitySignature, BigInt(revision)];
+  if (!member) return REGISTRY_ABI.encodeFunctionData('bind', args);
+  return REGISTRY_ABI.encodeFunctionData('bindWithConsent', [...args, parseAddressMembershipConsent(member.consent), member.ownerSignature, member.attestorSignature]);
 }

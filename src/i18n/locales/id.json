@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Otorisasi permintaan pemulihan Anda",
     "allocationRequest": "ID permintaan restorasi",
     "withdrawAllocation": "Tarik restorasi yang dialokasikan",
-    "membershipUnavailable": "Status keanggotaan privat sementara tidak tersedia. Muat ulang setelah tindakan tertunda selesai."
+    "membershipUnavailable": "Status keanggotaan privat sementara tidak tersedia. Muat ulang setelah tindakan tertunda selesai.",
+    "memberBindingConsent": "Persetujuan Recourse Pool untuk alamat ini",
+    "memberBindingBytes": "Tandatangani pesan kedua ini sebagai 32 byte yang ditampilkan dalam heksadesimal, bukan sebagai teks. Pesan ini memasukkan alamat ini ke keanggotaan Recourse Pool Anda yang sudah ada.",
+    "memberBindingSignature": "Tanda tangan persetujuan pool"
   }
 }

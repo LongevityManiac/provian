@@ -5139,6 +5139,9 @@
     "restoreAuthorize": "복원 요청 승인",
     "allocationRequest": "복원 요청 ID",
     "withdrawAllocation": "배정된 복원액 인출",
-    "membershipUnavailable": "비공개 회원 상태를 일시적으로 확인할 수 없습니다. 대기 중인 작업이 완료되면 새로고침하세요."
+    "membershipUnavailable": "비공개 회원 상태를 일시적으로 확인할 수 없습니다. 대기 중인 작업이 완료되면 새로고침하세요.",
+    "memberBindingConsent": "이 주소의 Recourse Pool 동의",
+    "memberBindingBytes": "이 두 번째 메시지는 텍스트가 아닌 16진수로 표시된 32바이트로 서명하세요. 이 주소가 기존 Recourse Pool 회원 자격에 포함됩니다.",
+    "memberBindingSignature": "풀 동의 서명"
   }
 }

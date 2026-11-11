@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Cho phép yêu cầu khôi phục của bạn",
     "allocationRequest": "Mã yêu cầu khôi phục",
     "withdrawAllocation": "Rút khoản khôi phục đã phân bổ",
-    "membershipUnavailable": "Trạng thái thành viên riêng tư tạm thời không khả dụng. Làm mới sau khi các thao tác đang chờ hoàn tất."
+    "membershipUnavailable": "Trạng thái thành viên riêng tư tạm thời không khả dụng. Làm mới sau khi các thao tác đang chờ hoàn tất.",
+    "memberBindingConsent": "Đồng ý tham gia Recourse Pool cho địa chỉ này",
+    "memberBindingBytes": "Ký thông điệp thứ hai này dưới dạng 32 byte được hiển thị bằng hệ thập lục phân, không phải văn bản. Thao tác này đưa địa chỉ này vào tư cách thành viên Recourse Pool hiện có của bạn.",
+    "memberBindingSignature": "Chữ ký đồng ý tham gia quỹ"
   }
 }

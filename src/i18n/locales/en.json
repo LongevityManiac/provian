@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Authorize your restoration request",
     "allocationRequest": "Restoration request ID",
     "withdrawAllocation": "Withdraw allocated restoration",
-    "membershipUnavailable": "Private membership status is temporarily unavailable. Refresh after pending actions finish."
+    "membershipUnavailable": "Private membership status is temporarily unavailable. Refresh after pending actions finish.",
+    "memberBindingConsent": "Recourse Pool consent for this address",
+    "memberBindingBytes": "Sign this second message as the 32 bytes shown in hex, not as text. It includes this address in your existing Recourse Pool membership.",
+    "memberBindingSignature": "Pool consent signature"
   }
 }

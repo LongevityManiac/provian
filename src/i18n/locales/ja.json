@@ -5139,6 +5139,9 @@
     "restoreAuthorize": "復元リクエストを承認",
     "allocationRequest": "復元申請ID",
     "withdrawAllocation": "割り当て済み復元額を引き出す",
-    "membershipUnavailable": "非公開の会員状態は一時的に確認できません。保留中の操作が完了したら更新してください。"
+    "membershipUnavailable": "非公開の会員状態は一時的に確認できません。保留中の操作が完了したら更新してください。",
+    "memberBindingConsent": "このアドレスのRecourse Poolへの同意",
+    "memberBindingBytes": "この2つ目のメッセージは、テキストではなく、16進数で表示された32バイトとして署名してください。このアドレスを既存のRecourse Pool会員資格に追加します。",
+    "memberBindingSignature": "プール同意の署名"
   }
 }

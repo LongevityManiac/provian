@@ -59,6 +59,13 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'private-membership-scan': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-scan.ts',
+    testMatchPath: 'src/core/recourse/private-membership-scan.test.ts',
+    mutations: [{ id: 'SCAN-BINDING-CONFIRMATION', description: 'stale scan clears a later binding confirmation freeze',
+      find: '|| hash(bindings(portfolio.docs)) !== proof.bindingHash', replace: '|| false',
+      expectedKilledBy: 'a scan captured before atomic binding cannot clear its later confirmation freeze' }],
+  },
   'private-membership-reservation': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-reservation.ts',
     testMatchPath: 'src/core/recourse/private-membership-reservation.test.ts src/core/recourse/membership-debit-revocation.test.ts',
@@ -130,7 +137,7 @@ const MUTATION_SETS = {
   },
   'RecourseAddressConsent': {
     sourcePath: 'contracts/src/RecourseAddressConsent.sol',
-    testMatchPath: 'test/{RecourseAddressConsent,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    testMatchPath: 'test/{RecourseAddressConsent,ProvianOwnershipRegistry,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
     mutations: [
       { id: 'DEBIT-OWNER', description: 'attestor can debit without the owner exact-amount mandate',
         find: '|| (debit.burn == 0 && debit.reserve == 0) || !_signature(owner, digest, ownerSignature)',
@@ -1204,6 +1211,12 @@ const MUTATION_SETS = {
       find: '(existing == bytes32(0) ? b.identity != addressBinding(b.account) : existing != b.identity)',
       replace: '(existing != bytes32(0) && existing != b.identity)',
       expectedKilledBy: 'testPrivateOwnerCannotBePublishedAsSharedAddressBindingEvenWithBothSignatures',
+    }, {
+      id: 'BINDING-MEMBER-DOMAIN', description: 'atomic identity signature can be stripped and used for a plain binding',
+      find: `return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian atomic member address binding",
+            block.chainid, address(this), address(pointer), b, consent)));`,
+      replace: 'return bindingDigest(b);',
+      expectedKilledBy: 'testBindingAndMemberConsentAreAtomicWithBothIndependentOwnerSignatures',
     }],
   },
   ProvianProtocolPointer: {

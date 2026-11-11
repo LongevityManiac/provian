@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Autorize seu pedido de restauração",
     "allocationRequest": "ID da solicitação de restauração",
     "withdrawAllocation": "Retirar restauração alocada",
-    "membershipUnavailable": "O estado privado da adesão está temporariamente indisponível. Atualize após a conclusão das ações pendentes."
+    "membershipUnavailable": "O estado privado da adesão está temporariamente indisponível. Atualize após a conclusão das ações pendentes.",
+    "memberBindingConsent": "Consentimento do Recourse Pool para este endereço",
+    "memberBindingBytes": "Assine esta segunda mensagem como os 32 bytes exibidos em hexadecimal, não como texto. Ela inclui este endereço na sua participação atual no Recourse Pool.",
+    "memberBindingSignature": "Assinatura de consentimento do fundo"
   }
 }

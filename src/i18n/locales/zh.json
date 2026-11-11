@@ -5139,6 +5139,9 @@
     "restoreAuthorize": "授权您的恢复请求",
     "allocationRequest": "恢复请求ID",
     "withdrawAllocation": "提取已分配的恢复额度",
-    "membershipUnavailable": "私密会员状态暂时不可用。请在待处理操作完成后刷新。"
+    "membershipUnavailable": "私密会员状态暂时不可用。请在待处理操作完成后刷新。",
+    "memberBindingConsent": "此地址的Recourse Pool同意授权",
+    "memberBindingBytes": "请将第二条消息作为以十六进制显示的32字节签名，而不是文本。此操作将此地址纳入您现有的Recourse Pool成员资格。",
+    "memberBindingSignature": "资金池同意签名"
   }
 }

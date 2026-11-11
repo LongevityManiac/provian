@@ -30,6 +30,9 @@ const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recours
 const outputs = new Map([
   ['provian-backend/src/core/recourse/issuance-ticket.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-issuance-ticket.ts'), 'utf8')
     .replace("'./recourse-membership-authorization'", "'./membership-authorization'")],
+  ...['src/core/recourse/member-binding.ts', 'provian-backend/src/core/recourse/member-binding.ts'].map(path =>
+    [path, readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-member-binding.ts'), 'utf8')
+      .replace("'./recourse-binding'", "'./binding'").replace("'./recourse-membership-authorization'", "'./membership-authorization'")]),
   ...['src/core/recourse/membership-authorization.ts', 'provian-backend/src/core/recourse/membership-authorization.ts'].map(path =>
     [path, readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-authorization.ts'), 'utf8')]),
   ['src/core/recourse/address-binding.ts', addressBinding],

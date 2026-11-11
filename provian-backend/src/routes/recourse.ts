@@ -15,6 +15,8 @@ import { identityHash, primaryBindingIdentity, ownershipBindingMessage, register
 import { currentProtocolDeployment } from '../core/protocol/runtime';
 import { selectExternalProofFence, revalidateExternalProofFence } from '../core/external-address/proof-head';
 import { createRecourseChainPort } from '../core/recourse/chain-ledger';
+import { prepareMemberBindingConsent } from '../core/recourse/member-binding-requirement';
+import type { MemberBindingConsent } from '../core/recourse/member-binding';
 import { readPrivateMembershipView } from '../core/recourse/private-membership-view';
 import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool-state';
 import { RECOURSE_RATIO_COLLECTION } from '../core/recourse/pool-ratio';
@@ -204,7 +206,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   });
   router.post('/binding-challenge', async (req, res) => {
     try {
-      await resolveOwner(req, deps);
+      const owner = await resolveOwner(req, deps);
       const body: unknown = req.body;
       if (!body || typeof body !== 'object' || !('address' in body) || typeof body.address !== 'string'
         || !('signingRoot' in body) || typeof body.signingRoot !== 'string'
@@ -216,7 +218,8 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         address: body.address.toLowerCase(), signingRoot: body.signingRoot.toLowerCase(), recoveryCommitment: body.recoveryCommitment.toLowerCase(),
         kernel: deployment.addresses.kernel.toLowerCase(), nonce: `0x${randomBytes(32).toString('hex')}`,
         expiresAtMs: Date.now() + 5 * 60_000 };
-      res.json({ binding, message: ownershipBindingMessage(binding) });
+      const memberConsent = await prepareMemberBindingConsent(deps.db, identityHash(owner.type, owner.id), binding);
+      res.json({ binding, message: ownershipBindingMessage(binding), memberConsent });
     } catch (error: unknown) {
       const code = error instanceof Error && /^recourse_[a-z_]+$/.test(error.message) ? error.message : 'recourse_unavailable';
       res.status(code === 'recourse_unavailable' ? 503 : 400).json({ error: code });
@@ -225,7 +228,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.post('/bind', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      const body = req.body as { binding?: OwnershipBinding; signature?: unknown } | undefined;
+      const body = req.body as { binding?: OwnershipBinding; signature?: unknown; memberConsent?: MemberBindingConsent } | undefined;
       if (!body?.binding || typeof body.signature !== 'string') {
         res.status(400).json({ error: 'recourse_binding_invalid' }); return;
       }
@@ -247,7 +250,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const record = await registerOwnership(deps.db, { binding: body.binding, signature: body.signature,
         authenticatedIdentity: identityHash(owner.type, owner.id), owner, nowMs: Date.now(), fence,
         admissionBlock, admissionBlockHash, balanceAtomic });
-      const operationId = await queueBindingOperation(deps.db, body.binding, body.signature);
+      if (record.chainBindingStatus === 'confirmed') {
+        res.json({ binding: record, operationId: record.bindingDigest }); return;
+      }
+      const operationId = await queueBindingOperation(deps.db, body.binding, body.signature, undefined, undefined, body.memberConsent);
       // Queue persistence precedes gas execution. A busy settlement signer is
       // resumed by the authenticated scheduler; no detached Cloud Run task.
       try { await runBindingWorker(deps.db); } catch { /* durable queued work remains */ }

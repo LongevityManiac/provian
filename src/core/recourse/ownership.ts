@@ -1,3 +1,7 @@
+import { getBytes } from 'ethers';
+import { readRecoursePoolChain } from './pool-chain';
+import { parseMemberBindingChallenge, type MemberBindingChallenge, type MemberBindingConsent } from './member-binding';
+import { addressMembershipSigningHash } from './membership-authorization';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import SeedManager from '../wallet/SeedManager';
@@ -9,6 +13,8 @@ import { addressRecoveryBinding } from './address-binding';
 
 import { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
 export { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
+const memberChallenges = new WeakMap<OwnershipBinding, MemberBindingChallenge>();
+export function humanBindingMemberChallenge(binding: OwnershipBinding): MemberBindingChallenge | undefined { return memberChallenges.get(binding); }
 export interface RecourseBindingPort {
   request(path: 'binding-challenge' | 'bind', body: unknown): Promise<unknown>;
   userId: string;
@@ -35,11 +41,18 @@ export async function prepareHumanOwnershipBinding(port: RecourseBindingPort, ad
     || binding.kernel !== deployment.addresses.kernel.toLowerCase() || binding.recoveryCommitment !== commitment || binding.signingRoot !== signingRoot
     || binding.expiresAtMs < Date.now() || binding.expiresAtMs > Date.now() + 5 * 60_000
     || raw.message !== bindingMessage(binding)) throw new Error('recourse_challenge_invalid');
+  if ('memberConsent' in raw && raw.memberConsent !== null && raw.memberConsent !== undefined) {
+    const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
+    memberChallenges.set(binding, parseMemberBindingChallenge(raw.memberConsent, binding, {
+      domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: pool.pool },
+      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp,
+    }));
+  }
   return binding;
 }
 
 export async function bindHumanOwnership(port: RecourseBindingPort, address: string, action: BiometricAction,
-  externalSign?: (message: string) => Promise<string>): Promise<void> {
+  externalSign?: (message: string | Uint8Array) => Promise<string>): Promise<void> {
   const binding = await prepareHumanOwnershipBinding(port, address, action);
   let signature: string;
   if (externalSign) signature = await externalSign(bindingMessage(binding));
@@ -48,6 +61,14 @@ export async function bindHumanOwnership(port: RecourseBindingPort, address: str
     if (signer.address.toLowerCase() !== binding.address) throw new Error('recourse_address_mismatch');
     signature = await signer.signMessage(bindingMessage(binding));
   }
-  await port.request('bind', { binding, signature });
+  const challenge = humanBindingMemberChallenge(binding);
+  let memberConsent: MemberBindingConsent | undefined;
+  if (challenge) {
+    const bytes = getBytes(addressMembershipSigningHash(challenge.domain, challenge.consent));
+    const ownerSignature = externalSign ? await externalSign(bytes)
+      : await new ActionWallet(await SeedManager.getEVMPrivateKey(action), action).signMessage(bytes);
+    memberConsent = { consent: challenge.consent, ownerSignature };
+  }
+  await port.request('bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
   await waitForRecourseBinding(binding, ownerChainNetwork());
 }

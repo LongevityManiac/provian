@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Autoriza tu solicitud de restauración",
     "allocationRequest": "Identificador de solicitud de restitución",
     "withdrawAllocation": "Retirar restitución asignada",
-    "membershipUnavailable": "El estado privado de la membresía no está disponible temporalmente. Actualiza cuando terminen las acciones pendientes."
+    "membershipUnavailable": "El estado privado de la membresía no está disponible temporalmente. Actualiza cuando terminen las acciones pendientes.",
+    "memberBindingConsent": "Consentimiento de Recourse Pool para esta dirección",
+    "memberBindingBytes": "Firma este segundo mensaje como los 32 bytes mostrados en hexadecimal, no como texto. Incluye esta dirección en tu membresía actual de Recourse Pool.",
+    "memberBindingSignature": "Firma de consentimiento del fondo"
   }
 }

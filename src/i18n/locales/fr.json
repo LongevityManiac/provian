@@ -5138,6 +5138,9 @@
     "restoreAuthorize": "Autorisez votre demande de restauration",
     "allocationRequest": "Identifiant de demande de restauration",
     "withdrawAllocation": "Retirer la restauration attribuée",
-    "membershipUnavailable": "Le statut privé de votre adhésion est temporairement indisponible. Actualisez après la fin des opérations en attente."
+    "membershipUnavailable": "Le statut privé de votre adhésion est temporairement indisponible. Actualisez après la fin des opérations en attente.",
+    "memberBindingConsent": "Consentement Recourse Pool pour cette adresse",
+    "memberBindingBytes": "Signez ce second message comme les 32 octets affichés en hexadécimal, et non comme du texte. Il inclut cette adresse dans votre adhésion actuelle au Recourse Pool.",
+    "memberBindingSignature": "Signature de consentement au fonds"
   }
 }

@@ -197,6 +197,8 @@ export interface LinkedAgent {
  */
 /** the one-time proof message for linking a third-party wallet to an agent. */
 export interface AgentExternalAddressChallenge {
+    /** Optional pool consent: sign decoded bytes, not the displayed hex text. */
+    memberConsentMessageHex?: string;
     challengeId: string;
     /** The EXACT text the third-party wallet signs (server-authoritative). */
     message: string;
@@ -1916,7 +1918,7 @@ class RelayAPIService {
      * @returns true if the relay confirmed registration (2xx), false otherwise.
      */
     async bindRecourseOwnership(address: string, biometricAction: BiometricAction,
-        externalSign?: (message: string) => Promise<string>): Promise<void> {
+        externalSign?: (message: string | Uint8Array) => Promise<string>): Promise<void> {
         const userId = await this.getUserId();
         if (!userId) throw new Error('recourse_identity_unavailable');
         const { bindHumanOwnership } = await import('../core/recourse/ownership');

@@ -92,3 +92,13 @@ test('a pointer change requires succession replay rather than carrying an unrela
   const s = setup(); s.f.state.endRevision = 2;
   await expect(readPrivateMembershipScan(s.db, h(500))).rejects.toThrow('succession_required');
 });
+
+test('a scan captured before atomic binding cannot clear its later confirmation freeze', async () => {
+  const s = setup(), proof = await readPrivateMembershipScan(s.db, h(500));
+  const ownerKey = `${RECOURSE_COLLECTIONS.owners}/${h(500)}`, addressKey = `${RECOURSE_COLLECTIONS.addresses}/${a(3)}`;
+  s.fake.store.set(ownerKey, { ownerIdentity: h(500), membershipScanRequired: true });
+  s.fake.store.set(addressKey, { ...s.fake.store.get(addressKey), chainBindingStatus: 'confirmed', boundBlock: 101, boundBlockHash: h(101) });
+  await expect(commitPrivateMembershipScan(s.db, proof)).rejects.toThrow('concurrent');
+  expect(s.fake.store.get(ownerKey)?.membershipScanRequired).toBe(true);
+  await expect(readPrivateMembershipScan(s.db, h(500))).rejects.toThrow('checkpoint');
+});

@@ -85,7 +85,7 @@ type VerifyResult = { ok: true; provenAddress: string } | { ok: false; error: st
 export interface ExternalWalletProofApi {
     list: () => Promise<AgentExternalAddress[] | null>;
     challenge: (address: string) => Promise<ChallengeResult>;
-    verify: (input: { address: string; challengeId: string; signature: string }) => Promise<VerifyResult>;
+    verify: (input: { address: string; challengeId: string; signature: string; memberSignature?: string }) => Promise<VerifyResult>;
 }
 
 export function proofApiFor(mode: ExternalWalletProofMode): ExternalWalletProofApi {
@@ -180,6 +180,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
     const [addressInput, setAddressInput] = useState('');
     const [challenge, setChallenge] = useState<AgentExternalAddressChallenge | null>(null);
     const [signatureInput, setSignatureInput] = useState('');
+    const [memberSignatureInput, setMemberSignatureInput] = useState('');
     const [pasteBusy, setPasteBusy] = useState(false);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -210,6 +211,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
         setError(null);
         setChallenge(null);
         setSignatureInput('');
+        setMemberSignatureInput('');
         setAddressInput('');
         await loadLinked();
     }, [loadLinked]);
@@ -265,11 +267,14 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
             );
             if (run !== runRef.current) return;
 
+            const memberSignature = issued.challenge.memberConsentMessageHex
+                ? await externalWalletProofClient.requestPersonalSignBytes(session, account, issued.challenge.memberConsentMessageHex) : undefined;
+            if (run !== runRef.current) return;
             setWcPhase('verifying');
             const verified = await api.verify({
                 address: account.address,
                 challengeId: issued.challenge.challengeId,
-                signature,
+                signature, ...(memberSignature ? { memberSignature } : {}),
             });
             if (run !== runRef.current) return;
             if (!verified.ok) throw new Error(verified.error);
@@ -300,13 +305,15 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
         }
         setChallenge(issued.challenge);
         setSignatureInput('');
+        setMemberSignatureInput('');
     }, [addressInput, api]);
 
     const verifyPasted = useCallback(async () => {
         if (!challenge) return;
         setError(null);
         const signature = normalizePastedSignature(signatureInput);
-        if (!signature) {
+        const memberSignature = challenge.memberConsentMessageHex ? normalizePastedSignature(memberSignatureInput) : undefined;
+        if (!signature || (challenge.memberConsentMessageHex && !memberSignature)) {
             setError('errorSignature');
             return;
         }
@@ -314,7 +321,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
         const verified = await api.verify({
             address: challenge.address,
             challengeId: challenge.challengeId,
-            signature,
+            signature, ...(memberSignature ? { memberSignature } : {}),
         });
         setPasteBusy(false);
         if (!verified.ok) {
@@ -324,7 +331,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
             return;
         }
         await finishLinked(verified.provenAddress);
-    }, [challenge, signatureInput, api, finishLinked]);
+    }, [challenge, signatureInput, memberSignatureInput, api, finishLinked]);
 
     const dateFmt = (ms: number): string => {
         try {
@@ -627,10 +634,24 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 multiline
                                 accessibilityLabel={t('linkExternalWallet.signatureLabel')}
                             />
+                            {challenge.memberConsentMessageHex && <>
+                                <Text style={styles.label}>{t('recourse.memberBindingConsent')}</Text>
+                                <Text style={styles.fine}>{t('recourse.memberBindingBytes')}</Text>
+                                <TouchableOpacity style={styles.messageBlock}
+                                    onPress={() => copy(challenge.memberConsentMessageHex!, 'member-message')}
+                                    accessibilityRole="button" accessibilityLabel={t('linkExternalWallet.copyMessage')}>
+                                    <Text style={styles.messageText} selectable>{challenge.memberConsentMessageHex}</Text>
+                                    <Text style={styles.linkBtnText}>{t(copiedKey === 'member-message' ? 'linkExternalWallet.copied' : 'linkExternalWallet.copyMessage')}</Text>
+                                </TouchableOpacity>
+                                <TextInput style={[styles.input, styles.signatureInput]} value={memberSignatureInput}
+                                    onChangeText={setMemberSignatureInput} editable={!pasteBusy} placeholder="0x…"
+                                    placeholderTextColor={COLORS.textMuted} autoCapitalize="none" autoCorrect={false}
+                                    spellCheck={false} multiline accessibilityLabel={t('recourse.memberBindingSignature')} />
+                            </>}
                             <TouchableOpacity
-                                style={[styles.primaryBtn, (pasteBusy || !signatureInput.trim()) && styles.disabled]}
+                                style={[styles.primaryBtn, (pasteBusy || !signatureInput.trim() || (challenge.memberConsentMessageHex && !memberSignatureInput.trim())) && styles.disabled]}
                                 onPress={verifyPasted}
-                                disabled={pasteBusy || !signatureInput.trim()}
+                                disabled={pasteBusy || !signatureInput.trim() || Boolean(challenge.memberConsentMessageHex && !memberSignatureInput.trim())}
                                 activeOpacity={0.8}
                                 accessibilityRole="button"
                             >
@@ -647,6 +668,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 onPress={() => {
                                     setChallenge(null);
                                     setSignatureInput('');
+        setMemberSignatureInput('');
                                 }}
                                 disabled={pasteBusy}
                                 activeOpacity={0.7}

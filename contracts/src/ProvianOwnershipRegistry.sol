@@ -5,6 +5,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ProvianProtocolPointer} from "./ProvianProtocolPointer.sol";
 import {ProvianHashAccount} from "./ProvianHashAccount.sol";
+import {RecourseAddressConsent} from "./RecourseAddressConsent.sol";
 
 interface IRegisteredRecourseKernel {
     function registryOperator() external view returns (address);
@@ -83,6 +84,25 @@ contract ProvianOwnershipRegistry {
         return MessageHashUtils.toEthSignedMessageHash(message);
     }
     function bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision) external {
+        _bind(b, ownerSignature, identitySignature, revision, bindingDigest(b));
+    }
+    function memberBindingDigest(Binding calldata b, RecourseAddressConsent.ConsentAuthorization calldata consent) public view returns (bytes32) {
+        return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian atomic member address binding",
+            block.chainid, address(this), address(pointer), b, consent)));
+    }
+    /// @notice An existing private member adds one independent address with its
+    /// recovery commitment and pool consent in the same transaction. No sibling
+    /// identifiers or private membership key enter either signed payload.
+    function bindWithConsent(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature,
+        uint256 revision, RecourseAddressConsent.ConsentAuthorization calldata consent,
+        bytes calldata consentOwnerSignature, bytes calldata consentAttestorSignature) external {
+        if (consent.binding != b.identity || consent.account != b.account || !consent.joined
+            || consent.revision != revision) revert InvalidBinding();
+        // This attestation cannot be stripped and replayed through plain bind.
+        _bind(b, ownerSignature, identitySignature, revision, memberBindingDigest(b, consent));
+        RecourseAddressConsent(pointer.component(8)).setAddressConsent(consent, consentOwnerSignature, consentAttestorSignature);
+    }
+    function _bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision, bytes32 identityDigest) private {
         bytes32 existing = ownerOf(b.account);
         if (b.identity == bytes32(0) || b.account == address(0)
             || b.recoveryCommitment == bytes32(0) || b.signingRoot == bytes32(0) || b.nonce == bytes32(0)
@@ -100,7 +120,7 @@ contract ProvianOwnershipRegistry {
         bytes32 digest = bindingDigest(b);
         if (identityAttestor == IRegisteredRecourseKernel(b.kernel).restorationAuthority()
             || consumedBinding[digest] || !SignatureChecker.isValidSignatureNow(b.account, digest, ownerSignature)
-            || !SignatureChecker.isValidSignatureNow(identityAttestor, digest, identitySignature)) revert InvalidBinding();
+            || !SignatureChecker.isValidSignatureNow(identityAttestor, identityDigest, identitySignature)) revert InvalidBinding();
         consumedBinding[digest] = true;
         bindingBlock[digest] = block.number;
         _ownerOf[b.account] = b.identity;

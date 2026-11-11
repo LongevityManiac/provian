@@ -11,7 +11,7 @@ import { MEMBERSHIP_RECEIPT_ABI, readMembershipReceipt, type VerifiedMembershipR
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS } from './ownership';
 
-interface Binding { readonly identity: string; readonly address: string; readonly recoveryGeneration: number }
+interface Binding { readonly identity: string; readonly address: string; readonly recoveryGeneration: number; readonly chainBindingStatus: string | null; readonly boundBlock: number | null; readonly boundBlockHash: string | null }
 interface Counters { nonce: bigint; generation: bigint; joined: boolean; debit: bigint }
 export interface PrivateMembershipScan {
   readonly ownerIdentity: string; readonly accountVersion: number; readonly bindingHash: string;
@@ -28,7 +28,12 @@ function bindings(rows: readonly { data(): FirebaseFirestore.DocumentData | unde
     const r = row.data();
     if (!r || !/^0x[0-9a-f]{64}$/.test(r.identity) || !/^0x[0-9a-f]{40}$/.test(r.address)
       || !Number.isSafeInteger(r.recoveryGeneration) || r.recoveryGeneration < 0) return fail('binding');
-    return { identity: String(r.identity), address: String(r.address), recoveryGeneration: Number(r.recoveryGeneration) };
+    if (r.chainBindingStatus === 'confirmed' && (!Number.isSafeInteger(r.boundBlock) || r.boundBlock < 0
+      || typeof r.boundBlockHash !== 'string' || !/^0x[0-9a-f]{64}$/.test(r.boundBlockHash))) return fail('binding');
+    return { identity: String(r.identity), address: String(r.address), recoveryGeneration: Number(r.recoveryGeneration),
+      chainBindingStatus: typeof r.chainBindingStatus === 'string' ? r.chainBindingStatus : null,
+      boundBlock: typeof r.boundBlock === 'number' ? r.boundBlock : null,
+      boundBlockHash: typeof r.boundBlockHash === 'string' ? r.boundBlockHash : null };
   }).sort((a, b) => a.address.localeCompare(b.address));
 }
 function quantity(value: unknown): number {
@@ -61,7 +66,7 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
   if (!pointer || !runtimeHash) return fail('pointer');
   const from = account.checkpoint, chain = createRecourseChainPort();
   const block = await chain.finalizedBlock(), blockHash = await chain.blockHash(block);
-  if (block < from.block || !blockHash) return fail('checkpoint');
+  if (block < from.block || !blockHash || portfolio.some(b => b.boundBlock !== null && b.boundBlock > block)) return fail('checkpoint');
   const [before, after] = await Promise.all([
     resolveHistoricalProtocolDeployment(rpcs, pointer, runtimeHash, from.block, from.blockHash),
     resolveHistoricalProtocolDeployment(rpcs, pointer, runtimeHash, block, blockHash),
@@ -138,6 +143,8 @@ export async function commitPrivateMembershipScan(db: Firestore, proof: PrivateM
     const ref = db.collection(C.owners).doc(proof.ownerIdentity), row = await tx.get(ref);
     if (!row.exists) return fail('missing_account');
     const state = row.data() as PrivateMembershipAccount;
+    const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(proof.ownerIdentity);
+    const owner = await tx.get(ownerRef);
     const portfolio = await tx.get(db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', proof.ownerIdentity));
     const effectRows = await Promise.all(proof.requiredEffects.map(e => tx.get(db.collection(C.effects)
       .doc(hash([e.kernel, proof.pool, e.transactionHash, e.logIndex])))));
@@ -146,6 +153,7 @@ export async function commitPrivateMembershipScan(db: Firestore, proof: PrivateM
       || hash(bindings(portfolio.docs)) !== proof.bindingHash) return fail('concurrent');
     if (effectRows.some(row => !row.exists || row.get('ownerIdentity') !== proof.ownerIdentity)) return fail('uncredited_effect');
     if (!Number.isSafeInteger(state.version + 1)) return fail('version');
+    if (owner.exists && owner.get('membershipScanRequired') === true) tx.update(ownerRef, { membershipScanRequired: false });
     tx.update(ref, { checkpoint: { pool: proof.pool, block: proof.block, blockHash: proof.blockHash },
       needsScan: false, version: state.version + 1 });
   });
