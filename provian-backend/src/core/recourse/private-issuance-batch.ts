@@ -75,11 +75,12 @@ export async function reservePrivateIssuanceBatch(db: Firestore, input: PrivateI
     const [existing, settlement] = await Promise.all([tx.get(ref), tx.get(db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.context.batchId))]);
     if (existing.exists) {
       const record = existing.data() as PrivateIssuanceBatchRecord;
-      if (digest(record.batch) !== digest(batch)) return fail('replay');
+      if (digest(record.batch) !== digest(batch) || settlement.get('membership_issuance_id') !== batch.id) return fail('replay');
       return record;
     }
     const parent = settlement.data() as SettlementBatchDoc;
-    if (!settlement.exists || parent.calldata !== batch.kernelCall || parent.status !== 'reserved' || parent.attempts.length !== 0) return fail('parent');
+    if (!settlement.exists || parent.calldata !== batch.kernelCall || parent.status !== 'reserved' || parent.applied !== false || parent.attempts.length !== 0
+      || parent.membership_issuance_id !== undefined) return fail('parent');
     const plan = planSettlementIssuance(parent, batch.policy);
     if (plan.settlementDigest !== batch.context.settlementDigest || plan.lane !== batch.context.lane
       || plan.recipients.length !== batch.tickets.length || plan.recipients.some((r, i) => {
@@ -106,6 +107,7 @@ export async function reservePrivateIssuanceBatch(db: Firestore, input: PrivateI
     for (const reservation of batch.reservations) tx.update(db.collection(C.reservations).doc(reservation.id), { issuanceBatchId: batch.id });
     for (const ticket of batch.tickets) tx.set(db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(ticket.account), { batchId: batch.id });
     tx.create(ref, record);
+    tx.update(db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.context.batchId), { membership_issuance_id: batch.id });
     return record;
   });
 }
@@ -119,8 +121,11 @@ export async function retainPrivateIssuanceSignature(db: Firestore, input: Priva
   const calldata = MEMBER_SETTLEMENT_ABI.encodeFunctionData('settleMemberBatch', [batch.kernelCall, batch.context, batch.tickets, signature]);
   const ref = db.collection(PRIVATE_ISSUANCE_BATCHES).doc(batch.id);
   return db.runTransaction(async tx => {
-    const row = await tx.get(ref), record = row.data() as PrivateIssuanceBatchRecord;
+    const [row,parent] = await Promise.all([tx.get(ref),tx.get(db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.context.batchId))]);
+    const record = row.data() as PrivateIssuanceBatchRecord;
     if (!row.exists || digest(record.batch) !== digest(batch)) return fail('replay');
+    if (!parent.exists || parent.get('membership_issuance_id') !== batch.id || parent.get('calldata') !== batch.kernelCall
+      || !['reserved','submitted','mined'].includes(String(parent.get('status'))) || parent.get('applied') !== false) return fail('parent');
     if (record.status === 'superseded') return fail('superseded');
     if (record.status !== 'reserved') {
       if (record.signature !== signature || record.calldata !== calldata) return fail('replay');

@@ -1143,6 +1143,8 @@ export interface SettlementBatchDoc {
   /** The exact settlement calldata, persisted so a crash-resume can rebuild
    * replacement transactions byte-identically. Bounded by `maxClaims`. */
   readonly calldata: string;
+  /** Private recipient classifications and exact outer member-settlement call. */
+  readonly membership_issuance_id?: string;
   readonly members: readonly BatchMemberRecord[];
   /**
    * `mined` is a success receipt seen but NOT yet at the safe-head depth. It is an

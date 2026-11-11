@@ -203,6 +203,20 @@ const MUTATION_SETS = {
         expectedKilledBy: 'same-domain pointer republication can cancel tickets from the previous revision' },
     ],
   },
+  'settlement-issuance-runtime': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance-runtime.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance-runtime.test.ts',
+    mutations: [{ id: 'ISSUANCE-POST-SIGN', description: 'retain authorization after the signing domain changes',
+      find: 'const after=await assertCurrentPrivateIssuance(db,record,gasPayer);', replace: 'const after=check;',
+      expectedKilledBy: 'pointer revision or calendar rollover during signing retains locks and refuses to retain an obsolete signature' }],
+  },
+  'issuance-parent-retention': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance-runtime.test.ts',
+    mutations: [{ id: 'ISSUANCE-PARENT-RETENTION', description: 'retain executable authorization after the parent retires during verification',
+      find: "!['reserved','submitted','mined'].includes(String(parent.get('status')))", replace: 'false',
+      expectedKilledBy: 'parent retirement during signing, verification or signed retry never retains or returns executable bytes' }],
+  },
   'issuance-succession-proof': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/issuance-succession-proof.ts',
     testMatchPath: 'src/core/recourse/issuance-succession-proof.test.ts',
