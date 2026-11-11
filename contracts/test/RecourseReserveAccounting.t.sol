@@ -10,8 +10,7 @@ contract ReserveTestToken is IRecourseReserveToken {
 }
 contract ReserveHarness is RecourseReserveAccounting {
     constructor(IRecourseReserveToken token) RecourseReserveAccounting(token) {}
-    function contribute(bytes32 id, uint256 amount) external returns (uint256) { return _contributeReserve(id, msg.sender, amount); }
-    function redeem(bytes32 id, uint256 shares) external returns (uint256) { return _redeemReserve(id, msg.sender, shares); }
+    function contribute(bytes32 id, uint256 amount) external { _contributeReserve(id, msg.sender, amount); }
     function allocate(bytes32[] calldata requests, bytes32[] calldata ids, uint256[] calldata amounts) external { _allocateRestorations(requests, ids, amounts); }
     function withdraw(bytes32 request, bytes32 id) external returns (uint256) { return _withdrawRestoration(request, id, msg.sender); }
 }
@@ -30,31 +29,29 @@ contract RecourseReserveAccountingTest is Test {
         requests.push(bytes32(uint256(11))); requests.push(bytes32(uint256(12)));
         identities.push(ALICE); identities.push(BOB);
     }
-    function testExitNeedsNoRelayAndCannotWithdrawAllocatedRestoration() public {
+    function testOnlyAllocatedRestorationsExitAndContributionsCannotBeRedeemed() public {
         losses.push(40 ether); losses.push(60 ether);
         pool.allocate(requests, identities, losses);
         assertEq(pool.availableReserve(), 300 ether);
-        assertEq(pool.redeem(ALICE, 100 ether), 75 ether);
-        assertEq(pool.redeem(BOB, 300 ether), 225 ether);
-        assertEq(token.balanceOf(address(pool)), 100 ether);
+        (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ALICE, 100 ether));
+        assertFalse(refunded);
+        assertEq(token.balanceOf(address(pool)), 400 ether);
         assertEq(pool.withdraw(requests[0], ALICE), 40 ether);
         assertEq(pool.withdraw(requests[1], BOB), 60 ether);
-        assertEq(token.balanceOf(address(pool)), 0);
+        assertEq(token.balanceOf(address(pool)), 300 ether);
         vm.expectRevert(RecourseReserveAccounting.InvalidReserveAccounting.selector);
         pool.withdraw(requests[0], ALICE);
     }
-    function testUnderfundingIsProRataAndNewContributionsDoNotReviveExhaustedShares() public {
+    function testUnderfundingIsProRataAndNewContributionsRemainInReserve() public {
         losses.push(400 ether); losses.push(1200 ether);
         pool.allocate(requests, identities, losses);
         assertEq(pool.availableReserve(), 0);
         assertEq(pool.allocatedRestorations(), 400 ether);
-        assertEq(pool.contribute(ALICE, 50 ether), 50 ether);
-        assertEq(pool.reserveGeneration(), 1);
-        vm.expectRevert(RecourseReserveAccounting.InvalidReserveAccounting.selector);
-        pool.redeem(BOB, 300 ether);
-        assertEq(pool.redeem(ALICE, 50 ether), 50 ether);
+        pool.contribute(ALICE, 50 ether);
+        assertEq(pool.availableReserve(), 50 ether);
         assertEq(pool.withdraw(requests[0], ALICE), 100 ether);
         assertEq(pool.withdraw(requests[1], BOB), 300 ether);
+        assertEq(token.balanceOf(address(pool)), 50 ether);
     }
     function testDuplicateAndForeignIdentityCannotConsumeAllocation() public {
         losses.push(40 ether); losses.push(60 ether);
@@ -81,13 +78,13 @@ contract RecourseReserveAccountingTest is Test {
         assertLt(distributable - a - b, 2);
         assertLe(a, first); assertLe(b, second);
     }
-    function testDonationCannotInflateSharePriceOrBlockSmallContribution() public {
+    function testDonationCannotBlockSmallContributionOrCreateRefundRights() public {
         token.mint(address(pool), 1000000000 ether);
-        assertEq(pool.contribute(ALICE, 1), 1);
+        pool.contribute(ALICE, 1);
         assertEq(pool.accountedBacking(), 400 ether + 1);
-        assertEq(pool.redeem(ALICE, 100 ether + 1), 100 ether + 1);
-        assertEq(pool.redeem(BOB, 300 ether), 300 ether);
-        assertEq(pool.availableReserve(), 1000000000 ether);
+        assertEq(pool.availableReserve(), 1000000400 ether + 1);
+        (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ALICE, 1));
+        assertFalse(refunded);
     }
 
 }

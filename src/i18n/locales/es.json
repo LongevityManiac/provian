@@ -5113,9 +5113,7 @@
     "bind": "Vincular una dirección que posees",
     "resources": "Reservas aportadas por los miembros",
     "available": "Disponible para restitución: {{amount}} PVT",
-    "interest": "Tu participación restante en la reserva: {{amount}} PVT",
-    "exitRule": "El rescate termina este período de membresía y devuelve tu participación proporcional restante en la reserva. Los importes ya asignados a restituciones siguen asignados. Los PVT quemados no se pueden rescatar. Esta salida funciona directamente en la cadena, sin el relay.",
-    "redeem": "Salir y rescatar la participación en la reserva",
+    "exitRule": "Las contribuciones no son reembolsables: un miembro no puede rescatar la contribución del 1% de sus ingresos ni la contribución fija de sus tenencias. Las quemas de participación son irreversibles. Una vez asignada una restitución a un miembro, este puede retirarla directamente en cadena sin el relay, incluso después de salir.",
     "requests": "Solicitudes de restitución",
     "rule": "Primero se revierte el movimiento, con la autoridad de restitución y tu prueba independiente de recuperación. Los PVT recibidos en un intercambio atestiguado permanecen con su destinatario. El fondo restituye el resto, a prorrata si faltan recursos. Cada determinación y resultado se registra en tu propia cadena.",
     "authorize": "Autorizar tu acción de Recourse",
@@ -5131,12 +5129,14 @@
       "successBody": "Esta dirección ya pertenece a tu registro de propiedad de Recourse. Los PVT ganados y recibidos reciben el mismo trato.",
       "verify": "Vincular esta dirección"
     },
-    "historyUnavailable": "El historial de direcciones y solicitudes no está disponible temporalmente. La membresía y las reservas se verifican directamente en la cadena; aún puedes salir y rescatar tu participación.",
+    "historyUnavailable": "El historial de direcciones y solicitudes no está disponible temporalmente. Las restituciones asignadas pueden retirarse directamente en cadena con el identificador de solicitud.",
     "bindingPending": "Registro enviado; esperando confirmación en la cadena.",
     "requestExplanation": "Indica la transacción que se llevó tus PVT y su bloque de Base. Tu prueba de recuperación establece una nueva clave de cartera; el relay comprueba la transacción y el registro del intercambio atestiguado antes de determinar el resultado. La copia de seguridad de tu semilla original sigue restaurando tu cartera.",
     "lossTransaction": "Hash de la transacción",
     "lossBlock": "Número de bloque de Base",
     "submitRequest": "Enviar solicitud de restitución",
-    "restoreAuthorize": "Autoriza tu solicitud de restauración"
+    "restoreAuthorize": "Autoriza tu solicitud de restauración",
+    "allocationRequest": "Identificador de solicitud de restitución",
+    "withdrawAllocation": "Retirar restitución asignada"
   }
 }

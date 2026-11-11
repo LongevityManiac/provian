@@ -36,8 +36,8 @@ beforeEach(() => {
       const values: Record<string, readonly unknown[]> = {
         token: [wrongToken ? pool : kernel], membershipState: [true, false, 1, 0], enrollment: [true, 24312, 24312, 24312, 0, 1],
         calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
-        monthlyRule: [[0, 100, 100, 100, identity]], reserveGeneration: [0], totalReserveShares: [100],
-        accountedBacking: [80], availableReserve: [disagreement && index === 1 ? 101 : 100], reserveShares: [25],
+        monthlyRule: [[0, 100, 100, 100, identity]],
+        availableReserve: [disagreement && index === 1 ? 101 : 100],
         obligations: [true, false, 100, 0, 100, 0, 100, 100, 0],
       };
       return RECOURSE_POOL_ABI.encodeFunctionResult(parsed.name, values[parsed.name]);
@@ -53,7 +53,7 @@ afterAll(() => {
 test('same-block member state and reserve agree across independent operators', async () => {
   expect(await readRecoursePoolState(identity)).toMatchObject({ pool, kernel, enrolled: true,
     reserveAtomic: '100', outstandingAtomic: '50', grace: false, participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', earningsBps: 100, redeemableAtomic: '20', unpaidAtomic: '0', block: 100, blockHash });
+    noEarningsContributionAtomic: '100', earningsBps: 100, unpaidAtomic: '0', block: 100, blockHash });
 });
 test('disagreement, altered runtime and wrong token each refuse the pool', async () => {
   disagreement = true;

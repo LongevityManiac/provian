@@ -5113,9 +5113,7 @@
     "bind": "Unganisha anwani unayomiliki",
     "resources": "Akiba iliyotolewa na wanachama",
     "available": "Inapatikana kwa urejeshaji: PVT {{amount}}",
-    "interest": "Sehemu yako iliyobaki katika akiba: PVT {{amount}}",
-    "exitRule": "Kukomboa kunamaliza kipindi hiki cha uanachama na kurudisha sehemu yako iliyobaki ya akiba kwa uwiano. Kiasi ambacho tayari kimetengwa kwa urejeshaji hubaki kimetengwa. PVT zilizoteketezwa haziwezi kukombolewa. Njia hii ya kutoka inafanya kazi moja kwa moja kwenye mnyororo bila relay.",
-    "redeem": "Ondoka na ukomboe sehemu ya akiba",
+    "exitRule": "Michango hairudishwi: mwanachama hawezi kukomboa mchango wa 1% ya mapato wala mchango wa kiasi maalumu kutoka kwenye salio lake. Uchomaji wa ushiriki hauwezi kutenguliwa. Baada ya mgao wa urejeshaji kutengewa mwanachama, anaweza kuutoa moja kwa moja kwenye mnyororo bila relay, hata baada ya kuondoka.",
     "requests": "Maombi ya urejeshaji",
     "rule": "Kwanza uhamisho hubatilishwa kwa mamlaka ya urejeshaji pamoja na uthibitisho wako huru wa kurejesha ufikiaji. PVT zilizopokelewa katika ubadilishanaji ulioshuhudiwa hubaki kwa mpokeaji. Hazina hurejesha sehemu iliyobaki, kwa uwiano ikiwa fedha hazitoshi. Kila uamuzi na matokeo yake huandikwa kwenye mnyororo wako mwenyewe.",
     "authorize": "Idhinisha kitendo chako cha Recourse",
@@ -5131,12 +5129,14 @@
       "successBody": "Anwani hii sasa ni sehemu ya rekodi yako ya umiliki ya Recourse. PVT ulizopata kwa kazi na ulizopokea hushughulikiwa kwa namna ileile.",
       "verify": "Unganisha anwani hii"
     },
-    "historyUnavailable": "Historia ya anwani na maombi haipatikani kwa muda. Uanachama na akiba vinathibitishwa moja kwa moja kwenye mnyororo; bado unaweza kuondoka na kukomboa sehemu yako.",
+    "historyUnavailable": "Historia ya anwani na maombi haipatikani kwa muda. Mgao wa urejeshaji unaweza kutolewa moja kwa moja kwenye mnyororo kwa kutumia kitambulisho cha ombi.",
     "bindingPending": "Usajili umetumwa; unasubiri uthibitisho wa mnyororo.",
     "requestExplanation": "Taja muamala uliochukua PVT zako na kitalu chake cha Base. Uthibitisho wako wa kurejesha ufikiaji huanzisha ufunguo mpya wa pochi; relay hukagua muamala na rekodi ya ubadilishanaji ulioshuhudiwa kabla ya kufanya uamuzi. Nakala ya akiba ya maneno yako asilia ya seed bado hurejesha pochi yako.",
     "lossTransaction": "Hash ya muamala",
     "lossBlock": "Nambari ya kitalu cha Base",
     "submitRequest": "Tuma ombi la urejeshaji",
-    "restoreAuthorize": "Idhinisha ombi lako la urejeshaji"
+    "restoreAuthorize": "Idhinisha ombi lako la urejeshaji",
+    "allocationRequest": "Kitambulisho cha ombi la urejeshaji",
+    "withdrawAllocation": "Toa mgao wa urejeshaji"
   }
 }

@@ -162,7 +162,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
  for(const name of ['ProvianRecourseEscrow','ProvianRecourseCourt','ProvianRecourseProjectPool'])
   await exact(name,'encumberedPVT',[],[0]);
  ensure(await scalar('ProvianMemberRecoursePool','poolHistoryReady')===true,'pool_history');
- for(const method of ['accountedBacking','allocatedRestorations','totalReserveShares','importedPoolEntries'])
+ for(const method of ['accountedBacking','allocatedRestorations','importedPoolEntries'])
   await exact('ProvianMemberRecoursePool',method,[],[0]);
  await exact('ProvianMemberRecoursePool','monthlyRuleCount',[],[1]);
  const poolIface=new Interface(artifacts.ProvianMemberRecoursePool.abi);

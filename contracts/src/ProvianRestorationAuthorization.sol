@@ -382,7 +382,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
         for (uint256 i; i < reversal.sources.length; ++i) {
             if (IRestorationKernel(kernel).outgoingSequence(reversal.sources[i]) != reversal.sourceSequences[i]) revert InvalidRestoration();
         }
-        // Member reserve interests and already allocated restorations are
+        // Nonrefundable contributions and already allocated restorations are
         // witnessed obligations, not gratuitous receipts. Re-evaluate at
         // execution: a contribution or allocation need not change the pool's
         // outgoing sequence. Unencumbered donations remain reachable.

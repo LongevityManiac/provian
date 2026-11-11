@@ -1,4 +1,4 @@
-<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
+<!-- source-sha256: 0d0ce789fb3845a2edc6b99a403dd830af76ec43472efd7705c7713e99c58957 -->
 # Katiba ya Mtandao wa Provian
 
 **Hali: hati ya uanzilishi — bado haijaridhiwa.** Hii ndiyo maandishi pekee ya katiba ya Mtandao wa Provian. Inaifunga Provian Technologies kupitia ahadi iliyochapishwa. Utawala wa kundi la binadamu haujaamilishwa na haujairidhia. Kusoma au kukubali hati hii si sharti la uanachama wa mtandao usiohitaji ruhusa.
@@ -103,7 +103,7 @@ Mwezi uliokosekana una mwezi mmoja wa kalenda wa neema. Kukamilisha ndani ya nee
 
 Ubatilishaji huanza kwanza. Katika muamala mmoja, kernel huharibu kiasi cha PVT kilichoamuliwa kwenye anwani zilizotajwa na kutoa tena kiasi hichohicho kwa ufunguo mpya wa mmiliki. Jumla ya PVT haibadiliki kamwe. Mamlaka ya urejeshaji inayoteuliwa kando na uthibitisho huru wa urejeshaji wa mmiliki lazima zote ziidhinishe kitendo; hakuna moja inayoweza kuhamisha PVT za mtu peke yake. Kanuni hufikia PVT ambazo bado zimeshikiliwa na aliyezichukua au yeyote ambaye hakutoa kitu kwa kubadilishana. PVT zilizopokelewa katika ubadilishanaji ulioshuhudiwa hubaki na mpokeaji. Ubadilishanaji wa uaminifu haubatilishwi kwa kudai kurudishiwa.
 
-Recourse Pool hurejesha salio, kwa uwiano kati ya maamuzi yaliyokubaliwa ikiwa fedha hazitoshi, kamwe zaidi ya akiba iliyopo. Uwiano wa akiba kwa salio la wanachama huchapishwa kama kipimo cha rasilimali, bila bei ya sarafu ya serikali wala ahadi ya urejeshaji. Mwanachama anaweza kuondoka na kukomboa sehemu yake ya uwiano iliyobaki katika akiba moja kwa moja kwenye mnyororo bila relay, ukiondoa kiasi ambacho tayari kimetengwa kwa urejeshaji. PVT zilizochomwa haziwezi kukombolewa.
+Recourse Pool hurejesha kilichobaki kwa uwiano kati ya maamuzi yaliyokubaliwa wakati fedha hazitoshi, bila kuzidi akiba iliyopo. Uwiano wa akiba kwa salio la wanachama huchapishwa kama kipimo cha rasilimali, bila bei ya sarafu ya serikali wala ahadi ya urejeshaji. Michango hairudishwi: mwanachama hawezi kukomboa mchango wa 1% ya mapato wala mchango wa kiasi maalumu kutoka kwenye salio lake. Uchomaji wa ushiriki hauwezi kutenguliwa. Baada ya mgao wa urejeshaji kutengewa mwanachama, anaweza kuutoa moja kwa moja kwenye mnyororo bila relay, hata baada ya kuondoka.
 
 Uamuzi hutumia ushahidi wa relay yenyewe kuhusu umiliki, uhamisho, wahusika wenza na mashahidi, pamoja na matokeo ya awali. Hakuna zuio, mipaka, muda wa kusubiri, viwango vya juu au uthibitisho wa pili kwa wanachama. Ufunguo wa Frank unashikilia mamlaka ya urejeshaji inayoteuliwa kando hadi Mahakama ifunguliwe; jukumu linaweza kuhamia Mahakamani au kwa utawala. Kila uamuzi na matokeo huingia katika mnyororo wa mwanachama mwenyewe, na kila matumizi ya mamlaka ya urejeshaji ni ya umma. Wizi wa kujitungia unabaki hatari ya ushahidi na huongoza kiasi cha kanuni kwa vipindi vijavyo.
 

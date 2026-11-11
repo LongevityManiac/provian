@@ -34,6 +34,7 @@ const outputs = new Map([
   ['provian-backend/src/core/recourse/hash-account-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/hash-account-data.ts'), 'utf8')],
   ['provian-backend/src/core/recourse/break-restoration-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-restoration-data.ts'), 'utf8').replace("'./recourse-owner-operation'", "'./owner-operation'")],
   ['provian-backend/src/core/recourse/break-deployment-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-deployment-data.ts'), 'utf8')],
+  ['src/core/recourse/restoration-exit.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-restoration-exit.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'")],
   ['src/core/recourse/pool-chain.ts', poolChain],
   ['src/core/recourse/pool-abi.ts', poolAbi],
   ['provian-backend/src/core/recourse/pool-abi.ts', poolAbi],

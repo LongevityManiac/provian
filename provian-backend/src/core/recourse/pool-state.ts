@@ -20,7 +20,7 @@ export interface RecoursePoolState {
   readonly outstandingAtomic: string; readonly authority: string;
   readonly grace: boolean; readonly membershipGeneration: string; readonly endMonthExclusive: string;
   readonly participationBurnAtomic: string; readonly noEarningsContributionAtomic: string; readonly earningsBps: number;
-  readonly signedRuleHash: string; readonly reserveShares: string; readonly redeemableAtomic: string;
+  readonly signedRuleHash: string;
   readonly invoices: readonly { month: string; burnDueAtomic: string; contributionDueAtomic: string; burnPaidAtomic: string; contributionPaidAtomic: string }[];
   readonly outcomeRevision: string;
 }
@@ -51,14 +51,13 @@ export async function readRecoursePoolState(identity: string): Promise<RecourseP
     if (!rawBlock || typeof rawBlock !== 'object' || !('hash' in rawBlock) || rawBlock.hash !== blockHash
       || !('timestamp' in rawBlock) || typeof rawBlock.timestamp !== 'string' || !/^0x[0-9a-f]+$/i.test(rawBlock.timestamp)) throw new Error('recourse_pool_block_unavailable');
     const month = BigInt((await call('calendarMonth', [BigInt(rawBlock.timestamp)]))[0]);
-    const [token, member, episode, primary, outstanding, revision, ruleResult, reserveGeneration, totalShares, backing, available] = await Promise.all([
+    const [token, member, episode, primary, outstanding, revision, ruleResult, available] = await Promise.all([
       call('token'), call('membershipState', [identity]), call('enrollment', [identity]), call('primaryAddress', [identity]),
       call('allocatedRestorations'), call('outcomeRevision', [identity]), call('monthlyRule', [month]),
-      call('reserveGeneration'), call('totalReserveShares'), call('accountedBacking'), call('availableReserve'),
+      call('availableReserve'),
     ]);
     if (String(token[0]).toLowerCase() !== kernel) throw new Error('recourse_pool_token_mismatch');
     const rule = ruleResult[0];
-    const shares = BigInt((await call('reserveShares', [reserveGeneration[0], identity]))[0]);
     const authorityRaw: unknown = await leg.provider.send('eth_call', [{ to: kernel,
       data: TOKEN.encodeFunctionData('restorationAuthority') }, tag]);
     if (typeof authorityRaw !== 'string') throw new Error('recourse_pool_reply_invalid');
@@ -87,8 +86,7 @@ export async function readRecoursePoolState(identity: string): Promise<RecourseP
       contributionAddress: String(primary[0]).toLowerCase(), month: String(month), issuedInMonth,
       unpaidAtomic: String(unpaid), reserveAtomic: String(available[0]), outstandingAtomic: String(outstanding[0]), authority,
       outcomeRevision: String(revision[0]), participationBurnAtomic: String(rule[1]), noEarningsContributionAtomic: String(rule[2]),
-      earningsBps: Number(rule[3]), signedRuleHash: String(rule[4]), reserveShares: String(shares),
-      redeemableAtomic: totalShares[0] === 0n ? '0' : String(shares * BigInt(backing[0]) / BigInt(totalShares[0])), invoices };
+      earningsBps: Number(rule[3]), signedRuleHash: String(rule[4]), invoices };
 
   }));
   if (JSON.stringify(values[0]) !== JSON.stringify(values[1])) throw new Error('recourse_pool_rpc_disagreement');

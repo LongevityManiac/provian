@@ -17,7 +17,7 @@ import { useWalletStore } from '../../store/walletStore';
 export interface RecourseView {
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
-  unpaidAtomic: string; reserveAtomic: string; reserveShares: string; redeemableAtomic: string;
+  unpaidAtomic: string; reserveAtomic: string;
   addresses: { address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
   requests: { requestId: string; status: string; transactionHash: string }[];
 }
@@ -51,8 +51,7 @@ export async function readRecourseView(): Promise<RecourseView> {
   return { identity, historyState: 'pending', enrolled: pool.enrolled, grace: pool.grace, earningsBps: pool.earningsBps,
     month: pool.month, endMonthExclusive: pool.endMonthExclusive,
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,
-    unpaidAtomic: pool.unpaidAtomic, reserveAtomic: pool.reserveAtomic, reserveShares: pool.reserveShares,
-    redeemableAtomic: pool.redeemableAtomic, addresses: [], requests: [] };
+    unpaidAtomic: pool.unpaidAtomic, reserveAtomic: pool.reserveAtomic, addresses: [], requests: [] };
 }
 /** History availability does not gate membership state, withdrawal or exit. */
 export async function readRecourseHistory(view: RecourseView): Promise<RecourseView> {
@@ -72,13 +71,12 @@ export async function readRecourseHistory(view: RecourseView): Promise<RecourseV
   } catch { return { ...view, historyState: 'unavailable' }; }
 }
 const poolAbi = new Interface(['function primaryAddress(bytes32) view returns(address)', 'function enroll(bytes32)',
-  'function leave(bytes32)', 'function settleMonth(bytes32)', 'function redeem(bytes32,uint256)',
-  'function reserveGeneration() view returns(uint256)', 'function reserveShares(uint256,bytes32) view returns(uint256)']);
+  'function leave(bytes32)', 'function settleMonth(bytes32)']);
 const tokenAbi = new Interface(['function allowance(address,address) view returns(uint256)', 'function approveCurrent(address,uint256,uint256) returns(bool)']);
 
 /** One owner action covers its approval and membership transaction. The pool
  * itself enforces calendar invoices and current deployment at execution. */
-export async function changeRecourseMembership(operation: 'enroll' | 'leave' | 'settleMonth' | 'redeem', identity: string): Promise<string> {
+export async function changeRecourseMembership(operation: 'enroll' | 'leave' | 'settleMonth', identity: string): Promise<string> {
   text(identity, hash);
   return withBiometricAction(translate('recourse.authorize', 'Authorize your Recourse action'), async action => {
     const deployment = await currentProtocolDeployment();
@@ -102,14 +100,7 @@ export async function changeRecourseMembership(operation: 'enroll' | 'leave' | '
     // may receive the subsequent owner transaction.
     const current = await currentProtocolDeployment();
     if (current.manifestHash !== deployment.manifestHash) throw new Error('protocol_pointer_changed');
-    let args: readonly unknown[] = [identity];
-    if (operation === 'redeem') {
-      const generation: unknown = await pool.reserveGeneration();
-      if (typeof generation !== 'bigint') throw new Error('recourse_reply_invalid');
-      const shares: unknown = await pool.reserveShares(generation, identity);
-      if (typeof shares !== 'bigint' || shares <= 0n) throw new Error('recourse_no_reserve_interest');
-      args = [identity, shares];
-    }
+    const args: readonly unknown[] = [identity];
     const tx = await signer.sendTransaction({ to: current.addresses.recoursePool, chainId: 8453,
       data: poolAbi.encodeFunctionData(operation, args) });
     const receipt = await tx.wait();
@@ -117,6 +108,8 @@ export async function changeRecourseMembership(operation: 'enroll' | 'leave' | '
     return tx.hash;
   });
 }
+
+export { withdrawHumanRestoration } from './human-restoration-exit';
 
 /** Uses the existing WalletConnect and pasted-signature flow. Only public
  * challenge material survives while the owner signs in the outside wallet. */

@@ -5114,9 +5114,7 @@
     "bind": "绑定你持有的地址",
     "resources": "成员出资的储备",
     "available": "可用于恢复：{{amount}} PVT",
-    "interest": "你剩余的储备份额：{{amount}} PVT",
-    "exitRule": "赎回将结束本次成员资格，并返还你按比例剩余的储备份额。已分配用于恢复的数量仍保留该分配。已销毁的 PVT 无法赎回。此退出路径直接在链上运行，无需 relay。",
-    "redeem": "退出并赎回储备份额",
+    "exitRule": "贡献不可退还：成员不能赎回收入的1%贡献或从持有余额中缴纳的固定贡献。参与销毁不可逆。恢复额度一旦分配给成员，即可不经中继直接在链上提取，退出后也不受影响。",
     "requests": "恢复请求",
     "rule": "先进行逆转，须同时具备恢复权限和你的独立恢复证明。通过有见证的交换收到的 PVT 仍归接收者所有。剩余部分由资金池恢复，资金不足时按比例分配。每个决定及其结果都记录在你自己的链中。",
     "authorize": "授权你的 Recourse 操作",
@@ -5132,12 +5130,14 @@
       "successBody": "此地址现已归入你的 Recourse 所有权记录。赚取和接收的 PVT 一视同仁。",
       "verify": "绑定此地址"
     },
-    "historyUnavailable": "地址和请求历史暂时不可用。成员资格和储备数额直接从链上验证；你仍可退出并赎回份额。",
+    "historyUnavailable": "地址和请求历史暂时不可用。已分配的恢复额度仍可通过请求ID直接在链上提取。",
     "bindingPending": "登记已提交，等待链上确认。",
     "requestExplanation": "填写转走你 PVT 的交易及其 Base 区块。恢复证明用于建立新的钱包密钥；relay 会检查交易及有见证的交换记录，再作出决定。原始助记词备份仍可恢复你的钱包。",
     "lossTransaction": "交易哈希",
     "lossBlock": "Base 区块高度",
     "submitRequest": "提交恢复请求",
-    "restoreAuthorize": "授权您的恢复请求"
+    "restoreAuthorize": "授权您的恢复请求",
+    "allocationRequest": "恢复请求ID",
+    "withdrawAllocation": "提取已分配的恢复额度"
   }
 }

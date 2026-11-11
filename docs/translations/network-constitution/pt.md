@@ -1,4 +1,4 @@
-<!-- source-sha256: 777155cbcbe38f5c8f657d3f02a709b4001972c95a4e81959c8b5535faaa5615 -->
+<!-- source-sha256: 0d0ce789fb3845a2edc6b99a403dd830af76ec43472efd7705c7713e99c58957 -->
 # A Constituição da Rede Provian
 
 **Status: carta fundadora — ainda não ratificada.** Este é o único texto constitucional da Rede Provian. Ele vincula a Provian Technologies por um compromisso publicado. A governança da classe humana não foi ativada nem o ratificou. Ler ou aceitar esta carta não é condição para a participação na rede sem permissão prévia.
@@ -103,7 +103,7 @@ Um mês não cumprido recebe um mês civil de tolerância. Regularizar dentro de
 
 A reversão vem primeiro. Em uma única transação, o núcleo destrói a quantidade determinada de PVT nas direções identificadas e reemite exatamente a mesma quantidade para a nova chave do proprietário. A oferta total nunca muda. Tanto a autoridade de restauração, nomeada separadamente, quanto a prova independente de recuperação do proprietário devem autorizar a operação; nenhuma pode mover sozinha os PVT de outra pessoa. A regra alcança os PVT ainda detidos por quem os tomou ou por quem nada deu em troca. PVT recebidos em uma troca testemunhada permanecem com o destinatário. Uma troca honesta não admite estorno.
 
-O Recourse Pool restaura o restante, proporcionalmente entre determinações aceitas quando os recursos são insuficientes, nunca além das reservas disponíveis. A razão entre reservas e saldos dos membros é publicada como medida de recursos, sem preço fiduciário nem promessa de restauração. Um membro pode sair e resgatar diretamente em cadeia sua participação proporcional restante na reserva, sem o relay, excluindo valores já alocados a restaurações. PVT queimados não podem ser resgatados.
+O Recourse Pool restaura o restante proporcionalmente entre as determinações aceitas quando faltam recursos, nunca além das reservas disponíveis. A razão entre reservas e saldos dos membros é publicada como medida de recursos, sem preço em moeda fiduciária nem promessa de restauração. As contribuições não são reembolsáveis: o membro não pode resgatar a contribuição de 1% dos ganhos nem a contribuição fixa de seus saldos. As queimas de participação são irreversíveis. Depois que uma restauração é alocada a um membro, ela pode ser retirada diretamente na cadeia sem o relay, inclusive após sua saída.
 
 A determinação utiliza as próprias evidências do relay sobre propriedade, transferências, contrapartes e testemunhas, incluindo resultados anteriores. Não há retenções, limites, períodos de espera, tetos nem segundas confirmações para membros. A chave de Frank detém a autoridade de restauração, nomeada separadamente, até a abertura do Tribunal; o papel pode passar ao Tribunal ou à governança. Cada determinação e resultado entra na cadeia do membro, e todo uso da autoridade é público. O furto simulado pelo próprio dono permanece um risco probatório e informa os valores prospectivos da regra.
 

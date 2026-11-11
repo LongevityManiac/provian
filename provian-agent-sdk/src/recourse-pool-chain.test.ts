@@ -21,8 +21,8 @@ function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: bo
     const values: Record<string, readonly unknown[]> = {
       token: [options.wrongToken ? pool : kernel], membershipState: [true, false, 1, 0], enrollment: [true, 24312, 24312, 24312, 0, 1],
       calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
-      monthlyRule: [[0, 100, 100, 100, identity]], reserveGeneration: [0], totalReserveShares: [100],
-      accountedBacking: [80], availableReserve: [options.disagree && index === 1 ? 101 : 100], reserveShares: [25],
+      monthlyRule: [[0, 100, 100, 100, identity]],
+      availableReserve: [options.disagree && index === 1 ? 101 : 100],
       obligations: [true, false, 100, 0, 100, 0, 100, 100, 0],
     };
     return RECOURSE_POOL_ABI.encodeFunctionResult(parsed.name, values[parsed.name]);
@@ -34,10 +34,10 @@ function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: bo
   return { deployment: async () => ({ ...deployment,
     manifestHash: options.changed && deployments++ > 0 ? 'changed' : 'current' }), rpcs: [rpc(0), rpc(1)] };
 }
-it('reads membership and redeemable reserve interest with no relay transport', async () => {
+it('reads membership and nonrefundable restoration reserves with no relay transport', async () => {
   expect(await readRecoursePoolChain(identity, network())).toMatchObject({ pool, kernel, enrolled: true,
     reserveAtomic: '100', outstandingAtomic: '50', grace: false, participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', earningsBps: 100, redeemableAtomic: '20', unpaidAtomic: '0', block: 100, blockHash });
+    noEarningsContributionAtomic: '100', earningsBps: 100, unpaidAtomic: '0', block: 100, blockHash });
 });
 it('disagreement, wrong token, reorganization and changed deployment refuse the financial view', async () => {
   await expect(readRecoursePoolChain(identity, network({ disagree: true }))).rejects.toThrow('disagreement');

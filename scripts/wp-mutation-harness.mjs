@@ -1205,7 +1205,7 @@ const MUTATION_SETS = {
             "description": "pool obligations no longer protected from reversal",
             "find": "if (balance < encumbered || poolDebit > balance - encumbered) revert InvalidRestoration();",
             "replace": "if (false) revert InvalidRestoration();",
-            "expectedKilledBy": "testReversalProtectsPoolSharesAndAllocatedAwardsButReachesUnallocatedDonation"
+            "expectedKilledBy": "testReversalProtectsContributionsAndAllocatedAwardsButReachesUnallocatedDonation"
         },
         {
             "id": "RESTORE-3",
@@ -1249,7 +1249,7 @@ const MUTATION_SETS = {
     "mutations": [
         {
             "id": "RESERVE-1",
-            "description": "restoration allocation made redeemable",
+            "description": "allocated restoration counted as available reserve",
             "find": "return balance - allocatedRestorations;",
             "replace": "return balance;",
             "expectedKilledBy": "testDeterminationAllocationsSurviveMemberExitAndRequireActualMembership"

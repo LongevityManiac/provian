@@ -5113,9 +5113,7 @@
     "bind": "Liên kết địa chỉ bạn sở hữu",
     "resources": "Dự trữ do thành viên đóng góp",
     "available": "Có sẵn để khôi phục: {{amount}} PVT",
-    "interest": "Phần dự trữ còn lại của bạn: {{amount}} PVT",
-    "exitRule": "Rút phần dự trữ sẽ kết thúc kỳ thành viên này và trả lại phần dự trữ còn lại theo tỷ lệ của bạn. Các khoản đã phân bổ cho khôi phục vẫn giữ nguyên. PVT đã hủy không thể rút lại. Bạn có thể thực hiện trực tiếp trên chuỗi, không cần relay.",
-    "redeem": "Rời quỹ và rút phần dự trữ",
+    "exitRule": "Các khoản đóng góp không được hoàn lại: thành viên không thể rút lại khoản đóng góp 1% thu nhập hoặc khoản đóng góp cố định từ số dư đang nắm giữ. Việc đốt để tham gia là không thể đảo ngược. Sau khi một khoản khôi phục được phân bổ cho thành viên, khoản đó có thể được rút trực tiếp trên chuỗi mà không cần relay, kể cả sau khi rời quỹ.",
     "requests": "Yêu cầu khôi phục",
     "rule": "Trước tiên là đảo ngược giao dịch, với thẩm quyền khôi phục và bằng chứng khôi phục độc lập của bạn. PVT nhận qua trao đổi được chứng thực vẫn thuộc về người nhận. Quỹ khôi phục phần còn lại, theo tỷ lệ nếu thiếu nguồn lực. Mỗi quyết định và kết quả đều được ghi vào chuỗi riêng của bạn.",
     "authorize": "Cho phép thao tác Recourse của bạn",
@@ -5131,12 +5129,14 @@
       "successBody": "Địa chỉ này hiện thuộc hồ sơ quyền sở hữu Recourse của bạn. PVT kiếm được và nhận được được đối xử như nhau.",
       "verify": "Liên kết địa chỉ này"
     },
-    "historyUnavailable": "Lịch sử địa chỉ và yêu cầu tạm thời không khả dụng. Tư cách thành viên và dự trữ được xác minh trực tiếp trên chuỗi; bạn vẫn có thể rời quỹ và rút phần của mình.",
+    "historyUnavailable": "Lịch sử địa chỉ và yêu cầu tạm thời không khả dụng. Các khoản khôi phục đã phân bổ vẫn có thể được rút trực tiếp trên chuỗi bằng mã yêu cầu.",
     "bindingPending": "Đã gửi đăng ký; đang chờ xác nhận trên chuỗi.",
     "requestExplanation": "Nhập giao dịch đã lấy PVT của bạn và khối Base tương ứng. Bằng chứng khôi phục thiết lập khóa ví mới; relay kiểm tra giao dịch và hồ sơ trao đổi được chứng thực trước khi quyết định. Bản sao lưu cụm từ gốc vẫn khôi phục được ví của bạn.",
     "lossTransaction": "Mã băm giao dịch",
     "lossBlock": "Số khối Base",
     "submitRequest": "Gửi yêu cầu khôi phục",
-    "restoreAuthorize": "Cho phép yêu cầu khôi phục của bạn"
+    "restoreAuthorize": "Cho phép yêu cầu khôi phục của bạn",
+    "allocationRequest": "Mã yêu cầu khôi phục",
+    "withdrawAllocation": "Rút khoản khôi phục đã phân bổ"
   }
 }

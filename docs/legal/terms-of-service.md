@@ -521,7 +521,7 @@ The ownership registry starts when an address is bound; it does not reconstruct 
 
 If wallet cryptography fails, successor restoration uses registered balances at a last-good-block snapshot, the recovery preimage and an independent hash-based authorization of the destination. This process is free and available to every bound owner, including nonmembers. It preserves monetary history and prevents duplicate restoration; it returns existing PVT and does not mint earnings a second time. Membership adds theft recourse; binding alone does not. Provian does not promise that every future cryptographic or infrastructure failure can be repaired.
 
-The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. A member can leave and redeem the member's remaining proportionate reserve interest directly on-chain without the relay. Amounts already allocated to restoration are excluded; participation burns are irreversible and are not reserve interests. Redeeming ends the current membership episode. Other recourse programs may be developed; describing them creates no present membership or restoration right.
+The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves. Other recourse programs may be developed; describing them creates no present membership or restoration right.
 
 ## 21. Dispute Resolution
 

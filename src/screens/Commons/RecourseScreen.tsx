@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { changeRecourseMembership, pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, type RecourseView } from '../../core/recourse/service';
+import { changeRecourseMembership, pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, type RecourseView } from '../../core/recourse/service';
 import { ExternalWalletProofFlow } from '../Agent/LinkExternalWalletScreen';
 
 export function RecourseBindScreen(): React.JSX.Element {
@@ -23,6 +23,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const [error, setError] = useState(false);
   const [lossTransaction, setLossTransaction] = useState('');
   const [lossBlock, setLossBlock] = useState('');
+  const [allocationRequest, setAllocationRequest] = useState('');
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     setLoading(true); setError(false);
@@ -36,7 +37,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     finally { if (sequence === loadSequence.current) setLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
-  const act = async (operation: 'enroll' | 'leave' | 'settleMonth' | 'redeem') => {
+  const act = async (operation: 'enroll' | 'leave' | 'settleMonth') => {
     if (!state || busy) return;
     setBusy(true); setError(false);
     try { await changeRecourseMembership(operation, state.identity); await load(); }
@@ -56,6 +57,13 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     } catch { setError(true); }
     finally { setBusy(false); }
   };
+  const withdraw = async (request: string) => {
+    if (!state || busy) return;
+    setBusy(true); setError(false);
+    try { await withdrawHumanRestoration(state.identity, request.trim().toLowerCase()); setAllocationRequest(''); await load(); }
+    catch { setError(true); }
+    finally { setBusy(false); }
+  };
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
@@ -64,7 +72,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error', 'We could not confirm the latest state or complete that action. Refresh to check the chain before trying again.')}</Text>
         {button(t('recourse.refresh', 'Refresh'), () => { void load(); })}</View> : null}
       {state ? <>
-        {state.historyState === 'unavailable' ? <Text style={styles.small}>{t('recourse.historyUnavailable', 'Address and request history is temporarily unavailable. Membership and reserve amounts are verified directly on-chain; you can still leave and redeem.')}</Text> : null}
+        {state.historyState === 'unavailable' ? <Text style={styles.small}>{t('recourse.historyUnavailable', 'Address and request history is temporarily unavailable. Membership and reserve amounts are verified directly on-chain; you can still leave or withdraw an allocated restoration.')}</Text> : null}
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.membership', 'Recourse Pool membership')}</Text>
           <Text style={styles.status}>{state.grace ? t('recourse.grace', 'Protected — in grace') : state.enrolled ? t('recourse.active', 'Protected') : t('recourse.inactive', 'Not enrolled')}</Text>
@@ -89,9 +97,11 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.resources', 'Member-funded reserves')}</Text>
           <Text style={styles.body}>{t('recourse.available', 'Available for restoration: {{amount}} PVT', { amount: pvtAmount(state.reserveAtomic) })}</Text>
-          <Text style={styles.body}>{t('recourse.interest', 'Your remaining reserve interest: {{amount}} PVT', { amount: pvtAmount(state.redeemableAtomic) })}</Text>
-          <Text style={styles.small}>{t('recourse.exitRule', 'Redemption ends this membership episode and returns your remaining proportionate reserve interest. Amounts already allocated to restoration stay allocated. Burned PVT cannot be redeemed. This exit works directly on-chain without the relay.')}</Text>
-          {state.reserveShares !== '0' ? button(t('recourse.redeem', 'Leave and redeem reserve interest'), () => { void act('redeem'); }) : null}
+          <Text style={styles.small}>{t('recourse.exitRule', 'Contributions are nonrefundable and burned PVT cannot be recovered. An allocated restoration remains yours after you leave and can be withdrawn directly on-chain without the relay.')}</Text>
+          <TextInput accessibilityLabel={t('recourse.allocationRequest', 'Restoration request ID')} placeholder={t('recourse.allocationRequest', 'Restoration request ID')}
+            value={allocationRequest} onChangeText={setAllocationRequest} autoCapitalize="none" autoCorrect={false} editable={!busy}
+            style={styles.input} placeholderTextColor={COLORS.textSecondary} />
+          {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(allocationRequest); })}
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.requests', 'Restoration requests')}</Text>
@@ -105,7 +115,9 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
             style={styles.input} placeholderTextColor={COLORS.textSecondary} />
           {button(t('recourse.submitRequest', 'Submit restoration request'), () => { void requestRestoration(); })}
           {state.requests.map(row => <View key={row.requestId} style={styles.request}><Text selectable style={styles.address}>{row.transactionHash}</Text>
-            <Text style={styles.body}>{t(`recourse.requestStatus.${row.status}`, row.status.replace(/_/g, ' '))}</Text></View>)}
+            <Text style={styles.body}>{t(`recourse.requestStatus.${row.status}`, row.status.replace(/_/g, ' '))}</Text>
+            <Text selectable style={styles.address}>{t('recourse.allocationRequest', 'Restoration request ID')}: {row.requestId}</Text>
+            {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(row.requestId); })}</View>)}
         </View>
       </> : null}
       {busy ? <ActivityIndicator color={COLORS.primary} /> : null}

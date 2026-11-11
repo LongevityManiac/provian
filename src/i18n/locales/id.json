@@ -5113,9 +5113,7 @@
     "bind": "Tautkan alamat yang Anda miliki",
     "resources": "Cadangan dari kontribusi anggota",
     "available": "Tersedia untuk pemulihan: {{amount}} PVT",
-    "interest": "Sisa bagian Anda dalam cadangan: {{amount}} PVT",
-    "exitRule": "Penarikan mengakhiri periode keanggotaan ini dan mengembalikan sisa bagian proporsional Anda dalam cadangan. Jumlah yang telah dialokasikan untuk pemulihan tetap dialokasikan. PVT yang dimusnahkan tidak dapat ditarik. Jalur keluar ini bekerja langsung di rantai tanpa relay.",
-    "redeem": "Keluar dan tarik bagian cadangan",
+    "exitRule": "Kontribusi tidak dapat dikembalikan: anggota tidak dapat menebus kontribusi 1% dari pendapatan maupun kontribusi tetap dari saldo miliknya. Pembakaran partisipasi tidak dapat dibatalkan. Setelah restorasi dialokasikan kepada anggota, alokasi itu dapat ditarik langsung di chain tanpa relay, termasuk setelah anggota keluar.",
     "requests": "Permintaan pemulihan",
     "rule": "Pembalikan dilakukan terlebih dahulu, dengan otoritas pemulihan dan bukti pemulihan independen Anda. PVT yang diterima dalam pertukaran yang disaksikan tetap menjadi milik penerimanya. Dana bersama memulihkan sisanya, secara proporsional jika dana kurang. Setiap keputusan dan hasilnya dicatat dalam rantai Anda sendiri.",
     "authorize": "Otorisasi tindakan Recourse Anda",
@@ -5131,12 +5129,14 @@
       "successBody": "Alamat ini kini tercatat dalam kepemilikan Recourse Anda. PVT hasil kerja dan PVT yang diterima diperlakukan sama.",
       "verify": "Tautkan alamat ini"
     },
-    "historyUnavailable": "Riwayat alamat dan permintaan sementara tidak tersedia. Keanggotaan dan cadangan diperiksa langsung di rantai; Anda tetap dapat keluar dan menarik bagian Anda.",
+    "historyUnavailable": "Riwayat alamat dan permintaan sementara tidak tersedia. Restorasi yang telah dialokasikan tetap dapat ditarik langsung di chain dengan ID permintaan.",
     "bindingPending": "Pendaftaran dikirim; menunggu konfirmasi rantai.",
     "requestExplanation": "Sebutkan transaksi yang mengambil PVT Anda dan blok Base-nya. Bukti pemulihan Anda menetapkan kunci dompet baru; relay memeriksa transaksi dan catatan pertukaran yang disaksikan sebelum membuat keputusan. Cadangan frasa awal Anda tetap dapat memulihkan dompet.",
     "lossTransaction": "Hash transaksi",
     "lossBlock": "Nomor blok Base",
     "submitRequest": "Kirim permintaan pemulihan",
-    "restoreAuthorize": "Otorisasi permintaan pemulihan Anda"
+    "restoreAuthorize": "Otorisasi permintaan pemulihan Anda",
+    "allocationRequest": "ID permintaan restorasi",
+    "withdrawAllocation": "Tarik restorasi yang dialokasikan"
   }
 }

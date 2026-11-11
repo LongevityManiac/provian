@@ -9,14 +9,14 @@ export interface RecoursePoolState {
   readonly outstandingAtomic: string; readonly authority: string;
   readonly grace: boolean; readonly membershipGeneration: string; readonly endMonthExclusive: string;
   readonly participationBurnAtomic: string; readonly noEarningsContributionAtomic: string; readonly earningsBps: number;
-  readonly signedRuleHash: string; readonly reserveShares: string; readonly redeemableAtomic: string;
+  readonly signedRuleHash: string;
   readonly invoices: readonly { month: string; burnDueAtomic: string; contributionDueAtomic: string; burnPaidAtomic: string; contributionPaidAtomic: string }[];
   readonly outcomeRevision: string;
 }
 
 
-/** Independent chain view, usable during a relay outage, including the exact
- * remaining reserve interest for permissionless redemption. */
+/** Independent chain view, usable during a relay outage, including membership
+ * obligations and the reserve available for restoration. */
 export async function readRecoursePoolChain(identity: string, network: OwnerChainNetwork): Promise<RecoursePoolState> {
   if (!/^0x[0-9a-f]{64}$/.test(identity)) throw new Error('recourse_identity_invalid');
   const deployment = await network.deployment();
@@ -39,14 +39,13 @@ export async function readRecoursePoolChain(identity: string, network: OwnerChai
     const block = Number(BigInt(rawBlock.number));
     if (!Number.isSafeInteger(block)) throw new Error('recourse_pool_block_unavailable');
     const month = BigInt((await call('calendarMonth', [BigInt(rawBlock.timestamp)]))[0]);
-    const [token, member, episode, primary, outstanding, revision, ruleResult, reserveGeneration, totalShares, backing, available] = await Promise.all([
+    const [token, member, episode, primary, outstanding, revision, ruleResult, available] = await Promise.all([
       call('token'), call('membershipState', [identity]), call('enrollment', [identity]), call('primaryAddress', [identity]),
       call('allocatedRestorations'), call('outcomeRevision', [identity]), call('monthlyRule', [month]),
-      call('reserveGeneration'), call('totalReserveShares'), call('accountedBacking'), call('availableReserve'),
+      call('availableReserve'),
     ]);
     if (String(token[0]).toLowerCase() !== kernel) throw new Error('recourse_pool_token_mismatch');
     const rule = ruleResult[0];
-    const shares = BigInt((await call('reserveShares', [reserveGeneration[0], identity]))[0]);
     const authorityRaw: unknown = await rpc.request('eth_call', [{ to: kernel,
       data: TOKEN.encodeFunctionData('restorationAuthority') }, tag]);
     if (typeof authorityRaw !== 'string') throw new Error('recourse_pool_reply_invalid');
@@ -75,8 +74,7 @@ export async function readRecoursePoolChain(identity: string, network: OwnerChai
       contributionAddress: String(primary[0]).toLowerCase(), month: String(month), issuedInMonth,
       unpaidAtomic: String(unpaid), reserveAtomic: String(available[0]), outstandingAtomic: String(outstanding[0]), authority,
       outcomeRevision: String(revision[0]), participationBurnAtomic: String(rule[1]), noEarningsContributionAtomic: String(rule[2]),
-      earningsBps: Number(rule[3]), signedRuleHash: String(rule[4]), reserveShares: String(shares),
-      redeemableAtomic: totalShares[0] === 0n ? '0' : String(shares * BigInt(backing[0]) / BigInt(totalShares[0])), invoices };
+      earningsBps: Number(rule[3]), signedRuleHash: String(rule[4]), invoices };
 
   }));
 

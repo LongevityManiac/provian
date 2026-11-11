@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:7ad3a4879adc624cd19b814452302ff1ecbcf5f8c9a8df5c283334b1845ac477",
+  "version": "sha256:7e36dfa621c61c57a234b3f3bf507f2f9a13491f46991da7389859d3dd3d416b",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2124,7 +2124,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. A member can leave and redeem the member's remaining proportionate reserve interest directly on-chain without the relay. Amounts already allocated to restoration are excluded; participation burns are irreversible and are not reserve interests. Redeeming ends the current membership episode. Other recourse programs may be developed; describing them creates no present membership or restoration right."
+          "text": "The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves. Other recourse programs may be developed; describing them creates no present membership or restoration right."
         }
       ]
     },

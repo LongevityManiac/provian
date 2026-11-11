@@ -1483,7 +1483,7 @@ The permanent pointer is the address discovery authority. Resolve it using the S
 | `projectPool` | Threshold pools; target-only execution and contributor refunds |
 | `bonds` | Performance collateral, carried obligations and direct exits |
 | `court` | Arbitration; the Court opens when its participation requirements are met |
-| `recoursePool` | Member contributions, grace, determinations, pro-rata restoration and direct redemption |
+| `recoursePool` | Member contributions, grace, determinations, pro-rata restoration and direct withdrawal of allocated restorations |
 | `settlement` | Settlement routing, including members' prospective issuance contribution |
 
 The kernel names its ownership registry and independent owner-authorization executor. The registry records identity bindings; the executor verifies the recovery commitment and exact owner intent. Daily PE anchors remain independently verifiable on Base; succession preserves their evidentiary role.
@@ -1519,7 +1519,7 @@ A missed month receives one calendar month of grace. Making it up within grace p
 
 Reversal comes first. In a single transaction the kernel destroys the determined PVT at named addresses and reissues exactly the same amount to the owner's new key. It never changes total supply. Both the separately appointable restoration authority and the owner's independent recovery proof must authorize that operation; neither factor alone can move anyone's PVT. The rule reaches PVT held by whoever took it or anyone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. An honest exchange is not subject to a chargeback.
 
-The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. The reserve-to-member-balance ratio is published as a measure of resources, without a fiat price or restoration promise. A member can leave and redeem a remaining proportionate reserve interest directly on-chain without the relay, excluding amounts already allocated to restoration. Burned PVT cannot be redeemed.
+The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. The reserve-to-member-balance ratio is published as a measure of resources, without a fiat price or restoration promise. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.
 
 The determination uses the relay's own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Frank's key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member's own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule's prospective amounts.
 

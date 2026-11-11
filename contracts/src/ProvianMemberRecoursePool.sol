@@ -13,9 +13,9 @@ interface IRecourseKernelAuthority {
     function restorationAuthority() external view returns (address);
     function ownerAuthorization() external view returns (ProvianRestorationAuthorization);
 }
-/// @notice Members' discretionary risk-sharing reserve. The company has no share,
-/// withdrawal or surplus path. Share redemption and allocated restoration withdrawal
-/// work directly on-chain, without the relay or a live restoration authority.
+/// @notice Members' discretionary risk-sharing reserve. Contributions are not
+/// refundable. Allocated restoration withdrawal works directly on-chain, without
+/// the relay or a live restoration authority. There is no admin or surplus exit.
 contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCollector {
     ProvianPVT9 public immutable token;
     ProvianMemberSettlement public immutable settlement;
@@ -159,13 +159,6 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, IMemberContributionCo
             _contributeReserve(identity, payer, reserve);
             _creditMonthly(identity, nowMonth, month, 0, reserve);
         }
-    }
-    function redeem(bytes32 identity, uint256 shares) external historyReady returns (uint256) {
-        _owner(identity);
-        // Redemption is an exit from the current membership episode. Historical
-        // determinations and allocations survive; rejoining remains immediate.
-        _closeMembership(identity, calendarMonth(block.timestamp));
-        return _redeemReserve(identity, msg.sender, shares);
     }
     function withdrawRestoration(bytes32 request, bytes32 identity) external historyReady returns (uint256) {
         _owner(identity);

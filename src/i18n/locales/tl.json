@@ -5113,9 +5113,7 @@
     "bind": "Iugnay ang address na pag-aari mo",
     "resources": "Reserbang mula sa mga miyembro",
     "available": "Magagamit sa pagsasauli: {{amount}} PVT",
-    "interest": "Natitira mong bahagi sa reserba: {{amount}} PVT",
-    "exitRule": "Tinatapos ng pagtubos ang panahong ito ng pagiging miyembro at ibinabalik ang natitira mong proporsiyonal na bahagi sa reserba. Mananatiling nakalaan ang pondong naitalaga na sa pagsasauli. Hindi matutubos ang nasunog na PVT. Gumagana ang paglabas na ito nang direkta sa chain, nang walang relay.",
-    "redeem": "Umalis at tubusin ang bahagi sa reserba",
+    "exitRule": "Hindi naibabalik ang mga kontribusyon: hindi maaaring tubusin ng miyembro ang kontribusyong 1% ng kita o ang nakapirming kontribusyon mula sa kanyang hawak. Hindi maibabalik ang PVT na sinunog para sa pakikilahok. Kapag naitalaga na sa miyembro ang pagpapanumbalik, maaari niya itong i-withdraw nang direkta sa chain nang walang relay, kahit umalis na siya.",
     "requests": "Mga kahilingan sa pagsasauli",
     "rule": "Nauuna ang pagbabaligtad, kasama ang awtoridad sa pagsasauli at ang hiwalay mong patunay ng pagbawi. Mananatili sa tumanggap ang PVT mula sa palitang may saksi. Isinasauli ng pool ang natitira, nang proporsiyonal kung kulang ang pondo. Bawat pasiya at resulta ay itinatala sa sarili mong chain.",
     "authorize": "Pahintulutan ang aksiyon mo sa Recourse",
@@ -5131,12 +5129,14 @@
       "successBody": "Bahagi na ang address na ito ng tala mo ng pagmamay-ari sa Recourse. Pareho ang pagtrato sa kinita at natanggap na PVT.",
       "verify": "Iugnay ang address na ito"
     },
-    "historyUnavailable": "Pansamantalang hindi makuha ang kasaysayan ng mga address at kahilingan. Direktang sinusuri sa chain ang pagiging miyembro at reserba; maaari ka pa ring umalis at tubusin ang bahagi mo.",
+    "historyUnavailable": "Pansamantalang hindi available ang kasaysayan ng mga address at kahilingan. Maaaring i-withdraw nang direkta sa chain ang nakatalagang pagpapanumbalik gamit ang ID ng kahilingan.",
     "bindingPending": "Naipadala ang pagpaparehistro; hinihintay ang kumpirmasyon sa chain.",
     "requestExplanation": "Ibigay ang transaksiyong kumuha ng PVT mo at ang bloke nito sa Base. Nagtatakda ang patunay mo ng pagbawi ng bagong susi sa wallet; sinusuri ng relay ang transaksiyon at tala ng palitang may saksi bago magpasiya. Naibabalik pa rin ng backup ng orihinal mong seed phrase ang wallet mo.",
     "lossTransaction": "Hash ng transaksiyon",
     "lossBlock": "Numero ng bloke sa Base",
     "submitRequest": "Magpadala ng kahilingan sa pagsasauli",
-    "restoreAuthorize": "Pahintulutan ang iyong kahilingan sa pagpapanumbalik"
+    "restoreAuthorize": "Pahintulutan ang iyong kahilingan sa pagpapanumbalik",
+    "allocationRequest": "ID ng kahilingan sa pagpapanumbalik",
+    "withdrawAllocation": "I-withdraw ang nakatalagang pagpapanumbalik"
   }
 }

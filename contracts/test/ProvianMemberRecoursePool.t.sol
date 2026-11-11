@@ -66,15 +66,16 @@ contract ProvianMemberRecoursePoolTest is Test {
         assertEq(pool.pvt(), address(token));
         assertEq(address(pool.token()), pool.pvt());
     }
-    function testBurnAndNoEarningsContributionAreSeparateAndExitIsDirect() public {
+    function testBurnAndNoEarningsContributionAreSeparateAndLeavingRefundsNeither() public {
         token.mint(address(this), 1000 ether); pool.enroll(ID);
         assertEq(token.totalSupply(), 900 ether); assertEq(pool.availableReserve(), 0);
         vm.warp(1706745600); pool.settleMonth(ID); // February 1
         assertEq(token.totalSupply(), 800 ether); // January and February participation burns.
         assertEq(pool.availableReserve(), 100 ether); // January no-earnings contribution.
         assertEq(token.balanceOf(address(this)), 700 ether);
-        assertEq(pool.redeem(ID, 100 ether), 100 ether);
-        assertEq(token.balanceOf(address(this)), 800 ether);
+        (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ID, 100 ether));
+        assertFalse(refunded); pool.leave(ID);
+        assertEq(token.balanceOf(address(this)), 700 ether);
         assertEq(token.totalSupply(), 800 ether);
         (bool active,,,) = pool.membershipState(ID);
         assertFalse(active);
@@ -130,8 +131,9 @@ contract ProvianMemberRecoursePoolTest is Test {
         token.ownerAuthorization().setOutcome(ds[0].request, sha256(abi.encode(ds[0].request, ID, address(this), ds[0].shortfall, ds[0].evidenceHash)));
         pool.determine(ds);
         pool.leave(ID);
-        assertEq(pool.redeem(ID, 100 ether), 60 ether);
+        assertEq(pool.availableReserve(), 60 ether);
         assertEq(pool.withdrawRestoration(ds[0].request, ID), 40 ether);
+        assertEq(token.balanceOf(address(pool)), 60 ether);
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
     }
     function testCompleteReversalRecordsFinalAcceptedOutcomeWithoutAllocatingReserves() public {

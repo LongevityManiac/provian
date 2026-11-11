@@ -44,7 +44,7 @@ Membership is optional, for holders with enough at stake. Its monthly requiremen
 
 All three amounts live in the signed rule and can rise or fall prospectively with loss experience. One calendar month of grace follows a missed month; catching up within grace preserves continuity. After expiry, membership ends. A former member can rejoin at any time, protected from that day forward, without restoration for losses while lapsed. One membership includes all bound holdings, earned and received alike.
 
-The pool is entirely member-funded and on-chain. Provian Technologies is not a party to it, contributes nothing, holds nothing, promises nothing, and receives no contribution or surplus. Members can leave and redeem their remaining proportionate reserve interest without the relay, excluding amounts already allocated to restoration. Burned PVT cannot be redeemed. Other recourse programs can follow.
+The pool is entirely member-funded and on-chain. Provian Technologies is not a party to it, contributes nothing, holds nothing, promises nothing, and receives no contribution or surplus. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves. Other recourse programs can follow.
 
 ## Work, proof and money
 

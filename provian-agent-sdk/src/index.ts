@@ -822,6 +822,8 @@ export { recoverRecourseAgent } from './recourse-recovery';
 export { currentProtocolDeployment } from "./protocol-runtime";
 export type { ProtocolDeployment } from "./protocol-pointer";
 
+export { prepareRestorationExit } from './recourse-restoration-exit';
+export type { RestorationExit } from './recourse-restoration-exit';
 export { readRecoursePoolChain } from './recourse-pool-chain';
 export type { RecoursePoolState } from './recourse-pool-chain';
 

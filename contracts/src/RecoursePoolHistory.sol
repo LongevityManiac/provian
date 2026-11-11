@@ -21,7 +21,6 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
     uint256 public importedPoolEntries;
     bool public poolHistoryReady;
     mapping(bytes32 => bool) private importedSlots;
-    uint256 private importedCurrentShares;
     uint256 private importedAllocations;
     uint256 private unmatchedPrimaries;
     bool private importedGlobals;
@@ -38,7 +37,7 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
     modifier historyReady() { if(!poolHistoryReady) revert InvalidPoolHistory(); _; }
     function _slot(uint8 kind,bytes memory key) private pure returns(bytes32) { return sha256(abi.encode(kind,key)); }
     /// kinds: globals, ordered rules, owner, invoice, membership period,
-    /// allocation, reserve shares, address binding, determination replay fence.
+    /// allocation, reserved kind, address binding, determination replay fence.
     function importPoolState(uint8 kind,bytes calldata data,bytes32[] calldata proof) external {
         if(poolHistoryReady||importedPoolEntries>=poolSnapshot.entries||proof.length>256) revert InvalidPoolHistory();
         bytes32 leaf=sha256(abi.encode("Provian pool succession",poolSnapshot.predecessor,poolSnapshot.blockNumber,kind,sha256(data)));
@@ -48,7 +47,7 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
         bytes32 slot;
         if(kind==0){
             if(importedPoolEntries!=0) revert InvalidPoolHistory();
-            (reserveGeneration,totalReserveShares,allocatedRestorations,accountedBacking)=abi.decode(data,(uint256,uint256,uint256,uint256));
+            (allocatedRestorations,accountedBacking)=abi.decode(data,(uint256,uint256));
             importedGlobals=true;slot=_slot(kind,"");
         } else {
             if(!importedGlobals) revert InvalidPoolHistory();
@@ -92,12 +91,6 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
             _requireImportedOwner(allocation.identity);
             restorationAllocations[request]=allocation;if(!allocation.withdrawn)importedAllocations+=allocation.amount;
             slot=_slot(kind,abi.encode(request));
-        } else if(kind==6){
-            (uint256 generation,bytes32 id,uint256 shares)=abi.decode(data,(uint256,bytes32,uint256));
-            if(id==bytes32(0)||generation>reserveGeneration) revert InvalidPoolHistory();
-            _requireImportedOwner(id);
-            reserveShares[generation][id]=shares;if(generation==reserveGeneration)importedCurrentShares+=shares;
-            slot=_slot(kind,abi.encode(generation,id));
         } else if(kind==7){
             (address account,bytes32 id)=abi.decode(data,(address,bytes32));
             if(account==address(0)||id==bytes32(0)||!importedSlots[_slot(2,abi.encode(id))]) revert InvalidPoolHistory();
@@ -115,7 +108,7 @@ abstract contract RecoursePoolHistory is RecourseMonthlyAccounting, RecourseRese
     function monthlyRuleAt(uint256 index) external view returns (MonthlyRule memory) { return monthlyRules[index]; }
     function activatePoolHistory() external {
         if(poolHistoryReady||!importedGlobals||importedPoolEntries!=poolSnapshot.entries||monthlyRules.length==0
-            ||importedCurrentShares!=totalReserveShares||importedAllocations!=allocatedRestorations||unmatchedPrimaries!=0
+            ||importedAllocations!=allocatedRestorations||unmatchedPrimaries!=0
             ||reserveToken.balanceOf(address(this))<allocatedRestorations+accountedBacking) revert InvalidPoolHistory();
         poolHistoryReady=true;emit PoolHistoryActivated(poolSnapshot.root,poolSnapshot.entries);
     }

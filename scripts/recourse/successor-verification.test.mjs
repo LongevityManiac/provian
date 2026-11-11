@@ -44,7 +44,6 @@ const corruptions=[
  ['curve break mode',f=>corrupt(f,'ProvianRestorationAuthorization','cryptographicBreak',()=>[true]),/wrong_succession_mode/],
  ['settlement submitter',f=>corrupt(f,'ProvianMemberSettlement','submitter',()=>[ZeroAddress]),/binding/],
  ['bond backing',f=>corrupt(f,'ProvianRecourseKernel','balanceOf',()=>[0],[f.plan.addresses.ProvianRecourseBondPool]),/bond_backing/],
- ['pool shares',f=>corrupt(f,'ProvianMemberRecoursePool','totalReserveShares',()=>[1]),/state/],
  ['extra monthly rule',f=>corrupt(f,'ProvianMemberRecoursePool','monthlyRuleCount',()=>[2]),/state/],
  ['old approver active',f=>corrupt(f,'oldVerifier','batchApprover',()=>[f.plan.admin]),/predecessor_verifier_not_retired/],
  ['runtime replacement',f=>{f.codes[f.plan.addresses.ProvianRecourseKernel]='0x6000';},/runtime_mismatch/],

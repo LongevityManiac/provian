@@ -5113,9 +5113,7 @@
     "bind": "Vincular um endereço que você possui",
     "resources": "Reservas constituídas pelos membros",
     "available": "Disponível para restauração: {{amount}} PVT",
-    "interest": "Sua participação restante na reserva: {{amount}} PVT",
-    "exitRule": "O resgate encerra este período de adesão e devolve sua participação proporcional restante na reserva. Valores já destinados à restauração continuam destinados a ela. PVT queimados não podem ser resgatados. Essa saída funciona diretamente na rede, sem o relay.",
-    "redeem": "Sair e resgatar a participação na reserva",
+    "exitRule": "As contribuições não são reembolsáveis: o membro não pode resgatar a contribuição de 1% dos ganhos nem a contribuição fixa de seus saldos. As queimas de participação são irreversíveis. Depois que uma restauração é alocada a um membro, ela pode ser retirada diretamente na cadeia sem o relay, inclusive após sua saída.",
     "requests": "Pedidos de restauração",
     "rule": "A reversão vem primeiro, com a autoridade de restauração e sua prova independente de recuperação. PVT recebidos em uma troca testemunhada permanecem com o destinatário. O fundo restaura o restante, proporcionalmente quando faltam recursos. Toda determinação e seu resultado entram na sua própria cadeia.",
     "authorize": "Autorizar sua ação de Recourse",
@@ -5131,12 +5129,14 @@
       "successBody": "Este endereço agora pertence ao seu registro de propriedade Recourse. PVT ganhos e recebidos recebem o mesmo tratamento.",
       "verify": "Vincular este endereço"
     },
-    "historyUnavailable": "O histórico de endereços e pedidos está temporariamente indisponível. A adesão e as reservas são verificadas diretamente na rede; você ainda pode sair e resgatar sua participação.",
+    "historyUnavailable": "O histórico de endereços e solicitações está temporariamente indisponível. Restaurações alocadas ainda podem ser retiradas diretamente na cadeia com o ID da solicitação.",
     "bindingPending": "Registro enviado; aguardando confirmação na rede.",
     "requestExplanation": "Informe a transação que levou seus PVT e seu bloco na Base. Sua prova de recuperação estabelece uma nova chave de carteira; o relay verifica a transação e os registros de trocas testemunhadas antes de uma determinação. O backup da sua frase original ainda restaura sua carteira.",
     "lossTransaction": "Hash da transação",
     "lossBlock": "Número do bloco na Base",
     "submitRequest": "Enviar pedido de restauração",
-    "restoreAuthorize": "Autorize seu pedido de restauração"
+    "restoreAuthorize": "Autorize seu pedido de restauração",
+    "allocationRequest": "ID da solicitação de restauração",
+    "withdrawAllocation": "Retirar restauração alocada"
   }
 }

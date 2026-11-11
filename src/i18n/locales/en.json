@@ -5113,9 +5113,7 @@
     "bind": "Bind an address you hold",
     "resources": "Member-funded reserves",
     "available": "Available for restoration: {{amount}} PVT",
-    "interest": "Your remaining reserve interest: {{amount}} PVT",
-    "exitRule": "Redemption ends this membership episode and returns your remaining proportionate reserve interest. Amounts already allocated to restoration stay allocated. Burned PVT cannot be redeemed. This exit works directly on-chain without the relay.",
-    "redeem": "Leave and redeem reserve interest",
+    "exitRule": "Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.",
     "requests": "Restoration requests",
     "rule": "Reversal comes first, with both restoration authority and your independent recovery proof. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder, pro rata when underfunded. Every determination and outcome enters your own chain.",
     "authorize": "Authorize your Recourse action",
@@ -5131,12 +5129,14 @@
       "successBody": "This address now belongs to your Recourse ownership record. Earned and received PVT are treated alike.",
       "verify": "Bind this address"
     },
-    "historyUnavailable": "Address and request history is temporarily unavailable. Membership and reserve amounts are verified directly on-chain; you can still leave and redeem.",
+    "historyUnavailable": "Address and request history is temporarily unavailable. Allocated restorations can still be withdrawn directly on-chain using the request ID.",
     "bindingPending": "Registration submitted; awaiting chain confirmation.",
     "requestExplanation": "Name the transaction that took your PVT and its Base block. Your recovery proof establishes a new wallet key; the relay checks the transaction and the witnessed exchange record before making a determination. Your original seed backup still restores your wallet.",
     "lossTransaction": "Transaction hash",
     "lossBlock": "Base block number",
     "submitRequest": "Submit restoration request",
-    "restoreAuthorize": "Authorize your restoration request"
+    "restoreAuthorize": "Authorize your restoration request",
+    "allocationRequest": "Restoration request ID",
+    "withdrawAllocation": "Withdraw allocated restoration"
   }
 }

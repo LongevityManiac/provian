@@ -149,7 +149,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         vm.mockCall(pool, abi.encodeWithSignature("accountedBacking()"), abi.encode(5 ether));
         vm.mockCall(pool, abi.encodeWithSignature("allocatedRestorations()"), abi.encode(3 ether));
     }
-    function testReversalProtectsPoolSharesAndAllocatedAwardsButReachesUnallocatedDonation() public {
+    function testReversalProtectsContributionsAndAllocatedAwardsButReachesUnallocatedDonation() public {
         ProvianRestorationAuthorization.Reversal memory r = poolReversal(3 ether);
         sign(r);
         vm.prank(ADMIN); vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector); execute(r);
