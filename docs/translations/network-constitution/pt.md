@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # A Constituição da Rede Provian
 
 **Status: carta fundadora — ainda não ratificada.** Este é o único texto constitucional da Rede Provian. Ele vincula a Provian Technologies por um compromisso publicado. A governança da classe humana não foi ativada nem o ratificou. Ler ou aceitar esta carta não é condição para a participação na rede sem permissão prévia.
@@ -64,7 +64,7 @@ Esse eleitorado e sua infraestrutura de verificação não constituem uma govern
 
 A participação na rede não exige permissão. Um participante gera PEs válidos e, ao integrar a emissão de PVT, respeita o caminho e a divisão canônicos de emissão. Nenhuma candidatura ou acordo com a empresa concede a participação.
 
-A participação na Fundação é um mecanismo distinto para humanos verificados e o piso da Fundação, com verificação de pessoas e distribuição assumidas como compromisso, mas ainda não abertas; carteiras de agentes não recebem essa distribuição humana. O Artigo IX estabelece o compromisso.
+A adesão à Fundação é um mecanismo distinto, destinado a humanos verificados e ao Piso da Fundação, com mecanismos propostos de verificação de pessoas e de distribuição; carteiras de agentes não são elegíveis para essa distribuição humana. O Artigo IX apresenta a proposta.
 
 ## Artigo VI — Direitos dos participantes
 
@@ -113,9 +113,9 @@ O registro de propriedade acompanha as transferências em cadeia desde a vincula
 
 O propósito da Fundação é ampliar a inclusão humana conforme a inteligência produz mais. A dignidade humana não depende de quanto o mercado paga pelo trabalho de alguém. Ganhos diretos, relações de beneficiário e inclusão universal atendem a partes diferentes desse propósito.
 
-A Fundação existe hoje como a tesouraria em cadeia que recebe uma parcela de cada liquidação, segundo as regras do núcleo. A Provian se compromete com um piso da Fundação: distribuição recorrente, uniforme e igual aos membros humanos verificados, sem teste de renda ou ponderação por riqueza. O requisito é ser uma pessoa verificada, gratuitamente e com reverificação periódica. Divide um fluxo de tesouraria existente e não cria PVT adicional. Propõe-se financiar primeiro as bolsas de gestão, limitadas à metade da parcela de cada período, preservando a maioria para o piso.
+A Fundação existe hoje como a tesouraria on-chain para a qual toda liquidação paga, sob as regras do núcleo. O Piso da Fundação proposto é uma distribuição recorrente, uniforme e igual a membros humanos verificados, sem teste de renda nem ponderação por riqueza. Ele divide um fluxo existente da tesouraria e não cria PVT adicional. Propõe-se financiar primeiro as subvenções para a gestão institucional, limitadas à metade da parcela de cada período, preservando a reivindicação majoritária do Piso da Fundação. A elegibilidade é a condição de pessoa verificada, gratuita e mantida por verificações periódicas.
 
-A Provian se compromete a estabelecer a instituição distribuidora, a verificação de humanos únicos, a participação de humanos verificados e as distribuições iguais recorrentes. Esses programas ainda não estão abertos. Até a instituição operar, o contrato encaminha a alocação à tesouraria designada. A futura governança humana continua sujeita ao Artigo IV.
+A instituição distribuidora, a verificação de pessoas, a associação e as distribuições recorrentes são propostas, ainda não construídas. Até operar, o contrato envia a parcela à tesouraria designada. A futura governança humana continua sujeita ao Artigo IV.
 
 # PARTE IV — O COMPROMISSO
 

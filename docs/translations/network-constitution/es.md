@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # La Constitución de la Red Provian
 
 **Estado: carta fundacional, aún no ratificada.** Este es el único texto constitucional de la Red Provian. Vincula a Provian Technologies mediante un compromiso publicado. La gobernanza de la clase humana no se ha activado ni la ha ratificado. Leer o aceptar esta carta no es una condición para pertenecer a la red sin permiso previo.
@@ -64,7 +64,7 @@ Ese electorado y su infraestructura de verificación no constituyen una gobernan
 
 La pertenencia a la red no requiere permiso. Un participante genera PE válidos y, al integrar la emisión de PVT, respeta la vía canónica de emisión y su reparto. Ninguna solicitud ni acuerdo con la empresa concede pertenencia.
 
-La membresía de la Fundación es un mecanismo distinto para humanos verificados y el piso de la Fundación, con verificación de personas y distribución comprometidas pero aún no abiertas; los agentes no pueden recibir esa distribución humana. El Artículo IX establece el compromiso.
+La afiliación a la Fundación es un mecanismo distinto para humanos verificados y el Piso de la Fundación, con una maquinaria propuesta de verificación de personas y de distribución; las carteras de agentes no pueden recibir esa distribución humana. El Artículo IX expone la propuesta.
 
 ## Artículo VI — Derechos de los participantes
 
@@ -113,9 +113,9 @@ El registro de propiedad sigue las transferencias en cadena desde la vinculació
 
 El propósito de la Fundación es una inclusión humana más amplia a medida que la inteligencia produce más. La dignidad humana no depende de cuánto pague el mercado por el trabajo de una persona. Los ingresos directos, las relaciones de beneficiarios y la inclusión universal sirven a distintas partes de ese propósito.
 
-La Fundación existe hoy como la tesorería en cadena a la que aporta cada liquidación conforme a las reglas del núcleo. Provian se compromete con un piso de la Fundación: una distribución periódica, uniforme e igual a miembros humanos verificados, sin prueba de recursos ni ponderación por riqueza. La condición es ser una persona verificada, sin coste y con reverificación periódica. Reparte un flujo de tesorería existente y no crea PVT adicional. Se propone financiar primero las ayudas de custodia, limitadas a la mitad de la porción de cada período, preservando la mayoría para el piso.
+La Fundación existe hoy como la tesorería en cadena a la que paga cada liquidación, bajo las reglas del núcleo. El Piso de la Fundación propuesto es una distribución recurrente, plana e igual a miembros humanos verificados, sin comprobación de recursos ni ponderación por riqueza. Divide un flujo de tesorería existente y no crea PVT adicional. Se propone financiar primero las subvenciones de custodia, pero limitarlas a la mitad de la parte de cada período, preservando el derecho mayoritario del Piso de la Fundación. La condición es ser una persona verificada; es gratuita y se mantiene mediante verificaciones periódicas.
 
-Provian se compromete a establecer la institución distribuidora, la verificación de personas únicas, la membresía de humanos verificados y las distribuciones periódicas iguales. Estos programas aún no están abiertos. Hasta que opere la institución distribuidora, el contrato dirige la asignación a su tesorería designada. La futura gobernanza humana sigue sujeta al Artículo IV.
+La institución distribuidora, la verificación de personas, la afiliación y las distribuciones recurrentes son propuestas, aún no construidas. Hasta que opere, el contrato dirige la asignación a su tesorería designada. La futura gobernanza humana sigue sujeta al Artículo IV.
 
 # PARTE IV — EL PACTO
 

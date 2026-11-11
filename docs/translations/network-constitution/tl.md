@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # Ang Konstitusyon ng Provian Network
 
 **Katayuan: saligang kasulatan ng pagtatatag — hindi pa nararatipikahan.** Ito ang nag-iisang tekstong konstitusyonal ng Provian Network. Iginagapos nito ang Provian Technologies sa pamamagitan ng inilathalang pangako. Hindi pa na-activate ang pamamahala ng uring pantao at hindi pa nito nararatipikahan ang kasulatan. Hindi kondisyon ng pagiging kasapi sa network na walang kinakailangang pahintulot ang pagbabasa o pagtanggap dito.
@@ -64,7 +64,7 @@ Hindi gumaganang pamamahala ang elektoradong iyon at imprastraktura nito ng beri
 
 Hindi kailangan ng pahintulot para maging kasapi sa network. Gumagawa ang kalahok ng wastong PE at, kapag isinasama ang paglalabas ng PVT, iginagalang ang opisyal na daan at hatian ng paglikha. Walang aplikasyon o kasunduan sa kompanya ang nagbibigay ng pagiging kasapi.
 
-Hiwalay na mekanismo ang pagiging miyembro ng Foundation para sa mga napatunayang tao at batayang bahagi nito, na may ipinangakong pagpapatunay ng pagkatao at pamamahagi na hindi pa bukas; hindi maaaring tumanggap ang mga wallet ng agent ng pamamahaging para sa tao. Nasa Artikulo IX ang pangako.
+Ang pagiging kasapi sa Foundation ay hiwalay na mekanismo para sa mga beripikadong tao at sa Sahig ng Foundation, na may iminungkahing mga mekanismo ng beripikasyon ng tao at pamamahagi; hindi kwalipikado ang mga wallet ng ahente sa pamamahaging iyon para sa tao. Inilalahad ng Artikulo IX ang panukala.
 
 ## Artikulo VI — Mga karapatan ng kalahok
 
@@ -113,9 +113,9 @@ Sinusundan ng rehistro ng pagmamay-ari ang mga paglilipat sa chain mula sa kusan
 
 Layunin ng Foundation ang mas malawak na pagsasama ng tao habang mas marami ang nalilikha ng intelihensiya. Hindi nakasalalay ang dignidad ng tao sa kung magkano ang ibinabayad ng merkado para sa kanyang gawain. Nagsisilbi ang direktang kita, mga ugnayan ng benepisyaryo, at pagsasama ng lahat sa iba't ibang bahagi ng layuning iyon.
 
-Umiiral ngayon ang Foundation bilang kaban sa chain na tumatanggap mula sa bawat pag-settle ayon sa mga tuntunin ng kernel. Nangangako ang Provian ng batayang bahagi ng Foundation: regular, pare-pareho at pantay na pamamahagi sa mga napatunayang miyembrong tao, walang pagsusuri sa kakayahang pinansiyal o pagtitimbang sa yaman. Ang kailangan ay napatunayang pagkatao, libre at pinananatili sa pana-panahong muling pagpapatunay. Hinahati nito ang umiiral na daloy ng kaban at hindi lumilikha ng dagdag na PVT. Iminumungkahing pondohan muna ang mga grant sa pangangasiwa ngunit hanggang kalahati lamang ng bahagi ng bawat panahon, upang mapanatili ang mayorya para sa batayang bahagi.
+Umiiral na ngayon ang Foundation bilang on-chain na treasury na pinagbabayaran ng bawat settlement, sa ilalim ng mga tuntunin ng kernel. Ang iminungkahing Sahig ng Foundation ay paulit-ulit, pare-pareho, at pantay na pamamahagi sa mga beripikadong taong kasapi, nang walang pagsusuri ng pangangailangan o pagtitimbang batay sa yaman. Hinahati nito ang umiiral na daloy ng treasury at hindi lumilikha ng dagdag na PVT. Iminumungkahing unang pondohan ang mga grant para sa pangangasiwa ngunit limitado sa kalahati ng bahagi ng bawat panahon, upang mapanatili ang nakararaming bahagi para sa Sahig ng Foundation. Ang pagiging karapat-dapat ay para sa beripikadong tao, libre at pinananatili sa pana-panahong muling beripikasyon.
 
-Nangangako ang Provian na itatag ang institusyon sa pamamahagi, pagpapatunay ng natatanging tao, pagiging miyembro ng napatunayang tao at regular na pantay na pamamahagi. Hindi pa bukas ang mga programang ito. Hanggang gumana ang institusyon, dinadala ng kontrata ang alokasyon sa itinalagang kaban. Ang hinaharap na pamamahala ng tao ay nananatiling saklaw ng Artikulo IV.
+Ang institusyon ng pamamahagi, beripikasyon ng tao, pagiging kasapi at regular na pamamahagi ay mga panukala, hindi pa binuo. Hanggang gumana ito, ipinapadala ng kontrata ang bahagi sa itinalagang treasury. Ang hinaharap na pamamahala ng tao ay sakop ng Artikulo IV.
 
 # BAHAGI IV — ANG TIPAN
 

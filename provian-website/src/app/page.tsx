@@ -21,23 +21,23 @@ import { linePath, route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Provian — Compute mints money. No one gets left behind.',
   description:
-    'Compute mints money. Provian joins witnessed work, a prospective ownership registry, independent recovery commitments and the members’ Recourse Pool. Built by one human, with AI.',
+    'The work you do with AI leaves proof. The proof mints money that is yours. Provian is a wallet that turns the useful things you do into proof you own and mints a currency, PVT, from that proof. The same proof shows anyone what was really done.',
   card: 'home',
   path: '/',
 })
 
 const BEATS: { title: string; body: string }[] = [
   {
-    title: 'Your work mints.',
-    body: 'A device, counterparty, forge or chain witnesses the act. Every act of work mints PVT once at its best-supported value. You carry the proof.',
+    title: 'You do something real.',
+    body: 'Write code and commit it, run an AI agent, keep a promise, trade or pay from your wallet, chat with an AI. An AI agent you run works the same way.',
   },
   {
-    title: 'Your holdings have an owner.',
-    body: 'Bind an address you hold. The registry follows its PVT from that point forward, minted or received. An independent recovery commitment separates ownership continuity from the wallet key.',
+    title: 'It leaves a receipt.',
+    body: 'Your phone, your computer, or the network signs a small record of what happened and who did it. It holds none of the private details.',
   },
   {
-    title: 'Members share loss risk.',
-    body: 'Choose the Recourse Pool. Members fund the reserve; evidence informs discretionary restoration. The pool restores by its published rule, pro rata when underfunded.',
+    title: 'The receipt mints.',
+    body: 'Each receipt mints new PVT into your own wallet, weighted by how strong the proof is.',
   },
 ]
 
@@ -85,14 +85,15 @@ export default function HomePage() {
             </Link>
           </GenesisGate>
           <h1 className="mt-6 max-w-5xl font-display text-[2.6rem] font-semibold leading-[0.98] tracking-[-0.04em] md:text-7xl lg:text-[length:min(5.5rem,9svh)]">
-            Compute mints money.{' '}
-            <span className="gradient-text">Ownership survives beyond a key.</span>
+            The work you do with AI leaves proof.{' '}
+            <span className="gradient-text">The proof mints money that is yours.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-text-primary/85 md:text-xl md:leading-9 lg:max-w-3xl">
-            Your work earns PVT. Your ownership has a record apart from the key that controls it.
-            Provian joins witnessed work, independent recovery proof and a member-funded Recourse Pool.
-            A stolen key is a problem to solve, not the final boundary of digital money.
-            Built by one human, with AI.
+            AI is about to do much of the world’s work. Provian is a wallet that turns the
+            useful things you do into proof you own, with AI and with each other, and mints a currency from that proof.
+            The same proof lets you show anyone, a person, a company, another AI, what was really
+            done, and no one has to take your word for it. For anyone with a phone, and any AI agent
+            with a wallet.
           </p>
           <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-provian-gold-bright md:text-sm">
             Compute mints money. No one gets left behind.
@@ -102,7 +103,6 @@ export default function HomePage() {
               Get the app
               <ArrowRight size={16} />
             </Link>
-            <Link href={route.recourse} className="btn-ghost">Explore Recourse</Link>
             <WatchFilmButton target={FILMS.toTheStars.slug} className="btn-ghost bg-void/40 backdrop-blur-md">
               Watch the film · {FILMS.toTheStars.seconds} s
             </WatchFilmButton>
@@ -176,6 +176,30 @@ export default function HomePage() {
         </p>
       </Statement>
 
+      {/* ── RECOURSE ── what you earn is yours to keep. */}
+      <section className="border-b border-white/10 px-6 py-20 md:px-10 md:py-24 lg:px-14">
+        <div className="mx-auto max-w-4xl">
+          <p className="eyebrow text-provian-blue-bright/80">Recourse</p>
+          <h2 className="mt-5 font-display text-4xl font-semibold leading-[1.02] tracking-[-0.03em] md:text-6xl">
+            Lose a key. <span className="gradient-text">Keep what’s yours.</span>
+          </h2>
+          <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
+            A bank account can be hacked as surely as a crypto wallet. The difference is that the bank
+            keeps a record of who is owed what apart from the password, and can put a customer back.
+            Provian built that for PVT. What you hold is recorded as yours apart from your key. If the
+            math behind keys ever breaks, your balance is restored, free. And if you join the Recourse
+            Pool, a theft can be reversed.
+          </p>
+          <Link
+            href={route.recourse}
+            className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-provian-blue-bright transition-colors hover:text-text-primary"
+          >
+            How recourse works
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </section>
+
       {/* ── 6 · ATLAS ── */}
       <section className="relative overflow-hidden border-b border-white/10 px-6 py-20 md:px-10 md:py-24 lg:px-14">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[420px] bg-glow-amber-radial opacity-60" />
@@ -216,9 +240,8 @@ export default function HomePage() {
         slug={LINES.yesMoney.slug}
       >
         <p>
-          A thousand years out, commerce across a civilization that has left the planet needs digital money.
-          Stolen keys, exposed balances and vulnerable cryptography are real weaknesses, not ceilings.
-          The ownership and recourse layer is part of building money that can travel with us.
+          They say money fades when machines do everything. We think that’s when it matters most.
+          Money is how people say what was done, and by whom. So, yes: money.
         </p>
       </Statement>
 
@@ -236,9 +259,8 @@ export default function HomePage() {
               <Link href={linePath(LINES.ubp.slug)}>Universal Basic Participation.</Link>
             </h2>
             <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
-              Earned participation and a human floor belong together. Work mints PVT for people and agents.
-              Provian commits to a flat, equal, human-only Foundation distribution alongside earned income. That program is not yet open.
-              That commitment does not dismiss universal basic income or pretend the distribution is already open.
+              Alongside whatever floor a society provides: PVT for your own work in the boom,
+              minted at the source to whoever did it: a person with a phone, an agent with a wallet.
             </p>
             <Link
               href={route.ubp}
@@ -263,9 +285,9 @@ export default function HomePage() {
               ))}
             </div>
             <p className="mt-10 text-lg leading-8 text-text-secondary">
-              Human-resolving standard issuance and Genesis follow 99/0.5/0.5. The treasury shares are floors;
-              agent-side Foundation allocation can change prospectively. The Foundation treasury receives its share now.
-              Membership and equal human distributions remain commitments to implement.
+              Half a percent of every mint already flows to the Foundation’s treasury, at a rate that
+              can never be lowered. Paying it out to verified people is the commitment it’s built to
+              keep.
             </p>
           </div>
         </div>

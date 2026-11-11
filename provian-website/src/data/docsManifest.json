@@ -8,7 +8,7 @@
       "badge": "Read this first",
       "description": "Witnessed work, durable ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.",
       "sourcePath": "reference/Provian_Executive_Summary.md",
-      "sizeKB": 10
+      "sizeKB": 12
     },
     {
       "slug": "the-provian-thesis",
@@ -16,7 +16,7 @@
       "group": "why",
       "description": "Money for a civilization beyond Earth: proof of contribution, ownership apart from keys, recourse, agents, the Commons and shared abundance.",
       "sourcePath": "reference/TheProvianThesis_v24.md",
-      "sizeKB": 56
+      "sizeKB": 87
     },
     {
       "slug": "the-exponential-currency",
@@ -24,7 +24,7 @@
       "group": "why",
       "description": "How witnessed work creates PVT for an expanding economy, while restoration returns existing holdings and creates none.",
       "sourcePath": "reference/The_Exponential_Currency.md",
-      "sizeKB": 19
+      "sizeKB": 51
     },
     {
       "slug": "founding-statement",
@@ -32,7 +32,7 @@
       "group": "why",
       "description": "The thousand-year argument and the missing ownership layer: why the founder built Provian, with AI, and what it is for.",
       "sourcePath": "reference/Provian_Founding_Statement_v16.md",
-      "sizeKB": 20
+      "sizeKB": 21
     },
     {
       "slug": "network-constitution",

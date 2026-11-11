@@ -1,7 +1,7 @@
 /**
  * VisionScreen - the Provian vision, card by card.
  *
- * A permanent tab screen: the opening, twelve cards, the builders' notes, and the
+ * A permanent tab screen: the opening, thirteen cards, the builders' notes, and the
  * call to participate. Accessible before wallet creation (registered outside the
  * auth guard). During Genesis, a full card leads before wallet setup; existing
  * owners get compact expandable details near the closing, with an
@@ -62,13 +62,14 @@ interface CardData {
 }
 
 const CARDS: CardData[] = [
-    { n: 1, image: require('../../../assets/images/vision-envelope.png'),
-        film: { url: VISION_LINKS.nothingUnwitnessedFilm, labelKey: 'visionScreen.card4Watch' } },
+    { n: 1, image: require('../../../assets/images/vision-envelope.png') },
     { n: 2, image: require('../../../assets/images/vision-pvt.png') },
+    { n: 13, image: require('../../../assets/images/vision-recourse.png') },
     { n: 3, image: require('../../../assets/images/vision-burn.png') },
     {
         n: 4,
         image: require('../../../assets/images/vision-other-fear.png'),
+        film: { url: VISION_LINKS.nothingUnwitnessedFilm, labelKey: 'visionScreen.card4Watch' },
     },
     { n: 5, image: require('../../../assets/images/vision-agent-economy.png') },
     { n: 6, image: require('../../../assets/images/vision-atlas.png') },
@@ -240,7 +241,7 @@ const VisionScreen = () => {
                 </View>
 
                 {/* ── CARDS ── */}
-                {CARDS.map((card) => {
+                {CARDS.map((card, index) => {
                     const title = t(`visionScreen.card${card.n}Title`);
                     const body = t(`visionScreen.card${card.n}Body`);
                     const film = card.film;
@@ -250,7 +251,7 @@ const VisionScreen = () => {
                             <LinearGradient colors={['transparent', 'rgba(11,14,20,0.95)']} style={s.sectionImageFade} />
                             <View style={s.sectionContent}>
                                 <View style={s.sectionHeader}>
-                                    <Text style={s.sectionTitle}>{`${card.n} · ${title}`}</Text>
+                                    <Text style={s.sectionTitle}>{`${index + 1} · ${title}`}</Text>
                                     {renderShare(title, body)}
                                 </View>
                                 <Text style={s.sectionBody}>{body}</Text>

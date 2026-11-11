@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # Hiến pháp Mạng lưới Provian
 
 **Trạng thái: hiến chương sáng lập — chưa được phê chuẩn.** Đây là văn bản hiến pháp duy nhất của Mạng lưới Provian. Văn bản ràng buộc Provian Technologies bằng cam kết công bố công khai. Quản trị của nhóm con người chưa được kích hoạt và chưa phê chuẩn văn bản này. Đọc hoặc chấp nhận hiến chương không phải điều kiện để gia nhập mạng lưới không cần cấp phép.
@@ -64,7 +64,7 @@ Cử tri đó và hạ tầng xác minh của họ chưa phải hệ thống qu�
 
 Tư cách thành viên mạng lưới không cần cấp phép. Người tham gia tạo PE hợp lệ và, khi tích hợp phát hành PVT, tôn trọng con đường phát hành và tỷ lệ chia chuẩn. Không đơn đăng ký hay thỏa thuận nào với công ty cấp tư cách thành viên.
 
-Tư cách thành viên Quỹ là cơ chế riêng cho con người đã xác minh và mức nền của Quỹ, với xác minh tư cách con người và phân phối đã cam kết nhưng chưa mở; ví tác nhân không đủ điều kiện cho phân phối dành cho con người này. Điều IX nêu cam kết.
+Tư cách thành viên Quỹ là cơ chế riêng dành cho con người đã xác minh và Nền tảng của Quỹ, với bộ máy xác minh con người và phân phối được đề xuất; ví tác nhân không đủ điều kiện nhận phân phối dành cho con người đó. Điều IX nêu đề xuất này.
 
 ## Điều VI — Quyền của người tham gia
 
@@ -113,9 +113,9 @@ Sổ đăng ký sở hữu theo dõi chuyển khoản trên chuỗi từ lúc li
 
 Mục đích của Quỹ là mở rộng sự hòa nhập của con người khi trí tuệ tạo ra nhiều hơn. Phẩm giá con người không phụ thuộc vào việc thị trường trả bao nhiêu cho công việc của một người. Thu nhập trực tiếp, quan hệ bên thụ hưởng và sự hòa nhập phổ quát phục vụ các phần khác nhau của mục đích này.
 
-Quỹ hiện tồn tại như kho bạc trên chuỗi mà mỗi lần quyết toán đóng góp theo quy tắc của kernel. Provian cam kết một mức nền của Quỹ: phân phối định kỳ, đồng đều và bằng nhau cho thành viên con người đã xác minh, không xét điều kiện kinh tế hay trọng số tài sản. Điều kiện là tư cách con người được xác minh, miễn phí và duy trì bằng tái xác minh định kỳ. Nó chia dòng kho bạc hiện có, không tạo thêm PVT. Đề xuất tài trợ trước các khoản hỗ trợ quản lý nhưng giới hạn ở một nửa phần của mỗi kỳ, giữ đa số cho mức nền.
+Quỹ hiện tồn tại dưới dạng ngân quỹ trên chuỗi mà mọi lần quyết toán đều chi trả vào, theo quy tắc của nhân hệ thống. Nền tảng của Quỹ được đề xuất là phân phối định kỳ, đồng mức và bình đẳng cho thành viên con người đã xác minh, không xét nhu cầu tài chính hay trọng số tài sản. Nó chia dòng ngân quỹ có sẵn và không tạo thêm PVT. Đề xuất cấp kinh phí cho hoạt động quản lý trước nhưng giới hạn ở một nửa phần của mỗi kỳ, giữ phần yêu cầu chiếm đa số cho Nền tảng của Quỹ. Điều kiện là con người đã xác minh, miễn phí và được duy trì bằng việc xác minh lại định kỳ.
 
-Provian cam kết xây dựng tổ chức phân phối, xác minh con người duy nhất, tư cách thành viên con người đã xác minh và phân phối bằng nhau định kỳ. Các chương trình này chưa mở. Cho đến khi tổ chức phân phối hoạt động, hợp đồng chuyển phân bổ vào kho bạc được chỉ định. Quản trị của con người trong tương lai vẫn tuân theo Điều IV.
+Thiết chế phân phối, xác minh con người, tư cách thành viên và phân phối định kỳ mới được đề xuất, chưa xây dựng. Trước khi vận hành, hợp đồng chuyển phần phân bổ đến ngân quỹ được chỉ định. Quản trị con người trong tương lai vẫn tuân theo Điều IV.
 
 # PHẦN IV — GIAO ƯỚC
 

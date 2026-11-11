@@ -63,7 +63,7 @@ That electorate and its verification infrastructure are not operating governance
 
 Network membership is permissionless. A participant generates valid PEs and, when integrating PVT issuance, honors the canonical minting path and split. No application or agreement with the company grants membership.
 
-Foundation membership is a distinct mechanism for verified humans and the Foundation floor, with committed personhood verification and distribution machinery that are not yet open; agent wallets are ineligible for that human distribution. Article IX states the commitment.
+Foundation membership is a distinct mechanism for verified humans and the Foundation floor, with proposed personhood verification and distribution machinery; agent wallets are ineligible for that human distribution. Article IX states the proposal.
 
 ## Article VI — Rights of Participants
 
@@ -112,13 +112,13 @@ The ownership registry follows chain transfers from voluntary binding, distingui
 
 The Foundation's purpose is wider human inclusion as intelligence produces more. Human dignity does not depend on how much the market pays for a person's work. Direct earnings, beneficiary relationships, and universal inclusion serve different parts of that purpose.
 
-The Foundation exists today as the on-chain treasury every settlement pays into, under the kernel's rules. Provian commits to a Foundation floor: a recurring, flat, equal distribution to verified human members, with no means test or wealth weighting. Eligibility is verified personhood, free and kept current by periodic re-verification. It divides an existing treasury stream and creates no additional PVT. Stewardship grants are proposed to be funded first but capped at half of each period's share, preserving the floor's majority claim.
+The Foundation exists today as the on-chain treasury every settlement pays into, under the kernel's rules. The proposed Foundation floor is a recurring, flat, equal distribution to verified human members, with no means test or wealth weighting. Eligibility is verified personhood, free and kept current by periodic re-verification. It divides an existing treasury stream and creates no additional PVT. Stewardship grants are proposed to be funded first but capped at half of each period's share, preserving the floor's majority claim.
 
-Provian commits to establishing the distributing institution, unique-human verification, verified-human membership and recurring equal distributions. These programs are not yet open. Until the distribution institution operates, the contract routes the allocation to its designated treasury. Future human governance remains subject to Article IV.
+The distributing institution, personhood verification, membership, and recurring distributions are proposed, not built. Until the distribution institution operates, the contract routes the allocation to its designated treasury. Future human governance remains subject to Article IV.
 
 # PART IV — THE COVENANT
 
-## Article X — The Shared Condition
+## Article X — The Mutual Condition
 
 The network's legitimacy depends on service to humans and agents together. An agent should make the human more, not less. A human should make the agent more, not less.
 

@@ -62,9 +62,9 @@ export function generateAppNarrative(check = false) {
   const english = readJson(resolve(root, 'src/i18n/narrative/en.json'));
   const outputs = [];
   outputs.push([resolve(root, 'provian-website/src/content/vision.generated.json'),
-    `${JSON.stringify(Array.from({ length: 12 }, (_, index) => ({
-      title: english[`visionScreen.card${index + 1}Title`],
-      paragraphs: english[`visionScreen.card${index + 1}Body`].split('\n\n'),
+    `${JSON.stringify([1, 2, 13, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((number) => ({
+      title: english[`visionScreen.card${number}Title`],
+      paragraphs: english[`visionScreen.card${number}Body`].split('\n\n'),
     })), null, 2)}\n`]);
   for (const locale of LOCALES) {
     const copy = readJson(resolve(root, `src/i18n/narrative/${locale}.json`));

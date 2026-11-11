@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # La Constitution du Réseau Provian
 
 **Statut : charte fondatrice — pas encore ratifiée.** Il s’agit de l’unique texte constitutionnel du Réseau Provian. Il engage Provian Technologies par un engagement publié. La gouvernance de la classe humaine n’a pas été activée et ne l’a pas ratifié. Lire ou accepter cette charte n’est pas une condition d’adhésion sans autorisation préalable au réseau.
@@ -64,7 +64,7 @@ Cet électorat et son infrastructure de vérification ne constituent pas une gou
 
 L’adhésion au réseau ne requiert pas d’autorisation. Un participant génère des PE valides et, lorsqu’il intègre l’émission de PVT, respecte le canal et le partage canoniques. Aucune candidature ni convention avec l’entreprise ne confère l’adhésion.
 
-L’adhésion à la Fondation est un mécanisme distinct pour les humains vérifiés et le socle de la Fondation, avec une vérification des personnes et une distribution promises mais pas encore ouvertes ; les portefeuilles d’agents ne sont pas admissibles à cette distribution humaine. L’Article IX expose cet engagement.
+L’adhésion à la Fondation est un mécanisme distinct pour les humains vérifiés et le Plancher de la Fondation, avec des mécanismes proposés de vérification des personnes et de distribution ; les portefeuilles d’agents ne sont pas admissibles à cette distribution humaine. L’Article IX énonce la proposition.
 
 ## Article VI — Droits des participants
 
@@ -113,9 +113,9 @@ Le registre de propriété suit les transferts en chaîne à partir du lien volo
 
 La Fondation vise une inclusion humaine plus large à mesure que l’intelligence produit davantage. La dignité humaine ne dépend pas du prix que le marché accorde au travail d’une personne. Revenus directs, relations de bénéficiaires et inclusion universelle servent différentes dimensions de cet objectif.
 
-La Fondation existe aujourd’hui comme trésorerie en chaîne alimentée par chaque règlement selon les règles du noyau. Provian s’engage à un socle de la Fondation : une distribution récurrente, uniforme et égale aux membres humains vérifiés, sans condition de ressources ni pondération par la richesse. L’admissibilité repose sur une personne vérifiée, gratuitement et avec une revérification périodique. Elle répartit un flux de trésorerie existant et ne crée aucun PVT supplémentaire. Il est proposé de financer d’abord les subventions de gestion, dans la limite de la moitié de la part de chaque période, préservant la majorité pour le socle.
+La Fondation existe aujourd’hui en tant que trésorerie sur la chaîne que chaque règlement alimente, selon les règles du noyau. Le Plancher de la Fondation proposé est une distribution récurrente, uniforme et égale aux membres humains vérifiés, sans condition de ressources ni pondération par la richesse. Il partage un flux de trésorerie existant et ne crée aucun PVT supplémentaire. Il est proposé de financer d’abord les subventions de gestion, mais de les plafonner à la moitié de la part de chaque période, préservant ainsi la part majoritaire du Plancher de la Fondation. L’éligibilité repose sur une personne vérifiée, gratuitement, avec une nouvelle vérification périodique.
 
-Provian s’engage à établir l’institution de distribution, la vérification d’unicité humaine, l’adhésion d’humains vérifiés et les distributions égales récurrentes. Ces programmes ne sont pas encore ouverts. Jusqu’au fonctionnement de l’institution, le contrat dirige l’allocation vers sa trésorerie désignée. La future gouvernance humaine reste soumise à l’Article IV.
+L’institution de distribution, la vérification des personnes, l’adhésion et les distributions récurrentes sont proposées, pas encore construites. Jusqu’à son fonctionnement, le contrat verse l’allocation à la trésorerie désignée. La gouvernance humaine future reste soumise à l’Article IV.
 
 # PARTIE IV — LE PACTE
 

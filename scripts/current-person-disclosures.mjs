@@ -12,9 +12,7 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "53d5b47a8dc25f1f5f67d0c89fb4cfebfd87461237c47bc46a21c09c7c317c95"
   ],
   "provian-website/public/docs-md/executive-summary.md": [
-    "cfe3da9eaca951c78fbaa269642921652486612238ec483895a8eb34d801ef6a",
-    "68c7f6447474ba0ca05427c8b3455fb3116dcbe6461574d8c68bcb0e68959f44",
-    "6fc4d6dd48c91979ec5ea738ab40367b484e2da8b11f16bdae988648c728c9c3"
+    "d970e544269cd75bc495bdeffc05a18719e86c9e4dc67cb55e75ab1ecf9143a4"
   ],
   "provian-website/public/docs-md/manual.md": [
     "d8f610bf03561d0a57d470a60e5aaac3f2748c44158661ff7489fd00298a17f7"
@@ -24,9 +22,8 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "d8f610bf03561d0a57d470a60e5aaac3f2748c44158661ff7489fd00298a17f7"
   ],
   "provian-website/public/docs-md/the-exponential-currency.md": [
-    "2b9b415b00f6261a1ae2747e114cf0ac938edf4a5048051345a12643131dd1e3",
-    "c8d437ec61f125e8150ddf17d553af5cefa64cc2d389924b14883b75b47c3248",
-    "a86c31c7600e5dcb1f10630870e39c8a7f8e56c954f161f959c60775b7af8d4f"
+    "88eb960d66025584e7a9dd3506aea5effa1cf98a239ca80fd1beaa5ad2f3fa66",
+    "e2cd7e6b857196c61c9d1e860d6e0bc9ed01babca61ea5e2d166fbc638fbc0a6"
   ],
   "docs/translations/network-constitution/sw.md": [
     "d82343bfb965680508fab2f0dc2f463f4af8f27ca8c15eb01c08482595b59a2c",
@@ -67,9 +64,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
   "provian-website/src/app/recourse/page.tsx": [
     "c41f28a0ea00ca6cdce9d34a19bab72d2e3f4111065cdc80864fc99a86de0cc8"
   ],
-  "provian-website/src/content/vision.generated.json": [
-    "0afb60daef05c4e2646a125bf6a1955f52f7326a4e9b1f0fae79babd4115d572"
-  ],
   "docs/PROVIAN_MANUAL.md": [
     "d8f610bf03561d0a57d470a60e5aaac3f2748c44158661ff7489fd00298a17f7"
   ],
@@ -87,17 +81,14 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "6d75d877136d26ecc129f2d01049b8a83ffdb5b7ca8918df7032f6c612a17e88"
   ],
   "reference/Provian_Executive_Summary.md": [
-    "cfe3da9eaca951c78fbaa269642921652486612238ec483895a8eb34d801ef6a",
-    "68c7f6447474ba0ca05427c8b3455fb3116dcbe6461574d8c68bcb0e68959f44",
-    "6fc4d6dd48c91979ec5ea738ab40367b484e2da8b11f16bdae988648c728c9c3"
+    "d970e544269cd75bc495bdeffc05a18719e86c9e4dc67cb55e75ab1ecf9143a4"
   ],
   "reference/Provian_Tokenomics_PVT_v3.md": [
     "862082c647b5739c082b0ff3a5d20ca385c33ec43cc3c162e2f521dc9b072c1c"
   ],
   "reference/The_Exponential_Currency.md": [
-    "2b9b415b00f6261a1ae2747e114cf0ac938edf4a5048051345a12643131dd1e3",
-    "c8d437ec61f125e8150ddf17d553af5cefa64cc2d389924b14883b75b47c3248",
-    "a86c31c7600e5dcb1f10630870e39c8a7f8e56c954f161f959c60775b7af8d4f"
+    "88eb960d66025584e7a9dd3506aea5effa1cf98a239ca80fd1beaa5ad2f3fa66",
+    "e2cd7e6b857196c61c9d1e860d6e0bc9ed01babca61ea5e2d166fbc638fbc0a6"
   ],
   "src/i18n/legal/en.generated.json": [
     "7037a8d1a606bdf476b9892e687f3c45729beb67823b0248546efc5f856ffeb0",
@@ -158,78 +149,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "ef4fd6ce705bdb8552514d529ea85fa9e975875fcb7fd285a6f2cffe4c5f6cbf",
     "d24a4ca7ac559c92400d9c0d456dc59493b773c85f905e86fda7827cb2119279",
     "932e0dd5ceaf51af40785ebdc328777caf70e02bd514598030bcd3a96c11dfb1"
-  ],
-  "src/i18n/locales/en.json": [
-    "aa91546f7d7094aad7b0efee2938f4e7bbe65668830d924c0ffdef4028e78ac0"
-  ],
-  "src/i18n/locales/es.json": [
-    "f8abf26a81123cc107afac459dcfb14da1e4aab67b7698396e68ad7e0f19344b"
-  ],
-  "src/i18n/locales/fr.json": [
-    "659d504bd1a9351cf65f7a98f1e5b30e01666ef02f9ceed3503001db134f96c8"
-  ],
-  "src/i18n/locales/hi.json": [
-    "1385bd5f66fcdd8e0fdf3f20b2b4831cbb034cbb39dea1f746d21a74eb75df52"
-  ],
-  "src/i18n/locales/id.json": [
-    "166d1aa5f883b549898b8872d63ab966fb8cee4264dc77a272396e8a5f9583b0"
-  ],
-  "src/i18n/locales/ja.json": [
-    "763bfc975c9e565d2864e5438bfd38682aa060df4bb64343e274790aa547f159"
-  ],
-  "src/i18n/locales/ko.json": [
-    "8d63fa9aaea932e86e5055bba07b73dda65199b84a9f468963700719001e94dd"
-  ],
-  "src/i18n/locales/pt.json": [
-    "c238d85b9add881c819c4101e5e7fc19410f1a094d0caa57acbc6dbb03f5dce6"
-  ],
-  "src/i18n/locales/sw.json": [
-    "c7ba989f872c63c60b1500ce4d445a8eef9fbe1960a2748fd4ef37af55d7485b"
-  ],
-  "src/i18n/locales/tl.json": [
-    "123e5114ed1914b17b0cc78ab6a7376ddd46c2aa061b0b635e461d2cdd9e9ba1"
-  ],
-  "src/i18n/locales/vi.json": [
-    "eb1b85519360826d8bf7603c453373b83909ff7b6c4b3234b49ce943de8721d8"
-  ],
-  "src/i18n/locales/zh.json": [
-    "75cd41559ab68335e170f1f314bab8641e798a0e502f36440e7cf795f5d700d3"
-  ],
-  "src/i18n/narrative/en.json": [
-    "cbc2cca26e239cb206a6c0f9916a0ca848674cabfafb8ae4cbbe29e270050e92"
-  ],
-  "src/i18n/narrative/es.json": [
-    "237120104a8856270a780bdccb8db7f71f8867470e9422972ad04256fd484387"
-  ],
-  "src/i18n/narrative/fr.json": [
-    "af23f4c41644846e965996bd593dbc97475c0fa36ee433e780c619484f3cf2e1"
-  ],
-  "src/i18n/narrative/hi.json": [
-    "4fd4c55fc499107e5a9a2d1722cbfdbd9d1e0cdbcee1194de472ff372317ebb9"
-  ],
-  "src/i18n/narrative/id.json": [
-    "6dd7dc4c4e52870e8f757528bc20007ba2f65a0e5fdc77d1324af8a0f0bd415e"
-  ],
-  "src/i18n/narrative/ja.json": [
-    "02e23faa60af2e4407541a6603e4992e1e9c4b122aec0f670acb1f8795b2d467"
-  ],
-  "src/i18n/narrative/ko.json": [
-    "b3bc409077469d4382328ce2c1eee5215bff2e816bc47a72aaa77b34df8a4054"
-  ],
-  "src/i18n/narrative/pt.json": [
-    "33033e570980ff5abad0e48d395612f9bf1939e48383d6be5acd3ea2a2ceb6b1"
-  ],
-  "src/i18n/narrative/sw.json": [
-    "10753d7d103ba1a9090d5fcc649abee7cead12dbc29b09238a914b38fbbf9bce"
-  ],
-  "src/i18n/narrative/tl.json": [
-    "398c7ce008b9a248349c5880dee031e8af90648c35acd8da870cf7e781b1b6fe"
-  ],
-  "src/i18n/narrative/vi.json": [
-    "7a9db11e325909fe92d48142279482a1d4e65ca228e727dcbd389837e46840ee"
-  ],
-  "src/i18n/narrative/zh.json": [
-    "170fd4d2b40e87f79864d30d5ce8eccad41ef52a2160f83d8008fe177f938013"
   ],
   "src/screens/Legal/termsContent.generated.ts": [
     "64c45cb7ffc150c09f0f7ce78e414e50c462fd12c5d81a3bb0976e39a0260b2a",

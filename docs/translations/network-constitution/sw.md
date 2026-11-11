@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # Katiba ya Mtandao wa Provian
 
 **Hali: hati ya uanzilishi — bado haijaridhiwa.** Hii ndiyo maandishi pekee ya katiba ya Mtandao wa Provian. Inaifunga Provian Technologies kupitia ahadi iliyochapishwa. Utawala wa kundi la binadamu haujaamilishwa na haujairidhia. Kusoma au kukubali hati hii si sharti la uanachama wa mtandao usiohitaji ruhusa.
@@ -64,7 +64,7 @@ Wapiga kura hao na miundombinu yao ya uthibitishaji si utawala unaofanya kazi. U
 
 Uanachama wa mtandao hauhitaji ruhusa. Mshiriki huzalisha PE halali na, anapounganisha utoaji wa PVT, huheshimu njia na mgawanyo rasmi wa uzalishaji. Hakuna ombi wala makubaliano na kampuni yanayotoa uanachama.
 
-Uanachama wa Wakfu ni utaratibu tofauti kwa binadamu waliothibitishwa na kiwango cha msingi cha Wakfu, wenye uthibitishaji wa watu na ugawaji ulioahidiwa lakini bado haujafunguliwa; pochi za mawakala hazistahiki mgao huo wa binadamu. Ibara IX inaeleza ahadi hiyo.
+Uanachama wa Wakfu ni mfumo tofauti kwa binadamu waliothibitishwa na Msingi wa Wakfu, wenye mifumo inayopendekezwa ya uthibitishaji wa watu na mgao; pochi za mawakala hazistahili mgao huo wa binadamu. Ibara IX inaeleza pendekezo hilo.
 
 ## Ibara VI — Haki za washiriki
 
@@ -113,9 +113,9 @@ Rejesta ya umiliki hufuata uhamisho kwenye mnyororo tangu kuunganishwa kwa hiari
 
 Kusudi la Wakfu ni ujumuishaji mpana wa binadamu kadiri akili inavyozalisha zaidi. Heshima ya binadamu haitegemei kiasi ambacho soko hulipa kwa kazi ya mtu. Mapato ya moja kwa moja, mahusiano ya mnufaika na ujumuishaji wa wote hutumikia sehemu tofauti za kusudi hilo.
 
-Wakfu upo leo kama hazina ya on-chain inayopokea mgao wa kila malipo ya mwisho kwa kanuni za kernel. Provian imejifunga kwa kiwango cha msingi cha Wakfu: mgao wa mara kwa mara, tambarare na sawa kwa wanachama binadamu waliothibitishwa, bila kupima kipato au kupima uzito kwa utajiri. Sifa ni kuwa mtu aliyethibitishwa, bila gharama na kwa uthibitishaji upya wa mara kwa mara. Hugawa mkondo wa hazina uliopo na hautengenezi PVT zaidi. Inapendekezwa ruzuku za usimamizi zifadhiliwe kwanza lakini ziwekwe mpaka wa nusu ya sehemu ya kila kipindi, ili kiwango cha msingi kibaki na wingi.
+Wakfu upo leo kama hazina ya kwenye blockchain ambayo kila malipo ya utatuzi hulipwa ndani yake, chini ya kanuni za kiini. Msingi wa Wakfu linalopendekezwa ni mgao wa mara kwa mara, wa kiwango sawa kwa wanachama binadamu waliothibitishwa, bila kipimo cha uhitaji wala uzito wa utajiri. Hugawanya mkondo uliopo wa hazina na halizalishi PVT ya ziada. Inapendekezwa ruzuku za usimamizi zifadhiliwe kwanza lakini zisizidi nusu ya sehemu ya kila kipindi, zikihifadhi madai ya sehemu kubwa kwa Msingi wa Wakfu. Ustahiki ni kuwa mtu aliyethibitishwa, bila malipo, ukidumishwa kwa uthibitishaji wa mara kwa mara.
 
-Provian imejifunga kuanzisha taasisi ya ugawaji, uthibitishaji wa binadamu wa kipekee, uanachama wa binadamu waliothibitishwa na mgao sawa wa mara kwa mara. Programu hizi bado hazijafunguliwa. Hadi taasisi ianze kufanya kazi, mkataba huelekeza mgao kwenye hazina iliyoteuliwa. Utawala wa binadamu wa baadaye unabaki chini ya Ibara IV.
+Taasisi ya mgao, uthibitishaji wa watu, uanachama na mgao wa mara kwa mara ni mapendekezo, bado havijajengwa. Hadi ianze, mkataba hutuma mgao kwenye hazina iliyoteuliwa. Utawala wa binadamu wa baadaye unafuata Ibara IV.
 
 # SEHEMU IV — AGANO
 

@@ -1,4 +1,4 @@
-<!-- source-sha256: 2d3e76f8a2b73e04cd59ce180193d8d7ee96cf9486361ae9072bf3d580b6e307 -->
+<!-- source-sha256: b0b2639fac1689e768e1537adcadb99f1042a906e57cf3f8a7d65d38de2bc2f3 -->
 # Konstitusi Jaringan Provian
 
 **Status: piagam pendiri — belum diratifikasi.** Ini adalah satu-satunya teks konstitusional Jaringan Provian. Teks ini mengikat Provian Technologies melalui komitmen yang dipublikasikan. Tata kelola kelas manusia belum diaktifkan dan belum meratifikasinya. Membaca atau menerima piagam ini bukan syarat keanggotaan jaringan yang tidak memerlukan izin.
@@ -64,7 +64,7 @@ Pemilih dan infrastruktur verifikasinya itu belum menjadi tata kelola yang berop
 
 Keanggotaan jaringan tidak memerlukan izin. Peserta menghasilkan PE valid dan, ketika mengintegrasikan penerbitan PVT, mematuhi jalur serta pembagian pencetakan kanonis. Tidak ada aplikasi atau perjanjian dengan perusahaan yang memberikan keanggotaan.
 
-Keanggotaan Yayasan adalah mekanisme terpisah bagi manusia terverifikasi dan dasar Yayasan, dengan verifikasi pribadi serta pembagian yang sudah menjadi komitmen tetapi belum dibuka; dompet agen tidak memenuhi syarat untuk pembagian manusia itu. Pasal IX menyatakan komitmennya.
+Keanggotaan Yayasan adalah mekanisme berbeda untuk manusia terverifikasi dan Dasar Yayasan, dengan usulan mekanisme verifikasi manusia dan distribusi; dompet agen tidak memenuhi syarat untuk distribusi manusia itu. Pasal IX menyatakan usulan tersebut.
 
 ## Pasal VI — Hak Peserta
 
@@ -113,9 +113,9 @@ Registri kepemilikan mengikuti transfer rantai sejak penautan sukarela, membedak
 
 Tujuan Yayasan adalah inklusi manusia yang lebih luas seiring meningkatnya produksi kecerdasan. Martabat manusia tidak bergantung pada seberapa besar pasar membayar pekerjaannya. Penghasilan langsung, hubungan penerima manfaat, dan inklusi universal melayani bagian berbeda dari tujuan tersebut.
 
-Yayasan saat ini hadir sebagai kas on-chain yang menerima alokasi setiap penyelesaian menurut aturan kernel. Provian berkomitmen pada dasar Yayasan: pembagian berkala, tetap dan sama rata kepada anggota manusia terverifikasi, tanpa uji kemampuan ekonomi atau pembobotan kekayaan. Syaratnya adalah pribadi terverifikasi, gratis dan dijaga melalui verifikasi ulang berkala. Pembagian ini membagi aliran kas yang sudah ada dan tidak menciptakan PVT tambahan. Hibah pengelolaan diusulkan didanai lebih dahulu, tetapi dibatasi setengah bagian setiap periode, menjaga mayoritas untuk dasar tersebut.
+Yayasan saat ini ada sebagai perbendaharaan on-chain yang menerima pembayaran dari setiap penyelesaian, menurut aturan kernel. Dasar Yayasan yang diusulkan adalah distribusi berulang, rata, dan setara kepada anggota manusia terverifikasi, tanpa uji kemampuan ekonomi atau pembobotan kekayaan. Dasar Yayasan membagi arus perbendaharaan yang sudah ada dan tidak menciptakan PVT tambahan. Hibah pengelolaan diusulkan untuk didanai lebih dahulu, tetapi dibatasi separuh bagian setiap periode, sehingga mempertahankan hak mayoritas Dasar Yayasan. Syaratnya adalah identitas manusia terverifikasi, gratis dan diperbarui melalui verifikasi ulang berkala.
 
-Provian berkomitmen membentuk lembaga pembagian, verifikasi manusia unik, keanggotaan manusia terverifikasi dan pembagian sama rata berkala. Program ini belum dibuka. Sampai lembaga pembagian beroperasi, kontrak mengarahkan alokasi ke kas yang ditunjuk. Tata kelola manusia di masa depan tetap tunduk pada Pasal IV.
+Lembaga distribusi, verifikasi manusia, keanggotaan dan distribusi berkala masih usulan, belum dibangun. Sebelum beroperasi, kontrak mengirim alokasi ke perbendaharaan yang ditentukan. Tata kelola manusia mendatang tetap tunduk pada Pasal IV.
 
 # BAGIAN IV — PERJANJIAN
 
