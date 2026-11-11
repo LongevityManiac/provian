@@ -57,7 +57,7 @@
     "provian-agent-sdk/src/act-verbs-output.test.ts": "f6ec557d354218561d018cd57b0f70be92e13b9c8d74a6974a8d57436915f149",
     "provian-agent-sdk/src/act-verbs.test.ts": "2f77861b71ad2f4ce764dd647962549c90bd788bd8cdea87cf80866ea6093f27",
     "provian-agent-sdk/src/act-verbs.ts": "94352dcb400ad59286ab91348e820a3dc12226908447fa5c6b774493198e5794",
-    "provian-agent-sdk/src/active-hash-delivery.test.ts": "a0dc9b3ad5bc01302aa80eb974144fd8bcfdf35a3662e4683e128878fc15aebc",
+    "provian-agent-sdk/src/active-hash-delivery.test.ts": "39d6c94c725369de24033769b7a218016599957261a96566c0b42fc92dae9984",
     "provian-agent-sdk/src/active-hash-delivery.ts": "ec655720fb3726dbf67ce2fe60233cbd745459605aaaec89b2423f786d44aa0c",
     "provian-agent-sdk/src/agent-swap.test.ts": "32d7821848df420cc78cac1c1949ca1a2e138989f9822bef552e57fe89eb3eae",
     "provian-agent-sdk/src/agent-swap.ts": "9df1cac6fcff2009d17e9834d2f1a8c0f348840b16efbfb541a20ec51b947af0",

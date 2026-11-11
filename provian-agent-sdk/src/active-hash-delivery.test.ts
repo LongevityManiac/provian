@@ -82,7 +82,7 @@ test('a retained gas transaction with a changed call cannot be recovered',async(
  f.lostResponse=true;await expect(deliverActiveHashWalletOperation(input())).rejects.toThrow();
  const store=fileNonceStore(path.join(directory,'evm-nonces')),key=`8453_${wallet.address.toLowerCase()}`;
  const record=readHashDeliveryJournal(path.join(directory,'hash-deliveries',`${input().operationId.slice(2)}.json`),input().passphrase,input().operationId,wallet.address.toLowerCase())!;
- const id=record.attempts[0].id,raw=await wallet.signTransaction({to:a(8),chainId:8453,nonce:0,gasLimit:21000,gasPrice:1});
+ const id=record.attempts[0].id,raw=await wallet.signTransaction({to:a(8),data:hashAccountCall(operation),chainId:8453,nonce:0,gasLimit:1000000,gasPrice:1});
  await store.transact(`${key}_${id}`,current=>({...current!,attempts:[{...current!.attempts[0],raw,hash:Transaction.from(raw).hash!}]}));
  await expect(reconcileActiveHashWalletOperation(input())).rejects.toThrow('nonce_invalid');expect(f.sendCount).toBe(1);
 });
