@@ -970,6 +970,8 @@
     "provian-backend/src/core/recourse/gas-signer.ts": "0da90ab322d72e84e0ce086e1cb9b6784a6ee586edc255ea6a074fff2bf0f831",
     "provian-backend/src/core/recourse/hash-account-data.ts": "76d857f191541313fedfaae21d539f361bae492cc43cb7c9494e367d87fd62bb",
     "provian-backend/src/core/recourse/hash-account.ts": "913620d9237b1b2014b49282ea8704699ee51c98bf06ab8fe16694802b12b9f7",
+    "provian-backend/src/core/recourse/hash-authority-operation-store.test.ts": "9bd3396b662e38763ceac24cac6655a916a9ab539e60539689987ec68936c5f5",
+    "provian-backend/src/core/recourse/hash-authority-operation-store.ts": "5208aaa3e1bef2d733b6219b3e93ca2af5e8dab3022c3650b76ef1f9140828ea",
     "provian-backend/src/core/recourse/hash-authorization.ts": "4f816f0e4be0fb0d14f5bcedc40f234b372c4227116ce22e0b2e0b6f9850192e",
     "provian-backend/src/core/recourse/hash-destination-proof.test.ts": "f42b56f0119eafa8681f47a34bd3da90ac337c20f326a28f74000b62cceb5c24",
     "provian-backend/src/core/recourse/hash-destination-proof.ts": "9bb4f5c5ec76457ac91cb4cd74d2edb45a93ad24100b9623c5152edbf35fb1bd",

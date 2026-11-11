@@ -31,6 +31,7 @@ export const PRIVATE_STORE_COLLECTIONS=new Set([
  'recourse_break_deployment_slots_v1', 'recourse_break_deployment_attempts_v1',
  'recourse_break_registrations_v1', 'recourse_break_registration_attempts_v1', 'recourse_break_authority_executions_v1',
  'recourse_changeover_stages_v1', 'recourse_changeover_attempts_v1',
+ 'recourse_hash_authority_operations_v1',
  'meter_act_keys_v1','meter_key_pages_v1','meter_held_acts_v1','identity_pes_legacy_v1','origin_reference_graph_v1',
  'meter_relay_acts_v1','meter_batch_acts_v1','identity_acts_v1','occurrence_mint_claims',
  'device_occurrence_mint_claims','artifact_novelty_claims','meter_pair_counts_v1',

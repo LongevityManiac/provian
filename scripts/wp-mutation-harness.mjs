@@ -103,6 +103,20 @@ const MUTATION_SETS = {
       { id: 'RECEIPT-OWNER', description: 'another binding authorizes this restoration',
         find: 'start.consumed.args.identity !== owner.identity', replace: 'false', expectedKilledBy: 'wrong-binding cannot substitute another execution' }],
   },
+  'hash-authority-operation-store': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/hash-authority-operation-store.ts', testMatchPath: 'src/core/recourse/hash-authority-operation-store.test.ts',
+    mutations: [{ id: 'HASH-STORE-IMMUTABLE', description: 'a later preparer overwrites an existing authority operation',
+      find: "requireValue(!(await tx.get(ref)).exists, 'slot_exists');", replace: '', expectedKilledBy: 'immutable public operation persists and reads back without exposing key material' },
+      { id: 'HASH-STORE-SNAPSHOT', description: 'serialization hooks inject credentials after validation',
+        find: 'value = structuredClone(value);', replace: '', expectedKilledBy: 'non-enumerable serialization hooks cannot persist credential fields' },
+      { id: 'HASH-STORE-PAYLOAD-HASH', description: 'changed stored payload bytes escape the integrity check',
+        find: "row.get('payloadHash') === digest(payload)", replace: 'true', expectedKilledBy: 'stored payload corruption cannot produce a usable operation' }],
+  },
+  'hash-authority-private-routing': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/provenance/private-store.ts', testMatchPath: 'src/core/recourse/hash-authority-operation-store.test.ts src/core/recourse/private-storage.test.ts',
+    mutations: [{ id: 'HASH-STORE-ENCRYPTION-ROUTE', description: 'authority operations bypass encrypted storage and opaque IDs',
+      find: " 'recourse_hash_authority_operations_v1',", replace: '', expectedKilledBy: 'operation slots route through encrypted payloads and opaque document identifiers' }],
+  },
   'hash-authority-durable': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/hash-authority-durable.mjs', testMatchPath: 'scripts/recourse/hash-authority-durable.test.mjs',
     mutations: [{ id: 'HASH-DURABLE-NONCE-SLOT', description: 'different plans can expose competing successors at one authority nonce',
