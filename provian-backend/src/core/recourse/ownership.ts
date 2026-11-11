@@ -120,6 +120,7 @@ export async function registerOwnership(
       transaction.get(db.collection(HUMAN_PROVEN_ADDRESSES_COLLECTION).doc(binding.address)),
       transaction.get(ownerRef),
     ]);
+    await assertNoPendingAddressIssuance(db, transaction, [binding.address]);
     // Recourse extends the existing proof registry; it never creates a competing owner.
     const ownsNative = native.exists && native.get('owner_type') === input.owner.type
       && native.get('wallet_id') === input.owner.walletId
@@ -328,3 +329,4 @@ Promise<{ readonly destination: string; readonly generation: number }> {
     return { destination: prepared.destination, generation: prepared.generation };
   });
 }
+import { assertNoPendingAddressIssuance } from './issuance-lock';

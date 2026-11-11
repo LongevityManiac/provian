@@ -1,12 +1,13 @@
 import { prepareMembershipJournalAppend } from './private-membership-journal';
 import { createHash } from 'crypto';
-import type { Firestore } from 'firebase-admin/firestore';
-import { creditPrivateMembership, recordPrivateMembershipIssuance,
+import type { Firestore, Transaction } from 'firebase-admin/firestore';
+import { creditPrivateMembership, recordPrivateMembershipIssuance, privateMembershipStatus,
   type PrivateMembershipEpisode, type PrivateCalendarRules } from './private-membership-calendar';
 import { exactMembershipDebitDigest, parseExactMembershipDebit, parseMembershipAuthorizationDomain,
   type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 import { parseMembershipIssuanceContext, type MembershipIssuanceContext } from './issuance-ticket';
 import type { AddressIssuanceContribution, PrivateIssuanceRecipient } from './private-monthly-earnings';
+import { emptyPrivateMonthlyEarnings, planPrivateMonthlyEarnings } from './private-monthly-earnings';
 import { assertMembershipReceipt, MEMBERSHIP_RECEIPT_ABI, type VerifiedMembershipReceipt } from './membership-receipt';
 import { utcCalendarMonth } from './calendar-month';
 import { RECOURSE_COLLECTIONS } from './ownership';
@@ -41,6 +42,9 @@ export interface PrivateDebitReservation extends ReservationBase {
 }
 export interface PrivateIssuanceReservation extends ReservationBase {
   readonly kind: 'issuance'; readonly context: MembershipIssuanceContext;
+  /** Absent in earlier protected reservations. False records zero credit while
+   * retaining the same owner lock against concurrent join/leave/debit. */
+  readonly protectedMember?: boolean;
   /** Ordinary batch ordinal, not a public owner-specific group number. */
   readonly recipients: readonly (AddressIssuanceContribution & { readonly ordinal: number })[];
 }
@@ -80,8 +84,11 @@ export function planPrivateIssuance(account: PrivateMembershipAccount, domain: M
   const common = base(account, domain), context = parseMembershipIssuanceContext(input), month = Number(context.month);
   if (!Number.isSafeInteger(month) || context.membershipRuleHash !== rules(month).ruleHash
     || recipients.some((row, i) => !Number.isSafeInteger(row.ordinal) || row.ordinal < 0 || (i > 0 && row.ordinal <= recipients[i - 1].ordinal))) return invalid('issuance');
-  const planned = recordPrivateMembershipIssuance(account.episode, month, recipients, rules);
+  const protectedMember = privateMembershipStatus(account.episode, month, rules).protectedNow;
+  const planned = protectedMember ? recordPrivateMembershipIssuance(account.episode, month, recipients, rules)
+    : planPrivateMonthlyEarnings(emptyPrivateMonthlyEarnings(0), recipients);
   const operation = { ...common, kind: 'issuance' as const, context,
+    protectedMember,
     recipients: planned.contributions.map((row, i) => ({ ...row, ordinal: recipients[i].ordinal })) };
   return { ...operation, id: digest(operation) };
 }
@@ -91,11 +98,20 @@ export async function reservePrivateMembership(db: Firestore, input: PrivateMemb
   // Detach before the first await: signing bytes cannot change while transaction
   // reads are in flight or while Firestore retries its callback.
   const reservation = JSON.parse(stable(input)) as PrivateMembershipReservation;
+  await db.runTransaction(async transaction => {
+    const write = await preparePrivateMembershipReservation(db, transaction, reservation);
+    write();
+  });
+}
+
+/** Read and validate first; callers can acquire every owner in one transaction
+ * without an earlier owner's writes preceding a later owner's reads. */
+export async function preparePrivateMembershipReservation(db: Firestore, transaction: Transaction,
+  reservation: PrivateMembershipReservation): Promise<() => void> {
   const { id, ...body } = reservation;
   if (id !== digest(body)) return invalid('digest');
   const accountRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.owners).doc(reservation.ownerIdentity);
   const reservationRef = db.collection(PRIVATE_MEMBERSHIP_COLLECTIONS.reservations).doc(id);
-  await db.runTransaction(async transaction => {
     const [accountRow, existing] = await Promise.all([transaction.get(accountRef), transaction.get(reservationRef)]);
     if (!accountRow.exists) return invalid('missing_account');
     const account = accountRow.data() as PrivateMembershipAccount;
@@ -123,12 +139,30 @@ export async function reservePrivateMembership(db: Firestore, input: PrivateMemb
     if (existing.exists) {
       if (stable(existing.get('reservation')) !== stable(reservation) || existing.get('status') !== 'pending'
         || account.pendingReservation !== id || digest({ ...account, pendingReservation: null }) !== reservation.beforeHash) return invalid('replay');
-      return;
+      return () => undefined;
     }
     if (account.ownerIdentity !== reservation.ownerIdentity || account.version !== reservation.accountVersion
       || account.pendingReservation !== null || digest(account) !== reservation.beforeHash) return invalid('concurrent');
-    transaction.create(reservationRef, { reservation, status: 'pending' });
-    transaction.update(accountRef, { pendingReservation: id });
+    return () => {
+      transaction.create(reservationRef, { reservation, status: 'pending' });
+      transaction.update(accountRef, { pendingReservation: id });
+    };
+}
+
+/** Every private owner in one ordinary settlement locks atomically. A conflict
+ * at any owner creates no reservations; a crash after commit leaves all locks
+ * discoverable by the immutable common batch context. */
+export async function reservePrivateIssuanceGroup(db: Firestore, inputs: readonly PrivateIssuanceReservation[]): Promise<void> {
+  const reservations = JSON.parse(stable(inputs)) as PrivateIssuanceReservation[];
+  if (reservations.length === 0 || new Set(reservations.map(r => r.ownerIdentity)).size !== reservations.length
+    || reservations.some(r => r.kind !== 'issuance' || stable(r.context) !== stable(reservations[0].context)
+      || stable(r.domain) !== stable(reservations[0].domain))) return invalid('issuance_group');
+  const ordinals = reservations.flatMap(r => r.recipients.map(row => row.ordinal));
+  if (new Set(ordinals).size !== ordinals.length) return invalid('issuance_group');
+  await db.runTransaction(async transaction => {
+    const writes: (() => void)[] = [];
+    for (const reservation of reservations) writes.push(await preparePrivateMembershipReservation(db, transaction, reservation));
+    for (const write of writes) write();
   });
 }
 
@@ -191,6 +225,11 @@ export function applyPrivateReservationReceipt(account: PrivateMembershipAccount
       || event.settlement.lane !== context.lane || event.settlement.epoch !== context.epoch) return invalid('issuance_effect');
     return event.logIndex;
   });
+  if (reservation.protectedMember === false) {
+    if (privateMembershipStatus(account.episode, month, rules).protectedNow
+      || reservation.recipients.some(row => row.contributionAtomic !== '0')) return invalid('issuance_classification');
+    return { episode: account.episode, status: 'committed', logIndexes: selected };
+  }
   const planned = recordPrivateMembershipIssuance(account.episode, month, reservation.recipients, rules);
   if (planned.contributions.some((row, i) => row.contributionAtomic !== reservation.recipients[i].contributionAtomic)) return invalid('issuance_rounding');
   return { episode: planned.state, status: 'committed', logIndexes: selected };
@@ -224,7 +263,8 @@ export async function commitPrivateMembershipReceipt(db: Firestore, ownerIdentit
       .doc(digest([reservation.domain.kernel, reservation.domain.pool, receipt.transactionHash, logIndex]))) : [];
     const effects = await Promise.all(effectRefs.map(ref => transaction.get(ref)));
     if (effects.some(row => row.exists)) return invalid('effect_replay');
-    const journal = result.status === 'committed' ? await prepareMembershipJournalAppend(db, transaction, {
+    const journal = result.status === 'committed' && !(reservation.kind === 'issuance' && reservation.protectedMember === false)
+      ? await prepareMembershipJournalAppend(db, transaction, {
       ownerIdentity, account, episode: result.episode, kind: reservation.kind, evidenceId: receiptHashId,
       position: { chainId: '8453', kernel: reservation.domain.kernel, pool: reservation.domain.pool,
         block: receipt.block, blockHash: receipt.blockHash, timestamp: receipt.timestamp, logIndex: Math.max(...result.logIndexes) },

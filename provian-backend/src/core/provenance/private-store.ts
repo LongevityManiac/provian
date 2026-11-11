@@ -20,6 +20,7 @@ import {compare as compareFirestoreValues,compareUtf8Strings} from '@google-clou
 import {recoverRetainedFields,privateRetentionKey,PRIVATE_RETENTION_STATE_COLLECTION,PRIVATE_RETENTION_STATE_DOC} from './private-retention';
 
 export const PRIVATE_STORE_COLLECTIONS=new Set([
+ 'recourse_private_issuance_addresses_v1', 'recourse_private_issuance_batches_v1',
  'recourse_private_membership_journal_v1', 'recourse_private_membership_transitions_v1', 'recourse_private_memberships_v1', 'recourse_private_membership_reservations_v1', 'recourse_private_membership_receipts_v1', 'recourse_private_membership_effects_v1',
  'recourse_membership_consent_operations_v1', 'recourse_membership_consent_operations_v1_attempts',
  'recourse_membership_debit_operations_v1', 'recourse_membership_debit_operations_v1_attempts',

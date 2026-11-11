@@ -129,3 +129,15 @@ test('an executed consent can be recorded after recovery, then the interrupted t
   expect(refreshed.bindings.find(b => b.binding === h(3))).toMatchObject({ address: a(5), recoveryGeneration: 1, admission: { block: 100, logIndex: 5 } });
   expect(nextPrivateAddressConsent(refreshed, h(4), { revision: '1', ruleHash: h(9), timestamp: now })).toMatchObject({ account: a(4), nonce: '0', joined: true });
 });
+
+test('first admission waits for zero-contribution issuance even when no membership account exists', async () => {
+  const s = setup();
+  const { PRIVATE_ISSUANCE_ADDRESSES } = await import('./issuance-lock');
+  s.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a(3)}`, { batchId: h(777) });
+  const op = await beginPrivateMembershipTransition(s.db, ownerId, 'join');
+  await expect(openPrivateMembershipConsents(s.db, op.id)).rejects.toThrow('issuance_reconciliation_pending');
+  expect(s.fake.store.get(`${T}/${op.id}`)?.status).toBe('preparing');
+  expect(s.fake.store.has(accountKey)).toBe(false);
+  s.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a(3)}`, { batchId: null });
+  expect((await openPrivateMembershipConsents(s.db, op.id)).status).toBe('consenting');
+});

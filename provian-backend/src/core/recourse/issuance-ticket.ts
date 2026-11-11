@@ -10,6 +10,10 @@ export interface MembershipIssuanceTicket {
 }
 const CONTEXT = 'tuple(bytes32 batchId,uint8 lane,uint64 epoch,bytes32 policyHash,bytes32 settlementDigest,uint256 revision,uint256 month,bytes32 membershipRuleHash)';
 const TICKETS = 'tuple(address account,uint256 gross,uint256 contributor,uint256 contribution,uint256 consentNonce,bool protectedMember)[]';
+export const MEMBER_SETTLEMENT_ABI = new Interface([
+  `function settleMemberBatch(bytes kernelCall,${CONTEXT} context,${TICKETS} tickets,bytes attestorSignature)`,
+  'function cancelMemberBatch(bytes32 batchId,uint256 revision)',
+]);
 export const MEMBERSHIP_ISSUANCE_ABI = new Interface([
   `function issuanceDigest(${CONTEXT},${TICKETS}) view returns(bytes32)`,
   `function installIssuanceTickets(${CONTEXT},${TICKETS},bytes)`, 'function finishIssuanceTickets(bytes32)',

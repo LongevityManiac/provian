@@ -145,6 +145,7 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
     const [row, accountRow] = await Promise.all([tx.get(ref), tx.get(db.collection(C.owners).doc(op.ownerIdentity))]);
     const operation = row.data() as PrivateMembershipTransition;
     if (!row.exists || operation.status !== 'preparing') return fail('concurrent');
+    await assertNoPendingAddressIssuance(db, tx, operation.bindings.map(b => b.address));
     await checkedPortfolio(tx, db, operation);
     const account = accountRow.exists ? accountRow.data() as PrivateMembershipAccount : null;
     if (account && (account.pendingReservation !== null || account.needsScan || account.checkpoint.pool !== op.pool
@@ -308,3 +309,4 @@ export async function refreshRecoveredMembershipTransition(db: Firestore, id: st
   });
   return next;
 }
+import { assertNoPendingAddressIssuance } from './issuance-lock';

@@ -1,8 +1,8 @@
 import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { joinPrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
-import { planPrivateDebit, planPrivateIssuance, reservePrivateMembership, commitPrivateMembershipReceipt,
+import { joinPrivateMembership, leavePrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
+import { planPrivateDebit, planPrivateIssuance, reservePrivateMembership, reservePrivateIssuanceGroup, commitPrivateMembershipReceipt,
   applyPrivateReservationReceipt, PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
 import { MEMBERSHIP_RECEIPT_ABI } from './membership-receipt';
 import { fixture, a, h, old, pointer } from './__test-helpers__/membership-receipt-fixture';
@@ -151,4 +151,42 @@ test('signed or reverted issuance cannot release its private remainder; permanen
   effects(f, 'IssuanceBatchCancelled', [context.batchId]);
   await expect(commitPrivateMembershipReceipt(s.db, h(500), r.id, await f.read(), rules)).resolves.toBe('cancelled');
   expect(s.state().episode.invoices[String(month)].earnings.grossAtomic).toBe('0');
+});
+
+test('inactive issuance records exact zero-credit effects without changing debt or reopening membership', async () => {
+  const s = store(), f = fixture();
+  const inactive = { ...s.state(), episode: leavePrivateMembership(s.state().episode, month, rules) };
+  s.fake.store.set(s.key, inactive);
+  const r = planPrivateIssuance(inactive, domain, context, [
+    { ordinal: 0, occurrence: h(700), account: a(3), grossAtomic: '199', contributorAtomic: '197' },
+  ], rules);
+  expect(r.protectedMember).toBe(false);
+  expect(r.recipients[0].contributionAtomic).toBe('0');
+  await reservePrivateMembership(s.db, r);
+  effects(f, 'IssuanceTicketConsumed', [context.batchId, 0, a(3), 199, 1, context.membershipRuleHash]);
+  await expect(commitPrivateMembershipReceipt(s.db, h(500), r.id, await f.read(), rules)).rejects.toThrow('issuance_effect');
+  effects(f, 'IssuanceTicketConsumed', [context.batchId, 0, a(3), 199, 0, context.membershipRuleHash]);
+  await commitPrivateMembershipReceipt(s.db, h(500), r.id, await f.read(), rules);
+  expect(s.state().episode).toEqual(inactive.episode);
+  expect(s.state().journalHead).toBe(inactive.journalHead);
+  expect([...s.fake.store.keys()].filter(k => k.startsWith(C.effects + '/'))).toHaveLength(1);
+});
+test('all owner locks are acquired together and a late conflict leaves no earlier owner stranded', async () => {
+  const s = store();
+  const other = { ...s.state(), ownerIdentity: h(501) };
+  s.fake.store.set(`${C.owners}/${h(501)}`, other);
+  for (const key of [`${RECOURSE_COLLECTIONS.addresses}/${a(4)}`, `${RECOURSE_COLLECTIONS.identities}/${h(4)}`])
+    s.fake.store.set(key, { ...s.fake.store.get(key), ownerIdentity: h(501) });
+  const first = planPrivateIssuance(s.state(), domain, context, [{ ordinal: 0, occurrence: h(700), account: a(3), grossAtomic: '199', contributorAtomic: '197' }], rules);
+  const second = planPrivateIssuance(other, domain, context, [{ ordinal: 1, occurrence: h(701), account: a(4), grossAtomic: '101', contributorAtomic: '99' }], rules);
+  s.fake.store.set(`${C.owners}/${h(501)}`, { ...other, version: 1 });
+  await expect(reservePrivateIssuanceGroup(s.db, [first, second])).rejects.toThrow('concurrent');
+  expect(s.state().pendingReservation).toBeNull();
+  expect(s.fake.store.has(`${C.reservations}/${first.id}`)).toBe(false);
+  s.fake.store.set(`${C.owners}/${h(501)}`, other);
+  await reservePrivateIssuanceGroup(s.db, [first, second]);
+  await reservePrivateIssuanceGroup(s.db, [first, second]);
+  expect(s.state().pendingReservation).toBe(first.id);
+  expect(s.fake.store.get(`${C.owners}/${h(501)}`)?.pendingReservation).toBe(second.id);
+  await expect(reservePrivateIssuanceGroup(s.db, [first, first])).rejects.toThrow('issuance_group');
 });

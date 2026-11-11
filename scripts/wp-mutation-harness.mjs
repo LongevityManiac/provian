@@ -183,6 +183,26 @@ const MUTATION_SETS = {
         expectedKilledBy: 'a global effect fence prevents credit duplication even if private ownership metadata is later reassigned' },
     ],
   },
+  'settlement-issuance': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance.test.ts',
+    mutations: [{ id: 'ISSUANCE-RATE', description: 'ticket gross ignores the frozen standard mint rate',
+      find: 'input * rate / 10n ** 18n', replace: 'input',
+      expectedKilledBy: 'standard sums claims before rate rounding, preserves ordinary recipient order and excludes treasury allocations' }],
+  },
+  'private-issuance-batch': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
+    testMatchPath: 'src/core/recourse/private-issuance-batch.test.ts',
+    mutations: [
+      { id: 'ISSUANCE-PARTITION', description: 'an omitted nonmember receives a ticket without its private classification fence',
+        find: "if (covered.size !== input.tickets.length) return fail('partition');", replace: 'void covered;',
+        expectedKilledBy: 'incomplete or fabricated recipient partitions and changed inner calldata cannot reserve' },
+      { id: 'ISSUANCE-CANCEL-REVISION', description: 'same-domain republication permanently strands obsolete tickets',
+        find: "if (cancelled.length === 1 && consumed.length === 0) return { status: 'cancelled', logIndexes: [] };",
+        replace: "if (cancelled.length === 1 && consumed.length === 0 && cancelled[0].event.revision === batch.context.revision) return { status: 'cancelled', logIndexes: [] };",
+        expectedKilledBy: 'same-domain pointer republication can cancel tickets from the previous revision' },
+    ],
+  },
   'membership-debit-revocation': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-revocation.ts',
     testMatchPath: 'src/core/recourse/membership-debit-revocation.test.ts src/core/recourse/private-membership-reservation.test.ts',

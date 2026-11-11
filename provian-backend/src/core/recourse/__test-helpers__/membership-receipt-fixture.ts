@@ -22,7 +22,7 @@ export function fixture() {
   const state = {
     publications: [publication(1, 1, old)], pool: old[8], status: '0x1', final: '0x64', chain: '0x2105', badCode: false,
     effects: [{ logIndex: '0x5', ...debit }], wrongBinding: false, reorg: false, reads: 0, receiptTx: tx, priorRevision: 0, endRevision: 1, endTargets: old,
-    debitNonceBefore: 7, debitNonceAfter: 7,
+    debitNonceBefore: 7, debitNonceAfter: 7, batchDigest: h(602),
     consentBefore: [1, 1, true] as readonly [number, number, boolean], consentAfter: [1, 1, true] as readonly [number, number, boolean],
   };
   const send: EconomicStateRpcLeg['send'] = async (method, params) => {
@@ -41,7 +41,7 @@ export function fixture() {
       const call = params[0] as { to: string; data: string };
       const batch = new Interface(['function getBatchRecord(bytes32) view returns((bool settled,uint8 lane,uint64 epoch,uint256 finalizedCursorStart,uint256 finalizedCursorEnd,bytes32 policyHash,bytes32 claimsHash,bytes32 settlementDigest,uint256 grossInput,uint256 totalMinted,uint256 contributorTotal,uint256 provianTotal,uint256 foundationTotal,uint256 recipientCount,uint256 claimCount))']);
       if (call.data.startsWith(batch.getFunction('getBatchRecord')!.selector)) return batch.encodeFunctionResult('getBatchRecord', [
-        [true,0,1,0,3,h(601),h(604),h(602),300,300,297,1,2,3,3],
+        [true,0,1,0,3,h(601),h(604),state.batchDigest,300,300,297,1,2,3,3],
       ]);
       const prior = (params[1] as { blockHash?: string }).blockHash === h(99);
       const consentCounter = new Interface(['function addressConsent(bytes32) view returns(uint256,uint256,bool)']);

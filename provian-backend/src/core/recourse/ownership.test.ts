@@ -166,6 +166,10 @@ describe('durable ownership and recovery transitions', () => {
       admissionBlock: fence.observedHeadBlock, admissionBlockHash: hash };
     const verify = { getCode: async () => '0x', isValidSignature: async () => '0x00000000' };
     const db = fake as unknown as Firestore;
+    const { PRIVATE_ISSUANCE_ADDRESSES } = await import('./issuance-lock');
+    await db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(value.address).set({ batchId: hash });
+    await expect(registerOwnership(db, request, verify)).rejects.toThrow('issuance_reconciliation_pending');
+    await db.collection(PRIVATE_ISSUANCE_ADDRESSES).doc(value.address).set({ batchId: null });
     const first = await registerOwnership(db, request, verify);
     expect(first.identity).not.toBe(identity);
     expect(first.ownerIdentity).toBe(identity);
@@ -187,7 +191,7 @@ describe('durable ownership and recovery transitions', () => {
       binding: { ...value, recoveryCommitment: replacement } }, verify)).rejects.toThrow('recourse_signature_invalid');
     await expect(registerOwnership(db, { ...request, authenticatedIdentity: binding.identity }, verify))
       .rejects.toThrow('recourse_binding_context_invalid');
-    expect(fake.store.size).toBe(4);
+    expect(fake.store.size).toBe(5);
     expect(fake.store.get(`${RECOURSE_COLLECTIONS.owners}/${identity}`)?.primaryBinding).toBe(publicBinding);
     const secondary = Wallet.createRandom();
     const secondaryBinding = { ...value, address: secondary.address.toLowerCase(),
