@@ -175,6 +175,7 @@ it('prepares and signs one bounded loss scope, then resumes without a second aut
   const scope = { request: `0x${'ab'.repeat(32)}`, lossHash: `0x${'bc'.repeat(32)}`, maximumLoss: '99' };
   const kernel = requireConfiguredPvt9Runtime().address.toLowerCase();
   const transactionHash = `0x${'cd'.repeat(32)}`;
+  let submissions=0;let cut:Record<string,unknown>|undefined;
   network.fetch.mockImplementation(async (url: string, options: RequestInit) => {
     const body = JSON.parse(String(options.body)) as Record<string, unknown>;
     if (url.endsWith('/restoration-intents')) {
@@ -182,17 +183,30 @@ it('prepares and signs one bounded loss scope, then resumes without a second aut
       expect(options.headers).toMatchObject({ Authorization: 'Bearer old-api:old-secret' });
       return { ok: true, json: async () => ({ ...scope, kernel }) };
     }
-    return { ok: true, json: async () => ({ walletId, destination: body.destination, generation: 1 }) };
+    if(url.endsWith('/restoration-requests')) {
+      submissions++;expect(cut).toBeDefined();
+      expect(options.headers).toMatchObject({Authorization:`Bearer ${cut!.apiKey}:${cut!.apiSecret}`});
+      expect(body).toEqual({identity:cut!.identity,transactionHash,block:100,recoveryRequestId:cut!.requestId});
+      if(submissions===1)throw Error('restoration response lost after commit');
+      return {ok:true,json:async()=>({requestId:submissions===2?`0x${'ff'.repeat(32)}`:scope.request,status:'awaiting_determination'})};
+    }
+    cut=body;return { ok: true, json: async () => ({ walletId, destination: body.destination, generation: 1 }) };
   });
   const request = { ...input(), restoration: { transactionHash, block: 100, apiKey: 'old-api', apiSecret: 'old-secret' } };
+  await expect(recoverRecourseAgent(request)).rejects.toThrow('restoration response lost');
+  const installed=fs.readFileSync(path.join(directory,'agent-keystore.json'),'utf8');
+  await expect(recoverRecourseAgent({...request,newRecovery:true})).rejects.toThrow('response binding mismatch');
+  expect(fs.existsSync(path.join(directory,'recoveries'))).toBe(false);expect(network.queue).toHaveBeenCalledTimes(1);
   const result = await recoverRecourseAgent(request);
+  expect(fs.readFileSync(path.join(directory,'agent-keystore.json'),'utf8')).toBe(installed);
+  expect(submissions).toBe(3);
   expect(result.restorationRequestId).toBe(scope.request);
   const operation = JSON.parse(String(network.queue.mock.calls[0][1].body)).request as RecoveryOwnerOperation;
   expect(operation.restoration).toEqual(scope);
   expect(operation.destination).toBe(result.destination);
   expect(await recoverRecourseAgent(request)).toEqual(result);
   expect(network.queue).toHaveBeenCalledTimes(1);
-  expect(network.fetch).toHaveBeenCalledTimes(2);
+  expect(network.fetch).toHaveBeenCalledTimes(5);
 });
 it('a prepared loss from a retired kernel never reaches owner signing or queueing', async () => {
   network.fetch.mockResolvedValue({ ok: true, json: async () => ({ request: `0x${'ab'.repeat(32)}`,
@@ -209,6 +223,7 @@ it('re-signs a queued bounded intent after ordinary succession while preserving 
  const transactionHash=`0x${'cd'.repeat(32)}`;
  network.fetch.mockImplementation(async(url:string,options:RequestInit)=>{
   if(url.endsWith('/restoration-intents'))return {ok:true,json:async()=>({...scope,kernel:originalKernel})};
+  if(url.endsWith('/restoration-requests'))return {ok:true,json:async()=>({requestId:scope.request,status:'awaiting_determination'})};
   const body=JSON.parse(String(options.body));return {ok:true,json:async()=>({walletId,destination:body.destination,generation:1})};
  });
  const request={...input(),restoration:{transactionHash,block:100,apiKey:'old-api',apiSecret:'old-secret'}};

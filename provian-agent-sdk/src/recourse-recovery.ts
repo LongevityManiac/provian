@@ -20,6 +20,7 @@ interface RecoveryJournal {
   version: 1; relayUrl: string; requestId: string; identity: string;
   oldKeystore: AgentKeystore; nextKeystore: AgentKeystore;
   apiKey: string; apiSecret: string; generation?: number; installed: boolean;
+  restorationSubmitted?: boolean;
   restoration?: { transactionHash: string; block: number; kernel: string; scope: RestorationScope };
   previousExecutionKernel?: string;
   operation?: RecoveryOwnerOperation; ownerIntent?: string; authorizationTxHash?: string;
@@ -121,6 +122,13 @@ export async function recoverRecourseAgent(input: {
     if (journal && (input.newRecovery || (journal.installed && input.restoration
       && (journal.restoration?.transactionHash !== input.restoration.transactionHash || journal.restoration.block !== input.restoration.block)))) {
       if (!journal.installed) throw new Error('Finish the pending recovery before starting another');
+      const current = loadKeystore(path.join(directory, 'agent-keystore.json'));
+      if (journal.version !== 1 || journal.relayUrl !== relayUrl || journal.oldKeystore.wallet_id !== journal.nextKeystore.wallet_id
+        || !current || current.wallet_id !== journal.nextKeystore.wallet_id || current.address !== journal.nextKeystore.address
+        || journal.generation === undefined) throw Error('Completed recovery identity mismatch');
+      // Do not retire the only credentials that can finish the previous loss.
+      // Its exact submission must be durable before this journal is archived.
+      await submitRecoveredRestoration(journal, file, input);
       saveJournal(path.join(directory, 'recoveries', `${journal.requestId}.json`), journal, input.passphrase);
       journal = null;
     }
@@ -162,6 +170,7 @@ export async function recoverRecourseAgent(input: {
       || ![journal.oldKeystore.address, journal.nextKeystore.address].includes(active.address)) throw new Error('Wallet changed outside the recovery journal');
     if (journal.installed) {
       if (active.address !== journal.nextKeystore.address || journal.generation === undefined) throw new Error('Completed recovery identity mismatch');
+      await submitRecoveredRestoration(journal, file, input);
       return { walletId: journal.nextKeystore.wallet_id, destination: journal.nextKeystore.address.toLowerCase(), generation: journal.generation, ...(journal.restoration ? { restorationRequestId: journal.restoration.scope.request } : {}) };
     }
     if (journal.generation === undefined) {
@@ -280,6 +289,27 @@ export async function recoverRecourseAgent(input: {
       address: journal.nextKeystore.address, api_key: journal.apiKey, api_secret: journal.apiSecret }));
     journal.installed = true;
     saveJournal(file, journal, input.passphrase);
+    await submitRecoveredRestoration(journal, file, input);
     return { walletId: journal.nextKeystore.wallet_id, destination: journal.nextKeystore.address.toLowerCase(), generation: journal.generation, ...(journal.restoration ? { restorationRequestId: journal.restoration.scope.request } : {}) };
   } finally { release(); }
+}
+
+/** A successful credential cut does not finish the restoration request. Submit
+ * the original bounded loss with the recovered credentials, retaining the same
+ * request across response loss without authorizing another owner operation. */
+async function submitRecoveredRestoration(journal: RecoveryJournal, file: string,
+  input: { passphrase: string; fetch?: typeof globalThis.fetch; signal?: AbortSignal }): Promise<void> {
+  if (!journal.restoration || journal.restorationSubmitted) return;
+  if (!journal.installed || !journal.operation || !journal.authorizationTxHash) throw Error('Restoration recovery not installed');
+  const response = await guardedFetcher(input.fetch)(`${journal.relayUrl}/v1/recourse/restoration-requests`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${journal.apiKey}:${journal.apiSecret}` },
+    body: JSON.stringify({ identity: journal.identity, transactionHash: journal.restoration.transactionHash,
+      block: journal.restoration.block, recoveryRequestId: journal.requestId }), signal: input.signal,
+  });
+  if (!response.ok) throw Error('Restoration request submission refused');
+  const result: unknown = await response.json();
+  if (!result || typeof result !== 'object' || !('requestId' in result) || result.requestId !== journal.restoration.scope.request
+    || !('status' in result) || typeof result.status !== 'string' || !result.status) throw Error('Restoration request response binding mismatch');
+  journal.restorationSubmitted = true;
+  saveJournal(file, journal, input.passphrase);
 }

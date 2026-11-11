@@ -304,6 +304,17 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'agent-restoration-submission': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/recourse-recovery.ts',
+    testMatchPath: 'src/recourse-recovery.test.ts',
+    mutations: [{ id: 'AGENT-RESTORATION-REPLY-BINDING', description: 'finish a restoration submission after a response for another bounded request',
+      find: ' || result.requestId !== journal.restoration.scope.request', replace: '',
+      expectedKilledBy: 'prepares and signs one bounded loss scope, then resumes without a second authorization' },
+      { id: 'AGENT-RESTORATION-PREARCHIVE', description: 'archive a recovery before its outstanding restoration submission completes',
+        find: '      await submitRecoveredRestoration(journal, file, input);\n      saveJournal(path.join(directory,',
+        replace: '      saveJournal(path.join(directory,',
+        expectedKilledBy: 'prepares and signs one bounded loss scope, then resumes without a second authorization' }],
+  },
   'active-hash-delivery': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/active-hash-delivery.ts',
     testMatchPath: 'src/active-hash-delivery.test.ts',
