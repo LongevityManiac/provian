@@ -278,6 +278,18 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'issuance-cancellation-nonce': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
+    testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',
+    mutations: [
+      { id: 'CANCEL-NONCE-FINALITY', description: 'allocate cancellation before the previous gas nonce is consumed',
+        find: 'params.consumedThrough <= priorNonce', replace: 'false',
+        expectedKilledBy: 'a consumed member nonce reserves its successor once before signing and refuses premature allocation' },
+      { id: 'CANCEL-NONCE-CONSUMED', description: 'reuse a reserved cancellation nonce already consumed while the signer was interrupted',
+        find: ' && batch.cancellation_nonce.nonce >= params.consumedThrough', replace: '',
+        expectedKilledBy: 'a consumed member nonce reserves its successor once before signing and refuses premature allocation' },
+    ],
+  },
   'issuance-retirement-intent': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-issuance-batch.ts',
     testMatchPath: 'src/core/recourse/private-issuance-batch.test.ts',

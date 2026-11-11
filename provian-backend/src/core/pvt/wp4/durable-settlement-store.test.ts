@@ -35,6 +35,7 @@ import {
   listUnresolvedBatches,
   markBatchDead,
   readLedgerPage,
+  reserveMemberCancellationNonce,
   requestMemberBatchRetirement,
   recordAttempt,
   recordMinedReceipt,
@@ -1050,6 +1051,23 @@ describe('private issuance terminal coordination',()=>{
       attempt:{...base,tx_hash:H(777),calldata:'0xcafe',kind:'original'}})).toEqual({kind:'refused',reason:'private_issuance_pending'});
     expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,batchId:s.batch.batch_id,
       attempt:{...base,tx_hash:H(778),calldata:MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[s.batch.batch_id,1]),kind:'cancel'}})).toEqual({kind:'recorded'});
+  });
+  it('a consumed member nonce reserves its successor once before signing and refuses premature allocation',async()=>{
+    const s=await coordinated(),base={nonce:s.batch.reserved_nonce,target:ADDR(999),max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
+    await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,
+      attempt:{...base,tx_hash:H(777),calldata:'0xcafe',kind:'original'}});
+    await requestMemberBatchRetirement(s.db,{batchId:s.batch.batch_id,signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW+3,reason:'reverted'});
+    const params={batchId:s.batch.batch_id,signer:ADDR(0xbeef),workerId:WORKER,nowMs:NOW+4,nonce:8,consumedThrough:7};
+    const before=new Map(s.fake.store);
+    await expect(reserveMemberCancellationNonce(s.db,params)).rejects.toThrow('not consumed');expect(s.fake.store).toEqual(before);
+    expect(await reserveMemberCancellationNonce(s.db,{...params,consumedThrough:8})).toBe(8);
+    expect(await reserveMemberCancellationNonce(s.db,{...params,consumedThrough:8,nonce:9})).toBe(8);
+    expect(await reserveMemberCancellationNonce(s.db,{...params,consumedThrough:9,nonce:9})).toBe(9);
+    const parent=s.fake.store.get(`${SETTLEMENT_BATCHES_COLLECTION}/${s.batch.batch_id}`)!;
+    expect(parent.cancellation_nonce_history).toEqual([{nonce:8,prior_nonce:7,consumed_through:8}]);
+    const cancel={...base,tx_hash:H(778),nonce:9,calldata:MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[s.batch.batch_id,1]),kind:'cancel' as const};
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+5,batchId:s.batch.batch_id,attempt:{...cancel,nonce:8}})).toEqual({kind:'refused',reason:'nonce_rules_violated'});
+    expect(await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+5,batchId:s.batch.batch_id,attempt:cancel})).toEqual({kind:'recorded'});
   });
   it('a live cycle cannot sign or retire after losing the shared signer lease',async()=>{
     const s=await coordinated();

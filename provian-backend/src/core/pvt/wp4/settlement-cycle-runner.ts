@@ -86,7 +86,9 @@ import {
   markBatchFinalityVerified,
   readLedgerPage,
   createLedgerPageSource,
+  reserveMemberCancellationNonce,
   requestMemberBatchRetirement,
+  readCycle,
   recordAttempt,
   recordMinedReceipt,
   releaseCycleLease,
@@ -1371,6 +1373,11 @@ async function resolveBatch(
       attempts = attempts.map((a) => (a.tx_hash === attempt.tx_hash ? { ...a, mined: null } : a));
       return 'recheck';
     }
+    if (memberExecution) {
+      const sent = await cancelConsumedMemberNonce(reasonPrefix, safeBlock);
+      if (!sent.ok) return {kind:'stopped',reason:sent.stopReason ?? 'resumption_abort',detail:sent.refused};
+      return 'recheck';
+    }
     const settlement = await memberSettlement(chain, batch.members, safeBlock);
     if (settlement.kind === 'unknown') {
       return {
@@ -1585,16 +1592,38 @@ async function resolveBatch(
     return { ok: true, hash: signed.hash };
   };
 
+  const cancelConsumedMemberNonce = async (reason: string, safeBlock: number): ReturnType<typeof record> => {
+    if (!deps.memberExecution) throw Error('member execution unavailable');
+    await requestMemberBatchRetirement(db,{batchId:batch.batch_id,signer:config.signerAddress,workerId:config.workerId,nowMs:now(),reason});
+    const call = await deps.memberExecution.cancellation(batch);
+    const consumed = await chain.getTransactionCount(config.signerAddress,safeBlock);
+    const seed = await seedCancellationNonce(deps,config);
+    const nonce = await reserveMemberCancellationNonce(db,{batchId:batch.batch_id,signer:config.signerAddress,
+      workerId:config.workerId,nowMs:now(),nonce:seed,consumedThrough:consumed});
+    const fees = await chain.feeData();
+    const gas = await chain.estimateGas({from:config.signerAddress,to:call.target,data:call.data});
+    return record('cancel',nonce,fees.maxFeePerGasWei,fees.maxPriorityFeePerGasWei,
+      gas * BigInt(config.gasHeadroomBps) / 10_000n,call.target,call.data);
+  };
+
   // A retained private reservation survives even if gas signing/recording crashed.
   // Cancel it at its still-reserved nonce before releasing any owner or claim.
   if (memberExecution && attempts.length === 0) {
     const retained = await db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(batch.batch_id).get();
     if (retained.data()?.membership_issuance_id !== undefined) {
       if (!deps.memberExecution) throw Error('member execution unavailable');
-      const call = await deps.memberExecution.cancellation(batch), fees = await chain.feeData();
-      const gas = await chain.estimateGas({from: config.signerAddress, to: call.target, data: call.data});
-      const sent = await record('cancel', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei,
-        gas * BigInt(config.gasHeadroomBps) / 10_000n, call.target, call.data);
+      const safeBlock = await readSafeBlock(chain);
+      const consumed = safeBlock === null ? null : await nonceConsumedAtBlock(chain,config.signerAddress,batch.reserved_nonce,safeBlock);
+      if (consumed === null || safeBlock === null) return {kind:'stopped',reason:'awaiting_finality',detail:'first member cancellation awaits a safe nonce checkpoint'};
+      let sent: Awaited<ReturnType<typeof record>>;
+      if (consumed) {
+        sent = await cancelConsumedMemberNonce('reserved gas nonce consumed before first attempt',safeBlock);
+      } else {
+        const call = await deps.memberExecution.cancellation(batch), fees = await chain.feeData();
+        const gas = await chain.estimateGas({from: config.signerAddress, to: call.target, data: call.data});
+        sent = await record('cancel', batch.reserved_nonce, fees.maxFeePerGasWei, fees.maxPriorityFeePerGasWei,
+          gas * BigInt(config.gasHeadroomBps) / 10_000n, call.target, call.data);
+      }
       if (!sent.ok) return {kind: 'stopped', reason: sent.stopReason ?? 'resumption_abort', detail: sent.refused};
     }
   }
@@ -1770,6 +1799,13 @@ async function resolveBatch(
         continue;
       }
       // The live nonce is CONSUMED by our own reverted settle, at safe depth.
+      if (memberExecution) {
+        const safeBlock = await readSafeBlock(chain);
+        if (safeBlock === null || now() > ctx.deadline) return {kind:'stopped',reason:'awaiting_finality',detail:'member cancellation awaits a safe nonce checkpoint'};
+        const sent = await cancelConsumedMemberNonce('member transaction reverted at finality',safeBlock);
+        if (!sent.ok) return {kind:'stopped',reason:sent.stopReason ?? 'resumption_abort',detail:sent.refused};
+        continue;
+      }
       if (adopted) {
         const safeBlock = await readSafeBlock(chain);
         if (safeBlock === null) {
@@ -2231,6 +2267,23 @@ async function reconcileHeldClaims(deps: CycleRunnerDeps, deadline: number): Pro
  * has mined at. Taken AFTER reconciliation, so it re-uses a nonce that a dead, never-broadcast
  * reservation left behind (no gap) and never one that may still carry a transaction.
  */
+/** Choose cancellation gas under the already-held shared lease. Never replay
+ * unrelated journal transactions from this path. Their durable nonces remain owned. */
+async function seedCancellationNonce(deps: CycleRunnerDeps, config: CycleRunnerConfig): Promise<number> {
+  let next = await deps.chain.getTransactionCount(config.signerAddress,'latest');
+  const snap = await deps.db.collection('evm_signer_nonce_journals_v1').doc(`8453_${config.signerAddress.toLowerCase()}`).get();
+  const journal = parseNonceJournal(snap.exists ? snap.data() : null);
+  next = Math.max(next,journal?.next ?? 0);
+  for (const batch of await listAllUnresolvedBatches(deps.db)) {
+    const cycle = await readCycle(deps.db,batch.cycle_id);
+    if (!cycle) throw Error('cancellation nonce cycle missing');
+    if (cycle.signer !== config.signerAddress.toLowerCase()) continue;
+    next = Math.max(next,batch.reserved_nonce+1,(batch.cancellation_nonce?.nonce ?? -1)+1,
+      ...batch.attempts.map(a=>a.nonce+1));
+  }
+  return next;
+}
+
 export async function seedCycleNonce(
   deps: CycleRunnerDeps,
   config: CycleRunnerConfig,
@@ -2251,7 +2304,7 @@ export async function seedCycleNonce(
   let seed = Math.max(latestCount, journal?.next ?? 0);
   const unresolved = new Set<string>(['reserved', 'submitted', 'mined']);
   const consider = (batch: SettlementBatchDoc, includeUnmined: boolean): void => {
-    if (includeUnmined) seed = Math.max(seed, batch.reserved_nonce + 1);
+    if (includeUnmined) seed = Math.max(seed, batch.reserved_nonce + 1, (batch.cancellation_nonce?.nonce ?? -1) + 1);
     for (const attempt of batch.attempts) {
       if (includeUnmined || attempt.mined !== null) seed = Math.max(seed, attempt.nonce + 1);
     }

@@ -3430,6 +3430,56 @@ describe('member settlement transaction envelope',()=>{
     expect(h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`)?.status).toBe('cancelled');
     expect(h.chain.claimSettled.size).toBe(0);expect(h.cancellation).toHaveBeenCalled();
   });
+  it('a finalized revert cancels the original authorization at a new nonce before requeueing',async()=>{
+    const h=forwarded();h.chain.trackNonces=true;h.chain.behaviors=['mine-revert','mine-success'];
+    h.chain.onBroadcast=(count)=>{if(count===1)h.candidateSource.ineligible.add('pe-0001');};
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await runSettlementCycle(h.deps,h.config);
+    const first=batchDocs(h.store)[0];expect(first.status).toBe('dead');
+    expect(first.attempts.map(a=>a.kind)).toEqual(['original','cancel']);
+    expect(first.attempts[1].nonce).toBe(first.attempts[0].nonce+1);
+    expect(first.cancellation_nonce).toEqual({nonce:first.attempts[1].nonce,prior_nonce:first.attempts[0].nonce,consumed_through:first.attempts[1].nonce});
+    expect(h.chain.claimSettled.size).toBe(0);
+  });
+  it('a nonce consumed by an unrecorded transaction still cancels reusable member authority',async()=>{
+    const h=forwarded();h.chain.behaviors=['drop','mine-success'];
+    h.chain.onBroadcast=(count)=>{if(count===1){h.chain.txCount=1;h.candidateSource.ineligible.add('pe-0001');}};
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await runSettlementCycle(h.deps,h.config);
+    const first=batchDocs(h.store)[0];expect(first.status).toBe('dead');
+    expect(first.attempts[0].mined).toBeNull();expect(first.attempts[1]).toMatchObject({kind:'cancel',nonce:1});
+    expect(h.store.get(`${PRIVATE_ISSUANCE_BATCHES}/${first.batch_id}`)?.status).toBe('cancelled');
+  });
+  it('a crash after reserving the cancellation nonce reuses it on cross-cycle adoption',async()=>{
+    const h=forwarded(),sign=h.chain.sign.bind(h.chain);h.chain.trackNonces=true;h.chain.behaviors=['mine-revert','mine-success'];
+    jest.spyOn(h.chain,'sign').mockImplementation(async(tx)=>{
+      if(tx.data.startsWith(MEMBER_SETTLEMENT_ABI.getFunction('cancelMemberBatch')!.selector))throw Error('cancel signer interrupted');
+      return sign(tx);
+    });
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle(h.deps,h.config)).rejects.toThrow('cancel signer interrupted');
+    const interrupted=batchDocs(h.store)[0],reserved=interrupted.cancellation_nonce!.nonce;
+    expect(interrupted.attempts).toHaveLength(1);expect(reserved).toBe(interrupted.reserved_nonce+1);
+    jest.mocked(h.chain.sign).mockImplementation(sign);h.candidateSource.ineligible.add('pe-0001');
+    await h.deps.sleep(200_000);
+    await runSettlementCycle(h.deps,{...h.config,cycleId:'member-adopt-cancel',workerId:'member-adopter'});
+    const finished=batchDocs(h.store).find(b=>b.batch_id===interrupted.batch_id)!;
+    expect(finished.status).toBe('dead');expect(finished.attempts[1]).toMatchObject({kind:'cancel',nonce:reserved});
+    expect(h.chain.claimSettled.size).toBe(0);
+  });
+  it('first signing crash then external nonce consumption uses a fresh cancellation nonce',async()=>{
+    const h=forwarded(),sign=h.chain.sign.bind(h.chain);
+    jest.spyOn(h.chain,'sign').mockRejectedValueOnce(Error('first signing interrupted')).mockImplementation(sign);
+    await registerClaimsBulk(h.db,[standardClaim(1,ADDR(0xa1))],50_000);
+    await expect(runSettlementCycle(h.deps,h.config)).rejects.toThrow('first signing interrupted');
+    const first=batchDocs(h.store)[0];expect(first.attempts).toHaveLength(0);
+    h.chain.txCount=first.reserved_nonce+1;h.candidateSource.ineligible.add('pe-0001');
+    jest.mocked(h.chain.sign).mockImplementation(async tx=>{if(tx.nonce<h.chain.txCount)throw Error('obsolete nonce');return sign(tx);});
+    await expect(runSettlementCycle(h.deps,h.config)).resolves.toBeDefined();
+    const finished=batchDocs(h.store).find(b=>b.batch_id===first.batch_id)!;
+    expect(finished.attempts[0]).toMatchObject({kind:'cancel',nonce:first.reserved_nonce+1});
+    expect(finished.status).toBe('dead');
+  });
   it('cancels a retained authorization after a crash before the first recorded gas attempt',async()=>{
     const h=forwarded(),sign=h.chain.sign.bind(h.chain);
     jest.spyOn(h.chain,'sign').mockRejectedValueOnce(Error('signing interrupted')).mockImplementation(sign);

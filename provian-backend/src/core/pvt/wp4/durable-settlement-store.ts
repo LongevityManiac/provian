@@ -1076,9 +1076,9 @@ export interface BatchAttempt {
   /** Exact outer transaction bytes; the parent retains its inner approval bytes. */
   readonly calldata?: string;
   /**
-   * 'cancel' is a plain self-transfer at the SAME nonce as a stuck attempt
-   * whose batch binding has died (epoch crossed) — it resolves the nonce
-   * without executing a settlement. A mined-successful cancel must NEVER be
+   * 'cancel' calls the member adapter to permanently retire issuance authority;
+   * legacy batches use a same-nonce self-transfer. Member cancellations also
+   * use a durably reserved fresh nonce after the predecessor was consumed. A mined-successful cancel must NEVER be
    * applied as a settlement (`applyConfirmedBatch` refuses it by kind).
    */
   readonly kind: 'original' | 'replacement' | 'retry_after_revert' | 'cancel';
@@ -1152,6 +1152,9 @@ export interface SettlementBatchDoc {
   readonly membership_issuance_id?: string;
   /** Durable decision: no further settlement signatures after cancellation begins. */
   readonly retirement_reason?: string;
+  /** Reserved before signing when the previous gas nonce was consumed at finality. */
+  readonly cancellation_nonce?: { readonly nonce: number; readonly prior_nonce: number; readonly consumed_through: number };
+  readonly cancellation_nonce_history?: readonly { readonly nonce: number; readonly prior_nonce: number; readonly consumed_through: number }[];
   readonly members: readonly BatchMemberRecord[];
   /**
    * `mined` is a success receipt seen but NOT yet at the safe-head depth. It is an
@@ -1367,6 +1370,36 @@ export async function requestMemberBatchRetirement(db: SettlementDb, params: {
   });
 }
 
+/** Reserve a new cancellation gas nonce once, including across a signing crash.
+ * The caller reads the consumed count at a canonical safe block under the signer
+ * lease; the parent remains unresolved and prevents sponsored nonce allocation. */
+export async function reserveMemberCancellationNonce(db: SettlementDb, params: {
+  batchId: string; signer: string; workerId: string; nowMs: number; nonce: number; consumedThrough: number;
+}): Promise<number> {
+  return db.runTransaction(async txn => {
+    const ref = db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(params.batchId.toLowerCase());
+    const snap = await txn.get(ref), batch = snap.data() as unknown as SettlementBatchDoc | undefined;
+    if (!batch || !batch.membership_issuance_id || batch.retirement_reason === undefined || batch.applied
+      || !['reserved','submitted'].includes(batch.status)) throw Error('cancellation nonce parent unavailable');
+    const cycleRef = db.collection(SETTLEMENT_CYCLES_COLLECTION).doc(batch.cycle_id);
+    const cycleSnap = await txn.get(cycleRef), cycle = cycleSnap.data() as unknown as SettlementCycleDoc | undefined;
+    if (!cycle || cycle.signer !== params.signer.toLowerCase()
+      || (cycle.status === 'active' && cycle.lease.owner !== params.workerId && cycle.lease.expires_at_ms > params.nowMs)
+      || !await holdsSignerLease(db,txn,params.signer,params.workerId,params.nowMs)) throw Error('cancellation nonce lease unavailable');
+    const latest = batch.attempts[batch.attempts.length-1];
+    const priorNonce = latest?.nonce ?? batch.reserved_nonce;
+    if (!Number.isSafeInteger(params.consumedThrough) || params.consumedThrough <= priorNonce)
+      throw Error('cancellation previous nonce is not consumed');
+    if (batch.cancellation_nonce?.prior_nonce === priorNonce && batch.cancellation_nonce.nonce >= params.consumedThrough) return batch.cancellation_nonce.nonce;
+    if (!Number.isSafeInteger(params.nonce) || params.nonce < params.consumedThrough) throw Error('cancellation nonce invalid');
+    txn.set(ref,{...batch,
+      cancellation_nonce_history:[...(batch.cancellation_nonce_history ?? []),...(batch.cancellation_nonce ? [batch.cancellation_nonce] : [])],
+      cancellation_nonce:{nonce:params.nonce,prior_nonce:priorNonce,consumed_through:params.consumedThrough},updated_at:params.nowMs});
+    txn.set(cycleRef,{...cycle,next_nonce:Math.max(cycle.next_nonce,params.nonce+1),updated_at:params.nowMs});
+    return params.nonce;
+  });
+}
+
 export async function recordAttempt(
   db: SettlementDb,
   params: {
@@ -1446,7 +1479,11 @@ export async function recordAttempt(
     } else if (kind === 'replacement' || kind === 'cancel') {
       const firstMemberCancel = kind === 'cancel' && batch.membership_issuance_id !== undefined
         && batch.retirement_reason !== undefined && latest === null && params.attempt.nonce === batch.reserved_nonce;
-      if (!firstMemberCancel && (latest === null || latest.nonce !== params.attempt.nonce || latest.mined !== null)) {
+      const freshMemberCancel = kind === 'cancel' && batch.membership_issuance_id !== undefined
+        && batch.retirement_reason !== undefined && batch.cancellation_nonce?.nonce === params.attempt.nonce
+        && batch.cancellation_nonce.prior_nonce === (latest?.nonce ?? batch.reserved_nonce)
+        && batch.cancellation_nonce.consumed_through > (latest?.nonce ?? batch.reserved_nonce);
+      if (!firstMemberCancel && !freshMemberCancel && (latest === null || latest.nonce !== params.attempt.nonce || latest.mined !== null)) {
         return { kind: 'refused', reason: 'nonce_rules_violated' };
       }
     } else {
@@ -2187,8 +2224,9 @@ export async function repairLedgerWritebacks(
 export const UNRESOLVED_BATCH_STATUSES = ['submitted', 'mined', 'reserved'] as const;
 
 function sortUnresolved(batches: SettlementBatchDoc[]): SettlementBatchDoc[] {
-  return batches.sort((a, b) => (a.reserved_nonce !== b.reserved_nonce
-    ? a.reserved_nonce - b.reserved_nonce
+  const nonce = (b: SettlementBatchDoc): number => Math.max(b.reserved_nonce, b.cancellation_nonce?.nonce ?? 0, ...b.attempts.map(a => a.nonce));
+  return batches.sort((a, b) => (nonce(a) !== nonce(b)
+    ? nonce(a) - nonce(b)
     : BigInt(a.cursor_start) < BigInt(b.cursor_start) ? -1 : 1));
 }
 
