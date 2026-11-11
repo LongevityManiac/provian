@@ -59,6 +59,35 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'ProvianMemberSettlement': {
+    sourcePath: 'contracts/src/ProvianMemberSettlement.sol',
+    testMatchPath: 'test/{ProvianMemberSettlementTickets,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    mutations: [
+      { id: 'ADAPTER-SELECTOR', description: 'an otherwise valid unknown kernel entry point can execute',
+        find: 'if ((context.lane == 0 && selector != ProvianPVT9.settleStandardPEBatch.selector)\n'
+          + '            || (context.lane == 1 && selector != ProvianPVT9.settleGenesisPEBatch.selector)\n'
+          + '            || context.lane > 1) revert InvalidConfiguration();',
+        replace: 'if (false) revert InvalidConfiguration();',
+        expectedKilledBy: 'testUnknownSelectorRefusesEvenWhenItsHeaderTicketsAndResultWouldMatch' },
+    ],
+  },
+  'RecourseIssuanceTickets': {
+    sourcePath: 'contracts/src/RecourseIssuanceTickets.sol',
+    testMatchPath: 'test/{RecourseIssuanceTickets,ProvianMemberSettlementTickets}.t.sol',
+    mutations: [
+      { id: 'TICKET-REPLAY', description: 'already settled ticket context can be reinstalled',
+        find: '|| cancelledIssuanceBatch[context.batchId] || alreadySettled',
+        replace: '|| cancelledIssuanceBatch[context.batchId]',
+        expectedKilledBy: 'testCompletedContextCannotBeReinstalledForAnotherSameShapedBatch' },
+      { id: 'TICKET-AMOUNT', description: 'attestor can divert beyond the exact gross percentage bound',
+        find: 'if (ticket.contribution < floor || ticket.contribution > ceil) revert InvalidIssuanceTicket();',
+        replace: 'if (false) revert InvalidIssuanceTicket();',
+        expectedKilledBy: 'testAttestorCannotChooseMoreThanExactFloorOrCeilOrTakeProtocolAllocations' },
+      { id: 'TICKET-UNUSED', description: 'a settlement can finish with unconsumed tickets',
+        find: '|| _get(2, 0) != _get(1, 0)', replace: '|| false',
+        expectedKilledBy: 'testMissingExtraOrWrongActualMintRevertsWholeBatch' },
+    ],
+  },
   'RecourseAddressConsent': {
     sourcePath: 'contracts/src/RecourseAddressConsent.sol',
     testMatchPath: 'test/RecourseAddressConsent.t.sol',
@@ -1139,7 +1168,7 @@ const MUTATION_SETS = {
   },
   ProvianProtocolPointer: {
     "sourcePath": "contracts/src/ProvianProtocolPointer.sol",
-    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry,RecoursePoolHistory}.t.sol",
+    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry,RecoursePoolHistory}.t.sol",
     "mutations": [
         {
             "id": "POINTER-1",
@@ -1293,7 +1322,7 @@ const MUTATION_SETS = {
 },
   SlhDsaSha2128s: {
     "sourcePath": "contracts/src/crypto/SlhDsaSha2128s.sol",
-    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount*,SlhDsaSha2128s,ProvianBreakRecoveryHistory,ProvianOwnershipRegistry,ProvianProtocolPointer}.t.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,Recourse*,ProvianHashAccount*,SlhDsaSha2128s,ProvianBreakRecoveryHistory,ProvianOwnershipRegistry,ProvianProtocolPointer}.t.sol",
     "mutations": [
         {
             "id": "SLH-1",
