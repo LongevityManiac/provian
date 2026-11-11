@@ -72,6 +72,7 @@ test('a verified leave releases the durable owner lock without inventing paid cr
   fake.store.set(`${RECOURSE_COLLECTIONS.addresses}/${a(3)}`, { address: a(3), identity: h(2), ownerIdentity: h(500),
     kernel: old[0], chainBindingStatus: 'confirmed', recoveryGeneration: 0 });
   fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${h(2)}`, { identity: h(2), ownerIdentity: h(500), recoveryGeneration: 0 });
+  fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${h(500)}`, { ownerIdentity: h(500) });
   const reservation = planPrivateDebit(account, domain, debit, Number(debit.month), rules);
   await reservePrivateMembership(db, reservation);
   f.state.debitNonceAfter = 8;

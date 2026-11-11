@@ -20,3 +20,19 @@ export async function readRecoursePoolState(identity: string): Promise<RecourseP
     { request: (method, params) => legs[1].provider.send(method, [...params]) },
   ] });
 }
+
+/** Canonical historical state for private accounting, never transaction authority. */
+export async function readHistoricalRecoursePoolState(identity: string,
+  checkpoint: { readonly block: number; readonly blockHash: string }): Promise<RecoursePoolState> {
+  const { resolveHistoricalProtocolDeployment } = await import('../protocol/pointer');
+  const { PROTOCOL_POINTER_PIN } = await import('../protocol/pointer-pin.generated');
+  const { createRecourseChainPort } = await import('./chain-ledger');
+  const legs = getOperatorBoundRpcLegs('base');
+  if (!legs[0].operatorId || !legs[1].operatorId || legs[0].operatorId === legs[1].operatorId) throw Error('recourse_rpc_operators_not_independent');
+  const rpcs = [{ request: (m: string, p: readonly unknown[]) => legs[0].provider.send(m, [...p]) },
+    { request: (m: string, p: readonly unknown[]) => legs[1].provider.send(m, [...p]) }] as const;
+  const { address, runtimeHash } = PROTOCOL_POINTER_PIN;
+  if (!address || !runtimeHash || checkpoint.block > await createRecourseChainPort().finalizedBlock()) throw Error('recourse_pool_checkpoint_unavailable');
+  return readRecoursePoolChain(identity, { rpcs, deployment: () => resolveHistoricalProtocolDeployment(rpcs,
+    address, runtimeHash, checkpoint.block, checkpoint.blockHash) });
+}

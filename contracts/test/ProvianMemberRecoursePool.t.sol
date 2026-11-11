@@ -102,6 +102,13 @@ contract ProvianMemberRecoursePoolTest is Test {
         bytes32 digest = pool.debitDigest(d);
         pool.executeMembershipDebit(d, sign(OWNER_KEY, digest), sign(ATTESTOR_KEY, digest));
     }
+    function testConsentAccountResolvesRecoveryBeforeAnyPoolWrite() public {
+        assertEq(pool.consentAccount(ID), address(this));
+        address replacement = vm.addr(0x998877);
+        token.ownerAuthorization().recover(ID, replacement);
+        assertEq(pool.primaryAddress(ID), address(this));
+        assertEq(pool.consentAccount(ID), replacement);
+    }
     function funded() private {
         token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY);
         debit(pool.calendarMonth(block.timestamp), 100 ether, 0);

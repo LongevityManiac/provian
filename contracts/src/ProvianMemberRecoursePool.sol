@@ -99,6 +99,15 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, RecourseAddressConsen
         _syncRecovery(binding);
         return primaryAddress[binding];
     }
+    /// @notice The effective signer, including recovery not yet synchronized by
+    /// a pool write. A snapshot awaiting owner recovery has no active signer.
+    function consentAccount(bytes32 binding) external view returns (address) {
+        if (!poolHistoryReady) revert InvalidPoolHistory();
+        ProvianRestorationAuthorization auth = IRecourseKernelAuthority(address(token)).ownerAuthorization();
+        if (requiresSnapshotRecovery[binding] && !auth.restoredIdentity(binding)) return address(0);
+        if (auth.ownerAuthorizationNonce(binding) > recoveryNonce[binding]) return auth.recoveredDestination(binding);
+        return primaryAddress[binding];
+    }
     function _consentAttestor() internal view override returns (address) { return _identityAttestor(); }
     function _consentDomain() internal view override returns (address, address) { return (address(pointer), address(token)); }
     function _consentCurrent(uint256 revision) internal view override {

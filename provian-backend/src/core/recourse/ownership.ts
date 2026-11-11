@@ -157,6 +157,10 @@ export async function registerOwnership(
       }
       return existing;
     }
+    if (ownerSnap.get('membershipTransition') != null) throw Error('recourse_membership_transition_pending');
+    const bindingSetVersion: unknown = ownerSnap.get('bindingSetVersion') ?? 0;
+    if (typeof bindingSetVersion !== 'number' || !Number.isSafeInteger(bindingSetVersion) || bindingSetVersion < 0
+      || !Number.isSafeInteger(bindingSetVersion + 1)) throw Error('recourse_binding_set_version_invalid');
     if (!identitySnap.exists) transaction.create(identityRef, {
       identity: binding.identity, ownerIdentity: input.authenticatedIdentity, originAddress: binding.address,
       primaryBinding: ownsNative, recoveryCommitment: binding.recoveryCommitment, signingRoot: binding.signingRoot,
@@ -165,9 +169,10 @@ export async function registerOwnership(
     });
     if (!ownerSnap.exists) transaction.create(ownerRef, {
       ownerIdentity: input.authenticatedIdentity, ownerType: input.owner.type, ownerId: input.owner.id,
-      walletId: input.owner.walletId, ...(ownsNative ? { primaryBinding: binding.identity } : {}), createdAtMs: input.nowMs,
+      walletId: input.owner.walletId, bindingSetVersion: 1, ...(ownsNative ? { primaryBinding: binding.identity } : {}), createdAtMs: input.nowMs,
     });
-    else if (ownsNative && ownerSnap.get('primaryBinding') === undefined) transaction.update(ownerRef, { primaryBinding: binding.identity });
+    else transaction.update(ownerRef, { bindingSetVersion: bindingSetVersion + 1,
+      ...(ownsNative && ownerSnap.get('primaryBinding') === undefined ? { primaryBinding: binding.identity } : {}) });
     const row: RegisteredAddress = { ...baseline, recoveryGeneration: generation, chainBindingStatus: 'pending' };
     transaction.create(addressRef, row);
     return row;

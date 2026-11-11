@@ -4,6 +4,7 @@ import { assessPrivateMembership, privateMembershipStatus, type PrivateCalendarR
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { readPrivateMembershipScan, commitPrivateMembershipScan } from './private-membership-scan';
 import { utcCalendarMonth } from './calendar-month';
+import { RECOURSE_COLLECTIONS } from './ownership';
 import type { RecoursePoolState } from './pool-state';
 
 export interface PrivateMembershipView {
@@ -33,6 +34,8 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
  * until their receipts reconcile; they never become fabricated zero dues. */
 export async function readPrivateMembershipView(db: Firestore, ownerIdentity: string,
   pool: RecoursePoolState): Promise<PrivateMembershipView> {
+  const owner = await db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
+  if (owner.get('membershipTransition') != null) throw Error('recourse_private_membership_transition_pending');
   const ref = db.collection(C.owners).doc(ownerIdentity), initial = await ref.get();
   if (!initial.exists) {
     if (pool.addressConsent) throw Error('recourse_private_membership_unreconciled');

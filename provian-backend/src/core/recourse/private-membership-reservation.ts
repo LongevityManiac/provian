@@ -26,6 +26,8 @@ export interface PrivateMembershipAccount {
   readonly checkpoint: PrivateMembershipCheckpoint;
   readonly needsScan: boolean;
   readonly pendingReservation: string | null;
+  readonly admission?: { readonly block: number; readonly blockHash: string; readonly logIndex: number; readonly timestamp: number } | null;
+  readonly closure?: { readonly block: number; readonly blockHash: string; readonly logIndex: number; readonly timestamp: number } | null;
 }
 interface ReservationBase {
   readonly id: string; readonly ownerIdentity: string; readonly accountVersion: number;
@@ -95,6 +97,10 @@ export async function reservePrivateMembership(db: Firestore, input: PrivateMemb
     const [accountRow, existing] = await Promise.all([transaction.get(accountRef), transaction.get(reservationRef)]);
     if (!accountRow.exists) return invalid('missing_account');
     const account = accountRow.data() as PrivateMembershipAccount;
+    const privateOwner = await transaction.get(db.collection(RECOURSE_COLLECTIONS.owners).doc(reservation.ownerIdentity));
+    if (!privateOwner.exists || privateOwner.get('ownerIdentity') !== reservation.ownerIdentity) return invalid('ownership');
+    if (privateOwner.get('membershipTransition') != null) return invalid('membership_transition_pending');
+
     const addresses = reservation.kind === 'debit' ? [reservation.debit.payer] : reservation.recipients.map(row => row.account);
     const bindings = await Promise.all(addresses.map(account => transaction.get(db.collection(RECOURSE_COLLECTIONS.addresses).doc(account))));
     const identities = await Promise.all(bindings.map(row => {

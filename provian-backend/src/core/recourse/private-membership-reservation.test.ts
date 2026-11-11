@@ -24,6 +24,7 @@ const context = { batchId: h(600), lane: 0 as const, epoch: '1', policyHash: h(6
 function store() {
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true });
   const key = `${C.owners}/${h(500)}`; fake.store.set(key, { ...account() });
+  for (const n of [500, 501]) fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${h(n)}`, { ownerIdentity: h(n) });
   for (const n of [3, 4]) {
     const binding = n === 3 ? h(2) : h(4);
     fake.store.set(`${RECOURSE_COLLECTIONS.addresses}/${a(n)}`, { identity: binding, address: a(n), ownerIdentity: h(500),

@@ -28,6 +28,7 @@ export const RECOURSE_POOL_ABI = new Interface([
   "function cancelIssuanceBatch(bytes32 batchId, uint256 revision)",
   "function cancelMembershipDebit(bytes32 binding, uint256 expectedNonce)",
   "function cancelledIssuanceBatch(bytes32) view returns (bool)",
+  "function consentAccount(bytes32 binding) view returns (address)",
   "function consentDigest((bytes32 binding, address account, uint256 nonce, bool joined, uint256 revision, bytes32 ruleHash, uint256 expiresAt) consent) view returns (bytes32)",
   "function consentPeriods(bytes32, uint256) view returns (uint256 startBlock, uint256 endBlock)",
   "function debitDigest((bytes32 binding, address payer, uint256 month, uint256 burn, uint256 reserve, uint256 nonce, uint256 generation, uint256 revision, bytes32 ruleHash, uint256 expiresAt) debit) view returns (bytes32)",

@@ -37,7 +37,7 @@ beforeEach(() => {
       if (!parsed) throw new Error('unexpected method');
       const values: Record<string, readonly unknown[]> = {
         token: [wrongToken ? pool : kernel], addressConsent: [1, 1, true], debitNonce: [7], poolHistoryReady: [true],
-        calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
+        calendarMonth: [24312], consentAccount: [pool], allocatedRestorations: [50], outcomeRevision: [2],
         monthlyRule: [[0, 100, 100, 100, identity]],
         availableReserve: [disagreement && index === 1 ? 101 : 100],
         };

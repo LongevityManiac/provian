@@ -20,7 +20,7 @@ function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: bo
     if (!parsed) throw new Error('unexpected_method');
     const values: Record<string, readonly unknown[]> = {
       token: [options.wrongToken ? pool : kernel], addressConsent: [1, 1, true], debitNonce: [7], poolHistoryReady: [!options.historyPending],
-      calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
+      calendarMonth: [24312], consentAccount: [pool], allocatedRestorations: [50], outcomeRevision: [2],
       monthlyRule: [[0, 100, 100, 100, identity]],
       availableReserve: [options.disagree && index === 1 ? 101 : 100],
     };

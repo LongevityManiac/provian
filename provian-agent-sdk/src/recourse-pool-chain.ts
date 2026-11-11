@@ -4,7 +4,7 @@ export interface RecoursePoolNetwork { readonly rpcs: readonly [PointerRpc, Poin
 import { RECOURSE_POOL_ABI } from './recourse-pool-abi';
 const TOKEN = new Interface(['function restorationAuthority() view returns(address)']);
 export interface RecoursePoolState {
-  readonly pool: string; readonly kernel: string; readonly block: number; readonly blockHash: string;
+  readonly pool: string; readonly kernel: string; readonly block: number; readonly blockHash: string; readonly timestamp: number;
   readonly addressConsent: boolean; readonly currentAddress: string; readonly month: string; readonly reserveAtomic: string;
   readonly consentNonce: string; readonly consentGeneration: string; readonly debitNonce: string;
   readonly outstandingAtomic: string; readonly authority: string;
@@ -36,11 +36,11 @@ export async function readRecoursePoolChain(identity: string, network: RecourseP
     if (!rawBlock || typeof rawBlock !== 'object' || !('hash' in rawBlock) || rawBlock.hash !== blockHash
       || !('number' in rawBlock) || typeof rawBlock.number !== 'string' || !/^0x[0-9a-f]+$/i.test(rawBlock.number)
       || !('timestamp' in rawBlock) || typeof rawBlock.timestamp !== 'string' || !/^0x[0-9a-f]+$/i.test(rawBlock.timestamp)) throw new Error('recourse_pool_block_unavailable');
-    const block = Number(BigInt(rawBlock.number));
-    if (!Number.isSafeInteger(block)) throw new Error('recourse_pool_block_unavailable');
+    const block = Number(BigInt(rawBlock.number)), timestamp = Number(BigInt(rawBlock.timestamp));
+    if (!Number.isSafeInteger(block) || !Number.isSafeInteger(timestamp)) throw new Error('recourse_pool_block_unavailable');
     const month = BigInt((await call('calendarMonth', [BigInt(rawBlock.timestamp)]))[0]);
     const [token, consent, debitNonce, primary, outstanding, revision, ruleResult, available, ready] = await Promise.all([
-      call('token'), call('addressConsent', [identity]), call('debitNonce', [identity]), call('primaryAddress', [identity]),
+      call('token'), call('addressConsent', [identity]), call('debitNonce', [identity]), call('consentAccount', [identity]),
       call('allocatedRestorations'), call('outcomeRevision', [identity]), call('monthlyRule', [month]),
       call('availableReserve'), call('poolHistoryReady'),
     ]);
@@ -51,7 +51,7 @@ export async function readRecoursePoolChain(identity: string, network: RecourseP
       data: TOKEN.encodeFunctionData('restorationAuthority') }, tag]);
     if (typeof authorityRaw !== 'string') throw new Error('recourse_pool_reply_invalid');
     const authority = String(TOKEN.decodeFunctionResult('restorationAuthority', authorityRaw)[0]).toLowerCase();
-    return { pool: config.address, kernel, block, blockHash, addressConsent: Boolean(consent[2]),
+    return { pool: config.address, kernel, block, blockHash, timestamp, addressConsent: Boolean(consent[2]),
       consentNonce: String(consent[0]), consentGeneration: String(consent[1]), debitNonce: String(debitNonce[0]),
       currentAddress: String(primary[0]).toLowerCase(), month: String(month),
       reserveAtomic: String(available[0]), outstandingAtomic: String(outstanding[0]), authority,
