@@ -6,7 +6,7 @@ import { hashAccountCall, type SignedHashAccountOperation } from './hash-account
 import { deliverHumanHashSpending, pendingHumanHashDeliveryOperation } from './human-hash-delivery';
 const f = vi.hoisted(() => ({ store: new Map<string, string>(), account: '', operation: null as unknown,
   completed: null as { hash: string; outcome: 'succeeded' | 'cancelled' } | null, failCompletion: false, active: true,
-  sender: '', tx: '', block: '', mined: false, rotations: 0, sends: 0, rpc: vi.fn() }));
+  sender: '', tx: '', block: '', mined: false, rotations: 0, sends: 0, rpc: vi.fn(), auxiliaryBinding:null as string|null, boundAccount:'' }));
 vi.mock('expo-secure-store', () => ({ WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'device', getItemAsync: async (key: string) => f.store.get(key) ?? null,
   setItemAsync: async (key: string, value: string) => {
     if (f.failCompletion && JSON.parse(value).complete) { f.failCompletion = false; throw Error('delivery write interrupted'); }
@@ -23,8 +23,9 @@ vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({ rpcs: [{ req
 vi.mock('../protocol/transaction', () => ({ assertCurrentProtocolTransaction: async () => ({}) }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: f.account }) } }));
 vi.mock('./human-account', () => ({ humanAccountPaths: () => ({ evm: "m/44'/60'/0'/0/0" }) }));
+vi.mock('./human-bound-hash-account',()=>({discoverBoundHumanHashAccount:async()=>({evm:f.boundAccount})}));
 vi.mock('./human-hash-spending', () => ({
-  readHumanHashSpendingDelivery: async () => ({ operation: f.operation, cancellation: null, completed: f.completed }),
+  readHumanHashSpendingDelivery: async () => ({ operation: f.operation, cancellation: null, completed: f.completed, auxiliaryBinding:f.auxiliaryBinding }),
   // The old pending-only accessor deliberately hides a completed operation.
   pendingHumanHashSpending: async () => ({ operation: f.completed ? null : f.operation, cancellation: null }),
   completeHumanHashSpending: async (_mnemonic: string, _account: string, hash: string) => {
@@ -38,6 +39,7 @@ const operation: SignedHashAccountOperation = { chainId: '8453', account: a('11'
 beforeEach(() => {
   f.store.clear(); f.account = operation.account; f.operation = operation; f.completed = null; f.failCompletion = false;
   f.active = true; f.sender = a('66'); f.tx = h('77'); f.block = h('88'); f.mined = false; f.rotations = 0; f.sends = 0;
+  f.auxiliaryBinding=null;f.boundAccount=operation.account;
   f.rpc.mockReset(); f.rpc.mockImplementation(async (method: string) => {
     if (method === 'eth_getTransactionReceipt') return f.mined ? { transactionHash: f.tx, blockHash: f.block, blockNumber: '0x64', status: '0x1' } : null;
     if (method === 'eth_getTransactionByHash') return { hash: f.tx, blockHash: f.block, from: f.sender, to: operation.account, input: hashAccountCall(operation), value: '0x0' };
@@ -77,4 +79,12 @@ test('queued delivery cannot substitute a newer account operation for the exact 
   expect(f.sends).toBe(0); expect(f.rotations).toBe(0); expect(f.rpc).not.toHaveBeenCalled();
   f.completed = { hash: h('99'), outcome: 'succeeded' };
   await expect(deliverHumanHashSpending(operation.account, action, hashDeliveryId(operation))).rejects.toThrow('intent_changed');
+});
+test('auxiliary gas delivery requires the seed-derived current account and leaves the primary wallet selected',async()=>{
+  f.account=a('99');f.auxiliaryBinding=h('aa');f.boundAccount=a('bb');
+  await expect(deliverHumanHashSpending(operation.account,action,hashDeliveryId(operation))).rejects.toThrow('wrong_wallet');
+  expect(f.sends).toBe(0);
+  f.boundAccount=operation.account;
+  await deliverHumanHashSpending(operation.account,action,hashDeliveryId(operation));
+  expect(f.sends).toBe(1);expect(f.account).toBe(a('99'));
 });

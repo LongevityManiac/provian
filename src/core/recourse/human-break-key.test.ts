@@ -24,3 +24,11 @@ it('rejects ambiguous, zero and overflowing domains before deriving any key', ()
   }
   expect(() => humanBreakKey(phrase, context as HumanBreakKeyContext, 'unknown' as 'spending', '0')).toThrow('context_invalid');
 });
+it('separates replacement account generations from spending nonces while retaining original and recovery keys',()=>{
+  const key=(accountGeneration:string,purpose:'spending'|'recovery-secret'='spending',nonce='0')=>
+    bytesToHex(humanBreakKey(phrase,{...context,accountGeneration},purpose,nonce));
+  expect(key('0')).toBe(bytesToHex(humanBreakKey(phrase,context,'spending','0')));
+  expect(new Set([key('0'),key('1'),key('2'),key('1','spending','1')]).size).toBe(4);
+  expect(key('1','recovery-secret','3')).toBe(key('0','recovery-secret','3'));
+  for(const accountGeneration of ['-1','01',(2n**256n).toString()])expect(()=>key(accountGeneration)).toThrow('context_invalid');
+});

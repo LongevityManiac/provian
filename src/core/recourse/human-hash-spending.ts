@@ -8,10 +8,11 @@ import { deriveHumanAccount, readHumanAccountSelection, discoverHumanHashAccount
 import { humanBreakKey } from './human-secret';
 import { prepareHashAccountOperation, hashAccountCall, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account';
 import { verifyHashAccountVariantReceipt } from './hash-account-chain';
+import { discoverBoundHumanHashAccount } from './human-bound-hash-account';
 
 export interface HumanHashCall { readonly target: string; readonly value: string; readonly callGas: string; readonly data: string; }
 interface Journal {
-  version: 1; account: string; identity: string; origin: string; requestId: string;
+  version: 1; account: string; identity: string; origin: string; requestId?: string; auxiliary?: true;
   intent: HashAccountIntent; operation?: SignedHashAccountOperation;
   cancellation?: SignedHashAccountOperation; cancellationReserved?: boolean;
   completed?: { hash: string; outcome: 'succeeded' | 'target_failed' | 'cancelled' };
@@ -27,7 +28,9 @@ async function load(account: string): Promise<Journal | null> {
   if (raw === null) return null;
   const j = JSON.parse(raw) as Journal;
   if (j.version !== 1 || j.account !== account || j.intent.account !== account
-    || !/^0x[0-9a-f]{64}$/.test(j.identity) || !/^0x[0-9a-f]{64}$/.test(j.requestId)
+    || !/^0x[0-9a-f]{64}$/.test(j.identity)
+    || (j.auxiliary ? j.requestId !== undefined : typeof j.requestId !== 'string' || !/^0x[0-9a-f]{64}$/.test(j.requestId))
+    || (j.auxiliary !== undefined && j.auxiliary !== true)
     || !/^0x[0-9a-f]{40}$/.test(j.origin)) throw Error('recourse_hash_spending_journal_invalid');
   if (j.operation) {
     hashAccountCall(j.operation);
@@ -41,7 +44,8 @@ async function load(account: string): Promise<Journal | null> {
 }
 let tail: Promise<unknown> = Promise.resolve();
 function locked<T>(run: () => Promise<T>): Promise<T> { const result = tail.then(run); tail = result.catch(() => undefined); return result; }
-async function selected(mnemonic: string, network: OwnerChainNetwork) {
+async function selected(mnemonic: string, network: OwnerChainNetwork, auxiliaryBinding?: string) {
+  if (auxiliaryBinding !== undefined) return { ...await discoverBoundHumanHashAccount(mnemonic, auxiliaryBinding, network), requestId: undefined };
   const root = await deriveHumanAccount(mnemonic, 0), stored = await readHumanAccountSelection(root.evm);
   if (stored?.kind !== 'hash') throw Error('recourse_hash_account_not_selected');
   return discoverHumanHashAccountSelection(mnemonic, stored.hashAccount!.identity, stored.requestId, network);
@@ -50,11 +54,11 @@ async function selected(mnemonic: string, network: OwnerChainNetwork) {
  * Persist the exact intent before publishing its signature. No curve key can
  * authorize this account; any gas sender receives only the public operation. */
 export function prepareHumanHashSpending(mnemonic: string, call: HumanHashCall, action: BiometricAction,
-  network: OwnerChainNetwork = ownerChainNetwork()): Promise<SignedHashAccountOperation> {
+  network: OwnerChainNetwork = ownerChainNetwork(), auxiliaryBinding?: string): Promise<SignedHashAccountOperation> {
   return locked(async () => {
     assertBiometricAction(action);
     const deployment = await assertCurrentProtocolTransaction(network, call.target, call.data);
-    const current = await selected(mnemonic, network), context = current.hashAccount!;
+    const current = await selected(mnemonic, network, auxiliaryBinding), context = current.hashAccount!;
     let journal = await load(current.evm);
     if (journal?.completed) {
       await save(`${keyFor(current.evm)}_${journal.intent.nonce}`, journal);
@@ -63,7 +67,7 @@ export function prepareHumanHashSpending(mnemonic: string, call: HumanHashCall, 
     const base = { chainId: '8453', account: current.evm, nonce: context.nonce, ...call };
     if (journal) {
       const { nextCommitment: _next, ...prior } = journal.intent;
-      if (journal.identity !== context.identity || journal.origin !== context.breakOrigin
+      if (journal.identity !== context.identity || journal.origin !== context.breakOrigin || Boolean(journal.auxiliary) !== Boolean(auxiliaryBinding)
         || (Object.keys(base) as (keyof typeof base)[]).some(field => prior[field] !== base[field])) throw Error('recourse_hash_spending_pending');
     }
     const seed = humanBreakKey(mnemonic, context, 'spending', context.nonce);
@@ -74,13 +78,13 @@ export function prepareHumanHashSpending(mnemonic: string, call: HumanHashCall, 
         async persistBeforeSigning(intent) {
           assertBiometricAction(action);
           journal = { version: 1, account: current.evm, identity: context.identity, origin: context.breakOrigin,
-            requestId: current.requestId, intent };
+            ...(auxiliaryBinding ? { auxiliary: true } : { requestId: current.requestId }), intent };
           await save(keyFor(current.evm), journal);
         },
       });
       if (!journal) throw Error('recourse_hash_spending_journal_missing');
       journal.operation = operation; await save(keyFor(current.evm), journal);
-      const confirmed = await selected(mnemonic, network);
+      const confirmed = await selected(mnemonic, network, auxiliaryBinding);
       if (confirmed.evm !== current.evm || confirmed.hashAccount!.nonce !== context.nonce
         || (await assertCurrentProtocolTransaction(network, call.target, call.data)).manifestHash !== deployment.manifestHash) {
         throw Error('recourse_hash_spending_state_changed');
@@ -100,20 +104,23 @@ export function pendingHumanHashSpending(account: string): Promise<{
 export function readHumanHashSpendingDelivery(account: string): Promise<{
   operation: SignedHashAccountOperation | null; cancellation: SignedHashAccountOperation | null;
   completed: Journal['completed'] | null;
+  auxiliaryBinding: string | null;
 }> {
   return locked(async () => {
     const j = await load(account);
-    return { operation: j?.operation ?? null, cancellation: j?.cancellation ?? null, completed: j?.completed ?? null };
+    return { operation: j?.operation ?? null, cancellation: j?.cancellation ?? null, completed: j?.completed ?? null,
+      auxiliaryBinding: j?.auxiliary ? j.identity : null };
   });
 }
 /** Cancellation is a competing signed no-op, never deletion of a published
  * authorization. Both variants install the same next key; either may win. */
 export function cancelHumanHashSpending(mnemonic: string, action: BiometricAction,
-  network: OwnerChainNetwork = ownerChainNetwork()): Promise<SignedHashAccountOperation> {
+  network: OwnerChainNetwork = ownerChainNetwork(), auxiliaryBinding?: string): Promise<SignedHashAccountOperation> {
   return locked(async () => {
     assertBiometricAction(action);
-    const current = await selected(mnemonic, network), context = current.hashAccount!, j = await load(current.evm);
-    if (!j?.operation || j.completed || j.intent.nonce !== context.nonce || j.origin !== context.breakOrigin) throw Error('recourse_hash_spending_pending_missing');
+    const current = await selected(mnemonic, network, auxiliaryBinding), context = current.hashAccount!, j = await load(current.evm);
+    if (!j?.operation || j.completed || j.intent.nonce !== context.nonce || j.origin !== context.breakOrigin
+      || j.identity !== context.identity || Boolean(j.auxiliary) !== Boolean(auxiliaryBinding)) throw Error('recourse_hash_spending_pending_missing');
     if (j.cancellation) return j.cancellation;
     const seed = humanBreakKey(mnemonic, context, 'spending', context.nonce);
     const nextSeed = humanBreakKey(mnemonic, context, 'spending', String(BigInt(context.nonce) + 1n));
@@ -145,7 +152,8 @@ export function completeHumanHashSpending(mnemonic: string, account: string, tra
     const variants = [j.operation, j.cancellation].filter((v): v is SignedHashAccountOperation => v !== undefined);
     const verified = await verifyHashAccountVariantReceipt(variants, transactionHash, network);
     const outcome = verified.operation === j.cancellation ? 'cancelled' : verified.outcome;
-    const selected = await installHumanHashAccountSelection(mnemonic, j.identity, j.requestId, action, network);
+    const selected = j.auxiliary ? await discoverBoundHumanHashAccount(mnemonic, j.identity, network)
+      : await installHumanHashAccountSelection(mnemonic, j.identity, j.requestId!, action, network);
     if (selected.evm !== account || selected.hashAccount!.nonce !== String(BigInt(j.intent.nonce) + 1n)) throw Error('recourse_hash_spending_selection_changed');
     j.completed = { hash: transactionHash, outcome }; await save(keyFor(account), j);
     return outcome;

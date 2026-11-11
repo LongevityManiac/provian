@@ -2,11 +2,13 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { sha256 } from 'ethers';
 import type { BiometricAction } from '../security/biometricAction';
 import type { OwnerChainNetwork } from './owner-chain';
-import { prepareHumanHashSpending, completeHumanHashSpending, pendingHumanHashSpending, cancelHumanHashSpending } from './human-hash-spending';
+import { prepareHumanHashSpending, completeHumanHashSpending, pendingHumanHashSpending, cancelHumanHashSpending, readHumanHashSpendingDelivery } from './human-hash-spending';
 const f=vi.hoisted(()=>({store:new Map<string,string>(),nonce:'0',active:true,approved:true,badWrite:false,retired:false,
   signCount:0,seeds:[]as Uint8Array[],outcome:'succeeded',receipt:false,install:vi.fn()}));
 const account=`0x${'11'.repeat(20)}`,target=`0x${'22'.repeat(20)}`,identity=`0x${'33'.repeat(32)}`,tx=`0x${'44'.repeat(32)}`;
 const selection=()=>({kind:'hash',evm:account,requestId:identity,hashAccount:{identity,breakOrigin:target,chainId:'8453',nonce:f.nonce}});
+vi.mock('./human-bound-hash-account',()=>({discoverBoundHumanHashAccount:async(_m:string,binding:string)=>({identity:binding,
+ evm:`0x${'77'.repeat(20)}`,hashAccount:{identity:binding,breakOrigin:target,chainId:'8453',accountGeneration:'2',nonce:f.nonce}})}));
 vi.mock('expo-secure-store',()=>({WHEN_UNLOCKED_THIS_DEVICE_ONLY:'device',getItemAsync:async(k:string)=>f.badWrite?null:f.store.get(k)??null,
  setItemAsync:async(k:string,v:string)=>{f.store.set(k,v);}}));
 vi.mock('../security/biometricAction',()=>({assertBiometricAction:()=>{if(!f.approved)throw Error('approval expired');}}));
@@ -61,4 +63,15 @@ test('changed protected operation is refused before signing or broadcasting',asy
  await prepareHumanHashSpending('backup',call,action,network);
  for(const[k,v]of f.store){const j=JSON.parse(v);j.operation.target=account;f.store.set(k,JSON.stringify(j));}
  await expect(prepareHumanHashSpending('backup',call,action,network)).rejects.toThrow('journal_invalid');expect(f.signCount).toBe(1);
+});
+test('auxiliary hash execution and cancellation rotate only the selected account and never install a primary selector',async()=>{
+ const binding=`0x${'78'.repeat(32)}`,auxiliary=`0x${'77'.repeat(20)}`;f.active=false;
+ const op=await prepareHumanHashSpending('backup',call,action,network,binding);
+ expect(op.account).toBe(auxiliary);expect(op.nonce).toBe('0');
+ expect((await readHumanHashSpendingDelivery(auxiliary)).auxiliaryBinding).toBe(binding);
+ await expect(cancelHumanHashSpending('backup',action,network,identity)).rejects.toThrow('pending_missing');
+ const cancel=await cancelHumanHashSpending('backup',action,network,binding);expect(cancel.target).toBe(auxiliary);
+ f.receipt=true;f.nonce='1';f.outcome='cancelled';
+ expect(await completeHumanHashSpending('backup',auxiliary,tx,action,network)).toBe('cancelled');
+ expect(f.install).not.toHaveBeenCalled();expect(f.seeds.every(s=>s.every(b=>b===0))).toBe(true);
 });

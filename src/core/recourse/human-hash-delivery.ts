@@ -15,6 +15,7 @@ import { humanAccountPaths } from './human-account';
 import { readHumanHashSpendingDelivery, completeHumanHashSpending } from './human-hash-spending';
 import { hashAccountCall, type SignedHashAccountOperation } from './hash-account';
 import { deliverHashAccountOperation, hashDeliveryId, type HashDeliveryRecord, type HashDeliveryResult } from './hash-account-delivery';
+import { discoverBoundHumanHashAccount } from './human-bound-hash-account';
 
 /** The spending journal is the durable authority for the winning variant.
  * Its completed result supersedes an unfinished transport-status write. */
@@ -31,14 +32,17 @@ export function deliverHumanHashSpending(account: string, action: BiometricActio
   variant: 'operation' | 'cancellation' = 'operation'): Promise<HashDeliveryResult> {
   const run = tail.then(async () => {
     assertBiometricAction(action);
-    if (useWalletStore.getState().address?.toLowerCase() !== account) throw Error('recourse_hash_delivery_wrong_wallet');
     const spending = await readHumanHashSpendingDelivery(account);
+    if (!spending.auxiliaryBinding && useWalletStore.getState().address?.toLowerCase() !== account) throw Error('recourse_hash_delivery_wrong_wallet');
     const operation = spending[variant];
     if (!operation || operation.account !== account) throw Error('recourse_hash_spending_pending_missing');
     if (hashDeliveryId(operation) !== expectedOperationId) throw Error('recourse_hash_delivery_intent_changed');
     if (spending.completed) return { status: 'complete' as const, transactionHash: spending.completed.hash, outcome: spending.completed.outcome };
     const mnemonic = await SeedManager.getMnemonic(action);
     if (!mnemonic) throw Error('recourse_seed_unavailable');
+    if (spending.auxiliaryBinding && (await discoverBoundHumanHashAccount(mnemonic, spending.auxiliaryBinding, ownerChainNetwork())).evm !== account) {
+      throw Error('recourse_hash_delivery_wrong_wallet');
+    }
     const seed = await mnemonicToSeedPaced(mnemonic);
     let root: HDKey | undefined, key: HDKey | undefined;
     try {

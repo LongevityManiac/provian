@@ -24,7 +24,7 @@ vi.mock('./hash-authorization', () => ({ recoverySigningRoot: async (seed: Uint8
   recoveryCommitment: (secret: Uint8Array) => sha256(secret) }));
 vi.mock('./break-recovery', () => ({ readBreakRecoveryContext: async () => breakOrigin }));
 vi.mock('./hash-account-deployment', () => ({ discoverHashAccount: async (root: string) => {
-  expect(root).toBe(sha256(humanBreakKey(phrase, context, 'spending', '0')));
+  if(root!==sha256(humanBreakKey(phrase,context,'spending','0')))return{deployed:false,account:`0x${'88'.repeat(20)}`,nonce:null,currentRoot:null,manifestHash:'manifest'};
   ++state.calls;
   return { deployed: true, account, factory: `0x${'44'.repeat(20)}`, nonce: state.nonce,
     currentRoot: state.badSpend ? `0x${'00'.repeat(32)}` : sha256(humanBreakKey(phrase, context, 'spending', state.nonce)),
@@ -76,4 +76,9 @@ it('cloud recovery refuses spending rollback independently of recovery nonce, wi
   expect(() => assertHumanBackupSelection(later, nextBreak)).not.toThrow();
   expect(() => assertHumanBackupSelection(current, null)).toThrow('chain_rollback');
   expect(() => assertHumanBackupSelection(current, { ...current, kind: 'curve', hashAccount: undefined })).toThrow('chain_rollback');
+  const replacement={...current,evm:`0x${'88'.repeat(20)}`,recoveryGeneration:3,
+    hashAccount:{...current.hashAccount!,accountGeneration:'3',nonce:'0'}};
+  expect(()=>assertHumanBackupSelection(later,replacement)).not.toThrow();
+  expect(()=>assertHumanBackupSelection(replacement,later)).toThrow('chain_rollback');
+  expect(()=>assertHumanBackupSelection(current,{...replacement,recoveryGeneration:2,hashAccount:{...replacement.hashAccount,accountGeneration:'2'}})).toThrow('chain_rollback');
 });

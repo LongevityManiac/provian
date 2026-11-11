@@ -304,6 +304,13 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'bound-hash-account': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-bound-hash-account.ts',
+    testMatchPath: 'src/core/recourse/human-bound-hash-account.test.ts',
+    mutations: [{ id: 'BOUND-HASH-SPENDING-ROOT', description: 'accept a recovered account whose spending root does not match the backup',
+      find: 'if (await recoverySigningRoot(spendingSeed) !== account.currentRoot)', replace: 'if (false)',
+      expectedKilledBy: 'refuses wrong backups, missing spending or recovery authority, and a changed finalized observation' }],
+  },
   'auxiliary-break-retry': {
     runner: 'native-vitest', sourcePath: 'src/core/recourse/human-break-recovery.ts',
     testMatchPath: 'src/core/recourse/human-break-recovery.test.ts',

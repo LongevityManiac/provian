@@ -12,6 +12,7 @@ import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
 import { addressRecoveryBinding } from './address-binding';
 import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
+import { discoverBoundHumanHashAccount } from './human-bound-hash-account';
 
 export interface HumanAccountSelection {
   readonly rootAddress: string; readonly generation: number; readonly evm: string; readonly sol: string;
@@ -23,6 +24,7 @@ export interface HumanAccountSelection {
   readonly hashAccount?: {
     readonly identity: string; readonly breakOrigin: string; readonly factory: string;
     readonly chainId: '8453'; readonly nonce: string;
+    readonly accountGeneration?: string;
   };
 }
 export function humanAccountPaths(generation: number): { evm: string; sol: string } {
@@ -58,6 +60,8 @@ function validate(value: HumanAccountSelection, rootAddress: string): void {
       || !/^0x[0-9a-f]{40}$/.test(h.breakOrigin) || /^0x0+$/.test(h.breakOrigin)
       || !/^0x[0-9a-f]{40}$/.test(h.factory) || /^0x0+$/.test(h.factory) || h.chainId !== '8453'
       || !/^(0|[1-9][0-9]*)$/.test(h.nonce) || BigInt(h.nonce) >= 2n ** 256n) throw Error('recourse_account_state_invalid');
+    if (h.accountGeneration !== undefined && (!/^(0|[1-9][0-9]*)$/.test(h.accountGeneration)
+      || BigInt(h.accountGeneration) > BigInt(value.recoveryGeneration ?? 0))) throw Error('recourse_account_state_invalid');
   } else if (value.hashAccount !== undefined) throw Error('recourse_account_state_invalid');
 }
 /** The signer selector is protected by the OS keystore, never selected by an
@@ -82,9 +86,12 @@ export function assertHumanBackupSelection(prior: HumanAccountSelection,
     ? current.hashAccount!.breakOrigin === prior.hashAccount!.breakOrigin
     : current.kind !== 'hash' && prior.kind !== 'hash';
   if (sameDomain && ((current.recoveryGeneration ?? current.generation) < (prior.recoveryGeneration ?? prior.generation)
-    || (current.kind === 'hash' && BigInt(current.hashAccount!.nonce) < BigInt(prior.hashAccount!.nonce)))) {
+    || (current.kind === 'hash' && current.evm === prior.evm && BigInt(current.hashAccount!.nonce) < BigInt(prior.hashAccount!.nonce)))) {
     throw Error('recourse_backup_chain_rollback');
   }
+  if (sameDomain && current.kind === 'hash' && current.evm !== prior.evm
+    && ((current.recoveryGeneration ?? 0) <= (prior.recoveryGeneration ?? 0)
+      || BigInt(current.hashAccount!.accountGeneration ?? '0') <= BigInt(prior.hashAccount!.accountGeneration ?? '0'))) throw Error('recourse_backup_chain_rollback');
 }
 /** Caller has already confirmed the matching relay transition. Verify both
  * derived accounts locally before installing the monotonic signing selector. */
@@ -150,28 +157,7 @@ export async function installHumanHashAccountSelection(mnemonic: string, identit
 
 export async function discoverHumanHashAccountSelection(mnemonic: string, identity: string, requestId: string,
   network: import('./owner-chain').OwnerChainNetwork, discoveredLegacyGeneration?: number): Promise<HumanAccountSelection> {
-  const [{ readBreakRecoveryContext }, { discoverHashAccount }, { readOwnerChainState }, { humanBreakKey }] = await Promise.all([
-    import('./break-recovery'), import('./hash-account-deployment'), import('./owner-chain'), import('./human-secret'),
-  ]);
-  const breakOrigin = await readBreakRecoveryContext(network);
-  const context = { identity, breakOrigin, chainId: '8453' as const };
-  const initialSeed = humanBreakKey(mnemonic, context, 'spending', '0');
-  let initialRoot: string;
-  try { initialRoot = await recoverySigningRoot(initialSeed); } finally { initialSeed.fill(0); }
-  const account = await discoverHashAccount(initialRoot, network, breakOrigin);
-  if (!account.deployed || account.nonce === null) throw Error('recourse_hash_account_not_deployed');
-  const spendingSeed = humanBreakKey(mnemonic, context, 'spending', account.nonce);
-  try {
-    if (await recoverySigningRoot(spendingSeed) !== account.currentRoot) throw Error('recourse_hash_account_key_mismatch');
-  } finally { spendingSeed.fill(0); }
-  const owner = await readOwnerChainState(identity, network);
-  if (owner.destination !== account.account || owner.deployment.manifestHash !== account.manifestHash) throw Error('recourse_hash_account_owner_mismatch');
-  const secret = humanBreakKey(mnemonic, context, 'recovery-secret', String(owner.nonce));
-  const signingSeed = humanBreakKey(mnemonic, context, 'recovery-signing', String(owner.nonce));
-  try {
-    const signingRoot = await recoverySigningRoot(signingSeed);
-    if (signingRoot !== owner.signingRoot || recoveryCommitment(secret, signingRoot) !== owner.commitment) throw Error('recourse_hash_account_recovery_mismatch');
-  } finally { secret.fill(0); signingSeed.fill(0); }
+  const bound = await discoverBoundHumanHashAccount(mnemonic, identity, network);
   const root = await deriveHumanAccount(mnemonic, 0);
   const current = await readHumanAccountSelection(root.evm);
   // PVT's EVM migration does not change the independent Solana account. A
@@ -180,17 +166,14 @@ export async function discoverHumanHashAccountSelection(mnemonic: string, identi
   const legacyGeneration = current?.generation ?? discoveredLegacyGeneration ?? 0;
   const legacy = legacyGeneration === 0 ? root : await deriveHumanAccount(mnemonic, legacyGeneration);
   if (current && current.sol !== legacy.sol) throw Error('recourse_account_binding_mismatch');
-  const next: HumanAccountSelection = { rootAddress: root.evm, generation: legacyGeneration, evm: account.account, sol: legacy.sol,
-    recoveryGeneration: owner.nonce, recoveryCommitment: owner.commitment, requestId, kind: 'hash',
-    hashAccount: { ...context, factory: account.factory, nonce: account.nonce } };
+  const next: HumanAccountSelection = { rootAddress: root.evm, generation: legacyGeneration, evm: bound.evm, sol: legacy.sol,
+    recoveryGeneration: bound.recoveryGeneration, recoveryCommitment: bound.recoveryCommitment, requestId, kind: 'hash',
+    hashAccount: { ...bound.hashAccount, chainId: '8453' } };
   validate(next, root.evm);
-  if (current?.kind === 'hash' && current.hashAccount!.breakOrigin === breakOrigin
-    && (BigInt(current.hashAccount!.nonce) > BigInt(account.nonce)
-      || (current.recoveryGeneration ?? 0) > owner.nonce)) throw Error('recourse_account_rollback');
-  const confirmed = await discoverHashAccount(initialRoot, network, breakOrigin);
-  const latestOwner = await readOwnerChainState(identity, network);
-  if (confirmed.manifestHash !== account.manifestHash || confirmed.currentRoot !== account.currentRoot || confirmed.nonce !== account.nonce
-    || latestOwner.deployment.manifestHash !== owner.deployment.manifestHash || latestOwner.nonce !== owner.nonce
-    || latestOwner.commitment !== owner.commitment || latestOwner.destination !== owner.destination) throw Error('recourse_hash_account_state_changed');
+  if (current?.kind === 'hash') assertHumanBackupSelection(current, next);
+  const confirmed = await discoverBoundHumanHashAccount(mnemonic, identity, network);
+  if (confirmed.manifestHash !== bound.manifestHash || confirmed.evm !== bound.evm
+    || confirmed.hashAccount.nonce !== bound.hashAccount.nonce || confirmed.recoveryGeneration !== bound.recoveryGeneration
+    || confirmed.recoveryCommitment !== bound.recoveryCommitment) throw Error('recourse_hash_account_state_changed');
   return next;
 }
