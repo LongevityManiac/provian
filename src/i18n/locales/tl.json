@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "Pansamantalang hindi available ang kasaysayan ng mga address at kahilingan. Maaaring i-withdraw nang direkta sa chain ang nakatalagang pagpapanumbalik gamit ang ID ng kahilingan.",
     "bindingPending": "Naipadala ang pagpaparehistro; hinihintay ang kumpirmasyon sa chain.",
+    "recoverAddress": "I-recover ang wallet na ito",
     "selectRestorationWallet": "Piliin ang wallet na nawalan ng PVT",
     "requestExplanation": "Ibigay ang transaksiyong kumuha ng PVT mo at ang bloke nito sa Base. Nagtatakda ang patunay mo ng pagbawi ng bagong susi sa wallet; sinusuri ng relay ang transaksiyon at tala ng palitang may saksi bago magpasiya. Naibabalik pa rin ng backup ng orihinal mong seed phrase ang wallet mo.",
     "lossTransaction": "Hash ng transaksiyon",

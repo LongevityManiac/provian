@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { Interface, ZeroAddress, ZeroHash, sha256 } from 'ethers';
-import { discoverHumanIdentityHistory, recoverHumanHistoricalMaterial } from './human-break-history';
+import { discoverHumanIdentityHistory, discoverAddressIdentityHistory, recoverHumanHistoricalMaterial } from './human-break-history';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import type { OwnerChainNetwork } from './owner-chain';
 import type { ProtocolDeployment } from '../protocol/pointer';
@@ -14,12 +14,13 @@ const abi = new Interface(['function registryOperator() view returns(address)', 
   'function predecessor() view returns(address)', 'function lastGoodBlock() view returns(uint256)',
   'function ownerAuthorizationNonce(bytes32) view returns(uint256)', 'function ownerRecoveryCommitment(bytes32) view returns(bytes32)',
   'function ownerSigningRoot(bytes32) view returns(bytes32)']);
-function fixture(mode = 'valid'): OwnerChainNetwork {
+function fixture(mode = 'valid', expectedOrigin = `0x${'11'.repeat(20)}`): OwnerChainNetwork {
   const commitment = sha256(humanRecoverySecret(phrase, 4, h(11)));
   const rpc = (index: number) => ({ async request(method: string, params: readonly unknown[]) {
     if (method === 'eth_getBlockByNumber') return { hash: mode === 'disagree' && index === 1 ? h(99) : h(100), number: '0x64', extra: index };
     const request = params[0] as { to: string; data: string }, parsed = abi.parseTransaction({ data: request.data })!;
     const blockHash = (params[1] as { blockHash: string }).blockHash;
+    if(parsed.name==='ownerOf')expect(String(parsed.args[0]).toLowerCase()).toBe(expectedOrigin);
     if ([a(2), a(6), a(8)].includes(request.to)) expect(blockHash).toBe(h(100));
     const old = blockHash === h(100);
     const values: Record<string, unknown> = {
@@ -40,6 +41,12 @@ it('rediscovers the original owner only at authenticated last-good registry stat
   expect(material.secret).toEqual(humanRecoverySecret(phrase, 4, h(11)));
   expect(material.signingSeed).toEqual(humanRecoverySigningSeed(phrase, 4, h(11)));
   material.secret.fill(0); material.signingSeed.fill(0);
+});
+it('follows an auxiliary origin through last-good history without querying the primary wallet or a sibling',async()=>{
+  const network=fixture('valid',a(123)),history=await discoverAddressIdentityHistory(a(123),network);
+  expect(history?.identity).toBe(h(11));expect(history?.rootAddress).toBe(a(123));
+  await expect(discoverAddressIdentityHistory(ZeroAddress,network)).rejects.toThrow('address_invalid');
+  await expect(discoverAddressIdentityHistory(a(123),fixture('disagree',a(123)))).rejects.toThrow('disagreement');
 });
 it('refuses disagreeing historical blocks and unrelated or wrong-backup commitments', async () => {
   await expect(discoverHumanIdentityHistory(phrase, fixture('disagree'))).rejects.toThrow('disagreement');

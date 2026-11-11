@@ -11,8 +11,12 @@ import { recoverHumanAccount } from './human-recovery';
 import { readRecoursePoolChain } from './pool-chain';
 import { readAddressRecoveryBinding } from './binding-chain';
 import { useWalletStore } from '../../store/walletStore';
+import SeedManager from '../wallet/SeedManager';
+import { readBreakRecoveryContext } from './break-recovery';
+import { recoverHumanAuxiliaryBreak } from './human-break-recovery';
 
 export interface RecourseView {
+  primaryIdentity: string | null;
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
@@ -29,6 +33,31 @@ function text(value: unknown, pattern: RegExp): string {
 }
 const atomic = /^(0|[1-9][0-9]*)$/, address = /^0x[0-9a-f]{40}$/, hash = /^0x[0-9a-f]{64}$/;
 export function pvtAmount(value: string): string { return formatUnits(value, 18); }
+
+/** Recover only the selected auxiliary lineage. Membership is irrelevant to
+ * restoring registered balances after a break; primary login stays untouched. */
+export async function recoverHumanBoundAddress(identity: string): Promise<void> {
+  text(identity, hash);
+  await withBiometricAction(translate('recourse.recoverAddress', 'Recover this wallet'), async action => {
+    const owner = object(await RelayAPIService.recourseRequest('ownership'));
+    if (owner.identity === identity || !Array.isArray(owner.addresses)) throw Error('recourse_auxiliary_binding_invalid');
+    const origins = owner.addresses.map(object).filter(row => row.identity === identity && row.recoveryGeneration === 0
+      && row.chainBindingStatus === 'confirmed');
+    if (origins.length !== 1) throw Error('recourse_auxiliary_binding_invalid');
+    const originAddress = text(origins[0].address, address), network = ownerChainNetwork();
+    let afterBreak = true;
+    try { await readBreakRecoveryContext(network); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== 'break_recovery_unavailable') throw error;
+      afterBreak = false;
+    }
+    if (afterBreak) {
+      const mnemonic = await SeedManager.getMnemonic(action);
+      if (!mnemonic) throw Error('recourse_seed_unavailable');
+      await recoverHumanAuxiliaryBreak(mnemonic, action, { identity, originAddress }, { network });
+    } else await recoverHumanAccount(action, { auxiliaryBinding: identity, newRecovery: true });
+  });
+}
 
 export async function submitHumanRestorationRequest(transactionHash: string, block: number, binding?: string): Promise<void> {
   text(transactionHash, hash);
@@ -60,7 +89,8 @@ export async function readRecourseView(): Promise<RecourseView> {
   const account = useWalletStore.getState().address;
   if (!account) throw Error('recourse_address_unavailable');
   let identity: string;
-  try { identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork()); }
+  let primaryIdentity: string | null = null;
+  try { identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork()); primaryIdentity = identity; }
   catch (error) {
     if (!(error instanceof Error) || error.message !== 'recourse_binding_required') throw error;
     // Public reserves and request-ID exits require no primary registration.
@@ -83,7 +113,7 @@ export async function readRecourseView(): Promise<RecourseView> {
     membership = { enrolled: privateView.enrolled, grace: privateView.grace, month: text(privateView.month, atomic),
       endMonthExclusive: text(privateView.endMonthExclusive, atomic), unpaidAtomic: text(privateView.unpaidAtomic, atomic) };
   } catch { /* The public reserve and direct allocated exit remain usable. */ }
-  return { identity, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
+  return { identity, primaryIdentity, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
     enrolled: membership?.enrolled ?? false, grace: membership?.grace ?? false, earningsBps: pool.earningsBps,
     month: membership?.month ?? pool.month, endMonthExclusive: membership?.endMonthExclusive ?? '0',
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,

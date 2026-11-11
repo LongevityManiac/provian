@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
 import { ExternalWalletProofFlow } from '../Agent/LinkExternalWalletScreen';
 
 export function RecourseBindScreen(): React.JSX.Element {
@@ -58,6 +58,13 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     catch { setError(true); }
     finally { setBusy(false); }
   };
+  const recoverAddress = async (identity: string) => {
+    if (busy) return;
+    setBusy(true); setError(false);
+    try { await recoverHumanBoundAddress(identity); await load(); }
+    catch { setError(true); }
+    finally { setBusy(false); }
+  };
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
@@ -93,7 +100,9 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>
           <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
           {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
-            {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}</View>)}
+            {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}
+            {row.confirmed && row.identity !== state.primaryIdentity
+              ? button(t('recourse.recoverAddress', 'Recover this wallet'), () => { void recoverAddress(row.identity); }) : null}</View>)}
           {button(t('recourse.bind', 'Bind an address you hold'), () => navigation.navigate('RecourseBind'))}
         </View>
         <View style={styles.card}>

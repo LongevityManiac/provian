@@ -5,7 +5,7 @@ import { assertBiometricAction, type BiometricAction } from '../security/biometr
 import { ownerChainNetwork } from '../protocol/runtime';
 import RelayAPIService from '../../services/RelayAPIService';
 import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
-import { discoverHumanIdentityHistory, discoverHistoricalCurveGeneration, recoverHumanHistoricalMaterial } from './human-break-history';
+import { discoverHumanIdentityHistory, discoverAddressIdentityHistory, discoverHistoricalCurveGeneration, recoverHumanHistoricalMaterial } from './human-break-history';
 import { discoverHumanHashAccountSelection, type HumanAccountSelection } from './human-account';
 import { readBreakRecoveryContext, prepareBreakRecovery, type PreparedBreakRecovery } from './break-recovery';
 import { parseBreakEntitlement } from './break-entitlement';
@@ -21,6 +21,7 @@ import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
 interface Journal {
   version: 1; identity: string; origin: string; requestId: string; authSecret: string; deviceId: string;
   destination?: string; prepared?: PreparedBreakRecovery; transactionHash?: string; userId?: string; credentialsInstalled?: boolean;
+  auxiliary?: true; bindingInstalled?: boolean;
 }
 const hash = /^0x[0-9a-f]{64}$/;
 async function save(key: string, value: Journal): Promise<void> {
@@ -75,30 +76,55 @@ export async function discoverHumanAccountForRestore(mnemonic: string, action: B
 /** Original backup material reconstructs every replacement key. The protected
  * journal fixes credentials and exact pending intent before publication; a
  * network wait never installs or selects an unverified account. */
-export function recoverHumanBreak(mnemonic: string, action: BiometricAction, options: {
+interface BreakOptions {
   network?: OwnerChainNetwork; signal?: AbortSignal; phase?(phase: FreeBreakRecoveryPhase): void;
-} = {}): Promise<{ identity: string; selection: HumanAccountSelection }> {
-  const run = tail.then(() => perform(mnemonic, action, options));
+}
+export function recoverHumanBreak(mnemonic: string, action: BiometricAction, options: BreakOptions = {}): Promise<{ identity: string; selection: HumanAccountSelection }> {
+  const run = tail.then(async () => {
+    const result = await perform(mnemonic, action, options);
+    if (!('selection' in result)) throw Error('recourse_break_result_invalid');
+    return result;
+  });
   tail = run.catch(() => undefined); return run;
 }
-async function perform(mnemonic: string, action: BiometricAction, options: {
-  network?: OwnerChainNetwork; signal?: AbortSignal; phase?(phase: FreeBreakRecoveryPhase): void;
-}): Promise<{ identity: string; selection: HumanAccountSelection }> {
+export function recoverHumanAuxiliaryBreak(mnemonic: string, action: BiometricAction,
+  binding: { identity: string; originAddress: string }, options: BreakOptions = {}): Promise<{ identity: string; destination: string }> {
+  const run = tail.then(async () => {
+    const result = await perform(mnemonic, action, { ...options, auxiliary: binding });
+    if (!('destination' in result)) throw Error('recourse_break_result_invalid');
+    return result;
+  });
+  tail = run.catch(() => undefined); return run;
+}
+async function perform(mnemonic: string, action: BiometricAction, options: BreakOptions & {
+  auxiliary?: { identity: string; originAddress: string };
+}): Promise<{ identity: string; selection: HumanAccountSelection } | { identity: string; destination: string }> {
   assertBiometricAction(action); options.signal?.throwIfAborted();
   const network = options.network ?? ownerChainNetwork();
-  const history = await discoverHumanIdentityHistory(mnemonic, network);
+  if (options.auxiliary) {
+    const owned = reply(await RelayAPIService.recourseRequest('ownership'));
+    if (!hash.test(options.auxiliary.identity) || owned.identity === options.auxiliary.identity || !Array.isArray(owned.addresses)
+      || !owned.addresses.some(value => { const row = reply(value); return row.identity === options.auxiliary!.identity
+        && row.address === options.auxiliary!.originAddress && row.recoveryGeneration === 0 && row.chainBindingStatus === 'confirmed'; })) {
+      throw Error('recourse_auxiliary_binding_invalid');
+    }
+  }
+  const history = options.auxiliary ? await discoverAddressIdentityHistory(options.auxiliary.originAddress, network)
+    : await discoverHumanIdentityHistory(mnemonic, network);
   if (!history) throw Error('recourse_binding_required');
+  if (options.auxiliary && history.identity !== options.auxiliary.identity) throw Error('recourse_auxiliary_binding_invalid');
   const identity = history.identity, origin = await readBreakRecoveryContext(network);
   if (history.points[0].breakOrigin !== origin) throw Error('recourse_break_history_changed');
-  const key = `provian_break_recovery_${identity.slice(2)}_${origin.slice(2)}`;
+  const key = `provian_break_recovery_${identity.slice(2)}_${origin.slice(2)}${options.auxiliary ? '_aux' : ''}`;
   const stored = await SecureStore.getItemAsync(key);
   const state: Journal = stored === null ? { version: 1, identity, origin,
     requestId: hexlify(Crypto.getRandomBytes(32)), authSecret: hexlify(Crypto.getRandomBytes(32)).slice(2),
-    deviceId: await RelayAPIService.getMeterDeviceId() } : JSON.parse(stored) as Journal;
+    deviceId: await RelayAPIService.getMeterDeviceId(), ...(options.auxiliary ? { auxiliary: true } : {}) } : JSON.parse(stored) as Journal;
   if (state.version !== 1 || state.identity !== identity || state.origin !== origin || !hash.test(state.requestId)
-    || !/^[0-9a-f]{64}$/.test(state.authSecret) || !/^[a-zA-Z0-9_-]{1,128}$/.test(state.deviceId)) throw Error('recourse_break_journal_invalid');
+    || !/^[0-9a-f]{64}$/.test(state.authSecret) || !/^[a-zA-Z0-9_-]{1,128}$/.test(state.deviceId)
+    || Boolean(state.auxiliary) !== Boolean(options.auxiliary)) throw Error('recourse_break_journal_invalid');
   await save(key, state);
-  const legacyGeneration = await discoverHistoricalCurveGeneration(mnemonic, history, network);
+  const legacyGeneration = options.auxiliary ? 0 : await discoverHistoricalCurveGeneration(mnemonic, history, network);
   const context = { identity, breakOrigin: origin, chainId: '8453' };
   const destinationSigningSeed = humanBreakKey(mnemonic, context, 'spending', '0');
   const nextRecoverySecret = humanBreakKey(mnemonic, context, 'recovery-secret', '1');
@@ -167,6 +193,40 @@ async function perform(mnemonic: string, action: BiometricAction, options: {
     try {
       if (await recoverySigningRoot(signingSeed) !== account.currentRoot) throw Error('recourse_hash_account_key_mismatch');
       const preimage = concat([details.proof.recoverySecret, details.proof.signingRoot]), expiresAtMs = Date.now() + 300000;
+      if (options.auxiliary) {
+        // A restored seed can discover a completed chain + relay cut without
+        // the device journal. Reuse only the private request ID bound to this
+        // independently verified transaction and exact derived destination.
+        const owned = reply(await RelayAPIService.recourseRequest('ownership'));
+        if (owned.identity === identity || !Array.isArray(owned.addresses)) throw Error('recourse_auxiliary_binding_invalid');
+        const completed = owned.addresses.map(reply).filter(row => row.identity === identity
+          && row.address === account.account && row.chainBindingStatus === 'confirmed'
+          && row.authorizationTxHash === state.transactionHash);
+        if (completed.length > 1) throw Error('recourse_break_discovery_ambiguous');
+        if (completed.length) {
+          const requestId = completed[0].recoveryRequestId;
+          if (typeof requestId !== 'string' || !hash.test(requestId)
+            || (state.bindingInstalled && requestId !== state.requestId)) throw Error('recourse_break_reply_invalid');
+          state.requestId = requestId; await save(key, state);
+        }
+        const body = { kernel: prepared.kernel, identity, preimage, destination: prepared.destination,
+          nextCommitment: details.proof.nextCommitment, nextSigningRoot: details.proof.nextSigningRoot,
+          authorizationTxHash: state.transactionHash, authorizationNonce: owner.nonce - 1,
+          requestId: state.requestId, expiresAtMs, destinationKind: 'hash' as const, breakDestinationRoot: initialRoot };
+        const message = ['Provian auxiliary ownership recovery', 'chain:8453', `kernel:${body.kernel}`, `identity:${identity}`,
+          `recovery:${sha256(preimage)}`, `destination:${body.destination}`, `next:${body.nextCommitment}`,
+          `next-hash-authority:${body.nextSigningRoot}`, `authorization:${body.authorizationTxHash}`,
+          `authorization-nonce:${body.authorizationNonce}`, `request:${state.requestId}`, `expires:${expiresAtMs}`,
+          'destination-signature:hash', `break-destination-root:${initialRoot}`].join('\n');
+        assertBiometricAction(action);
+        const signature = await signHashAccountMessage(account.account, hashMessage(message), signingSeed);
+        const result = reply(await RelayAPIService.recourseRequest('recover-address', { ...body, signature }, action));
+        if (result.identity !== identity || result.destination !== account.account
+          || !Number.isSafeInteger(result.generation) || Number(result.generation) < 1) throw Error('recourse_break_reply_invalid');
+        await verifyBreakRecoveryReceipt(prepared, state.transactionHash, network);
+        state.bindingInstalled = true; await save(key, state);
+        return { identity, destination: account.account };
+      }
       const body = { kernel: prepared.kernel, identity, preimage, destination: prepared.destination,
         nextCommitment: details.proof.nextCommitment, nextSigningRoot: details.proof.nextSigningRoot,
         authorizationTxHash: state.transactionHash, authorizationNonce: owner.nonce - 1,

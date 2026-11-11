@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "Lịch sử địa chỉ và yêu cầu tạm thời không khả dụng. Các khoản khôi phục đã phân bổ vẫn có thể được rút trực tiếp trên chuỗi bằng mã yêu cầu.",
     "bindingPending": "Đã gửi đăng ký; đang chờ xác nhận trên chuỗi.",
+    "recoverAddress": "Khôi phục ví này",
     "selectRestorationWallet": "Chọn ví đã mất PVT",
     "requestExplanation": "Nhập giao dịch đã lấy PVT của bạn và khối Base tương ứng. Bằng chứng khôi phục thiết lập khóa ví mới; relay kiểm tra giao dịch và hồ sơ trao đổi được chứng thực trước khi quyết định. Bản sao lưu cụm từ gốc vẫn khôi phục được ví của bạn.",
     "lossTransaction": "Mã băm giao dịch",

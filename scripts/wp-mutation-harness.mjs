@@ -304,6 +304,13 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'auxiliary-break-retry': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-break-recovery.ts',
+    testMatchPath: 'src/core/recourse/human-break-recovery.test.ts',
+    mutations: [{ id: 'AUXILIARY-REINSTALL-REQUEST', description: 'retry consumed break authority with a fresh device request ID',
+      find: 'state.requestId = requestId; await save(key, state);', replace: 'await save(key, state);',
+      expectedKilledBy: 'a completed auxiliary relay cut survives loss of the local journal without replaying consumed authority under a new request' }],
+  },
   'settlement-terminal-winner': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/settlement-cycle-runner.ts',
     testMatchPath: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',
@@ -1791,7 +1798,7 @@ function runScopedJestSuite(testMatchPath, sdkVitest = false) {
   const res = spawnSync(
     'npx',
     [...(sdkVitest ? ['vitest', 'run', '--config', 'vitest.config.ts', '--reporter=json'] : ['jest', '--json', '--silent']), ...testMatchPath.split(/\s+/).filter(Boolean)],
-    { cwd: path.join(REPO_ROOT, sdkVitest ? 'provian-agent-sdk' : 'provian-backend'), encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
+    { cwd: sdkVitest === 'native' ? REPO_ROOT : path.join(REPO_ROOT, sdkVitest ? 'provian-agent-sdk' : 'provian-backend'), encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
   );
   const stdout = res.stdout || '';
   const stderr = res.stderr || '';
@@ -2094,7 +2101,7 @@ function verifyRegistry() {
       if (n !== 1) bad.push(`${name}  ${m.id}: find occurs ${n}x (must be exactly 1)`);
     }
     // Solidity sets only: the jest sets use a space-separated path list, not a glob.
-    if (!['jest', 'sdk-vitest'].includes(set.runner)) {
+    if (!['jest', 'sdk-vitest', 'native-vitest'].includes(set.runner)) {
       const { problems, files, expected, inScope } = auditGlob(name, set);
       bad.push(...problems);
       const extra = [...inScope].filter((f) => !expected.includes(f)).sort();
@@ -2247,13 +2254,14 @@ function main() {
 
   console.log(`# wp-mutation-harness — ${args.contract}`);
   console.log(`# source ${set.sourcePath}  (sha256 ${originalSha.slice(0, 12)})`);
-  console.log(set.runner === 'sdk-vitest' ? `# suite  npx vitest run --reporter=json ${set.testMatchPath}` : set.runner === 'jest'
+  console.log(['sdk-vitest', 'native-vitest'].includes(set.runner) ? `# suite  npx vitest run --reporter=json ${set.testMatchPath}` : set.runner === 'jest'
     ? `# suite  npx jest --json ${set.testMatchPath}`
     : `# suite  forge test --root contracts --match-path '${set.testMatchPath}' --json`);
   console.log('');
 
   // Baseline: the pristine suite MUST pass, or a "killed" verdict is meaningless.
-  const runSuite = set.runner === 'sdk-vitest' ? path => runScopedJestSuite(path, true) : set.runner === 'jest' ? runScopedJestSuite : runScopedSuite;
+  const runSuite = set.runner === 'native-vitest' ? path => runScopedJestSuite(path, 'native')
+    : set.runner === 'sdk-vitest' ? path => runScopedJestSuite(path, true) : set.runner === 'jest' ? runScopedJestSuite : runScopedSuite;
   const base = runSuite(set.testMatchPath);
   if (!base.ran) {
     console.error('FATAL: pristine suite did not compile/run:\n' + base.stderr.split('\n').slice(0, 20).join('\n'));

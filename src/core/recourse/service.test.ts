@@ -1,7 +1,8 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { readRecourseHistory, readRecourseView, submitHumanRestorationRequest, type RecourseView } from './service';
+import { readRecourseHistory, readRecourseView, submitHumanRestorationRequest, recoverHumanBoundAddress, type RecourseView } from './service';
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
-  history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '' }));
+  history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
+  breakContext: vi.fn(), recoverBreak: vi.fn() }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   if (f.relayDown) throw Error('unavailable');
@@ -22,12 +23,28 @@ vi.mock('./pool-chain', () => ({ readRecoursePoolChain: async (identity: string)
 vi.mock('../security/biometricAction', () => ({ withBiometricAction: async (_title: string, run: (action: unknown) => unknown) => run('approved') }));
 vi.mock('../../i18n/translate', () => ({ translate: (_key: string, fallback: string) => fallback }));
 vi.mock('./human-recovery', () => ({ recoverHumanAccount: (...args: unknown[]) => f.recovery(...args) }));
+vi.mock('./human-break-recovery', () => ({ recoverHumanAuxiliaryBreak: (...args: unknown[]) => f.recoverBreak(...args) }));
+vi.mock('./break-recovery', () => ({ readBreakRecoveryContext: (...args: unknown[]) => f.breakContext(...args) }));
+vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 'test backup' } }));
 vi.mock('./human-restoration-exit', () => ({ withdrawHumanRestoration: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: a('12'), setAddress: f.setAddress }) } }));
 beforeEach(() => {
   f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
   f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44') });
+  f.breakContext.mockReset(); f.recoverBreak.mockReset(); f.breakContext.mockResolvedValue(a('99'));
+});
+it('recovers an auxiliary after a break without membership or primary changes and never falls back on unverifiable history',async()=>{
+  f.history={identity:null,addresses:[{identity:h('55'),address:a('22'),recoveryGeneration:0,chainBindingStatus:'confirmed'}]};
+  await recoverHumanBoundAddress(h('55'));
+  expect(f.recoverBreak).toHaveBeenCalledWith('test backup','approved',{identity:h('55'),originAddress:a('22')},{network:{}});
+  expect(f.recovery).not.toHaveBeenCalled();expect(f.setAddress).not.toHaveBeenCalled();
+  f.breakContext.mockRejectedValueOnce(Error('break_recovery_unavailable'));
+  await recoverHumanBoundAddress(h('55'));
+  expect(f.recovery).toHaveBeenCalledWith('approved',{auxiliaryBinding:h('55'),newRecovery:true});
+  f.recovery.mockClear();f.recoverBreak.mockClear();f.breakContext.mockRejectedValueOnce(Error('break_recovery_rpc_disagreement'));
+  await expect(recoverHumanBoundAddress(h('55'))).rejects.toThrow('disagreement');
+  expect(f.recovery).not.toHaveBeenCalled();expect(f.recoverBreak).not.toHaveBeenCalled();
 });
 it('submits auxiliary restoration under its selected binding without changing the primary wallet address', async () => {
   await submitHumanRestorationRequest(h('33'), 100, h('55'));

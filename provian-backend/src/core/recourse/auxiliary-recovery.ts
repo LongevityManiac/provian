@@ -92,6 +92,7 @@ Promise<{ identity: string; destination: string; generation: number }> {
         checkOwner(binding, portfolio);
         const prepared = await prepareRecoveryTransaction(deps.db, tx, { ...proof, authorization });
         if (!prepared.replay || destination.get('identity') !== input.identity || destination.get('ownerIdentity') !== ownerIdentity
+          || destination.get('recoveryRequestId') !== input.requestId || destination.get('authorizationTxHash') !== input.authorizationTxHash
           || destination.get('recoveryGeneration') !== prepared.generation || binding.get('recoveryGeneration') !== prepared.generation
           || binding.get('recoveryCommitment') !== input.nextCommitment || binding.get('signingRoot') !== input.nextSigningRoot) throw Error('recourse_auxiliary_replay_invalid');
         return { identity: input.identity, destination: input.destination, generation: prepared.generation };
@@ -131,6 +132,7 @@ Promise<{ identity: string; destination: string; generation: number }> {
         const binding: RegisteredAddress = { identity: input.identity, ownerIdentity, address: input.destination, kernel,
           boundBlock: baselineBlock, boundBlockHash: baselineHash, boundAtMs: nowMs, openingBalanceAtomic: balance.toString(),
           bindingDigest: ethers.hashMessage(message), recoveryGeneration: prepared.generation,
+          recoveryRequestId: input.requestId, authorizationTxHash: input.authorizationTxHash,
           chainBindingStatus: 'confirmed', ledgerNeedsCatchup: true };
         tx.create(destinationRef, binding);
       },

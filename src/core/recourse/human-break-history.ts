@@ -36,7 +36,15 @@ async function call(network: OwnerChainNetwork, target: string, method: string, 
  * current bindings. Follow immutable break origins and read each predecessor at
  * the last-good block instead. The relay cannot select an identity or a signer. */
 export async function discoverHumanIdentityHistory(mnemonic: string, network: OwnerChainNetwork): Promise<HumanIdentityHistory | null> {
-  const root = await deriveHumanAccount(mnemonic, 0), deployment = await network.deployment();
+  const root = await deriveHumanAccount(mnemonic, 0);
+  return discoverAddressIdentityHistory(root.evm, network);
+}
+
+/** An auxiliary binding is looked up by its original address, not by a sibling
+ * or portfolio identifier. Every registry read uses its authenticated cutoff. */
+export async function discoverAddressIdentityHistory(originAddress: string, network: OwnerChainNetwork): Promise<HumanIdentityHistory | null> {
+  if (!/^0x[0-9a-f]{40}$/.test(originAddress) || originAddress === ZeroAddress) throw Error('recourse_history_address_invalid');
+  const deployment = await network.deployment();
   let kernel = deployment.addresses.kernel.toLowerCase(), blockHash = deployment.blockHash;
   let ownerIdentity: string | null = null;
   const points: HumanRecoveryHistoryPoint[] = [], seen = new Set<string>();
@@ -50,14 +58,14 @@ export async function discoverHumanIdentityHistory(mnemonic: string, network: Ow
       || String(await call(network, executor, 'kernel', [], blockHash)).toLowerCase() !== kernel) throw Error('recourse_break_history_invalid');
     const origin = String(await call(network, executor, 'breakOrigin', [], blockHash)).toLowerCase();
     points.push({ kernel, executor, breakOrigin: origin, blockHash });
-    const identity = String(await call(network, registry, 'ownerOf', [root.evm], blockHash));
+    const identity = String(await call(network, registry, 'ownerOf', [originAddress], blockHash));
     if (identity !== ZeroHash) {
       if (ownerIdentity !== null && ownerIdentity !== identity) throw Error('recourse_break_history_identity_conflict');
       ownerIdentity = identity;
     }
     if (origin === ZeroAddress) {
       if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_break_history_changed');
-      return ownerIdentity === null ? null : { identity: ownerIdentity, rootAddress: root.evm, manifestHash: deployment.manifestHash, points };
+      return ownerIdentity === null ? null : { identity: ownerIdentity, rootAddress: originAddress, manifestHash: deployment.manifestHash, points };
     }
     const previous = String(await call(network, origin, 'predecessor', [], blockHash)).toLowerCase();
     const cutoff = BigInt(await call(network, origin, 'lastGoodBlock', [], blockHash));

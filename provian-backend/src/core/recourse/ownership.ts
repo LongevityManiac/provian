@@ -85,6 +85,9 @@ export interface RegisteredAddress {
   readonly recoveryGeneration: number;
   readonly chainBindingStatus?: 'pending' | 'confirmed';
   readonly ledgerNeedsCatchup?: boolean;
+  /** Private retry provenance for a completed recovery, never a portfolio ID. */
+  readonly recoveryRequestId?: string;
+  readonly authorizationTxHash?: string;
 }
 
 /**

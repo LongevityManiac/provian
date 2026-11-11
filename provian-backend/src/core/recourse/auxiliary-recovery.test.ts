@@ -88,3 +88,18 @@ test('transaction-time owner substitution is refused after a valid chain proof',
   expect(f.db.store.has(`${R.recoveries}/${f.input.requestId}`)).toBe(false);
   expect(f.db.store.has(`${R.addresses}/${f.input.destination}`)).toBe(false);
 });
+test('an auxiliary break resets its authorization domain and requires fresh hash-account possession',async()=>{
+  const f=await fixture();
+  f.db.store.get(`${R.identities}/${f.input.identity}`)!.lastAuthorizationNonce=9;
+  const input:AuxiliaryRecoveryRequest={...f.input,destinationKind:'hash',breakDestinationRoot:h('99'),signature:`0x${'11'.repeat(7888)}`};
+  expect(parseAuxiliaryRecoveryRequest(input)).toEqual(input);
+  const verifyHashDestination=jest.fn(async()=>{});
+  const deny=jest.fn(async()=>{throw Error('hash_proof_invalid');});
+  const before=JSON.stringify([...f.db.store]);
+  await expect(recoverAuxiliaryOwnership(f.deps,f.owner,input,f.now,{...f.ports,verifyHashDestination:deny})).rejects.toThrow('hash_proof_invalid');
+  expect(JSON.stringify([...f.db.store])).toBe(before);
+  await expect(recoverAuxiliaryOwnership(f.deps,f.owner,input,f.now,{...f.ports,verifyHashDestination})).resolves.toEqual({
+    identity:input.identity,destination:input.destination,generation:1});
+  expect(verifyHashDestination).toHaveBeenCalledWith(input.destination,auxiliaryRecoveryMessage(input),input.signature);
+  expect(f.db.store.get(`auth_secrets/${f.owner.id}`)?.secret).toBe('PRIMARY_LOGIN_UNCHANGED');
+});

@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "L’historique des adresses et des demandes est temporairement indisponible. Une restauration attribuée peut toujours être retirée directement sur la chaîne avec l’identifiant de demande.",
     "bindingPending": "Enregistrement envoyé ; confirmation sur la chaîne en attente.",
+    "recoverAddress": "Récupérer ce portefeuille",
     "selectRestorationWallet": "Sélectionnez le portefeuille qui a perdu des PVT",
     "requestExplanation": "Indiquez la transaction qui a emporté vos PVT et son bloc Base. Votre preuve de récupération établit une nouvelle clé de portefeuille ; le relais vérifie la transaction et les échanges attestés avant de prendre une détermination. La sauvegarde de votre phrase d’origine permet toujours de restaurer votre portefeuille.",
     "lossTransaction": "Hash de transaction",
