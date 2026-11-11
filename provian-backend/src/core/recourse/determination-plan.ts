@@ -2,7 +2,7 @@ import { AbiCoder, Interface, sha256 } from 'ethers';
 import { assertCheckedDetermination, type CheckedDetermination } from './determination';
 import { utcCalendarMonth } from './calendar-month';
 import { RECOURSE_POOL_ABI } from './pool-abi';
-export const REVERSAL_TUPLE = 'tuple(bytes32 request,bytes32 identity,address destination,address[] sources,uint256[] amounts,uint256[] sourceSequences,address[] observationAccounts,uint256[] observationSequences,uint256 poolShortfall,bytes32 evidenceHash)';
+export const REVERSAL_TUPLE = 'tuple(bytes32 request,bytes32 identity,address destination,address[] sources,uint256[] amounts,uint256[] sourceSequences,address[] observationAccounts,uint256[] observationSequences,uint256 poolShortfall,uint256 restorationRevision,bytes32 evidenceHash)';
 export const THEFT_EVIDENCE_TUPLE = 'tuple(address kernel,bytes32 operation,bytes32 identity,address lossAccount,uint256 lossBlock,bytes32 checkpointHash,bytes32 membershipHash,uint256 revision,uint256 bindingLogIndex,uint256 lossLogIndex)';
 export const RESTORATION_EXECUTION_ABI = new Interface([
   `function executeRestorationIntent(${REVERSAL_TUPLE} reversal,uint256 revision)`,
@@ -27,7 +27,7 @@ export function determinationPlan(value: CheckedDetermination, execution: {
   const reversal = { request:packet.request, identity:packet.ticket.identity, destination:packet.ticket.currentDestination,
     sources:trace.sources.map(source=>source.address), amounts:trace.sources.map(source=>source.amountAtomic),
     sourceSequences:trace.sources.map(source=>source.outgoingSequence),
-    observationAccounts:observations.map(row=>row.address), observationSequences:observations.map(row=>row.outgoingSequence), poolShortfall:trace.shortfallAtomic, evidenceHash:value.evidenceHash };
+    observationAccounts:observations.map(row=>row.address), observationSequences:observations.map(row=>row.outgoingSequence), poolShortfall:trace.shortfallAtomic, restorationRevision:packet.evidence.restorationRevision, evidenceHash:value.evidenceHash };
   const scopeHash = sha256(coder.encode(['string','tuple(bytes32 request,bytes32 identity,address destination,bytes32 lossHash,uint256 maximumLoss)'],
     ['Provian bounded restoration intent', packet.ticket]));
   const operation = sha256(coder.encode(['string','bytes32',REVERSAL_TUPLE],['Provian scoped theft reversal',scopeHash,reversal]));

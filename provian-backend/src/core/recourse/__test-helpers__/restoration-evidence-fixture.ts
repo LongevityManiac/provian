@@ -18,7 +18,7 @@ export function fixture(): {snapshot:LossSnapshot;port:RestorationEvidencePort;e
   const snapshot:LossSnapshot={identity,kernel:token,block:100,blockHash:hash(100),transactionHash:hash(1000),firstOutflowLogIndex:0,
     recordedBalanceAtomic:'100',lossAtomic:'100',addresses:[{address:owner,balanceAtomic:'100',bindingDigest:hash(7)}],outflows:[event],occurrence:hash(8),evidenceHash:hash(9)};
   const port:RestorationEvidencePort={currentKernel:async()=>token,transaction:async()=>transaction,verifiedIdentity:async()=>null,privateOwner:async binding=>binding,
-    call:async(_target,method,args)=>method==='registryOperator'?address(8):method==='outgoingSequence'?'1':args[0]===owner||state.alias?identity:hash(0),
+    call:async(_target,method,args)=>method==='registryOperator'?address(8):method==='ownerAuthorization'?address(7):method==='restorationRevision'?'3':method==='outgoingSequence'?'1':args[0]===owner||state.alias?identity:hash(0),
     chain:{finalizedBlock:async()=>101,blockHash:async n=>hash(n),
       balance:async(_kernel,account,pin)=>pin===hash(99)?account===owner?100n:0n:account===owner?0n:state.closing,
       transfers:async()=>[event]}};

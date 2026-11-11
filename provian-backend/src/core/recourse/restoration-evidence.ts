@@ -16,12 +16,12 @@ import { traceRestoration, type TraceCheckpoint, type TracedTransfer, type Resto
 
 const ZERO = `0x${'0'.repeat(40)}`;
 const abi = new Interface(['function registryOperator() view returns(address)', 'function ownerOf(address) view returns(bytes32)',
-  'function outgoingSequence(address) view returns(uint256)', 'function transfer(address,uint256)', 'function transferCurrent(address,uint256,uint256)']);
+  'function outgoingSequence(address) view returns(uint256)', 'function ownerAuthorization() view returns(address)', 'function restorationRevision() view returns(uint256)', 'function transfer(address,uint256)', 'function transferCurrent(address,uint256,uint256)']);
 const digest = (value: unknown): string => `0x${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
 export interface RestorationEvidencePort {
   readonly chain: RecourseChainPort;
   transaction(hash: string): Promise<BaseTransactionEvidence>;
-  call(target: string, method: 'registryOperator' | 'ownerOf' | 'outgoingSequence', args: readonly unknown[], blockHash: string): Promise<string>;
+  call(target: string, method: 'registryOperator' | 'ownerOf' | 'outgoingSequence' | 'ownerAuthorization' | 'restorationRevision', args: readonly unknown[], blockHash: string): Promise<string>;
   currentKernel(): Promise<string>;
   lineage?(lossKernel:string): Promise<RestorationLineage>;
   migrationMint?(migration:RestorationMigration,account:string,through:number): Promise<MigrationBalance|null>;
@@ -95,7 +95,7 @@ export function classifyRestorationReceipt(kernel: string, event: TransferEvent,
     && exchange.carrier.log.address === kernel && exchange.carrier.log.logIndex === event.logIndex) return 'witnessed_exchange';
   return 'unresolved';
 }
-export interface CheckedRestorationEvidence { readonly executionKernel:string; readonly checkpoint: TraceCheckpoint; readonly trace: RestorationTrace; }
+export interface CheckedRestorationEvidence { readonly executionKernel:string; readonly restorationRevision:string; readonly checkpoint: TraceCheckpoint; readonly trace: RestorationTrace; }
 const checked = new WeakSet<CheckedRestorationEvidence>();
 export function assertRestorationEvidence(value: CheckedRestorationEvidence): void {
   if (!checked.has(value)) throw new Error('recourse_evidence_unverified');
@@ -114,6 +114,9 @@ export async function collectRestorationEvidence(snapshot: LossSnapshot, port: R
   const openingHash = await port.chain.blockHash(snapshot.block - 1);
   if (block < snapshot.block || !blockHash || !openingHash || await port.chain.blockHash(snapshot.block) !== snapshot.blockHash) throw new Error('recourse_evidence_checkpoint_invalid');
   const registry = await port.call(executionKernel, 'registryOperator', [], blockHash);
+  const authorization = await port.call(executionKernel, 'ownerAuthorization', [], blockHash);
+  const restorationRevision = await port.call(authorization, 'restorationRevision', [], blockHash);
+  if (!/^(0|[1-9][0-9]*)$/.test(restorationRevision) || BigInt(restorationRevision) >= (1n << 256n)) throw Error('recourse_evidence_revision_invalid');
   const privateOwner = await port.privateOwner(snapshot.identity);
   if (privateOwner === null) throw Error('recourse_evidence_owner_unusable');
   const migrations=lineage?.migrations ?? [];
@@ -174,5 +177,5 @@ export async function collectRestorationEvidence(snapshot: LossSnapshot, port: R
   if (await port.chain.blockHash(block) !== blockHash || await port.chain.blockHash(snapshot.block) !== snapshot.blockHash
     || await port.chain.blockHash(snapshot.block - 1) !== openingHash || executionKernel !== await port.currentKernel()) throw new Error('recourse_evidence_checkpoint_changed');
   if(lineage && port.lineage && (await port.lineage(snapshot.kernel)).manifestHash!==lineage.manifestHash)throw Error('recourse_evidence_checkpoint_changed');
-  const result = { executionKernel, checkpoint, trace }; checked.add(result); return result;
+  const result = { executionKernel, restorationRevision, checkpoint, trace }; checked.add(result); return result;
 }

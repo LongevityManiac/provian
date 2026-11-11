@@ -111,7 +111,8 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         ProvianRestorationAuthorization.Reversal memory r) private pure returns(bytes32) {
         return sha256(abi.encode("Provian scoped theft reversal",sha256(abi.encode("Provian bounded restoration intent",intent)),r));
     }
-    function reversal(uint256 amount) private pure returns (ProvianRestorationAuthorization.Reversal memory r) {
+    function reversal(uint256 amount) private view returns (ProvianRestorationAuthorization.Reversal memory r) {
+        r.restorationRevision = authorization.restorationRevision();
         r.request = bytes32(uint256(1)); r.identity = ID; r.destination = DESTINATION;
         r.sources = new address[](1); r.sources[0] = THIEF;
         r.amounts = new uint256[](1); r.amounts[0] = amount;
@@ -410,6 +411,18 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         assertEq(kernel.balanceOf(DESTINATION), 0);
         assertEq(authorization.reversalOutcome(r.request), sha256(abi.encode(r.request, ID, DESTINATION, r.poolShortfall, r.evidenceHash)));
     }
+    function testImportedFundsInvalidateAStaleReversalWithoutAnOutgoingTransfer() public {
+        assertEq(authorization.restorationRevision(),1);
+        assertEq(kernel.outgoingSequence(THIEF),0);
+        ProvianRestorationAuthorization.Reversal memory r=reversal(100 ether);
+        r.restorationRevision=0;sign(r);
+        vm.prank(ADMIN);vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector);execute(r);
+        assertEq(kernel.balanceOf(THIEF),123 ether);assertEq(kernel.balanceOf(DESTINATION),0);
+        assertTrue(evidence[signedOperation]);
+        r.restorationRevision=authorization.restorationRevision();sign(r);
+        vm.prank(ADMIN);execute(r);
+        assertEq(kernel.balanceOf(DESTINATION),100 ether);
+    }
     function testAuthorityIsAppointableAndOrdinaryTransfersRemainPermissionless() public {
         vm.prank(ADMIN); kernel.appointRestorationAuthority(address(0x999));
         assertEq(kernel.restorationAuthority(), address(0x999));
@@ -455,6 +468,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         }
         vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector);
         auth.registerBreakOwner(ID, amount + 1, proof.recoverySecret, proof.signingRoot, new bytes32[](0));
+        assertEq(auth.restorationRevision(),0);
         auth.registerBreakOwner(ID, amount, proof.recoverySecret, proof.signingRoot, new bytes32[](0));
         assertTrue(auth.snapshotRecoveryPending(ID));
         bytes memory prematureRotation=abi.encode(uint8(2),abi.encode(ID,DESTINATION,uint256(1)));
@@ -477,6 +491,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         assertTrue(admin.execute(address(auth), 0, callGas, data, nextAdmin, adminPublic, adminSignature));
         assertEq(successor.balanceOf(address(destination)), amount);
         assertEq(successor.totalSupply(), amount);
+        assertEq(auth.restorationRevision(),1);
         assertTrue(auth.restoredIdentity(ID));
         assertFalse(auth.snapshotRecoveryPending(ID));
         vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector);
@@ -518,6 +533,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         assertEq(successor.totalSupply(), 123 ether);
         assertEq(successor.restoredBalance(), 123 ether);
         assertTrue(auth.successionReady());
+        assertEq(auth.restorationRevision(),1);
         assertEq(auth.importedInstitutionCount(),1);assertEq(auth.importedInstitutionAmount(),123 ether);
         vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector);
         auth.importInstitutionBalance(oldInstitution, address(institution), 123 ether, codeHash, empty);

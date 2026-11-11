@@ -118,6 +118,9 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
             : ProvianRestorationAuthorization(previousAuthorization).recoveredDestination(identity);
     }
     error InvalidRestoration();
+    // Imports can make previously unreachable funds spendable without an
+    // outgoing transfer. Exact determinations bind this execution checkpoint.
+    uint256 public restorationRevision;
     event BalanceMigrated(address indexed previousOwner, address indexed destination, uint256 amount);
     event IdentityRestored(bytes32 indexed identity, address indexed destination, uint256 amount);
     event ReversalHistoryImported(bytes32 indexed request, bytes32 indexed identity, uint256 shortfall, bytes32 evidenceHash);
@@ -175,6 +178,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
         _verifySnapshot(leaf, proof);
         migratedAddress[previousOwner] = true;
         ordinaryImportedBalance += amount;
+        ++restorationRevision;
         IRestorationKernel(kernel).importAuthorizedBalance(destination, amount);
         emit BalanceMigrated(previousOwner, destination, amount);
     }
@@ -212,6 +216,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
         if (!ok || result.length != 32 || abi.decode(result, (address)) != kernel) revert InvalidRestoration();
         migratedAddress[previousInstitution] = true;
         ++importedInstitutionCount;importedInstitutionAmount += amount;
+        ++restorationRevision;
         IRestorationKernel(kernel).importAuthorizedBalance(destination, amount);
         emit BalanceMigrated(previousInstitution, destination, amount);
     }
@@ -261,6 +266,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
             address(r.destination), r.destinationKeyRoot, source.predecessor(), source.lastGoodBlock()));
         _requireOwnerOperation(r.identity, operation);
         _restoredIdentity[r.identity] = true;
+        ++restorationRevision;
         if (r.amount != 0) IRestorationKernel(kernel).importAuthorizedBalance(address(r.destination), r.amount);
         _recoveredDestination[r.identity] = address(r.destination);
         IRestorationEvidence(IRestorationKernel(kernel).registryOperator()).bindRecovered(r.identity, address(r.destination));
@@ -276,6 +282,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
         address[] observationAccounts;
         uint256[] observationSequences;
         uint256 poolShortfall;
+        uint256 restorationRevision;
         bytes32 evidenceHash;
     }
     /// @notice One recovery action can authorize a named loss before its exact
@@ -364,7 +371,7 @@ contract ProvianRestorationAuthorization is RecourseOwnerAuthorization {
         _reverseTheftAuthorized(reversal, expectedRevision, operation);
     }
     function _reverseTheftAuthorized(Reversal memory reversal, uint256 expectedRevision, bytes32 operation) private {
-        if (!reversalHistoryReady() || reversal.request == bytes32(0) || reversalExecuted(reversal.request) || reversal.evidenceHash == bytes32(0)
+        if (reversal.restorationRevision != restorationRevision || !reversalHistoryReady() || reversal.request == bytes32(0) || reversalExecuted(reversal.request) || reversal.evidenceHash == bytes32(0)
             || IRestorationPoolHistory(IRestorationKernel(kernel).protocolPointer().component(8)).determined(reversal.request)) revert InvalidRestoration();
         // A protected or unresolved recipient can return the loss before this
         // transaction lands. Fence every observed trail holder, not only the

@@ -50,6 +50,7 @@ test('execution calldata fixes the ticket, exact trace, membership generation an
   expect(plan.reversal.sources).toHaveLength(0);
   expect(plan.reversal.observationAccounts).toEqual(f.packet.evidence.checkpoint.accounts.map(row=>row.address).sort());
   expect(plan.reversal.observationAccounts.length).toBeGreaterThan(1);
+  expect(plan.reversal.restorationRevision).toBe('3');
   expect(plan.reversal.observationSequences).toHaveLength(plan.reversal.observationAccounts.length);
   expect(plan.poolCall).toBeNull(); // positive shortfalls join one pro-rata batch
   expect(RECOURSE_POOL_ABI.parseTransaction({data:plan.deliveryCall!})!.args.identity).toBe(f.ticket.identity);

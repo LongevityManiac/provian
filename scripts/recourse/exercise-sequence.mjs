@@ -116,7 +116,7 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet) {
   const reversal = { request, identity, destination: destination.address, sources: [thief.address], amounts: [60n * unit],
     sourceSequences: [await kernel.outgoingSequence(thief.address)], observationAccounts: observations,
     observationSequences: await Promise.all(observations.map(x => kernel.outgoingSequence(x))),
-    poolShortfall: 40n * unit, evidenceHash: labelHash('fixture witnessed exchange; synthetic exercise evidence') };
+    poolShortfall: 40n * unit, restorationRevision: await authorization.restorationRevision(), evidenceHash: labelHash('fixture witnessed exchange; synthetic exercise evidence') };
   const reversalType = authorization.interface.getFunction('executeRestorationIntent').inputs[0];
   const operation = sha256(coder.encode(['string', reversalType], ['Provian theft reversal', reversal]));
   const bindingLog = bound.logs.find(log => {

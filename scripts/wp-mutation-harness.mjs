@@ -1849,6 +1849,34 @@ const MUTATION_SETS = {
     "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
     "mutations": [
         {
+            "id": "RESTORE-REVISION-FENCE",
+            "description": "execute a determination from before an entitlement became spendable",
+            "find": "reversal.restorationRevision != restorationRevision || ",
+            "replace": "",
+            "expectedKilledBy": "testImportedFundsInvalidateAStaleReversalWithoutAnOutgoingTransfer"
+        },
+        {
+            "id": "RESTORE-REVISION-ORDINARY",
+            "description": "ordinary import does not advance the restoration checkpoint",
+            "find": "ordinaryImportedBalance += amount;\n        ++restorationRevision;",
+            "replace": "ordinaryImportedBalance += amount;",
+            "expectedKilledBy": "testImportedFundsInvalidateAStaleReversalWithoutAnOutgoingTransfer"
+        },
+        {
+            "id": "RESTORE-REVISION-BREAK",
+            "description": "free restoration does not invalidate stale reachability",
+            "find": "_restoredIdentity[r.identity] = true;\n        ++restorationRevision;",
+            "replace": "_restoredIdentity[r.identity] = true;",
+            "expectedKilledBy": "testCryptographicBreakUsesSnapshotAndRealHashAuthorityWithOwnerProof"
+        },
+        {
+            "id": "RESTORE-REVISION-INSTITUTION",
+            "description": "institutional restoration does not advance the checkpoint",
+            "find": "++importedInstitutionCount;importedInstitutionAmount += amount;\n        ++restorationRevision;",
+            "replace": "++importedInstitutionCount;importedInstitutionAmount += amount;",
+            "expectedKilledBy": "testBreakInstitutionCustodyIsExactAndCannotRedirectOrReplay"
+        },
+        {
             "id": "RESTORE-1",
             "description": "authority requirement bypassed",
             "find": "executing || msg.sender != IRestorationKernel(kernel).restorationAuthority()",
