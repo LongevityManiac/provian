@@ -59,6 +59,24 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'restoration-break-partition': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-break-partition.ts', testMatchPath: 'src/core/recourse/restoration-break-partition.test.ts',
+    mutations: [{ id: 'PARTITION-EXACT-TOTAL', description: 'a changed historical balance partition authorizes the same aggregate',
+      find: 'total !== BigInt(owner.amount)', replace: 'false',
+      expectedKilledBy: 'omitted bindings, changed balances and substituted ownership refuse rather than becoming pool shortfalls' },
+      { id: 'PARTITION-UNCLAIMED-ONLY', description: 'already issued entitlement is counted again at the next break',
+        find: 'if (priorOwner && !restored) {', replace: 'if (priorOwner) {',
+        expectedKilledBy: 'claimed state is read from the effective predecessor executor at cutoff, not the original origin today' }],
+  },
+  'restoration-break-partition-chain': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-break-partition-chain.ts', testMatchPath: 'src/core/recourse/restoration-break-partition-chain.test.ts',
+    mutations: [{ id: 'PARTITION-FIRST-BINDING', description: 'incomplete registry history omits an earlier effective binding',
+      find: "|| await call(original, 'boundBlock', [account], throughHash) !== BigInt(first)", replace: '|| false',
+      expectedKilledBy: 'refuses birth rather than substituting artifact-supplied account metadata' },
+      { id: 'PARTITION-FINAL-CUTOFF', description: 'a late cutoff reorg preserves the assembled account list',
+        find: "if (await blockHash(through) !== throughHash) throw Error('recourse_partition_reorg');", replace: 'void throughHash;',
+        expectedKilledBy: 'a reorg of the final cutoff after earlier historical checks invalidates the entire enumeration' }],
+  },
   'break-artifact-store': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/break-artifact-store.ts', testMatchPath: 'src/core/recourse/break-artifact-store.test.ts',
     mutations: [{ id: 'BREAK-STORE-READ-AUTHORITY', description: 'stored self-described roots substitute for current pointer ancestry',
