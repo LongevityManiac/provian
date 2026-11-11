@@ -2,11 +2,16 @@ import { AbiCoder, concat, sha256 } from 'ethers';
 import { verifyBreakEntitlement, type BreakEntitlement } from './break-entitlement';
 
 export interface BreakArtifactDomain { readonly predecessor: string; readonly block: number; readonly root: string; }
+export interface BreakInstitutionEntitlement {
+  readonly source: string; readonly destination: string; readonly amount: string;
+  readonly runtimeHash: string; readonly proof: readonly string[];
+}
 export interface VerifiedBreakArtifact {
   readonly domain: BreakArtifactDomain;
   /** Aggregate proofs only. accounts[] and signingRoot are not committed by an
    * owner leaf and are intentionally absent from this result. */
   readonly owners: readonly BreakEntitlement[];
+  readonly institutions: readonly BreakInstitutionEntitlement[];
 }
 const coder = AbiCoder.defaultAbiCoder(), hash = /^0x[0-9a-f]{64}$/, address = /^0x[0-9a-fA-F]{40}$/;
 function record(value: unknown): Record<string, unknown> {
@@ -42,11 +47,13 @@ export function verifyBreakArtifact(value: unknown, domain: BreakArtifactDomain)
   const institutions = new Set<string>(), destinations = new Set<string>(), historyIdentities = new Set<string>();
   let institutionCount: number | null = null, institutionAmount: bigint | null = null, historyCount: number | null = null;
   let institutionalBalance = 0n;
+  const institutionEntries: BreakInstitutionEntitlement[] = [];
   const encode = (label: string, types: readonly string[], values: readonly unknown[]): string => sha256(coder.encode(
     ['string', 'address', 'uint256', ...types], [label, predecessor, domain.block, ...values]));
   for (const item of row.entries) {
     const entry = record(item);
     let leaf: string;
+    let institution: Omit<BreakInstitutionEntitlement, 'proof'> | null = null;
     if (entry.kind === 'owner') {
       const owner = verifyBreakEntitlement({ identity: entry.identity, amount: entry.amount, commitment: entry.commitment, proof: entry.proof },
         predecessor, BigInt(domain.block), root);
@@ -57,7 +64,8 @@ export function verifyBreakArtifact(value: unknown, domain: BreakArtifactDomain)
       const source = account(entry.source), destination = account(entry.destination), amount = quantity(entry.amount);
       if (source === destination || institutions.has(source) || destinations.has(destination) || amount === 0n) throw Error('break_artifact_institution_invalid');
       institutions.add(source); destinations.add(destination); institutionalBalance += amount;
-      leaf = encode('Provian institution restoration', ['address', 'address', 'uint256', 'bytes32'], [source, destination, amount, word(entry.runtimeHash)]);
+      institution = { source, destination, amount: amount.toString(), runtimeHash: word(entry.runtimeHash) };
+      leaf = encode('Provian institution restoration', ['address', 'address', 'uint256', 'bytes32'], [source, destination, amount, institution.runtimeHash]);
     } else if (entry.kind === 'institution-count') {
       if (institutionCount !== null) throw Error('break_artifact_duplicate_count');
       institutionCount = count(entry.count); institutionAmount = quantity(entry.amount);
@@ -83,6 +91,7 @@ export function verifyBreakArtifact(value: unknown, domain: BreakArtifactDomain)
     let proved = leaf;
     for (const sibling of entry.proof as string[]) proved = sha256(concat([proved, sibling].sort()));
     if (proved !== root) throw Error('break_artifact_proof_invalid');
+    if (institution) institutionEntries.push(Object.freeze({ ...institution, proof: Object.freeze([...(entry.proof as string[])]) }));
     leaves.push(leaf);
   }
   if (identities.size === 0 || new Set(leaves).size !== leaves.length || institutionCount !== institutions.size
@@ -97,5 +106,5 @@ export function verifyBreakArtifact(value: unknown, domain: BreakArtifactDomain)
     level = next;
   }
   if (level[0] !== root) throw Error('break_artifact_incomplete');
-  return Object.freeze({ domain: Object.freeze({ predecessor, block: domain.block, root }), owners: Object.freeze(owners) });
+  return Object.freeze({ domain: Object.freeze({ predecessor, block: domain.block, root }), owners: Object.freeze(owners), institutions: Object.freeze(institutionEntries) });
 }

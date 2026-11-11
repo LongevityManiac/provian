@@ -19,7 +19,7 @@ function fixture() {
     lineage: jest.fn(async () => ({ kernel: a(90), executor: a(91), manifestHash: manifest, block: 300, blockHash: h(300), migrations: [{ kernel: a(90), executor: a(91), predecessor: kernel, cutoff: 250, cutoffHash: h(250), root: h(92), kind: 'cryptographic_break' as const }] })),
     authenticateExecutor: jest.fn(async () => undefined),
     artifact: jest.fn(async () => ({ domain: { predecessor: a(20), block: 100, root: h(21) },
-      owners: [{ identity, amount: '50', commitment: h(6), proof: [] }] })),
+      institutions: [], owners: [{ identity, amount: '50', commitment: h(6), proof: [] }] })),
     call: jest.fn(async (target, method, _args, pin) => {
       if (pin !== h(250)) throw Error('not pinned');
       if (method === 'ownerAuthorization') return executor;
@@ -60,7 +60,7 @@ test.each(['not-finalized', 'wrong-kernel', 'wrong-root', 'missing-owner', 'wron
   if (mode === 'wrong-kernel' || mode === 'wrong-root') {
     const original = port.call; port.call = async (...args) => args[1] === (mode === 'wrong-kernel' ? 'kernel' : 'restorationRoot') ? (mode === 'wrong-kernel' ? a(99) : h(99)) : original(...args);
   }
-  if (mode === 'missing-owner') { const original = port.artifact; port.artifact = async origin => ({ ...await original(origin), owners: [] }); }
+  if (mode === 'missing-owner') { const original = port.artifact; port.artifact = async origin => ({ ...await original(origin), institutions: [], owners: [] }); }
   if (mode === 'wrong-query-receipt') port.logs = async () => [{ ...logs[2], data: `${logs[2].data.slice(0, -1)}1` }];
   await expect(readHistoricalBreakRestoration(kernel, identity, 250, port)).rejects.toThrow();
 });

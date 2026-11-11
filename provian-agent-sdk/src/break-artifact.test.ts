@@ -45,7 +45,11 @@ describe('complete break artifacts', () => {
       return { root: tree.root, artifact: { ...artifact, root: tree.root, entries: entries.map((entry, i) => ({ ...entry, proof: tree.proofs[i] })) } };
     }
     const complete = assembled();
-    expect(verifyBreakArtifact(complete.artifact, { ...domain, root: complete.root }).owners).toHaveLength(2);
+    const verified = verifyBreakArtifact(complete.artifact, { ...domain, root: complete.root });
+    expect(verified.owners).toHaveLength(2);
+    expect(verified.institutions).toEqual([{ source: a(10), destination: a(11), amount: '7', runtimeHash: h(10), proof: complete.artifact.entries[2].proof }]);
+    expect(Object.isFrozen(verified.institutions[0].proof)).toBe(true);
+    expect(Object.isFrozen(verified.institutions)).toBe(true);
     entries[3] = { kind: 'institution-count', count: 1, amount: '8',
       leaf: encode('Provian institution restoration count', ['uint256', 'uint256'], [1, 8]) };
     const changed = assembled();

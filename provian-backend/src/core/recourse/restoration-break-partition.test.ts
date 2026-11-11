@@ -5,8 +5,8 @@ const h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
 function fixture() {
   const owner = (amount: string) => ({ identity: h(1), amount, commitment: h(9), proof: [] });
   const artifacts = new Map<string, VerifiedBreakArtifact>([
-    [a(20), { domain: { predecessor: a(10), block: 100, root: h(1000) }, owners: [owner('80')] }],
-    [a(21), { domain: { predecessor: a(11), block: 200, root: h(2000) }, owners: [owner('90')] }],
+    [a(20), { domain: { predecessor: a(10), block: 100, root: h(1000) }, institutions: [], owners: [owner('80')] }],
+    [a(21), { domain: { predecessor: a(11), block: 200, root: h(2000) }, institutions: [], owners: [owner('90')] }],
   ]);
   let restored = false, changed = false, reorg = false, manifests = 0;
   const port: BreakPartitionPort = {
@@ -41,7 +41,7 @@ test('repeated breaks reconstruct cutoff balances plus unissued rights with thei
 test('claimed state is read from the effective predecessor executor at cutoff, not the original origin today', async () => {
   const f = fixture(); f.setRestored();
   const current = f.artifacts.get(a(21))!;
-  f.artifacts.set(a(21), { ...current, owners: [{ ...current.owners[0], amount: '10' }] });
+  f.artifacts.set(a(21), { ...current, institutions: [], owners: [{ ...current.owners[0], amount: '10' }] });
   const calls: { target: string; method: string; pin: string }[] = [], read = f.port.call;
   const result = await reconstructBreakPartition(a(21), h(1), { ...f.port, async call(target, method, args, pin) {
     calls.push({ target, method, pin }); return read(target, method, args, pin);
@@ -51,8 +51,8 @@ test('claimed state is read from the effective predecessor executor at cutoff, n
 });
 test('authenticated prior absence differs from a missing artifact', async () => {
   const f = fixture(), current = f.artifacts.get(a(21))!, prior = f.artifacts.get(a(20))!;
-  f.artifacts.set(a(21), { ...current, owners: [{ ...current.owners[0], amount: '10' }] });
-  f.artifacts.set(a(20), { ...prior, owners: [{ ...prior.owners[0], identity: h(2) }] });
+  f.artifacts.set(a(21), { ...current, institutions: [], owners: [{ ...current.owners[0], amount: '10' }] });
+  f.artifacts.set(a(20), { ...prior, institutions: [], owners: [{ ...prior.owners[0], identity: h(2) }] });
   expect((await reconstructBreakPartition(a(21), h(1), f.port))?.carried).toBeNull();
   f.artifacts.delete(a(20));
   await expect(reconstructBreakPartition(a(21), h(1), f.port)).rejects.toThrow('missing_artifact');
@@ -78,7 +78,7 @@ test('cycles, nondecreasing cutoffs and a changed unclaimed recovery commitment 
   future.artifacts.set(a(20), { ...prior, domain: { ...prior.domain, block: 200 } });
   await expect(reconstructBreakPartition(a(21), h(1), future.port)).rejects.toThrow('cutoff_invalid');
   const changed = fixture(), current = changed.artifacts.get(a(21))!;
-  changed.artifacts.set(a(21), { ...current, owners: [{ ...current.owners[0], commitment: h(999) }] });
+  changed.artifacts.set(a(21), { ...current, institutions: [], owners: [{ ...current.owners[0], commitment: h(999) }] });
   await expect(reconstructBreakPartition(a(21), h(1), changed.port)).rejects.toThrow('total_mismatch');
 });
 test('pointer or cutoff reorgs invalidate reconstruction after all recursive reads', async () => {
