@@ -1,5 +1,5 @@
 import { Interface } from 'ethers';
-import { readRestorationLineage, readMigrationMint } from './restoration-lineage';
+import { readRestorationLineage, readRestorationSuccessionLineage, readMigrationMint } from './restoration-lineage';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { getAgreedBaseLogs, readAgreedBaseBlockHash, verifyBaseTransactionEvidence } from '../onchain/economic-discovery';
@@ -10,19 +10,42 @@ jest.mock('../onchain/economic-discovery',()=>({getAgreedBaseLogs:jest.fn(),read
 const kernel=address(77),executor=address(78),previousExecutor=address(79);
 const abi=new Interface(['function ownerAuthorization() view returns(address)','function kernel() view returns(address)','function predecessor() view returns(address)',
  'function previousAuthorization() view returns(address)','function lastGoodBlock() view returns(uint256)','function cryptographicBreak() view returns(bool)',
+ 'function restorationRoot() view returns(bytes32)',
  'function successionReady() view returns(bool)','event BalanceMigrated(address indexed previousOwner,address indexed destination,uint256 amount)',
  'event Transfer(address indexed from,address indexed to,uint256 amount)']);
-let wrong=false,broken=false,disagree=false;
+let wrong=false,broken=false,disagree=false,orphaned=false;
 beforeEach(()=>{
- jest.resetAllMocks();wrong=false;broken=false;disagree=false;
+ jest.resetAllMocks();wrong=false;broken=false;disagree=false;orphaned=false;
  (currentProtocolDeployment as jest.Mock).mockResolvedValue({addresses:{kernel},blockHash:hash(150),manifestHash:hash(151)});
  (getOperatorBoundRpcLegs as jest.Mock).mockReturnValue([0,1].map(index=>({operatorId:`rpc-${index}`,provider:{send:async(_method:string,params:readonly unknown[])=>{
+  if (_method === 'eth_getBlockByHash' || _method === 'eth_getBlockByNumber') return {
+    hash: orphaned && _method === 'eth_getBlockByNumber' ? hash(999) : hash(150), number: '0x96' };
   const call=params[0] as {to:string;data:string}; const parsed=abi.parseTransaction({data:call.data})!;
-  const values:Record<string,unknown>={ownerAuthorization:call.to===kernel?executor:previousExecutor,kernel,predecessor:token,
-    previousAuthorization:wrong?address(99):previousExecutor,lastGoodBlock:disagree&&index===1?106:105,cryptographicBreak:broken,successionReady:true};
+  const values:Record<string,unknown>={ownerAuthorization:call.to===kernel?executor:previousExecutor,kernel:call.to===previousExecutor?token:kernel,predecessor:token,
+    previousAuthorization:wrong?address(99):broken?address(0):previousExecutor,lastGoodBlock:disagree&&index===1?106:105,cryptographicBreak:broken,successionReady:true,restorationRoot:hash(160)};
   return abi.encodeFunctionResult(parsed.name,[values[parsed.name]]);
  }}})));
  (readAgreedBaseBlockHash as jest.Mock).mockImplementation(async n=>hash(n));
+});
+test('typed succession domains authenticate breaks without enabling them in the ordinary transfer collector',async()=>{
+ broken=true;
+ expect(await readRestorationSuccessionLineage(token)).toMatchObject({kernel,executor,migrations:[{
+  kernel,executor,predecessor:token,cutoff:105,cutoffHash:hash(105),root:hash(160),kind:'cryptographic_break'}]});
+ await expect(readRestorationLineage(token)).rejects.toThrow('lineage_invalid');
+ wrong=true;await expect(readRestorationSuccessionLineage(token)).rejects.toThrow('lineage_invalid');
+});
+test('canonical cutoff changes and malformed loss kernels cannot authenticate historical domains',async()=>{
+ (readAgreedBaseBlockHash as jest.Mock).mockResolvedValueOnce(hash(105)).mockResolvedValueOnce(hash(999));
+ await expect(readRestorationSuccessionLineage(token)).rejects.toThrow('lineage_changed');
+ await expect(readRestorationSuccessionLineage(address(0))).rejects.toThrow('lineage_invalid');
+ await expect(readRestorationSuccessionLineage('unknown')).rejects.toThrow('lineage_invalid');
+});
+test('a same-manifest reorg during the final resolver cannot preserve orphaned import-ready state',async()=>{
+ const deployment={addresses:{kernel},blockHash:hash(150),manifestHash:hash(151)};
+ (currentProtocolDeployment as jest.Mock).mockResolvedValueOnce(deployment).mockImplementationOnce(async()=>{
+  orphaned=true;return deployment;
+ });
+ await expect(readRestorationSuccessionLineage(token)).rejects.toThrow('lineage_changed');
 });
 test('current pointer authenticates ordinary executor ancestry and refuses independent disagreements or substituted ancestors',async()=>{
  expect(await readRestorationLineage(token)).toMatchObject({kernel,executor,migrations:[{kernel,executor,predecessor:token,cutoff:105}]});

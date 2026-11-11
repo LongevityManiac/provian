@@ -59,6 +59,18 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'restoration-succession-lineage': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-lineage.ts', testMatchPath: 'src/core/recourse/restoration-lineage.test.ts',
+    mutations: [{ id: 'LINEAGE-CANONICAL-HEAD', description: 'an unchanged manifest accepts orphaned import-ready state',
+      find: "if (canonical.some(header => headerNumber(header) !== height)) throw Error('recourse_lineage_changed');", replace: 'void canonical;',
+      expectedKilledBy: 'a same-manifest reorg during the final resolver cannot preserve orphaned import-ready state' },
+      { id: 'LINEAGE-TYPED-COLLECTOR', description: 'ordinary transfer tracing accepts unissued cryptographic-break balances',
+        find: "if (lineage.migrations.some(migration => migration.kind !== 'ordinary')) throw Error('recourse_lineage_invalid');", replace: 'void lineage;',
+        expectedKilledBy: 'typed succession domains authenticate breaks without enabling them in the ordinary transfer collector' },
+      { id: 'LINEAGE-BREAK-ANCESTOR', description: 'a cryptographic break accepts a substituted previous authorization',
+        find: '(broken ? previous !== zero : previous !== predecessorExecutor)', replace: '(!broken && previous !== predecessorExecutor)',
+        expectedKilledBy: 'typed succession domains authenticate breaks without enabling them in the ordinary transfer collector' }],
+  },
   'break-artifact-verifier': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/break-artifact.ts', testMatchPath: 'src/break-artifact.test.ts',
     mutations: [{ id: 'BREAK-ARTIFACT-COMPLETE-ROOT', description: 'individual proofs substitute for complete-root reconstruction',
