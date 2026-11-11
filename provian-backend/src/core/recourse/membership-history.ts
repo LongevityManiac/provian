@@ -1,3 +1,4 @@
+import { reconcilePrivateMembershipDomain } from './private-membership-domain';
 import type { Firestore } from 'firebase-admin/firestore';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { getAgreedBaseLogs, readAgreedBaseBlockHash } from '../onchain/economic-discovery';
@@ -15,6 +16,7 @@ import { readPrivateCalendarRules } from './private-calendar-rules';
 export async function readLossMembership(db: Firestore, snapshot: LossSnapshot): Promise<LossMembershipEvidence & { readonly lossTimestamp: number }> {
   const owner = await db.collection(R.identities).doc(snapshot.identity).get(), ownerIdentity: unknown = owner.get('ownerIdentity');
   if (!owner.exists || typeof ownerIdentity !== 'string' || !/^0x[0-9a-f]{64}$/.test(ownerIdentity)) throw Error('recourse_membership_owner_unknown');
+  await reconcilePrivateMembershipDomain(db,ownerIdentity);
   const ref = db.collection(C.owners).doc(ownerIdentity), row = await ref.get();
   const account = row.exists ? row.data() as PrivateMembershipAccount : null;
   if (account && (account.ownerIdentity !== ownerIdentity || account.needsScan || account.pendingReservation !== null

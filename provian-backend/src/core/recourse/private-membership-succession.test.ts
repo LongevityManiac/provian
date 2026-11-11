@@ -1,3 +1,5 @@
+import { readPrivateMembershipScan } from './private-membership-scan';
+jest.mock('./private-membership-scan', () => ({ readPrivateMembershipScan: jest.fn() }));
 import type { Firestore } from 'firebase-admin/firestore';
 import { AbiCoder, Interface, keccak256 } from 'ethers';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -32,10 +34,11 @@ const rules: PrivateCalendarRules = () => ({ ruleHash: h(1), rule: { schema: 'pr
 const publicationAbi = new Interface(['event DeploymentChanged(uint256 indexed revision,bytes32 indexed manifestHash,address[10] components,bytes32[10] runtimeHashes)']);
 const authority = new Interface(['function ownerAuthorization() view returns(address)', 'function predecessor() view returns(address)',
   'function lastGoodBlock() view returns(uint256)', 'function cryptographicBreak() view returns(bool)', 'function kernel() view returns(address)',
-  'function retired(address) view returns(bool)']);
+  'function retired(address) view returns(bool)',
+  'function getBatchRecord(bytes32) view returns((bool settled,uint8 lane,uint64 epoch,uint256 finalizedCursorStart,uint256 finalizedCursorEnd,bytes32 policyHash,bytes32 claimsHash,bytes32 settlementDigest,uint256 grossInput,uint256 totalMinted,uint256 contributorTotal,uint256 provianTotal,uint256 foundationTotal,uint256 recipientCount,uint256 claimCount))']);
 function setup(joinBlock = 20) {
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
-  const state = { block: 100, effective: 90, revision: 2n, republish: false, cutoff: 50, afterBreak: true, retired: true, disagreement: false, wrongCutoff: false, nextDebit: 0,
+  const state = { block: 100, effective: 90, revision: 2n, republish: false, cutoff: 50, afterBreak: true, retired: true, disagreement: false, wrongCutoff: false, batchSettled: false, batchCancelled: false, nextDebit: 0, absentBinding: '' as string,
     priorPool: a(1), priorKernel: a(2), pool: a(3), kernel: a(4), events: [] as ReturnType<typeof event>[] };
   fake.store.set(ownerKey, { ownerIdentity: ownerId, bindingSetVersion: 1, membershipTransition: null });
   fake.store.set(`${R.addresses}/${wallet}`, { ownerIdentity: ownerId, identity: binding, address: wallet, kernel: a(2) });
@@ -79,7 +82,9 @@ function setup(joinBlock = 20) {
       else if (name === 'lastGoodBlock') result = [state.cutoff + (state.wrongCutoff ? 1 : 0)];
       else if (name === 'cryptographicBreak') result = [state.afterBreak];
       else if (name === 'retired') result = [state.retired && !(state.disagreement && index === 1)];
-      else if (name === 'addressConsent') result = [1,1,true];
+      else if (name === 'getBatchRecord') result = [[state.batchSettled,0,1,0,0,h(1),h(2),h(3),0,0,0,0,0,0,0]];
+      else if (name === 'cancelledIssuanceBatch') result = [state.batchCancelled];
+      else if (name === 'addressConsent') result = parsed.args[0] === state.absentBinding ? [0,0,false] : [1,1,true];
       else if (name === 'debitNonce') result = [call.to === state.pool ? state.nextDebit : 0];
       else throw Error(`unexpected call ${name}`);
       return contract.encodeFunctionResult(name, result);
@@ -102,7 +107,7 @@ function event(name: 'MembershipDebitCancelled' | 'MembershipDebitExecuted', arg
   return { ...RECOURSE_POOL_ABI.encodeEventLog(RECOURSE_POOL_ABI.getEvent(name)!, args), address: a(3), blockNumber: 100,
     blockHash: h(100), logIndex: 2, transactionHash: h(500), removed: false };
 }
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => { jest.resetAllMocks(); (readPrivateMembershipScan as jest.Mock).mockRejectedValue(Error('recourse_membership_succession_reconciliation_pending')); });
 test('break selects cutoff history, retains discarded payments and fences, and rejects fabricated proof', async () => {
   const s = setup(); await s.credit(70);
   s.fake.store.set(`${C.effects}/${h(22)}`, { ownerIdentity: ownerId });
@@ -193,4 +198,65 @@ test('a later pointer revision retaining the same kernel and pool never postpone
   const s = setup(); s.state.republish = true; s.state.revision = 3n;
   const proof = await readPrivateMembershipSuccession(s.db, ownerId);
   expect(proof.entry.position.block).toBe(90);
+});
+
+test('an interrupted first join with only partial consent creates an explicit unadmitted successor root', async () => {
+  const s = setup(); s.fake.store.delete(accountKey);
+  for (const key of s.fake.store.keys()) if (key.startsWith(J + '/')) s.fake.store.delete(key);
+  s.fake.store.set(ownerKey, { ...s.fake.store.get(ownerKey), membershipTransition: 'first-join' });
+  s.fake.store.set(`${R.addresses}/${a(88)}`, { ownerIdentity: ownerId, identity: h(88), address: a(88), kernel: a(2) });
+  s.state.absentBinding = h(88);
+  const bindings = [binding,h(88)].map(id => ({ binding: id, address: id === binding ? wallet : a(88), nonce: '0', generation: '0',
+    initiallyJoined: false, recoveryGeneration: 0, departure: null, admission: null }));
+  s.fake.store.set(`${T}/first-join`, { id: 'first-join', ownerIdentity: ownerId, kind: 'join', status: 'consenting', pool: a(1), kernel: a(2),
+    checkpoint: { block: 20, blockHash: h(20), logIndex: 0, timestamp: stamp(20) }, bindings });
+  const proof = await readPrivateMembershipSuccession(s.db, ownerId);
+  expect(proof.entry.previousId).toBeNull(); expect(proof.entry.episode.generation).toBe(0);
+  await commitPrivateMembershipSuccession(s.db, proof);
+  expect(await readMembershipJournal(s.db, s.current())).toHaveLength(1);
+  expect(s.fake.store.get(`${T}/first-join`)?.status).toBe('superseded');
+  expect(joinPrivateMembership(s.current().episode, month + 1, rules).generation).toBe(1);
+});
+test('fully executed but unrecorded first-join consent must reconcile instead of being erased as unadmitted', async () => {
+  const s = setup(); s.fake.store.delete(accountKey);
+  s.fake.store.set(ownerKey, { ...s.fake.store.get(ownerKey), membershipTransition: 'first-join' });
+  s.fake.store.set(`${T}/first-join`, { id: 'first-join', ownerIdentity: ownerId, kind: 'join', status: 'consenting', pool: a(1), kernel: a(2),
+    checkpoint: { block: 20, blockHash: h(20), logIndex: 0, timestamp: stamp(20) },
+    bindings: [{ binding, nonce: '0', generation: '0', initiallyJoined: false }] });
+  await expect(readPrivateMembershipSuccession(s.db, ownerId)).rejects.toThrow('first_join_reconciliation_pending');
+  expect(s.fake.store.has(accountKey)).toBe(false);
+  await expect(readPrivateMembershipSuccession(s.db, ownerId, { block: 101, blockHash: h(101) })).rejects.toThrow('observation');
+  await expect(readPrivateMembershipSuccession(s.db, ownerId, { block: 100, blockHash: h(99) })).rejects.toThrow('reorg');
+});
+
+test('an authenticated complete old-domain scan reaches a lagged cutoff and every credited effect is rechecked at commit', async () => {
+  const s = setup(), effect = { kernel: a(2), transactionHash: h(45), logIndex: 2 };
+  s.fake.store.set(accountKey, { ...s.current(), checkpoint: { pool: a(1), block: 20, blockHash: h(20) } });
+  (readPrivateMembershipScan as jest.Mock).mockResolvedValue({ ownerIdentity: ownerId, historical: true, accountVersion: 0, bindingHash: h(8),
+    fromBlock: 20, fromBlockHash: h(20), pool: a(1), block: 50, blockHash: h(50), timestamp: stamp(50), receipts: [], requiredEffects: [effect] });
+  await expect(readPrivateMembershipSuccession(s.db, ownerId)).rejects.toThrow('reconciliation_pending');
+  const id = hash([a(2),a(1),h(45),2]); s.fake.store.set(`${C.effects}/${id}`, { ownerIdentity: ownerId });
+  const proof = await readPrivateMembershipSuccession(s.db,ownerId);
+  expect(readPrivateMembershipScan).toHaveBeenCalledWith(s.db,ownerId,expect.objectContaining({ pool: a(1),block: 50,blockHash: h(50) }));
+  s.fake.store.delete(`${C.effects}/${id}`);
+  await expect(commitPrivateMembershipSuccession(s.db,proof)).rejects.toThrow('concurrent');
+  s.fake.store.set(`${C.effects}/${id}`, { ownerIdentity: ownerId });
+  await commitPrivateMembershipSuccession(s.db,proof);
+  expect(s.current().checkpoint.pool).toBe(a(3));
+});
+
+test('missing issuance logs cannot erase a batch that the cutoff kernel records as settled or cancelled', async () => {
+  const s = setup(), id = h(123);
+  s.fake.store.set(accountKey, { ...s.current(), pendingReservation: id, checkpoint: { pool: a(1),block: 20,blockHash: h(20) } });
+  s.fake.store.set(`${C.reservations}/${id}`, { status: 'pending', reservation: { id, ownerIdentity: ownerId,kind: 'issuance',
+    domain: { pointer: a(9),kernel: a(2),pool: a(1) }, checkpoint: { block: 20 },context: { batchId: h(124) } } });
+  (readPrivateMembershipScan as jest.Mock).mockResolvedValue({ ownerIdentity: ownerId,historical: true,accountVersion: 0,bindingHash: h(8),
+    fromBlock: 20,fromBlockHash: h(20),pool: a(1),block: 50,blockHash: h(50),timestamp: stamp(50),receipts: [],requiredEffects: [] });
+  s.state.batchSettled = true;
+  await expect(readPrivateMembershipSuccession(s.db,ownerId)).rejects.toThrow('pending_reconciliation');
+  s.state.batchSettled = false; s.state.batchCancelled = true;
+  await expect(readPrivateMembershipSuccession(s.db,ownerId)).rejects.toThrow('pending_reconciliation');
+  s.state.batchCancelled = false;
+  await commitPrivateMembershipSuccession(s.db,await readPrivateMembershipSuccession(s.db,ownerId));
+  expect(s.fake.store.get(`${C.reservations}/${id}`)?.status).toBe('superseded');
 });

@@ -1,3 +1,4 @@
+import { reconcilePrivateMembershipDomain } from './private-membership-domain';
 import type { Firestore } from 'firebase-admin/firestore';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
 import { assessPrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
@@ -34,6 +35,7 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
  * until their receipts reconcile; they never become fabricated zero dues. */
 export async function readPrivateMembershipView(db: Firestore, ownerIdentity: string,
   pool: RecoursePoolState): Promise<PrivateMembershipView> {
+  await reconcilePrivateMembershipDomain(db,ownerIdentity);
   const owner = await db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
   if (owner.get('membershipTransition') != null) throw Error('recourse_private_membership_transition_pending');
   const ref = db.collection(C.owners).doc(ownerIdentity), initial = await ref.get();

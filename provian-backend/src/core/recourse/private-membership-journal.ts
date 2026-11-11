@@ -48,7 +48,9 @@ export function checkMembershipJournalEntry(value: MembershipJournalEntry): void
   if (value.kind === 'succession') {
     const s = value.succession;
     if (!s || !HASH.test(s.manifestHash) || !HASH.test(s.previousManifestHash) || typeof s.afterBreak !== 'boolean'
-      || (s.ancestorId !== null && !HASH.test(s.ancestorId)) || value.previousId === null) return fail('succession');
+      || (s.ancestorId !== null && !HASH.test(s.ancestorId))) return fail('succession');
+    if (value.previousId === null && (s.ancestorId !== null || value.episode.generation !== 0 || value.episode.joined
+      || Object.keys(value.episode.invoices).length !== 0 || value.beforeEpisodeHash !== membershipJournalHash(null))) return fail('succession_root');
     validatePosition(s.cutoff);
     if (s.cutoff.logIndex !== Number.MAX_SAFE_INTEGER || s.cutoff.block >= value.position.block
       || s.cutoff.timestamp > value.position.timestamp || s.cutoff.pool === value.position.pool
@@ -110,7 +112,7 @@ export async function readMembershipJournal(db: Firestore, account: MembershipJo
     result.push(entry); id = entry.previousId;
   }
   if (result.length === 0 || membershipJournalHash(result[0].episode) !== membershipJournalHash(account.episode)
-    || result[result.length - 1].beforeEpisodeHash !== membershipJournalHash(null) || result[result.length - 1].kind !== 'admission') return fail('chain');
+    || result[result.length - 1].beforeEpisodeHash !== membershipJournalHash(null) || !['admission','succession'].includes(result[result.length - 1].kind)) return fail('chain');
   result.reverse();
   activeMembershipJournal(result); // Validate explicit branch ancestry before any projection.
   return result;
@@ -124,7 +126,12 @@ export function activeMembershipJournal(audit: readonly MembershipJournalEntry[]
   for (const entry of audit) {
     if (entry.kind !== 'succession') { active.push(entry); continue; }
     const s = entry.succession;
-    if (!s || active.length === 0) return fail('succession');
+    if (!s) return fail('succession');
+    if (active.length === 0) {
+      checkMembershipJournalEntry(entry);
+      if (entry.previousId !== null) return fail('succession_root');
+      active.push(entry); continue;
+    }
     const previous = active[active.length - 1];
     if (previous.position.kernel !== s.cutoff.kernel || previous.position.pool !== s.cutoff.pool) return fail('succession_domain');
     const retained = active.filter(e => beforeMembershipPosition(e.position, s.cutoff)

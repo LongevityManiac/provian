@@ -1,3 +1,4 @@
+jest.mock('./private-membership-domain', () => ({ reconcilePrivateMembershipDomain: jest.fn(async () => undefined) }));
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { readLossMembership } from './membership-history';

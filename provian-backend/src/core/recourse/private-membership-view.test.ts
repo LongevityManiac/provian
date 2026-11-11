@@ -1,3 +1,4 @@
+jest.mock('./private-membership-domain', () => ({ reconcilePrivateMembershipDomain: jest.fn(async () => undefined) }));
 import { joinPrivateMembership, creditPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { projectPrivateMembershipView } from './private-membership-view';
 import type { PrivateMembershipAccount } from './private-membership-reservation';
