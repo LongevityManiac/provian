@@ -14,7 +14,7 @@ import { prepareRestorationExit } from './restoration-exit';
  * selects a PVT recipient, signs for the recovered account or changes the wallet
  * selection. The gas sender requires ETH; its curve key does not protect funds
  * after a curve break. The allocated PVT stays protected by the pool's destination. */
-export async function withdrawHumanRestoration(identity: string, request: string): Promise<string> {
+export async function withdrawHumanRestoration(identity: string | undefined, request: string): Promise<string> {
   return withBiometricAction(translate('recourse.authorize', 'Authorize your Recourse action'), async action => {
     const exit = await prepareRestorationExit(identity, request, ownerChainNetwork());
     // This narrowly scoped transport remains usable with a hash account selected.

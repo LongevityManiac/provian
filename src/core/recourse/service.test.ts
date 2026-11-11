@@ -1,0 +1,71 @@
+import { beforeEach, expect, it, vi } from 'vitest';
+import { readRecourseHistory, readRecourseView, submitHumanRestorationRequest, type RecourseView } from './service';
+const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
+  history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '' }));
+const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
+vi.mock('../../services/RelayAPIService', () => ({ default: { getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
+  if (f.relayDown) throw Error('unavailable');
+  f.calls.push({ path, body }); if (path === 'ownership') return f.history;
+  if (path === 'restoration-requests' && body === undefined) return f.requests;
+  if (path === 'pool') return { identity: h('55'), pool: a('66'), kernel: a('77'), membership: {
+    enrolled: true, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } };
+  return { requestId: h('44'), status: 'authorized' };
+} } }));
+vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({}) }));
+vi.mock('./binding-chain', () => ({ readAddressRecoveryBinding: async () => {
+  if(f.primaryMissing) throw Error('recourse_binding_required'); return h('11');
+} }));
+vi.mock('./pool-chain', () => ({ readRecoursePoolChain: async (identity: string) => {
+  f.poolBinding=identity; return {pool:a('66'),kernel:a('77'),month:'1',reserveAtomic:'100',earningsBps:100,
+    participationBurnAtomic:'100',noEarningsContributionAtomic:'100'};
+} }));
+vi.mock('../security/biometricAction', () => ({ withBiometricAction: async (_title: string, run: (action: unknown) => unknown) => run('approved') }));
+vi.mock('../../i18n/translate', () => ({ translate: (_key: string, fallback: string) => fallback }));
+vi.mock('./human-recovery', () => ({ recoverHumanAccount: (...args: unknown[]) => f.recovery(...args) }));
+vi.mock('./human-restoration-exit', () => ({ withdrawHumanRestoration: vi.fn() }));
+vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: a('12'), setAddress: f.setAddress }) } }));
+beforeEach(() => {
+  f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
+  f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
+  f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44') });
+});
+it('submits auxiliary restoration under its selected binding without changing the primary wallet address', async () => {
+  await submitHumanRestorationRequest(h('33'), 100, h('55'));
+  expect(f.recovery).toHaveBeenCalledWith('approved', { lossTransaction: h('33'), lossBlock: 100, auxiliaryBinding: h('55') });
+  expect(f.setAddress).not.toHaveBeenCalled();
+  expect(f.calls.filter(c=>c.path!=='ownership')).toEqual([{ path: 'restoration-requests', body: { transactionHash: h('33'), block: 100,
+    recoveryRequestId: h('44'), identity: h('55') } }]);
+  await submitHumanRestorationRequest(h('33'), 100, h('11'));
+  expect(f.setAddress).toHaveBeenCalledWith(a('22'));
+  expect(f.recovery).toHaveBeenLastCalledWith('approved', { lossTransaction: h('33'), lossBlock: 100, auxiliaryBinding: undefined });
+});
+it('never submits or changes a primary address after an auxiliary recovery failure', async () => {
+  f.recovery.mockRejectedValueOnce(Error('invalid_receipt'));
+  await expect(submitHumanRestorationRequest(h('33'), 100, h('55'))).rejects.toThrow('invalid_receipt');
+  expect(f.calls.every(c=>c.path==='ownership')).toBe(true); expect(f.setAddress).not.toHaveBeenCalled();
+});
+it('explicit auxiliary recovery and its private membership view work without a primary binding',async()=>{
+  f.primaryMissing=true;
+  f.history={identity:null,addresses:[{identity:h('55'),address:a('22'),boundAtMs:1,openingBalanceAtomic:'10',chainBindingStatus:'confirmed'}]};
+  f.requests={requests:[]};
+  await submitHumanRestorationRequest(h('33'),100,h('55'));
+  expect(f.recovery).toHaveBeenCalledWith('approved',{lossTransaction:h('33'),lossBlock:100,auxiliaryBinding:h('55')});
+  expect(f.setAddress).not.toHaveBeenCalled();
+  const view=await readRecourseView();
+  expect(view.identity).toBe(h('55'));expect(view.membershipState).toBe('available');expect(view.enrolled).toBe(true);
+  expect((await readRecourseHistory(view)).historyState).toBe('available');
+  f.relayDown=true;
+  const publicOnly=await readRecourseView();
+  expect(f.poolBinding).toBe(h('00'));expect(publicOnly.reserveAtomic).toBe('100');expect(publicOnly.membershipState).toBe('unavailable');
+});
+it('retains binding identity on every address and request and refuses missing identities', async () => {
+  f.history = { identity: h('11'), addresses: [{ identity: h('55'), address: a('22'), boundAtMs: 1,
+    openingBalanceAtomic: '10', chainBindingStatus: 'confirmed' }] };
+  f.requests = { requests: [{ identity: h('55'), requestId: h('44'), transactionHash: h('33'), status: 'authorized' }] };
+  const view = { identity: h('11'), historyState: 'pending', addresses: [], requests: [] } as unknown as RecourseView;
+  const result = await readRecourseHistory(view);
+  expect(result.historyState).toBe('available'); expect(result.addresses[0].identity).toBe(h('55'));
+  expect(result.requests[0].identity).toBe(h('55'));
+  f.requests = { requests: [{ requestId: h('44'), transactionHash: h('33'), status: 'authorized' }] };
+  expect((await readRecourseHistory(view)).historyState).toBe('unavailable');
+});

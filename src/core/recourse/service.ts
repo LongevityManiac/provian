@@ -16,8 +16,8 @@ export interface RecourseView {
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
-  addresses: { address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
-  requests: { requestId: string; status: string; transactionHash: string }[];
+  addresses: { identity: string; address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
+  requests: { identity: string; requestId: string; status: string; transactionHash: string }[];
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('recourse_reply_invalid');
@@ -30,14 +30,27 @@ function text(value: unknown, pattern: RegExp): string {
 const atomic = /^(0|[1-9][0-9]*)$/, address = /^0x[0-9a-f]{40}$/, hash = /^0x[0-9a-f]{64}$/;
 export function pvtAmount(value: string): string { return formatUnits(value, 18); }
 
-export async function submitHumanRestorationRequest(transactionHash: string, block: number): Promise<void> {
+export async function submitHumanRestorationRequest(transactionHash: string, block: number, binding?: string): Promise<void> {
   text(transactionHash, hash);
+  if (binding !== undefined) text(binding, hash);
   if (!Number.isSafeInteger(block) || block < 1) throw new Error('recourse_loss_block_invalid');
   await withBiometricAction(translate('recourse.restoreAuthorize', 'Authorize your restoration request'), async action => {
-    const recovered = await recoverHumanAccount(action, { lossTransaction: transactionHash, lossBlock: block });
-    useWalletStore.getState().setAddress(recovered.destination);
+    let primary: string | null;
+    if (binding !== undefined) {
+      const owner = object(await RelayAPIService.recourseRequest('ownership'));
+      primary = owner.identity === null ? null : text(owner.identity, hash);
+      if (!Array.isArray(owner.addresses) || !owner.addresses.some(value => object(value).identity === binding
+        && object(value).chainBindingStatus === 'confirmed')) throw Error('recourse_binding_required');
+    } else {
+      const account = useWalletStore.getState().address;
+      if (!account) throw Error('recourse_address_unavailable');
+      primary = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork());
+    }
+    const auxiliaryBinding = binding !== undefined && binding !== primary ? binding : undefined;
+    const recovered = await recoverHumanAccount(action, { lossTransaction: transactionHash, lossBlock: block, auxiliaryBinding });
+    if (auxiliaryBinding === undefined) useWalletStore.getState().setAddress(recovered.destination);
     await RelayAPIService.recourseRequest('restoration-requests', { transactionHash, block,
-      recoveryRequestId: recovered.requestId }, action);
+      recoveryRequestId: recovered.requestId, identity: binding ?? primary }, action);
   });
 }
 
@@ -46,7 +59,20 @@ export async function readRecourseView(): Promise<RecourseView> {
   if (!userId) throw new Error('recourse_identity_unavailable');
   const account = useWalletStore.getState().address;
   if (!account) throw Error('recourse_address_unavailable');
-  const identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork());
+  let identity: string;
+  try { identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork()); }
+  catch (error) {
+    if (!(error instanceof Error) || error.message !== 'recourse_binding_required') throw error;
+    // Public reserves and request-ID exits require no primary registration.
+    identity = `0x${'00'.repeat(32)}`;
+    try {
+      const owner = object(await RelayAPIService.recourseRequest('ownership'));
+      if (owner.identity !== null || !Array.isArray(owner.addresses)) throw Error('recourse_reply_invalid');
+      const bindings = owner.addresses.map(object).filter(row => row.chainBindingStatus === 'confirmed')
+        .map(row => text(row.identity, hash)).sort();
+      if (bindings.length) identity = bindings[0];
+    } catch { /* A public reserve view still works during a private-history outage. */ }
+  }
   const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
   let membership: { enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string; unpaidAtomic: string } | null = null;
   try {
@@ -70,13 +96,15 @@ export async function readRecourseHistory(view: RecourseView): Promise<RecourseV
       RelayAPIService.recourseRequest('ownership'), RelayAPIService.recourseRequest('restoration-requests'),
     ]);
     const owner = object(rawOwner), requests = object(rawRequests).requests;
-    if (owner.identity !== view.identity || !Array.isArray(owner.addresses) || !Array.isArray(requests)) throw new Error('recourse_reply_invalid');
+    if (!Array.isArray(owner.addresses) || !Array.isArray(requests)
+      || (owner.identity !== view.identity && (owner.identity !== null
+        || (!/^0x0+$/.test(view.identity) && !owner.addresses.some(value => object(value).identity === view.identity))))) throw new Error('recourse_reply_invalid');
     return { ...view, historyState: 'available', addresses: owner.addresses.map(value => {
       const row = object(value);
       if (typeof row.boundAtMs !== 'number' || !Number.isSafeInteger(row.boundAtMs)) throw new Error('recourse_reply_invalid');
-      return { address: text(row.address, address), openingBalanceAtomic: text(row.openingBalanceAtomic, atomic), boundAtMs: row.boundAtMs,
+      return { identity: text(row.identity, hash), address: text(row.address, address), openingBalanceAtomic: text(row.openingBalanceAtomic, atomic), boundAtMs: row.boundAtMs,
         confirmed: row.chainBindingStatus === 'confirmed' };
-    }), requests: requests.map(value => { const row = object(value); return { requestId: text(row.requestId, hash),
+    }), requests: requests.map(value => { const row = object(value); return { identity: text(row.identity, hash), requestId: text(row.requestId, hash),
       transactionHash: text(row.transactionHash, hash), status: text(row.status, /^[a-z_]+$/) }; }) };
   } catch { return { ...view, historyState: 'unavailable' }; }
 }

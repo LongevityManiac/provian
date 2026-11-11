@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "El historial de direcciones y solicitudes no está disponible temporalmente. Las restituciones asignadas pueden retirarse directamente en cadena con el identificador de solicitud.",
     "bindingPending": "Registro enviado; esperando confirmación en la cadena.",
+    "selectRestorationWallet": "Selecciona la cartera que perdió PVT",
     "requestExplanation": "Indica la transacción que se llevó tus PVT y su bloque de Base. Tu prueba de recuperación establece una nueva clave de cartera; el relay comprueba la transacción y el registro del intercambio atestiguado antes de determinar el resultado. La copia de seguridad de tu semilla original sigue restaurando tu cartera.",
     "lossTransaction": "Hash de la transacción",
     "lossBlock": "Número de bloque de Base",

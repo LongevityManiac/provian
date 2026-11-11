@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "Address and request history is temporarily unavailable. Allocated restorations can still be withdrawn directly on-chain using the request ID.",
     "bindingPending": "Registration submitted; awaiting chain confirmation.",
+    "selectRestorationWallet": "Select the wallet that lost PVT",
     "requestExplanation": "Name the transaction that took your PVT and its Base block. Your recovery proof establishes a new wallet key; the relay checks the transaction and the witnessed exchange record before making a determination. Your original seed backup still restores your wallet.",
     "lossTransaction": "Transaction hash",
     "lossBlock": "Base block number",

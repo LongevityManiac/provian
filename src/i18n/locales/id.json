@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "Riwayat alamat dan permintaan sementara tidak tersedia. Restorasi yang telah dialokasikan tetap dapat ditarik langsung di chain dengan ID permintaan.",
     "bindingPending": "Pendaftaran dikirim; menunggu konfirmasi rantai.",
+    "selectRestorationWallet": "Pilih dompet yang kehilangan PVT",
     "requestExplanation": "Sebutkan transaksi yang mengambil PVT Anda dan blok Base-nya. Bukti pemulihan Anda menetapkan kunci dompet baru; relay memeriksa transaksi dan catatan pertukaran yang disaksikan sebelum membuat keputusan. Cadangan frasa awal Anda tetap dapat memulihkan dompet.",
     "lossTransaction": "Hash transaksi",
     "lossBlock": "Nomor blok Base",

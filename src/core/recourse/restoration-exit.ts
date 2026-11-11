@@ -8,9 +8,9 @@ export interface RestorationExit {
 }
 /** Anyone may deliver an existing allocation, but only to its contract-bound
  * recovered destination. No relay, membership renewal or new determination is required. */
-export async function prepareRestorationExit(identity: string, request: string,
+export async function prepareRestorationExit(identity: string | undefined, request: string,
   network: OwnerChainNetwork): Promise<RestorationExit> {
-  if (![identity, request].every(value => /^0x[0-9a-f]{64}$/.test(value) && !/^0x0+$/.test(value))) {
+  if (![...(identity === undefined ? [] : [identity]), request].every(value => /^0x[0-9a-f]{64}$/.test(value) && !/^0x0+$/.test(value))) {
     throw new Error('recourse_allocation_identifier_invalid');
   }
   const deployment = await network.deployment();
@@ -28,11 +28,12 @@ export async function prepareRestorationExit(identity: string, request: string,
     };
     const [token, allocation] = await Promise.all([call('token'), call('restorationAllocations', [request])]);
     if (String(token[0]).toLowerCase() !== deployment.addresses.kernel.toLowerCase()) throw new Error('recourse_pool_token_mismatch');
-    if (allocation[0] !== identity || allocation[1] <= 0n || allocation[2] !== false) throw new Error('recourse_allocation_unavailable');
-    return String(allocation[1]);
+    if (!/^0x[0-9a-f]{64}$/.test(allocation[0]) || /^0x0+$/.test(allocation[0])
+      || (identity !== undefined && allocation[0] !== identity) || allocation[1] <= 0n || allocation[2] !== false) throw new Error('recourse_allocation_unavailable');
+    return { identity: String(allocation[0]), amount: String(allocation[1]) };
   }));
-  if (results[0] !== results[1]) throw new Error('recourse_pool_rpc_disagreement');
+  if (results[0].identity !== results[1].identity || results[0].amount !== results[1].amount) throw new Error('recourse_pool_rpc_disagreement');
   if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw new Error('recourse_pool_deployment_changed');
-  return { request, identity, amountAtomic: results[0], pool, manifestHash: deployment.manifestHash,
-    data: RECOURSE_POOL_ABI.encodeFunctionData('deliverRestoration', [request, identity]) };
+  return { request, identity: results[0].identity, amountAtomic: results[0].amount, pool, manifestHash: deployment.manifestHash,
+    data: RECOURSE_POOL_ABI.encodeFunctionData('deliverRestoration', [request, results[0].identity]) };
 }

@@ -37,9 +37,9 @@ vi.mock('./hash-authorization', () => ({
   },
 }));
 vi.mock('./owner-chain', () => ({
-  readOwnerChainState: async () => ({ nonce: state.nonce, destination: state.destination,
-    commitment: sha256(concat([humanRecoverySecret(mnemonic, state.nonce, h('91')), sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, h('91'))))])),
-    signingRoot: sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, h('91')))),
+  readOwnerChainState: async (identity: string) => ({ nonce: state.nonce, destination: state.destination,
+    commitment: sha256(concat([humanRecoverySecret(mnemonic, state.nonce, identity), sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, identity)))])),
+    signingRoot: sha256(sha256(humanRecoverySigningSeed(mnemonic, state.nonce, identity))),
     deployment: { addresses: { kernel: `0x${'44'.repeat(20)}` }, revision: state.revision } }),
   verifyOwnerOperationReceipt: async () => { if (state.failReceipt) throw new Error('invalid_receipt'); },
 }));
@@ -50,13 +50,20 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
   recordAddressProofAuthorization: async () => {},
   recourseRequest: async(path:string,body:unknown)=>{
     state.calls.push({path,body});
+    if(path==='ownership') return { identity: h('91'), addresses: [
+      { identity: h('92'), chainBindingStatus: 'confirmed' }, { identity: h('93'), chainBindingStatus: 'confirmed' }] };
+    if(path==='recover-address') {
+      if(state.loseResponse) { state.loseResponse=false; throw Error('response_lost'); }
+      const input=body as {identity:string;destination:string};
+      return {identity:input.identity,destination:input.destination,generation:state.nonce};
+    }
     if(path!=='restoration-intents')throw Error('unexpected_request');
     const input=body as {transactionHash:string;block:number};
     return {request:input.transactionHash,lossHash:sha256(toUtf8Bytes(JSON.stringify(input))),maximumLoss:'100',kernel:`0x${'44'.repeat(20)}`};
   },
   recourseRecoveryRequest: async (path: string, body: unknown, privateAccess?: {identity:string;secret:Uint8Array;signingSeed:Uint8Array}) => {
     if (path.startsWith('owner-operations/')) {
-      expect(privateAccess?.identity).toBe(h('91'));
+      expect([h('91'),h('92'),h('93')]).toContain(privateAccess?.identity);
       expect(privateAccess?.secret.length).toBe(32); expect(privateAccess?.signingSeed.length).toBe(32);
     }
     state.calls.push({ path, body });
@@ -75,6 +82,32 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
 beforeEach(() => {
   state.memory.clear(); state.failReceipt = false; state.loseResponse = false; state.nonce = 0; state.destination = ''; state.random = 17;
   state.calls = []; state.installed = []; state.credentials = []; state.revision = 1n; state.refuseQueue = false; state.crashReplacement = false;
+});
+it('recovers an auxiliary binding with its own journal and key without installing primary credentials', async () => {
+  const options={auxiliaryBinding:h('92'),lossTransaction:h('77'),lossBlock:100};
+  state.loseResponse=true;
+  await expect(recoverHumanAccount(action,options)).rejects.toThrow('response_lost');
+  const first=await recoverHumanAccount(action,options);
+  expect(await recoverHumanAccount(action,options)).toEqual(first);
+  expect(state.credentials).toEqual([]); expect(state.installed).toEqual([]);
+  const requests=state.calls.filter(c=>c.path==='recover-address').map(c=>c.body as Record<string,unknown>);
+  expect(requests).toHaveLength(2);
+  expect(requests[0].identity).toBe(h('92'));expect(requests[0].destination).toBe(first.destination);
+  expect(requests[1].requestId).toBe(requests[0].requestId);
+  expect(requests[0]).not.toHaveProperty('authSecret');expect(requests[0]).not.toHaveProperty('deviceId');
+  expect(state.calls.find(c=>c.path==='restoration-intents')?.body).toEqual({identity:h('92'),transactionHash:h('77'),block:100});
+  expect(state.calls.some(c=>c.path==='recover-human')).toBe(false);
+  state.nonce=0;state.destination='';
+  const sibling=await recoverHumanAccount(action,{...options,auxiliaryBinding:h('93')});
+  expect(sibling.destination).not.toBe(first.destination);
+  expect([...state.memory.keys()].filter(k=>k.includes('_aux_'))).toHaveLength(2);
+});
+it('refuses primary or unknown bindings on the auxiliary path before signing any owner operation',async()=>{
+  for(const auxiliaryBinding of [h('91'),h('94')]) {
+    await expect(recoverHumanAccount(action,{auxiliaryBinding})).rejects.toThrow('auxiliary_binding_invalid');
+  }
+  expect(state.calls.every(c=>c.path==='ownership')).toBe(true);
+  expect(state.installed).toEqual([]);expect(state.credentials).toEqual([]);expect(state.memory.size).toBe(0);
 });
 it('replaces an unexecuted stale pointer revision safely, including a crash after the replacement write', async () => {
   state.refuseQueue = true;

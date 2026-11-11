@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { HDKey } from '@scure/bip32';
 import { bytesToHex } from '@noble/hashes/utils';
-import { concat, sha256, toUtf8Bytes } from 'ethers';
+import { concat, sha256, toUtf8Bytes, computeAddress } from 'ethers';
 import SeedManager from '../wallet/SeedManager';
 import { mnemonicToSeedPaced } from '../wallet/pacedSeed';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -16,17 +16,19 @@ import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './hash-authorization';
 import { readOwnerChainState, verifyOwnerOperationReceipt } from './owner-chain';
 import { ownerOperationIntent, recoveryOperationId, parseRestorationScope, type RestorationScope, type RecoveryOwnerOperation } from './owner-operation';
+import { auxiliaryAccountKey } from './auxiliary-account';
 
 interface Journal {
   version: 1; rootAddress: string; identity: string; requestId: string; authSecret: string; deviceId: string;
   kernel: string; revision: string; nonce: number; accountGeneration: number;
   intent?: string; authorizationTxHash?: string; userId?: string; installed?: boolean;
   lossTransaction?: string; lossBlock?: number; restoration?: RestorationScope;
+  auxiliary?: true;
 }
 const hex32 = () => `0x${bytesToHex(Crypto.getRandomBytes(32))}`;
-const journalKey = (root: string) => `provian_recourse_recovery_${root.slice(2)}`;
+const journalKey = (root: string, binding?: string) => `provian_recourse_recovery_${root.slice(2)}${binding ? `_aux_${binding.slice(2)}` : ''}`;
 async function save(journal: Journal): Promise<void> {
-  const key = journalKey(journal.rootAddress), serialized = JSON.stringify(journal);
+  const key = journalKey(journal.rootAddress, journal.auxiliary ? journal.identity : undefined), serialized = JSON.stringify(journal);
   await SecureStore.setItemAsync(key, serialized, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
   if (await SecureStore.getItemAsync(key) !== serialized) throw new Error('recourse_journal_write_unconfirmed');
 }
@@ -38,7 +40,7 @@ function object(value: unknown): Record<string, unknown> {
 /** The seed remains in its existing vault. A small device-encrypted journal
  * fixes the destination and fresh credentials before any authorization leaves.
  * Hash signatures are deterministically regenerated, never kept in public state. */
-type RecoveryOptions = { newRecovery?: boolean; lossTransaction?: string; lossBlock?: number; signal?: AbortSignal };
+type RecoveryOptions = { newRecovery?: boolean; lossTransaction?: string; lossBlock?: number; signal?: AbortSignal; auxiliaryBinding?: string };
 let recoveryTail: Promise<unknown> = Promise.resolve();
 export function recoverHumanAccount(action: BiometricAction, options: RecoveryOptions = {}):
 Promise<{ destination: string; requestId: string }> {
@@ -49,16 +51,24 @@ Promise<{ destination: string; requestId: string }> {
 async function performHumanRecovery(action: BiometricAction, options: RecoveryOptions):
 Promise<{ destination: string; requestId: string }> {
   assertBiometricAction(action);
+  if (options.auxiliaryBinding !== undefined) {
+    if (!/^0x[0-9a-f]{64}$/.test(options.auxiliaryBinding)) throw Error('recourse_auxiliary_binding_invalid');
+    const owned = object(await RelayAPIService.recourseRequest('ownership'));
+    if (owned.identity === options.auxiliaryBinding || !Array.isArray(owned.addresses)
+      || !owned.addresses.some(value => object(value).identity === options.auxiliaryBinding
+        && object(value).chainBindingStatus === 'confirmed')) throw Error('recourse_auxiliary_binding_invalid');
+  }
   if (options.lossTransaction !== undefined && !/^0x[0-9a-f]{64}$/.test(options.lossTransaction)) throw new Error('recourse_loss_transaction_invalid');
   if (options.lossTransaction !== undefined && (!Number.isSafeInteger(options.lossBlock) || options.lossBlock! < 1)) throw new Error('recourse_loss_block_invalid');
   const mnemonic = await SeedManager.getMnemonic(action);
   if (!mnemonic) throw new Error('recourse_seed_unavailable');
   const root = await deriveHumanAccount(mnemonic, 0);
-  const raw = await SecureStore.getItemAsync(journalKey(root.evm));
+  const raw = await SecureStore.getItemAsync(journalKey(root.evm, options.auxiliaryBinding));
   let journal: Journal | null = raw === null ? null : JSON.parse(raw) as Journal;
   if (journal && (journal.version !== 1 || journal.rootAddress !== root.evm
     || !/^0x[0-9a-f]{64}$/.test(journal.identity) || !/^0x[0-9a-f]{64}$/.test(journal.requestId)
-    || !/^[0-9a-f]{64}$/.test(journal.authSecret))) throw new Error('recourse_journal_invalid');
+    || !/^[0-9a-f]{64}$/.test(journal.authSecret) || Boolean(journal.auxiliary) !== Boolean(options.auxiliaryBinding)
+    || (options.auxiliaryBinding !== undefined && journal.identity !== options.auxiliaryBinding))) throw new Error('recourse_journal_invalid');
   if (journal?.installed && (options.newRecovery
     || (options.lossTransaction !== undefined && options.lossTransaction !== journal.lossTransaction))) {
     journal = null;
@@ -69,24 +79,32 @@ Promise<{ destination: string; requestId: string }> {
   if(journal && options.lossTransaction!==undefined && journal.lossBlock!==options.lossBlock)throw new Error('recourse_loss_block_changed');
   const network = ownerChainNetwork();
   if (!journal) {
-    const found = await discoverHumanAccount(mnemonic, network);
+    const found = options.auxiliaryBinding ? { identity: options.auxiliaryBinding } : await discoverHumanAccount(mnemonic, network);
     if (!found) throw new Error('recourse_binding_required');
     const state = await readOwnerChainState(found.identity, network);
     journal = { version: 1, rootAddress: root.evm, identity: found.identity, requestId: hex32(),
       authSecret: hex32().slice(2), deviceId: await RelayAPIService.getMeterDeviceId(),
       kernel: state.deployment.addresses.kernel.toLowerCase(), revision: state.deployment.revision.toString(),
       nonce: state.nonce, accountGeneration: state.nonce + 1,
+      ...(options.auxiliaryBinding ? { auxiliary: true } : {}),
       ...(options.lossTransaction === undefined ? {} : { lossTransaction: options.lossTransaction, lossBlock: options.lossBlock }) };
     if (options.lossTransaction !== undefined) {
       const prepared = object(await RelayAPIService.recourseRequest('restoration-intents', {
-        transactionHash: options.lossTransaction, block: options.lossBlock }, action));
+        transactionHash: options.lossTransaction, block: options.lossBlock,
+        ...(options.auxiliaryBinding ? { identity: options.auxiliaryBinding } : {}) }, action));
       if (prepared.kernel !== journal.kernel) throw new Error('recourse_owner_protocol_changed');
       journal.restoration = parseRestorationScope({ request: prepared.request, lossHash: prepared.lossHash, maximumLoss: prepared.maximumLoss });
     }
     humanAccountPaths(journal.accountGeneration);
     await save(journal);
   }
-  const state = journal, next = await deriveHumanAccount(mnemonic, state.accountGeneration);
+  const state = journal;
+  const next = await (async () => {
+    if (!state.auxiliary) return deriveHumanAccount(mnemonic, state.accountGeneration);
+    const key = await auxiliaryAccountKey(mnemonic, state.identity, state.accountGeneration);
+    try { return { evm: computeAddress(`0x${bytesToHex(key)}`).toLowerCase(), sol: '' }; }
+    finally { key.fill(0); }
+  })();
   if (state.installed) {
     const current = await readOwnerChainState(state.identity, network);
     if (current.destination !== next.evm || current.nonce < state.nonce + 1) throw new Error('recourse_completed_recovery_superseded');
@@ -140,6 +158,23 @@ Promise<{ destination: string; requestId: string }> {
     await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
     const preimage = concat([operation.proof.recoverySecret, signingRoot]);
     const expiresAtMs = Date.now() + 300000;
+    if (state.auxiliary) {
+      const body = { kernel: state.kernel, identity: state.identity, preimage, destination: next.evm, nextCommitment, nextSigningRoot,
+        authorizationTxHash: state.authorizationTxHash, authorizationNonce: state.nonce, requestId: state.requestId, expiresAtMs };
+      const message = ['Provian auxiliary ownership recovery', 'chain:8453', `kernel:${state.kernel}`, `identity:${state.identity}`,
+        `recovery:${sha256(preimage)}`, `destination:${next.evm}`, `next:${nextCommitment}`, `next-hash-authority:${nextSigningRoot}`,
+        `authorization:${state.authorizationTxHash}`, `authorization-nonce:${state.nonce}`, `request:${state.requestId}`, `expires:${expiresAtMs}`].join('\n');
+      const key = await auxiliaryAccountKey(mnemonic, state.identity, state.accountGeneration);
+      try {
+        const signature = await new ActionWallet(`0x${bytesToHex(key)}`, action).signMessage(message);
+        const result = object(await RelayAPIService.recourseRequest('recover-address', { ...body, signature }, action));
+        if (result.identity !== state.identity || result.destination !== next.evm || typeof result.generation !== 'number'
+          || !Number.isSafeInteger(result.generation) || result.generation < 1) throw Error('recourse_recovery_reply_invalid');
+        await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
+        state.installed = true; await save(state);
+        return { destination: next.evm, requestId: state.requestId };
+      } finally { key.fill(0); }
+    }
     const body = { kernel: state.kernel, identity: state.identity, preimage, destination: next.evm, nextCommitment, nextSigningRoot,
       authorizationTxHash: state.authorizationTxHash, authorizationNonce: state.nonce,
       requestId: state.requestId, deviceId: state.deviceId, authSecret: state.authSecret, expiresAtMs };

@@ -10,6 +10,36 @@ import { MEMBERSHIP_DEBIT_OPERATIONS } from '../core/recourse/membership-debit-o
 import { PRIVATE_MEMBERSHIP_COLLECTIONS } from '../core/recourse/private-membership-reservation';
 import * as restoration from '../core/recourse/restoration-request';
 import * as auxiliaryRecovery from '../core/recourse/auxiliary-recovery';
+import * as poolState from '../core/recourse/pool-state';
+import * as membershipView from '../core/recourse/private-membership-view';
+
+test('an auxiliary-only owner reads private membership without inventing primary recovery authority', async () => {
+  const db=createFakeFirestore(),walletId='wallet_aw_aux_member',ownerIdentity=identityHash('agent',walletId);
+  const identity=`0x${'ab'.repeat(32)}`,account=`0x${'ac'.repeat(20)}`;
+  const owner={ownerIdentity,ownerType:'agent',ownerId:walletId,walletId};
+  db.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`,owner);
+  db.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`,{...owner,identity,primaryBinding:false});
+  db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`,{ownerIdentity,identity,address:account,chainBindingStatus:'confirmed'});
+  const pool={pool:account,kernel:account,block:100,blockHash:identity,timestamp:1000,addressConsent:true,currentAddress:account,
+    month:'1',reserveAtomic:'100',consentNonce:'0',consentGeneration:'1',debitNonce:'0',outstandingAtomic:'0',authority:account,
+    participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100,signedRuleHash:identity,outcomeRevision:'0'};
+  const readPool=jest.spyOn(poolState,'readRecoursePoolState').mockResolvedValue(pool);
+  const readMembership=jest.spyOn(membershipView,'readPrivateMembershipView').mockResolvedValue({enrolled:true,grace:false,
+    month:'1',endMonthExclusive:'2',unpaidAtomic:'0',block:100,blockHash:identity});
+  const app=express();app.use(express.json());
+  app.use('/v1/recourse',createRecourseRouter({db} as unknown as AgentBankDeps,(req,_res,next)=>{
+    req.agentWallet={id:walletId} as Request['agentWallet'];next();
+  }));
+  try {
+    const response=await request(app).get('/v1/recourse/pool');
+    expect(response.status).toBe(200);expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body.identity).toBe(identity);expect(response.body.membership.enrolled).toBe(true);
+    expect(readPool).toHaveBeenCalledWith(identity);expect(readMembership).toHaveBeenCalledWith(db,ownerIdentity,pool);
+    expect(db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)).not.toHaveProperty('primaryBinding');
+    db.store.get(`${RECOURSE_COLLECTIONS.identities}/${identity}`)!.walletId='other';
+    expect((await request(app).get('/v1/recourse/pool')).status).toBe(503);
+  } finally {readPool.mockRestore();readMembership.mockRestore();}
+});
 
 test('auxiliary recovery requires owner authentication and returns only a generic error', async () => {
   const db = createFakeFirestore(), app = express(); app.use(express.json());

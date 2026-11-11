@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "Historia ya anwani na maombi haipatikani kwa muda. Mgao wa urejeshaji unaweza kutolewa moja kwa moja kwenye mnyororo kwa kutumia kitambulisho cha ombi.",
     "bindingPending": "Usajili umetumwa; unasubiri uthibitisho wa mnyororo.",
+    "selectRestorationWallet": "Chagua pochi iliyopoteza PVT",
     "requestExplanation": "Taja muamala uliochukua PVT zako na kitalu chake cha Base. Uthibitisho wako wa kurejesha ufikiaji huanzisha ufunguo mpya wa pochi; relay hukagua muamala na rekodi ya ubadilishanaji ulioshuhudiwa kabla ya kufanya uamuzi. Nakala ya akiba ya maneno yako asilia ya seed bado hurejesha pochi yako.",
     "lossTransaction": "Hash ya muamala",
     "lossBlock": "Nambari ya kitalu cha Base",

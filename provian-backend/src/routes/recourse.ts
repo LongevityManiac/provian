@@ -299,7 +299,15 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/pool', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      const identity = await primaryBindingIdentity(deps.db, owner);
+      const portfolio = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(identityHash(owner.type, owner.id)).get();
+      let identity: string;
+      if (portfolio.get('primaryBinding') !== undefined) identity = await primaryBindingIdentity(deps.db, owner);
+      else {
+        const addresses = await deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', identityHash(owner.type, owner.id)).get();
+        const bindings = addresses.docs.filter(row => row.get('chainBindingStatus') === 'confirmed')
+          .map(row => String(row.get('identity'))).sort();
+        identity = bindings.length ? await ownedBindingIdentity(deps.db, owner, bindings[0]) : `0x${'00'.repeat(32)}`;
+      }
       const pool = await readRecoursePoolState(identity);
       const membership = await readPrivateMembershipView(deps.db, identityHash(owner.type, owner.id), pool);
       res.json({ ...pool, identity, membership });

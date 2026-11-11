@@ -1960,7 +1960,7 @@ class RelayAPIService {
         return response.json();
     }
 
-    async recourseRequest(path: MembershipRequestPath | 'pool' | 'ownership' | 'restoration-requests' | 'restoration-intents' | 'binding-challenge' | 'bind',
+    async recourseRequest(path: MembershipRequestPath | 'pool' | 'ownership' | 'restoration-requests' | 'restoration-intents' | 'binding-challenge' | 'bind' | 'recover-address',
         body?: unknown, biometricAction?: BiometricAction): Promise<unknown> {
         const response = await this.makeAuthenticatedRequest(`/v1/recourse/${path}`, {
             method: body === undefined ? 'GET' : 'POST',

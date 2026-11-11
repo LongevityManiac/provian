@@ -5132,6 +5132,7 @@
     },
     "historyUnavailable": "주소 및 요청 내역을 일시적으로 사용할 수 없습니다. 배정된 복원액은 요청 ID로 온체인에서 직접 인출할 수 있습니다.",
     "bindingPending": "등록을 제출했습니다. 체인 확인을 기다리는 중입니다.",
+    "selectRestorationWallet": "PVT를 잃은 지갑을 선택하세요",
     "requestExplanation": "PVT를 가져간 거래와 해당 Base 블록을 입력하세요. 복구 증명으로 새 지갑 키를 설정하며, relay는 거래와 증명된 교환 기록을 확인한 뒤 결정합니다. 원래 시드 구문 백업으로도 지갑을 계속 복구할 수 있습니다.",
     "lossTransaction": "거래 해시",
     "lossBlock": "Base 블록 번호",

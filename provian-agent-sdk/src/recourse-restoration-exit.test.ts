@@ -6,7 +6,7 @@ import type { OwnerChainNetwork } from './recourse-owner-chain';
 import type { ProtocolDeployment } from './protocol-pointer';
 const pool = `0x${'12'.repeat(20)}`, kernel = `0x${'13'.repeat(20)}`, identity = `0x${'34'.repeat(32)}`;
 const request = `0x${'44'.repeat(32)}`, blockHash = `0x${'56'.repeat(32)}`, code = '0x6000';
-function network(options: { foreign?: boolean; zero?: boolean; withdrawn?: boolean; disagree?: boolean; runtime?: boolean; token?: boolean; changed?: boolean } = {}): OwnerChainNetwork {
+function network(options: { foreign?: boolean; zero?: boolean; withdrawn?: boolean; disagree?: boolean; identityDisagree?: boolean; emptyIdentity?: boolean; runtime?: boolean; token?: boolean; changed?: boolean } = {}): OwnerChainNetwork {
   let reads = 0;
   const deployment: ProtocolDeployment = { pointer: pool, revision: 1n, blockHash,
     addresses: { kernel, recoursePool: pool, eligibilityVerifier: pool, beneficiaryVerifier: pool,
@@ -22,7 +22,7 @@ function network(options: { foreign?: boolean; zero?: boolean; withdrawn?: boole
     if (parsed?.name === 'token') return RECOURSE_POOL_ABI.encodeFunctionResult('token', [options.token ? pool : kernel]);
     expect(parsed?.name).toBe('restorationAllocations');
     expect(parsed?.args[0]).toBe(request);
-    return RECOURSE_POOL_ABI.encodeFunctionResult('restorationAllocations', [options.foreign ? request : identity,
+    return RECOURSE_POOL_ABI.encodeFunctionResult('restorationAllocations', [options.emptyIdentity ? `0x${'00'.repeat(32)}` : options.foreign || (options.identityDisagree && index === 1) ? request : identity,
       options.zero ? 0 : options.disagree && index === 1 ? 11 : 10, options.withdrawn === true]);
   } });
   return { deployment: async () => ({ ...deployment, manifestHash: options.changed && reads++ > 0 ? 'changed' : 'current' }), rpcs: [rpc(0), rpc(1)] };
@@ -33,6 +33,14 @@ it('prepares delivery with only chain RPCs and cannot choose a recipient', async
   const call = RECOURSE_POOL_ABI.parseTransaction({ data: result.data });
   expect(call?.name).toBe('deliverRestoration');
   expect([...call!.args]).toEqual([request, identity]);
+});
+it('discovers the exact binding from the allocated request without relay history or a primary binding', async () => {
+  const result = await prepareRestorationExit(undefined, request, network({ foreign: true }));
+  expect(result.identity).toBe(request);
+  expect([...RECOURSE_POOL_ABI.parseTransaction({ data: result.data })!.args]).toEqual([request, request]);
+  for (const option of ['zero', 'withdrawn', 'disagree', 'identityDisagree', 'emptyIdentity', 'runtime', 'token', 'changed'] as const) {
+    await expect(prepareRestorationExit(undefined, request, network({ [option]: true }))).rejects.toThrow(/recourse_/);
+  }
 });
 it('refuses foreign, consumed, empty, changed or unverifiable allocations', async () => {
   for (const option of ['foreign', 'zero', 'withdrawn', 'disagree', 'runtime', 'token', 'changed'] as const) {

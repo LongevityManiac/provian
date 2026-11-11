@@ -5132,6 +5132,7 @@
     },
     "historyUnavailable": "地址和请求历史暂时不可用。已分配的恢复额度仍可通过请求ID直接在链上提取。",
     "bindingPending": "登记已提交，等待链上确认。",
+    "selectRestorationWallet": "选择丢失 PVT 的钱包",
     "requestExplanation": "填写转走你 PVT 的交易及其 Base 区块。恢复证明用于建立新的钱包密钥；relay 会检查交易及有见证的交换记录，再作出决定。原始助记词备份仍可恢复你的钱包。",
     "lossTransaction": "交易哈希",
     "lossBlock": "Base 区块高度",

@@ -5131,6 +5131,7 @@
     },
     "historyUnavailable": "O histórico de endereços e solicitações está temporariamente indisponível. Restaurações alocadas ainda podem ser retiradas diretamente na cadeia com o ID da solicitação.",
     "bindingPending": "Registro enviado; aguardando confirmação na rede.",
+    "selectRestorationWallet": "Selecione a carteira que perdeu PVT",
     "requestExplanation": "Informe a transação que levou seus PVT e seu bloco na Base. Sua prova de recuperação estabelece uma nova chave de carteira; o relay verifica a transação e os registros de trocas testemunhadas antes de uma determinação. O backup da sua frase original ainda restaura sua carteira.",
     "lossTransaction": "Hash da transação",
     "lossBlock": "Número do bloco na Base",

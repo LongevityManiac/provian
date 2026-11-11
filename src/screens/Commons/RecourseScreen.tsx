@@ -24,6 +24,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const [lossTransaction, setLossTransaction] = useState('');
   const [lossBlock, setLossBlock] = useState('');
   const [allocationRequest, setAllocationRequest] = useState('');
+  const [selectedBinding, setSelectedBinding] = useState<string | undefined>();
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     setLoading(true); setError(false);
@@ -45,15 +46,15 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     setBusy(true); setError(false);
     try {
       if (!/^[0-9]+$/.test(lossBlock.trim())) throw new Error('recourse_loss_block_invalid');
-      await submitHumanRestorationRequest(lossTransaction.trim().toLowerCase(), Number(lossBlock));
+      await submitHumanRestorationRequest(lossTransaction.trim().toLowerCase(), Number(lossBlock), selectedBinding ?? state?.identity);
       setLossTransaction(''); setLossBlock(''); await load();
     } catch { setError(true); }
     finally { setBusy(false); }
   };
-  const withdraw = async (request: string) => {
-    if (!state || busy) return;
+  const withdraw = async (request: string, identity?: string) => {
+    if (busy) return;
     setBusy(true); setError(false);
-    try { await withdrawHumanRestoration(state.identity, request.trim().toLowerCase()); setAllocationRequest(''); await load(); }
+    try { await withdrawHumanRestoration(identity, request.trim().toLowerCase()); setAllocationRequest(''); await load(); }
     catch { setError(true); }
     finally { setBusy(false); }
   };
@@ -61,6 +62,14 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
       <Text style={styles.lead}>{t('recourse.intro', 'Protect the PVT you hold. Bind your addresses to an ownership record that survives a change of key; choose membership for theft recourse.')}</Text>
+      <View style={styles.card}>
+        <Text style={styles.small}>{t('recourse.exitRule', 'Contributions are nonrefundable and burned PVT cannot be recovered. An allocated restoration remains yours after you leave and can be withdrawn directly on-chain without the relay.')}</Text>
+        <TextInput accessibilityLabel={t('recourse.allocationRequest', 'Restoration request ID')} placeholder={t('recourse.allocationRequest', 'Restoration request ID')}
+          value={allocationRequest} onChangeText={setAllocationRequest} autoCapitalize="none" autoCorrect={false} editable={!busy}
+          style={styles.input} placeholderTextColor={COLORS.textSecondary} />
+        <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={() => { void withdraw(allocationRequest); }}
+          style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation', 'Withdraw allocated restoration')}</Text></TouchableOpacity>
+      </View>
       {loading && !state ? <ActivityIndicator color={COLORS.primary} /> : null}
       {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error', 'We could not confirm the latest state or complete that action. Refresh to check the chain before trying again.')}</Text>
         {button(t('recourse.refresh', 'Refresh'), () => { void load(); })}</View> : null}
@@ -90,16 +99,17 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.resources', 'Member-funded reserves')}</Text>
           <Text style={styles.body}>{t('recourse.available', 'Available for restoration: {{amount}} PVT', { amount: pvtAmount(state.reserveAtomic) })}</Text>
-          <Text style={styles.small}>{t('recourse.exitRule', 'Contributions are nonrefundable and burned PVT cannot be recovered. An allocated restoration remains yours after you leave and can be withdrawn directly on-chain without the relay.')}</Text>
-          <TextInput accessibilityLabel={t('recourse.allocationRequest', 'Restoration request ID')} placeholder={t('recourse.allocationRequest', 'Restoration request ID')}
-            value={allocationRequest} onChangeText={setAllocationRequest} autoCapitalize="none" autoCorrect={false} editable={!busy}
-            style={styles.input} placeholderTextColor={COLORS.textSecondary} />
-          {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(allocationRequest); })}
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.requests', 'Restoration requests')}</Text>
           <Text style={styles.body}>{t('recourse.rule', 'Reversal comes first, with both restoration authority and your independent recovery proof. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder, pro rata when underfunded. Every determination and outcome enters your own chain.')}</Text>
           <Text style={styles.small}>{t('recourse.requestExplanation', 'Name the transaction that took your PVT and its Base block. Your recovery proof establishes a new wallet key; the relay checks the transaction and the witnessed exchange record before making a determination. Your original seed backup still restores your wallet.')}</Text>
+          <Text style={styles.body}>{t('recourse.selectRestorationWallet', 'Select the wallet that lost PVT')}</Text>
+          {state.addresses.filter(row => row.confirmed).map(row => <TouchableOpacity key={row.address}
+            accessibilityRole="radio" accessibilityState={{ checked: (selectedBinding ?? state.identity) === row.identity }}
+            disabled={busy || loading} onPress={() => setSelectedBinding(row.identity)} style={styles.button}>
+            <Text style={styles.buttonText}>{(selectedBinding ?? state.identity) === row.identity ? '● ' : '○ '}{row.address}</Text>
+          </TouchableOpacity>)}
           <TextInput accessibilityLabel={t('recourse.lossTransaction', 'Transaction hash')} placeholder={t('recourse.lossTransaction', 'Transaction hash')}
             value={lossTransaction} onChangeText={setLossTransaction} autoCapitalize="none" autoCorrect={false} editable={!busy}
             style={styles.input} placeholderTextColor={COLORS.textSecondary} />
@@ -110,7 +120,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state.requests.map(row => <View key={row.requestId} style={styles.request}><Text selectable style={styles.address}>{row.transactionHash}</Text>
             <Text style={styles.body}>{t(`recourse.requestStatus.${row.status}`, row.status.replace(/_/g, ' '))}</Text>
             <Text selectable style={styles.address}>{t('recourse.allocationRequest', 'Restoration request ID')}: {row.requestId}</Text>
-            {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(row.requestId); })}</View>)}
+            {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(row.requestId, row.identity); })}</View>)}
         </View>
       </> : null}
       {busy ? <ActivityIndicator color={COLORS.primary} /> : null}

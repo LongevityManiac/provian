@@ -297,6 +297,13 @@ const MUTATION_SETS = {
         expectedKilledBy: 'auxiliary recovery appends exactly one owner-chain record and fresh binding without changing login, primary wallet or earning proofs' },
     ],
   },
+  'restoration-exit-discovery': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/recourse-restoration-exit.ts',
+    testMatchPath: 'src/recourse-restoration-exit.test.ts',
+    mutations: [{ id: 'EXIT-BINDING-AGREEMENT', description: 'derive an allocation binding despite independent RPC disagreement',
+      find: 'results[0].identity !== results[1].identity || ', replace: '',
+      expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
+  },
   'settlement-terminal-winner': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/settlement-cycle-runner.ts',
     testMatchPath: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',
