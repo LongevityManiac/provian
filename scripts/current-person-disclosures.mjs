@@ -65,7 +65,7 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "7a9a096c1e42fe064665306c414483e3de55f0a8233e0848bf73f7595764a30c"
   ],
   "provian-website/src/app/recourse/page.tsx": [
-    "7b5aba0bd7a0a359e001ea021604f05be75c3dd208b7fa29c452c34af19a1284"
+    "c41f28a0ea00ca6cdce9d34a19bab72d2e3f4111065cdc80864fc99a86de0cc8"
   ],
   "provian-website/src/content/vision.generated.json": [
     "0afb60daef05c4e2646a125bf6a1955f52f7326a4e9b1f0fae79babd4115d572"
