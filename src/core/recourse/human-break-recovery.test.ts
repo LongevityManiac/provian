@@ -1,4 +1,5 @@
-vi.mock('./human-recovery', () => ({ resumeHumanRecoveryForRestore: async () => null, replaceHumanAccountForRestore: (...args: unknown[]) => f.replace(...args) }));
+vi.mock('./human-recovery', () => ({ resumeHumanRecoveryForRestore: async () => null, replaceHumanAccountForRestore: (...args: unknown[]) => f.replace(...args),
+  recoverHumanAccountFromBackup: (...args: unknown[]) => f.independent(...args) }));
 import { beforeEach, expect, test, vi } from 'vitest';
 import { sha256 } from 'ethers';
 import type { BiometricAction } from '../security/biometricAction';
@@ -6,7 +7,8 @@ import type { OwnerChainNetwork } from './owner-chain';
 import { recoverHumanBreak, recoverHumanAuxiliaryBreak, discoverHumanAccountForRestore } from './human-break-recovery';
 
 const f = vi.hoisted(() => ({ storage:new Map<string,string>(), badReceipt:false, badUser:false, badEntitlement:false,
-  spendingLost:false, replace:vi.fn(), discoverError:false, requests:[] as string[], phases:[] as string[], credentials:vi.fn(), proof:vi.fn(),
+  spendingLost:false, typedSpendingLoss:false, ownerNonce:1, independent:vi.fn(), replacementAddress:null as string|null,
+  replace:vi.fn(), discoverError:false, requests:[] as string[], phases:[] as string[], credentials:vi.fn(), proof:vi.fn(),
   privateGenerations:[] as number[], firstBoundGeneration:0, snapshotSeed:21, secrets:[] as Uint8Array[], cancelled:false, builds:0, historyChanged:false, restored:false, relayRestored:false,
   auxiliaryRequestId:null as string|null, random:10 }));
 const h = (n: number) => `0x${n.toString(16).padStart(64,'0')}`, a = (n: number) => `0x${n.toString(16).padStart(40,'0')}`;
@@ -37,7 +39,7 @@ vi.mock('./human-account', () => ({discoverHumanHashAccountSelection:async (_m:s
 vi.mock('./human-discovery', () => ({discoverHumanAccount:async () => {
   if(f.spendingLost)throw Error('recourse_hash_account_key_mismatch');
   if(f.discoverError)throw Error('recourse_break_restoration_required');
-  return {identity:h(1),selection:{kind:'hash',evm:a(3),generation:2,hashAccount:{breakOrigin:a(2)}}};
+  return {identity:h(1),selection:{kind:'hash',evm:f.replacementAddress??a(3),generation:2,hashAccount:{breakOrigin:a(2)}}};
 }}));
 vi.mock('./break-recovery', () => ({readBreakRecoveryContext:async () => a(2),
   prepareBreakRecovery:async (input:{persistBeforePublishing:(b:unknown)=>Promise<void>}) => {
@@ -60,8 +62,14 @@ vi.mock('./free-break-recovery', () => ({recoverFreeBreak:async (input:{
 vi.mock('./break-restoration-data', () => ({parseBreakRestorationRequest:(v:unknown)=>v,
   breakRestorationDetails:()=>({identity:h(1),destination:a(3),amount:'200',destinationKeyRoot:sha256(new Uint8Array(32).fill(11)),
     proof:{recoverySecret:h(20),signingRoot:h(21),nextCommitment:sha256(new Uint8Array(32).fill(12)),nextSigningRoot:sha256(new Uint8Array(32).fill(13))}})}));
-vi.mock('./owner-chain', () => ({readOwnerChainState:async () => ({nonce:1,destination:f.restored?a(3):a(0)})}));
-vi.mock('./break-recovery-receipt', () => ({verifyBreakRecoveryReceipt:async () => {if(f.badReceipt)throw Error('receipt_unverified');}}));
+vi.mock('./owner-chain', () => ({readOwnerChainState:async () => ({nonce:f.ownerNonce,destination:f.restored?a(3):a(0)})}));
+vi.mock('./break-recovery-receipt', async importOriginal => {
+  const original = await importOriginal<typeof import('./break-recovery-receipt')>();
+  return { ...original, verifyBreakRecoveryReceipt:async () => {
+    if(f.badReceipt)throw Error('receipt_unverified');
+    if(f.typedSpendingLoss)throw new original.BreakRecoverySpendingKeyChanged();
+  }};
+});
 vi.mock('./hash-account-deployment', () => ({discoverHashAccount:async () => ({account:a(3),nonce:'0',currentRoot:sha256(new Uint8Array(32).fill(11))})}));
 vi.mock('./hash-authorization', () => ({recoverySigningRoot:async (key:Uint8Array)=>sha256(key),recoveryCommitment:(key:Uint8Array)=>sha256(key)}));
 vi.mock('./hash-account', () => ({signHashAccountMessage:async ()=> '0xsignature'}));
@@ -100,6 +108,7 @@ vi.mock('../../services/RelayAPIService', () => ({default:{
   },
 }}));
 beforeEach(()=>{f.storage.clear();f.requests=[];f.privateGenerations=[];f.firstBoundGeneration=0;f.snapshotSeed=21;f.secrets=[];f.badReceipt=false;f.badUser=false;f.badEntitlement=false;
+  f.typedSpendingLoss=false;f.ownerNonce=1;f.independent.mockReset();f.replacementAddress=null;
   f.cancelled=false;f.builds=0;f.historyChanged=false;f.discoverError=false;f.restored=false;f.relayRestored=false;f.credentials.mockClear();f.proof.mockClear();f.auxiliaryRequestId=null;f.random=10;});
 const action={} as BiometricAction,network={deployment:async()=>({manifestHash:h(8)})} as OwnerChainNetwork;
 test('an auxiliary break restores its own hash account and lineage without changing primary credentials or selection',async()=>{
@@ -196,4 +205,45 @@ test('restoring a backup with a stolen hash spending root invokes independent re
  try{expect(await discoverHumanAccountForRestore('test backup',action,network)).toEqual({identity,selection:{evm:a(90)}});
   expect(f.replace).toHaveBeenCalledWith('test backup',action,network);
  }finally{f.spendingLost=false;f.replace.mockReset();}
+});
+
+test.each([false,true])('verified initial spending theft resumes independent recovery (auxiliary=%s)',async auxiliary=>{
+  f.typedSpendingLoss=true;
+  f.independent.mockImplementation(async()=>{f.replacementAddress=a(90);return {destination:a(90),requestId:h(90)};});
+  const run=()=>auxiliary?recoverHumanAuxiliaryBreak('test backup',action,{identity,originAddress:a(10)},{network})
+    :recoverHumanBreak('test backup',action,{network});
+  const result=await run();
+  expect('destination' in result?result.destination:result.selection.evm).toBe(a(90));
+  expect(f.independent).toHaveBeenCalledWith('test backup',action,network,
+    auxiliary?{signal:undefined,auxiliaryBinding:identity}:{signal:undefined});
+  const journal=JSON.parse([...f.storage.values()][0]);
+  expect(journal.replacementStarted).toBe(true);expect(journal.credentialsInstalled).not.toBe(true);
+  expect(journal.bindingInstalled).not.toBe(true);
+  expect(f.requests).not.toContain('recover-human');expect(f.requests).not.toContain('recover-address');
+  expect(f.secrets.every(s=>s.every(b=>b===0))).toBe(true);
+  // A crash after consuming the next owner nonce resumes its existing journal.
+  f.ownerNonce=2;await run();expect(f.builds).toBe(1);expect(f.independent).toHaveBeenCalledTimes(2);
+});
+test('fresh-device verified theft discovery uses independent recovery without repeating free balance restoration',async()=>{
+  f.restored=true;f.typedSpendingLoss=true;
+  f.independent.mockImplementation(async()=>{f.replacementAddress=a(90);return {destination:a(90),requestId:h(90)};});
+  expect((await recoverHumanBreak('test backup',action,{network})).selection.evm).toBe(a(90));
+  expect(f.builds).toBe(0);expect(f.requests).not.toContain('break-restorations');
+});
+test('ordinary receipt failures and changed owner nonces never enter the initial-theft recovery branch',async()=>{
+  f.badReceipt=true;
+  await expect(recoverHumanBreak('test backup',action,{network})).rejects.toThrow('receipt_unverified');
+  expect(f.independent).not.toHaveBeenCalled();
+  f.badReceipt=false;f.typedSpendingLoss=true;f.ownerNonce=2;
+  await expect(recoverHumanBreak('test backup',action,{network})).rejects.toThrow();
+  expect(f.independent).not.toHaveBeenCalled();
+  expect(JSON.parse([...f.storage.values()][0]).replacementStarted).toBeUndefined();
+});
+test('interrupted independent recovery keeps a resume marker without falsely installing initial credentials',async()=>{
+  f.typedSpendingLoss=true;f.independent.mockRejectedValueOnce(Error('reply_lost'));
+  await expect(recoverHumanBreak('test backup',action,{network})).rejects.toThrow('reply_lost');
+  f.ownerNonce=2;
+  f.independent.mockImplementation(async()=>{f.replacementAddress=a(90);return {destination:a(90),requestId:h(90)};});
+  expect((await recoverHumanBreak('test backup',action,{network})).selection.evm).toBe(a(90));
+  expect(f.builds).toBe(1);expect(f.credentials).not.toHaveBeenCalled();
 });

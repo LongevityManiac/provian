@@ -54,6 +54,14 @@ Promise<{ destination: string; requestId: string }> {
   recoveryTail = run.catch(() => undefined);
   return run;
 }
+/** Resume independent owner recovery while restoring a backup, before the
+ * original seed has been installed in the device vault. */
+export function recoverHumanAccountFromBackup(mnemonic: string, action: BiometricAction,
+  network: OwnerChainNetwork, options: RecoveryOptions = {}): Promise<{ destination: string; requestId: string }> {
+  const backupOptions = { ...options };
+  const run = recoveryTail.then(() => performHumanRecovery(action, backupOptions, mnemonic, network));
+  recoveryTail = run.catch(() => undefined); return run;
+}
 async function currentBreakOrigin(network: OwnerChainNetwork): Promise<string | null> {
   try { return await readBreakRecoveryContext(network); }
   catch (error) { if (error instanceof Error && error.message === 'break_recovery_unavailable') return null; throw error; }

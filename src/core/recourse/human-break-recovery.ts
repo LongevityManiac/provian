@@ -14,7 +14,7 @@ import { prepareBreakDeploymentRequest } from './break-deployment-proof';
 import { recoverFreeBreak, type FreeBreakRecoveryPhase } from './free-break-recovery';
 import { parseBreakRestorationRequest, breakRestorationDetails } from './break-restoration-data';
 import { readOwnerChainState, type OwnerChainNetwork } from './owner-chain';
-import { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
+import { BreakRecoverySpendingKeyChanged, verifyBreakRecoveryReceipt } from './break-recovery-receipt';
 import { signHashAccountMessage } from './hash-account';
 import { discoverHashAccount } from './hash-account-deployment';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
@@ -23,6 +23,7 @@ interface Journal {
   version: 1; identity: string; origin: string; requestId: string; authSecret: string; deviceId: string;
   destination?: string; prepared?: PreparedBreakRecovery; transactionHash?: string; userId?: string; credentialsInstalled?: boolean;
   auxiliary?: true; bindingInstalled?: boolean;
+  replacementStarted?: true;
 }
 const hash = /^0x[0-9a-f]{64}$/;
 async function save(key: string, value: Journal): Promise<void> {
@@ -119,6 +120,22 @@ async function perform(mnemonic: string, action: BiometricAction, options: Break
     || !/^[0-9a-f]{64}$/.test(state.authSecret) || !/^[a-zA-Z0-9_-]{1,128}$/.test(state.deviceId)
     || Boolean(state.auxiliary) !== Boolean(options.auxiliary)) throw Error('recourse_break_journal_invalid');
   await save(key, state);
+  const replaceInitialAccount = async () => {
+    assertBiometricAction(action); options.signal?.throwIfAborted();
+    const { recoverHumanAccountFromBackup } = await import('./human-recovery');
+    const recovered = await recoverHumanAccountFromBackup(mnemonic, action, network,
+      { signal: options.signal, ...(options.auxiliary ? { auxiliaryBinding: identity } : {}) });
+    if (options.auxiliary) return { identity, destination: recovered.destination };
+    const { discoverHumanAccount } = await import('./human-discovery');
+    const found = await discoverHumanAccount(mnemonic, network);
+    if (found?.identity !== identity || !found.selection || found.selection.evm !== recovered.destination) {
+      throw Error('recourse_break_destination_changed');
+    }
+    return { identity, selection: found.selection };
+  };
+  // This marker resumes the independently verified owner operation. It never
+  // treats the stolen initial account's relay cut as successfully installed.
+  if (state.replacementStarted) return replaceInitialAccount();
   const legacyGeneration = options.auxiliary ? 0 : await discoverHistoricalCurveGeneration(mnemonic, history, network);
   const context = { identity, breakOrigin: origin, chainId: '8453' };
   const destinationSigningSeed = humanBreakKey(mnemonic, context, 'spending', '0');
@@ -186,7 +203,10 @@ async function perform(mnemonic: string, action: BiometricAction, options: Break
     if (account.account !== prepared.destination || account.nonce === null) throw Error('recourse_break_destination_changed');
     const signingSeed = humanBreakKey(mnemonic, context, 'spending', account.nonce);
     try {
-      if (await recoverySigningRoot(signingSeed) !== account.currentRoot) throw Error('recourse_hash_account_key_mismatch');
+      if (await recoverySigningRoot(signingSeed) !== account.currentRoot) {
+        await verifyBreakRecoveryReceipt(prepared, state.transactionHash, network);
+        throw Error('recourse_hash_account_key_mismatch');
+      }
       const preimage = concat([details.proof.recoverySecret, details.proof.signingRoot]), expiresAtMs = Date.now() + 300000;
       if (options.auxiliary) {
         // A restored seed can discover a completed chain + relay cut without
@@ -248,5 +268,12 @@ async function perform(mnemonic: string, action: BiometricAction, options: Break
       state.credentialsInstalled = true; await save(key, state);
       return { identity, selection };
     } finally { signingSeed.fill(0); }
+  } catch (error) {
+    if (!(error instanceof BreakRecoverySpendingKeyChanged)) throw error;
+    // The receipt verifier emits this outcome only after checking the exact
+    // finalized restoration and current independent owner authority.
+    if ((await readOwnerChainState(identity, network)).nonce !== 1) throw error;
+    state.replacementStarted = true; await save(key, state);
+    return replaceInitialAccount();
   } finally { destinationSigningSeed.fill(0); nextRecoverySecret.fill(0); nextRecoverySigningSeed.fill(0); }
 }
