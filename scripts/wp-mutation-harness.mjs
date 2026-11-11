@@ -744,7 +744,7 @@ const MUTATION_SETS = {
   },
   'RecourseAddressConsent': {
     sourcePath: 'contracts/src/RecourseAddressConsent.sol',
-    testMatchPath: 'test/{RecourseAddressConsent,ProvianOwnershipRegistry,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
+    testMatchPath: 'test/{RecourseAddressConsent,ProvianOwnershipRegistry*,ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
     mutations: [
       { id: 'DEBIT-OWNER', description: 'attestor can debit without the owner exact-amount mandate',
         find: '|| (debit.burn == 0 && debit.reserve == 0) || !_signature(owner, digest, ownerSignature)',
@@ -1811,8 +1811,27 @@ const MUTATION_SETS = {
   },
   ProvianOwnershipRegistry: {
     sourcePath: 'contracts/src/ProvianOwnershipRegistry.sol',
-    testMatchPath: 'test/ProvianOwnershipRegistry.t.sol',
+    testMatchPath: 'test/ProvianOwnershipRegistry*.t.sol',
     mutations: [{
+      id: 'BINDING-SNAPSHOT-COMMITMENT', description: 'old snapshot wallet can replace its independent commitment through prospective binding',
+      find: 'if (existing == bytes32(0) && _boundBeforeBreak(b.account)) revert InvalidBinding();',
+      replace: 'if (false) revert InvalidBinding();',
+      expectedKilledBy: 'testOldSnapshotAddressCannotReplaceItsOriginalCommitment',
+    }, {
+      id: 'BINDING-ORDINARY-SNAPSHOT', description: 'ordinary successor permits poisoning a prior unclaimed break entitlement',
+      find: 'existing == bytes32(0) && _boundBeforeBreak(b.account)',
+      replace: 'afterCryptographicBreak && existing == bytes32(0) && _boundBeforeBreak(b.account)',
+      expectedKilledBy: 'testOrdinarySuccessorStillProtectsUnclaimedBreakOwnership',
+    }, {
+      id: 'BINDING-ANCESTRAL-SNAPSHOT', description: 'only the latest reset protects pre-cutoff wallets',
+      find: 'origin = IRegisteredOwnerAuthorization(\n                IRegisteredRecourseKernel(previousKernel).ownerAuthorization()).breakOrigin();',
+      replace: 'origin = address(0);',
+      expectedKilledBy: 'testRepeatedBreakStillProtectsEarlierUnclaimedOwnership',
+    }, {
+      id: 'BINDING-CUTOFF', description: 'post-cutoff bindings can falsely disqualify a new independent binding',
+      find: 'bound != 0 && bound <= cutoff', replace: 'bound != 0',
+      expectedKilledBy: 'testPostCutoffBindingCannotBeBackdatedIntoTheSnapshot',
+    }, {
       id: 'BINDING-1',
       description: 'unrelated original addresses may share a public owner identifier',
       find: '(existing == bytes32(0) ? b.identity != addressBinding(b.account) : existing != b.identity)',
@@ -1828,7 +1847,7 @@ const MUTATION_SETS = {
   },
   ProvianProtocolPointer: {
     "sourcePath": "contracts/src/ProvianProtocolPointer.sol",
-    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry,RecoursePoolHistory}.t.sol",
+    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry*,RecoursePoolHistory}.t.sol",
     "mutations": [
         {
             "id": "POINTER-1",
@@ -1902,7 +1921,7 @@ const MUTATION_SETS = {
   },
   RecourseOwnerAuthorization: {
     "sourcePath": "contracts/src/RecourseOwnerAuthorization.sol",
-    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,ProvianOwnershipRegistrySnapshot,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
     "mutations": [
         {
             "id": "OWNER-1",
@@ -1915,7 +1934,7 @@ const MUTATION_SETS = {
 },
   ProvianRestorationAuthorization: {
     "sourcePath": "contracts/src/ProvianRestorationAuthorization.sol",
-    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,ProvianOwnershipRegistrySnapshot,Recourse*,ProvianHashAccount,SlhDsaSha2128s}.t.sol",
     "mutations": [
         {
             "id": "RESTORE-REVISION-FENCE",
@@ -2013,7 +2032,7 @@ const MUTATION_SETS = {
 },
   SlhDsaSha2128s: {
     "sourcePath": "contracts/src/crypto/SlhDsaSha2128s.sol",
-    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,Recourse*,ProvianHashAccount*,SlhDsaSha2128s,ProvianBreakRecoveryHistory,ProvianOwnershipRegistry,ProvianProtocolPointer}.t.sol",
+    "testMatchPath": "test/{ProvianRecourse*,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,Recourse*,ProvianHashAccount*,SlhDsaSha2128s,ProvianBreakRecoveryHistory,ProvianOwnershipRegistry*,ProvianProtocolPointer}.t.sol",
     "mutations": [
         {
             "id": "SLH-1",

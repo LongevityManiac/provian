@@ -57,6 +57,7 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
     ProvianOwnershipRegistry.Binding binding;
     function setUp() public {
         vm.chainId(8453); vm.warp(1000); vm.roll(100);
+        vm.mockCall(address(0xB), abi.encodeWithSignature("breakOrigin()"), abi.encode(address(0)));
         pointer = new ProvianProtocolPointer(address(new ProvianHashAccount(sha256("pointer signing root TEST ONLY"))));
         registry = new ProvianOwnershipRegistry(pointer, vm.addr(EVIDENCE_KEY), false);
         kernel = new RegistryKernelFixture(address(registry), address(0xA), address(0xB));

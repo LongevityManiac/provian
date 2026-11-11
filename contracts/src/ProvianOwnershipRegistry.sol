@@ -19,6 +19,9 @@ interface IRegisteredRecoursePool {
 }
 interface IRegisteredOwnerAuthorization {
     function recoveredDestination(bytes32 identity) external view returns (address);
+    function breakOrigin() external view returns (address);
+    function predecessor() external view returns (address);
+    function lastGoodBlock() external view returns (uint256);
 }
 /// @notice Each public identifier names one original address and its individual
 /// recovery lineage. The owner-to-address portfolio exists only in the relay.
@@ -104,6 +107,9 @@ contract ProvianOwnershipRegistry {
     }
     function _bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision, bytes32 identityDigest) private {
         bytes32 existing = ownerOf(b.account);
+        // A reset registry must not replace an unissued snapshot owner's
+        // independent commitment through a prospective address binding.
+        if (existing == bytes32(0) && _boundBeforeBreak(b.account)) revert InvalidBinding();
         if (b.identity == bytes32(0) || b.account == address(0)
             || b.recoveryCommitment == bytes32(0) || b.signingRoot == bytes32(0) || b.nonce == bytes32(0)
             || b.expiresAtMs < block.timestamp * 1000 || b.expiresAtMs > (block.timestamp + 300) * 1000
@@ -128,6 +134,30 @@ contract ProvianOwnershipRegistry {
         IRegisteredRecourseKernel(b.kernel).bindRestorationOwner(b.identity, b.recoveryCommitment, b.signingRoot);
         IRegisteredRecoursePool(pool).bind(b.identity, b.account);
         emit OwnershipBound(b.identity, b.account, b.kernel, b.recoveryCommitment, b.signingRoot, digest);
+    }
+    /// @dev First-bound blocks are append-only. Even a broken old signing key
+    /// cannot backdate a new binding into a published cutoff. Follow earlier
+    /// origins too: an unclaimed entitlement may survive several resets and
+    /// ordinary successors. Recovery enters through bindRecovered instead.
+    function _boundBeforeBreak(address account) private view returns (bool) {
+        address origin = IRegisteredOwnerAuthorization(
+            IRegisteredRecourseKernel(pointer.component(0)).ownerAuthorization()).breakOrigin();
+        uint256 ceiling = type(uint256).max;
+        while (origin != address(0)) {
+            IRegisteredOwnerAuthorization history = IRegisteredOwnerAuthorization(origin);
+            uint256 cutoff = history.lastGoodBlock();
+            if (cutoff == 0 || cutoff >= ceiling) revert InvalidBinding();
+            address previousKernel = history.predecessor();
+            ProvianOwnershipRegistry previous = ProvianOwnershipRegistry(
+                IRegisteredRecourseKernel(previousKernel).registryOperator());
+            if (address(previous.pointer()) != address(pointer)) revert InvalidBinding();
+            uint256 bound = previous.boundBlock(account);
+            if (bound != 0 && bound <= cutoff) return true;
+            ceiling = cutoff;
+            origin = IRegisteredOwnerAuthorization(
+                IRegisteredRecourseKernel(previousKernel).ownerAuthorization()).breakOrigin();
+        }
+        return false;
     }
     event RecoveredAddressBound(bytes32 indexed identity, address indexed account, address indexed kernel);
     /// @notice The immutable executor has just consumed the independent owner

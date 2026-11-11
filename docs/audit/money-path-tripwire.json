@@ -17,7 +17,7 @@
     "contracts/src/ProvianHashAccountFactory.sol": "cb43ffbebc128ee19224b7ae032e8d6f09264d1aa066d8d780a84dcea8f895f6",
     "contracts/src/ProvianMemberRecoursePool.sol": "1f7f321943e0107580051f34e2fb4c074a6839abe2a5be8a4a80400ef3d38e13",
     "contracts/src/ProvianMemberSettlement.sol": "e561fef3ccd5de5fc2fc838ed22f2bb67b4f319105c590afed1abf5113182849",
-    "contracts/src/ProvianOwnershipRegistry.sol": "dcb4b7409010e547b505cceddd22bf6555ec1f34468c4bc9cbaec45a9a363bf1",
+    "contracts/src/ProvianOwnershipRegistry.sol": "2077ebe620c363f478be661cb40dffed2be84a898eada623a9e17edc0c460e0b",
     "contracts/src/ProvianPEAnchor.sol": "2ad92d10fa7a178408c07c46bd418b2f8face39f82d3c1e7457d098fac40c3c4",
     "contracts/src/ProvianPVT9.sol": "6fafddefe8c20490a813e13095bb466bccb6dd2b7a7b506c4c9f576497dd8a5d",
     "contracts/src/ProvianPVT9EligibilityVerifier.sol": "dc129c388219e05ca3cf55b80c4f9cd91d6628f2345556a62c8823b2103b8e02",
