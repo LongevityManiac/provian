@@ -1188,6 +1188,8 @@
     "scripts/recourse/hash-authority-cli.mjs": "d993ee689b58dd407bf65c6197ee7cad7a65d9965993bedf531867ab804a0186",
     "scripts/recourse/hash-authority-durable.mjs": "e2c2247560aafb053cd245548f46a5a69813615de272b44faf54c15a0f7e4313",
     "scripts/recourse/hash-authority-durable.test.mjs": "1e87b4badf2a211a1de4d6caa41d9195674be37063f782d2706b7242da622065",
+    "scripts/recourse/hash-authority-inspection.mjs": "12a10854413ab37faf80860dbd730feccdc4aa246096b07ea15dfdc943fb6bc1",
+    "scripts/recourse/hash-authority-inspection.test.mjs": "90e8ecbd0f33ff927a98e4bd1dd09bd5882a246572be1ccd9da666a9deb038d3",
     "scripts/recourse/hash-authority-plan.mjs": "5fb76ca4136022380820b838f1b72c21932883398e8ec33f21a39d7ca0710817",
     "scripts/recourse/hash-authority-plan.test.mjs": "796086667b36ac64618ae3456b76adbebe7cb2e10db5daa0ab2f2aa7d32f7c35",
     "scripts/recourse/hash-authority-vault.mjs": "088b984188046a7ad86934cdc42807e25df953761d0f5415f75d142bf29b1cda",
