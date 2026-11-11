@@ -105,3 +105,15 @@ test('the independent stage validator sees and refuses substituted executable st
     assert.equal(f.db.store.size, 0);
   }
 });
+
+test('invalid fee configuration refuses before reserving any signer or writing a journal', async () => {
+  for (const change of [
+    input => { input.approvedStageBudgetWei = '0'; },
+    input => { input.maxGas = 0n; },
+    input => { input.maxPriorityFeePerGas = 3n; },
+    input => { input.readers[0].request = undefined; },
+  ]) {
+    const f = fixture(); change(f.input); await assert.rejects(f.run());
+    assert.equal(f.db.store.size, 0); assert.equal(f.state.loaded, 0);
+  }
+});

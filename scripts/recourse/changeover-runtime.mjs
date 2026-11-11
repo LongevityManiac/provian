@@ -15,12 +15,17 @@ const ensure = (value, code) => { if (!value) throw Error('changeover_runtime_' 
 export async function runChangeoverStage({ db, steps, planDigest, readers, loadSigner, assertPlan,
   approvedStageBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId }) {
   steps = structuredClone(steps);
+  ensure(typeof approvedStageBudgetWei === 'string' && /^[1-9][0-9]*$/.test(approvedStageBudgetWei)
+    && [maxFeePerGas, maxPriorityFeePerGas, maxGas].every(value => typeof value === 'bigint' && value > 0n)
+    && maxFeePerGas >= maxPriorityFeePerGas, 'fee_configuration');
+  ensure(typeof assertPlan === 'function' && typeof loadSigner === 'function', 'callbacks');
   const stageDigest = sha256(toUtf8Bytes(JSON.stringify({ planDigest, steps })));
   const checkedPlan = async digest => {
     ensure(digest === planDigest, 'plan_changed');
     await assertPlan({ planDigest, stageDigest, steps: structuredClone(steps) });
   };
-  ensure(readers.length === 2 && readers.every(reader => typeof reader.operatorId === 'string' && reader.operatorId)
+  ensure(readers.length === 2 && readers.every(reader => typeof reader.operatorId === 'string' && reader.operatorId
+    && typeof reader.request === 'function')
     && readers[0].operatorId !== readers[1].operatorId, 'independent_operators');
   await checkedPlan(planDigest);
   const store = await openChangeoverJournal(db, { planDigest, steps, workerId });
