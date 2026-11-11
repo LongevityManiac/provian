@@ -56,6 +56,10 @@ test('a crash after proof exposure but before any sponsor reservation still reco
   const f = fixture(); f.rows.delete(publicationOperationSlot(a(21), 2));
   const result = await f.run(); expect(result.records).toHaveLength(2); expect(result.current).toBeNull();
 });
+test('a missing consumed operation refuses even when an older saved root is current again', async () => {
+  const f = fixture(); f.rows.delete(publicationOperationSlot(a(21), 1)); f.state.root = h(101);
+  await expect(f.run()).rejects.toThrow(/unknown_consumed_operation/);
+});
 test.each(['missing', 'wrong-root', 'lineage', 'target', 'nonce', 'future', 'reconstruction', 'proof', 'code', 'superseded'])('%s negative control refuses', async mode => {
   const f = fixture(), saved = f.rows.get(publicationOperationSlot(a(21), 1));
   if (mode === 'missing') f.rows.delete(publicationOperationSlot(a(21), 1));
