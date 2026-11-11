@@ -23,6 +23,10 @@ test('fresh reconstruction compares every executable field and a nonempty moneta
     p => { p.identityAttestor = p.admin; },
     p => { p.submitter = p.admin; },
     p => { p.pointerAuthority = p.admin; },
+    p => { p.components[0] = p.pointerAuthority; },
+    p => { p.retireAfterImport.push(p.pointerAuthority); },
+    p => { p.addresses.ProvianRecourseKernel = p.pointerAuthority; },
+    p => { p.ruleHash = '0x' + 'ff'.repeat(32); },
     p => { p.extra = 'unreviewed'; },
   ];
   for (const change of changes) {

@@ -70,11 +70,11 @@ export async function verifySuccessorSourceInterval({ plan, deployment, artifact
     token.encodeFunctionData('balanceOf', [address]), current.hash))[0] === 0n, 'new_usdc_custody');
 }
 
-/** Read-only first-changeover preflight. The caller must verify the membership
- * signature with the pinned public approval key before supplying verifiedRule.
- * This rebuilds chain facts rather than trusting snapshot files accompanying a
- * plan. It grants no signer lease, reads no private key and broadcasts nothing. */
-export async function preflightSuccessorPlan({ plan, pointerPlan, verifiedRule, operators, deployment, artifacts, port }) {
+/** Reconstruct executable bytes from independent cutoff facts and operator inputs.
+ * This does not require an unused pointer authority: retirement registration
+ * rotates that authority before publication. Callers separately authenticate
+ * the pointer's current runtime, revision and authority state. */
+export async function reconstructSuccessorPlan({ plan, pointerPlan, verifiedRule, operators, deployment, artifacts, port }) {
   plan = structuredClone(plan); pointerPlan = structuredClone(pointerPlan); verifiedRule = structuredClone(verifiedRule);
   operators = structuredClone(operators); deployment = structuredClone(deployment);
   ensure(plan.schema === 'provian.successor-plan.v1' && plan.chainId === 8453
@@ -88,12 +88,6 @@ export async function preflightSuccessorPlan({ plan, pointerPlan, verifiedRule, 
   for (const key of Object.keys(operators)) ensure(plan[key] === operators[key], 'operators_changed');
   const finalized = await port.finalizedBlock();
   ensure(finalized.number >= plan.cutoff.number && await port.blockHash(plan.cutoff.number) === plan.cutoff.hash, 'cutoff_unfinalized');
-  await verifyPermanentPointerPlan(pointerPlan, port);
-  const pointerAbi = new Interface(['function revision() view returns(uint256)']);
-  if (await port.code(plan.pointer, finalized.hash) !== '0x') {
-    ensure(pointerAbi.decodeFunctionResult('revision', await port.call(plan.pointer,
-      pointerAbi.encodeFunctionData('revision'), finalized.hash))[0] === 0n, 'already_published');
-  }
   const predecessor = artifacts.ProvianPVT9;
   const snapshot = await buildSuccessionSnapshot({ port, kernelAbi: predecessor.abi,
     predecessor: deployment.wiring.pvt, deploymentBlock: deployment.successorKernel.pvt9Kernel.block,
@@ -105,6 +99,20 @@ export async function preflightSuccessorPlan({ plan, pointerPlan, verifiedRule, 
     block: plan.cutoff.number, blockHash: plan.cutoff.hash });
   const rebuilt = assertFreshSuccessorPlan(plan, { snapshot, institutions, deployment, artifacts, pointerPlan, rule: verifiedRule,
     ...operators });
+  ensure(await port.blockHash(plan.cutoff.number) === plan.cutoff.hash
+    && await port.blockHash(finalized.number) === finalized.hash, 'reorg');
+  return { plan: rebuilt, institutions, verifiedAt: finalized };
+}
+
+/** Read-only first-changeover preflight. The caller must verify the membership
+ * signature with the pinned public approval key before supplying verifiedRule.
+ * It grants no signer lease, reads no private key and broadcasts nothing. */
+export async function preflightSuccessorPlan(inputs) {
+  const { pointerPlan, deployment, artifacts, port } = inputs;
+  const { plan, institutions, verifiedAt: finalized } = await reconstructSuccessorPlan(inputs);
+  const rebuilt = plan, snapshot = plan.snapshot, predecessor = artifacts.ProvianPVT9;
+  await verifyPermanentPointerPlan(pointerPlan, port);
+  const pointerAbi = new Interface(['function revision() view returns(uint256)']);
   // The source must still be retired now, not merely at the historical cutoff.
   const current = await port.finalizedBlock(), kernel = new Interface(predecessor.abi);
   ensure(current.number >= finalized.number, 'finality_regressed');
