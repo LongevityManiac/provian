@@ -109,7 +109,7 @@ const MUTATION_SETS = {
       replace: 'operation = await openPrivateMembershipConsents',
       expectedKilledBy: 'recovery during interrupted preparation refreshes the replacement before opening consents' },
       { id: 'CONSENT-RESUME', description: 'queued consent is presented as a fresh signature request',
-        find: 'if (inFlight.length) pending.push', replace: 'if (false) pending.push',
+        find: 'if (inFlight.length) pending.push', replace: 'if (inFlight.length < 0) pending.push',
         expectedKilledBy: 'resume discovers exact queued consent without requesting a second signature or exposing signatures' }],
   },
   'membership-consent-operation': {
