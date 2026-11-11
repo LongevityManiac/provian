@@ -29,7 +29,8 @@ function fixture() {
   const port = {
     finalizedBlock: async () => { ++state.reads; return { number: state.stale ? 19 : 21, hash: hash(21) }; },
     blockHash: async n => state.reorg && state.reads >= 3 ? hash(99) : hash(n),
-    code: async address => address === facts.pointerPlan.factory ? POINTER_CREATE2_FACTORY_CODE
+    code: async address => address === facts.deployment.wiring.pvt ? facts.artifacts.ProvianPVT9.deployedBytecode.object
+      : address === facts.pointerPlan.factory ? POINTER_CREATE2_FACTORY_CODE
       : address === facts.pointerPlan.pointer && state.published && state.reads >= 3 ? '0x6000' : '0x',
     logs: async (addresses, from, to, topics) => {
       assert.equal(from, 21); assert.equal(to, 21);

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Wallet, getAddress, hexlify, sha256, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Wallet, getAddress, hexlify, sha256, toUtf8Bytes } from 'ethers';
 
 /** Sign only the fixed, chain-31337 exercise binding on the agent's own
  * machine. The existing keystore never leaves that machine. The output is a
@@ -18,7 +18,9 @@ export async function signExerciseBinding(challengePath, outputPath, sdkDirector
     || !['identity','recoveryCommitment','signingRoot','nonce'].every(key => /^0x[0-9a-f]{64}$/.test(b[key]))
     || !/^[1-9][0-9]*$/.test(b.expiresAtMs)) throw Error('exercise_binding_invalid');
   const account = getAddress(b.account).toLowerCase(), kernel = getAddress(b.kernel).toLowerCase();
-  if (b.identity !== sha256(toUtf8Bytes('EXERCISE ONLY: wallet identity '+account))) throw Error('exercise_identity_invalid');
+  const pointer = getAddress(challenge.pointer).toLowerCase();
+  if (b.identity !== sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','address'],
+    ['Provian address recovery binding',31337,pointer,account]))) throw Error('exercise_identity_invalid');
   const message = ['Provian ownership binding','chain:31337','kernel:'+kernel,'identity:'+b.identity,'address:'+account,
     'recovery:'+b.recoveryCommitment,'hash-authority:'+b.signingRoot,'nonce:'+b.nonce,'expires:'+b.expiresAtMs].join('\n');
   if (challenge.messageHex !== hexlify(toUtf8Bytes(message))) throw Error('exercise_binding_message_changed');
@@ -32,7 +34,7 @@ export async function signExerciseBinding(challengePath, outputPath, sdkDirector
     { flag: 'wx', mode: 0o600 });
   return { address: account, chainId: 31337 };
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && existsSync(process.argv[1]) && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   signExerciseBinding(process.argv[2],process.argv[3],process.argv[4]).then(result=>console.log(JSON.stringify(result))).catch(error=>{
     console.error(error.message?.startsWith('exercise_')?error.message:'exercise_binding_signing_failed');process.exitCode=1;
   });

@@ -2,11 +2,12 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AbiCoder, Contract, MaxUint256, concat, getAddress, keccak256, sha256, toQuantity, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Contract, MaxUint256, concat, getAddress, getBytes, keccak256, sha256, toQuantity, toUtf8Bytes } from 'ethers';
 import { isolatedExercisePort } from './exercise-port.mjs';
 import { exerciseReceipt } from './exercise-read.mjs';
 import { exerciseSeed, exerciseWallet } from './exercise-bootstrap.mjs';
 import { recoverySigningRoot, signRecoveryIntent } from '../../provian-agent-sdk/dist/recourse-hash-authorization.js';
+import { prepareExerciseMembership, verifyExerciseMembershipSignature } from './exercise-membership.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const coder = AbiCoder.defaultAbiCoder(), unit = 10n ** 18n;
@@ -16,8 +17,9 @@ const abi = name => JSON.parse(readFileSync(resolve(root, `contracts/out/${name}
 /** Repeatable fixture demonstration on a private simulator. The wallets and
  * recovery secrets here are public test material, never production identities.
  * An explicitly selected copied balance funds it only inside the local fork. */
-export async function exerciseSequence(directory, copiedFunder, boundWallet) {
+export async function exerciseSequence(directory, copiedFunder, boundWallet, signOwner) {
   const selectedOwner = boundWallet === undefined ? null : getAddress(boundWallet).toLowerCase();
+  if (selectedOwner && typeof signOwner !== 'function') throw Error('exercise_wallet_signature_required');
   const output = resolve(directory), path = resolve(output, selectedOwner ? `sequence-${selectedOwner}.json` : 'sequence.json');
   if (existsSync(path)) throw Error('exercise_sequence_already_started');
   const m = JSON.parse(readFileSync(resolve(output, 'exercise.json'), 'utf8'));
@@ -70,11 +72,21 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet) {
   };
   const initialSupply = await kernel.totalSupply();
   if (selectedOwner && await registry.ownerOf(selectedOwner) !== identity) throw Error('exercise_workbench_binding_required');
-  const alreadyJoined = (await pool.membershipState(identity)).protectedNow;
+  const consentAtStart = await pool.addressConsent(identity), alreadyJoined = consentAtStart.joined;
+  const startHeader = await provider.send('eth_getBlockByNumber', ['latest', false]);
+  const startMonth = await pool.calendarMonth(BigInt(startHeader.timestamp));
+  const priorDebits = await provider.send('eth_getLogs', [{ address: a.ProvianMemberRecoursePool,
+    fromBlock: toQuantity(m.cutoff.number + 1), toBlock: 'latest',
+    topics: [pool.interface.getEvent('MembershipDebitExecuted').topicHash, null, identity] }]);
+  const period = alreadyJoined ? await pool.consentPeriods(identity, consentAtStart.generation) : { startBlock: 0n };
+  const initialBurnPaid = alreadyJoined && priorDebits.some(log => {
+    const event = pool.interface.parseLog(log);
+    return BigInt(log.blockNumber) >= period.startBlock && event.args.month === startMonth && event.args.burn === 100n * unit;
+  });
   if (!selectedOwner && await kernel.balanceOf(funder) < 500n * unit) throw Error('exercise_fixture_funding_unavailable');
   // Exactly the demonstrated burns, contribution and loss; a workbench member
   // has already burned its first month's participation amount.
-  if (selectedOwner && await kernel.balanceOf(selectedOwner) < (alreadyJoined ? 300n : 400n) * unit) throw Error('exercise_fixture_funding_unavailable');
+  if (selectedOwner && await kernel.balanceOf(selectedOwner) < (initialBurnPaid ? 300n : 400n) * unit) throw Error('exercise_fixture_funding_unavailable');
   await port.mutate('anvil_impersonateAccount', [m.admin]);
   await port.mutate('anvil_impersonateAccount', [owner.address]);
   await port.mutate('anvil_impersonateAccount', [thief.address]);
@@ -99,16 +111,24 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet) {
       attestor.signingKey.sign(digest).serialized, revision]);
   requireEqual(await registry.ownerOf(owner.address), identity, 'boundOwner');
   await send(owner.address, kernel, 'approve', [a.ProvianMemberRecoursePool, MaxUint256]);
-  if (!alreadyJoined) await send(owner.address, pool, 'enroll', [identity]);
-  requireEqual(await kernel.totalSupply(), initialSupply - (alreadyJoined ? 0n : 100n * unit), 'participationIsTrueBurn');
+  async function membership(kind) {
+    const prepared = await prepareExerciseMembership({ manifest: m, provider, registry, pool, account: owner.address, kind, attestor });
+    const signature = selectedOwner ? await signOwner(prepared.challenge) : await owner.signMessage(getBytes(prepared.challenge.messageHex));
+    verifyExerciseMembershipSignature(prepared.challenge, signature);
+    return send(m.deployer, pool, prepared.challenge.method, [prepared.challenge.authorization, signature, prepared.attestorSignature]);
+  }
+  if (!alreadyJoined) await membership('join');
+  if (!initialBurnPaid) await membership('burn');
+  requireEqual(await kernel.totalSupply(), initialSupply - (initialBurnPaid ? 0n : 100n * unit), 'participationIsTrueBurn');
   const now = Number(BigInt((await provider.send('eth_getBlockByNumber', ['latest', false])).timestamp));
   const date = new Date(now * 1000), nextMonth = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) / 1000;
   await port.mutate('evm_increaseTime', [nextMonth - now + 1]); await port.mutate('evm_mine', []);
-  await send(m.deployer, pool, 'settleMonth', [identity]);
+  const reserveOpening = await pool.accountedBacking();
+  await membership('reserve');
+  await membership('burn');
   const poolOpening = await pool.accountedBacking();
-  requireEqual((await pool.obligations(identity, (await pool.membershipState(identity)).generation,
-    await pool.calendarMonth(now))).reservePaid, 100n * unit, 'noEarningsContribution');
-  requireEqual(await kernel.totalSupply(), initialSupply - (alreadyJoined ? 100n : 200n) * unit, 'secondMonthlyBurn');
+  requireEqual(poolOpening - reserveOpening, 100n * unit, 'noEarningsContribution');
+  requireEqual(await kernel.totalSupply(), initialSupply - (initialBurnPaid ? 100n : 200n) * unit, 'secondMonthlyBurn');
   const exchangeOpening = await kernel.balanceOf(exchange.address);
   const loss = await send(owner.address, kernel, 'transfer', [thief.address, 100n * unit]);
   await send(thief.address, kernel, 'transfer', [exchange.address, 40n * unit]);
@@ -143,11 +163,24 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet) {
   requireEqual(await kernel.balanceOf(destination.address), 60n * unit, 'namedSourceReversal');
   requireEqual(await kernel.balanceOf(exchange.address), exchangeOpening + 40n * unit, 'witnessedExchangeRetained');
   const lossHeader = await provider.send('eth_getBlockByHash', [loss.blockHash, false]);
-  const membership = await pool.membershipState(identity);
-  await send(m.admin, pool, 'determine', [[{ request, identity, occurrence: loss.transactionHash,
+  const consent = await pool.addressConsent(identity);
+  const determination = { request, identity, occurrence: loss.transactionHash,
     shortfall: 40n * unit, evidenceHash: reversal.evidenceHash, expectedRevision: await pool.outcomeRevision(identity),
-    membershipGeneration: membership.generation, lossBlock: BigInt(loss.blockNumber),
-    lossMonth: await pool.calendarMonth(BigInt(lossHeader.timestamp)) }]]);
+    membershipGeneration: consent.generation, lossBlock: BigInt(loss.blockNumber),
+    lossMonth: await pool.calendarMonth(BigInt(lossHeader.timestamp)) };
+  const consentPeriod = await pool.consentPeriods(identity, consent.generation);
+  const admissions = await provider.send('eth_getLogs', [{ address: a.ProvianMemberRecoursePool,
+    fromBlock: toQuantity(consentPeriod.startBlock), toBlock: toQuantity(consentPeriod.startBlock),
+    topics: [pool.interface.getEvent('AddressConsentChanged').topicHash, identity] }]);
+  const admission = admissions.find(log => {
+    const event = pool.interface.parseLog(log); return event.args.generation === consent.generation && event.args.joined;
+  });
+  if (!admission) throw Error('exercise_required_consent_missing');
+  const eligibility = { determination, ruleHash: (await pool.monthlyRule(determination.lossMonth)).signedRuleHash,
+    admissionLogIndex: BigInt(admission.logIndex), lossLogIndex: BigInt(lossLog.logIndex), closureLogIndex: 0n };
+  await send(m.deployer, pool, 'admitLossEligibility', [eligibility,
+    attestor.signingKey.sign(await pool.lossEligibilityDigest(eligibility)).serialized]);
+  await send(m.admin, pool, 'determine', [[determination]]);
   await send(m.deployer, pool, 'deliverRestoration', [request, identity]);
   requireEqual(await kernel.balanceOf(destination.address), 100n * unit, 'poolRestoredRemainder');
   requireEqual(await kernel.totalSupply(), beforeReversal, 'poolTransferCreatesNothing');

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Interface, keccak256, ZeroAddress, zeroPadValue } from 'ethers';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
-import { buildInstitutionSnapshot, LEGACY_INSTITUTIONS } from './institution-snapshot.mjs';
+import { buildInstitutionSnapshot, LEGACY_INSTITUTIONS, verifyInstitutionRuntime } from './institution-snapshot.mjs';
 import { buildSuccessorPlan, successorLocations, SUCCESSOR_CREATION_ORDER } from './successor-plan.mjs';
 import { permanentPointerPlan, verifyPermanentPointerPlan } from './permanent-pointer-plan.mjs';
 
@@ -92,7 +92,7 @@ export async function reconstructSuccessorPlan({ plan, pointerPlan, verifiedRule
   const snapshot = await buildSuccessionSnapshot({ port, kernelAbi: predecessor.abi,
     predecessor: deployment.wiring.pvt, deploymentBlock: deployment.successorKernel.pvt9Kernel.block,
     block: plan.cutoff.number, blockHash: plan.cutoff.hash,
-    expectedRuntimeHash: keccak256(predecessor.deployedBytecode.object),
+    expectedRuntimeHash: verifyInstitutionRuntime(predecessor, await port.code(deployment.wiring.pvt, plan.cutoff.hash)),
     destinations: successorLocations(deployment, operators.deployer, operators.nonce).destinations,
     institutions: Object.keys(LEGACY_INSTITUTIONS).map(key => deployment.contracts[key].address) });
   const institutions = await buildInstitutionSnapshot({ port, deployment, artifacts,

@@ -2,7 +2,7 @@ import { test, expect } from 'vitest';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { HDNodeWallet, hexlify, sha256, toUtf8Bytes, verifyMessage } from 'ethers';
+import { AbiCoder, HDNodeWallet, hexlify, sha256, toUtf8Bytes, verifyMessage } from 'ethers';
 import { signExerciseBinding } from './exercise-sign-binding.mjs';
 
 test('agent signs only the fixed isolated binding and never overwrites signed output', async () => {
@@ -14,11 +14,13 @@ test('agent signs only the fixed isolated binding and never overwrites signed ou
   writeFileSync(join(directory,'keystore.js'),`export function loadKeystore(){return {}};export function decryptKeystore(){return {privateKey:${JSON.stringify(key.privateKey)}}}`);
   writeFileSync(join(directory,'local-keystore-secret.js'),'export function readLocalKeystoreSecret(){return "TEST ONLY"}');
   const hash=sha256(toUtf8Bytes('TEST ONLY'));
+  const pointer='0x0000000000000000000000000000000000000002';
   const binding={account:address,kernel:'0x0000000000000000000000000000000000000001',
-    identity:sha256(toUtf8Bytes('EXERCISE ONLY: wallet identity '+address)),recoveryCommitment:hash,signingRoot:hash,nonce:hash,expiresAtMs:'1900000000000'};
+    identity:sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','address'],
+      ['Provian address recovery binding',31337,pointer,address])),recoveryCommitment:hash,signingRoot:hash,nonce:hash,expiresAtMs:'1900000000000'};
   const message=['Provian ownership binding','chain:31337','kernel:'+binding.kernel,'identity:'+binding.identity,'address:'+address,
     'recovery:'+hash,'hash-authority:'+hash,'nonce:'+hash,'expires:'+binding.expiresAtMs].join('\n');
-  const challenge={binding,revision:'1',messageHex:hexlify(toUtf8Bytes(message))};
+  const challenge={binding,pointer,revision:'1',messageHex:hexlify(toUtf8Bytes(message))};
   try {
     writeFileSync(challengeFile,JSON.stringify({...challenge,messageHex:hexlify(toUtf8Bytes(message.replace('chain:31337','chain:8453')))}));
     await expect(signExerciseBinding(challengeFile,output,directory)).rejects.toThrow('exercise_binding_message_changed');

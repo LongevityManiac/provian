@@ -7,6 +7,7 @@ import { isolatedExercisePort } from './exercise-port.mjs';
 import { exerciseRead, exerciseReceipt } from './exercise-read.mjs';
 import { exerciseJournal } from './exercise-journal.mjs';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
+import { verifyInstitutionRuntime } from './institution-snapshot.mjs';
 import { snapshotRpcPort } from './snapshot-cli.mjs';
 import { recoverySigningRoot, signRecoveryIntent } from '../../provian-agent-sdk/dist/recourse-hash-authorization.js';
 
@@ -159,7 +160,7 @@ export async function bootstrapExercise(outputDirectory) {
   };
   const snapshot = await buildSuccessionSnapshot({ port: chain, kernelAbi: artifact('ProvianPVT9').abi,
     predecessor: oldKernel, deploymentBlock: current.successorKernel.pvt9Kernel.block, block, blockHash,
-    expectedRuntimeHash: keccak256(artifact('ProvianPVT9').deployedBytecode.object), institutions, destinations });
+    expectedRuntimeHash: verifyInstitutionRuntime(artifact('ProvianPVT9'), await chain.code(oldKernel, blockHash)), institutions, destinations });
   save('snapshot.json', { ...snapshot, rehearsalChainId: 31337, fork: metadata.forkedNetwork });
   save('progress.json', { stage: 'snapshot-reconciled', holders: snapshot.balances.length, history: snapshot.history.length });
   const seedEscrows = [], seedBonds = [], seedBps = [];

@@ -4,6 +4,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guardedFetch } from '../../provian-agent-sdk/dist/guarded-fetch.js';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
+import { verifyInstitutionRuntime } from './institution-snapshot.mjs';
 import { readPendingBreak } from './pending-break.mjs';
 import { assembleSuccessionArtifact } from './break-artifacts.mjs';
 import { buildPoolSnapshot } from './pool-snapshot.mjs';
@@ -171,7 +172,7 @@ async function main() {
       || plan.deploymentBlock !== canonicalDeployment.successorKernel.pvt9Kernel.block) throw Error('snapshot_canonical_predecessor_mismatch');
     artifact = JSON.parse(readFileSync(resolve(root, 'contracts/out/ProvianPVT9.sol/ProvianPVT9.json'), 'utf8'));
     institutions = ['escrowV4', 'promiseV3', 'poolV3', 'bondPool', 'courtV2'].map(key => canonicalDeployment.contracts[key].address);
-    expectedRuntimeHash = keccak256(artifact.deployedBytecode.object);
+    expectedRuntimeHash = verifyInstitutionRuntime(artifact, await port.code(plan.predecessor, blockHash));
   }
   const priorArtifact = plan.priorSnapshotFile ? JSON.parse(readFileSync(resolve(plan.priorSnapshotFile),'utf8')) : undefined;
   const priorSnapshot = priorArtifact?.monetary ?? priorArtifact;

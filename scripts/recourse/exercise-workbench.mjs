@@ -9,6 +9,8 @@ import { exerciseReceipt } from './exercise-read.mjs';
 import { exerciseSeed, exerciseWallet } from './exercise-bootstrap.mjs';
 import { exerciseSequence } from './exercise-sequence.mjs';
 import { exerciseMutationLock } from './exercise-lock.mjs';
+import { prepareExerciseMembership, verifyExerciseMembershipSubmission } from './exercise-membership.mjs';
+import { exerciseSignatureQueue } from './exercise-signature-queue.mjs';
 import { recoverySigningRoot } from '../../provian-agent-sdk/dist/recourse-hash-authorization.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -23,18 +25,20 @@ const page = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="v
 <small>No seed or private key is requested. The permanent production pointer and all public services remain unchanged.</small>
 <script type="module" src="/client.js"></script></html>`;
 const client = `import { Interface, formatEther } from '/ethers.js';
-const status=document.querySelector('#status');let account,config,identity;
+const status=document.querySelector('#status');let account,config,identity;const polling=new Map();
 const show=value=>status.textContent=typeof value==='string'?value:JSON.stringify(value,null,2);
 async function api(path,body){const r=await fetch(path,body?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{});const v=await r.json();if(!r.ok)throw Error(v.error);return v;}
 async function chain(){if(await ethereum.request({method:'eth_chainId'})!=='0x7a69')throw Error('Switch to Isolated Recourse (31337) before signing.');}
 async function send(to,data){await chain();const current=await ethereum.request({method:'eth_accounts'});if(current[0]?.toLowerCase()!==account.toLowerCase())throw Error('Wallet changed; connect again.');const hash=await ethereum.request({method:'eth_sendTransaction',params:[{from:account,to,data}]});show({transaction:hash});for(let i=0;i<120;i++){let r;try{r=await ethereum.request({method:'eth_getTransactionReceipt',params:[hash]});}catch{}if(r){if(BigInt(r.status)!==1n)throw Error('Exercise transaction reverted.');return hash;}await new Promise(r=>setTimeout(r,500));}throw Error('Receipt still pending. Refresh before retrying.');}
-async function refresh(){const v=await api('/state',{address:account});identity=v.identity;show({...v,balancePVT:formatEther(v.balance)});document.querySelector('#bind').disabled=v.bound;document.querySelector('#join').disabled=!v.bound||v.member;document.querySelector('#fund').disabled=!config.copiedFunder;document.querySelector('#exercise').disabled=!v.bound||!v.member||v.sequenceStarted||v.exerciseBusy;}
+async function refresh(){const selected=account,v=await api('/state',{address:selected});identity=v.identity;show({...v,balancePVT:formatEther(v.balance)});document.querySelector('#bind').disabled=v.bound;document.querySelector('#join').disabled=!v.bound||v.member;document.querySelector('#fund').disabled=!config.copiedFunder;document.querySelector('#exercise').disabled=!v.bound||!v.member||v.sequenceStarted||v.exerciseBusy;const job=await api('/exercise-status',{address:selected});if(job.state==='running')await followExercise(selected);}
+async function followExercise(selected){if(polling.has(selected))return polling.get(selected);const running=(async()=>{for(;;){const job=await api('/exercise-status',{address:selected});if(job.pending){await chain();const current=await ethereum.request({method:'eth_accounts'});if(current[0]?.toLowerCase()!==selected.toLowerCase())throw Error('Reconnect the exercise wallet and refresh to resume its signature request.');show(job.pending.challenge.summary);const signature=await ethereum.request({method:'personal_sign',params:[job.pending.challenge.messageHex,selected]});await api('/exercise-signature',{address:selected,id:job.pending.id,signature});}else if(job.state==='completed'){show(job.result);return;}else if(job.state==='failed')throw Error(job.error);else if(job.state==='idle')throw Error('No exercise is running for this wallet.');else show('Running the isolated loss, reversal and pool restoration.');await new Promise(r=>setTimeout(r,500));}})();polling.set(selected,running);try{return await running;}finally{polling.delete(selected);}}
 function action(id,fn){document.querySelector(id).onclick=async()=>{try{await fn();}catch(e){show(e.message);}};}
 action('#connect',async()=>{if(!window.ethereum)throw Error('A browser wallet is required.');config=await api('/manifest');[account]=await ethereum.request({method:'eth_requestAccounts'});await ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:'0x7a69',chainName:'Isolated Recourse',rpcUrls:['http://127.0.0.1:18545'],nativeCurrency:{name:'Exercise ETH',symbol:'ETH',decimals:18}}]});await ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x7a69'}]});await chain();document.querySelector('#refresh').disabled=false;await refresh();});
 action('#bind',async()=>{await chain();const b=await api('/binding',{address:account});const signature=await ethereum.request({method:'personal_sign',params:[b.messageHex,account]});const data=new Interface(config.registryAbi).encodeFunctionData('bind',[b.binding,signature,b.attestorSignature,b.revision]);await send(config.registry,data);await refresh();});
-action('#join',async()=>{const token=new Interface(config.tokenAbi),pool=new Interface(config.poolAbi);await send(config.kernel,token.encodeFunctionData('approve',[config.pool,200n*10n**18n]));await send(config.pool,pool.encodeFunctionData('enroll',[identity]));await refresh();});
+async function membership(kind){await chain();const prepared=await api('/membership',{address:account,kind}),c=prepared.challenge;show(c.summary);const signature=await ethereum.request({method:'personal_sign',params:[c.messageHex,account]});await send(config.pool,new Interface(config.poolAbi).encodeFunctionData(c.method,[c.authorization,signature,prepared.attestorSignature]));}
+action('#join',async()=>{const token=new Interface(config.tokenAbi);await send(config.kernel,token.encodeFunctionData('approve',[config.pool,200n*10n**18n]));await membership('join');await membership('burn');await refresh();});
 action('#fund',async()=>{show(await api('/fund',{address:account}));await refresh();});
-action('#exercise',async()=>{document.querySelector('#exercise').disabled=true;show('Running the isolated loss, reversal and pool restoration. This uses only local copied balances.');show(await api('/exercise',{address:account}));});
+action('#exercise',async()=>{const selected=account;document.querySelector('#exercise').disabled=true;try{await api('/exercise',{address:selected});}catch(error){const job=await api('/exercise-status',{address:selected});if(job.state!=='running'&&job.state!=='completed')throw error;}await followExercise(selected);});
 action('#refresh',refresh);`;
 
 export async function startExerciseWorkbench(directory, copiedFundingAddress) {
@@ -47,6 +51,7 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
   const token = new Contract(a.ProvianRecourseKernel, tokenAbi, provider);
   const copiedFunder = copiedFundingAddress ? getAddress(copiedFundingAddress).toLowerCase() : null;
   const mutationLock = exerciseMutationLock();
+  const signatures = exerciseSignatureQueue(), jobs = new Map();
   const attestor = exerciseWallet(manifest.instanceId, 'attestor');
   if (attestor.address.toLowerCase() !== manifest.attestor.toLowerCase()) throw Error('exercise_attestor_changed');
   async function verify() {
@@ -67,18 +72,41 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
       await verify();
       if (req.method === 'GET' && req.url === '/manifest') return reply(200, {chainId:31337,kernel:a.ProvianRecourseKernel,
         registry:a.ProvianOwnershipRegistry,pool:a.ProvianMemberRecoursePool,copiedFunder,registryAbi,tokenAbi,poolAbi});
-      if (req.method !== 'POST' || !['/state','/binding','/submit-binding','/fund','/exercise'].includes(req.url) || req.headers['content-type'] !== 'application/json'
+      if (req.method !== 'POST' || !['/state','/binding','/submit-binding','/fund','/exercise','/membership','/submit-membership','/exercise-status','/exercise-signature'].includes(req.url) || req.headers['content-type'] !== 'application/json'
         || req.headers.origin !== origin) return reply(403,{error:'exercise_request_refused'});
       let body='';for await(const chunk of req){body+=chunk.toString();if(Buffer.byteLength(body)>4096)throw Error('exercise_request_too_large');}
       const input=JSON.parse(body);
-      const address=getAddress(req.url==='/submit-binding'?input.binding?.account:input.address).toLowerCase();
+      const address=getAddress(req.url==='/submit-binding'?input.binding?.account:req.url==='/submit-membership'?input.challenge?.account:input.address).toLowerCase();
       const identity=await registry.addressBinding(address);
       const sequencePath=resolve(directory,`sequence-${address}.json`);
-      if(req.url==='/exercise'){
+      if(req.url==='/exercise-status') return reply(200,{...(jobs.get(address)??{state:'idle'}),pending:signatures.read(address)});
+      if(req.url==='/exercise-signature'){
+        signatures.submit(address,input.id,input.signature);return reply(200,{accepted:true,productionChanged:false});
+      }
+      if(req.url==='/membership'){
+        if(mutationLock.busy||!['join','burn'].includes(input.kind))throw Error('exercise_membership_unavailable');
+        return reply(200,await prepareExerciseMembership({manifest,provider,registry,pool,account:address,kind:input.kind,attestor}));
+      }
+      if(req.url==='/submit-membership'){
         return await mutationLock.run(async()=>{
-          if(await registry.ownerOf(address)!==identity||!(await pool.membershipState(identity)).protectedNow)throw Error('exercise_bound_member_required');
-          return reply(200,await exerciseSequence(directory,address,address));
+          const signed=verifyExerciseMembershipSubmission(input,{chainId:'31337',pointer:a.ProvianProtocolPointer.toLowerCase(),
+            kernel:a.ProvianRecourseKernel.toLowerCase(),pool:a.ProvianMemberRecoursePool.toLowerCase()},attestor.address);
+          const data=pool.interface.encodeFunctionData(signed.challenge.method,[signed.challenge.authorization,signed.ownerSignature,signed.attestorSignature]);
+          const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:a.ProvianMemberRecoursePool,data,gas:toQuantity(2_000_000)}]);
+          const receipt=await exerciseReceipt(provider,transactionHash);
+          if(!receipt||BigInt(receipt.status)!==1n)throw Error('exercise_membership_not_confirmed');
+          return reply(200,{transactionHash,productionChanged:false});
         });
+      }
+      if(req.url==='/exercise'){
+        if(mutationLock.busy||jobs.has(address)||existsSync(sequencePath))throw Error('exercise_already_started');
+        if(await registry.ownerOf(address)!==identity||!(await pool.addressConsent(identity)).joined)throw Error('exercise_bound_member_required');
+        if(mutationLock.busy)throw Error('exercise_already_started');
+        jobs.set(address,{state:'running'});
+        void mutationLock.run(()=>exerciseSequence(directory,address,address,challenge=>signatures.request(challenge)))
+          .then(result=>jobs.set(address,{state:'completed',result}))
+          .catch(error=>{signatures.close();jobs.set(address,{state:'failed',error:error.message?.startsWith('exercise_')?error.message:'exercise_sequence_failed'});});
+        return reply(202,{state:'running',productionChanged:false});
       }
       if(req.url==='/fund'){
         return await mutationLock.run(async()=>{
@@ -108,8 +136,8 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
         return reply(200,{transactionHash,productionChanged:false});
       }
       if(req.url==='/state'){
-        const bound=await registry.ownerOf(address),membership=await pool.membershipState(identity);
-        return reply(200,{address,identity,bound:bound===identity,member:membership.protectedNow,balance:(await token.balanceOf(address)).toString(),
+        const bound=await registry.ownerOf(address),membership=await pool.addressConsent(identity);
+        return reply(200,{address,identity,bound:bound===identity,member:membership.joined,balance:(await token.balanceOf(address)).toString(),
           sequenceStarted:existsSync(sequencePath),sequence:existsSync(sequencePath)?JSON.parse(readFileSync(sequencePath,'utf8')):null,exerciseBusy:mutationLock.busy,productionChanged:false});
       }
       const signingRoot=await recoverySigningRoot(exerciseSeed('wallet signing '+address));
@@ -121,9 +149,10 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
         'recovery:'+recoveryCommitment,'hash-authority:'+signingRoot,'nonce:'+binding.nonce,'expires:'+binding.expiresAtMs].join('\n');
       const digest=await registry.bindingDigest(binding);
       await port.mutate('anvil_setBalance',[address,toQuantity(100n*10n**18n)]);
-      return reply(200,{binding,messageHex:hexlify(toUtf8Bytes(message)),attestorSignature:attestor.signingKey.sign(digest).serialized,revision:'1'});
+      return reply(200,{binding,pointer:a.ProvianProtocolPointer.toLowerCase(),messageHex:hexlify(toUtf8Bytes(message)),attestorSignature:attestor.signingKey.sign(digest).serialized,revision:'1'});
     } catch(error){reply(400,{error:error.message?.startsWith('exercise_')?error.message:'exercise_request_failed'});}
   });
+  server.once('close',()=>signatures.close());
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(18546,'127.0.0.1',resolve);});
   return server;
 }

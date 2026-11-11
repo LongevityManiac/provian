@@ -166,6 +166,27 @@ const MUTATION_SETS = {
       { id: 'HASH-CANCEL-PERSISTENCE', description: 'executable cancellation escapes before durable creation',
         find: 'try { await store.create(cancelSlot, structuredClone(record)); }', replace: 'return record; try { await store.create(cancelSlot, structuredClone(record)); }', expectedKilledBy: 'cancellation retains original bytes and uses the same saved successor without another vault item' }],
   },
+  'exercise-membership': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/exercise-membership.mjs', testMatchPath: 'scripts/recourse/exercise-membership.test.mjs scripts/recourse/exercise-sign-membership.test.mjs',
+    mutations: [{ id: 'EXERCISE-MEMBERSHIP-DOMAIN', description: 'an exercise signature can authorize a production-chain debit',
+      find: "ensure(domain.chainId === '31337', 'wrong_chain');", replace: '', expectedKilledBy: 'live-chain, changed amount, arbitrary method and wrong-wallet signatures refuse' },
+      { id: 'EXERCISE-MEMBERSHIP-OWNER', description: 'a different wallet satisfies the owner debit signature',
+        find: 'verifyMessage(getBytes(checked.messageHex), signature).toLowerCase() === checked.account', replace: 'true', expectedKilledBy: 'live-chain, changed amount, arbitrary method and wrong-wallet signatures refuse' },
+      { id: 'EXERCISE-MEMBERSHIP-ATTESTOR', description: 'an owner signature replaces the independent test attestor in a sponsored command',
+        find: 'recoverAddress(hashMessage(getBytes(challenge.messageHex)), input.attestorSignature).toLowerCase() === attestor.toLowerCase()', replace: 'true', expectedKilledBy: 'agent-sponsored submission fixes the simulator contracts and both independent signatures' }],
+  },
+  'exercise-signature-queue': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/exercise-signature-queue.mjs', testMatchPath: 'scripts/recourse/exercise-signature-queue.test.mjs',
+    mutations: [{ id: 'EXERCISE-QUEUE-SIGNATURE', description: 'queued membership completes without the requested owner signature',
+      find: 'verifyExerciseMembershipSignature(pending.challenge, signature);', replace: '', expectedKilledBy: 'only the requested wallet and exact signature can resolve a pending exercise command' }],
+  },
+  'exercise-workbench': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/exercise-workbench.mjs', testMatchPath: 'scripts/recourse/exercise-client.test.mjs',
+    mutations: [{ id: 'EXERCISE-CLIENT-RESUME', description: 'a reload loses the only path to an outstanding owner signature',
+      find: "if(job.state==='running')await followExercise(selected);", replace: '', expectedKilledBy: 'fresh page refresh resumes a running signature request without starting a job' },
+      { id: 'EXERCISE-CLIENT-ACCOUNT', description: 'a concurrent connect changes the account used for a pending job signature',
+        find: 'params:[job.pending.challenge.messageHex,selected]', replace: 'params:[job.pending.challenge.messageHex,account]', expectedKilledBy: 'polling captures account and deduplicates concurrent resume calls' }],
+  },
   'hash-authority-cancellation-vault': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/hash-authority-vault.mjs', testMatchPath: 'scripts/recourse/hash-authority-cancellation.test.mjs scripts/recourse/hash-authority-vault.test.mjs',
     mutations: [{ id: 'HASH-CANCEL-SEED-LINEAGE', description: 'a successor vault record can lose its original operation binding',

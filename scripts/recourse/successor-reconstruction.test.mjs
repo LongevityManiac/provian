@@ -1,5 +1,5 @@
 import { test, expect, vi, beforeEach } from 'vitest';
-import { sha256, toUtf8Bytes } from 'ethers';
+import { keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { successorFixture } from './successor-plan.test.mjs';
 import { buildSuccessorPlan } from './successor-plan.mjs';
 import { permanentPointerPlan } from './permanent-pointer-plan.mjs';
@@ -19,6 +19,7 @@ function fixture() {
   const plan = buildSuccessorPlan(facts), operators = Object.fromEntries(['deployer', 'nonce', 'identityAttestor', 'submitter', 'batchApprover'].map(key => [key, facts[key]]));
   const finalized = { number: 30, hash: '0x' + '30'.repeat(32) };
   const port = { finalizedBlock: vi.fn(async () => finalized), blockHash: vi.fn(async n => n === 20 ? facts.snapshot.blockHash : finalized.hash),
+    code: vi.fn(async () => facts.artifacts.ProvianPVT9.deployedBytecode.object),
     // Reconstruction must not enforce a fresh authority nonce/root. Those
     // rotate when registering retirement before this same plan is published.
     call: vi.fn(async () => { throw Error('unexpected_authority_read'); }) };
@@ -39,6 +40,20 @@ test('canonical reconstruction reads independent cutoff facts without requiring 
   expect(rebuilt.plan).toEqual(f.plan); expect(rebuilt.institutions).toEqual(f.facts.institutions);
   expect(readers.snapshot).toHaveBeenCalledOnce(); expect(readers.institutions).toHaveBeenCalledOnce();
   expect(f.port.call).not.toHaveBeenCalled();
+});
+test('predecessor executable changes refuse before snapshot reconciliation', async () => {
+  const f = fixture(); f.port.code.mockResolvedValue('0x60006001');
+  await expect(reconstructSuccessorPlan(f)).rejects.toThrow('runtime_mismatch');
+  expect(readers.snapshot).not.toHaveBeenCalled();
+});
+test('authenticated metadata variation still pins the complete deployed runtime in both snapshot boundaries', async () => {
+  const f = fixture(), prefix = '0x6000a2646970667358221220', suffix = '64736f6c63430008180033';
+  f.artifacts.ProvianPVT9 = { ...f.artifacts.ProvianPVT9, deployedBytecode: { object: prefix + '11'.repeat(32) + suffix } };
+  const runtime = prefix + '22'.repeat(32) + suffix; f.port.code.mockResolvedValue(runtime);
+  await reconstructSuccessorPlan(f);
+  expect(readers.snapshot.mock.calls[0][0].expectedRuntimeHash).toBe(keccak256(runtime));
+  f.port.code.mockResolvedValue(runtime.replace('0x6000', '0x6001'));
+  await expect(reconstructSuccessorPlan(f)).rejects.toThrow('runtime_mismatch');
 });
 test.each(['component', 'retirement', 'address', 'balance', 'history', 'rule', 'operator'])('rehashed %s substitution is refused by independent reconstruction', async mode => {
   const f = fixture();
