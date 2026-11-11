@@ -59,6 +59,27 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'private-membership-reservation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/private-membership-reservation.ts',
+    testMatchPath: 'src/core/recourse/private-membership-reservation.test.ts src/core/recourse/membership-debit-revocation.test.ts',
+    mutations: [
+      { id: 'RESERVATION-SNAPSHOT', description: 'caller can change signing bytes while durable reservation awaits reads',
+        find: 'JSON.parse(stable(input)) as PrivateMembershipReservation', replace: 'input',
+        expectedKilledBy: 'async caller mutation cannot alter the reserved signing bytes' },
+      { id: 'RESERVATION-EFFECT', description: 'one physical payment can credit multiple private owner calendars',
+        find: "const effectRefs = result.status === 'committed' ?", replace: 'const effectRefs = false ?',
+        expectedKilledBy: 'a global effect fence prevents credit duplication even if private ownership metadata is later reassigned' },
+    ],
+  },
+  'membership-debit-revocation': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-revocation.ts',
+    testMatchPath: 'src/core/recourse/membership-debit-revocation.test.ts src/core/recourse/private-membership-reservation.test.ts',
+    mutations: [
+      { id: 'REVOCATION-GAP', description: 'an omitted execution can be mistaken for a permanently cancelled debit',
+        find: "if (cursor !== final) return fail('history_gap');", replace: "if (false) return fail('history_gap');",
+        expectedKilledBy: 'missing execution, missing final leave, wrong baseline and gapped nonces fail closed' },
+    ],
+  },
   'ProvianMemberRecoursePool': {
     sourcePath: 'contracts/src/ProvianMemberRecoursePool.sol',
     testMatchPath: 'test/{ProvianMemberRecoursePool,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePoolHistory}.t.sol',
