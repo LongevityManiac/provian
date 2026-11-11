@@ -1,3 +1,5 @@
+import { pendingMembershipDebit } from './membership-progress';
+import type { SponsoredOperationStatus } from './sponsored-operation-queue';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
@@ -16,7 +18,7 @@ export interface MembershipDebitChallenge {
   readonly messageHex: string; readonly allowanceAtomic: string;
 }
 export type MembershipDebitPreparation = { readonly status: 'ready'; readonly challenge: MembershipDebitChallenge }
-  | { readonly status: 'pending' | 'settled' };
+  | { readonly status: 'settled' } | { readonly status: 'pending'; readonly operation: SponsoredOperationStatus | null };
 const fail = (reason: string): never => { throw Error(`recourse_membership_debit_${reason}`); };
 export function parseMembershipPaymentSelection(value: unknown): MembershipPaymentSelection {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('amount');
@@ -71,7 +73,7 @@ export async function prepareMembershipDebit(db: Firestore, ownerIdentity: strin
   const [owner, accountRow, address] = await Promise.all([db.collection(R.owners).doc(ownerIdentity).get(),
     db.collection(C.owners).doc(ownerIdentity).get(), db.collection(R.addresses).doc(payer).get()]);
   if (!owner.exists || !accountRow.exists || owner.get('ownerIdentity') !== ownerIdentity) return fail('join_required');
-  if (owner.get('membershipTransition') != null) return { status: 'pending' };
+  if (owner.get('membershipTransition') != null) return { status: 'pending', operation: null };
   if (!address.exists || address.get('ownerIdentity') !== ownerIdentity || address.get('chainBindingStatus') !== 'confirmed') return fail('payer');
   const binding: unknown = address.get('identity');
   if (typeof binding !== 'string') return fail('payer');
@@ -84,8 +86,10 @@ export async function prepareMembershipDebit(db: Firestore, ownerIdentity: strin
     if (!row.exists || row.get('status') !== 'pending' || !r || r.ownerIdentity !== ownerIdentity) return fail('pending_invalid');
     if (r.kind !== 'debit' || r.debit.payer !== payer || BigInt(r.debit.expiresAt) < BigInt(state.timestamp)
       || r.domain.pool !== state.pool || r.domain.kernel !== state.kernel || r.domain.pointer !== deployment.pointer.toLowerCase()
-      || r.debit.revision !== String(deployment.revision)) return { status: 'pending' };
-    if (requested && ['month', 'burn', 'reserve'].some(key => requested[key as keyof MembershipPaymentSelection] !== r.debit[key as keyof MembershipPaymentSelection])) return { status: 'pending' };
+      || r.debit.revision !== String(deployment.revision)) return { status: 'pending', operation: null };
+    if (requested && ['month', 'burn', 'reserve'].some(key => requested[key as keyof MembershipPaymentSelection] !== r.debit[key as keyof MembershipPaymentSelection])) return { status: 'pending', operation: null };
+    const pending = await pendingMembershipDebit(db, r);
+    if (pending) return { status: 'pending', operation: pending };
     return { status: 'ready', challenge: membershipDebitChallenge(r) };
   }
   if (owner.get('membershipScanRequired') === true || account.needsScan || account.checkpoint.pool !== state.pool) return fail('reconciliation_pending');

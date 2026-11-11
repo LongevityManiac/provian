@@ -17,7 +17,8 @@ const binding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-bindi
 const bindingChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-binding-chain.ts'), 'utf8')
   .replace("'./recourse-binding'", "'./binding'").replace("'./recourse-owner-chain'", "'./owner-chain'");
 const transactionGuard = readFileSync(resolve(root, 'provian-agent-sdk/src/protocol-transaction.ts'), 'utf8')
-  .replace("'./protocol-pointer'", "'./pointer'").replace("'./recourse-owner-chain'", "'../recourse/owner-chain'");
+  .replace("'./protocol-pointer'", "'./pointer'").replace("'./recourse-owner-chain'", "'../recourse/owner-chain'")
+  .replace("'./hash-account-data'", "'../recourse/hash-account-data'");
 const poolChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-chain.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'").replace("'./protocol-pointer'", "'../protocol/pointer'");
 const poolAbi = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-abi.ts'), 'utf8');
 const recoveryModules = ['private-access-data', 'private-access', 'break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];

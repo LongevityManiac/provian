@@ -1,3 +1,4 @@
+import { HASH_ACCOUNT_ABI } from '../recourse/hash-account-data';
 import { Interface, TypedDataEncoder, type TypedDataField } from 'ethers';
 import { assertNoRetiredProtocolAddresses, type ProtocolDeployment } from './pointer';
 import type { OwnerChainNetwork } from '../recourse/owner-chain';
@@ -23,12 +24,21 @@ export function typedDataProtocolAddresses(verifyingContract: string | undefined
 }
 export function protocolTransactionAddresses(to: string, data?: string): string[] {
   const addresses = [to];
-  if (data && data !== '0x') {
-    const fragment = tokens.getFunction(data.slice(0, 10));
-    if (fragment) {
-      const decoded = tokens.decodeFunctionData(fragment, data);
-      fragment.inputs.forEach((input, index) => { if (input.type === 'address') addresses.push(String(decoded[index])); });
+  let input = data?.toLowerCase();
+  while (input && input !== '0x') {
+    if (input.slice(0, 10) === HASH_ACCOUNT_ABI.getFunction('execute')!.selector) {
+      const call = HASH_ACCOUNT_ABI.decodeFunctionData('execute', input);
+      addresses.push(String(call[0]));
+      const nested = String(call[3]);
+      if (nested.length >= input.length) throw Error('protocol_nested_call_invalid');
+      input = nested; continue;
     }
+    const fragment = tokens.getFunction(input.slice(0, 10));
+    if (fragment) {
+      const decoded = tokens.decodeFunctionData(fragment, input);
+      fragment.inputs.forEach((field, index) => { if (field.type === 'address') addresses.push(String(decoded[index])); });
+    }
+    break;
   }
   return addresses;
 }

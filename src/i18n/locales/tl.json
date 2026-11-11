@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Pansamantalang hindi available ang pribadong katayuan ng pagiging miyembro. I-refresh matapos makumpleto ang mga nakabinbing aksyon.",
     "memberBindingConsent": "Pahintulot sa Recourse Pool para sa address na ito",
     "memberBindingBytes": "Lagdaan ang ikalawang mensaheng ito bilang 32 byte na ipinakita sa hex, hindi bilang teksto. Isinasama nito ang address na ito sa kasalukuyan mong pagiging miyembro ng Recourse Pool.",
-    "memberBindingSignature": "Lagda ng pahintulot sa pool"
+    "memberBindingSignature": "Lagda ng pahintulot sa pool",
+    "flow": {
+      "title": "Ang iyong pagiging miyembro",
+      "explain": "Bawat nakaugnay na wallet ay nagbibigay-pahintulot sa sarili nitong paglahok. Pinagsasama ng relay ang iyong pagiging miyembro nang pribado. Walang ibinabawas na PVT sa pagpirma rito; bawat burn o kontribusyon mula sa hawak mong balanse ay nangangailangan ng hiwalay na pahintulot para sa eksaktong halaga.",
+      "preparing": "Itinutugma ang mga naunang aksyon bago humingi ng mga lagda.",
+      "consenting": "Pahintulutan ang bawat wallet sa ibaba. Magkakabisa ang mga pagbabago matapos makumpirma sa chain.",
+      "complete": "Nakumpirma ang aksyon sa pagiging miyembro.",
+      "superseded": "Nagbago ang mga kontrata. Magpatuloy gamit ang kasalukuyang kalagayan.",
+      "pending": "Naipadala ang pahintulot. I-refresh para tingnan ang kumpirmasyon.",
+      "enable": "Isama ang wallet na ito",
+      "disable": "Tapusin ang paglahok ng wallet na ito",
+      "external": "Pahintulutan sa wallet na ito",
+      "done": "Bumalik sa Recourse",
+      "restart": "Magpatuloy sa kasalukuyang mga kontrata",
+      "none": "Walang hindi pa tapos na aksyon sa pagiging miyembro.",
+      "raw": "Lagdaan ang eksaktong 32 byte na ito gamit ang personal_sign, hindi ang hexadecimal na teksto. Malapit nang mag-expire ang pahintulot; i-refresh kung nag-expire na.",
+      "copy": "Kopyahin ang mga byte na lalagdaan",
+      "connect": "Ikonekta ang panlabas na wallet",
+      "copyConnection": "Kopyahin ang link ng koneksyon",
+      "signature": "Lagda",
+      "submit": "Isumite ang lagda",
+      "resume": "Ipagpatuloy ang hindi pa tapos na aksyon"
+    }
   }
 }

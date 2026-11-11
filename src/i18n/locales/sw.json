@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Hali binafsi ya uanachama haipatikani kwa muda. Onyesha upya baada ya shughuli zinazosubiri kukamilika.",
     "memberBindingConsent": "Idhini ya Recourse Pool kwa anwani hii",
     "memberBindingBytes": "Saini ujumbe huu wa pili kama baiti 32 zilizoonyeshwa kwa heksadesimali, si kama maandishi. Unajumuisha anwani hii katika uanachama wako wa sasa wa Recourse Pool.",
-    "memberBindingSignature": "Saini ya idhini ya mfuko"
+    "memberBindingSignature": "Saini ya idhini ya mfuko",
+    "flow": {
+      "title": "Uanachama wako",
+      "explain": "Kila pochi iliyounganishwa inaidhinisha ushiriki wake yenyewe. Relay inaunganisha uanachama wako kwa faragha. Kutia saini hapa hakukati PVT; kila uchomaji au mchango kutoka salio lako unahitaji idhini yake ya kiasi halisi.",
+      "preparing": "Kulinganisha hatua za awali kabla ya kuomba saini.",
+      "consenting": "Idhinisha kila pochi hapa chini. Mabadiliko ya uanachama yanaanza baada ya uthibitisho kwenye mnyororo.",
+      "complete": "Hatua ya uanachama imethibitishwa.",
+      "superseded": "Mikataba imebadilika. Endelea na hali yake ya sasa.",
+      "pending": "Idhini imetumwa. Pakia upya ili kuangalia uthibitisho.",
+      "enable": "Jumuisha pochi hii",
+      "disable": "Maliza ushiriki wa pochi hii",
+      "external": "Idhinisha katika pochi hii",
+      "done": "Rudi Recourse",
+      "restart": "Endelea na mikataba ya sasa",
+      "none": "Hakuna hatua ya uanachama ambayo haijakamilika.",
+      "raw": "Tia saini baiti hizi 32 halisi kwa personal_sign, si maandishi ya heksadesimali. Idhini inaisha muda hivi karibuni; pakia upya ikiisha.",
+      "copy": "Nakili baiti za kusaini",
+      "connect": "Unganisha pochi ya nje",
+      "copyConnection": "Nakili kiungo cha kuunganisha",
+      "signature": "Saini",
+      "submit": "Tuma saini",
+      "resume": "Endelea na hatua isiyokamilika"
+    }
   }
 }

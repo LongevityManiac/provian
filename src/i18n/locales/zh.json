@@ -5142,6 +5142,28 @@
     "membershipUnavailable": "私密会员状态暂时不可用。请在待处理操作完成后刷新。",
     "memberBindingConsent": "此地址的Recourse Pool同意授权",
     "memberBindingBytes": "请将第二条消息作为以十六进制显示的32字节签名，而不是文本。此操作将此地址纳入您现有的Recourse Pool成员资格。",
-    "memberBindingSignature": "资金池同意签名"
+    "memberBindingSignature": "资金池同意签名",
+    "flow": {
+      "title": "你的成员资格",
+      "explain": "每个已绑定钱包都单独授权自己的参与。中继私下统一管理你的成员资格。在此签名不会扣除PVT；从持有余额中进行的每笔销毁或缴纳，都需要单独授权其准确数量。",
+      "preparing": "正在核对之前的操作，完成后再请求签名。",
+      "consenting": "请授权下方的每个钱包。成员资格变更在链上确认后生效。",
+      "complete": "成员资格操作已确认。",
+      "superseded": "合约已更改。请按当前状态继续。",
+      "pending": "授权已提交。刷新以查看确认状态。",
+      "enable": "纳入此钱包",
+      "disable": "结束此钱包的参与",
+      "external": "在此钱包中授权",
+      "done": "返回Recourse",
+      "restart": "使用当前合约继续",
+      "none": "没有未完成的成员资格操作。",
+      "raw": "请使用personal_sign对这32个字节本身签名，而不是对十六进制文本签名。授权即将过期；如已过期，请刷新。",
+      "copy": "复制待签名字节",
+      "connect": "连接外部钱包",
+      "copyConnection": "复制连接链接",
+      "signature": "签名",
+      "submit": "提交签名",
+      "resume": "继续未完成的操作"
+    }
   }
 }

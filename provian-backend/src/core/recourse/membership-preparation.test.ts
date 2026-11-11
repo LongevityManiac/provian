@@ -1,3 +1,4 @@
+import { MEMBERSHIP_CONSENT_OPERATIONS, membershipConsentOperationId } from './membership-operation-identifiers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { prepareMembershipTransition } from './membership-preparation';
@@ -83,4 +84,23 @@ test('recovery during interrupted preparation refreshes the replacement before o
   expect(view.status).toBe('consenting');
   expect(view.challenges.find(c => c.consent.binding === h('03'))?.consent.account).toBe(a('05'));
   expect(f.fake.store.get(`${T}/${id}`)?.bindingSetVersion).toBe(3);
+});
+
+test('resume discovers exact queued consent without requesting a second signature or exposing signatures', async () => {
+  const f = fixture(), view = await prepareMembershipTransition(f.db, owner, { kind: 'join' });
+  const challenge = view.challenges[0], id = membershipConsentOperationId(challenge);
+  const request = { transitionId: view.id, domain: challenge.domain, consent: challenge.consent,
+    ownerSignature: 'PRIVATE_OWNER_SIGNATURE', attestorSignature: 'PRIVATE_ATTESTOR_SIGNATURE' };
+  f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`, { request, status: 'queued', transactionHash: null });
+  const resumed = await prepareMembershipTransition(f.db, owner, { id: view.id });
+  expect(resumed.challenges).toHaveLength(1);
+  expect(resumed.pending).toEqual([{ binding: challenge.consent.binding, account: challenge.consent.account,
+    operation: { id, status: 'queued', transactionHash: null } }]);
+  expect(JSON.stringify(resumed)).not.toContain('PRIVATE_');
+  // Another transition and an obsolete nonce cannot suppress the current challenge.
+  f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.request = { ...request, transitionId: h('ee') };
+  expect((await prepareMembershipTransition(f.db, owner, { id: view.id })).challenges).toHaveLength(2);
+  f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.request = request;
+  f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.status = 'failed';
+  expect((await prepareMembershipTransition(f.db, owner, { id: view.id })).challenges).toHaveLength(2);
 });

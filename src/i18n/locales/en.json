@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Private membership status is temporarily unavailable. Refresh after pending actions finish.",
     "memberBindingConsent": "Recourse Pool consent for this address",
     "memberBindingBytes": "Sign this second message as the 32 bytes shown in hex, not as text. It includes this address in your existing Recourse Pool membership.",
-    "memberBindingSignature": "Pool consent signature"
+    "memberBindingSignature": "Pool consent signature",
+    "flow": {
+      "title": "Your membership",
+      "explain": "Each bound wallet authorizes its own participation. The relay keeps your membership together privately. Signing here does not debit PVT; each burn or contribution from holdings needs its own exact authorization.",
+      "preparing": "Reconciling earlier actions before requesting signatures.",
+      "consenting": "Authorize each wallet below. Membership changes take effect after chain confirmation.",
+      "complete": "Membership action confirmed.",
+      "superseded": "The contracts changed. Continue with their current state.",
+      "pending": "Authorization submitted. Refresh to check its confirmation.",
+      "enable": "Include this wallet",
+      "disable": "End this wallet’s participation",
+      "external": "Authorize in this wallet",
+      "done": "Return to Recourse",
+      "restart": "Continue with the current contracts",
+      "none": "No unfinished membership action.",
+      "raw": "Sign these exact 32 bytes using personal_sign, not the hexadecimal text. The authorization expires shortly; refresh if it expires.",
+      "copy": "Copy signing bytes",
+      "connect": "Connect the external wallet",
+      "copyConnection": "Copy connection link",
+      "signature": "Signature",
+      "submit": "Submit signature",
+      "resume": "Continue unfinished action"
+    }
   }
 }

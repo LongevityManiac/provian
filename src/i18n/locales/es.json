@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "El estado privado de la membresía no está disponible temporalmente. Actualiza cuando terminen las acciones pendientes.",
     "memberBindingConsent": "Consentimiento de Recourse Pool para esta dirección",
     "memberBindingBytes": "Firma este segundo mensaje como los 32 bytes mostrados en hexadecimal, no como texto. Incluye esta dirección en tu membresía actual de Recourse Pool.",
-    "memberBindingSignature": "Firma de consentimiento del fondo"
+    "memberBindingSignature": "Firma de consentimiento del fondo",
+    "flow": {
+      "title": "Tu participación",
+      "explain": "Cada billetera vinculada autoriza su propia participación. El relay mantiene tu participación conjunta en privado. Firmar aquí no descuenta PVT; cada quema o contribución desde tus tenencias requiere su propia autorización por importes exactos.",
+      "preparing": "Conciliando acciones anteriores antes de solicitar firmas.",
+      "consenting": "Autoriza cada billetera a continuación. Los cambios se aplican tras la confirmación en cadena.",
+      "complete": "Acción de participación confirmada.",
+      "superseded": "Los contratos cambiaron. Continúa con su estado actual.",
+      "pending": "Autorización enviada. Actualiza para comprobar su confirmación.",
+      "enable": "Incluir esta billetera",
+      "disable": "Finalizar la participación de esta billetera",
+      "external": "Autorizar en esta billetera",
+      "done": "Volver a Recourse",
+      "restart": "Continuar con los contratos actuales",
+      "none": "No hay ninguna acción de participación pendiente.",
+      "raw": "Firma estos 32 bytes exactos con personal_sign, no el texto hexadecimal. La autorización caduca pronto; actualiza si caduca.",
+      "copy": "Copiar bytes para firmar",
+      "connect": "Conectar la billetera externa",
+      "copyConnection": "Copiar enlace de conexión",
+      "signature": "Firma",
+      "submit": "Enviar firma",
+      "resume": "Continuar acción pendiente"
+    }
   }
 }

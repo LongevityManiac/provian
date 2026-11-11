@@ -1,3 +1,4 @@
+import { MEMBERSHIP_DEBIT_OPERATIONS, membershipDebitOperationId } from './membership-operation-identifiers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { prepareMembershipDebit, selectMembershipPayment } from './membership-debit-preparation';
@@ -55,9 +56,9 @@ test('preparation reserves exact bytes; retry cannot select a second payer or la
   expect(first.challenge).toMatchObject({ allowanceAtomic: '100', debit: { payer, burn: '100', reserve: '0' } });
   expect(f.fake.store.get(`${C.owners}/${owner}`)!.pendingReservation).toBe(first.challenge.reservationId);
   expect(await prepareMembershipDebit(f.db, owner, payer)).toEqual(first);
-  expect(await prepareMembershipDebit(f.db, owner, payer, { month: String(month), burn: '200', reserve: '0' })).toEqual({ status: 'pending' });
+  expect(await prepareMembershipDebit(f.db, owner, payer, { month: String(month), burn: '200', reserve: '0' })).toEqual({ status: 'pending', operation: null });
   (readRecoursePoolState as jest.Mock).mockResolvedValue({ ...f.state, currentAddress: a('04') });
-  expect(await prepareMembershipDebit(f.db, owner, a('04'))).toEqual({ status: 'pending' });
+  expect(await prepareMembershipDebit(f.db, owner, a('04'))).toEqual({ status: 'pending', operation: null });
   expect([...f.fake.store.keys()].filter(k => k.startsWith(C.reservations + '/'))).toHaveLength(1);
 });
 test('a consumed or recovery-changed nonce must finalize into the private checkpoint before new signing', async () => {
@@ -71,6 +72,16 @@ test('expiry observation alone never replaces a retained private reservation', a
   expect(first.status).toBe('ready');
   const reserved = f.fake.store.get(`${C.owners}/${owner}`)!.pendingReservation;
   (readRecoursePoolState as jest.Mock).mockResolvedValue({ ...f.state, timestamp: now + 301 });
-  expect(await prepareMembershipDebit(f.db, owner, payer)).toEqual({ status: 'pending' });
+  expect(await prepareMembershipDebit(f.db, owner, payer)).toEqual({ status: 'pending', operation: null });
   expect(f.fake.store.get(`${C.owners}/${owner}`)!.pendingReservation).toBe(reserved);
+});
+
+test('resuming a queued debit returns its status instead of another approval or signature challenge', async () => {
+  const f = fixture(), first = await prepareMembershipDebit(f.db, owner, payer);
+  if (first.status !== 'ready') throw Error('missing challenge');
+  const id = membershipDebitOperationId(first.challenge), transactionHash = h('ee');
+  f.fake.store.set(`${MEMBERSHIP_DEBIT_OPERATIONS}/${id}`, { status: 'submitted', transactionHash });
+  expect(await prepareMembershipDebit(f.db, owner, payer)).toEqual({ status: 'pending', operation: { id, status: 'submitted', transactionHash } });
+  f.fake.store.get(`${MEMBERSHIP_DEBIT_OPERATIONS}/${id}`)!.status = 'failed';
+  expect(await prepareMembershipDebit(f.db, owner, payer)).toEqual(first);
 });

@@ -1,7 +1,7 @@
-import { AbiCoder, getBytes, sha256 } from 'ethers';
+import { getBytes } from 'ethers';
 import { isDeepStrictEqual } from 'util';
 import type { Firestore } from 'firebase-admin/firestore';
-import { MEMBERSHIP_AUTHORIZATION_ABI as POOL, exactMembershipDebitDigest, exactMembershipDebitSigningHash,
+import { MEMBERSHIP_AUTHORIZATION_ABI as POOL, exactMembershipDebitSigningHash,
   parseExactMembershipDebit, parseMembershipAuthorizationDomain, type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, planPrivateDebit, type PrivateDebitReservation, type PrivateMembershipAccount } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
@@ -18,7 +18,8 @@ import { finalizedOwnerTransaction } from './transaction-finality';
 import { readMembershipReceipt } from './membership-receipt';
 import { reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
 
-export const MEMBERSHIP_DEBIT_OPERATIONS = 'recourse_membership_debit_operations_v1';
+import { MEMBERSHIP_DEBIT_OPERATIONS, membershipDebitOperationId } from './membership-operation-identifiers';
+export { MEMBERSHIP_DEBIT_OPERATIONS, membershipDebitOperationId } from './membership-operation-identifiers';
 export interface MembershipDebitRequest {
   readonly reservationId: string; readonly domain: MembershipAuthorizationDomain; readonly debit: ExactMembershipDebit;
   readonly ownerSignature: string; readonly attestorSignature: string;
@@ -34,9 +35,6 @@ export function parseMembershipDebitRequest(value: unknown): MembershipDebitRequ
     || typeof r.attestorSignature !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(r.attestorSignature)) return fail('input');
   return { reservationId: r.reservationId, domain: parseMembershipAuthorizationDomain(r.domain), debit: parseExactMembershipDebit(r.debit),
     ownerSignature: r.ownerSignature, attestorSignature: r.attestorSignature };
-}
-export function membershipDebitOperationId(request: Pick<MembershipDebitRequest, 'domain' | 'debit'>): string {
-  return sha256(AbiCoder.defaultAbiCoder().encode(['string', 'bytes32'], ['Provian sponsored membership debit', exactMembershipDebitDigest(request.domain, request.debit)]));
 }
 export function membershipDebitCalldata(request: MembershipDebitRequest): string {
   return POOL.encodeFunctionData('executeMembershipDebit', [request.debit, request.ownerSignature, request.attestorSignature]);

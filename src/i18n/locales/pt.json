@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "O estado privado da adesão está temporariamente indisponível. Atualize após a conclusão das ações pendentes.",
     "memberBindingConsent": "Consentimento do Recourse Pool para este endereço",
     "memberBindingBytes": "Assine esta segunda mensagem como os 32 bytes exibidos em hexadecimal, não como texto. Ela inclui este endereço na sua participação atual no Recourse Pool.",
-    "memberBindingSignature": "Assinatura de consentimento do fundo"
+    "memberBindingSignature": "Assinatura de consentimento do fundo",
+    "flow": {
+      "title": "Sua participação",
+      "explain": "Cada carteira vinculada autoriza sua própria participação. O relay mantém sua participação conjunta em privado. Assinar aqui não debita PVT; cada queima ou contribuição de seus saldos exige sua própria autorização com valores exatos.",
+      "preparing": "Conciliando ações anteriores antes de solicitar assinaturas.",
+      "consenting": "Autorize cada carteira abaixo. As alterações entram em vigor após a confirmação na rede.",
+      "complete": "Ação de participação confirmada.",
+      "superseded": "Os contratos mudaram. Continue com o estado atual deles.",
+      "pending": "Autorização enviada. Atualize para verificar a confirmação.",
+      "enable": "Incluir esta carteira",
+      "disable": "Encerrar a participação desta carteira",
+      "external": "Autorizar nesta carteira",
+      "done": "Voltar ao Recourse",
+      "restart": "Continuar com os contratos atuais",
+      "none": "Nenhuma ação de participação pendente.",
+      "raw": "Assine estes 32 bytes exatos com personal_sign, não o texto hexadecimal. A autorização expira em breve; atualize se expirar.",
+      "copy": "Copiar bytes para assinar",
+      "connect": "Conectar a carteira externa",
+      "copyConnection": "Copiar link de conexão",
+      "signature": "Assinatura",
+      "submit": "Enviar assinatura",
+      "resume": "Continuar ação pendente"
+    }
   }
 }

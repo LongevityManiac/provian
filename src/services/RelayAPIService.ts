@@ -1,3 +1,4 @@
+import type { MembershipRequestPath } from '../core/recourse/membership-client';
 import i18next from 'i18next';
 import { ActionWallet } from '../core/security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, isBiometricActionValid, type BiometricAction } from '../core/security/biometricAction';
@@ -1959,7 +1960,7 @@ class RelayAPIService {
         return response.json();
     }
 
-    async recourseRequest(path: 'pool' | 'ownership' | 'restoration-requests' | 'restoration-intents' | 'binding-challenge' | 'bind',
+    async recourseRequest(path: MembershipRequestPath | 'pool' | 'ownership' | 'restoration-requests' | 'restoration-intents' | 'binding-challenge' | 'bind',
         body?: unknown, biometricAction?: BiometricAction): Promise<unknown> {
         const response = await this.makeAuthenticatedRequest(`/v1/recourse/${path}`, {
             method: body === undefined ? 'GET' : 'POST',

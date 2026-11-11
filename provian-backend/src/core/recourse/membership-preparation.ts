@@ -1,3 +1,5 @@
+import { pendingMembershipConsents } from './membership-progress';
+import type { SponsoredOperationStatus } from './sponsored-operation-queue';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
@@ -22,6 +24,7 @@ export interface MembershipTransitionView {
   readonly id: string; readonly kind: 'join' | 'leave';
   readonly status: PrivateMembershipTransition['status'];
   readonly challenges: readonly MembershipConsentChallenge[];
+  readonly pending: readonly { readonly binding: string; readonly account: string; readonly operation: SponsoredOperationStatus }[];
 }
 
 /** Complete receipt reconciliation precedes any new signing. A pending debit
@@ -85,17 +88,19 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
     await reconcileCurrentPrivateMembership(db, ownerIdentity);
     const account = await db.collection(C.owners).doc(ownerIdentity).get();
     if (account.exists && account.get('pendingReservation') != null) {
-      return { id: operation.id, kind: operation.kind, status: 'preparing', challenges: [] };
+      return { id: operation.id, kind: operation.kind, status: 'preparing', challenges: [], pending: [] };
     }
     operation = await refreshRecoveredMembershipTransition(db, operation.id);
     operation = await openPrivateMembershipConsents(db, operation.id);
   }
-  if (operation.status !== 'consenting') return { id: operation.id, kind: operation.kind, status: operation.status, challenges: [] };
+  if (operation.status !== 'consenting') return { id: operation.id, kind: operation.kind, status: operation.status, challenges: [], pending: [] };
   operation = await refreshRecoveredMembershipTransition(db, operation.id);
   const deployment = await currentProtocolDeployment();
   if (operation.pool !== deployment.addresses.recoursePool.toLowerCase() || operation.kernel !== deployment.addresses.kernel.toLowerCase()) throw Error('recourse_membership_retired');
   const domain: MembershipAuthorizationDomain = { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: operation.kernel, pool: operation.pool };
   const challenges: MembershipConsentChallenge[] = [];
+  const queued = await pendingMembershipConsents(db, operation.id);
+  const pending: MembershipTransitionView['pending'][number][] = [];
   for (const binding of operation.bindings) {
     const state = await readRecoursePoolState(binding.binding);
     if (state.pool !== operation.pool || state.kernel !== operation.kernel || state.currentAddress !== binding.address) throw Error('recourse_membership_changed');
@@ -103,9 +108,12 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
       revision: String(deployment.revision), ruleHash: state.signedRuleHash, timestamp: state.timestamp });
     if (consent) {
       if (consent.nonce !== state.consentNonce || consent.joined === state.addressConsent) throw Error('recourse_membership_reconciliation_pending');
-      challenges.push({ domain, consent, messageHex: addressMembershipSigningHash(domain, consent) });
+      const inFlight = queued.filter(row => row.domain.pool === domain.pool && row.domain.kernel === domain.kernel && row.domain.pointer === domain.pointer
+        && Object.entries(consent).every(([key, value]) => key === 'expiresAt' || row.consent[key as keyof AddressMembershipConsent] === value));
+      if (inFlight.length) pending.push(...inFlight.map(row => ({ binding: consent.binding, account: consent.account, operation: row.operation })));
+      else challenges.push({ domain, consent, messageHex: addressMembershipSigningHash(domain, consent) });
     }
   }
   if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');
-  return { id: operation.id, kind: operation.kind, status: operation.status, challenges };
+  return { id: operation.id, kind: operation.kind, status: operation.status, challenges, pending };
 }

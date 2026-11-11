@@ -124,6 +124,7 @@ import CommonsHumanJobManage from '../screens/Commons/CommonsHumanJobManage';
 import CommonsInstitutions from '../screens/Commons/CommonsInstitutions';
 import CommonsCourt from '../screens/Commons/CommonsCourt';
 import CommonsBonds from '../screens/Commons/CommonsBonds';
+import RecourseMembershipScreen from '../screens/Commons/RecourseMembershipScreen';
 import RecourseScreen, { RecourseBindScreen } from '../screens/Commons/RecourseScreen';
 import CommonsGovernance from '../screens/Commons/CommonsGovernance';
 import CommonsForum from '../screens/Commons/CommonsForum';
@@ -424,6 +425,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="CommonsBonds" component={CommonsBonds} />
                 <Stack.Screen name="Recourse" component={RecourseScreen} />
                 <Stack.Screen name="RecourseBind" component={RecourseBindScreen} />
+                <Stack.Screen name="RecourseMembership" component={RecourseMembershipScreen} />
                 <Stack.Screen name="CommonsGovernance" component={CommonsGovernance} />
                 <Stack.Screen name="CommonsForum" component={CommonsForum} />
                 <Stack.Screen name="CommonsForumPost" component={CommonsForumPost} />

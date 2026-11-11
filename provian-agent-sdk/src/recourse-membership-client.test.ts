@@ -70,9 +70,18 @@ it('changed payer, nonce, generation, historical rule or elapsed grace refuses p
   await expect(validateMembershipDebit(debitChallenge(), payer, { ...f.network, rpcs: [f.rpc, other] })).rejects.toThrow('disagreement');
 });
 it('portfolio grouping and duplicate challenges are not accepted as public authorization material', () => {
-  const view = { id: h('21'), kind: 'join', status: 'consenting', challenges: [consentChallenge()] };
+  const view = { id: h('21'), kind: 'join', status: 'consenting', challenges: [consentChallenge()], pending: [] };
   expect(parseMembershipTransitionView(view)).toEqual(view);
   expect(() => parseMembershipTransitionView({ ...view, challenges: [consentChallenge(), consentChallenge()] })).toThrow('invalid');
   expect(() => parseMembershipTransitionView({ ...view, challenges: [{ ...consentChallenge(), siblings: [a('ff')] }] })).toThrow('invalid');
   expect(() => parseMembershipTransitionView({ ...view, kind: 'leave' })).toThrow('invalid');
+});
+
+it('resume status is bounded to pending public operation metadata', () => {
+  const entry = { binding: consent.binding, account: payer, operation: { id: h('20'), status: 'submitted', transactionHash: h('22') } };
+  const view = { id: h('21'), kind: 'join', status: 'consenting', challenges: [], pending: [entry] };
+  expect(parseMembershipTransitionView(view)).toEqual(view);
+  expect(() => parseMembershipTransitionView({ ...view, challenges: [consentChallenge()] })).toThrow('invalid');
+  expect(() => parseMembershipTransitionView({ ...view, pending: [{ ...entry, ownerSignature: '0x1234' }] })).toThrow('invalid');
+  expect(() => parseMembershipTransitionView({ ...view, pending: [{ ...entry, operation: { ...entry.operation, status: 'confirmed' } }] })).toThrow('invalid');
 });

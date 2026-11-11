@@ -20,12 +20,13 @@ export interface MembershipDebitChallenge {
 export interface MembershipTransitionView {
   readonly id: string; readonly kind: 'join' | 'leave'; readonly status: 'preparing' | 'consenting' | 'complete' | 'superseded';
   readonly challenges: readonly MembershipConsentChallenge[];
+  readonly pending: readonly { readonly binding: string; readonly account: string; readonly operation: MembershipOperationStatus }[];
 }
 export interface MembershipOperationStatus {
   readonly id: string; readonly status: 'queued' | 'submitted' | 'confirmed' | 'failed'; readonly transactionHash: string | null;
 }
 export type MembershipDebitPreparation = { readonly status: 'ready'; readonly challenge: MembershipDebitChallenge }
-  | { readonly status: 'pending' | 'settled' };
+  | { readonly status: 'settled' } | { readonly status: 'pending'; readonly operation: MembershipOperationStatus | null };
 const fail = (): never => { throw Error('recourse_membership_reply_invalid'); };
 function object(value: unknown, keys: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).sort().join(',') !== keys) return fail();
@@ -48,13 +49,21 @@ export function parseMembershipDebitChallenge(value: unknown): MembershipDebitCh
   return { domain, debit, messageHex, allowanceAtomic, reservationId };
 }
 export function parseMembershipTransitionView(value: unknown): MembershipTransitionView {
-  const row = object(value, 'challenges,id,kind,status');
+  const row = object(value, 'challenges,id,kind,pending,status');
   if ((row.kind !== 'join' && row.kind !== 'leave') || !['preparing', 'consenting', 'complete', 'superseded'].includes(String(row.status))
-    || !Array.isArray(row.challenges)) return fail();
+    || !Array.isArray(row.challenges) || !Array.isArray(row.pending)) return fail();
   const challenges = row.challenges.map(parseMembershipConsentChallenge);
+  const pending = row.pending.map(value => {
+    const item = object(value, 'account,binding,operation'), operation = parseMembershipOperationStatus(item.operation);
+    if (typeof item.account !== 'string' || !/^0x[0-9a-f]{40}$/.test(item.account)
+      || !['queued','submitted'].includes(operation.status)) return fail();
+    return { binding: hash(item.binding), account: item.account, operation };
+  });
+  if ((row.status !== 'consenting' && pending.length) || new Set(pending.map(p => p.operation.id)).size !== pending.length
+    || pending.some(p => challenges.some(c => c.consent.binding === p.binding))) return fail();
   if ((row.status !== 'consenting' && challenges.length !== 0) || new Set(challenges.map(c => c.consent.binding)).size !== challenges.length
     || (row.kind === 'leave' && challenges.some(c => c.consent.joined))) return fail();
-  return { id: hash(row.id), kind: row.kind, status: row.status as MembershipTransitionView['status'], challenges };
+  return { id: hash(row.id), kind: row.kind, status: row.status as MembershipTransitionView['status'], challenges, pending };
 }
 export function parseMembershipOperationStatus(value: unknown): MembershipOperationStatus {
   const row = object(value, 'id,status,transactionHash');
@@ -64,8 +73,10 @@ export function parseMembershipOperationStatus(value: unknown): MembershipOperat
 export function parseMembershipDebitPreparation(value: unknown): MembershipDebitPreparation {
   if (!value || typeof value !== 'object' || !('status' in value)) return fail();
   if (value.status === 'ready') return { status: 'ready', challenge: parseMembershipDebitChallenge(object(value, 'challenge,status').challenge) };
-  if (value.status !== 'pending' && value.status !== 'settled') return fail();
-  object(value, 'status'); return { status: value.status };
+  if (value.status === 'settled') { object(value, 'status'); return { status: 'settled' }; }
+  if (value.status !== 'pending') return fail();
+  const row = object(value, 'operation,status');
+  return { status: 'pending', operation: row.operation === null ? null : parseMembershipOperationStatus(row.operation) };
 }
 function requireDomain(domain: MembershipAuthorizationDomain, revision: string, deployment: ProtocolDeployment): void {
   if (domain.chainId !== '8453' || domain.pointer !== deployment.pointer.toLowerCase() || domain.kernel !== deployment.addresses.kernel.toLowerCase()

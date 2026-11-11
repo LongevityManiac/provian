@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Le statut privé de votre adhésion est temporairement indisponible. Actualisez après la fin des opérations en attente.",
     "memberBindingConsent": "Consentement Recourse Pool pour cette adresse",
     "memberBindingBytes": "Signez ce second message comme les 32 octets affichés en hexadécimal, et non comme du texte. Il inclut cette adresse dans votre adhésion actuelle au Recourse Pool.",
-    "memberBindingSignature": "Signature de consentement au fonds"
+    "memberBindingSignature": "Signature de consentement au fonds",
+    "flow": {
+      "title": "Votre participation",
+      "explain": "Chaque portefeuille lié autorise sa propre participation. Le relais regroupe votre participation en privé. Signer ici ne débite aucun PVT ; chaque destruction ou contribution prélevée sur vos avoirs exige sa propre autorisation pour des montants exacts.",
+      "preparing": "Rapprochement des actions précédentes avant la demande de signatures.",
+      "consenting": "Autorisez chaque portefeuille ci-dessous. Les changements prennent effet après confirmation sur la chaîne.",
+      "complete": "Action de participation confirmée.",
+      "superseded": "Les contrats ont changé. Continuez avec leur état actuel.",
+      "pending": "Autorisation envoyée. Actualisez pour vérifier sa confirmation.",
+      "enable": "Inclure ce portefeuille",
+      "disable": "Mettre fin à la participation de ce portefeuille",
+      "external": "Autoriser dans ce portefeuille",
+      "done": "Retour à Recourse",
+      "restart": "Continuer avec les contrats actuels",
+      "none": "Aucune action de participation en attente.",
+      "raw": "Signez ces 32 octets exacts avec personal_sign, et non le texte hexadécimal. L’autorisation expire bientôt ; actualisez si elle a expiré.",
+      "copy": "Copier les octets à signer",
+      "connect": "Connecter le portefeuille externe",
+      "copyConnection": "Copier le lien de connexion",
+      "signature": "Signature",
+      "submit": "Envoyer la signature",
+      "resume": "Reprendre l’action en attente"
+    }
   }
 }

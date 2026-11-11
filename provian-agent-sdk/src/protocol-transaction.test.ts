@@ -1,3 +1,4 @@
+import { HASH_ACCOUNT_ABI } from './hash-account-data';
 import { expect, it } from 'vitest';
 import { Interface } from 'ethers';
 import { assertCurrentProtocolTransaction, assertCurrentProtocolAddresses, typedDataProtocolAddresses } from './protocol-transaction';
@@ -36,4 +37,29 @@ it('nested typed-data permits cannot grant a retired spender authority over curr
     { details: { token, amount: 1 }, spender: retired });
   expect(addresses).toContain(retired);
   await expect(assertCurrentProtocolAddresses(network(), addresses)).rejects.toThrow('retired');
+});
+
+it('hash account wrappers cannot hide retired inner targets or token approval spenders', async () => {
+  const wrap = (target: string, data: string) => HASH_ACCOUNT_ABI.encodeFunctionData('execute', [target, 0, 100000, data,
+    `0x${'66'.repeat(32)}`, '0x1234', '0xabcd']);
+  await expect(assertCurrentProtocolTransaction(network(), recipient, wrap(retired, '0x'))).rejects.toThrow('retired');
+  await expect(assertCurrentProtocolTransaction(network(), recipient,
+    wrap(token, tokenAbi.encodeFunctionData('approve', [retired, 1])))).rejects.toThrow('retired');
+  await expect(assertCurrentProtocolTransaction(network(), recipient,
+    wrap(recipient, wrap(token, tokenAbi.encodeFunctionData('transfer', [retired, 1]))))).rejects.toThrow('retired');
+  await expect(assertCurrentProtocolTransaction(network(), recipient,
+    wrap(token, tokenAbi.encodeFunctionData('approve', [recipient, 1])))).resolves.toHaveProperty('manifestHash', 'current');
+});
+
+it('mixed-case hex cannot hide hash wrappers or token approval selectors', async () => {
+  const upperSelector = (data: string) => '0x' + data.slice(2, 10).toUpperCase() + data.slice(10);
+  const wrap = (target: string, data: string) => HASH_ACCOUNT_ABI.encodeFunctionData('execute', [target, 0, 100000, data,
+    `0x${'66'.repeat(32)}`, '0x1234', '0xabcd']);
+  for (const data of [upperSelector(wrap(retired, '0x')),
+    wrap(recipient, upperSelector(wrap(retired, '0x'))),
+    wrap(token, upperSelector(tokenAbi.encodeFunctionData('approve', [retired, 1])))]) {
+    await expect(assertCurrentProtocolTransaction(network(), recipient, data)).rejects.toThrow('retired');
+  }
+  await expect(assertCurrentProtocolTransaction(network(), token,
+    upperSelector(tokenAbi.encodeFunctionData('approve', [retired, 1])))).rejects.toThrow('retired');
 });

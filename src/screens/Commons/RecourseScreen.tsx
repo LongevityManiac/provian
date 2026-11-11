@@ -84,8 +84,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           <Text style={styles.small}>{t('recourse.consent', 'Each debit from your holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
           {state.membershipState === 'available' ? state.enrolled ? <>
             {button(t('recourse.catchUp', 'Complete monthly obligations'), () => { void act('settleMonth'); })}
-            {button(t('recourse.leave', 'Leave Recourse Pool'), () => { void act('leave'); })}
-          </> : button(t('recourse.join', 'Join Recourse Pool'), () => { void act('enroll'); }) : null}
+            {button(t('recourse.leave', 'Leave Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'leave' }))}
+          </> : button(t('recourse.join', 'Join Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'join' })) : button(t('recourse.flow.resume', 'Continue unfinished action'), () => navigation.navigate('RecourseMembership', { kind: 'resume' }))}
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>

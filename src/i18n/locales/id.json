@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Status keanggotaan privat sementara tidak tersedia. Muat ulang setelah tindakan tertunda selesai.",
     "memberBindingConsent": "Persetujuan Recourse Pool untuk alamat ini",
     "memberBindingBytes": "Tandatangani pesan kedua ini sebagai 32 byte yang ditampilkan dalam heksadesimal, bukan sebagai teks. Pesan ini memasukkan alamat ini ke keanggotaan Recourse Pool Anda yang sudah ada.",
-    "memberBindingSignature": "Tanda tangan persetujuan pool"
+    "memberBindingSignature": "Tanda tangan persetujuan pool",
+    "flow": {
+      "title": "Keanggotaan Anda",
+      "explain": "Setiap dompet tertaut mengizinkan partisipasinya sendiri. Relay menyatukan keanggotaan Anda secara privat. Menandatangani di sini tidak mendebit PVT; setiap pembakaran atau kontribusi dari saldo memerlukan otorisasi tersendiri untuk jumlah yang tepat.",
+      "preparing": "Merekonsiliasi tindakan sebelumnya sebelum meminta tanda tangan.",
+      "consenting": "Otorisasi setiap dompet di bawah. Perubahan keanggotaan berlaku setelah konfirmasi di rantai.",
+      "complete": "Tindakan keanggotaan dikonfirmasi.",
+      "superseded": "Kontrak telah berubah. Lanjutkan dengan keadaan saat ini.",
+      "pending": "Otorisasi dikirim. Muat ulang untuk memeriksa konfirmasinya.",
+      "enable": "Sertakan dompet ini",
+      "disable": "Akhiri partisipasi dompet ini",
+      "external": "Otorisasi di dompet ini",
+      "done": "Kembali ke Recourse",
+      "restart": "Lanjutkan dengan kontrak saat ini",
+      "none": "Tidak ada tindakan keanggotaan yang belum selesai.",
+      "raw": "Tandatangani tepat 32 byte ini menggunakan personal_sign, bukan teks heksadesimalnya. Otorisasi segera kedaluwarsa; muat ulang jika sudah kedaluwarsa.",
+      "copy": "Salin byte untuk ditandatangani",
+      "connect": "Hubungkan dompet eksternal",
+      "copyConnection": "Salin tautan koneksi",
+      "signature": "Tanda tangan",
+      "submit": "Kirim tanda tangan",
+      "resume": "Lanjutkan tindakan yang belum selesai"
+    }
   }
 }

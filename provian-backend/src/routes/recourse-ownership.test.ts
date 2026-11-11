@@ -81,7 +81,7 @@ test('active transition discovery is authenticated and scoped to the caller afte
   const fake = createFakeFirestore(), walletId = 'wallet_aw_resume', ownerIdentity = identityHash('agent', walletId);
   const id = `0x${'31'.repeat(32)}`;
   const preparation = await import('../core/recourse/membership-preparation');
-  const prepare = jest.spyOn(preparation, 'prepareMembershipTransition').mockResolvedValue({ id, kind: 'join', status: 'preparing', challenges: [] });
+  const prepare = jest.spyOn(preparation, 'prepareMembershipTransition').mockResolvedValue({ id, kind: 'join', status: 'preparing', challenges: [], pending: [] });
   const app = express(); app.use(express.json());
   app.use('/v1/recourse', createRecourseRouter({ db: fake } as unknown as AgentBankDeps, (req, res, next) => {
     if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
@@ -97,6 +97,6 @@ test('active transition discovery is authenticated and scoped to the caller afte
     const found = await request(app).get('/v1/recourse/membership-transitions').set('Authorization', 'Bearer TEST_ONLY');
     expect(found.status).toBe(200); expect(found.headers['cache-control']).toBe('no-store');
     expect(prepare).toHaveBeenCalledWith(fake, ownerIdentity, { id });
-    expect(found.body).toEqual({ id, kind: 'join', status: 'preparing', challenges: [] });
+    expect(found.body).toEqual({ id, kind: 'join', status: 'preparing', challenges: [], pending: [] });
   } finally { prepare.mockRestore(); }
 });

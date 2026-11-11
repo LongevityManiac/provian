@@ -59,6 +59,16 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'protocol-transaction': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/protocol-transaction.ts',
+    testMatchPath: 'src/protocol-transaction.test.ts',
+    mutations: [{ id: 'HASH-INNER-RETIREMENT', description: 'a hash account wrapper hides a retired inner target or spender',
+      find: "if (input.slice(0, 10) === HASH_ACCOUNT_ABI.getFunction('execute')!.selector) {", replace: 'if (false) {',
+      expectedKilledBy: 'hash account wrappers cannot hide retired inner targets or token approval spenders' },
+      { id: 'HASH-HEX-CASE', description: 'mixed-case calldata bypasses nested retirement checks',
+        find: 'let input = data?.toLowerCase();', replace: 'let input = data;',
+        expectedKilledBy: 'mixed-case hex cannot hide hash wrappers or token approval selectors' }],
+  },
   'recourse-membership-client': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/recourse-membership-client.ts',
     testMatchPath: 'src/recourse-membership-client.test.ts',
@@ -97,7 +107,10 @@ const MUTATION_SETS = {
     mutations: [{ id: 'PREPARING-RECOVERY', description: 'recovery strands a preparing membership transition',
       find: 'operation = await refreshRecoveredMembershipTransition(db, operation.id);\n    operation = await openPrivateMembershipConsents',
       replace: 'operation = await openPrivateMembershipConsents',
-      expectedKilledBy: 'recovery during interrupted preparation refreshes the replacement before opening consents' }],
+      expectedKilledBy: 'recovery during interrupted preparation refreshes the replacement before opening consents' },
+      { id: 'CONSENT-RESUME', description: 'queued consent is presented as a fresh signature request',
+        find: 'if (inFlight.length) pending.push', replace: 'if (false) pending.push',
+        expectedKilledBy: 'resume discovers exact queued consent without requesting a second signature or exposing signatures' }],
   },
   'membership-consent-operation': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-consent-operation.ts',

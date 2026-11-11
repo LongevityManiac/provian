@@ -5141,6 +5141,28 @@
     "membershipUnavailable": "Trạng thái thành viên riêng tư tạm thời không khả dụng. Làm mới sau khi các thao tác đang chờ hoàn tất.",
     "memberBindingConsent": "Đồng ý tham gia Recourse Pool cho địa chỉ này",
     "memberBindingBytes": "Ký thông điệp thứ hai này dưới dạng 32 byte được hiển thị bằng hệ thập lục phân, không phải văn bản. Thao tác này đưa địa chỉ này vào tư cách thành viên Recourse Pool hiện có của bạn.",
-    "memberBindingSignature": "Chữ ký đồng ý tham gia quỹ"
+    "memberBindingSignature": "Chữ ký đồng ý tham gia quỹ",
+    "flow": {
+      "title": "Tư cách thành viên của bạn",
+      "explain": "Mỗi ví đã liên kết tự cho phép việc tham gia của mình. Relay quản lý chung tư cách thành viên của bạn một cách riêng tư. Ký ở đây không trừ PVT; mỗi lần đốt hoặc đóng góp từ số dư đều cần ủy quyền riêng cho số lượng chính xác.",
+      "preparing": "Đang đối chiếu các thao tác trước khi yêu cầu chữ ký.",
+      "consenting": "Ủy quyền cho từng ví bên dưới. Thay đổi thành viên có hiệu lực sau khi được xác nhận trên chuỗi.",
+      "complete": "Thao tác thành viên đã được xác nhận.",
+      "superseded": "Các hợp đồng đã thay đổi. Tiếp tục với trạng thái hiện tại.",
+      "pending": "Đã gửi ủy quyền. Làm mới để kiểm tra xác nhận.",
+      "enable": "Bao gồm ví này",
+      "disable": "Kết thúc sự tham gia của ví này",
+      "external": "Ủy quyền trong ví này",
+      "done": "Quay lại Recourse",
+      "restart": "Tiếp tục với các hợp đồng hiện tại",
+      "none": "Không có thao tác thành viên nào chưa hoàn tất.",
+      "raw": "Ký đúng 32 byte này bằng personal_sign, không ký văn bản thập lục phân. Ủy quyền sắp hết hạn; hãy làm mới nếu đã hết hạn.",
+      "copy": "Sao chép byte để ký",
+      "connect": "Kết nối ví bên ngoài",
+      "copyConnection": "Sao chép liên kết kết nối",
+      "signature": "Chữ ký",
+      "submit": "Gửi chữ ký",
+      "resume": "Tiếp tục thao tác chưa hoàn tất"
+    }
   }
 }

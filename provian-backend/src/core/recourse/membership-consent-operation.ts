@@ -1,10 +1,10 @@
-import { AbiCoder, getBytes, sha256 } from 'ethers';
+import { getBytes } from 'ethers';
 import { readMembershipWiring } from './membership-wiring';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import { breakDeploymentChain } from './break-deployment-queue';
-import { MEMBERSHIP_AUTHORIZATION_ABI as POOL, addressMembershipSigningHash, addressMembershipDigest,
+import { MEMBERSHIP_AUTHORIZATION_ABI as POOL, addressMembershipSigningHash,
   parseAddressMembershipConsent, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
   type MembershipAuthorizationDomain } from './membership-authorization';
 import { configuredIdentityAttestor, assertIdentityAttestation, type IdentityAttestor } from './identity-attestor';
@@ -19,7 +19,8 @@ import { finalizedOwnerTransaction } from './transaction-finality';
 import { readMembershipReceipt } from './membership-receipt';
 import { reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
 
-export const MEMBERSHIP_CONSENT_OPERATIONS = 'recourse_membership_consent_operations_v1';
+import { MEMBERSHIP_CONSENT_OPERATIONS, membershipConsentOperationId } from './membership-operation-identifiers';
+export { MEMBERSHIP_CONSENT_OPERATIONS, membershipConsentOperationId } from './membership-operation-identifiers';
 export interface MembershipConsentRequest {
   readonly transitionId: string; readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent;
   readonly ownerSignature: string; readonly attestorSignature: string;
@@ -36,10 +37,6 @@ export function parseMembershipConsentRequest(value: unknown): MembershipConsent
     || typeof row.attestorSignature !== 'string' || !/^0x(?:[0-9a-fA-F]{2})+$/.test(row.attestorSignature)) return fail('input');
   return { transitionId: row.transitionId, domain: parseMembershipAuthorizationDomain(row.domain),
     consent: parseAddressMembershipConsent(row.consent), ownerSignature: row.ownerSignature, attestorSignature: row.attestorSignature };
-}
-export function membershipConsentOperationId(request: Pick<MembershipConsentRequest, 'domain' | 'consent'>): string {
-  return sha256(AbiCoder.defaultAbiCoder().encode(['string', 'bytes32'],
-    ['Provian sponsored address consent', addressMembershipDigest(request.domain, request.consent)]));
 }
 export function membershipConsentCalldata(request: MembershipConsentRequest): string {
   return POOL.encodeFunctionData('setAddressConsent', [request.consent, request.ownerSignature, request.attestorSignature]);

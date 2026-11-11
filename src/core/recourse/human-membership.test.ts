@@ -1,0 +1,31 @@
+import { beforeEach, expect, test, vi } from 'vitest';
+import { getBytes, hashMessage } from 'ethers';
+import type { BiometricAction } from '../security/biometricAction';
+import { signHumanMembershipBytes } from './human-membership';
+const f = vi.hoisted(() => ({ selected: '', signer: '', getKey: vi.fn(async () => 'private'), hash: vi.fn(), sign: vi.fn(async () => 'curve-signature') }));
+vi.mock('../../services/RelayAPIService', () => ({ default: { recourseRequest: vi.fn() } }));
+vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 'backup', getEVMPrivateKey: f.getKey } }));
+vi.mock('../security/ActionWallet', () => ({ ActionWallet: class { address = f.signer; signMessage = f.sign; } }));
+vi.mock('../security/biometricAction', () => ({ withBiometricAction: vi.fn() }));
+vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({}) }));
+vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: f.selected }) } }));
+vi.mock('../../i18n/translate', () => ({ translate: (_key: string, fallback: string) => fallback }));
+vi.mock('./human-hash-message', () => ({ signHumanHashDigest: f.hash }));
+const account = `0x${'11'.repeat(20)}`, bytes = getBytes(`0x${'22'.repeat(32)}`), action = {} as BiometricAction;
+beforeEach(() => { vi.clearAllMocks(); f.selected = account; f.signer = account; f.hash.mockResolvedValue(null); });
+test('managed curve wallet signs bytes only when the selected and derived accounts both match', async () => {
+  expect(await signHumanMembershipBytes(account, bytes, action)).toBe('curve-signature');
+  expect(f.hash).toHaveBeenCalledWith('backup', account, hashMessage(bytes), action);
+  expect(f.sign).toHaveBeenCalledWith(bytes);
+  f.sign.mockClear(); f.getKey.mockClear(); f.selected = `0x${'33'.repeat(20)}`;
+  await expect(signHumanMembershipBytes(account, bytes, action)).rejects.toThrow('wrong_wallet'); expect(f.getKey).not.toHaveBeenCalled();
+  f.selected = account; f.signer = `0x${'44'.repeat(20)}`;
+  await expect(signHumanMembershipBytes(account, bytes, action)).rejects.toThrow('wrong_wallet'); expect(f.sign).not.toHaveBeenCalled();
+});
+test('hash account signing uses the EIP-191 digest and never accesses a curve key on failure', async () => {
+  f.hash.mockResolvedValue('hash-signature');
+  expect(await signHumanMembershipBytes(account, bytes, action)).toBe('hash-signature'); expect(f.getKey).not.toHaveBeenCalled();
+  f.hash.mockRejectedValue(Error('root changed'));
+  await expect(signHumanMembershipBytes(account, bytes, action)).rejects.toThrow('root changed');
+  expect(f.getKey).not.toHaveBeenCalled(); expect(f.sign).not.toHaveBeenCalled();
+});
