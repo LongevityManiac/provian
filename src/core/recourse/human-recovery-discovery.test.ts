@@ -1,10 +1,10 @@
-vi.mock('./restoration-ticket',()=>({verifyContinuedRestoration:async()=>{if(f.badTicket)throw Error('ticket_changed');}}));
+vi.mock('./restoration-ticket',()=>({readContinuedRestorationStatus:async()=>{if(f.badTicket)throw Error('ticket_changed');return f.ticketStatus;}}));
 import { beforeEach, expect, test, vi } from 'vitest';
 import { concat, hexlify, sha256, toUtf8Bytes } from 'ethers';
 import { humanBreakKey } from './human-secret';
 import type { OwnerChainNetwork } from './owner-chain';
-import { discoverPendingHumanRecovery } from './human-recovery-discovery';
-const f=vi.hoisted(()=>({continuation:false,badTicket:false,restoration:false,badEvidence:false,relayCurrent:false,nonce:3,badReceipt:false,wrongDestination:false,wrongProof:false,duplicate:false,
+import { discoverPendingHumanRecovery, discoverHumanRestorationHistory } from './human-recovery-discovery';
+const f=vi.hoisted(()=>({ticketStatus: 'pending' as 'pending'|'executed'|'absent',continuation:false,badTicket:false,restoration:false,badEvidence:false,relayCurrent:false,nonce:3,badReceipt:false,wrongDestination:false,wrongProof:false,duplicate:false,
  requests:[] as string[],receipts:[] as string[],missing:false}));
 const a=(n:number)=>`0x${n.toString(16).padStart(40,'0')}`,h=(n:number)=>`0x${n.toString(16).padStart(64,'0')}`;
 const phrase='test test test test test test test test test test test junk',base={identity:h(1),breakOrigin:a(2),chainId:'8453'};
@@ -20,7 +20,7 @@ vi.mock('./owner-chain',()=>({readOwnerChainState:async()=>({nonce:f.nonce,commi
  destination:f.wrongDestination?a(99):a(3),deployment:{manifestHash:h(7)}}),verifyOwnerOperationReceipt:async(_op:unknown,tx:string)=>{
  f.receipts.push(tx);if(f.badReceipt)throw Error('receipt_unverified');}}));
 vi.mock('./human-private-recovery',()=>({requestHumanRecoveryData:async(_m:string,_i:string,g:number,path:string)=>{
- expect(g).toBe(4);f.requests.push(path);const candidate={operation:operation(),transactionHash:h(8),...(f.relayCurrent?{completedRequestId:h(88)}:{}),...(f.restoration?{restorationEvidence:f.badEvidence?evidence().replace('123','124'):evidence()}: {}),
+ expect(g).toBe(4);f.requests.push(path);if(path.startsWith('restoration-history/'))return {identity:h(1),candidates:[{scope:{request:h(55),lossHash:sha256(toUtf8Bytes(evidence())),maximumLoss:'20'},evidence:f.badEvidence?evidence()+' ':evidence()}]};const candidate={operation:operation(),transactionHash:h(8),...(f.relayCurrent?{completedRequestId:h(88)}:{}),...(f.restoration?{restorationEvidence:f.badEvidence?evidence().replace('123','124'):evidence()}: {}),
  ...(f.continuation?{continuations:[{scope:{request:h(55),lossHash:sha256(toUtf8Bytes(evidence())),maximumLoss:'20'},evidence:evidence()}]}:{})};
  return{identity:h(1),nonce:f.nonce-1,relayCommitment:f.relayCurrent?commitment(f.nonce):h(9),
  candidates:f.missing?[]:f.duplicate?[candidate,candidate]:[candidate]};}}));
@@ -30,7 +30,7 @@ vi.mock('./hash-account-deployment',()=>({discoverHashAccount:async(initialRoot:
  expect(initialRoot).toBe(expected);return{account:a(3),deployed:true,manifestHash:h(7)};
 }}));
 vi.mock('./human-account',()=>({deriveHumanAccount:vi.fn()}));
-beforeEach(()=>Object.assign(f,{continuation:false,badTicket:false,restoration:false,badEvidence:false,relayCurrent:false,nonce:3,badReceipt:false,wrongDestination:false,wrongProof:false,duplicate:false,requests:[],receipts:[],missing:false}));
+beforeEach(()=>Object.assign(f,{ticketStatus:'pending',continuation:false,badTicket:false,restoration:false,badEvidence:false,relayCurrent:false,nonce:3,badReceipt:false,wrongDestination:false,wrongProof:false,duplicate:false,requests:[],receipts:[],missing:false}));
 test('a new backup authenticates a later hash destination and exact completed owner receipt without the old spending key',async()=>{
  const result=await discoverPendingHumanRecovery(phrase,{}as OwnerChainNetwork);
  expect(result).toMatchObject({identity:h(1),transactionHash:h(8),legacyGeneration:4,replacement:{nonce:2,accountGeneration:'3',account:a(3),breakOrigin:a(2)}});
@@ -68,4 +68,17 @@ test('a completed relay cut still returns verified prior losses and its existing
  const result=await discoverPendingHumanRecovery(phrase,{}as OwnerChainNetwork);
  expect(result?.completedRequestId).toBe(h(88));expect(result?.continuedLosses?.[0].transactionHash).toBe(h(56));
  f.badTicket=true;await expect(discoverPendingHumanRecovery(phrase,{}as OwnerChainNetwork)).rejects.toThrow('ticket_changed');
+});
+
+test('imported terminal history stays discoverable without an old intent and absence never creates authorization',async()=>{
+ f.continuation=true;f.ticketStatus='executed';
+ expect((await discoverPendingHumanRecovery(phrase,{}as OwnerChainNetwork))?.continuedLosses).toHaveLength(1);
+ f.ticketStatus='absent';await expect(discoverPendingHumanRecovery(phrase,{}as OwnerChainNetwork)).rejects.toThrow('ticket_changed');
+});
+test('private all-generation history works at the initial break nonce and independently filters absent candidates',async()=>{
+ f.nonce=1;
+ for(const status of ['pending','executed'] as const){f.ticketStatus=status;
+  expect(await discoverHumanRestorationHistory(phrase,h(1),4,{}as OwnerChainNetwork)).toHaveLength(1);}
+ f.ticketStatus='absent';expect(await discoverHumanRestorationHistory(phrase,h(1),4,{}as OwnerChainNetwork)).toEqual([]);
+ f.badEvidence=true;await expect(discoverHumanRestorationHistory(phrase,h(1),4,{}as OwnerChainNetwork)).rejects.toThrow('loss_changed');
 });

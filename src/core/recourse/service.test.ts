@@ -1,9 +1,10 @@
+vi.mock('./restoration-ticket', () => ({ readContinuedRestorationStatus: (...args: unknown[]) => f.ticket(...args) }));
 vi.mock('./owner-chain', () => ({ readOwnerChainState: (...args: unknown[]) => f.ownerState(...args) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { readRecourseHistory, readRecourseView, submitHumanRestorationRequest, recoverHumanBoundAddress, type RecourseView } from './service';
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
   history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
-  ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn() }));
+  ticket:vi.fn(),wrongReply:false, ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn() }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   if (f.relayDown) throw Error('unavailable');
@@ -11,7 +12,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: { getUserId: async (
   if (path === 'restoration-requests' && body === undefined) return f.requests;
   if (path === 'pool') return { identity: h('55'), pool: a('66'), kernel: a('77'), membership: {
     enrolled: true, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } };
-  return { requestId: h('44'), status: 'authorized' };
+  return { requestId: f.wrongReply?h('99'):h('44'), status: 'authorized' };
 } } }));
 vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({}) }));
 vi.mock('./binding-chain', () => ({ readAddressRecoveryBinding: async () => {
@@ -32,7 +33,8 @@ vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({
 beforeEach(() => {
   f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
-  f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44') });
+  f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44'),restoration:{request:h('44'),lossHash:h('88'),maximumLoss:'100'} });
+  f.ticket.mockReset();f.ticket.mockResolvedValue('pending');f.wrongReply=false;
   f.ownerState.mockReset(); f.ownerState.mockResolvedValue({nonce:0,destination:a('00')}); f.breakContext.mockReset(); f.recoverBreak.mockReset(); f.breakContext.mockResolvedValue(a('99'));
 });
 it('recovers an auxiliary after a break without membership or primary changes and never falls back on unverifiable history',async()=>{
@@ -97,4 +99,18 @@ it('the auxiliary recovery button routes a restored hash binding to fresh replac
  expect(f.recoverBreak).not.toHaveBeenCalled();expect(f.setAddress).not.toHaveBeenCalled();
  f.ownerState.mockRejectedValueOnce(Error('rpc_disagreement'));f.recovery.mockClear();
  await expect(recoverHumanBoundAddress(h('55'))).rejects.toThrow('disagreement');expect(f.recovery).not.toHaveBeenCalled();
+});
+
+it('terminal observations suppress only the current submission and are rechecked after a reorg',async()=>{
+ f.ticket.mockResolvedValueOnce('executed');await submitHumanRestorationRequest(h('33'),100,h('55'));
+ expect(f.calls.some(c=>c.path==='restoration-requests')).toBe(false);
+ await submitHumanRestorationRequest(h('33'),100,h('55'));
+ expect(f.calls.filter(c=>c.path==='restoration-requests')).toHaveLength(1);
+ expect(f.ticket).toHaveBeenCalledTimes(2);
+});
+it('missing or changed tickets and wrong returned occurrence cannot complete a restoration request',async()=>{
+ f.ticket.mockResolvedValueOnce('absent');await expect(submitHumanRestorationRequest(h('33'),100,h('55'))).rejects.toThrow('ticket_changed');
+ expect(f.calls.some(c=>c.path==='restoration-requests')).toBe(false);
+ f.wrongReply=true;await expect(submitHumanRestorationRequest(h('33'),100,h('55'))).rejects.toThrow('reply_invalid');
+ f.ticket.mockRejectedValueOnce(Error('rpc_disagreement'));await expect(submitHumanRestorationRequest(h('33'),100,h('55'))).rejects.toThrow('disagreement');
 });

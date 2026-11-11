@@ -1,4 +1,5 @@
-vi.mock('./human-recovery-discovery', () => ({ discoverPendingHumanRecovery: async () => state.discovered }));
+vi.mock('./restoration-ticket', () => ({ readContinuedRestorationStatus: async () => state.ticketStatus }));
+vi.mock('./human-recovery-discovery', () => ({ discoverPendingHumanRecovery: async () => state.discovered, discoverHumanRestorationHistory: async () => state.historical }));
 vi.mock('./human-discovery', () => ({ discoverHumanAccount: async () => ({ identity: h('91'), selection: { evm: state.destination } }) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { HDKey } from '@scure/bip32';
@@ -10,7 +11,7 @@ import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './
 import type { BiometricAction } from '../security/biometricAction';
 
 const state = vi.hoisted(() => ({ memory: new Map<string, string>(), failReceipt: false, loseResponse: false,
-  discovered: null as unknown, afterBreak: false, deployFailure: false, destinationStolen: false, privateUnavailable: false, ownerResponseLost: false, nonce: 0, destination: '', random: 17, revision: 1n, refuseQueue: false, crashReplacement: false,
+  historical: [] as import('./human-recovery-discovery').ContinuedHumanLoss[], ticketStatus:'pending' as 'pending'|'executed'|'absent', discovered: null as unknown, afterBreak: false, deployFailure: false, destinationStolen: false, privateUnavailable: false, ownerResponseLost: false, nonce: 0, destination: '', random: 17, revision: 1n, refuseQueue: false, crashReplacement: false,
   calls: [] as { path: string; body: unknown }[], installed: [] as unknown[], credentials: [] as unknown[] }));
 const mnemonic = 'test test test test test test test test test test test junk';
 const action = 'approved' as unknown as BiometricAction;
@@ -109,7 +110,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
   },
 } }));
 beforeEach(() => {
-  state.destinationStolen = false; state.privateUnavailable = false; state.discovered = null; state.afterBreak = false; state.deployFailure = false; state.ownerResponseLost = false;
+  state.historical = []; state.ticketStatus = 'pending'; state.destinationStolen = false; state.privateUnavailable = false; state.discovered = null; state.afterBreak = false; state.deployFailure = false; state.ownerResponseLost = false;
   state.memory.clear(); state.failReceipt = false; state.loseResponse = false; state.nonce = 0; state.destination = ''; state.random = 17;
   state.calls = []; state.installed = []; state.credentials = []; state.revision = 1n; state.refuseQueue = false; state.crashReplacement = false;
 });
@@ -285,7 +286,7 @@ it('a restored seed finishes a verified later receipt using fresh credentials wi
   const result = await resumeHumanRecoveryForRestore(mnemonic, action, {} as import('./owner-chain').OwnerChainNetwork);
   expect(result?.selection?.evm).toBe(original.replacement.account);
   expect(state.calls.some(call => call.path === 'deploy' || call.path === 'owner-operations/recovery')).toBe(false);
-  expect(await recoverHumanAccount(action, { lossTransaction: h('77'), lossBlock: 100 })).toEqual({ destination: original.replacement.account, requestId: retained.requestId });
+  expect(await recoverHumanAccount(action, { lossTransaction: h('77'), lossBlock: 100 })).toEqual({ destination: original.replacement.account, requestId: retained.requestId, restoration: original.restoration });
   expect(state.calls.some(call => call.path === 'owner-operations/recovery')).toBe(false);
   expect(state.credentials).toHaveLength(1);
   const requests = state.calls.filter(call => call.path === 'recover-human').map(call => call.body as Record<string, unknown>);
@@ -352,6 +353,41 @@ it('a completed relay cut with a lost response reuses its verified request ID an
   legacyGeneration:4,completedRequestId:old.requestId,lossTransaction:old.lossTransaction,lossBlock:old.lossBlock};
  state.memory.clear();state.calls=[];state.credentials=[];state.installed=[];
  await resumeHumanRecoveryForRestore(mnemonic,action,{}as import('./owner-chain').OwnerChainNetwork);
- expect(await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100})).toEqual({destination:old.replacement.account,requestId:old.requestId});
+ expect(await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100})).toEqual({destination:old.replacement.account,requestId:old.requestId,restoration:old.restoration});
  expect(state.calls).toEqual([]);expect(state.credentials).toEqual([]);expect(state.installed).toEqual([]);
+});
+
+it.each([false,true])('an older-origin bounded loss survives into a fresh break journal (lost journal=%s)',async lost=>{
+ await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ const old=JSON.parse([...state.memory.values()][0]);
+ if(lost){state.memory.clear();state.historical=[{restoration:old.restoration,transactionHash:h('77'),block:100}];}
+ state.afterBreak=true;state.nonce=1;state.destination=`0x${'22'.repeat(20)}`;state.calls=[];
+ const result=await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ expect(result.restoration).toEqual(old.restoration);
+ const operations=state.calls.filter(c=>c.path==='owner-operations/recovery');expect(operations).toHaveLength(1);
+ expect(operations[0].body).not.toHaveProperty('restoration');
+ expect(state.calls.some(c=>c.path==='restoration-intents')).toBe(false);
+});
+it('imported terminal history preserves the bounded occurrence and conflicting historical metadata refuses',async()=>{
+ await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ const old=JSON.parse([...state.memory.values()][0]);
+ state.historical=[{restoration:old.restoration,transactionHash:h('77'),block:101}];
+ await expect(recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100})).rejects.toThrow('history_changed');
+ state.historical=[{...state.historical[0],block:100}];state.memory.clear();state.afterBreak=true;state.nonce=1;state.ticketStatus='executed';state.calls=[];
+ const recovered=await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ expect(recovered.restoration).toEqual(old.restoration);expect(state.calls.some(c=>c.path==='restoration-intents')).toBe(false);
+});
+
+it('an absent pre-break scope cannot shadow the fresh surviving authorization for the same transaction',async()=>{
+ await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ const [key,raw]=[...state.memory.entries()][0],old=JSON.parse(raw);
+ old.restoration.lossHash=h('aa');state.memory.set(key,JSON.stringify(old));
+ state.afterBreak=true;state.nonce=1;state.destination=`0x${'22'.repeat(20)}`;state.ticketStatus='absent';state.calls=[];
+ const result=await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ const operation=state.calls.find(c=>c.path==='owner-operations/recovery')!.body as {restoration:unknown};
+ expect(result.restoration).toEqual(operation.restoration);
+ expect(result.restoration?.lossHash).not.toBe(h('aa'));
+ const current=JSON.parse(state.memory.get(key)!);
+ expect(current.continuedLosses).toEqual([]);
+ expect([...state.memory.keys()].some(value=>value.includes('_retired_'))).toBe(true);
 });

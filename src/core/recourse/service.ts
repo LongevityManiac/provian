@@ -15,6 +15,7 @@ import { useWalletStore } from '../../store/walletStore';
 import SeedManager from '../wallet/SeedManager';
 import { readBreakRecoveryContext } from './break-recovery';
 import { recoverHumanAuxiliaryBreak } from './human-break-recovery';
+import { readContinuedRestorationStatus } from './restoration-ticket';
 
 export interface RecourseView {
   primaryIdentity: string | null;
@@ -82,8 +83,17 @@ export async function submitHumanRestorationRequest(transactionHash: string, blo
     const auxiliaryBinding = binding !== undefined && binding !== primary ? binding : undefined;
     const recovered = await recoverHumanAccount(action, { lossTransaction: transactionHash, lossBlock: block, auxiliaryBinding });
     if (auxiliaryBinding === undefined) useWalletStore.getState().setAddress(recovered.destination);
-    await RelayAPIService.recourseRequest('restoration-requests', { transactionHash, block,
-      recoveryRequestId: recovered.requestId, identity: binding ?? primary }, action);
+    const identity = binding ?? primary;
+    if (!identity || !recovered.restoration) throw Error('recourse_restoration_scope_missing');
+    const status = await readContinuedRestorationStatus(identity, recovered.destination, recovered.restoration, ownerChainNetwork());
+    // This is an observation of the current chain, not a durable completion
+    // flag. A later retry rechecks it, including after a reorganization.
+    if (status === 'executed') return;
+    if (status !== 'pending') throw Error('recourse_restoration_ticket_changed');
+    const response = object(await RelayAPIService.recourseRequest('restoration-requests', { transactionHash, block,
+      recoveryRequestId: recovered.requestId, identity }, action));
+    if (response.requestId !== recovered.restoration.request || typeof response.status !== 'string'
+      || !/^[a-z_]+$/.test(response.status)) throw Error('recourse_restoration_reply_invalid');
   });
 }
 

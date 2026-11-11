@@ -188,3 +188,19 @@ test('mounted later-recovery discovery requires a signed matching binding, nonce
  expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path,{changed:true}))).status).toBe(404);
  expect(response.headers['cache-control']).toBe('no-store');
 },30000);
+
+test('mounted restoration history requires a signed exact binding and no request body',async()=>{
+ const f=fixture(),app=express(),path=`restoration-history/${identity}`;
+ app.use(express.json({limit:'256kb'}));
+ app.use('/v1/recourse',createRecourseRouter({db:f.fake as unknown as Firestore} as AgentBankDeps,
+  (_req,res)=>{res.status(401).json({error:'owner_auth_required'});}));
+ const response=await http(app).post(`/v1/recourse/${path}`).send(envelope(path));
+ expect(response.status).toBe(200);expect(response.body).toEqual({identity,candidates:[]});
+ expect(response.headers['cache-control']).toBe('no-store');
+ expect((await http(app).get(`/v1/recourse/${path}`)).status).toBe(404);
+ expect((await http(app).post(`/v1/recourse/${path}`).send({request:null})).status).toBe(404);
+ const foreign=`restoration-history/${other}`;
+ expect((await http(app).post(`/v1/recourse/${foreign}`).send(envelope(path))).status).toBe(404);
+ expect((await http(app).post(`/v1/recourse/${foreign}`).send(envelope(foreign))).status).toBe(404);
+ expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path,{changed:true}))).status).toBe(404);
+},30000);

@@ -19,9 +19,10 @@ import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './
 import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './hash-authorization';
 import { readOwnerChainState, verifyOwnerOperationReceipt, type OwnerChainNetwork } from './owner-chain';
 import { ownerOperationIntent, recoveryOperationId, parseRestorationScope, type RestorationScope, type RecoveryOwnerOperation } from './owner-operation';
-import { discoverPendingHumanRecovery, type ContinuedHumanLoss } from './human-recovery-discovery';
+import { discoverPendingHumanRecovery, discoverHumanRestorationHistory, type ContinuedHumanLoss } from './human-recovery-discovery';
 import { discoverHumanAccount } from './human-discovery';
 import { auxiliaryAccountKey } from './auxiliary-account';
+import { readContinuedRestorationStatus } from './restoration-ticket';
 
 interface Journal {
   version: 1; rootAddress: string; identity: string; requestId: string; authSecret: string; deviceId: string;
@@ -48,7 +49,7 @@ function object(value: unknown): Record<string, unknown> {
 type RecoveryOptions = { newRecovery?: boolean; lossTransaction?: string; lossBlock?: number; signal?: AbortSignal; auxiliaryBinding?: string };
 let recoveryTail: Promise<unknown> = Promise.resolve();
 export function recoverHumanAccount(action: BiometricAction, options: RecoveryOptions = {}):
-Promise<{ destination: string; requestId: string }> {
+Promise<{ destination: string; requestId: string; restoration?: RestorationScope }> {
   const retainedOptions = { ...options };
   const run = recoveryTail.then(() => performHumanRecovery(action, retainedOptions));
   recoveryTail = run.catch(() => undefined);
@@ -57,7 +58,7 @@ Promise<{ destination: string; requestId: string }> {
 /** Resume independent owner recovery while restoring a backup, before the
  * original seed has been installed in the device vault. */
 export function recoverHumanAccountFromBackup(mnemonic: string, action: BiometricAction,
-  network: OwnerChainNetwork, options: RecoveryOptions = {}): Promise<{ destination: string; requestId: string }> {
+  network: OwnerChainNetwork, options: RecoveryOptions = {}): Promise<{ destination: string; requestId: string; restoration?: RestorationScope }> {
   const backupOptions = { ...options };
   const run = recoveryTail.then(() => performHumanRecovery(action, backupOptions, mnemonic, network));
   recoveryTail = run.catch(() => undefined); return run;
@@ -103,8 +104,13 @@ Promise<Awaited<ReturnType<typeof discoverHumanAccount>>> {
   recoveryTail = run.catch(() => undefined);
   return run;
 }
+function recoveryResult(state: Journal, destination: string): { destination: string; requestId: string; restoration?: RestorationScope } {
+  const restoration = state.continuedLosses?.find(loss => loss.transactionHash === state.lossTransaction)?.restoration
+    ?? state.continuedRestoration ?? state.restoration;
+  return { destination, requestId: state.requestId, ...(restoration ? { restoration } : {}) };
+}
 async function performHumanRecovery(action: BiometricAction, options: RecoveryOptions, suppliedMnemonic?: string, suppliedNetwork?: OwnerChainNetwork):
-Promise<{ destination: string; requestId: string }> {
+Promise<{ destination: string; requestId: string; restoration?: RestorationScope }> {
   assertBiometricAction(action);
   if (options.auxiliaryBinding !== undefined) {
     if (!/^0x[0-9a-f]{64}$/.test(options.auxiliaryBinding)) throw Error('recourse_auxiliary_binding_invalid');
@@ -125,6 +131,12 @@ Promise<{ destination: string; requestId: string }> {
     || !/^0x[0-9a-f]{64}$/.test(journal.identity) || !/^0x[0-9a-f]{64}$/.test(journal.requestId)
     || !/^[0-9a-f]{64}$/.test(journal.authSecret) || Boolean(journal.auxiliary) !== Boolean(options.auxiliaryBinding)
     || (options.auxiliaryBinding !== undefined && journal.identity !== options.auxiliaryBinding))) throw new Error('recourse_journal_invalid');
+  const inheritedLosses: ContinuedHumanLoss[] = [...(journal?.continuedLosses ?? [])];
+  const priorScope = journal?.restoration ?? journal?.continuedRestoration;
+  if (priorScope && journal?.lossTransaction && journal.lossBlock
+    && !inheritedLosses.some(loss => loss.restoration.request === priorScope.request)) {
+    inheritedLosses.push({ restoration: priorScope, transactionHash: journal.lossTransaction, block: journal.lossBlock });
+  }
   if (journal && (journal.replacement?.breakOrigin ?? null) !== await currentBreakOrigin(network)) {
     // Keep the exact interrupted record, but a new break has a different key
     // domain and its authenticated snapshot supersedes the old authorization.
@@ -134,14 +146,25 @@ Promise<{ destination: string; requestId: string }> {
     if (await SecureStore.getItemAsync(key) !== archived) throw Error('recourse_journal_write_unconfirmed');
     journal = null;
   }
-  const inheritedLosses: ContinuedHumanLoss[] = [...(journal?.continuedLosses ?? [])];
-  const priorScope = journal?.restoration ?? journal?.continuedRestoration;
-  if (priorScope && journal?.lossTransaction && journal.lossBlock
-    && !inheritedLosses.some(loss => loss.restoration.request === priorScope.request)) {
-    inheritedLosses.push({ restoration: priorScope, transactionHash: journal.lossTransaction, block: journal.lossBlock });
+  if (options.lossTransaction !== undefined) {
+    if (journal?.lossTransaction === options.lossTransaction && journal.lossBlock !== options.lossBlock) throw Error('recourse_loss_block_changed');
+    const history = options.auxiliaryBinding ? null : await discoverHumanIdentityHistory(mnemonic, network);
+    const identity = options.auxiliaryBinding ?? history?.identity;
+    if (!identity || (journal && journal.identity !== identity)) throw Error('recourse_binding_required');
+    const generation = history ? await discoverHistoricalCurveGeneration(mnemonic, history, network) : 0;
+    const historical = await discoverHumanRestorationHistory(mnemonic, identity, generation, network);
+    for (const loss of historical) {
+      const prior = inheritedLosses.find(value => value.restoration.request === loss.restoration.request);
+      if (prior && (prior.transactionHash !== loss.transactionHash || prior.block !== loss.block
+        || prior.restoration.lossHash !== loss.restoration.lossHash || prior.restoration.maximumLoss !== loss.restoration.maximumLoss)) {
+        throw Error('recourse_restoration_history_changed');
+      }
+      if (!prior) inheritedLosses.push(loss);
+    }
+    if (journal) { journal.continuedLosses = inheritedLosses; await save(journal); }
   }
   if (journal?.installed && options.lossTransaction !== undefined && journal.lossTransaction !== options.lossTransaction) {
-    const loss = journal.continuedLosses?.find(value => value.transactionHash === options.lossTransaction);
+    const loss = inheritedLosses.find(value => value.transactionHash === options.lossTransaction);
     if (loss) {
       if (loss.block !== options.lossBlock) throw Error('recourse_loss_block_changed');
       journal.lossTransaction = loss.transactionHash; journal.lossBlock = loss.block; journal.continuedRestoration = loss.restoration;
@@ -177,7 +200,14 @@ Promise<{ destination: string; requestId: string }> {
       ...(inheritedLosses.length ? { continuedLosses: inheritedLosses } : {}),
       ...(options.auxiliaryBinding ? { auxiliary: true } : {}),
       ...(options.lossTransaction === undefined ? {} : { lossTransaction: options.lossTransaction, lossBlock: options.lossBlock }) };
-    if (options.lossTransaction !== undefined) {
+    const retainedLoss = inheritedLosses.find(loss => loss.transactionHash === options.lossTransaction);
+    if (retainedLoss && retainedLoss.block !== options.lossBlock) throw Error('recourse_loss_block_changed');
+    if (retainedLoss && await readContinuedRestorationStatus(identity, state.destination, retainedLoss.restoration, network) !== 'absent') {
+      journal.continuedRestoration = retainedLoss.restoration;
+    } else if (options.lossTransaction !== undefined) {
+      // A discarded fork's scope remains in the archived journal, but must
+      // never shadow the newly authorized scope for this same transaction.
+      if (retainedLoss) inheritedLosses.splice(inheritedLosses.indexOf(retainedLoss), 1);
       const prepared = object(await RelayAPIService.recourseRequest('restoration-intents', {
         transactionHash: options.lossTransaction, block: options.lossBlock,
         ...(options.auxiliaryBinding ? { identity: options.auxiliaryBinding } : {}) }, action));
@@ -209,7 +239,7 @@ Promise<{ destination: string; requestId: string }> {
   if (state.installed) {
     const current = await readOwnerChainState(state.identity, network);
     if (current.destination !== next.evm || current.nonce < state.nonce + 1) throw new Error('recourse_completed_recovery_superseded');
-    return { destination: next.evm, requestId: state.requestId };
+    return recoveryResult(state, next.evm);
   }
   const derive = (purpose: 'recovery-secret' | 'recovery-signing', nonce: number) => state.replacement
     ? humanBreakKey(mnemonic, { identity: state.identity, breakOrigin: state.replacement.breakOrigin, chainId: '8453' }, purpose, String(nonce))
@@ -292,7 +322,7 @@ Promise<{ destination: string; requestId: string }> {
           || !Number.isSafeInteger(result.generation) || result.generation < 1) throw Error('recourse_recovery_reply_invalid');
         await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
         state.installed = true; await save(state);
-        return { destination: next.evm, requestId: state.requestId };
+        return recoveryResult(state, next.evm);
       } finally { key?.fill(0); }
     }
     const body = { kernel: state.kernel, identity: state.identity, preimage, destination: next.evm, nextCommitment, nextSigningRoot,
@@ -334,7 +364,7 @@ Promise<{ destination: string; requestId: string }> {
     await RelayAPIService.setAuthSecret(state.authSecret, state.userId);
     await RelayAPIService.recordAddressProofAuthorization({ address: next.evm, userId: state.userId });
     state.installed = true; await save(state);
-    return { destination: next.evm, requestId: state.requestId };
+    return recoveryResult(state, next.evm);
   } catch (error) {
     if (!(error instanceof ReplacementSpendingKeyChangedError) || !verifiedOperation || !state.replacement || !state.authorizationTxHash) throw error;
     // A spending key stolen during an interrupted relay cut cannot strand the

@@ -1,4 +1,5 @@
 import { discoverOwnerRecovery } from '../core/recourse/owner-recovery-discovery';
+import { discoverRestorationHistory } from '../core/recourse/restoration-history';
 import { runOwnerOperationWorker } from '../core/recourse/owner-operation-runtime';
 import { readBreakEntitlement } from '../core/recourse/break-entitlement-store';
 import { discoverBreakRecovery } from '../core/recourse/break-recovery-discovery';
@@ -51,6 +52,11 @@ async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
 export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: RequestHandler): Router {
   const router = Router();
   router.use(authenticatePrivateRecourse(deps.db));
+  router.post('/restoration-history/:identity', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try { res.json(await discoverRestorationHistory(deps.db, String(req.params.identity))); }
+    catch { res.status(404).json({ error: 'recourse_restoration_history_unavailable' }); }
+  });
   router.post('/owner-recovery-state/:identity/:nonce', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json(await discoverOwnerRecovery(deps.db, String(req.params.identity), String(req.params.nonce))); }

@@ -1,4 +1,4 @@
-import { verifyContinuedRestoration } from './restoration-ticket';
+import { readContinuedRestorationStatus } from './restoration-ticket';
 import { sha256, toUtf8Bytes } from 'ethers';
 import { bytesToHex } from '@noble/hashes/utils';
 import { readOwnerChainState, verifyOwnerOperationReceipt, type OwnerChainNetwork } from './owner-chain';
@@ -29,6 +29,23 @@ function lossOccurrence(identity: string, scope: RestorationScope, raw: unknown)
     || typeof snapshot.transactionHash !== 'string' || !/^0x[0-9a-f]{64}$/.test(snapshot.transactionHash)
     || typeof snapshot.block !== 'number' || !Number.isSafeInteger(snapshot.block) || snapshot.block < 1) throw Error('recourse_owner_discovery_loss_changed');
   return { transactionHash: snapshot.transactionHash, block: snapshot.block };
+}
+/** Private historical evidence only names candidates. Current independently
+ * verified chain state decides whether a bounded authorization survived. */
+export async function discoverHumanRestorationHistory(mnemonic: string, identity: string, generation: number,
+  network: OwnerChainNetwork): Promise<ContinuedHumanLoss[]> {
+  const response = object(await requestHumanRecoveryData(mnemonic, identity, generation, `restoration-history/${identity}`));
+  if (response.identity !== identity || !Array.isArray(response.candidates)) throw Error('recourse_owner_discovery_invalid');
+  const owner = await readOwnerChainState(identity, network), retained: ContinuedHumanLoss[] = [], seen = new Set<string>();
+  for (const value of response.candidates) {
+    const row = object(value), restoration = parseRestorationScope(row.scope), loss = lossOccurrence(identity, restoration, row.evidence);
+    if (seen.has(restoration.request)) throw Error('recourse_owner_discovery_ambiguous');
+    seen.add(restoration.request);
+    if (await readContinuedRestorationStatus(identity, owner.destination, restoration, network) !== 'absent') {
+      retained.push({ restoration, ...loss });
+    }
+  }
+  return retained;
 }
 /** A relay candidate cannot choose an address, recovery authority or signing
  * selector. The original backup and independent chain receipts fix all three. */
@@ -81,7 +98,9 @@ export async function discoverPendingHumanRecovery(mnemonic: string, network: Ow
         for (const value of candidate.continuations) {
           const row = object(value), restoration = parseRestorationScope(row.scope);
           const loss = lossOccurrence(history.identity, restoration, row.evidence);
-          await verifyContinuedRestoration(history.identity, owner.destination, restoration, network);
+          if (await readContinuedRestorationStatus(history.identity, owner.destination, restoration, network) === 'absent') {
+            throw Error('recourse_restoration_ticket_changed');
+          }
           if (continuedLosses.some(prior => prior.restoration.request === restoration.request)) throw Error('recourse_owner_discovery_ambiguous');
           continuedLosses.push({ restoration, ...loss });
         }

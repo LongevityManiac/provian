@@ -10,11 +10,13 @@ import { BREAK_REGISTRATIONS } from '../../core/recourse/break-registration';
 import { breakRestorationDetails, parseBreakRestorationRequest } from '../../core/recourse/break-restoration-data';
 import { BREAK_RESTORATIONS } from '../../core/recourse/break-restoration-queue';
 
-const privatePrefix = /^\/(?:owner-operations|owner-recovery-state|break-entitlements|break-recovery-state|break-deployments|break-registrations|break-restorations)(?:\/|$)/i;
+const privatePrefix = /^\/(?:owner-operations|owner-recovery-state|restoration-history|break-entitlements|break-recovery-state|break-deployments|break-registrations|break-restorations)(?:\/|$)/i;
 
 /** Bind ID-based requests to the stored target, never to the caller's own
  * assertion of its owner. No worker or chain reconciliation runs before this. */
 async function targetIdentity(db: Firestore, path: string, request: unknown): Promise<string> {
+  const restorationHistory = /^restoration-history\/(0x[0-9a-f]{64})$/.exec(path);
+  if (restorationHistory && request === null) return restorationHistory[1];
   const ownerDiscovery = /^owner-recovery-state\/(0x[0-9a-f]{64})\/(0|[1-9][0-9]*)$/.exec(path);
   if (ownerDiscovery && request === null) return ownerDiscovery[1];
   if (path === 'owner-operations/recovery') return parseRecoveryOwnerOperation(request).identity;
