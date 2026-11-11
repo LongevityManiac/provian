@@ -59,6 +59,39 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'restoration-executor-runtime': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-executor-runtime.ts', testMatchPath: 'src/core/recourse/restoration-executor-runtime.test.ts',
+    mutations: [{ id: 'EXECUTOR-CODE', description: 'changed executable byte is accepted as reviewed implementation',
+      find: 'if (masked !== template.runtime)', replace: 'if (false)', expectedKilledBy: 'opcode implementation fails before its getters can be trusted' },
+      { id: 'EXECUTOR-PRIVATE-PROOF', description: 'a substituted private proof verifier accepts arbitrary owner authorizations',
+        find: 'if (keccak256(await port.code(proof, pin)) !== template.proofVerifierHash)', replace: 'if (false)', expectedKilledBy: 'private-verifier substitution refuses' },
+      { id: 'EXECUTOR-ANCESTORS', description: 'inherited owner state is trusted from a fake prior executor',
+        find: 'executor = account(words.previousAuthorization);', replace: 'executor = zero;', expectedKilledBy: 'ordinary inheritance authenticates the prior executor instead of trusting getter-shaped state' }],
+  },
+  'restoration-receipt-interval': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-receipt-interval.ts', testMatchPath: 'src/core/recourse/restoration-receipt-interval.test.ts src/core/recourse/restoration-break-receipt.test.ts',
+    mutations: [{ id: 'RECEIPT-EXACT-MINT', description: 'restoration amount can be backed by a different mint amount',
+      find: 'mints[0].transfer!.args.amount !== BigInt(owner.amount)', replace: 'false', expectedKilledBy: 'wrong-amount mint refuses' },
+      { id: 'RECEIPT-INTERVAL', description: 'a mint outside this execution is counted as its restoration',
+        find: 'log.logIndex > start.log.logIndex && log.logIndex < logIndex', replace: 'true', expectedKilledBy: 'several restorations with identical mint destinations and amounts remain distinct within one wrapper receipt' },
+      { id: 'RECEIPT-OWNER', description: 'another binding authorizes this restoration',
+        find: 'start.consumed.args.identity !== owner.identity', replace: 'false', expectedKilledBy: 'wrong-binding cannot substitute another execution' }],
+  },
+  'restoration-break-receipt': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-break-receipt.ts', testMatchPath: 'src/core/recourse/restoration-break-receipt.test.ts src/core/recourse/restoration-break-receipt-chain.test.ts',
+    mutations: [{ id: 'BREAK-RECEIPT-ORIGINAL-PIN', description: 'a same-manifest new resolver checkpoint replaces the original readiness checkpoint',
+      find: 'return lineage;', replace: 'return { ...lineage, blockHash: (await currentProtocolDeployment()).blockHash };', expectedKilledBy: 'runtime verification and final caller fence retain the original lineage checkpoint across a same-manifest resolver replacement' },
+      { id: 'BREAK-RECEIPT-CUTOFF', description: 'discarded post-cutoff restoration is treated as a current entitlement',
+      find: 'through > next.cutoff', replace: 'false', expectedKilledBy: 'discarded tail after the immediate successor cutoff cannot issue the same carried entitlement twice' },
+      { id: 'BREAK-RECEIPT-RUNTIME', description: 'getter-shaped executor bypasses implementation checks',
+        find: 'await port.authenticateExecutor(executor, kernel, pin);', replace: '', expectedKilledBy: 'lookalike executor getters do not bypass independent implementation authentication' },
+      { id: 'BREAK-RECEIPT-COMPLETENESS', description: 'local restoration log can be omitted despite consumed entitlement',
+      find: 'if (logs.length !== (local ? 1 : 0))', replace: 'if (false)', expectedKilledBy: 'inherited-with-local restoration history refuses' },
+      { id: 'BREAK-RECEIPT-HEADER', description: 'checkpoint reorg after verification is accepted',
+        find: 'await port.chain.blockHash(through) !== pin', replace: 'false', expectedKilledBy: 'checkpoint-reorg after asynchronous reads refuses' },
+      { id: 'BREAK-RECEIPT-MANIFEST', description: 'pointer changes during verification are accepted',
+        find: 'if (await port.manifest() !== manifest)', replace: 'if (false)', expectedKilledBy: 'manifest after asynchronous reads refuses' }],
+  },
   'restoration-break-partition': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-break-partition.ts', testMatchPath: 'src/core/recourse/restoration-break-partition.test.ts',
     mutations: [{ id: 'PARTITION-EXACT-TOTAL', description: 'a changed historical balance partition authorizes the same aggregate',

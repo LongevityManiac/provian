@@ -29,7 +29,7 @@ beforeEach(()=>{
 });
 test('typed succession domains authenticate breaks without enabling them in the ordinary transfer collector',async()=>{
  broken=true;
- expect(await readRestorationSuccessionLineage(token)).toMatchObject({kernel,executor,migrations:[{
+ expect(await readRestorationSuccessionLineage(token)).toMatchObject({kernel,executor,block:150,blockHash:hash(150),migrations:[{
   kernel,executor,predecessor:token,cutoff:105,cutoffHash:hash(105),root:hash(160),kind:'cryptographic_break'}]});
  await expect(readRestorationLineage(token)).rejects.toThrow('lineage_invalid');
  wrong=true;await expect(readRestorationSuccessionLineage(token)).rejects.toThrow('lineage_invalid');

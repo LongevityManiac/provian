@@ -37,7 +37,7 @@ export async function readRestorationLineage(lossKernel:string):Promise<Restorat
 /** The pointer and immutable predecessor chain authenticate origins. Artifact
  * metadata never supplies an origin, root or cutoff. This describes succession
  * domains; it does not yet verify a balance partition or restoration receipt. */
-export async function readRestorationSuccessionLineage(lossKernel:string):Promise<RestorationSuccessionLineage> {
+export async function readRestorationSuccessionLineage(lossKernel:string):Promise<RestorationSuccessionLineage & { readonly block: number; readonly blockHash: string }> {
   if (!/^0x[0-9a-f]{40}$/.test(lossKernel) || lossKernel === zero) throw Error('recourse_lineage_invalid');
   const deployment=await currentProtocolDeployment();
   const legs=getOperatorBoundRpcLegs('base');
@@ -88,7 +88,7 @@ export async function readRestorationSuccessionLineage(lossKernel:string):Promis
   // state survived. Check canonical height after the final resolver awaits.
   const canonical = await Promise.all(legs.map(leg => leg.provider.send('eth_getBlockByNumber', [`0x${height.toString(16)}`, false])));
   if (canonical.some(header => headerNumber(header) !== height)) throw Error('recourse_lineage_changed');
-  return {kernel:currentKernel,executor:currentExecutor,manifestHash:deployment.manifestHash,migrations:migrations.reverse()};
+  return {kernel:currentKernel,executor:currentExecutor,manifestHash:deployment.manifestHash,migrations:migrations.reverse(),block:height,blockHash:deployment.blockHash};
 }
 /** Verify the actual import event and its adjacent token mint against the old
  * balance at the immutable cutoff. Only that precise mint is a carried balance;
