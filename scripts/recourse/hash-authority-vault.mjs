@@ -111,3 +111,30 @@ export async function prepareVaultHashOperation(vault,input,crypto=defaultCrypto
     return {operation,nextItemId};
   }finally{seed.fill(0);nextSeed.fill(0);}
 }
+
+/** A cancellation installs the original operation's already-saved successor.
+ * It never creates another seed at the same nonce. The caller fixes the self
+ * call and authenticates the original durable operation before this boundary.
+ * Both seeds and their lineage are read back before signing; only public
+ * material is returned. persistIntent verifies the original durable record
+ * from which the exact cancellation intent is deterministically derived. */
+export async function prepareVaultHashCancellation(vault, input, persistIntent, crypto=defaultCrypto){
+  input=structuredClone(input);
+  const current=await vault.byRoot(input.currentRoot), saved=await vault.read(input.nextItemId);
+  const seed=seedOf(current.record);let nextSeed;
+  try{
+    nextSeed=seedOf(saved.record);
+    if(await crypto.root(seed)!==input.currentRoot || saved.id!==input.nextItemId
+      || await crypto.root(nextSeed)!==input.nextCommitment || saved.record.root!==input.nextCommitment
+      || saved.record.parent?.root!==input.currentRoot || saved.record.parent?.itemId!==current.id
+      || saved.record.digest!==input.originalIntentDigest)throw Error('recourse_vault_cancellation_lineage');
+    const operation=await crypto.prepare({intent:input.intent,signingSeed:seed,nextSigningSeed:nextSeed,
+      async persistBeforeSigning(intent,successor){
+        if(intent.nextCommitment!==input.nextCommitment
+          || !timingSafeEqual(Buffer.from(successor),Buffer.from(nextSeed)))throw Error('recourse_vault_successor_mismatch');
+        await persistIntent(intent);
+      },
+    });
+    return {operation,nextItemId:input.nextItemId};
+  }finally{seed.fill(0);nextSeed?.fill(0);}
+}
