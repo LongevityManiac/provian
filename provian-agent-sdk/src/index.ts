@@ -817,6 +817,12 @@ export type { GitHubPrRequest, SignedGitHubPrRequest } from './github-pr-request
 
 export { bindRecourseOwnership, readRecourseOwnership, recourseBindingMessage, submitAgentRestorationRequest, readRestorationRequests } from './recourse';
 export type { RecourseConfig, RecourseBinding } from './recourse';
+export { recourseMembershipRelay, beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent,
+  prepareAgentMembershipDebit, authorizeAgentMembershipDebit } from './recourse';
+export { beginMembershipTransition, readMembershipTransition, prepareMembershipDebit, prepareMembershipApproval,
+  validateMembershipConsent, validateMembershipDebit, submitMembershipConsent, submitMembershipDebit } from './recourse-membership-client';
+export type { MembershipRelay, MembershipRequestPath, MembershipConsentChallenge, MembershipDebitChallenge,
+  MembershipTransitionView, MembershipOperationStatus, MembershipDebitPreparation } from './recourse-membership-client';
 export { recoverRecourseAgent } from './recourse-recovery';
 
 export { currentProtocolDeployment } from "./protocol-runtime";
@@ -838,6 +844,7 @@ export { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRe
 export { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
 
 export type { ActiveHashWallet, HashWalletCall } from './break-recovery-store';
+export { signActiveHashWalletMessage } from './break-recovery-store';
 
 export { addressRecoveryBinding } from './recourse-address-binding';
 export type { AddressRecoveryDomain } from './recourse-address-binding';

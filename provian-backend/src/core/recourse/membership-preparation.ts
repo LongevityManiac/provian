@@ -83,6 +83,10 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
     : await beginPrivateMembershipTransition(db, ownerIdentity, input.kind);
   if (operation.status === 'preparing') {
     await reconcileCurrentPrivateMembership(db, ownerIdentity);
+    const account = await db.collection(C.owners).doc(ownerIdentity).get();
+    if (account.exists && account.get('pendingReservation') != null) {
+      return { id: operation.id, kind: operation.kind, status: 'preparing', challenges: [] };
+    }
     operation = await refreshRecoveredMembershipTransition(db, operation.id);
     operation = await openPrivateMembershipConsents(db, operation.id);
   }

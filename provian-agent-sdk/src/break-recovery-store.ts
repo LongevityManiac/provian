@@ -351,6 +351,30 @@ export function readActiveHashWallet(directory: string): ActiveHashWallet | null
 }
 
 export interface HashWalletCall { readonly target: string; readonly value: string; readonly callGas: string; readonly data: string; }
+/** Message signatures use the selected hash account's independent spending
+ * material. A selected account that cannot verify never falls back to a curve
+ * key. This does not rotate the account or publish a transaction. */
+export async function signActiveHashWalletMessage(input: { directory: string; passphrase: string; account: string;
+  message: string | Uint8Array; network: OwnerChainNetwork }): Promise<string | null> {
+  const directory = path.resolve(input.directory), digest = hashMessage(input.message);
+  return locked(directory, input.passphrase, async () => {
+    const active = readActiveHashWallet(directory);
+    if (!active) return null;
+    if (active.address !== input.account.toLowerCase()) throw Error('hash_wallet_account_changed');
+    const record = readRecord(recordFile(directory, active.identity, active.commitment, active.context), input.passphrase,
+      active.identity, active.commitment, active.context);
+    if (!record || record.destination !== active.address || record.restoredTransaction !== active.transactionHash) throw Error('hash_wallet_record_mismatch');
+    const state = await readHashAccountState(active.address, input.network);
+    const seed = Buffer.from((record.accountSigningSeed ?? record.destinationSigningSeed).slice(2), 'hex');
+    try {
+      if (await recoverySigningRoot(seed) !== state.root) throw Error('hash_wallet_reconcile_pending_receipt');
+      const signature = await signHashAccountMessage(active.address, digest, seed);
+      const after = await readHashAccountState(active.address, input.network);
+      if (after.root !== state.root || after.nonce !== state.nonce || after.manifestHash !== state.manifestHash) throw Error('hash_wallet_state_changed');
+      return signature;
+    } finally { seed.fill(0); }
+  });
+}
 /** A hash-wallet operation rotates a signing key even when its inner call fails.
  * Keep the predecessor and successor encrypted, reserve one exact nonce/intent,
  * and expose a public gas-sponsorable call only after durable readback. */

@@ -59,6 +59,17 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'recourse-membership-client': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/recourse-membership-client.ts',
+    testMatchPath: 'src/recourse-membership-client.test.ts',
+    mutations: [{ id: 'MEMBERSHIP-POST-SIGN', description: 'a pointer change during owner signing reaches the relay',
+      find: 'await validateMembershipConsent(challenge, input.account, input.kind, network);', replace: 'void challenge;',
+      expectedKilledBy: 'consent signs raw validated bytes and refuses a pointer change during signing' },
+      { id: 'MEMBERSHIP-ALLOWANCE', description: 'owner approval permits more than the exact debit',
+        find: 'parsed.domain.pool, parsed.allowanceAtomic, parsed.debit.revision',
+        replace: 'parsed.domain.pool, (1n << 256n) - 1n, parsed.debit.revision',
+        expectedKilledBy: 'exact approval is only burn plus reserve and has independently verified current token and pool' }],
+  },
   'membership-debit-preparation': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-debit-preparation.ts',
     testMatchPath: 'src/core/recourse/membership-debit-preparation.test.ts',
@@ -1576,11 +1587,11 @@ function runScopedSuite(testMatchPath) {
  * structured `--json` output. Never `tail -1`: a compile failure yields no JSON
  * and is reported as "did not run", which the caller treats as ERROR, not KILLED.
  */
-function runScopedJestSuite(testMatchPath) {
+function runScopedJestSuite(testMatchPath, sdkVitest = false) {
   const res = spawnSync(
     'npx',
-    ['jest', '--json', '--silent', ...testMatchPath.split(/\s+/).filter(Boolean)],
-    { cwd: path.join(REPO_ROOT, 'provian-backend'), encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
+    [...(sdkVitest ? ['vitest', 'run', '--config', 'vitest.config.ts', '--reporter=json'] : ['jest', '--json', '--silent']), ...testMatchPath.split(/\s+/).filter(Boolean)],
+    { cwd: path.join(REPO_ROOT, sdkVitest ? 'provian-agent-sdk' : 'provian-backend'), encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
   );
   const stdout = res.stdout || '';
   const stderr = res.stderr || '';
@@ -1883,7 +1894,7 @@ function verifyRegistry() {
       if (n !== 1) bad.push(`${name}  ${m.id}: find occurs ${n}x (must be exactly 1)`);
     }
     // Solidity sets only: the jest sets use a space-separated path list, not a glob.
-    if (set.runner !== 'jest') {
+    if (!['jest', 'sdk-vitest'].includes(set.runner)) {
       const { problems, files, expected, inScope } = auditGlob(name, set);
       bad.push(...problems);
       const extra = [...inScope].filter((f) => !expected.includes(f)).sort();
@@ -2036,13 +2047,13 @@ function main() {
 
   console.log(`# wp-mutation-harness — ${args.contract}`);
   console.log(`# source ${set.sourcePath}  (sha256 ${originalSha.slice(0, 12)})`);
-  console.log(set.runner === 'jest'
+  console.log(set.runner === 'sdk-vitest' ? `# suite  npx vitest run --reporter=json ${set.testMatchPath}` : set.runner === 'jest'
     ? `# suite  npx jest --json ${set.testMatchPath}`
     : `# suite  forge test --root contracts --match-path '${set.testMatchPath}' --json`);
   console.log('');
 
   // Baseline: the pristine suite MUST pass, or a "killed" verdict is meaningless.
-  const runSuite = set.runner === 'jest' ? runScopedJestSuite : runScopedSuite;
+  const runSuite = set.runner === 'sdk-vitest' ? path => runScopedJestSuite(path, true) : set.runner === 'jest' ? runScopedJestSuite : runScopedSuite;
   const base = runSuite(set.testMatchPath);
   if (!base.ran) {
     console.error('FATAL: pristine suite did not compile/run:\n' + base.stderr.split('\n').slice(0, 20).join('\n'));

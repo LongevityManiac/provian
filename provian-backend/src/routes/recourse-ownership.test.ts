@@ -76,3 +76,27 @@ test('payment status does not expose another owner reservation or its exact fina
   expect(response.status).toBe(200); expect(response.headers['cache-control']).toBe('no-store');
   expect(response.body).toEqual({ id, status: 'queued', transactionHash: null });
 });
+
+test('active transition discovery is authenticated and scoped to the caller after a lost response', async () => {
+  const fake = createFakeFirestore(), walletId = 'wallet_aw_resume', ownerIdentity = identityHash('agent', walletId);
+  const id = `0x${'31'.repeat(32)}`;
+  const preparation = await import('../core/recourse/membership-preparation');
+  const prepare = jest.spyOn(preparation, 'prepareMembershipTransition').mockResolvedValue({ id, kind: 'join', status: 'preparing', challenges: [] });
+  const app = express(); app.use(express.json());
+  app.use('/v1/recourse', createRecourseRouter({ db: fake } as unknown as AgentBankDeps, (req, res, next) => {
+    if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
+    req.agentWallet = { id: walletId } as Request['agentWallet']; next();
+  }));
+  try {
+    expect((await request(app).get('/v1/recourse/membership-transitions')).status).toBe(401);
+    expect(prepare).not.toHaveBeenCalled();
+    fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${identityHash('agent', 'other')}`, { membershipTransition: id });
+    const absent = await request(app).get('/v1/recourse/membership-transitions').set('Authorization', 'Bearer TEST_ONLY');
+    expect(absent.status).toBe(200); expect(absent.body).toBe(null); expect(prepare).not.toHaveBeenCalled();
+    fake.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`, { membershipTransition: id });
+    const found = await request(app).get('/v1/recourse/membership-transitions').set('Authorization', 'Bearer TEST_ONLY');
+    expect(found.status).toBe(200); expect(found.headers['cache-control']).toBe('no-store');
+    expect(prepare).toHaveBeenCalledWith(fake, ownerIdentity, { id });
+    expect(found.body).toEqual({ id, kind: 'join', status: 'preparing', challenges: [] });
+  } finally { prepare.mockRestore(); }
+});

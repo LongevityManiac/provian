@@ -28,6 +28,10 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
+  ['src/core/recourse/membership-client.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-client.ts'), 'utf8')
+    .replaceAll("'./recourse-owner-chain'", "'./owner-chain'").replaceAll("'./protocol-pointer'", "'../protocol/pointer'")
+    .replaceAll("'./recourse-pool-chain'", "'./pool-chain'").replaceAll("'./recourse-pool-abi'", "'./pool-abi'")
+    .replaceAll("'./recourse-membership-authorization'", "'./membership-authorization'")],
   ['provian-backend/src/core/recourse/hash-authorization.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-hash-authorization.ts'), 'utf8')
     .replace("import { hkdf } from '@noble/hashes/hkdf';\nimport { sha256 } from '@noble/hashes/sha256';\nimport { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';",
       "import { hkdf, sha256, bytesToHex, hexToBytes, utf8ToBytes } from './hash-primitives';")],

@@ -3,7 +3,9 @@ import { afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { hexlify } from 'ethers';
+import { hexlify, getBytes, hashMessage } from 'ethers';
+import { hashAccountContractDigest } from './hash-account-data';
+import { signActiveHashWalletMessage } from './break-recovery-store';
 import { recoveryCommitment, recoverySigningRoot } from './recourse-hash-authorization';
 import { provisionBreakRecovery, prepareAgentBreakRecovery, completeAgentBreakRecovery, readActiveHashWallet, prepareActiveHashWalletOperation, completeActiveHashWalletOperation, cancelActiveHashWalletOperation, pendingActiveHashWalletOperations } from './break-recovery-store';
 import { readHashAccountState, verifyHashAccountVariantReceipt } from './hash-account-chain';
@@ -181,3 +183,31 @@ it('reserves one exact hash-wallet spend, keeps the next seed on retry and advan
  expect(await completeActiveHashWalletOperation({directory,passphrase,network,transactionHash:`0x${'aa'.repeat(32)}`})).toBe('cancelled');
  expect(await pendingActiveHashWalletOperations({directory,passphrase})).toEqual({operation:null,cancellation:null});
 }, 30000);
+it('selected hash account signs exact membership bytes without curve fallback or key rotation', async () => {
+ const rpc={request:async()=>{throw Error('unexpected RPC');}};
+ const network:OwnerChainNetwork={rpcs:[rpc,rpc],deployment:async()=>{throw Error('unexpected deployment');}};
+ const message=getBytes(`0x${'ab'.repeat(32)}`), args={directory,passphrase,account:destination,message,network};
+ expect(await signActiveHashWalletMessage(args)).toBeNull();
+ const root=await provisionBreakRecovery(input());
+ saveKeystore(encryptKeystore({...generateAgentKeyPair(),walletId:'wallet_aw_break_test',passphrase,
+  recoverySecret:'44'.repeat(32),recoverySigningSeed:'55'.repeat(32),kdfParams:{N:1024,r:8,p:1,dklen:32}}),path.join(directory,'agent-keystore.json'));
+ vi.mocked(prepareBreakRecovery).mockImplementation(async args=>{
+  await args.persistBeforePublishing({kernel:destination,identity:id,destination,operationHash:commitment,
+   destinationSigningSeed:args.destinationSigningSeed,nextRecoverySecret:args.nextRecoverySecret,nextRecoverySigningSeed:args.nextRecoverySigningSeed});
+  return {phase:'restore_balance',kernel:destination,executor:destination,authority:destination,manifestHash:commitment,identity:id,destination,amount:'50',data:'0x',ownerIntent:commitment};
+ });
+ await prepareAgentBreakRecovery({directory,passphrase,destination,network,entitlement:{identity:id,amount:'50',commitment,proof:[]}});
+ vi.mocked(verifyBreakRecoveryReceipt).mockResolvedValue(undefined);
+ await completeAgentBreakRecovery({...input(),transactionHash:`0x${'77'.repeat(32)}`,network});
+ const state={root:root.signingRoot,nonce:'0',manifestHash:commitment,blockHash:commitment};
+ vi.mocked(readHashAccountState).mockResolvedValue(state);
+ const before=fs.readFileSync(file(),'utf8'), signature=getBytes((await signActiveHashWalletMessage(args))!);
+ expect(signature).toHaveLength(7888);expect(fs.readFileSync(file(),'utf8')).toBe(before);
+ const {slh_dsa_sha2_128s}=await import('@noble/post-quantum/slh-dsa.js');
+ expect(slh_dsa_sha2_128s.verify(signature.slice(32),getBytes(hashAccountContractDigest(destination,root.signingRoot,hashMessage(message))),signature.slice(0,32))).toBe(true);
+ await expect(signActiveHashWalletMessage({...args,account:`0x${'aa'.repeat(20)}`})).rejects.toThrow('account_changed');
+ vi.mocked(readHashAccountState).mockResolvedValueOnce({...state,root:`0x${'bb'.repeat(32)}`});
+ await expect(signActiveHashWalletMessage(args)).rejects.toThrow('reconcile_pending_receipt');
+ vi.mocked(readHashAccountState).mockResolvedValueOnce(state).mockResolvedValueOnce({...state,nonce:'1'});
+ await expect(signActiveHashWalletMessage(args)).rejects.toThrow('state_changed');
+},30000);

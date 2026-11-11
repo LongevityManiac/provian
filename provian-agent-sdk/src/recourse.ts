@@ -11,6 +11,11 @@ import { addressRecoveryBinding } from './recourse-address-binding';
 import { signEip191Message } from './link-signing';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
 import { waitForRecourseBinding } from './recourse-binding-chain';
+import { readActiveHashWallet, signActiveHashWalletMessage } from './break-recovery-store';
+import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent, prepareMembershipDebit, submitMembershipDebit,
+  type MembershipConsentChallenge, type MembershipDebitChallenge, type MembershipRelay } from './recourse-membership-client';
+import { loadKeystore } from './keystore';
+import * as path from 'path';
 
 export interface RecourseConfig {
   readonly relayUrl: string;
@@ -30,6 +35,43 @@ async function request(config: RecourseConfig, path: string, body?: unknown): Pr
   });
   if (!response.ok) throw new Error(`recourse_request_refused:${response.status}`);
   return response.json();
+}
+export function recourseMembershipRelay(config: RecourseConfig): MembershipRelay {
+  return { request: (path, body) => request(config, path, body) };
+}
+async function signAgentMembership(config: RecourseConfig, input: { directory: string; passphrase: string; account: string }, bytes: Uint8Array): Promise<string> {
+  const keystore = loadKeystore(path.join(input.directory, 'agent-keystore.json'));
+  if (!keystore || keystore.wallet_id !== config.walletId) throw Error('recourse_wallet_mismatch');
+  const hashed = await signActiveHashWalletMessage({ ...input, message: bytes, network: ownerChainNetwork() });
+  if (hashed !== null) return hashed;
+  if (keystore.address.toLowerCase() !== input.account.toLowerCase()) throw Error('recourse_wallet_mismatch');
+  return withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
+}
+export async function beginAgentMembership(config: RecourseConfig, kind: 'join' | 'leave') {
+  return beginMembershipTransition(recourseMembershipRelay(config), kind);
+}
+export async function readAgentMembershipTransition(config: RecourseConfig, id?: string) {
+  return readMembershipTransition(recourseMembershipRelay(config), id);
+}
+export async function authorizeAgentMembershipConsent(config: RecourseConfig, input: { directory: string; passphrase: string;
+  transitionId: string; kind: 'join' | 'leave'; challenge: MembershipConsentChallenge }) {
+  const account = input.challenge.consent.account;
+  return submitMembershipConsent(recourseMembershipRelay(config), ownerChainNetwork(), { ...input, account,
+    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes) });
+}
+export async function prepareAgentMembershipDebit(config: RecourseConfig, input: { directory: string;
+  amounts?: { readonly month: string; readonly burn: string; readonly reserve: string } }) {
+  const keystore = loadKeystore(path.join(input.directory, 'agent-keystore.json'));
+  if (!keystore || keystore.wallet_id !== config.walletId) throw Error('recourse_wallet_mismatch');
+  const payer = readActiveHashWallet(input.directory)?.address ?? keystore.address;
+  return prepareMembershipDebit(recourseMembershipRelay(config), payer, input.amounts);
+}
+/** Exact token approval must be submitted separately, through the current
+ * pointer-verified transaction path, before this financial mandate is signed. */
+export async function authorizeAgentMembershipDebit(config: RecourseConfig, input: { directory: string; passphrase: string; challenge: MembershipDebitChallenge }) {
+  const account = input.challenge.debit.payer;
+  return submitMembershipDebit(recourseMembershipRelay(config), ownerChainNetwork(), { payer: account, challenge: input.challenge,
+    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes) });
 }
 
 /** Durably encrypt an independent secret before registering only its hash. */

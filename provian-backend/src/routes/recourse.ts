@@ -178,6 +178,16 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { kind: body.kind }));
     } catch { res.status(400).json({ error: 'recourse_membership_unavailable' }); }
   });
+  router.get('/membership-transitions', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps), ownerIdentity = identityHash(owner.type, owner.id);
+      const row = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
+      const id: unknown = row.get('membershipTransition');
+      if (id == null) { res.json(null); return; }
+      if (typeof id !== 'string') throw Error('recourse_membership_unknown');
+      res.json(await prepareMembershipTransition(deps.db, ownerIdentity, { id }));
+    } catch { res.status(503).json({ error: 'recourse_membership_unavailable' }); }
+  });
   router.get('/membership-transitions/:id', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
@@ -211,10 +221,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body)
-        || !['payer', 'payer,payment'].includes(Object.keys(body).sort().join(',')) || !('payer' in body) || typeof body.payer !== 'string') throw Error('recourse_membership_input');
+        || !['payer', 'amounts,payer'].includes(Object.keys(body).sort().join(',')) || !('payer' in body) || typeof body.payer !== 'string') throw Error('recourse_membership_input');
       res.json(await prepareMembershipDebit(deps.db, identityHash(owner.type, owner.id), body.payer,
-        'payment' in body ? parseMembershipPaymentSelection(body.payment) : undefined));
-    } catch { res.status(400).json({ error: 'recourse_membership_payment_unavailable' }); }
+        'amounts' in body ? parseMembershipPaymentSelection(body.amounts) : undefined));
+    } catch { res.status(400).json({ error: 'recourse_membership_debit_unavailable' }); }
   });
   router.post('/membership-debits', async (req, res) => {
     try {
@@ -225,7 +235,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const result = await queueMembershipDebit(deps.db, identityHash(owner.type, owner.id), input);
       try { await runMembershipDebitWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
       res.status(202).json(result);
-    } catch { res.status(400).json({ error: 'recourse_membership_payment_refused' }); }
+    } catch { res.status(400).json({ error: 'recourse_membership_debit_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
   });
   router.get('/membership-debits/:id', async (req, res) => {
@@ -236,7 +246,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const input = parseMembershipDebitRequest(row.get('request'));
       await ownedMembershipDebit(deps.db, identityHash(owner.type, owner.id), input.reservationId);
       res.json(await readSponsoredOperation(deps.db, MEMBERSHIP_DEBIT_OPERATIONS, id));
-    } catch { res.status(404).json({ error: 'recourse_membership_payment_unavailable' }); }
+    } catch { res.status(404).json({ error: 'recourse_membership_debit_unavailable' }); }
   });
   router.post('/restoration-intents', async (req, res) => {
     try {

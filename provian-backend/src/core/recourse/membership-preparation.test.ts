@@ -60,7 +60,7 @@ test('leave freezes new signing but cannot erase an unresolved issuance reservat
   f.fake.store.set(`${C.owners}/${owner}`, { ownerIdentity: owner, version: 0, pendingReservation: h('fe'), needsScan: false,
     checkpoint: { pool: a('12'), block: 99, blockHash: h('99') }, episode: joinPrivateMembership(null, utcCalendarMonth(now), rules) });
   f.fake.store.set(`${C.reservations}/${h('fe')}`, { status: 'pending', reservation: { ownerIdentity: owner, kind: 'issuance' } });
-  await expect(prepareMembershipTransition(f.db, owner, { kind: 'leave' })).rejects.toThrow('reconciliation_pending');
+  await expect(prepareMembershipTransition(f.db, owner, { kind: 'leave' })).resolves.toMatchObject({ status: 'preparing', challenges: [] });
   const id = f.fake.store.get(`${R.owners}/${owner}`)!.membershipTransition;
   expect(f.fake.store.get(`${T}/${id}`)).toMatchObject({ status: 'preparing', closure: null });
   expect(f.fake.store.get(`${C.owners}/${owner}`)).toMatchObject({ pendingReservation: h('fe'), episode: { joined: true } });
