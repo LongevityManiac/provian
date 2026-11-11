@@ -98,7 +98,7 @@ export function snapshotRpcPort(urls, options = {}) {
     }
   }
   return {
-    rpcs: urls.map(url => ({ request: (method, params) => rpc(url, method, params) })),
+    rpcs: urls.map(url => ({ operatorId: operator(url), request: (method, params) => rpc(url, method, params) })),
     async finalizedBlock() {
       if (await agree('eth_chainId', []) !== '0x2105') throw Error('snapshot_wrong_chain');
       const finals = await Promise.all(urls.map(url => rpc(url, 'eth_getBlockByNumber', ['finalized', false])));
