@@ -5204,7 +5204,9 @@
       "new": "Nova transferência",
       "amount": "Valor",
       "review": "Revisar transferência",
-      "authorize": "Autorizar esta transferência exata"
+      "authorize": "Autorizar esta transferência exata",
+      "open": "Enviar da carteira recuperada",
+      "curveGas": "O gás da rede é pago em ETH por esta carteira recuperada."
     }
   }
 }

@@ -5204,7 +5204,9 @@
       "new": "Uhamisho mpya",
       "amount": "Kiasi",
       "review": "Kagua uhamisho",
-      "authorize": "Idhinisha uhamisho huu halisi"
+      "authorize": "Idhinisha uhamisho huu halisi",
+      "open": "Tuma kutoka kwenye pochi iliyorejeshwa",
+      "curveGas": "Gharama ya gas ya mtandao hulipwa kwa ETH kutoka kwenye pochi hii iliyorejeshwa."
     }
   }
 }

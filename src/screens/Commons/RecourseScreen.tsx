@@ -8,6 +8,10 @@ import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { withBiometricAction } from '../../core/security/biometricAction';
+import SeedManager from '../../core/wallet/SeedManager';
+import { ownerChainNetwork } from '../../core/protocol/runtime';
+import { discoverBoundHumanSpendingAccount } from '../../core/recourse/human-bound-spending';
 import { ExternalWalletProofFlow } from '../Agent/LinkExternalWalletScreen';
 
 export function RecourseBindScreen(): React.JSX.Element {
@@ -65,6 +69,19 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     catch { setError(true); }
     finally { setBusy(false); }
   };
+  const sendFromAddress = async (identity: string) => {
+    if (busy) return;
+    setBusy(true); setError(false);
+    try {
+      const bound = await withBiometricAction(t('recourse.transfer.authorize'), async action => {
+        const mnemonic = await SeedManager.getMnemonic(action);
+        if (!mnemonic) throw Error('recourse_seed_unavailable');
+        return discoverBoundHumanSpendingAccount(mnemonic, identity, ownerChainNetwork());
+      });
+      navigation.navigate('RecoveredTransfer', { account: bound.account, auxiliaryBinding: identity, kind: bound.kind });
+    } catch { setError(true); }
+    finally { setBusy(false); }
+  };
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
@@ -102,7 +119,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
             {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}
             {row.confirmed && row.identity !== state.primaryIdentity
-              ? button(t('recourse.recoverAddress', 'Recover this wallet'), () => { void recoverAddress(row.identity); }) : null}</View>)}
+              ? <>{button(t('recourse.recoverAddress', 'Recover this wallet'), () => { void recoverAddress(row.identity); })}
+                {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
           {button(t('recourse.bind', 'Bind an address you hold'), () => navigation.navigate('RecourseBind'))}
         </View>
         <View style={styles.card}>

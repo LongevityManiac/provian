@@ -13,15 +13,18 @@ import { TOKEN_ADDRESSES } from '../../core/chains/evm/config';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
 import SeedManager from '../../core/wallet/SeedManager';
 import { executeHumanHashTransfer, readHumanHashTransfer, type HumanHashTransfer } from '../../core/recourse/human-hash-transfer';
+import { executeHumanCurveTransfer, readHumanCurveTransfer, type HumanCurveTransfer } from '../../core/recourse/human-curve-transfer';
 import { describeHumanTransfer, prepareHumanTransferReview, type HumanTransferReview } from '../../core/recourse/human-transfer-review';
 import ProvenanceEnvelopeManager from '../../core/provenance/ProvenanceEnvelopeManager';
 import TransactionHistoryService from '../../core/history/TransactionHistoryService';
 
 export default function RecoveredTransferScreen({ navigation, route }: NativeStackScreenProps<AppParamList, 'RecoveredTransfer'>): React.JSX.Element {
   const { t } = useTranslation(), { account, auxiliaryBinding } = route.params;
+  const curve = route.params.kind === 'curve';
+  const readTransfer = useCallback(() => curve ? readHumanCurveTransfer(account) : readHumanHashTransfer(account), [account, curve]);
   const [tokens, setTokens] = useState<readonly { symbol: string; address: string | null }[]>([]);
   const [token, setToken] = useState(route.params.symbol ?? 'PVT'), [recipient, setRecipient] = useState(route.params.recipient ?? ''), [amount, setAmount] = useState(route.params.amount ?? '');
-  const [review, setReview] = useState<HumanTransferReview | null>(null), [held, setHeld] = useState<HumanHashTransfer | null>(null);
+  const [review, setReview] = useState<HumanTransferReview | null>(null), [held, setHeld] = useState<HumanHashTransfer | HumanCurveTransfer | null>(null);
   const [gasPayer, setGasPayer] = useState<string | null>(null), [busy, setBusy] = useState(true), [error, setError] = useState(false);
   const [recorded, setRecorded] = useState(false);
   const lock = useRef(false), alive = useRef(true);
@@ -29,19 +32,19 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
     const network = ownerChainNetwork();
     // Unfinished sends are loaded before discovery so a network failure cannot
     // make an existing authorization look like an empty form.
-    const saved = await readHumanHashTransfer(account);
+    const saved = await readTransfer();
     if (saved && saved.intent.auxiliaryBinding !== auxiliaryBinding) throw Error('recourse_transfer_wrong_account');
     if (alive.current) setHeld(saved);
     if (saved) {
       const prior = await describeHumanTransfer(saved.intent, network);
       if (alive.current) setReview(prior);
     }
-    const deployment = await network.deployment(), payer = await SeedManager.getBackupIdentityAddress();
+    const deployment = await network.deployment(), payer = curve ? account : await SeedManager.getBackupIdentityAddress();
     if (alive.current) {
       setGasPayer(payer); setTokens([{ symbol: 'ETH', address: null }, { symbol: 'PVT', address: deployment.addresses.kernel.toLowerCase() },
         ...Object.entries(TOKEN_ADDRESSES[8453]).map(([symbol, address]) => ({ symbol, address: address.toLowerCase() }))]);
     }
-  }, [account, auxiliaryBinding]);
+  }, [account, auxiliaryBinding, curve, readTransfer]);
   useEffect(() => { alive.current = true; lock.current = true; setBusy(true);
     void load().catch(() => { if (alive.current) setError(true); }).finally(() => { lock.current = false; if (alive.current) setBusy(false); });
     return () => { alive.current = false; };
@@ -51,7 +54,7 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
     try { await fn(); } catch { if (alive.current) setError(true); }
     finally { lock.current = false; if (alive.current) setBusy(false); }
   };
-  const record = async (current: HumanHashTransfer, shown: HumanTransferReview, action: BiometricAction) => {
+  const record = async (current: HumanHashTransfer | HumanCurveTransfer, shown: HumanTransferReview, action: BiometricAction) => {
     if (current.result?.status !== 'complete' || current.result.outcome !== 'succeeded') return;
     const txHash = current.result.transactionHash;
     await ProvenanceEnvelopeManager.createConfirmedTransferEnvelope({ txHash, chainId: 8453, actorAddress: account,
@@ -64,12 +67,15 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
     if (!review) return;
     const shown = review;
     await withBiometricAction(t('recourse.transfer.authorize'), async action => {
-      try { await executeHumanHashTransfer(shown.intent, action, cancel); }
+      try {
+        if (curve) { if (cancel) throw Error('recourse_transfer_invalid'); await executeHumanCurveTransfer(shown.intent, action); }
+        else await executeHumanHashTransfer(shown.intent, action, cancel);
+      }
       finally {
-        const retained = await readHumanHashTransfer(account);
+        const retained = await readTransfer();
         if (alive.current && retained?.intent.id === shown.intent.id) setHeld(retained);
       }
-      const saved = await readHumanHashTransfer(account);
+      const saved = await readTransfer();
       if (!saved || saved.intent.id !== shown.intent.id) throw Error('recourse_transfer_intent_changed');
       if (alive.current) setHeld(saved);
       await record(saved, shown, action);
@@ -82,7 +88,7 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.transfer.title')}</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.body}>{t('recourse.transfer.network')}</Text><Text selectable style={styles.address}>{account}</Text>
-      <Text style={styles.body}>{t('recourse.transfer.gas')}</Text><Text selectable style={styles.address}>{gasPayer}</Text>
+      <Text style={styles.body}>{t(curve ? 'recourse.transfer.curveGas' : 'recourse.transfer.gas')}</Text><Text selectable style={styles.address}>{gasPayer}</Text>
       {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
       {error ? <View><Text style={styles.body}>{t('recourse.error')}</Text>{button(t('recourse.refresh'), load)}</View> : null}
       {review ? <View style={styles.card}>
@@ -95,7 +101,7 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
         {held?.cancelling && !complete ? <Text style={styles.body}>{t('recourse.transfer.cancelling')}</Text> : null}
         {!complete ? <>
           {button(t(held ? 'recourse.transfer.resume' : 'recourse.transfer.confirm'), () => deliver(false))}
-          {held ? button(t('recourse.transfer.cancel'), () => deliver(true)) : button(t('recourse.transfer.edit'), async () => { setReview(null); })}
+          {held ? (curve ? null : button(t('recourse.transfer.cancel'), () => deliver(true))) : button(t('recourse.transfer.edit'), async () => { setReview(null); })}
         </> : <>
           {succeeded && !recorded ? <><Text style={styles.body}>{t('recourse.transfer.recordPending')}</Text>
             {button(t('recourse.transfer.record'), () => deliver(false))}</> : null}

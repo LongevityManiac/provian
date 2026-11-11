@@ -5204,7 +5204,9 @@
       "new": "Giao dịch mới",
       "amount": "Số tiền",
       "review": "Xem lại giao dịch",
-      "authorize": "Cho phép đúng giao dịch này"
+      "authorize": "Cho phép đúng giao dịch này",
+      "open": "Gửi từ ví đã khôi phục",
+      "curveGas": "Phí gas mạng được thanh toán bằng ETH từ ví đã khôi phục này."
     }
   }
 }

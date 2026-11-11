@@ -5204,7 +5204,9 @@
       "new": "Bagong paglilipat",
       "amount": "Halaga",
       "review": "Suriin ang paglilipat",
-      "authorize": "Pahintulutan ang eksaktong paglilipat na ito"
+      "authorize": "Pahintulutan ang eksaktong paglilipat na ito",
+      "open": "Magpadala mula sa naibalik na wallet",
+      "curveGas": "Binabayaran ang gas ng network sa ETH mula sa naibalik na wallet na ito."
     }
   }
 }

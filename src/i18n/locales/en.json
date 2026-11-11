@@ -5204,7 +5204,9 @@
       "new": "New transfer",
       "amount": "Amount",
       "review": "Review transfer",
-      "authorize": "Authorize this exact transfer"
+      "authorize": "Authorize this exact transfer",
+      "open": "Send from recovered wallet",
+      "curveGas": "Network gas is paid in ETH from this recovered wallet."
     }
   }
 }

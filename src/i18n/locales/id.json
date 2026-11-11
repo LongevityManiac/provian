@@ -5204,7 +5204,9 @@
       "new": "Transfer baru",
       "amount": "Jumlah",
       "review": "Tinjau transfer",
-      "authorize": "Otorisasi transfer persis ini"
+      "authorize": "Otorisasi transfer persis ini",
+      "open": "Kirim dari dompet yang dipulihkan",
+      "curveGas": "Gas jaringan dibayar dalam ETH dari dompet yang dipulihkan ini."
     }
   }
 }

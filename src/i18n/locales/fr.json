@@ -5204,7 +5204,9 @@
       "new": "Nouveau transfert",
       "amount": "Montant",
       "review": "Vérifier le transfert",
-      "authorize": "Autoriser ce transfert exact"
+      "authorize": "Autoriser ce transfert exact",
+      "open": "Envoyer depuis le portefeuille récupéré",
+      "curveGas": "Les frais de réseau sont payés en ETH depuis ce portefeuille récupéré."
     }
   }
 }
