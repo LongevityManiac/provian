@@ -6,7 +6,7 @@ export interface RecoursePrivateAuthorization {
   readonly issuedAtMs: number; readonly signature: string;
 }
 const hash = /^0x[0-9a-f]{64}$/;
-const privatePath = /^(?:owner-operations\/(?:recovery|0x[0-9a-f]{64})|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/;
+const privatePath = /^(?:owner-operations\/(?:recovery|0x[0-9a-f]{64})|owner-recovery-state\/0x[0-9a-f]{64}\/(?:0|[1-9][0-9]*)|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/;
 function requireValue(value: unknown): asserts value {
   if (!value) throw Error('recourse_private_access_refused');
 }

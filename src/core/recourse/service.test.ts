@@ -1,8 +1,9 @@
+vi.mock('./owner-chain', () => ({ readOwnerChainState: (...args: unknown[]) => f.ownerState(...args) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { readRecourseHistory, readRecourseView, submitHumanRestorationRequest, recoverHumanBoundAddress, type RecourseView } from './service';
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
   history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
-  breakContext: vi.fn(), recoverBreak: vi.fn() }));
+  ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn() }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   if (f.relayDown) throw Error('unavailable');
@@ -32,7 +33,7 @@ beforeEach(() => {
   f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
   f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44') });
-  f.breakContext.mockReset(); f.recoverBreak.mockReset(); f.breakContext.mockResolvedValue(a('99'));
+  f.ownerState.mockReset(); f.ownerState.mockResolvedValue({nonce:0,destination:a('00')}); f.breakContext.mockReset(); f.recoverBreak.mockReset(); f.breakContext.mockResolvedValue(a('99'));
 });
 it('recovers an auxiliary after a break without membership or primary changes and never falls back on unverifiable history',async()=>{
   f.history={identity:null,addresses:[{identity:h('55'),address:a('22'),recoveryGeneration:0,chainBindingStatus:'confirmed'}]};
@@ -85,4 +86,15 @@ it('retains binding identity on every address and request and refuses missing id
   expect(result.requests[0].identity).toBe(h('55'));
   f.requests = { requests: [{ requestId: h('44'), transactionHash: h('33'), status: 'authorized' }] };
   expect((await readRecourseHistory(view)).historyState).toBe('unavailable');
+});
+
+it('the auxiliary recovery button routes a restored hash binding to fresh replacement recovery',async()=>{
+ f.history={identity:null,addresses:[{identity:h('55'),address:a('22'),recoveryGeneration:0,chainBindingStatus:'confirmed'},
+  {identity:h('55'),address:a('33'),recoveryGeneration:1,chainBindingStatus:'confirmed'}]};
+ f.ownerState.mockResolvedValue({nonce:1,destination:a('33')});
+ await recoverHumanBoundAddress(h('55'));
+ expect(f.recovery).toHaveBeenCalledWith('approved',{auxiliaryBinding:h('55'),newRecovery:true});
+ expect(f.recoverBreak).not.toHaveBeenCalled();expect(f.setAddress).not.toHaveBeenCalled();
+ f.ownerState.mockRejectedValueOnce(Error('rpc_disagreement'));f.recovery.mockClear();
+ await expect(recoverHumanBoundAddress(h('55'))).rejects.toThrow('disagreement');expect(f.recovery).not.toHaveBeenCalled();
 });

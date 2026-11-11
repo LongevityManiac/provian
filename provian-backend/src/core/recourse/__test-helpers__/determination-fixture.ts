@@ -12,7 +12,7 @@ export async function packetFixture() {
   const ticket = { request:f.snapshot.occurrence, identity:f.snapshot.identity, destination:address(50), currentDestination:address(50), maximumLoss:'100',
     lossHash:`0x${createHash('sha256').update(JSON.stringify({snapshot:f.snapshot,membership})).digest('hex')}` };
   const path = `${RESTORATION_REQUESTS}/${ticket.request}`;
-  fake.store.set(path,{identity:ticket.identity,destination:ticket.destination,snapshot:f.snapshot,membership,status:'awaiting_determination'});
+  fake.store.set(path,{identity:ticket.identity,destination:ticket.destination,snapshot:f.snapshot,membership,evidence:JSON.stringify({snapshot:f.snapshot,membership}),status:'awaiting_determination'});
   const ports:DeterminationPorts={ticket:async()=>ticket,evidence:snapshot=>collectRestorationEvidence(snapshot,f.port),pool:async()=>({outcomeRevision:'0'} as RecoursePoolState)};
   const db = fake as unknown as Firestore;
   const packet = await prepareDetermination(db,ticket.request,ports);

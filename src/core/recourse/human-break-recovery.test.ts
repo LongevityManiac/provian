@@ -1,3 +1,4 @@
+vi.mock('./human-recovery', () => ({ resumeHumanRecoveryForRestore: async () => null, replaceHumanAccountForRestore: (...args: unknown[]) => f.replace(...args) }));
 import { beforeEach, expect, test, vi } from 'vitest';
 import { sha256 } from 'ethers';
 import type { BiometricAction } from '../security/biometricAction';
@@ -5,7 +6,7 @@ import type { OwnerChainNetwork } from './owner-chain';
 import { recoverHumanBreak, recoverHumanAuxiliaryBreak, discoverHumanAccountForRestore } from './human-break-recovery';
 
 const f = vi.hoisted(() => ({ storage:new Map<string,string>(), badReceipt:false, badUser:false, badEntitlement:false,
-  discoverError:false, requests:[] as string[], phases:[] as string[], credentials:vi.fn(), proof:vi.fn(),
+  spendingLost:false, replace:vi.fn(), discoverError:false, requests:[] as string[], phases:[] as string[], credentials:vi.fn(), proof:vi.fn(),
   privateGenerations:[] as number[], firstBoundGeneration:0, snapshotSeed:21, secrets:[] as Uint8Array[], cancelled:false, builds:0, historyChanged:false, restored:false, relayRestored:false,
   auxiliaryRequestId:null as string|null, random:10 }));
 const h = (n: number) => `0x${n.toString(16).padStart(64,'0')}`, a = (n: number) => `0x${n.toString(16).padStart(40,'0')}`;
@@ -34,6 +35,7 @@ vi.mock('./human-account', () => ({discoverHumanHashAccountSelection:async (_m:s
   expect(g).toBe(2);return {kind:'hash',evm:a(3),generation:g,hashAccount:{breakOrigin:a(2)}};
 }}));
 vi.mock('./human-discovery', () => ({discoverHumanAccount:async () => {
+  if(f.spendingLost)throw Error('recourse_hash_account_key_mismatch');
   if(f.discoverError)throw Error('recourse_break_restoration_required');
   return {identity:h(1),selection:{kind:'hash',evm:a(3),generation:2,hashAccount:{breakOrigin:a(2)}}};
 }}));
@@ -187,4 +189,11 @@ test('a seed first bound at a later curve generation retries only private author
   await recoverHumanBreak('original backup',{} as BiometricAction);
   expect(f.privateGenerations.slice(0,2)).toEqual([0,1]);
   expect(f.credentials).toHaveBeenCalled();
+});
+
+test('restoring a backup with a stolen hash spending root invokes independent replacement recovery only for that exact failure',async()=>{
+ f.spendingLost=true;f.replace.mockResolvedValue({identity,selection:{evm:a(90)}});
+ try{expect(await discoverHumanAccountForRestore('test backup',action,network)).toEqual({identity,selection:{evm:a(90)}});
+  expect(f.replace).toHaveBeenCalledWith('test backup',action,network);
+ }finally{f.spendingLost=false;f.replace.mockReset();}
 });

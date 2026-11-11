@@ -1,3 +1,4 @@
+import { requestHumanRecoveryData } from './human-private-recovery';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { HDKey } from '@scure/bip32';
@@ -12,19 +13,21 @@ import RelayAPIService from '../../services/RelayAPIService';
 import { ownerChainNetwork } from '../protocol/runtime';
 import { discoverHumanIdentityHistory, discoverHistoricalCurveGeneration } from './human-break-history';
 import { readBreakRecoveryContext } from './break-recovery';
-import { prepareHumanReplacementAccount, deployHumanReplacementAccount, signHumanReplacementDestination, type HumanReplacementAccount } from './human-replacement-account';
+import { prepareHumanReplacementAccount, deployHumanReplacementAccount, signHumanReplacementDestination, ReplacementSpendingKeyChangedError, type HumanReplacementAccount } from './human-replacement-account';
 import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection, installHumanHashAccountSelection } from './human-account';
 import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot, signRecoveryIntent } from './hash-authorization';
-import { readOwnerChainState, verifyOwnerOperationReceipt } from './owner-chain';
+import { readOwnerChainState, verifyOwnerOperationReceipt, type OwnerChainNetwork } from './owner-chain';
 import { ownerOperationIntent, recoveryOperationId, parseRestorationScope, type RestorationScope, type RecoveryOwnerOperation } from './owner-operation';
+import { discoverPendingHumanRecovery, type ContinuedHumanLoss } from './human-recovery-discovery';
+import { discoverHumanAccount } from './human-discovery';
 import { auxiliaryAccountKey } from './auxiliary-account';
 
 interface Journal {
   version: 1; rootAddress: string; identity: string; requestId: string; authSecret: string; deviceId: string;
   kernel: string; revision: string; nonce: number; accountGeneration: number;
   intent?: string; authorizationTxHash?: string; userId?: string; installed?: boolean;
-  lossTransaction?: string; lossBlock?: number; restoration?: RestorationScope;
+  lossTransaction?: string; lossBlock?: number; restoration?: RestorationScope; continuedRestoration?: RestorationScope; continuedLosses?: readonly ContinuedHumanLoss[];
   auxiliary?: true; replacement?: HumanReplacementAccount; legacyGeneration?: number;
 }
 const hex32 = () => `0x${bytesToHex(Crypto.getRandomBytes(32))}`;
@@ -51,7 +54,48 @@ Promise<{ destination: string; requestId: string }> {
   recoveryTail = run.catch(() => undefined);
   return run;
 }
-async function performHumanRecovery(action: BiometricAction, options: RecoveryOptions):
+async function currentBreakOrigin(network: OwnerChainNetwork): Promise<string | null> {
+  try { return await readBreakRecoveryContext(network); }
+  catch (error) { if (error instanceof Error && error.message === 'break_recovery_unavailable') return null; throw error; }
+}
+export function replaceHumanAccountForRestore(mnemonic: string, action: BiometricAction, network: OwnerChainNetwork):
+Promise<Awaited<ReturnType<typeof discoverHumanAccount>>> {
+  const run = recoveryTail.then(async () => {
+    await performHumanRecovery(action, { newRecovery: true }, mnemonic, network);
+    return discoverHumanAccount(mnemonic, network);
+  });
+  recoveryTail = run.catch(() => undefined); return run;
+}
+/** A new device can finish a previously authorized chain transition without
+ * the lost login, old spending key or device journal. Never repeat the transfer. */
+export function resumeHumanRecoveryForRestore(mnemonic: string, action: BiometricAction, network: OwnerChainNetwork):
+Promise<Awaited<ReturnType<typeof discoverHumanAccount>>> {
+  const run = recoveryTail.then(async () => {
+    assertBiometricAction(action);
+    const root = await deriveHumanAccount(mnemonic, 0), raw = await SecureStore.getItemAsync(journalKey(root.evm));
+    const local: unknown = raw === null ? null : JSON.parse(raw);
+    const localRecord = local === null ? null : object(local);
+    const localOrigin = localRecord?.replacement === undefined ? null : object(localRecord.replacement).breakOrigin;
+    if (localRecord && localRecord.installed !== true && localOrigin === await currentBreakOrigin(network)) {
+      await performHumanRecovery(action, {}, mnemonic, network);
+      return discoverHumanAccount(mnemonic, network);
+    }
+    const found = await discoverPendingHumanRecovery(mnemonic, network);
+    if (!found) return null;
+    const op = found.operation;
+    const journal: Journal = { version: 1, rootAddress: root.evm, identity: found.identity, requestId: found.completedRequestId ?? hex32(), authSecret: hex32().slice(2),
+      deviceId: await RelayAPIService.getMeterDeviceId(), kernel: op.kernel, revision: op.revision, nonce: op.nonce,
+      accountGeneration: op.nonce + 1, ...(found.completedRequestId ? { installed: true } : {}), ...(found.continuedLosses ? { continuedLosses: found.continuedLosses } : {}), intent: ownerOperationIntent(op), authorizationTxHash: found.transactionHash,
+      ...(op.restoration ? { restoration: op.restoration, lossTransaction: found.lossTransaction, lossBlock: found.lossBlock } : {}),
+      ...(found.replacement ? { replacement: found.replacement, legacyGeneration: found.legacyGeneration } : {}) };
+    await save(journal);
+    if (!found.completedRequestId) await performHumanRecovery(action, {}, mnemonic, network);
+    return discoverHumanAccount(mnemonic, network);
+  });
+  recoveryTail = run.catch(() => undefined);
+  return run;
+}
+async function performHumanRecovery(action: BiometricAction, options: RecoveryOptions, suppliedMnemonic?: string, suppliedNetwork?: OwnerChainNetwork):
 Promise<{ destination: string; requestId: string }> {
   assertBiometricAction(action);
   if (options.auxiliaryBinding !== undefined) {
@@ -63,15 +107,39 @@ Promise<{ destination: string; requestId: string }> {
   }
   if (options.lossTransaction !== undefined && !/^0x[0-9a-f]{64}$/.test(options.lossTransaction)) throw new Error('recourse_loss_transaction_invalid');
   if (options.lossTransaction !== undefined && (!Number.isSafeInteger(options.lossBlock) || options.lossBlock! < 1)) throw new Error('recourse_loss_block_invalid');
-  const mnemonic = await SeedManager.getMnemonic(action);
+  const mnemonic = suppliedMnemonic ?? await SeedManager.getMnemonic(action);
   if (!mnemonic) throw new Error('recourse_seed_unavailable');
   const root = await deriveHumanAccount(mnemonic, 0);
+  const network = suppliedNetwork ?? ownerChainNetwork();
   const raw = await SecureStore.getItemAsync(journalKey(root.evm, options.auxiliaryBinding));
   let journal: Journal | null = raw === null ? null : JSON.parse(raw) as Journal;
   if (journal && (journal.version !== 1 || journal.rootAddress !== root.evm
     || !/^0x[0-9a-f]{64}$/.test(journal.identity) || !/^0x[0-9a-f]{64}$/.test(journal.requestId)
     || !/^[0-9a-f]{64}$/.test(journal.authSecret) || Boolean(journal.auxiliary) !== Boolean(options.auxiliaryBinding)
     || (options.auxiliaryBinding !== undefined && journal.identity !== options.auxiliaryBinding))) throw new Error('recourse_journal_invalid');
+  if (journal && (journal.replacement?.breakOrigin ?? null) !== await currentBreakOrigin(network)) {
+    // Keep the exact interrupted record, but a new break has a different key
+    // domain and its authenticated snapshot supersedes the old authorization.
+    const key = `${journalKey(root.evm, options.auxiliaryBinding)}_retired_${journal.requestId.slice(2)}`;
+    const archived = JSON.stringify(journal);
+    await SecureStore.setItemAsync(key, archived, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+    if (await SecureStore.getItemAsync(key) !== archived) throw Error('recourse_journal_write_unconfirmed');
+    journal = null;
+  }
+  const inheritedLosses: ContinuedHumanLoss[] = [...(journal?.continuedLosses ?? [])];
+  const priorScope = journal?.restoration ?? journal?.continuedRestoration;
+  if (priorScope && journal?.lossTransaction && journal.lossBlock
+    && !inheritedLosses.some(loss => loss.restoration.request === priorScope.request)) {
+    inheritedLosses.push({ restoration: priorScope, transactionHash: journal.lossTransaction, block: journal.lossBlock });
+  }
+  if (journal?.installed && options.lossTransaction !== undefined && journal.lossTransaction !== options.lossTransaction) {
+    const loss = journal.continuedLosses?.find(value => value.transactionHash === options.lossTransaction);
+    if (loss) {
+      if (loss.block !== options.lossBlock) throw Error('recourse_loss_block_changed');
+      journal.lossTransaction = loss.transactionHash; journal.lossBlock = loss.block; journal.continuedRestoration = loss.restoration;
+      await save(journal);
+    }
+  }
   if (journal?.installed && (options.newRecovery
     || (options.lossTransaction !== undefined && options.lossTransaction !== journal.lossTransaction))) {
     journal = null;
@@ -80,7 +148,6 @@ Promise<{ destination: string; requestId: string }> {
     throw new Error('recourse_recovery_pending_for_another_request');
   }
   if(journal && options.lossTransaction!==undefined && journal.lossBlock!==options.lossBlock)throw new Error('recourse_loss_block_changed');
-  const network = ownerChainNetwork();
   if (!journal) {
     // Identity discovery does not require the stolen account's spending key.
     const history = options.auxiliaryBinding ? null : await discoverHumanIdentityHistory(mnemonic, network);
@@ -99,6 +166,7 @@ Promise<{ destination: string; requestId: string }> {
       kernel: state.deployment.addresses.kernel.toLowerCase(), revision: state.deployment.revision.toString(),
       nonce: state.nonce, accountGeneration: state.nonce + 1,
       ...(replacement ? { replacement, legacyGeneration } : {}),
+      ...(inheritedLosses.length ? { continuedLosses: inheritedLosses } : {}),
       ...(options.auxiliaryBinding ? { auxiliary: true } : {}),
       ...(options.lossTransaction === undefined ? {} : { lossTransaction: options.lossTransaction, lossBlock: options.lossBlock }) };
     if (options.lossTransaction !== undefined) {
@@ -112,6 +180,15 @@ Promise<{ destination: string; requestId: string }> {
     await save(journal);
   }
   const state = journal;
+  const privateRequest = async (path: string, body: unknown, access: { identity: string; secret: Uint8Array; signingSeed: Uint8Array }): Promise<unknown> => {
+    try { return await RelayAPIService.recourseRecoveryRequest(path, body, access); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== 'recourse_private_unavailable') throw error;
+      // Chain execution can advance before the private relay cut. An original
+      // recovery credential may read/submit the independently checked proof.
+      return requestHumanRecoveryData(mnemonic, state.identity, state.auxiliary ? 0 : state.legacyGeneration ?? state.accountGeneration, path, body);
+    }
+  };
   if (state.replacement && (state.replacement.identity !== state.identity || state.replacement.nonce !== state.nonce
     || state.replacement.accountGeneration !== String(state.accountGeneration))) throw Error('recourse_journal_invalid');
   const next = await (async () => {
@@ -131,6 +208,7 @@ Promise<{ destination: string; requestId: string }> {
     : (purpose === 'recovery-secret' ? humanRecoverySecret : humanRecoverySigningSeed)(mnemonic, nonce, state.identity);
   const secret = derive('recovery-secret', state.nonce), seed = derive('recovery-signing', state.nonce);
   const nextSecret = derive('recovery-secret', state.nonce + 1), nextSeed = derive('recovery-signing', state.nonce + 1);
+  let verifiedOperation: RecoveryOwnerOperation | undefined;
   try {
     const signingRoot = await recoverySigningRoot(seed), nextSigningRoot = await recoverySigningRoot(nextSeed);
     const nextCommitment = recoveryCommitment(nextSecret, nextSigningRoot);
@@ -141,7 +219,7 @@ Promise<{ destination: string; requestId: string }> {
         if (current.nonce === state.nonce && current.commitment === recoveryCommitment(secret, signingRoot) && current.signingRoot === signingRoot) {
           await deployHumanReplacementAccount(mnemonic, state.replacement, action, network, async plan => {
             state.replacement = plan; await save(state);
-          }, options.signal);
+          }, options.signal, privateRequest);
         } else if (current.nonce !== state.nonce + 1 || current.destination !== next.evm
           || current.commitment !== nextCommitment || current.signingRoot !== nextSigningRoot || !state.intent) {
           throw Error('recourse_replacement_state_changed');
@@ -170,7 +248,7 @@ Promise<{ destination: string; requestId: string }> {
     if (!state.authorizationTxHash) {
       const id = recoveryOperationId(operation);
       const privateAccess = { identity: state.identity, secret, signingSeed: seed };
-      let response = await RelayAPIService.recourseRecoveryRequest('owner-operations/recovery', operation, privateAccess);
+      let response = await privateRequest('owner-operations/recovery', operation, privateAccess);
       while (true) {
         assertBiometricAction(action); options.signal?.throwIfAborted();
         const status = object(response);
@@ -182,10 +260,11 @@ Promise<{ destination: string; requestId: string }> {
           state.authorizationTxHash = status.transactionHash; await save(state); break;
         }
         await new Promise<void>(resolve => setTimeout(resolve, 5000));
-        response = await RelayAPIService.recourseRecoveryRequest(`owner-operations/${id}`, undefined, privateAccess);
+        response = await privateRequest(`owner-operations/${id}`, undefined, privateAccess);
       }
     }
     await verifyOwnerOperationReceipt(operation, state.authorizationTxHash, network);
+    verifiedOperation = operation;
     const preimage = concat([operation.proof.recoverySecret, signingRoot]);
     const expiresAtMs = Date.now() + 300000;
     if (state.auxiliary) {
@@ -248,5 +327,24 @@ Promise<{ destination: string; requestId: string }> {
     await RelayAPIService.recordAddressProofAuthorization({ address: next.evm, userId: state.userId });
     state.installed = true; await save(state);
     return { destination: next.evm, requestId: state.requestId };
+  } catch (error) {
+    if (!(error instanceof ReplacementSpendingKeyChangedError) || !verifiedOperation || !state.replacement || !state.authorizationTxHash) throw error;
+    // A spending key stolen during an interrupted relay cut cannot strand the
+    // independent owner. Preserve the completed ticket and authorize only a
+    // new recovery destination; a bounded loss is never authorized twice.
+    await verifyOwnerOperationReceipt(verifiedOperation, state.authorizationTxHash, network);
+    const replacement = await prepareHumanReplacementAccount(mnemonic, state.identity, network);
+    const current = await readOwnerChainState(state.identity, network);
+    if (current.nonce !== replacement.nonce || replacement.breakOrigin !== state.replacement.breakOrigin) throw Error('recourse_replacement_state_changed');
+    const archivedKey = `${journalKey(root.evm, options.auxiliaryBinding)}_superseded_${state.requestId.slice(2)}`;
+    const archived = JSON.stringify(state);
+    await SecureStore.setItemAsync(archivedKey, archived, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY });
+    if (await SecureStore.getItemAsync(archivedKey) !== archived) throw Error('recourse_journal_write_unconfirmed');
+    const next: Journal = { ...state, requestId: hex32(), authSecret: hex32().slice(2), nonce: replacement.nonce,
+      accountGeneration: replacement.nonce + 1, replacement, kernel: current.deployment.addresses.kernel.toLowerCase(),
+      revision: current.deployment.revision.toString(), ...(state.restoration ? { continuedRestoration: state.restoration } : {}) };
+    delete next.restoration; delete next.intent; delete next.authorizationTxHash; delete next.userId; delete next.installed;
+    await save(next);
+    return performHumanRecovery(action, { auxiliaryBinding: state.auxiliary ? state.identity : undefined }, mnemonic, network);
   } finally { secret.fill(0); seed.fill(0); nextSecret.fill(0); nextSeed.fill(0); }
 }

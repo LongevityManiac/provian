@@ -40,7 +40,7 @@ function fixture(options: { stale?: boolean; denied?: boolean; revision?: bigint
     return abi.encodeFunctionResult(parsed.name, values[parsed.name]);
   }) };
   const fake = createFakeFirestore({ strictTransactionOrder: true });
-  fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${op.identity}`, { recoveryCommitment:
+  fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${op.identity}`, { identity: op.identity, recoveryCommitment:
     sha256(concat([op.proof.recoverySecret, op.proof.signingRoot])), signingRoot: op.proof.signingRoot });
   return { op, port, fake, db: fake as unknown as Firestore };
 }
@@ -73,7 +73,7 @@ test('a deserialized checked result has no gasPayer capability', async () => {
   expect(() => assertCheckedOwnerOperation(result)).not.toThrow();
   expect(() => assertCheckedOwnerOperation({ ...result })).toThrow('unverified');
 });
-test('a relay owner mismatch cannot be queued even when chain simulation succeeds', async () => {
+test('an unregistered binding cannot be queued even when chain simulation succeeds', async () => {
   const { op, port, fake, db } = fixture();
   fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${op.identity}`, { recoveryCommitment: hash('aa'), signingRoot: op.proof.signingRoot });
   await expect(queueOwnerOperation(db, op, port)).rejects.toThrow('identity_invalid');
@@ -256,4 +256,14 @@ test('an unfinalized external execution remains retryable and signed sponsor byt
   expect(f.fake.store.get(`${OWNER_OPERATIONS}/${id}`)).toMatchObject({transactionHash:hash('ea'),sponsoredTransactionHash:sponsoredHash,terminalReason:'authorization_superseded'});
   expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.signer.address}`)?.pending_operation).toBeNull();
   expect(f.signer.sign).toHaveBeenCalledTimes(1);
+});
+
+test('a stale private commitment cannot veto current independently simulated recovery authority', async () => {
+ const { op, port, fake, db } = fixture();
+ fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${op.identity}`, { identity: op.identity, recoveryCommitment: hash('aa'), signingRoot: hash('bb') });
+ const result = await queueOwnerOperation(db, op, port);
+ expect(result.status).toBe('queued');expect(fake.store.get(`${OWNER_OPERATIONS}/${result.id}`)?.identity).toBe(op.identity);
+ const denied = fixture({denied:true});
+ denied.fake.store.set(`${RECOURSE_COLLECTIONS.identities}/${op.identity}`, { identity: op.identity, recoveryCommitment: hash('aa'), signingRoot: hash('bb') });
+ await expect(queueOwnerOperation(denied.db,denied.op,denied.port)).rejects.toThrow('onchain_hash_proof_refused');
 });

@@ -10,6 +10,9 @@ import { prepareReplacementDeploymentRequest } from './replacement-deployment-pr
 import { accountDeploymentDigest } from './break-deployment-data';
 import { signHashAccountMessage } from './hash-account';
 
+export class ReplacementSpendingKeyChangedError extends Error {
+  constructor() { super('recourse_replacement_spending_key_changed'); }
+}
 export interface HumanReplacementAccount {
   readonly identity: string; readonly breakOrigin: string; readonly nonce: number;
   readonly account: string; readonly initialRoot: string; readonly accountGeneration: string;
@@ -49,7 +52,9 @@ export async function prepareHumanReplacementAccount(mnemonic: string, identity:
  * The relay cannot replace its address; both status and final deployed runtime
  * are checked against the exact seed-derived root. */
 export async function deployHumanReplacementAccount(mnemonic: string, supplied: HumanReplacementAccount,
-  action: BiometricAction, network: OwnerChainNetwork, retain: (plan: HumanReplacementAccount) => Promise<void>, signal?: AbortSignal): Promise<void> {
+  action: BiometricAction, network: OwnerChainNetwork, retain: (plan: HumanReplacementAccount) => Promise<void>, signal?: AbortSignal,
+  send: (path: string, body: unknown, access: { identity: string; secret: Uint8Array; signingSeed: Uint8Array }) => Promise<unknown>
+    = (path, body, access) => RelayAPIService.recourseRecoveryRequest(path, body, access)): Promise<void> {
   const plan = { ...supplied }, base = context(plan);
   assertBiometricAction(action); signal?.throwIfAborted();
   const spendingSeed = humanBreakKey(mnemonic, base, 'spending', '0');
@@ -72,7 +77,7 @@ export async function deployHumanReplacementAccount(mnemonic: string, supplied: 
       } });
     const id = accountDeploymentDigest(request), access = { identity: plan.identity, secret, signingSeed };
     assertBiometricAction(action);
-    let response: unknown = await RelayAPIService.recourseRecoveryRequest('break-deployments', request, access);
+    let response: unknown = await send('break-deployments', request, access);
     while (true) {
       assertBiometricAction(action); signal?.throwIfAborted();
       if (!response || typeof response !== 'object' || !('id' in response) || response.id !== id || !('status' in response)
@@ -80,7 +85,7 @@ export async function deployHumanReplacementAccount(mnemonic: string, supplied: 
       if (response.status === 'failed') throw Error('recourse_replacement_deployment_failed');
       if (response.status === 'confirmed') break;
       await new Promise<void>(resolve => setTimeout(resolve, 5000));
-      response = await RelayAPIService.recourseRecoveryRequest(`break-deployments/${id}`, undefined, access);
+      response = await send(`break-deployments/${id}`, undefined, access);
     }
     const deployed = await discoverHashAccount(plan.initialRoot, network, plan.breakOrigin);
     if (!deployed.deployed || deployed.account !== plan.account || deployed.currentRoot !== plan.initialRoot || deployed.nonce !== '0') throw Error('recourse_replacement_state_changed');
@@ -96,7 +101,7 @@ export async function signHumanReplacementDestination(mnemonic: string, supplied
   if (!account.deployed || account.account !== plan.account || account.nonce === null) throw Error('recourse_replacement_state_changed');
   const seed = humanBreakKey(mnemonic, base, 'spending', account.nonce);
   try {
-    if (await recoverySigningRoot(seed) !== account.currentRoot) throw Error('recourse_replacement_backup_mismatch');
+    if (await recoverySigningRoot(seed) !== account.currentRoot) throw new ReplacementSpendingKeyChangedError();
     const signature = await signHashAccountMessage(plan.account, hashMessage(message), seed);
     const latest = await discoverHashAccount(plan.initialRoot, network, plan.breakOrigin);
     if (latest.manifestHash !== account.manifestHash || latest.currentRoot !== account.currentRoot || latest.nonce !== account.nonce) throw Error('recourse_replacement_state_changed');

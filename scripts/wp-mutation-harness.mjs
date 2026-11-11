@@ -304,6 +304,27 @@ const MUTATION_SETS = {
       find: 'results[0].identity !== results[1].identity || ', replace: '',
       expectedKilledBy: 'discovers the exact binding from the allocated request without relay history or a primary binding' }],
   },
+  'human-recovery-discovery': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/human-recovery-discovery.ts',
+    testMatchPath: 'src/core/recourse/human-recovery-discovery.test.ts',
+    mutations: [{ id: 'DISCOVERY-LOSS-EVIDENCE', description: 'accept changed original loss bytes on backup recovery',
+      find: ' || sha256(toUtf8Bytes(raw)) !== scope.lossHash', replace: '',
+      expectedKilledBy: 'a recovered bounded restoration retains the original loss occurrence authenticated by its on-chain intent' }],
+  },
+  'continued-restoration-ticket': {
+    runner: 'native-vitest', sourcePath: 'src/core/recourse/restoration-ticket.ts',
+    testMatchPath: 'src/core/recourse/restoration-ticket.test.ts',
+    mutations: [{ id: 'CONTINUED-TICKET-CEILING', description: 'carry a restoration whose actual authorized amount changed',
+      find: ' || String(row.maximumLoss) !== scope.maximumLoss', replace: '',
+      expectedKilledBy: 'foreign identity, changed amount, stale destination, manifest drift and RPC disagreement cannot create a continuation' }],
+  },
+  'restoration-evidence-order': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/determination.ts',
+    testMatchPath: 'src/core/recourse/determination.test.ts',
+    mutations: [{ id: 'EVIDENCE-ENCRYPTED-MAP-ORDER', description: 'rebuild packet evidence from storage-reordered maps',
+      find: 'const snapshot = original.snapshot as LossSnapshot;', replace: "const snapshot = record.get('snapshot') as LossSnapshot;",
+      expectedKilledBy: 'encrypted map ordering preserves the exact loss evidence and determination packet' }],
+  },
   'human-replacement-authority': {
     runner: 'native-vitest', sourcePath: 'src/core/recourse/human-replacement-account.ts',
     testMatchPath: 'src/core/recourse/human-replacement-account.test.ts',

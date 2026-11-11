@@ -84,3 +84,16 @@ test('preparation rejects a lapse and zero-loss report before any owner operatio
   await expect(prepareRestorationRequest(db, identity, input, { ...ports, snapshot: async (...args) => ({ ...await snapshot(...args), lossAtomic: '0' }) })).rejects.toThrow('scope_invalid');
   expect(fake.store.has(`${RESTORATION_REQUESTS}/${requestId}`)).toBe(false);
 });
+
+test('a later verified recovery carries the existing ticket to the new owner destination without another loss authorization',async()=>{
+ const f=fixture();const prepared=await prepareRestorationRequest(f.db,identity,{transactionHash:txHash,block:20},f.ports);
+ const key=`${RESTORATION_REQUESTS}/${requestId}`,priorDestination=`0x${'44'.repeat(20)}`;
+ f.fake.store.set(key,{...f.fake.store.get(key),destination:priorDestination,authorizationTxHash:h(49),status:'awaiting_determination'});
+ const ticket=jest.fn().mockResolvedValue({...prepared,identity,destination:priorDestination,currentDestination:destination});
+ await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).resolves.toEqual({requestId,status:'awaiting_determination'});
+ expect(f.fake.store.get(key)).toMatchObject({destination:priorDestination,authorizationTxHash:h(49),recoveryDestination:destination,recoveryRequestId:recoveryId});
+ ticket.mockResolvedValue({...prepared,identity,destination:priorDestination,currentDestination:old});
+ await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).rejects.toThrow('scope_unverified');
+ ticket.mockResolvedValue({...prepared,identity,destination:priorDestination,currentDestination:destination,maximumLoss:'101'});
+ await expect(submitRestorationRequest(f.db,identity,f.input,{...f.ports,ticket})).rejects.toThrow('scope_unverified');
+});

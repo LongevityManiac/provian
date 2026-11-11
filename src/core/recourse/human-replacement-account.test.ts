@@ -41,6 +41,6 @@ test('exact durable plan precedes sponsorship, a false success cannot install an
 test('destination possession follows the replacement current spending nonce and refuses expired authority or another root',async()=>{
  const plan=await prepareHumanReplacementAccount(phrase,h(1),network);f.deployed=true;f.nonce='4';
  expect(await signHumanReplacementDestination(phrase,plan,'exact credential cut',action,network)).toBe('hash signature');
- f.wrongRoot=true;await expect(signHumanReplacementDestination(phrase,plan,'exact credential cut',action,network)).rejects.toThrow('backup_mismatch');
+ f.wrongRoot=true;await expect(signHumanReplacementDestination(phrase,plan,'exact credential cut',action,network)).rejects.toThrow('spending_key_changed');
  f.wrongRoot=false;f.approved=false;await expect(signHumanReplacementDestination(phrase,plan,'exact credential cut',action,network)).rejects.toThrow('expired');
 });

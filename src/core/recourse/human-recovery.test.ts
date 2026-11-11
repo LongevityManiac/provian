@@ -1,14 +1,16 @@
+vi.mock('./human-recovery-discovery', () => ({ discoverPendingHumanRecovery: async () => state.discovered }));
+vi.mock('./human-discovery', () => ({ discoverHumanAccount: async () => ({ identity: h('91'), selection: { evm: state.destination } }) }));
 import { beforeEach, expect, it, vi } from 'vitest';
 import { HDKey } from '@scure/bip32';
 import { mnemonicToSeedSync } from '@scure/bip39';
 import { Wallet, concat, sha256, hexlify, toUtf8Bytes } from 'ethers';
-import { recoverHumanAccount } from './human-recovery';
+import { recoverHumanAccount, resumeHumanRecoveryForRestore } from './human-recovery';
 import { recoveryOperationId } from './owner-operation';
 import { humanBreakKey, humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import type { BiometricAction } from '../security/biometricAction';
 
 const state = vi.hoisted(() => ({ memory: new Map<string, string>(), failReceipt: false, loseResponse: false,
-  afterBreak: false, deployFailure: false, ownerResponseLost: false, nonce: 0, destination: '', random: 17, revision: 1n, refuseQueue: false, crashReplacement: false,
+  discovered: null as unknown, afterBreak: false, deployFailure: false, destinationStolen: false, privateUnavailable: false, ownerResponseLost: false, nonce: 0, destination: '', random: 17, revision: 1n, refuseQueue: false, crashReplacement: false,
   calls: [] as { path: string; body: unknown }[], installed: [] as unknown[], credentials: [] as unknown[] }));
 const mnemonic = 'test test test test test test test test test test test junk';
 const action = 'approved' as unknown as BiometricAction;
@@ -31,7 +33,9 @@ vi.mock('./break-recovery', () => ({ readBreakRecoveryContext: async () => {
   if (!state.afterBreak) throw Error('break_recovery_unavailable');
   return `0x${'55'.repeat(20)}`;
 } }));
-vi.mock('./human-replacement-account', () => ({
+vi.mock('./human-replacement-account', () => {
+  class ReplacementSpendingKeyChangedError extends Error {}
+  return { ReplacementSpendingKeyChangedError,
   prepareHumanReplacementAccount: async (_mnemonic: string, identity: string) => ({ identity, breakOrigin: `0x${'55'.repeat(20)}`,
     nonce: state.nonce, account: `0x${(state.nonce + 10).toString(16).padStart(40, '0')}`, initialRoot: h('aa'), accountGeneration: String(state.nonce + 1) }),
   deployHumanReplacementAccount: async (_mnemonic: string, plan: unknown, _action: unknown, _network: unknown, retain: (plan: unknown) => Promise<void>) => {
@@ -39,9 +43,10 @@ vi.mock('./human-replacement-account', () => ({
     if (state.deployFailure) { state.deployFailure = false; throw Error('deployment_interrupted'); }
   },
   signHumanReplacementDestination: async (_mnemonic: string, plan: unknown, message: string) => {
+    if (state.destinationStolen) { state.destinationStolen = false; throw new ReplacementSpendingKeyChangedError(); }
     state.calls.push({ path: 'destination-proof', body: { plan, message } }); return `0x${'77'.repeat(7888)}`;
   },
-}));
+}; });
 vi.mock('./human-account', async original => {
   const actual = await original<typeof import('./human-account')>();
   return { ...actual, installHumanHashAccountSelection: async (...args: unknown[]) => { state.installed.push(args); }, installHumanAccountSelection: async (_mnemonic: string, selection: unknown) => { state.installed.push(selection); } };
@@ -89,6 +94,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
       expect(privateAccess?.secret.length).toBe(32); expect(privateAccess?.signingSeed.length).toBe(32);
     }
     state.calls.push({ path, body });
+    if (state.privateUnavailable) { state.privateUnavailable = false; throw Error('recourse_private_unavailable'); }
     if (path === 'owner-operations/recovery') {
       if (state.refuseQueue) { state.refuseQueue = false; throw new Error('queue_unavailable'); }
       const operation = body as Parameters<typeof recoveryOperationId>[0];
@@ -103,7 +109,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: {
   },
 } }));
 beforeEach(() => {
-  state.afterBreak = false; state.deployFailure = false; state.ownerResponseLost = false;
+  state.destinationStolen = false; state.privateUnavailable = false; state.discovered = null; state.afterBreak = false; state.deployFailure = false; state.ownerResponseLost = false;
   state.memory.clear(); state.failReceipt = false; state.loseResponse = false; state.nonce = 0; state.destination = ''; state.random = 17;
   state.calls = []; state.installed = []; state.credentials = []; state.revision = 1n; state.refuseQueue = false; state.crashReplacement = false;
 });
@@ -260,4 +266,92 @@ it('never installs a hash selector or relay credentials on an unverified replace
   await expect(recoverHumanAccount(action)).rejects.toThrow('invalid_receipt');
   expect(state.installed).toEqual([]); expect(state.credentials).toEqual([]);
   expect(state.calls.some(call => call.path === 'recover-human')).toBe(false);
+});
+
+it('a restored seed finishes a verified later receipt using fresh credentials without submitting another owner operation', async () => {
+  state.afterBreak = true; state.nonce = 2; state.loseResponse = true;
+  await expect(recoverHumanAccount(action, { lossTransaction: h('77'), lossBlock: 100 })).rejects.toThrow('response_lost');
+  const original = JSON.parse([...state.memory.values()][0]);
+  const operation = state.calls.find(call => call.path === 'owner-operations/recovery')!.body;
+  state.discovered = { identity: original.identity, operation, transactionHash: original.authorizationTxHash,
+    replacement: original.replacement, legacyGeneration: 4, lossTransaction: original.lossTransaction, lossBlock: original.lossBlock };
+  state.memory.clear(); state.calls = []; state.random = 101;
+  state.loseResponse = true;
+  await expect(resumeHumanRecoveryForRestore(mnemonic, action, {} as import('./owner-chain').OwnerChainNetwork)).rejects.toThrow('response_lost');
+  const retained = JSON.parse([...state.memory.values()][0]);
+  expect(retained.requestId).not.toBe(original.requestId);
+  expect(retained.authorizationTxHash).toBe(original.authorizationTxHash);
+  state.discovered = null;
+  const result = await resumeHumanRecoveryForRestore(mnemonic, action, {} as import('./owner-chain').OwnerChainNetwork);
+  expect(result?.selection?.evm).toBe(original.replacement.account);
+  expect(state.calls.some(call => call.path === 'deploy' || call.path === 'owner-operations/recovery')).toBe(false);
+  expect(await recoverHumanAccount(action, { lossTransaction: h('77'), lossBlock: 100 })).toEqual({ destination: original.replacement.account, requestId: retained.requestId });
+  expect(state.calls.some(call => call.path === 'owner-operations/recovery')).toBe(false);
+  expect(state.credentials).toHaveLength(1);
+  const requests = state.calls.filter(call => call.path === 'recover-human').map(call => call.body as Record<string, unknown>);
+  expect(requests).toHaveLength(2); expect(requests[0].requestId).toBe(requests[1].requestId);
+});
+
+it('an interrupted relay key cut can use historical private credentials while the owner proof stays current',async()=>{
+ state.afterBreak=true;state.nonce=2;state.privateUnavailable=true;
+ await recoverHumanAccount(action);
+ const submissions=state.calls.filter(call=>call.path==='owner-operations/recovery');
+ expect(submissions).toHaveLength(2);expect(submissions[1].body).toEqual(submissions[0].body);
+ expect(state.credentials).toHaveLength(1);
+});
+it('a new break archives an unexecuted old-domain journal instead of reusing its curve authorization',async()=>{
+ state.refuseQueue=true;await expect(recoverHumanAccount(action)).rejects.toThrow('queue_unavailable');
+ const old=JSON.parse([...state.memory.values()][0]);
+ state.afterBreak=true;state.nonce=1;state.calls=[];
+ await recoverHumanAccount(action);
+ const archived=[...state.memory.entries()].find(([key])=>key.includes('_retired_'));
+ expect(archived).toBeDefined();expect(JSON.parse(archived![1])).toEqual(old);
+ const request=state.calls.find(call=>call.path==='recover-human')!.body as Record<string,unknown>;
+ expect(request.destinationKind).toBe('hash');expect(request.requestId).not.toBe(old.requestId);
+});
+
+it.each([undefined,h('92')])('a replacement stolen during an interrupted relay cut rotates only the destination and retains the bounded loss: %s',async(auxiliaryBinding)=>{
+ state.afterBreak=true;state.nonce=2;state.loseResponse=true;
+ const options={lossTransaction:h('77'),lossBlock:100,auxiliaryBinding};
+ await expect(recoverHumanAccount(action,options)).rejects.toThrow('response_lost');
+ const original=JSON.parse([...state.memory.values()][0]);
+ state.destinationStolen=true;
+ const recovered=await recoverHumanAccount(action,options);
+ expect(recovered.destination).not.toBe(original.replacement.account);
+ const operations=state.calls.filter(call=>call.path==='owner-operations/recovery').map(call=>call.body as Record<string,unknown>);
+ expect(operations).toHaveLength(2);expect(operations[0]).toHaveProperty('restoration');expect(operations[1]).not.toHaveProperty('restoration');
+ const current=JSON.parse([...state.memory.entries()].find(([key])=>!key.includes('_superseded_'))![1]);
+ expect(current.continuedRestoration).toEqual(original.restoration);expect(current.lossTransaction).toBe(h('77'));expect(current.lossBlock).toBe(100);
+ expect(await recoverHumanAccount(action,options)).toEqual(recovered);
+ expect(state.credentials).toHaveLength(auxiliaryBinding?0:1);
+});
+
+it('losing the journal again after a kind2 replacement preserves the earlier kind3 request without a third authorization',async()=>{
+ state.afterBreak=true;state.nonce=2;state.loseResponse=true;
+ const options={lossTransaction:h('77'),lossBlock:100};
+ await expect(recoverHumanAccount(action,options)).rejects.toThrow('response_lost');
+ const original=JSON.parse([...state.memory.values()][0]);
+ state.destinationStolen=true;state.loseResponse=true;
+ await expect(recoverHumanAccount(action,options)).rejects.toThrow('response_lost');
+ const latest=JSON.parse([...state.memory.entries()].find(([key])=>!key.includes('_superseded_'))![1]);
+ const operation=state.calls.filter(call=>call.path==='owner-operations/recovery').at(-1)!.body;
+ state.discovered={identity:latest.identity,operation,transactionHash:latest.authorizationTxHash,replacement:latest.replacement,
+  legacyGeneration:4,continuedLosses:[{restoration:original.restoration,transactionHash:h('77'),block:100}]};
+ state.memory.clear();state.calls=[];
+ await resumeHumanRecoveryForRestore(mnemonic,action,{}as import('./owner-chain').OwnerChainNetwork);
+ const recovered=await recoverHumanAccount(action,options);
+ expect(recovered.destination).toBe(latest.replacement.account);
+ expect(state.calls.some(call=>call.path==='deploy'||call.path==='owner-operations/recovery')).toBe(false);
+});
+
+it('a completed relay cut with a lost response reuses its verified request ID and old loss without changing credentials',async()=>{
+ state.afterBreak=true;state.nonce=2;await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100});
+ const old=JSON.parse([...state.memory.values()][0]);
+ const operation=state.calls.find(call=>call.path==='owner-operations/recovery')!.body;
+ state.discovered={identity:old.identity,operation,transactionHash:old.authorizationTxHash,replacement:old.replacement,
+  legacyGeneration:4,completedRequestId:old.requestId,lossTransaction:old.lossTransaction,lossBlock:old.lossBlock};
+ state.memory.clear();state.calls=[];state.credentials=[];state.installed=[];
+ await resumeHumanRecoveryForRestore(mnemonic,action,{}as import('./owner-chain').OwnerChainNetwork);
+ expect(await recoverHumanAccount(action,{lossTransaction:h('77'),lossBlock:100})).toEqual({destination:old.replacement.account,requestId:old.requestId});
+ expect(state.calls).toEqual([]);expect(state.credentials).toEqual([]);expect(state.installed).toEqual([]);
 });

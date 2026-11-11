@@ -1,3 +1,4 @@
+import { encodePrivateRecord, decodePrivateRecord, privateStorageId } from '../provenance/private-store';
 import { packetFixture } from './__test-helpers__/determination-fixture';
 import { AbiCoder, Interface, sha256 } from 'ethers';
 import { determinationPlan, RESTORATION_EXECUTION_ABI, REVERSAL_TUPLE } from './determination-plan';
@@ -71,4 +72,18 @@ test('later independent owner recovery changes the destination but never the ori
   expect(packet.ticket.destination).toBe(f.ticket.destination);
   const originalScope=recoveryOperationHash(f.ticket.identity,f.ticket.destination,{request:f.ticket.request,lossHash:f.ticket.lossHash,maximumLoss:f.ticket.maximumLoss});
   expect(plan.operation).toBe(sha256(AbiCoder.defaultAbiCoder().encode(['string','bytes32',REVERSAL_TUPLE],['Provian scoped theft reversal',originalScope,plan.reversal])));
+});
+
+test('encrypted map ordering preserves the exact loss evidence and determination packet',async()=>{
+ const f=await packetFixture(),prior=process.env.RELAY_SIGNING_KEY;
+ try{
+  process.env.RELAY_SIGNING_KEY='public-test-determination-evidence-key';
+  const encoded=encodePrivateRecord(RESTORATION_REQUESTS,f.ticket.request,f.fake.store.get(f.path)!);
+  const decoded=decodePrivateRecord(RESTORATION_REQUESTS,privateStorageId(RESTORATION_REQUESTS,f.ticket.request),encoded,f.db).data;
+  expect(JSON.stringify(decoded.snapshot)).not.toBe(JSON.stringify(f.snapshot));f.fake.store.set(f.path,decoded);
+  const packet=await prepareDetermination(f.db,f.ticket.request,f.ports);
+  expect(packet.packetHash).toBe(f.packet.packetHash);
+  f.fake.store.set(f.path,{...decoded,evidence:JSON.stringify({snapshot:decoded.snapshot,membership:decoded.membership})});
+  await expect(prepareDetermination(f.db,f.ticket.request,f.ports)).rejects.toThrow('scope_mismatch');
+ }finally{if(prior===undefined)delete process.env.RELAY_SIGNING_KEY;else process.env.RELAY_SIGNING_KEY=prior;}
 });

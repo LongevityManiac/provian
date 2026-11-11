@@ -144,8 +144,10 @@ export async function queueOwnerOperation(db: Firestore, value: unknown, port?: 
   return db.runTransaction(async tx => {
     const [current, owner] = await Promise.all([tx.get(ref), tx.get(ownerRef)]);
     if (current.exists) return status(id, current.data()!);
-    if (!owner.exists || owner.get('recoveryCommitment') !== sha256(concat([operation.proof.recoverySecret, operation.proof.signingRoot]))
-      || owner.get('signingRoot') !== operation.proof.signingRoot) throw new Error('recourse_owner_operation_identity_invalid');
+    // The independently simulated current executor is the recovery authority.
+    // Its commitment can advance before an interrupted relay credential cut.
+    // The private record proves only that this binding was registered.
+    if (!owner.exists || owner.get('identity') !== operation.identity) throw new Error('recourse_owner_operation_identity_invalid');
     if (operation.restoration) {
       const requestRef = db.collection(RESTORATION_REQUESTS).doc(operation.restoration.request);
       const request = await tx.get(requestRef);
@@ -164,7 +166,7 @@ export async function queueOwnerOperation(db: Firestore, value: unknown, port?: 
     // This is intentionally public transaction calldata, including the revealed
     // recovery preimage and exact-intent signature, not a signing key or seed.
     // Private-store encryption additionally protects it while awaiting execution.
-    tx.create(ref, { operation, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash, queuedAtBlockHash:plan.blockHash,
+    tx.create(ref, { identity: operation.identity, operation, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash, queuedAtBlockHash:plan.blockHash,
       status: 'queued', transactionHash: null, createdAtMs: Date.now() });
     return { id, status: 'queued', transactionHash: null };
   });

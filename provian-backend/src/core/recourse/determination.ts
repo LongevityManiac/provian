@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'util';
 import { readRestorationLineage } from './restoration-lineage';
 import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -26,7 +27,7 @@ const abi = new Interface([
   'function restorationIntent(bytes32) view returns(tuple(bytes32 request,bytes32 identity,address destination,bytes32 lossHash,uint256 maximumLoss))',
   'function reversalExecuted(bytes32) view returns(bool)', 'function recoveredDestination(bytes32) view returns(address)',
 ]);
-async function readTicket(kernel: string, request: string): Promise<RestorationTicket> {
+export async function readRestorationTicket(kernel: string, request: string): Promise<RestorationTicket> {
   const deployment = await currentProtocolDeployment();
   const lineage=await readRestorationLineage(kernel);
   if(lineage.manifestHash!==deployment.manifestHash)throw Error('recourse_determination_checkpoint_changed');
@@ -64,16 +65,21 @@ const packets = new WeakSet<DeterminationPacket>();
  * signing-device record is not itself a theft finding. */
 export async function prepareDetermination(db: Firestore, request: string, supplied?: DeterminationPorts, checkpointBlock?:number): Promise<DeterminationPacket> {
   if (!/^0x[0-9a-f]{64}$/.test(request)) throw new Error('recourse_determination_request_invalid');
-  const ports = supplied ?? { ticket: readTicket, evidence: (snapshot: LossSnapshot) => collectRestorationEvidence(snapshot, restorationEvidencePort(db),checkpointBlock), pool: readRecoursePoolState };
+  const ports = supplied ?? { ticket: readRestorationTicket, evidence: (snapshot: LossSnapshot) => collectRestorationEvidence(snapshot, restorationEvidencePort(db),checkpointBlock), pool: readRecoursePoolState };
   const record = await db.collection(RESTORATION_REQUESTS).doc(request).get();
   if (!record.exists || !['awaiting_determination', 'under_determination'].includes(String(record.get('status')))) throw new Error('recourse_determination_not_authorized');
-  const snapshot = record.get('snapshot') as LossSnapshot;
-  const membership = record.get('membership') as DeterminationPacket['membership'];
+  const exact: unknown = record.get('evidence');
+  if (typeof exact !== 'string') throw Error('recourse_determination_scope_mismatch');
+  const original: unknown = JSON.parse(exact);
+  if (!original || typeof original !== 'object' || !('snapshot' in original) || !('membership' in original)
+    || !isDeepStrictEqual(original, { snapshot: record.get('snapshot'), membership: record.get('membership') })) throw Error('recourse_determination_scope_mismatch');
+  const snapshot = original.snapshot as LossSnapshot;
+  const membership = original.membership as DeterminationPacket['membership'];
   if (!snapshot || !membership || snapshot.occurrence !== request || snapshot.identity !== record.get('identity')
     || !membership.active || membership.periodIndex === null) throw new Error('recourse_determination_record_invalid');
   const ticket = await ports.ticket(snapshot.kernel, request);
   if (ticket.identity !== snapshot.identity || ticket.destination !== record.get('destination')
-    || ticket.maximumLoss !== snapshot.lossAtomic || ticket.lossHash !== digest({ snapshot, membership })) throw new Error('recourse_determination_scope_mismatch');
+    || ticket.maximumLoss !== snapshot.lossAtomic || ticket.lossHash !== `0x${createHash('sha256').update(exact).digest('hex')}`) throw new Error('recourse_determination_scope_mismatch');
   const [evidence, pool] = await Promise.all([ports.evidence(snapshot), ports.pool(ticket.identity)]);
   assertRestorationEvidence(evidence);
   const content = { request, ticket, snapshot, membership, evidence, poolRevision: pool.outcomeRevision };

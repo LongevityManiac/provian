@@ -1,3 +1,4 @@
+import type { RestorationTicket } from './determination';
 import { parseRestorationScope, type RestorationScope } from './owner-operation';
 import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -15,6 +16,7 @@ export interface RestorationEvidencePorts {
   snapshot(identity: string, transactionHash: string, block: number, bindings: readonly RegisteredAddress[]): Promise<LossSnapshot>;
   membership(db: Firestore, snapshot: LossSnapshot): Promise<LossMembershipEvidence & { readonly lossTimestamp: number }>;
   pool(identity: string): Promise<RecoursePoolState>;
+  ticket?(kernel: string, request: string): Promise<RestorationTicket>;
 }
 const defaultPorts: RestorationEvidencePorts = { snapshot: snapshotReportedLoss, membership: readLossMembership, pool: readRecoursePoolState };
 
@@ -34,7 +36,8 @@ export async function prepareRestorationRequest(db: Firestore, identity: string,
   const snapshot = await ports.snapshot(identity, input.transactionHash, input.block, bindings);
   const membership = await ports.membership(db, snapshot);
   if (!membership.active || membership.periodIndex === null) throw new Error('recourse_restoration_not_member_at_loss');
-  const lossHash = `0x${createHash('sha256').update(JSON.stringify({ snapshot, membership })).digest('hex')}`;
+  const evidence = JSON.stringify({ snapshot, membership });
+  const lossHash = `0x${createHash('sha256').update(evidence).digest('hex')}`;
   const scope = parseRestorationScope({ request: snapshot.occurrence, lossHash, maximumLoss: snapshot.lossAtomic });
   await db.runTransaction(async tx => {
     const ref = db.collection(RESTORATION_REQUESTS).doc(scope.request);
@@ -50,7 +53,7 @@ export async function prepareRestorationRequest(db: Firestore, identity: string,
       return;
     }
     tx.create(ref, { requestId: scope.request, identity, transactionHash: input.transactionHash, block: input.block,
-      scope, snapshot, membership, evidenceHash: lossHash, status: 'prepared', createdAtMs: Date.now() });
+      scope, snapshot, membership, evidence, evidenceHash: lossHash, status: 'prepared', createdAtMs: Date.now() });
   });
   return { ...scope, kernel: snapshot.kernel };
 }
@@ -81,13 +84,30 @@ export async function submitRestorationRequest(db: Firestore, authenticatedIdent
   if (!membership.active || membership.periodIndex === null) throw new Error('recourse_restoration_not_member_at_loss');
   const requestId = snapshot.occurrence;
   const ref = db.collection(RESTORATION_REQUESTS).doc(requestId);
+  const prior = await ref.get();
+  if (!prior.exists || !hash.test(String(prior.get('authorizationTxHash')))
+    || ['prepared', 'authorization_queued', 'authorization_failed'].includes(String(prior.get('status')))) throw Error('recourse_restoration_scope_unverified');
+  let continuation: RestorationTicket | null = null;
+  if (prior.get('authorizationTxHash') !== recovery.get('authorizationTxHash')) {
+    if (!prior.exists || prior.get('destination') === destination) throw Error('recourse_restoration_scope_unverified');
+    // A later independently authenticated recovery carries the existing ticket
+    // to the owner's new address; it never authorizes the same loss a second time.
+    const ticket = ports.ticket ?? (await import('./determination')).readRestorationTicket;
+    continuation = await ticket(snapshot.kernel, requestId);
+    const scope = parseRestorationScope(prior.get('scope'));
+    if (continuation.identity !== authenticatedIdentity || continuation.currentDestination !== destination
+      || continuation.destination === destination || continuation.destination !== prior.get('destination')
+      || continuation.request !== scope.request || continuation.lossHash !== scope.lossHash
+      || continuation.maximumLoss !== scope.maximumLoss) throw Error('recourse_restoration_scope_unverified');
+  }
   return db.runTransaction(async tx => {
     const [existing, currentOwner, currentRecovery, currentDestination] = await Promise.all([
       tx.get(ref), tx.get(ownerRef), tx.get(recoveryRef),
       tx.get(db.collection(RECOURSE_COLLECTIONS.addresses).doc(destination)),
     ]);
     if (!existing.exists || !hash.test(String(existing.get('authorizationTxHash')))
-      || existing.get('authorizationTxHash') !== currentRecovery.get('authorizationTxHash')
+      || (continuation ? existing.get('authorizationTxHash') !== prior.get('authorizationTxHash')
+        : existing.get('authorizationTxHash') !== currentRecovery.get('authorizationTxHash'))
       || ['prepared', 'authorization_queued', 'authorization_failed'].includes(String(existing.get('status')))) {
       throw new Error('recourse_restoration_scope_unverified');
     }
@@ -97,11 +117,13 @@ export async function submitRestorationRequest(db: Firestore, authenticatedIdent
       || scope.lossHash !== existing.get('evidenceHash')) throw new Error('recourse_restoration_request_conflict');
     if (currentOwner.get('recoveryGeneration') !== recovery.get('generation')
       || currentOwner.get('recoveryCommitment') !== recovery.get('nextCommitment')
+      || currentRecovery.get('authorizationTxHash') !== recovery.get('authorizationTxHash')
       || currentRecovery.get('destination') !== destination || currentDestination.get('bindingDigest') !== destinationBinding.bindingDigest) {
       throw new Error('recourse_restoration_identity_changed');
     }
-    if (existing.get('destination') !== destination) throw new Error('recourse_restoration_destination_invalid');
-    tx.update(ref, { recoveryRequestId: input.recoveryRequestId, observedOutcomeRevision: pool.outcomeRevision });
+    if (existing.get('destination') !== (continuation?.destination ?? destination)) throw new Error('recourse_restoration_destination_invalid');
+    tx.update(ref, { recoveryRequestId: input.recoveryRequestId, observedOutcomeRevision: pool.outcomeRevision,
+      ...(continuation ? { recoveryDestination: destination } : {}) });
     return { requestId, status: String(existing.get('status')) };
   });
 }

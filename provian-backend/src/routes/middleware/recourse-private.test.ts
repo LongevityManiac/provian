@@ -76,7 +76,7 @@ function fixture(owner = identity) {
 
 test('all private namespaces refuse anonymous access and legacy GET/HEAD, including Express path aliases', async () => {
   const f = fixture();
-  const paths = [`break-entitlements/${a(1)}/${identity}`, `break-recovery-state/${a(1)}/${identity}`,
+  const paths = [`owner-recovery-state/${identity}/2`, `break-entitlements/${a(1)}/${identity}`, `break-recovery-state/${a(1)}/${identity}`,
     'owner-operations/recovery', `owner-operations/${id}`, 'break-deployments', `break-deployments/${id}`,
     'break-registrations', `break-registrations/${id}`, 'break-restorations', `break-restorations/${id}`, `break-restorations/${id}/receipt`];
   for (const path of paths) {
@@ -172,4 +172,19 @@ test('mounted replacement submission and status retain private owner authenticat
     f.fake.store.set(`${BREAK_DEPLOYMENTS}/${id}`,{request:foreign,...status});
     expect((await http(app).post(`/v1/recourse/${lookup}`).send(envelope(lookup))).status).toBe(404);
   } finally {queued.mockRestore();worker.mockRestore();}
+},30000);
+
+test('mounted later-recovery discovery requires a signed matching binding, nonce and empty body', async () => {
+ const f=fixture(),app=express(),path=`owner-recovery-state/${identity}/2`;
+ app.use(express.json({limit:'256kb'}));
+ app.use('/v1/recourse',createRecourseRouter({db:f.fake as unknown as Firestore} as AgentBankDeps,
+  (_req,res)=>{res.status(401).json({error:'owner_auth_required'});}));
+ const response=await http(app).post(`/v1/recourse/${path}`).send(envelope(path));
+ expect(response.status).toBe(200);expect(response.body).toEqual({identity,nonce:2,relayCommitment:credential.commitment,candidates:[]});
+ for(const target of [`owner-recovery-state/${other}/2`,`owner-recovery-state/${identity}/3`])
+  expect((await http(app).post(`/v1/recourse/${target}`).send(envelope(path))).status).toBe(404);
+ const foreign=`owner-recovery-state/${other}/2`;
+ expect((await http(app).post(`/v1/recourse/${foreign}`).send(envelope(foreign))).status).toBe(404);
+ expect((await http(app).post(`/v1/recourse/${path}`).send(envelope(path,{changed:true}))).status).toBe(404);
+ expect(response.headers['cache-control']).toBe('no-store');
 },30000);

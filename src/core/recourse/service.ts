@@ -1,3 +1,4 @@
+import { readOwnerChainState } from './owner-chain';
 import { formatUnits } from 'ethers';
 import RelayAPIService from '../../services/RelayAPIService';
 import { currentProtocolDeployment, ownerChainNetwork } from '../protocol/runtime';
@@ -51,7 +52,10 @@ export async function recoverHumanBoundAddress(identity: string): Promise<void> 
       if (!(error instanceof Error) || error.message !== 'break_recovery_unavailable') throw error;
       afterBreak = false;
     }
-    if (afterBreak) {
+    const current = afterBreak ? await readOwnerChainState(identity, network) : null;
+    const cutComplete = current && current.nonce > 0 && owner.addresses.map(object).some(row => row.identity === identity
+      && row.address === current.destination && row.chainBindingStatus === 'confirmed');
+    if (afterBreak && !cutComplete) {
       const mnemonic = await SeedManager.getMnemonic(action);
       if (!mnemonic) throw Error('recourse_seed_unavailable');
       await recoverHumanAuxiliaryBreak(mnemonic, action, { identity, originAddress }, { network });
