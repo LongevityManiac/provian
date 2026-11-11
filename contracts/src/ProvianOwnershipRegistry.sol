@@ -180,16 +180,43 @@ contract ProvianOwnershipRegistry {
         uint256 lossBlock; bytes32 checkpointHash; bytes32 membershipHash; uint256 revision;
         uint256 bindingLogIndex; uint256 lossLogIndex;
     }
+    /// @dev Historical evidence does not revive an old address's bind or spend
+    /// authority. Append-only first-bound blocks cannot be backdated after a
+    /// reset, and only a registry at a cutoff containing the loss can attest it.
+    function _evidenceBindingBlock(address account, bytes32 identity, uint256 lossBlock) private view returns (uint256) {
+        uint256 current = boundBlock(account);
+        if (ownerOf(account) == identity && current != 0 && current <= lossBlock) return current;
+        address origin = IRegisteredOwnerAuthorization(
+            IRegisteredRecourseKernel(pointer.component(0)).ownerAuthorization()).breakOrigin();
+        uint256 ceiling = type(uint256).max;
+        while (origin != address(0)) {
+            IRegisteredOwnerAuthorization history = IRegisteredOwnerAuthorization(origin);
+            uint256 cutoff = history.lastGoodBlock();
+            if (cutoff == 0 || cutoff >= ceiling) revert InvalidBinding();
+            if (cutoff < lossBlock) return 0;
+            address historicalKernel = history.predecessor();
+            ProvianOwnershipRegistry previous = ProvianOwnershipRegistry(
+                IRegisteredRecourseKernel(historicalKernel).registryOperator());
+            if (address(previous.pointer()) != address(pointer)) revert InvalidBinding();
+            uint256 bound = previous.boundBlock(account);
+            if (previous.ownerOf(account) == identity && bound != 0 && bound <= lossBlock) return bound;
+            ceiling = cutoff;
+            origin = IRegisteredOwnerAuthorization(
+                IRegisteredRecourseKernel(historicalKernel).ownerAuthorization()).breakOrigin();
+        }
+        return 0;
+    }
     event TheftEvidenceAdmitted(bytes32 indexed operation, bytes32 indexed identity, bytes32 digest);
     function evidenceDigest(TheftEvidence calldata e) public view returns (bytes32) {
         return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian theft evidence", block.chainid, address(this), e)));
     }
     function admitTheftEvidence(TheftEvidence calldata e, bytes calldata signature) external {
         pointer.requireCurrent(e.revision, 0, e.kernel);
+        uint256 bound = _evidenceBindingBlock(e.lossAccount, e.identity, e.lossBlock);
         if (e.operation == bytes32(0) || e.identity == bytes32(0) || e.checkpointHash == bytes32(0)
             || e.membershipHash == bytes32(0) || e.lossBlock >= block.number
-            || ownerOf(e.lossAccount) != e.identity || boundBlock(e.lossAccount) > e.lossBlock
-            || (boundBlock(e.lossAccount) == e.lossBlock && e.lossLogIndex <= e.bindingLogIndex)
+            || bound == 0
+            || (bound == e.lossBlock && e.lossLogIndex <= e.bindingLogIndex)
             || identityAttestor == IRegisteredRecourseKernel(e.kernel).restorationAuthority()
             || IRegisteredRecourseKernel(e.kernel).registryOperator() != address(this)
             || !SignatureChecker.isValidSignatureNow(identityAttestor, evidenceDigest(e), signature)) revert InvalidBinding();

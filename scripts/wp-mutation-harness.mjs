@@ -59,6 +59,15 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'restoration-binding-log': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-binding-log.ts', testMatchPath: 'src/core/recourse/restoration-binding-log.test.ts src/core/recourse/determination-execution.test.ts',
+    mutations: [{ id: 'BINDING-LOG-POSITIVE', description: 'missing historical binding is treated as a block before the loss',
+      find: 'bound < 1n', replace: 'false', expectedKilledBy: 'unbound binding proof refuses' },
+      { id: 'BINDING-LOG-ORDER', description: 'same-block binding after the loss grants protection',
+        find: 'if (index >= loss.firstOutflowLogIndex)', replace: 'if (false)', expectedKilledBy: 'late-log binding proof refuses' },
+      { id: 'BINDING-LOG-REORG', description: 'orphaned binding evidence survives the final checkpoint reread',
+        find: 'if (await port.blockHash(loss.block) !== loss.blockHash)', replace: 'if (false)', expectedKilledBy: 'reorg binding proof refuses' }],
+  },
   'restoration-succession-trace': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-succession-trace.ts', testMatchPath: 'src/core/recourse/restoration-succession-trace.test.ts',
     mutations: [{ id: 'TRACE-ACTUAL-SUCCESSOR', description: 'a phantom final-generation break turns current holdings into unreachable rights',
@@ -1865,6 +1874,18 @@ const MUTATION_SETS = {
     sourcePath: 'contracts/src/ProvianOwnershipRegistry.sol',
     testMatchPath: 'test/ProvianOwnershipRegistry*.t.sol',
     mutations: [{
+      id: 'BINDING-HISTORICAL-EVIDENCE', description: 'a valid pre-break loss loses evidence admission after registry reset',
+      find: 'previous.ownerOf(account) == identity && bound != 0 && bound <= lossBlock', replace: 'false',
+      expectedKilledBy: 'testSnapshotPreservesAdmissionOfTheOriginalPreBreakLoss',
+    }, {
+      id: 'BINDING-EVIDENCE-CUTOFF', description: 'discarded post-cutoff loss can use an older binding',
+      find: 'if (cutoff < lossBlock) return 0;', replace: 'if (false) return 0;',
+      expectedKilledBy: 'testHistoricalEvidenceCannotBackdateBindingOrUseDiscardedLossBlocks',
+    }, {
+      id: 'BINDING-EVIDENCE-FIRST-BLOCK', description: 'binding after the loss is accepted as historical protection',
+      find: 'bound <= lossBlock) return bound;', replace: 'true) return bound;',
+      expectedKilledBy: 'testHistoricalEvidenceCannotBackdateBindingOrUseDiscardedLossBlocks',
+    }, {
       id: 'BINDING-SNAPSHOT-COMMITMENT', description: 'old snapshot wallet can replace its independent commitment through prospective binding',
       find: 'if (existing == bytes32(0) && _boundBeforeBreak(b.account)) revert InvalidBinding();',
       replace: 'if (false) revert InvalidBinding();',

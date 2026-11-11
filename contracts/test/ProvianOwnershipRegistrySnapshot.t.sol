@@ -121,4 +121,47 @@ contract ProvianOwnershipRegistrySnapshotTest is SlhTestSigner {
         _bind(lateAccount, 7, sha256("new independent commitment TEST ONLY"));
         assertEq(registry.ownerOf(address(lateAccount)), registry.addressBinding(address(lateAccount)));
     }
+    function _historicalEvidence(uint256 lossBlock, address lossAccount) private view returns (ProvianOwnershipRegistry.TheftEvidence memory) {
+        return ProvianOwnershipRegistry.TheftEvidence(address(kernel), sha256("historical loss TEST ONLY"), identity, lossAccount,
+            lossBlock, sha256("checkpoint TEST ONLY"), sha256("membership TEST ONLY"), revision, 4, 5);
+    }
+    function _evidenceSignature(ProvianOwnershipRegistry.TheftEvidence memory evidence) private returns (bytes memory) {
+        (bytes memory pk, bytes memory signature) = slhSign(2, attestor.signatureDigest(registry.evidenceDigest(evidence)));
+        return abi.encodePacked(pk, signature);
+    }
+    function testSnapshotPreservesAdmissionOfTheOriginalPreBreakLoss() public {
+        ProvianOwnershipRegistry.TheftEvidence memory evidence = _historicalEvidence(120, address(oldAccount));
+        bytes memory signature = _evidenceSignature(evidence);
+        registry.admitTheftEvidence(evidence, signature);
+        vm.prank(address(authorization));
+        assertEq(registry.consumeTheftEvidence(evidence.operation, revision), evidence.operation);
+        assertEq(registry.ownerOf(address(oldAccount)), bytes32(0));
+    }
+
+    function testOriginalLossAdmissionSurvivesOrdinaryAndRepeatedSuccessors() public {
+        vm.roll(300); _succeed(false, 250);
+        testSnapshotPreservesAdmissionOfTheOriginalPreBreakLoss();
+        vm.roll(400); _succeed(true, 350);
+        testSnapshotPreservesAdmissionOfTheOriginalPreBreakLoss();
+    }
+    function testHistoricalEvidenceCannotBackdateBindingOrUseDiscardedLossBlocks() public {
+        for (uint256 i; i < 4; ++i) {
+            ProvianOwnershipRegistry.TheftEvidence memory evidence = _historicalEvidence(i == 0 ? 99 : i == 1 ? 160 : 120,
+                i == 2 ? address(lateAccount) : address(oldAccount));
+            if (i == 2) evidence.identity = registry.addressBinding(address(lateAccount));
+            if (i == 3) evidence.identity = sha256("another binding TEST ONLY");
+            bytes memory signature = _evidenceSignature(evidence);
+            vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector);
+            registry.admitTheftEvidence(evidence, signature);
+        }
+    }
+    function testHistoricalSameBlockBindingStillMustPrecedeTheLoss() public {
+        ProvianOwnershipRegistry.TheftEvidence memory evidence = _historicalEvidence(100, address(oldAccount));
+        evidence.bindingLogIndex = 5; evidence.lossLogIndex = 5;
+        bytes memory signature = _evidenceSignature(evidence);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.admitTheftEvidence(evidence, signature);
+        evidence.lossLogIndex = 6; signature = _evidenceSignature(evidence);
+        registry.admitTheftEvidence(evidence, signature);
+    }
+
 }

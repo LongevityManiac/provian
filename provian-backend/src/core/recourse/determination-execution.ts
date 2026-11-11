@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import { RESTORATION_REQUESTS } from './restoration-request';
 import type { LossSnapshot } from './loss-snapshot';
+import { readHistoricalBindingLog, HISTORICAL_BINDING_ABI } from './restoration-binding-log';
 import type { LossMembershipEvidence } from './membership-at-loss';
 import { utcCalendarMonth } from './calendar-month';
 import { Interface } from 'ethers';
@@ -28,30 +29,23 @@ export interface DeterminationExecutionPort {
  agree(method:string,params:readonly unknown[]):Promise<unknown>;
  bindingLog(value:CheckedDetermination,registry:string):Promise<number>;
 }
-function productionPort():DeterminationExecutionPort {
+export function createDeterminationExecutionPort():DeterminationExecutionPort {
  const legs=getOperatorBoundRpcLegs('base');
  if(legs[0].operatorId===legs[1].operatorId)throw Error('recourse_rpc_operators_not_independent');
  const agree=async(method:string,params:readonly unknown[])=>{
   const values:unknown[]=await Promise.all(legs.map(leg=>leg.provider.send(method,[...params])));
   if(!rpcChainFactsEqual(values[0],values[1]))throw Error('recourse_execution_rpc_disagreement');return values[0];
  };
- return {deployment:currentProtocolDeployment,agree,async bindingLog(value,registry){
-  const loss=value.packet.snapshot,account=loss.outflows[0]?.from;
-  if(!account)throw Error('recourse_execution_loss_missing');
-  const raw=await agree('eth_call',[{to:registry,data:DETERMINATION_EXECUTION_READ_ABI.encodeFunctionData('boundBlock',[account])},'latest']);
-  if(typeof raw!=='string')throw Error('recourse_execution_reply_invalid');
-  const bound=Number(DETERMINATION_EXECUTION_READ_ABI.decodeFunctionResult('boundBlock',raw)[0]);
-  if(bound<loss.block)return 0;
-  if(bound!==loss.block)throw Error('recourse_execution_binding_invalid');
-  const originalRaw=await agree('eth_call',[{to:loss.kernel,data:DETERMINATION_EXECUTION_READ_ABI.encodeFunctionData('registryOperator')},{blockHash:loss.blockHash,requireCanonical:true}]);
-  if(typeof originalRaw!=='string')throw Error('recourse_execution_reply_invalid');
-  const original=String(DETERMINATION_EXECUTION_READ_ABI.decodeFunctionResult('registryOperator',originalRaw)[0]).toLowerCase();
-  const topics=['OwnershipBound','RecoveredAddressBound'].map(name=>DETERMINATION_EXECUTION_READ_ABI.getEvent(name)!.topicHash);
-  const logs=await getAgreedBaseLogs({address:original,topics:[topics,loss.identity,`0x${account.slice(2).padStart(64,'0')}`],fromBlock:bound,toBlock:bound});
-  if(logs.length!==1||logs[0].removed||logs[0].blockHash!==loss.blockHash||await readAgreedBaseBlockHash(bound)!==loss.blockHash
-    ||logs[0].logIndex>=loss.firstOutflowLogIndex)throw Error('recourse_execution_binding_invalid');
-  return logs[0].logIndex;
- }};
+ return {deployment:currentProtocolDeployment,agree,bindingLog:async value=>readHistoricalBindingLog(value.packet.snapshot, {
+  call:async(target,method,args,pin)=>{
+   const raw=await agree('eth_call',[{to:target,data:HISTORICAL_BINDING_ABI.encodeFunctionData(method,args)},{blockHash:pin,requireCanonical:true}]);
+   if(typeof raw!=='string')throw Error('recourse_execution_reply_invalid');
+   return HISTORICAL_BINDING_ABI.decodeFunctionResult(method,raw)[0];
+  },
+  logs:(registry,identity,account,block)=>getAgreedBaseLogs({address:registry,topics:[
+   ['OwnershipBound','RecoveredAddressBound'].map(name=>HISTORICAL_BINDING_ABI.getEvent(name)!.topicHash),identity,`0x${account.slice(2).padStart(64,'0')}`],fromBlock:block,toBlock:block}),
+  blockHash:readAgreedBaseBlockHash,
+ })};
 }
 interface ExecutionCheck { readonly target:string; readonly data:string; readonly expected:string; }
 export interface CheckedRecourseExecution extends RecourseExecutionCall {
@@ -81,7 +75,7 @@ async function seal(call:RecourseExecutionCall,requests:readonly string[],checks
  const result={...call,requests:Object.freeze([...requests]),checks:Object.freeze(checks.map(check=>Object.freeze(check)))};
  Object.freeze(result);checked.add(result);await verifyRecourseExecution(result,port);return result;
 }
-export async function verifyRecourseExecution(value:CheckedRecourseExecution,port:DeterminationExecutionPort=productionPort()):Promise<void>{
+export async function verifyRecourseExecution(value:CheckedRecourseExecution,port:DeterminationExecutionPort=createDeterminationExecutionPort()):Promise<void>{
  assertCheckedRecourseExecution(value);
  const deployment=await port.deployment();
  if(deployment.manifestHash!==value.manifestHash)throw Error('recourse_execution_retired');
@@ -96,7 +90,7 @@ export async function verifyRecourseExecution(value:CheckedRecourseExecution,por
 }
 export interface EvidenceAttestor { readonly address:string; signDigest(message:string):Promise<string>; }
 export async function prepareDeterminationExecution(value:CheckedDetermination,kind:'attest'|'reverse'|'record'|'decline'|'deliver',
- attestor?:EvidenceAttestor,port:DeterminationExecutionPort=productionPort()):Promise<CheckedRecourseExecution>{
+ attestor?:EvidenceAttestor,port:DeterminationExecutionPort=createDeterminationExecutionPort()):Promise<CheckedRecourseExecution>{
  assertCheckedDetermination(value);
  const context=await executionContext(port),{deployment,kernel,pool,registry,executor,authority,submitter,call}=context;
  if(value.packet.evidence.executionKernel!==kernel)throw Error('recourse_execution_retired');
@@ -130,7 +124,7 @@ export async function prepareDeterminationExecution(value:CheckedDetermination,k
 }
 /** The operator supplies the complete ready batch from its transactional queue.
  * Same-owner revisions advance in deterministic request order inside one call. */
-export async function prepareRestorationAllocation(values:readonly CheckedDetermination[],port:DeterminationExecutionPort=productionPort()):Promise<CheckedRecourseExecution>{
+export async function prepareRestorationAllocation(values:readonly CheckedDetermination[],port:DeterminationExecutionPort=createDeterminationExecutionPort()):Promise<CheckedRecourseExecution>{
  if(values.length===0)throw Error('recourse_execution_batch_empty');
  values.forEach(assertCheckedDetermination);
  const context=await executionContext(port),checks:ExecutionCheck[]=[],counts=new Map<string,bigint>();
@@ -154,7 +148,7 @@ export async function prepareRestorationAllocation(values:readonly CheckedDeterm
  * the amount/evidence come from the actual immutable on-chain reversal result.
  * This path survives operator crashes between reversal and reserve allocation. */
 export async function prepareRecordedPoolExecution(db:Firestore,requests:readonly string[],kind:'allocate'|'record'|'deliver',
- port:DeterminationExecutionPort=productionPort()):Promise<CheckedRecourseExecution>{
+ port:DeterminationExecutionPort=createDeterminationExecutionPort()):Promise<CheckedRecourseExecution>{
  if(requests.length===0||new Set(requests).size!==requests.length||requests.some(request=>!/^0x[0-9a-f]{64}$/.test(request))
    ||(kind!=='allocate'&&requests.length!==1))throw Error('recourse_execution_batch_invalid');
  const context=await executionContext(port),checks:ExecutionCheck[]=[],records=[],offsets=new Map<string,bigint>();
