@@ -1213,6 +1213,8 @@
     "scripts/recourse/predecessor-retirement.mjs": "2c07a97cd17d306afca26ad4276a92dbc8be5c3eba0f75a586ce0dd11bc232a8",
     "scripts/recourse/predecessor-retirement.test.mjs": "a846db49e06ed3603cf220c264384652b487487c26e0b617b36a57dabc49c6b4",
     "scripts/recourse/prepare-permanent-pointer.mjs": "7c605e69f819175640ed58980fffb124f6da60a5741febbc9de99b3eba4b68ed",
+    "scripts/recourse/publication-gas-closure.mjs": "fbbab6e36647e12700710eba48447c21be33d345662e069d75ad78cff25e395a",
+    "scripts/recourse/publication-gas-closure.test.mjs": "b56bec31f3e0dafb7fb54de53fe3e50990d86040790f5264cc2610ef7c075711",
     "scripts/recourse/snapshot-cli.mjs": "cc9ebf250624f74413fcc1eb40c92622cb20fa13685adc8ba91753c2e3efac96",
     "scripts/recourse/snapshot-history.mjs": "55d04fa7ada4acc65f00188ffd410a0e316060200de0a4aa7103b583b2593c0c",
     "scripts/recourse/snapshot-history.test.mjs": "089176702dccd5e740e7aa7b239d261ddee3f59db3ee13649daf9ae6e85efc38",
