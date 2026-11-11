@@ -5163,6 +5163,27 @@
       "signature": "Signature",
       "submit": "Envoyer la signature",
       "resume": "Reprendre l’action en attente"
+    },
+    "debit": {
+      "title": "Destruction et contribution mensuelles",
+      "explain": "Vérifiez les montants exacts. La destruction retire définitivement les PVT ; la contribution va au Recourse Pool et n’est pas remboursable. Une autorisation distincte du montant exact peut nécessiter du gas réseau en ETH.",
+      "previous": "Terminer l’autorisation précédente",
+      "approvalAmount": "Montant autorisé : {{amount}} PVT",
+      "token": "Contrat du jeton",
+      "spender": "Destinataire autorisé",
+      "hashGas": "Pour un portefeuille à clé de hachage restauré, l’adresse d’origine ne fournit que le gas en ETH. La clé de hachage contrôle les PVT. L’app confirme le résultat et la clé suivante avant une nouvelle autorisation.",
+      "resume": "Reprendre l’autorisation exacte",
+      "burn": "Destruction : {{amount}} PVT",
+      "reserve": "Contribution : {{amount}} PVT",
+      "total": "Total depuis ce portefeuille : {{amount}} PVT",
+      "authorize": "Autoriser ces montants exacts",
+      "settled": "Toutes les obligations actuellement exigibles sont remplies. La contribution d’un mois sans revenus est déterminée après la fin du mois.",
+      "pending": "Une action précédente est en cours de rapprochement. Actualisez pour vérifier son résultat ; son autorisation reste inchangée tant qu’elle n’est pas résolue.",
+      "submitted": "Autorisation exacte envoyée. Actualisez pour vérifier la confirmation.",
+      "succeeded": "Autorisation confirmée. Actualisez pour vérifier la destruction et la contribution actuelles.",
+      "target_failed": "L’autorisation du jeton n’a pas abouti. Actualisez avant de réessayer.",
+      "cancelled": "L’autorisation précédente a été annulée. Actualisez pour continuer.",
+      "outer_reverted": "La transaction réseau a échoué. Reprenez la même autorisation pour réessayer."
     }
   }
 }

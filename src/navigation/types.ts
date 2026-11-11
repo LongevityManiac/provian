@@ -37,6 +37,7 @@ export type AppParamList = {
     CommonsBonds: undefined;
     Recourse: undefined;
     RecourseBind: undefined;
+    RecourseMonthly: undefined;
     RecourseMembership: { kind: 'join' | 'leave' | 'resume' };
     CommonsGovernance: undefined;
     CommonsForum: undefined;

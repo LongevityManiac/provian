@@ -35,6 +35,8 @@ async function load(account: string): Promise<Journal | null> {
       if (j.operation[field] !== j.intent[field]) throw Error('recourse_hash_spending_journal_invalid');
   }
   if (j.cancellation) hashAccountCall(j.cancellation);
+  if (j.completed && (!/^0x[0-9a-f]{64}$/.test(j.completed.hash) || !['succeeded','target_failed','cancelled'].includes(j.completed.outcome)
+    || !j.operation)) throw Error('recourse_hash_spending_journal_invalid');
   return j;
 }
 let tail: Promise<unknown> = Promise.resolve();
@@ -92,6 +94,17 @@ export function pendingHumanHashSpending(account: string): Promise<{
 }> {
   return locked(async () => { const j = await load(account); return { operation: j?.completed ? null : j?.operation ?? null,
     cancellation: j?.completed ? null : j?.cancellation ?? null }; });
+}
+/** Delivery reconciliation needs the exact signed bytes even if key rotation
+ * completed before its own transport journal could save the final outcome. */
+export function readHumanHashSpendingDelivery(account: string): Promise<{
+  operation: SignedHashAccountOperation | null; cancellation: SignedHashAccountOperation | null;
+  completed: Journal['completed'] | null;
+}> {
+  return locked(async () => {
+    const j = await load(account);
+    return { operation: j?.operation ?? null, cancellation: j?.cancellation ?? null, completed: j?.completed ?? null };
+  });
 }
 /** Cancellation is a competing signed no-op, never deletion of a published
  * authorization. Both variants install the same next key; either may win. */

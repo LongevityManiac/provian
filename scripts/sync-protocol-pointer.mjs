@@ -21,12 +21,13 @@ const transactionGuard = readFileSync(resolve(root, 'provian-agent-sdk/src/proto
   .replace("'./hash-account-data'", "'../recourse/hash-account-data'");
 const poolChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-chain.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'").replace("'./protocol-pointer'", "'../protocol/pointer'");
 const poolAbi = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-abi.ts'), 'utf8');
-const recoveryModules = ['private-access-data', 'private-access', 'break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];
+const recoveryModules = ['private-access-data', 'private-access', 'break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-delivery', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];
 const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${name}.ts`,
   readFileSync(resolve(root, `provian-agent-sdk/src/${name}.ts`), 'utf8')
     .replaceAll("'./recourse-owner-chain'", "'./owner-chain'")
     .replaceAll("'./recourse-owner-operation'", "'./owner-operation'")
-    .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")]);
+    .replaceAll("'./recourse-hash-authorization'", "'./hash-authorization'")
+    .replaceAll("'./protocol-transaction'", "'../protocol/transaction'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
   ['src/core/recourse/membership-client.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-client.ts'), 'utf8')

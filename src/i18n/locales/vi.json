@@ -5163,6 +5163,27 @@
       "signature": "Chữ ký",
       "submit": "Gửi chữ ký",
       "resume": "Tiếp tục thao tác chưa hoàn tất"
+    },
+    "debit": {
+      "title": "Đốt và đóng góp hằng tháng",
+      "explain": "Xem lại số lượng chính xác bên dưới. Việc đốt hủy PVT; khoản đóng góp vào Recourse Pool không được hoàn lại. Việc phê duyệt riêng số lượng token chính xác có thể cần gas mạng bằng ETH.",
+      "previous": "Hoàn tất phê duyệt token trước đó",
+      "approvalAmount": "Hạn mức token được phép: {{amount}} PVT",
+      "token": "Hợp đồng token",
+      "spender": "Bên nhận được ủy quyền",
+      "hashGas": "Với ví hash đã được khôi phục, địa chỉ ví gốc chỉ cung cấp ETH cho gas. Khóa hash kiểm soát PVT. Ứng dụng xác nhận kết quả và khóa tiếp theo trước lần ủy quyền mới.",
+      "resume": "Tiếp tục phê duyệt chính xác",
+      "burn": "Đốt: {{amount}} PVT",
+      "reserve": "Đóng góp: {{amount}} PVT",
+      "total": "Tổng từ ví này: {{amount}} PVT",
+      "authorize": "Ủy quyền các số lượng chính xác này",
+      "settled": "Mọi nghĩa vụ hiện đến hạn đều đã hoàn tất. Khoản đóng góp của tháng không có thu nhập được xác định sau khi tháng đó kết thúc.",
+      "pending": "Thao tác trước đó vẫn đang được đối chiếu. Làm mới để kiểm tra kết quả; ủy quyền của nó sẽ không bị thay thế khi chưa được giải quyết.",
+      "submitted": "Đã gửi ủy quyền chính xác. Làm mới để kiểm tra xác nhận.",
+      "succeeded": "Phê duyệt đã được xác nhận. Làm mới để xem số lượng đốt và đóng góp hiện tại.",
+      "target_failed": "Phê duyệt token chưa hoàn tất. Làm mới trước khi thử lại.",
+      "cancelled": "Phê duyệt trước đó đã bị hủy. Làm mới để tiếp tục.",
+      "outer_reverted": "Giao dịch mạng thất bại. Tiếp tục cùng phê duyệt đó để thử lại."
     }
   }
 }

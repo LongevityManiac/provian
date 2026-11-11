@@ -59,6 +59,16 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'hash-account-delivery': {
+    runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/hash-account-delivery.ts',
+    testMatchPath: 'src/hash-account-delivery.test.ts',
+    mutations: [{ id: 'HASH-DELIVERY-FINALITY', description: 'an unfinalized outer revert releases a fresh gas attempt',
+      find: "if (!finalized.every(Boolean)) return 'pending';", replace: 'void finalized;',
+      expectedKilledBy: 'a new gas attempt requires a proven finalized outer revert and an explicit later invocation' },
+      { id: 'HASH-DELIVERY-REPLAY', description: 'unmined retry silently substitutes another signed gas transaction',
+        find: "if (replayed !== last.hash) throw Error('hash_delivery_replay_changed');", replace: 'void replayed;',
+        expectedKilledBy: 'an unmined retry must reuse the exact signed transaction hash and still refuse retired targets' }],
+  },
   'protocol-transaction': {
     runner: 'sdk-vitest', sourcePath: 'provian-agent-sdk/src/protocol-transaction.ts',
     testMatchPath: 'src/protocol-transaction.test.ts',

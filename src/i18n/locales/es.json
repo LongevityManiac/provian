@@ -5163,6 +5163,27 @@
       "signature": "Firma",
       "submit": "Enviar firma",
       "resume": "Continuar acción pendiente"
+    },
+    "debit": {
+      "title": "Quema y contribución mensuales",
+      "explain": "Revisa los importes exactos. La quema destruye PVT; la contribución va al Recourse Pool y no es reembolsable. Una autorización separada por el importe exacto puede requerir gas de red en ETH.",
+      "previous": "Completar la autorización anterior",
+      "approvalAmount": "Cantidad autorizada: {{amount}} PVT",
+      "token": "Contrato del token",
+      "spender": "Destinatario autorizado",
+      "hashGas": "En una billetera hash recuperada, la dirección original solo aporta ETH para gas. La clave hash controla los PVT. La app confirma el resultado y la siguiente clave antes de una nueva autorización.",
+      "resume": "Reanudar autorización exacta",
+      "burn": "Quema: {{amount}} PVT",
+      "reserve": "Contribución: {{amount}} PVT",
+      "total": "Total desde esta billetera: {{amount}} PVT",
+      "authorize": "Autorizar estos importes exactos",
+      "settled": "Todas las obligaciones actualmente exigibles están completas. La contribución por un mes sin ingresos se determina al finalizar ese mes.",
+      "pending": "Se está conciliando una acción anterior. Actualiza para comprobar el resultado; su autorización no se reemplaza mientras siga sin resolverse.",
+      "submitted": "Autorización exacta enviada. Actualiza para comprobar la confirmación.",
+      "succeeded": "Autorización confirmada. Actualiza para revisar la quema y contribución actuales.",
+      "target_failed": "La autorización del token no se completó. Actualiza antes de volver a intentarlo.",
+      "cancelled": "La autorización anterior se canceló. Actualiza para continuar.",
+      "outer_reverted": "La transacción de red falló. Reanuda la misma autorización para volver a intentarlo."
     }
   }
 }

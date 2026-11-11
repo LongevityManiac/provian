@@ -5163,6 +5163,27 @@
       "signature": "Lagda",
       "submit": "Isumite ang lagda",
       "resume": "Ipagpatuloy ang hindi pa tapos na aksyon"
+    },
+    "debit": {
+      "title": "Buwanang burn at kontribusyon",
+      "explain": "Suriin ang mga eksaktong halaga sa ibaba. Sinisira ng burn ang PVT; napupunta sa Recourse Pool ang kontribusyon at hindi ito maibabalik. Maaaring mangailangan ng network gas sa ETH ang hiwalay na pahintulot para sa eksaktong dami ng token.",
+      "previous": "Tapusin ang naunang pahintulot sa token",
+      "approvalAmount": "Pinahihintulutang dami: {{amount}} PVT",
+      "token": "Kontrata ng token",
+      "spender": "Pinahintulutang tatanggap",
+      "hashGas": "Para sa naibalik na hash wallet, ang orihinal na address ay nagbibigay lamang ng ETH para sa gas. Ang hash key ang kumokontrol sa PVT. Kinukumpirma ng app ang resulta at susunod na key bago ang bagong pahintulot.",
+      "resume": "Ipagpatuloy ang eksaktong pahintulot",
+      "burn": "Burn: {{amount}} PVT",
+      "reserve": "Kontribusyon: {{amount}} PVT",
+      "total": "Kabuuan mula sa wallet na ito: {{amount}} PVT",
+      "authorize": "Pahintulutan ang mga eksaktong halagang ito",
+      "settled": "Kumpleto ang lahat ng obligasyong dapat tuparin ngayon. Ang kontribusyon para sa buwang walang kita ay tinutukoy matapos ang buwang iyon.",
+      "pending": "Itinutugma pa ang naunang aksyon. I-refresh para tingnan ang resulta; hindi papalitan ang pahintulot nito habang hindi pa nalulutas.",
+      "submitted": "Naipadala ang eksaktong pahintulot. I-refresh para tingnan ang kumpirmasyon.",
+      "succeeded": "Nakumpirma ang pahintulot. I-refresh para suriin ang kasalukuyang burn at kontribusyon.",
+      "target_failed": "Hindi nakumpleto ang pahintulot sa token. I-refresh bago subukang muli.",
+      "cancelled": "Kinansela ang naunang pahintulot. I-refresh para magpatuloy.",
+      "outer_reverted": "Nabigo ang transaksyon sa network. Ipagpatuloy ang parehong pahintulot para subukang muli."
     }
   }
 }

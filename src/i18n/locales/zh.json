@@ -5164,6 +5164,27 @@
       "signature": "签名",
       "submit": "提交签名",
       "resume": "继续未完成的操作"
+    },
+    "debit": {
+      "title": "每月销毁和缴纳",
+      "explain": "请核对下方的准确数量。销毁会永久移除PVT；缴纳的PVT进入Recourse Pool且不可退还。单独授权准确的代币数量可能需要以ETH支付网络gas。",
+      "previous": "完成之前的代币授权",
+      "approvalAmount": "代币授权额度：{{amount}} PVT",
+      "token": "代币合约",
+      "spender": "获授权的接收方",
+      "hashGas": "对于已恢复的哈希钱包，原钱包地址只提供ETH用于gas。PVT由哈希密钥控制。应用会确认结果及下一把密钥，再进行新的授权。",
+      "resume": "继续准确授权",
+      "burn": "销毁：{{amount}} PVT",
+      "reserve": "缴纳：{{amount}} PVT",
+      "total": "从此钱包转出的总量：{{amount}} PVT",
+      "authorize": "授权这些准确数量",
+      "settled": "当前到期的义务均已完成。无收入月份的缴纳额在该月结束后确定。",
+      "pending": "之前的操作仍在核对中。请刷新查看结果；在操作未解决前，不会替换其授权。",
+      "submitted": "准确授权已提交。请刷新查看确认状态。",
+      "succeeded": "授权已确认。请刷新以核对当前销毁和缴纳数量。",
+      "target_failed": "代币授权未完成。请刷新后重试。",
+      "cancelled": "之前的授权已取消。请刷新以继续。",
+      "outer_reverted": "网络交易失败。请继续同一授权以重试。"
     }
   }
 }

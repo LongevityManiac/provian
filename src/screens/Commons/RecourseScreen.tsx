@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { changeRecourseMembership, pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, type RecourseView } from '../../core/recourse/service';
 import { ExternalWalletProofFlow } from '../Agent/LinkExternalWalletScreen';
 
 export function RecourseBindScreen(): React.JSX.Element {
@@ -37,13 +37,6 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     finally { if (sequence === loadSequence.current) setLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
-  const act = async (operation: 'enroll' | 'leave' | 'settleMonth') => {
-    if (!state || busy) return;
-    setBusy(true); setError(false);
-    try { await changeRecourseMembership(operation, state.identity); await load(); }
-    catch { setError(true); }
-    finally { setBusy(false); }
-  };
   const button = (label: string, onPress: () => void) => <TouchableOpacity accessibilityRole="button"
     disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
     <Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
@@ -83,7 +76,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state.membershipState === 'available' && state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
           <Text style={styles.small}>{t('recourse.consent', 'Each debit from your holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
           {state.membershipState === 'available' ? state.enrolled ? <>
-            {button(t('recourse.catchUp', 'Complete monthly obligations'), () => { void act('settleMonth'); })}
+            {button(t('recourse.catchUp', 'Complete monthly obligations'), () => navigation.navigate('RecourseMonthly'))}
             {button(t('recourse.leave', 'Leave Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'leave' }))}
           </> : button(t('recourse.join', 'Join Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'join' })) : button(t('recourse.flow.resume', 'Continue unfinished action'), () => navigation.navigate('RecourseMembership', { kind: 'resume' }))}
         </View>

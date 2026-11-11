@@ -5163,6 +5163,27 @@
       "signature": "Saini",
       "submit": "Tuma saini",
       "resume": "Endelea na hatua isiyokamilika"
+    },
+    "debit": {
+      "title": "Uchomaji na mchango wa kila mwezi",
+      "explain": "Kagua kiasi halisi hapa chini. Uchomaji unaharibu PVT; mchango unaenda Recourse Pool na haurudishwi. Idhini tofauti ya kiasi halisi cha tokeni inaweza kuhitaji gas ya mtandao katika ETH.",
+      "previous": "Maliza idhini ya awali ya tokeni",
+      "approvalAmount": "Kiasi kilichoidhinishwa: {{amount}} PVT",
+      "token": "Mkataba wa tokeni",
+      "spender": "Mpokeaji aliyeidhinishwa",
+      "hashGas": "Kwa pochi ya hash iliyorejeshwa, anwani ya awali inatoa ETH ya gas pekee. Ufunguo wa hash unadhibiti PVT. Programu inathibitisha matokeo na ufunguo unaofuata kabla ya idhini mpya.",
+      "resume": "Endelea na idhini ya kiasi halisi",
+      "burn": "Uchomaji: {{amount}} PVT",
+      "reserve": "Mchango: {{amount}} PVT",
+      "total": "Jumla kutoka pochi hii: {{amount}} PVT",
+      "authorize": "Idhinisha kiasi hiki halisi",
+      "settled": "Wajibu wote unaodaiwa sasa umetimizwa. Mchango wa mwezi usio na mapato unaamuliwa baada ya mwezi huo kuisha.",
+      "pending": "Hatua ya awali bado inalinganishwa. Pakia upya kuangalia matokeo; idhini yake haitabadilishwa ikiwa haijatatuliwa.",
+      "submitted": "Idhini ya kiasi halisi imetumwa. Pakia upya kuangalia uthibitisho.",
+      "succeeded": "Idhini imethibitishwa. Pakia upya kukagua uchomaji na mchango wa sasa.",
+      "target_failed": "Idhini ya tokeni haikukamilika. Pakia upya kabla ya kujaribu tena.",
+      "cancelled": "Idhini ya awali ilighairiwa. Pakia upya ili kuendelea.",
+      "outer_reverted": "Muamala wa mtandao umeshindwa. Endelea na idhini ileile ili kujaribu tena."
     }
   }
 }

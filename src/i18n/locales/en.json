@@ -5163,6 +5163,27 @@
       "signature": "Signature",
       "submit": "Submit signature",
       "resume": "Continue unfinished action"
+    },
+    "debit": {
+      "title": "Monthly burn and contribution",
+      "explain": "Review the exact amounts below. The burn destroys PVT; the contribution goes to the Recourse Pool and is not refundable. A separate, exact token approval may require network gas in ETH.",
+      "previous": "Finish the previous token approval",
+      "approvalAmount": "Token allowance: {{amount}} PVT",
+      "token": "Token contract",
+      "spender": "Authorized recipient",
+      "hashGas": "For a recovered hash wallet, the original wallet address carries only ETH gas. The hash key controls PVT. The app confirms the result and next key before a new authorization.",
+      "resume": "Resume exact approval",
+      "burn": "Burn: {{amount}} PVT",
+      "reserve": "Contribution: {{amount}} PVT",
+      "total": "Total from this wallet: {{amount}} PVT",
+      "authorize": "Authorize these exact amounts",
+      "settled": "All obligations currently due are complete. A no-earnings contribution is determined after that month ends.",
+      "pending": "An earlier action is still being reconciled. Refresh to check its result; its authorization will not be replaced while it is unresolved.",
+      "submitted": "Exact authorization submitted. Refresh to check confirmation.",
+      "succeeded": "Approval confirmed. Refresh to review the current burn and contribution.",
+      "target_failed": "The token approval did not complete. Refresh before trying again.",
+      "cancelled": "The previous approval was cancelled. Refresh to continue.",
+      "outer_reverted": "The network transaction failed. Resume the same approval to try again."
     }
   }
 }

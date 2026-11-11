@@ -5163,6 +5163,27 @@
       "signature": "Tanda tangan",
       "submit": "Kirim tanda tangan",
       "resume": "Lanjutkan tindakan yang belum selesai"
+    },
+    "debit": {
+      "title": "Pembakaran dan kontribusi bulanan",
+      "explain": "Tinjau jumlah tepat di bawah. Pembakaran memusnahkan PVT; kontribusi masuk ke Recourse Pool dan tidak dapat dikembalikan. Persetujuan token terpisah dengan jumlah tepat mungkin memerlukan gas jaringan dalam ETH.",
+      "previous": "Selesaikan persetujuan token sebelumnya",
+      "approvalAmount": "Jumlah token yang diizinkan: {{amount}} PVT",
+      "token": "Kontrak token",
+      "spender": "Penerima yang diizinkan",
+      "hashGas": "Untuk dompet hash yang dipulihkan, alamat dompet awal hanya menyediakan ETH untuk gas. Kunci hash mengendalikan PVT. Aplikasi memastikan hasil dan kunci berikutnya sebelum otorisasi baru.",
+      "resume": "Lanjutkan persetujuan tepat",
+      "burn": "Pembakaran: {{amount}} PVT",
+      "reserve": "Kontribusi: {{amount}} PVT",
+      "total": "Total dari dompet ini: {{amount}} PVT",
+      "authorize": "Otorisasi jumlah tepat ini",
+      "settled": "Semua kewajiban yang saat ini jatuh tempo telah selesai. Kontribusi bulan tanpa pendapatan ditentukan setelah bulan tersebut berakhir.",
+      "pending": "Tindakan sebelumnya masih direkonsiliasi. Muat ulang untuk memeriksa hasilnya; otorisasinya tidak akan diganti selama belum terselesaikan.",
+      "submitted": "Otorisasi tepat dikirim. Muat ulang untuk memeriksa konfirmasi.",
+      "succeeded": "Persetujuan dikonfirmasi. Muat ulang untuk meninjau pembakaran dan kontribusi saat ini.",
+      "target_failed": "Persetujuan token tidak selesai. Muat ulang sebelum mencoba lagi.",
+      "cancelled": "Persetujuan sebelumnya dibatalkan. Muat ulang untuk melanjutkan.",
+      "outer_reverted": "Transaksi jaringan gagal. Lanjutkan persetujuan yang sama untuk mencoba lagi."
     }
   }
 }

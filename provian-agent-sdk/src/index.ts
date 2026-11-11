@@ -850,3 +850,6 @@ export { addressRecoveryBinding } from './recourse-address-binding';
 export type { AddressRecoveryDomain } from './recourse-address-binding';
 export { deriveAddressRecoveryCredential, deriveBoundRecoveryCredential } from './recourse-address-credential';
 export { readAddressRecoveryBinding } from './recourse-binding-chain';
+
+export { deliverHashAccountOperation, hashDeliveryId } from './hash-account-delivery';
+export type { HashDeliveryPorts, HashDeliveryRecord, HashDeliveryAttempt, HashDeliveryResult, HashDeliveryOutcome } from './hash-account-delivery';
