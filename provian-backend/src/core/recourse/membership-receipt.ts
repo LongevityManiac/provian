@@ -10,7 +10,7 @@ import { MEMBERSHIP_ISSUANCE_ABI } from './issuance-ticket';
 const POINTER = new Interface(['function revision() view returns(uint256)',
   'function current() view returns(uint256,bytes32,address[10],bytes32[10])',
   'event DeploymentChanged(uint256 indexed revision,bytes32 indexed manifestHash,address[10] components,bytes32[10] runtimeHashes)']);
-const BATCH = new Interface(['function getBatchRecord(bytes32) view returns((bool settled,uint8 lane,uint64 epoch,uint256 finalizedCursorStart,uint256 finalizedCursorEnd,bytes32 policyHash,bytes32 claimsHash,bytes32 settlementDigest,uint256 grossInput,uint256 totalMinted,uint256 contributorTotal,uint256 provianTotal,uint256 foundationTotal,uint256 recipientCount,uint256 claimCount))']);
+export const MEMBERSHIP_BATCH_ABI = new Interface(['function getBatchRecord(bytes32) view returns((bool settled,uint8 lane,uint64 epoch,uint256 finalizedCursorStart,uint256 finalizedCursorEnd,bytes32 policyHash,bytes32 claimsHash,bytes32 settlementDigest,uint256 grossInput,uint256 totalMinted,uint256 contributorTotal,uint256 provianTotal,uint256 foundationTotal,uint256 recipientCount,uint256 claimCount))']);
 export const MEMBERSHIP_RECEIPT_ABI = new Interface([
   ...MEMBERSHIP_AUTHORIZATION_ABI.fragments.filter(f => f.type === 'event'),
   ...MEMBERSHIP_ISSUANCE_ABI.fragments.filter(f => f.type === 'event'),
@@ -184,9 +184,9 @@ export async function readMembershipReceipt(transactionHash: string, poolAddress
       const batchId = hash(event.args.batchId), key = `${manifest.kernel}:${batchId}`;
       settlement = settlements.get(key);
       if (!settlement) {
-        const encoded = await agreed('eth_call', [{ to: manifest.kernel, data: BATCH.encodeFunctionData('getBatchRecord', [batchId]) }, pin]);
+        const encoded = await agreed('eth_call', [{ to: manifest.kernel, data: MEMBERSHIP_BATCH_ABI.encodeFunctionData('getBatchRecord', [batchId]) }, pin]);
         if (typeof encoded !== 'string') return invalid('batch');
-        const r = BATCH.decodeFunctionResult('getBatchRecord', encoded)[0];
+        const r = MEMBERSHIP_BATCH_ABI.decodeFunctionResult('getBatchRecord', encoded)[0];
         if (r.settled !== true || (r.lane !== 0n && r.lane !== 1n)) return invalid('batch');
         settlement = Object.freeze({ batchId, lane: Number(r.lane), epoch: String(r.epoch),
           policyHash: hash(r.policyHash), settlementDigest: hash(r.settlementDigest) });

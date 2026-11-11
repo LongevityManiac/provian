@@ -1,3 +1,4 @@
+import { PRIVATE_ISSUANCE_BATCHES } from '../../recourse/issuance-lock';
 /**
  * settlement runtime — durable settlement store tests.
  *
@@ -21,6 +22,7 @@ import {
   acquireSignerLease,
   claimHoldBackoffMs,
   clearMinedReceipt,
+  clearStaleReservation,
   holdClaims,
   revertReorgedBatch,
   settleClaimsFromChainEvidence,
@@ -1006,5 +1008,64 @@ describe(' review · chain-evidence settlement (the kernel read paid at the safe
     expect((await listHeldClaims(db, 10)).map((row) => row.claim_key)).toEqual([key(1)]);
     await settleClaimsFromChainEvidence(db, { nowMs: NOW + 1, claims: [{ claimKey: key(1), claimId: H(1) }], evidence });
     expect(await listHeldClaims(db, 10)).toEqual([]);
+  });
+});
+
+describe('private issuance terminal coordination',()=>{
+  async function coordinated(){
+    const fake=createFakeFirestore({strictTransactionOrder:true,rejectUndefinedValues:true}),db=fake as unknown as SettlementDb;
+    await freshCycle(db);const reserved=await reserveOne(db);if(reserved.kind!=='reserved')throw Error('reservation failed');
+    const batch=reserved.batch,id=H(0x9876);
+    fake.store.set(`${SETTLEMENT_BATCHES_COLLECTION}/${batch.batch_id}`,{...batch,membership_issuance_id:id});
+    const record={batch:{id,kernelCall:batch.calldata,context:{batchId:batch.batch_id}},status:'signed',transactionHash:null};
+    fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${id}`,record);
+    return {fake,db,batch,id,record};
+  }
+  it.each(['signed','reserved','committed','missing'])('cannot retire or orphan-release a %s coordinator',async(status)=>{
+    const s=await coordinated();
+    if(status==='missing')s.fake.store.delete(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`);
+    else s.fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`,{...s.record,status});
+    expect(await markBatchDead(s.db,{batchId:s.batch.batch_id,nowMs:NOW+2,reason:'nonce resolved'})).toEqual({marked:false});
+    await closeCycle(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+3,status:'stopped',stopReason:'test'});
+    expect(await retireIfNeverBroadcastOrphan(s.db,{batchId:s.batch.batch_id,nowMs:NOW+4})).toBe(false);
+    expect((await s.db.collection(CLAIM_LEDGER_COLLECTION).doc(claimKeyOf('pe-1','sole')).get()).data()?.reserved_batch_id).toBe(s.batch.batch_id);
+  });
+  it.each(['cancelled','superseded'])('allows retirement only after %s private reconciliation',async(status)=>{
+    const s=await coordinated();s.fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`,{...s.record,status});
+    expect(await markBatchDead(s.db,{batchId:s.batch.batch_id,nowMs:NOW+2,reason:'reconciled'})).toEqual({marked:true});
+    expect((await s.db.collection(CLAIM_LEDGER_COLLECTION).doc(claimKeyOf('pe-1','sole')).get()).data()?.reserved_batch_id).toBeNull();
+  });
+  it('chain-evidence and stale repair cannot bypass pending private coordination or a missing parent',async()=>{
+    for(const shape of ['pending','dead','missing']){
+      const s=await coordinated(),key=claimKeyOf('pe-1','sole');
+      if(shape==='dead')s.fake.store.set(`${SETTLEMENT_BATCHES_COLLECTION}/${s.batch.batch_id}`,{...s.batch,membership_issuance_id:s.id,status:'dead'});
+      if(shape==='missing')s.fake.store.delete(`${SETTLEMENT_BATCHES_COLLECTION}/${s.batch.batch_id}`);
+      const outcome=await settleClaimsFromChainEvidence(s.db,{nowMs:NOW+2,claims:[{claimKey:key,claimId:H(1)}],
+        evidence:{safe_block:100,reason:'kernel reads paid',concluding_batch_id:s.batch.batch_id}});
+      expect(outcome.settled).toEqual([]);
+      expect(await clearStaleReservation(s.db,{claimKey:key,batchId:s.batch.batch_id})).toEqual({cleared:false});
+      expect((await s.db.collection(CLAIM_LEDGER_COLLECTION).doc(key).get()).data()?.reserved_batch_id).toBe(s.batch.batch_id);
+    }
+  });
+  it('a coordinated reorg refuses before touching the parent, claims or private calendar',async()=>{
+    const s=await coordinated();
+    s.fake.store.set(`${SETTLEMENT_BATCHES_COLLECTION}/${s.batch.batch_id}`,{...s.batch,membership_issuance_id:s.id,status:'confirmed',applied:true,confirmed_tx_hash:H(777)});
+    const before=new Map(s.fake.store);
+    expect(await revertReorgedBatch(s.db,{batchId:s.batch.batch_id,nowMs:NOW+2,reason:'changed canonical block'})).toEqual({kind:'refused',reason:'private_issuance_reconciliation_required'});
+    expect(s.fake.store).toEqual(before);
+    await expect(writeLedgerSettlement(s.db,{batchId:s.batch.batch_id,nowMs:NOW+2})).rejects.toThrow('private issuance is not committed');
+    expect(s.fake.store).toEqual(before);
+  });
+  it('cannot apply a parent before private issuance commits the exact winning transaction',async()=>{
+    const s=await coordinated(),hash=H(0x777);
+    const attempt={nonce:s.batch.reserved_nonce,tx_hash:hash,kind:'original' as const,max_fee_per_gas_wei:'10',max_priority_fee_per_gas_wei:'1',gas_limit:'100'};
+    await recordAttempt(s.db,{cycleId:CYCLE,workerId:WORKER,nowMs:NOW+2,batchId:s.batch.batch_id,attempt});
+    await recordMinedReceipt(s.db,{batchId:s.batch.batch_id,txHash:hash,nowMs:NOW+3,status:'success',blockNumber:100,blockHash:H(100),gasUsed:10n,effectiveGasPriceWei:2n});
+    for(const status of ['signed','cancelled','committed']){
+      s.fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`,{...s.record,status,transactionHash:H(0x778)});
+      expect(await applyConfirmedBatch(s.db,{cycleId:CYCLE,batchId:s.batch.batch_id,txHash:hash,nowMs:NOW+4})).toEqual({kind:'refused',reason:'private_issuance_pending'});
+    }
+    s.fake.store.set(`${PRIVATE_ISSUANCE_BATCHES}/${s.id}`,{...s.record,status:'committed',transactionHash:hash});
+    expect(await applyConfirmedBatch(s.db,{cycleId:CYCLE,batchId:s.batch.batch_id,txHash:hash,nowMs:NOW+4})).toEqual({kind:'applied'});
   });
 });

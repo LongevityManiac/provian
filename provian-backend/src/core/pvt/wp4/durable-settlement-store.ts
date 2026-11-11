@@ -1,3 +1,5 @@
+import { PRIVATE_ISSUANCE_BATCHES } from '../../recourse/issuance-lock';
+import type { PrivateIssuanceBatchRecord } from '../../recourse/private-issuance-batch';
 import { singleScanQuery } from '../../provenance/private-store';
 /**
  * settlement runtime — durable settlement state: claim ledger, cycle cursor, lease, nonce,
@@ -1522,12 +1524,29 @@ export async function clearMinedReceipt(
   });
 }
 
+/** The private coordinator is a second durable lifecycle. Gas resolution or
+ * a never-broadcast parent is insufficient to release its owner/address locks.
+ * Reads stay in the same transaction as the parent terminal write. */
+async function privateIssuanceAllowsTerminal(db: SettlementDb, txn: SettlementTxn, batch: SettlementBatchDoc,
+  required: 'committed' | 'released', transactionHash?: string): Promise<boolean> {
+  const id = batch.membership_issuance_id;
+  if (id === undefined) return true;
+  if (!/^0x[0-9a-f]{64}$/.test(id)) return false;
+  const row = await txn.get(db.collection(PRIVATE_ISSUANCE_BATCHES).doc(id));
+  const record = row.data() as unknown as PrivateIssuanceBatchRecord | undefined;
+  if (!row.exists || !record || record.batch?.id !== id || record.batch.kernelCall !== batch.calldata
+    || record.batch.context.batchId !== batch.batch_id) return false;
+  return required === 'committed'
+    ? record.status === 'committed' && record.transactionHash === transactionHash?.toLowerCase()
+    : record.status === 'cancelled' || record.status === 'superseded';
+}
+
 export type ApplyBatchResult =
   | { readonly kind: 'applied' }
   | { readonly kind: 'already_applied' }
   | {
       readonly kind: 'refused';
-      readonly reason: 'batch_unknown' | 'no_successful_attempt' | 'cursor_mismatch' | 'cycle_unknown';
+      readonly reason: 'batch_unknown' | 'no_successful_attempt' | 'cursor_mismatch' | 'cycle_unknown' | 'private_issuance_pending';
     };
 
 /**
@@ -1562,6 +1581,9 @@ export async function applyConfirmedBatch(
     if (!isCycleDoc(cycleData)) return { kind: 'refused', reason: 'cycle_unknown' };
     const batch = batchData as unknown as SettlementBatchDoc;
     const cycle = cycleData as unknown as SettlementCycleDoc;
+    if (!await privateIssuanceAllowsTerminal(db, txn, batch, 'committed', params.txHash)) {
+      return { kind: 'refused', reason: 'private_issuance_pending' };
+    }
     if (batch.applied) return { kind: 'already_applied' };
     const attempt = batch.attempts.find(
       (candidate) => candidate.tx_hash.toLowerCase() === params.txHash.toLowerCase()
@@ -1709,6 +1731,7 @@ export async function markBatchDead(
     if (!isBatchDoc(data)) return { marked: false };
     const batch = data as unknown as SettlementBatchDoc;
     if (batch.applied || batch.status === 'confirmed') return { marked: false };
+    if (!await privateIssuanceAllowsTerminal(db, txn, batch, 'released')) return { marked: false };
     // MONEY-SAFETY: a batch with a SEEN successful settlement receipt is never marked
     // dead — that would return claims to the queue that the chain may already have paid. Such
     // a receipt is cleared (`clearMinedReceipt`) only on positive evidence it is not canonical.
@@ -1789,6 +1812,7 @@ export async function retireIfNeverBroadcastOrphan(
     const cycle = cycleData as unknown as SettlementCycleDoc;
     if (batch.status !== 'reserved' || batch.applied || batch.attempts.length !== 0) return false;
     if (cycle.status === 'active') return false;
+    if (!await privateIssuanceAllowsTerminal(db, txn, batch, 'released')) return false;
     const memberRefs = batch.members.map((member) => db.collection(CLAIM_LEDGER_COLLECTION)
       .doc(claimKeyOf(member.pe_id, member.leg, member.claim_kind ?? 'act')));
     const memberSnaps: SettlementDocSnap[] = [];
@@ -1921,6 +1945,9 @@ export async function writeLedgerSettlement(
   const batch = data as unknown as SettlementBatchDoc;
   if (!batch.applied || batch.confirmed_tx_hash === null) {
     throw new Error('writeLedgerSettlement: batch is not applied');
+  }
+  if (!await db.runTransaction(txn => privateIssuanceAllowsTerminal(db, txn, batch, 'committed', batch.confirmed_tx_hash!))) {
+    throw new Error('writeLedgerSettlement: private issuance is not committed');
   }
   const ledger = db.collection(CLAIM_LEDGER_COLLECTION);
   let written = 0;
@@ -2289,6 +2316,14 @@ export async function settleClaimsFromChainEvidence(
         if (reservedBy !== null && reservedBy !== params.evidence.concluding_batch_id) {
           return { ok: false, why: `reserved_by:${reservedBy}` };
         }
+        if (reservedBy !== null) {
+          const parent = await txn.get(db.collection(SETTLEMENT_BATCHES_COLLECTION).doc(reservedBy));
+          const parentData = parent.data();
+          if (!isBatchDoc(parentData)) return { ok: false, why: 'reserved_parent_missing' };
+          if (!await privateIssuanceAllowsTerminal(db, txn, parentData as unknown as SettlementBatchDoc, 'released')) {
+            return { ok: false, why: 'private_issuance_receipt_required' };
+          }
+        }
         txn.set(ref, {
           settled: true,
           reserved_batch_id: null,
@@ -2373,7 +2408,7 @@ export async function settleClaimsFromChainEvidence(
 }
 
 /**
- * clear a reservation whose batch is DEAD (or gone). `markBatchDead` clears member
+ * clear a reservation whose batch is provably DEAD. `markBatchDead` clears member
  * reservations in the same transaction, so this is a repair path only; a reservation naming a
  * live or confirmed batch is never touched.
  */
@@ -2388,7 +2423,9 @@ export async function clearStaleReservation(
     const row = rowSnap.exists ? (rowSnap.data() ?? {}) : null;
     if (row === null || row.reserved_batch_id !== params.batchId) return { cleared: false };
     const batchData = batchSnap.exists ? batchSnap.data() : undefined;
-    if (isBatchDoc(batchData) && (batchData as unknown as SettlementBatchDoc).status !== 'dead') {
+    if (!isBatchDoc(batchData)) return { cleared: false };
+    const batch = batchData as unknown as SettlementBatchDoc;
+    if (batch.status !== 'dead' || !await privateIssuanceAllowsTerminal(db, txn, batch, 'released')) {
       return { cleared: false };
     }
     txn.set(rowRef, { reserved_batch_id: null }, { merge: true });
@@ -2522,7 +2559,7 @@ export async function listFinalitySweepCandidates(
 
 export type RevertReorgedResult =
   | { readonly kind: 'reverted'; readonly peHistoryReverted: number }
-  | { readonly kind: 'refused'; readonly reason: 'batch_unknown' | 'not_applied' | 'not_cycle_tip' | 'cycle_unknown' };
+  | { readonly kind: 'refused'; readonly reason: 'batch_unknown' | 'not_applied' | 'not_cycle_tip' | 'cycle_unknown' | 'private_issuance_reconciliation_required' };
 
 /**
  * UNWIND an applied settle whose transaction is no longer canonical.
@@ -2551,6 +2588,9 @@ export async function revertReorgedBatch(
   if (!isBatchDoc(firstData)) return { kind: 'refused', reason: 'batch_unknown' };
   const initial = firstData as unknown as SettlementBatchDoc;
   if (!initial.applied || initial.status !== 'confirmed') return { kind: 'refused', reason: 'not_applied' };
+  // A coordinated receipt was finalized before application. Rewinding only the
+  // parent would leave private calendars credited on the discarded branch.
+  if (initial.membership_issuance_id !== undefined) return { kind: 'refused', reason: 'private_issuance_reconciliation_required' };
   const cycleProbe = await db.collection(SETTLEMENT_CYCLES_COLLECTION).doc(initial.cycle_id).get();
   const cycleProbeData = cycleProbe.exists ? cycleProbe.data() : undefined;
   if (!isCycleDoc(cycleProbeData)) return { kind: 'refused', reason: 'cycle_unknown' };

@@ -278,6 +278,20 @@ const MUTATION_SETS = {
         expectedKilledBy: 'testUnsignedProbeEntrypointsRefuseExternalExecution' },
     ],
   },
+  'issuance-parent-terminal': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
+    testMatchPath: 'src/core/pvt/wp4/durable-settlement-store.test.ts',
+    mutations: [{ id: 'ISSUANCE-PARENT-TERMINAL', description: 'parent repair releases unresolved private issuance locks',
+      find: 'if (id === undefined) return true;', replace: 'if (id === undefined || id.length === 66) return true;',
+      expectedKilledBy: 'chain-evidence and stale repair cannot bypass pending private coordination or a missing parent' }],
+  },
+  'issuance-lifecycle': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance-lifecycle.ts',
+    testMatchPath: 'src/core/recourse/settlement-issuance-lifecycle.test.ts',
+    mutations: [{ id: 'ISSUANCE-LIFECYCLE-REORG', description: 'private receipt commits after its endpoint checkpoint changes',
+      find: "if(await createRecourseChainPort().blockHash(block)!==deployment.blockHash)return fail('reorg');",
+      replace: 'void block;', expectedKilledBy: 'wrong signer, changed domain or reorg prevents a new cancellation or private release' }],
+  },
   'issuance-probe-rpc': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/settlement-issuance-probe.ts',
     testMatchPath: 'src/core/recourse/settlement-issuance-probe.test.ts',

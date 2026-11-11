@@ -27,7 +27,7 @@ import { utcCalendarMonth } from './calendar-month';
 
 const kernelAbi = new Interface(KERNEL_OBSERVATION_ABI);
 const fail = (reason:string):never => { throw Error(`recourse_settlement_execution_${reason}`); };
-async function finalizedDeployment(): Promise<{ deployment:ProtocolDeployment;block:number;timestamp:number }> {
+export async function finalizedIssuanceDeployment(): Promise<{ deployment:ProtocolDeployment;block:number;timestamp:number }> {
   const chain=createRecourseChainPort(),block=await chain.finalizedBlock(),blockHash=await chain.blockHash(block);
   const { address,runtimeHash }=PROTOCOL_POINTER_PIN;
   if(!address||!runtimeHash||!blockHash)return fail('pointer');
@@ -155,14 +155,14 @@ export async function preparePrivateIssuanceExecution(db:Firestore,parent:Settle
  * planner creates no financial reservation or usable attestor authorization. */
 async function planPrivateIssuanceExecution(db:Firestore,parent:SettlementBatchDoc,gasPayer:string,
   env:NodeJS.ProcessEnv):Promise<PrivateIssuanceBatch>{
-  let selected=await finalizedDeployment(),policy=await epochPolicy(parent,selected.deployment);
+  let selected=await finalizedIssuanceDeployment(),policy=await epochPolicy(parent,selected.deployment);
   const id=privateIssuanceBatchId(policy.kernel,parent.batch_id);
     const firstPlan=planSettlementIssuance(parent,policy);
     await reconcileAddressIssuance(db,firstPlan.recipients.map(r=>r.account));
     const owners=new Set<string>();
     for(const r of firstPlan.recipients){const row=await db.collection(R.addresses).doc(r.account).get();if(row.exists)owners.add(String(row.get('ownerIdentity')));}
     for(const owner of owners)await reconcileCurrentPrivateMembership(db,owner);
-    selected=await finalizedDeployment();policy=await epochPolicy(parent,selected.deployment);
+    selected=await finalizedIssuanceDeployment();policy=await epochPolicy(parent,selected.deployment);
     if(privateIssuanceBatchId(policy.kernel,parent.batch_id)!==id)return fail('stale');
     const {deployment,block,timestamp}=selected,plan=planSettlementIssuance(parent,policy);
     const wiring=await readMembershipWiring(breakDeploymentChain(),deployment),attestor=configuredIdentityAttestor(env);
