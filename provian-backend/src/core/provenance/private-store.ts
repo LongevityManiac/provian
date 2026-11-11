@@ -27,7 +27,7 @@ export const PRIVATE_STORE_COLLECTIONS=new Set([
  'recourse_private_owners_v1', 'recourse_identities_v1', 'recourse_owner_operations_v1', 'recourse_binding_operations_v1','recourse_addresses_v1','recourse_recoveries_v1','recourse_transfer_events_v1','recourse_commitments_v1',
  'recourse_restoration_requests_v1', 'recourse_determination_workflows_v1', 'recourse_determination_coordination_v1', 'recourse_execution_transactions_v1',
  'recourse_lifecycle_records_v1', 'recourse_lifecycle_cursors_v1', 'recourse_lifecycle_pending_v1',
- 'recourse_break_entitlements_v1', 'recourse_break_restorations_v1', 'recourse_break_deployments_v1',
+ 'recourse_break_artifacts_v1', 'recourse_break_entitlements_v1', 'recourse_break_restorations_v1', 'recourse_break_deployments_v1',
  'recourse_break_deployment_slots_v1', 'recourse_break_deployment_attempts_v1',
  'recourse_break_registrations_v1', 'recourse_break_registration_attempts_v1', 'recourse_break_authority_executions_v1',
  'recourse_changeover_stages_v1', 'recourse_changeover_attempts_v1',

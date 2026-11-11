@@ -59,6 +59,16 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'break-artifact-store': {
+    runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/break-artifact-store.ts', testMatchPath: 'src/core/recourse/break-artifact-store.test.ts',
+    mutations: [{ id: 'BREAK-STORE-READ-AUTHORITY', description: 'stored self-described roots substitute for current pointer ancestry',
+      find: 'return authenticateBreakArtifact(origin, JSON.parse(payload) as unknown, lineage);',
+      replace: 'const parsed = object(JSON.parse(payload)); return verifyBreakArtifact(parsed, {predecessor:String(parsed.predecessor),block:Number(parsed.block),root:String(parsed.root)});',
+      expectedKilledBy: 'complete artifacts span bounded chunks, omit uncommitted metadata, and reauthenticate on every read' },
+      { id: 'BREAK-STORE-PUBLISH-RECHECK', description: 'a changed origin publishes a manifest after writing chunks',
+        find: 'await authenticateBreakArtifact(origin, JSON.parse(payload) as unknown, lineage);', replace: 'void payload;',
+        expectedKilledBy: 'interrupted chunk writes cannot publish a usable manifest; a clean retry is idempotent' }],
+  },
   'restoration-succession-lineage': {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/restoration-lineage.ts', testMatchPath: 'src/core/recourse/restoration-lineage.test.ts',
     mutations: [{ id: 'LINEAGE-CANONICAL-HEAD', description: 'an unchanged manifest accepts orphaned import-ready state',
