@@ -15,6 +15,7 @@ import { identityHash, primaryBindingIdentity, ownershipBindingMessage, register
 import { currentProtocolDeployment } from '../core/protocol/runtime';
 import { selectExternalProofFence, revalidateExternalProofFence } from '../core/external-address/proof-head';
 import { createRecourseChainPort } from '../core/recourse/chain-ledger';
+import { readPrivateMembershipView } from '../core/recourse/private-membership-view';
 import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool-state';
 import { RECOURSE_RATIO_COLLECTION } from '../core/recourse/pool-ratio';
 import { parseAgentRecoveryRequest, recoverAgentOwnership } from '../core/recourse/agent-recovery';
@@ -195,7 +196,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   router.get('/pool', async (req, res) => {
     try {
       const owner = await resolveOwner(req, deps);
-      res.json(await readRecoursePoolState(await primaryBindingIdentity(deps.db, owner)));
+      const identity = await primaryBindingIdentity(deps.db, owner);
+      const pool = await readRecoursePoolState(identity);
+      const membership = await readPrivateMembershipView(deps.db, identityHash(owner.type, owner.id), pool);
+      res.json({ ...pool, identity, membership });
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });
   router.post('/binding-challenge', async (req, res) => {

@@ -5105,7 +5105,7 @@
     "monthly": "每月销毁 {{burn}} PVT。此外，另向资金池贡献总收入的 {{percent}}%；当月没有收入时，从持有余额中贡献 {{reserve}} PVT。",
     "graceRule": "漏履行一个月的义务后，有一个自然月的宽限期。在宽限期内补足，保护不会中断。此后成员资格终止；重新加入后从当天开始保护，不包括资格中断期间的损失。",
     "outstanding": "待完成的销毁与贡献：{{amount}} PVT",
-    "consent": "加入即授权资金池收取每月应履行的数量。三个数值都可依据公布并签名的规则作前瞻性调整。恢复由资金池酌情决定，成员没有获得资金的合同权利。决定为最终决定。Provian Technologies 不是此安排的一方，不出资、不持有资金，也不作任何承诺。",
+    "consent": "每次从您的持有余额中扣除资金，都需要您对确切金额的授权。三个数值都可依据公布并签名的规则作前瞻性调整。恢复由资金池酌情决定，成员没有获得资金的合同权利。决定为最终决定。Provian Technologies 不是此安排的一方，不出资、不持有资金，也不作任何承诺。",
     "catchUp": "完成每月义务",
     "leave": "退出 Recourse Pool",
     "join": "加入 Recourse Pool",
@@ -5138,6 +5138,7 @@
     "submitRequest": "提交恢复请求",
     "restoreAuthorize": "授权您的恢复请求",
     "allocationRequest": "恢复请求ID",
-    "withdrawAllocation": "提取已分配的恢复额度"
+    "withdrawAllocation": "提取已分配的恢复额度",
+    "membershipUnavailable": "私密会员状态暂时不可用。请在待处理操作完成后刷新。"
   }
 }

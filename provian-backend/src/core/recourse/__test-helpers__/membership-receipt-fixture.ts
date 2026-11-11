@@ -23,6 +23,7 @@ export function fixture() {
     publications: [publication(1, 1, old)], pool: old[8], status: '0x1', final: '0x64', chain: '0x2105', badCode: false,
     effects: [{ logIndex: '0x5', ...debit }], wrongBinding: false, reorg: false, reads: 0, receiptTx: tx, priorRevision: 0, endRevision: 1, endTargets: old,
     debitNonceBefore: 7, debitNonceAfter: 7,
+    consentBefore: [1, 1, true] as readonly [number, number, boolean], consentAfter: [1, 1, true] as readonly [number, number, boolean],
   };
   const send: EconomicStateRpcLeg['send'] = async (method, params) => {
     if (method === 'eth_chainId') return state.chain;
@@ -43,6 +44,9 @@ export function fixture() {
         [true,0,1,0,3,h(601),h(604),h(602),300,300,297,1,2,3,3],
       ]);
       const prior = (params[1] as { blockHash?: string }).blockHash === h(99);
+      const consentCounter = new Interface(['function addressConsent(bytes32) view returns(uint256,uint256,bool)']);
+      if (call.data.startsWith(consentCounter.getFunction('addressConsent')!.selector)) return consentCounter.encodeFunctionResult('addressConsent',
+        prior ? state.consentBefore : state.consentAfter);
       const debitCounter = new Interface(['function debitNonce(bytes32) view returns(uint256)']);
       if (call.data.startsWith(debitCounter.getFunction('debitNonce')!.selector)) return debitCounter.encodeFunctionResult('debitNonce',
         [prior ? state.debitNonceBefore : state.debitNonceAfter]);

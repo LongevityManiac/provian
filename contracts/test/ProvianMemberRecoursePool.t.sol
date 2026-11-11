@@ -87,6 +87,14 @@ contract ProvianMemberRecoursePoolTest is Test {
         bytes32 digest = pool.consentDigest(c);
         pool.setAddressConsent(c, sign(key, digest), sign(ATTESTOR_KEY, digest));
     }
+    function leaveExternally() external { leave(); }
+    function leave() private {
+        (uint256 nonce,,) = pool.addressConsent(ID);
+        RecourseAddressConsent.ConsentAuthorization memory c = RecourseAddressConsent.ConsentAuthorization(ID, address(this), nonce,
+            false, 1, sha256("signed test rule"), block.timestamp + 300);
+        bytes32 digest = pool.consentDigest(c);
+        pool.setAddressConsent(c, sign(OWNER_KEY, digest), sign(ATTESTOR_KEY, digest));
+    }
     function debit(uint256 month, uint256 burn, uint256 reserve) private {
         (, uint256 generation,) = pool.addressConsent(ID);
         RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(ID, address(this), month,
@@ -140,7 +148,7 @@ contract ProvianMemberRecoursePoolTest is Test {
         debit(pool.calendarMonth(block.timestamp), 100 ether, 0);
         assertEq(token.totalSupply(), 800 ether); assertEq(pool.availableReserve(), 100 ether);
         (bool refunded,) = address(pool).call(abi.encodeWithSignature("redeem(bytes32,uint256)", ID, 100 ether)); assertFalse(refunded);
-        pool.leaveAddressConsent(ID); join(ID, address(this), OWNER_KEY);
+        leave(); join(ID, address(this), OWNER_KEY);
         assertEq(token.balanceOf(address(this)), 700 ether); assertEq(token.totalSupply(), 800 ether);
     }
     function testMeasuredDebitRejectsAFalseBurnAndPreservesNonce() public {
@@ -186,7 +194,7 @@ contract ProvianMemberRecoursePoolTest is Test {
         ProvianMemberRecoursePool.Determination[] memory ds = new ProvianMemberRecoursePool.Determination[](1); ds[0] = d;
         vm.prank(address(7)); vm.expectRevert(ProvianMemberRecoursePool.Unauthorized.selector); pool.determine(ds);
         outcome(d, address(this)); vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
-        eligible(d); pool.determine(ds); pool.leaveAddressConsent(ID);
+        eligible(d); pool.determine(ds); leave();
         assertEq(pool.availableReserve(), 60 ether); assertEq(pool.withdrawRestoration(d.request, ID), 40 ether);
         assertEq(token.balanceOf(address(pool)), 60 ether);
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.determine(ds);
@@ -212,15 +220,15 @@ contract ProvianMemberRecoursePoolTest is Test {
         eligible(actual); determine(actual); (, uint256 assigned,) = pool.restorationAllocations(actual.request); assertEq(assigned, 40 ether);
     }
     function testRepeatedLeaveCannotMoveHistoricalClosurePastLoss() public {
-        join(ID, address(this), OWNER_KEY); vm.roll(101); pool.leaveAddressConsent(ID); vm.roll(103);
-        vm.expectRevert(); pool.leaveAddressConsent(ID); (, uint256 end) = pool.consentPeriods(ID, 1); assertEq(end, 101);
+        join(ID, address(this), OWNER_KEY); vm.roll(101); leave(); vm.roll(103);
+        vm.expectRevert(); this.leaveExternally(); (, uint256 end) = pool.consentPeriods(ID, 1); assertEq(end, 101);
         ProvianMemberRecoursePool.Determination memory d = determination(40 ether); d.lossBlock = 102;
         ProvianMemberRecoursePool.LossEligibility memory proof = ProvianMemberRecoursePool.LossEligibility(d, sha256("signed test rule"), 1, 2, 3);
         bytes memory signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.admitLossEligibility(proof, signature);
     }
     function testSameBlockLossBeforeConsentOrAfterClosureCannotBeAttested() public {
-        join(ID, address(this), OWNER_KEY); pool.leaveAddressConsent(ID); vm.roll(101);
+        join(ID, address(this), OWNER_KEY); leave(); vm.roll(101);
         ProvianMemberRecoursePool.Determination memory d = determination(40 ether);
         ProvianMemberRecoursePool.LossEligibility memory proof = ProvianMemberRecoursePool.LossEligibility(d, sha256("signed test rule"), 2, 1, 3);
         bytes memory signature = sign(ATTESTOR_KEY, pool.lossEligibilityDigest(proof));

@@ -5104,7 +5104,7 @@
     "monthly": "Mỗi tháng: hủy {{burn}} PVT. Đồng thời, đóng góp riêng {{percent}}% tổng thu nhập, hoặc {{reserve}} PVT từ số dư trong tháng không có thu nhập.",
     "graceRule": "Nếu bỏ lỡ một tháng, bạn có một tháng dương lịch gia hạn. Hoàn thành trong thời gian này thì không bị gián đoạn. Sau đó tư cách thành viên kết thúc; tham gia lại chỉ bảo vệ từ ngày đó, không áp dụng cho tổn thất trong thời gian gián đoạn.",
     "outstanding": "Số PVT còn phải hủy và đóng góp: {{amount}} PVT",
-    "consent": "Tư cách thành viên cho phép quỹ thu các nghĩa vụ hằng tháng. Cả ba mức có thể thay đổi cho tương lai theo quy tắc có chữ ký đã công bố. Việc khôi phục tùy thuộc quyết định của quỹ, không có quyền theo hợp đồng được nhận tiền. Các quyết định là cuối cùng. Provian Technologies không phải bên tham gia, không đóng góp, không giữ tài sản và không hứa hẹn điều gì.",
+    "consent": "Mỗi lần trừ vào số dư của bạn cần được bạn cho phép với số tiền chính xác. Cả ba mức có thể thay đổi cho tương lai theo quy tắc có chữ ký đã công bố. Việc khôi phục tùy thuộc quyết định của quỹ, không có quyền theo hợp đồng được nhận tiền. Các quyết định là cuối cùng. Provian Technologies không phải bên tham gia, không đóng góp, không giữ tài sản và không hứa hẹn điều gì.",
     "catchUp": "Hoàn thành nghĩa vụ hằng tháng",
     "leave": "Rời Recourse Pool",
     "join": "Tham gia Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Gửi yêu cầu khôi phục",
     "restoreAuthorize": "Cho phép yêu cầu khôi phục của bạn",
     "allocationRequest": "Mã yêu cầu khôi phục",
-    "withdrawAllocation": "Rút khoản khôi phục đã phân bổ"
+    "withdrawAllocation": "Rút khoản khôi phục đã phân bổ",
+    "membershipUnavailable": "Trạng thái thành viên riêng tư tạm thời không khả dụng. Làm mới sau khi các thao tác đang chờ hoàn tất."
   }
 }

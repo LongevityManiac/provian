@@ -19,7 +19,7 @@ export const MEMBERSHIP_AUTHORIZATION_ABI = new Interface([
   'function addressConsent(bytes32) view returns(uint256 nonce,uint256 generation,bool joined)',
   'function consentPeriods(bytes32,uint256) view returns(uint256 startBlock,uint256 endBlock)',
   'function debitNonce(bytes32) view returns(uint256)',
-  'function leaveAddressConsent(bytes32)', 'function cancelMembershipDebit(bytes32,uint256)',
+  'function cancelMembershipDebit(bytes32,uint256)',
   'event AddressConsentChanged(bytes32 indexed binding,uint256 indexed generation,bool joined,uint256 nonce)',
   'event MembershipDebitExecuted(bytes32 indexed digest,bytes32 indexed binding,address indexed payer,uint256 month,uint256 burn,uint256 reserve,uint256 nonce)',
   'event MembershipDebitCancelled(bytes32 indexed binding,uint256 indexed nonce)',

@@ -5104,7 +5104,7 @@
     "monthly": "Kila mwezi: teketeza PVT {{burn}}. Kando na hayo, changia {{percent}}% ya mapato ghafi, au PVT {{reserve}} kutoka salio lako katika mwezi usio na mapato.",
     "graceRule": "Ukikosa kutimiza wajibu wa mwezi mmoja, unapata mwezi mmoja wa kalenda wa nyongeza. Ukikamilisha ndani ya muda huo, hakuna pengo la ulinzi. Baadaye uanachama unaisha; ukijiunga tena, ulinzi huanza siku hiyo na hauhusu hasara ya wakati ambao hukuwa mwanachama.",
     "outstanding": "Uteketezaji na mchango ambao haujakamilika: PVT {{amount}}",
-    "consent": "Uanachama unaidhinisha hazina kukusanya wajibu wa kila mwezi. Kiasi chote kitatu kinaweza kubadilishwa kwa siku zijazo chini ya kanuni iliyochapishwa na kusainiwa. Urejeshaji ni uamuzi wa hiari; hakuna haki ya kimkataba ya kupokea fedha. Maamuzi ni ya mwisho. Provian Technologies si mshiriki wa mpango huu, haichangii, haishikilii fedha na haiahidi chochote.",
+    "consent": "Kila makato kutoka kwenye salio lako yanahitaji idhini yako ya kiasi halisi. Kiasi chote kitatu kinaweza kubadilishwa kwa siku zijazo chini ya kanuni iliyochapishwa na kusainiwa. Urejeshaji ni uamuzi wa hiari; hakuna haki ya kimkataba ya kupokea fedha. Maamuzi ni ya mwisho. Provian Technologies si mshiriki wa mpango huu, haichangii, haishikilii fedha na haiahidi chochote.",
     "catchUp": "Kamilisha wajibu wa kila mwezi",
     "leave": "Ondoka Recourse Pool",
     "join": "Jiunge na Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Tuma ombi la urejeshaji",
     "restoreAuthorize": "Idhinisha ombi lako la urejeshaji",
     "allocationRequest": "Kitambulisho cha ombi la urejeshaji",
-    "withdrawAllocation": "Toa mgao wa urejeshaji"
+    "withdrawAllocation": "Toa mgao wa urejeshaji",
+    "membershipUnavailable": "Hali binafsi ya uanachama haipatikani kwa muda. Onyesha upya baada ya shughuli zinazosubiri kukamilika."
   }
 }

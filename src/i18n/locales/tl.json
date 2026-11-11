@@ -5104,7 +5104,7 @@
     "monthly": "Bawat buwan: magsunog ng {{burn}} PVT. Hiwalay dito, mag-ambag ng {{percent}}% ng kabuuang kinita, o {{reserve}} PVT mula sa hawak mong balanse sa buwang walang kita.",
     "graceRule": "May isang buwang kalendaryong palugit kapag may nalaktawang buwan. Kumpletuhin ito sa loob ng palugit at walang mapuputol. Pagkatapos nito, matatapos ang pagiging miyembro; ang muling pagsali ay nagbibigay ng proteksiyon mula sa araw na iyon, hindi para sa nawala habang hindi kasapi.",
     "outstanding": "Hindi pa natutupad na pagsunog at ambag: {{amount}} PVT",
-    "consent": "Pinahihintulutan ng pagiging miyembro ang pool na kolektahin ang buwanang mga obligasyon. Maaaring baguhin ang tatlong halaga para sa hinaharap ayon sa inilathalang pirmadong tuntunin. Nasa pagpapasiya ang pagsasauli at walang karapatang kontraktuwal na tumanggap ng pondo. Pinal ang mga pasiya. Hindi partido rito ang Provian Technologies; wala itong iniaambag, hinahawakang pondo o ipinapangako.",
+    "consent": "Bawat bawas sa iyong hawak na pondo ay nangangailangan ng pahintulot mo para sa eksaktong halaga. Maaaring baguhin ang tatlong halaga para sa hinaharap ayon sa inilathalang pirmadong tuntunin. Nasa pagpapasiya ang pagsasauli at walang karapatang kontraktuwal na tumanggap ng pondo. Pinal ang mga pasiya. Hindi partido rito ang Provian Technologies; wala itong iniaambag, hinahawakang pondo o ipinapangako.",
     "catchUp": "Kumpletuhin ang buwanang obligasyon",
     "leave": "Umalis sa Recourse Pool",
     "join": "Sumali sa Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Magpadala ng kahilingan sa pagsasauli",
     "restoreAuthorize": "Pahintulutan ang iyong kahilingan sa pagpapanumbalik",
     "allocationRequest": "ID ng kahilingan sa pagpapanumbalik",
-    "withdrawAllocation": "I-withdraw ang nakatalagang pagpapanumbalik"
+    "withdrawAllocation": "I-withdraw ang nakatalagang pagpapanumbalik",
+    "membershipUnavailable": "Pansamantalang hindi available ang pribadong katayuan ng pagiging miyembro. I-refresh matapos makumpleto ang mga nakabinbing aksyon."
   }
 }

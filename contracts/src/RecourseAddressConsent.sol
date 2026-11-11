@@ -70,7 +70,7 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
             || consent.nonce != current.nonce || consent.joined == current.joined
             || consent.ruleHash != _consentRule(_consentMonth())
             || !_signature(owner, digest, ownerSignature)
-            || (consent.joined && !_signature(_consentAttestor(), digest, attestorSignature))) revert InvalidAddressConsent();
+            || !_signature(_consentAttestor(), digest, attestorSignature)) revert InvalidAddressConsent();
         ++current.nonce;
         current.joined = consent.joined;
         if (consent.joined) {
@@ -82,17 +82,6 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
             ++debitNonce[consent.binding];
         }
         emit AddressConsentChanged(consent.binding, current.generation, consent.joined, consent.nonce);
-    }
-    /// @notice Leaving never requires the relay or attestor. Exact historical
-    /// start/end log order is checked when eligibility at loss is attested.
-    function leaveAddressConsent(bytes32 binding) external {
-        address owner = _consentOwner(binding);
-        AddressConsent storage current = addressConsent[binding];
-        if (owner == address(0) || msg.sender != owner || !current.joined) revert InvalidAddressConsent();
-        current.joined = false;
-        consentPeriods[binding][current.generation].endBlock = block.number;
-        ++debitNonce[binding];
-        emit AddressConsentChanged(binding, current.generation, false, current.nonce++);
     }
     /// @notice Exact authorization, not a standing debit mandate. Allowance alone,
     /// an attestor signature alone, or a changed payer/amount can never collect.

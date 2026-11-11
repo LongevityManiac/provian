@@ -18,7 +18,7 @@ const bindingChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-
   .replace("'./recourse-binding'", "'./binding'").replace("'./recourse-owner-chain'", "'./owner-chain'");
 const transactionGuard = readFileSync(resolve(root, 'provian-agent-sdk/src/protocol-transaction.ts'), 'utf8')
   .replace("'./protocol-pointer'", "'./pointer'").replace("'./recourse-owner-chain'", "'../recourse/owner-chain'");
-const poolChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-chain.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'");
+const poolChain = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-chain.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'").replace("'./protocol-pointer'", "'../protocol/pointer'");
 const poolAbi = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-pool-abi.ts'), 'utf8');
 const recoveryModules = ['private-access-data', 'private-access', 'break-entitlement', 'break-recovery', 'break-recovery-receipt', 'finalized-receipt', 'hash-account', 'hash-account-data', 'hash-account-chain', 'hash-account-deployment', 'break-deployment-data', 'break-deployment-proof', 'break-restoration-data', 'break-registration-data', 'free-break-recovery'];
 const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${name}.ts`,
@@ -44,6 +44,7 @@ const outputs = new Map([
   ['provian-backend/src/core/recourse/break-deployment-data.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/break-deployment-data.ts'), 'utf8')],
   ['src/core/recourse/restoration-exit.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-restoration-exit.ts'), 'utf8').replace("'./recourse-owner-chain'", "'./owner-chain'").replace("'./recourse-pool-abi'", "'./pool-abi'")],
   ['src/core/recourse/pool-chain.ts', poolChain],
+  ['provian-backend/src/core/recourse/pool-chain.ts', poolChain],
   ['src/core/recourse/pool-abi.ts', poolAbi],
   ['provian-backend/src/core/recourse/pool-abi.ts', poolAbi],
   ['provian-mcp/src/core/protocol-pointer.ts', resolver],

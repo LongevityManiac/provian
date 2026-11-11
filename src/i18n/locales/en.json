@@ -5104,7 +5104,7 @@
     "monthly": "Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from holdings in a month with no earnings.",
     "graceRule": "A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.",
     "outstanding": "Outstanding burn and contribution: {{amount}} PVT",
-    "consent": "Membership authorizes the pool to collect its monthly obligations. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.",
+    "consent": "Each debit from your holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.",
     "catchUp": "Complete monthly obligations",
     "leave": "Leave Recourse Pool",
     "join": "Join Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Submit restoration request",
     "restoreAuthorize": "Authorize your restoration request",
     "allocationRequest": "Restoration request ID",
-    "withdrawAllocation": "Withdraw allocated restoration"
+    "withdrawAllocation": "Withdraw allocated restoration",
+    "membershipUnavailable": "Private membership status is temporarily unavailable. Refresh after pending actions finish."
   }
 }

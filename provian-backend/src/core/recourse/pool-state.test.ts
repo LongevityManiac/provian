@@ -12,21 +12,23 @@ const identity = `0x${'34'.repeat(32)}`;
 const blockHash = `0x${'56'.repeat(32)}`;
 const kernel = requireConfiguredPvt9Runtime().address.toLowerCase();
 const token = new Interface(['function restorationAuthority() view returns (address)']);
+let reorg = false;
 let disagreement = false;
 let wrongToken = false;
 let code = '0x6000';
 const saved = { address: process.env.PVT_RECOURSE_POOL_ADDRESS, hash: process.env.PVT_RECOURSE_POOL_RUNTIME_HASH };
 beforeEach(() => {
   jest.resetAllMocks();
-  (currentProtocolDeployment as jest.Mock).mockResolvedValue({ addresses: { kernel, recoursePool: pool }, runtimeHashes: Array(10).fill(keccak256('0x6000')) });
-  disagreement = false; wrongToken = false; code = '0x6000';
+  (currentProtocolDeployment as jest.Mock).mockResolvedValue({ blockHash, manifestHash: identity, addresses: { kernel, recoursePool: pool }, runtimeHashes: Array(10).fill(keccak256('0x6000')) });
+  reorg = false; disagreement = false; wrongToken = false; code = '0x6000';
   process.env.PVT_RECOURSE_POOL_ADDRESS = pool;
   process.env.PVT_RECOURSE_POOL_RUNTIME_HASH = keccak256(code);
   (readAgreedBaseHead as jest.Mock).mockResolvedValue(100);
   (readAgreedBaseBlockHash as jest.Mock).mockResolvedValue(blockHash);
   (getOperatorBoundRpcLegs as jest.Mock).mockReturnValue([0, 1].map(index => ({ operatorId: `operator-${index}`,
     provider: { send: jest.fn(async (method: string, args: readonly unknown[]) => {
-      if (method === 'eth_getBlockByHash') return { hash: blockHash, timestamp: '0x697e8680' };
+      if (method === 'eth_getBlockByHash') return { hash: blockHash, number: '0x64', timestamp: '0x697e8680' };
+      if (method === 'eth_getBlockByNumber') return { hash: reorg ? identity : blockHash };
       expect(args[1]).toEqual({ blockHash, requireCanonical: true });
       if (method === 'eth_getCode') return code;
       const call = args[0] as { to: string; data: string };
@@ -34,12 +36,11 @@ beforeEach(() => {
       const parsed = RECOURSE_POOL_ABI.parseTransaction({ data: call.data });
       if (!parsed) throw new Error('unexpected method');
       const values: Record<string, readonly unknown[]> = {
-        token: [wrongToken ? pool : kernel], membershipState: [true, false, 1, 0], enrollment: [true, 24312, 24312, 24312, 0, 1],
+        token: [wrongToken ? pool : kernel], addressConsent: [1, 1, true], debitNonce: [7], poolHistoryReady: [true],
         calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
         monthlyRule: [[0, 100, 100, 100, identity]],
         availableReserve: [disagreement && index === 1 ? 101 : 100],
-        obligations: [true, false, 100, 0, 100, 0, 100, 100, 0],
-      };
+        };
       return RECOURSE_POOL_ABI.encodeFunctionResult(parsed.name, values[parsed.name]);
     }) },
   })));
@@ -51,9 +52,9 @@ afterAll(() => {
   else process.env.PVT_RECOURSE_POOL_RUNTIME_HASH = saved.hash;
 });
 test('same-block member state and reserve agree across independent operators', async () => {
-  expect(await readRecoursePoolState(identity)).toMatchObject({ pool, kernel, enrolled: true,
-    reserveAtomic: '100', outstandingAtomic: '50', grace: false, participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', earningsBps: 100, unpaidAtomic: '0', block: 100, blockHash });
+  expect(await readRecoursePoolState(identity)).toMatchObject({ pool, kernel, addressConsent: true, consentGeneration: '1', consentNonce: '1', debitNonce: '7',
+    reserveAtomic: '100', outstandingAtomic: '50', participationBurnAtomic: '100',
+    noEarningsContributionAtomic: '100', earningsBps: 100, block: 100, blockHash });
 });
 test('disagreement, altered runtime and wrong token each refuse the pool', async () => {
   disagreement = true;
@@ -64,7 +65,7 @@ test('disagreement, altered runtime and wrong token each refuse the pool', async
   await expect(readRecoursePoolState(identity)).rejects.toThrow('recourse_pool_token_mismatch');
 });
 test('reorg and incomplete configuration fail closed', async () => {
-  (readAgreedBaseBlockHash as jest.Mock).mockResolvedValueOnce(blockHash).mockResolvedValueOnce(identity);
+  reorg = true;
   await expect(readRecoursePoolState(identity)).rejects.toThrow('recourse_pool_reorg');
   (currentProtocolDeployment as jest.Mock).mockRejectedValue(new Error('protocol_pointer_not_deployed'));
   await expect(recoursePoolConfig()).rejects.toThrow('protocol_pointer_not_deployed');

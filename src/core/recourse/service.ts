@@ -15,7 +15,7 @@ import { readAddressRecoveryBinding } from './binding-chain';
 import { useWalletStore } from '../../store/walletStore';
 
 export interface RecourseView {
-  identity: string; historyState: 'pending' | 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
+  identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
   addresses: { address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
@@ -50,12 +50,22 @@ export async function readRecourseView(): Promise<RecourseView> {
   if (!account) throw Error('recourse_address_unavailable');
   const identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork());
   const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
-  return { identity, historyState: 'pending', enrolled: pool.enrolled, grace: pool.grace, earningsBps: pool.earningsBps,
-    month: pool.month, endMonthExclusive: pool.endMonthExclusive,
+  let membership: { enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string; unpaidAtomic: string } | null = null;
+  try {
+    const reply = object(await RelayAPIService.recourseRequest('pool'));
+    if (reply.identity !== identity || reply.pool !== pool.pool || reply.kernel !== pool.kernel) throw Error('recourse_reply_invalid');
+    const privateView = object(reply.membership);
+    if (typeof privateView.enrolled !== 'boolean' || typeof privateView.grace !== 'boolean') throw Error('recourse_reply_invalid');
+    membership = { enrolled: privateView.enrolled, grace: privateView.grace, month: text(privateView.month, atomic),
+      endMonthExclusive: text(privateView.endMonthExclusive, atomic), unpaidAtomic: text(privateView.unpaidAtomic, atomic) };
+  } catch { /* The public reserve and direct allocated exit remain usable. */ }
+  return { identity, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
+    enrolled: membership?.enrolled ?? false, grace: membership?.grace ?? false, earningsBps: pool.earningsBps,
+    month: membership?.month ?? pool.month, endMonthExclusive: membership?.endMonthExclusive ?? '0',
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,
-    unpaidAtomic: pool.unpaidAtomic, reserveAtomic: pool.reserveAtomic, addresses: [], requests: [] };
+    unpaidAtomic: membership?.unpaidAtomic ?? '0', reserveAtomic: pool.reserveAtomic, addresses: [], requests: [] };
 }
-/** History availability does not gate membership state, withdrawal or exit. */
+/** Address/request history is separate from private membership reconciliation. */
 export async function readRecourseHistory(view: RecourseView): Promise<RecourseView> {
   try {
     const [rawOwner, rawRequests] = await Promise.all([

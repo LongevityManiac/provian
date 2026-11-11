@@ -5104,7 +5104,7 @@
     "monthly": "Todo mês: queime {{burn}} PVT. Separadamente, contribua com {{percent}}% dos ganhos brutos, ou com {{reserve}} PVT dos seus saldos em um mês sem ganhos.",
     "graceRule": "Um mês não cumprido tem um mês civil de tolerância. Regularize dentro desse prazo e não haverá interrupção. Depois, a adesão termina; uma nova adesão protege a partir daquele dia, nunca por uma perda ocorrida durante a interrupção.",
     "outstanding": "Queima e contribuição pendentes: {{amount}} PVT",
-    "consent": "A adesão autoriza o fundo a recolher as obrigações mensais. Os três valores podem mudar prospectivamente pela regra assinada publicada. A restauração é discricionária e não existe direito contratual a receber fundos. As determinações são finais. A Provian Technologies não é parte desse acordo, não contribui, não mantém fundos e não promete nada.",
+    "consent": "Cada débito dos seus fundos exige sua autorização para os valores exatos. Os três valores podem mudar prospectivamente pela regra assinada publicada. A restauração é discricionária e não existe direito contratual a receber fundos. As determinações são finais. A Provian Technologies não é parte desse acordo, não contribui, não mantém fundos e não promete nada.",
     "catchUp": "Cumprir as obrigações mensais",
     "leave": "Sair do Recourse Pool",
     "join": "Entrar no Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Enviar pedido de restauração",
     "restoreAuthorize": "Autorize seu pedido de restauração",
     "allocationRequest": "ID da solicitação de restauração",
-    "withdrawAllocation": "Retirar restauração alocada"
+    "withdrawAllocation": "Retirar restauração alocada",
+    "membershipUnavailable": "O estado privado da adesão está temporariamente indisponível. Atualize após a conclusão das ações pendentes."
   }
 }

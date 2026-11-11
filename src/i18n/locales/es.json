@@ -5104,7 +5104,7 @@
     "monthly": "Cada mes: quema {{burn}} PVT. Por separado, aporta el {{percent}}% de tus ganancias brutas, o {{reserve}} PVT de tus tenencias en un mes sin ganancias.",
     "graceRule": "Si omites un mes, dispones de un mes natural de gracia. Si te pones al día dentro de ese plazo, no hay interrupción. Después termina la membresía; al volver a unirte, la protección comienza ese día y nunca incluye pérdidas durante la interrupción.",
     "outstanding": "Quema y aportación pendientes: {{amount}} PVT",
-    "consent": "La membresía autoriza al fondo a recaudar las obligaciones mensuales. Los tres importes pueden cambiar de forma prospectiva según la regla firmada publicada. La restitución es discrecional y no existe derecho contractual a recibir fondos. Las determinaciones son definitivas. Provian Technologies no es parte del acuerdo, no aporta ni custodia fondos y no promete nada.",
+    "consent": "Cada débito de tus fondos requiere tu autorización de los importes exactos. Los tres importes pueden cambiar de forma prospectiva según la regla firmada publicada. La restitución es discrecional y no existe derecho contractual a recibir fondos. Las determinaciones son definitivas. Provian Technologies no es parte del acuerdo, no aporta ni custodia fondos y no promete nada.",
     "catchUp": "Completar las obligaciones mensuales",
     "leave": "Salir de Recourse Pool",
     "join": "Unirse a Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Enviar solicitud de restitución",
     "restoreAuthorize": "Autoriza tu solicitud de restauración",
     "allocationRequest": "Identificador de solicitud de restitución",
-    "withdrawAllocation": "Retirar restitución asignada"
+    "withdrawAllocation": "Retirar restitución asignada",
+    "membershipUnavailable": "El estado privado de la membresía no está disponible temporalmente. Actualiza cuando terminen las acciones pendientes."
   }
 }

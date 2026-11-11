@@ -72,20 +72,20 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error', 'We could not confirm the latest state or complete that action. Refresh to check the chain before trying again.')}</Text>
         {button(t('recourse.refresh', 'Refresh'), () => { void load(); })}</View> : null}
       {state ? <>
-        {state.historyState === 'unavailable' ? <Text style={styles.small}>{t('recourse.historyUnavailable', 'Address and request history is temporarily unavailable. Membership and reserve amounts are verified directly on-chain; you can still leave or withdraw an allocated restoration.')}</Text> : null}
+        {state.historyState === 'unavailable' ? <Text style={styles.small}>{t('recourse.historyUnavailable', 'Address and request history is temporarily unavailable. Pool reserves and allocated restoration withdrawals remain available directly on-chain.')}</Text> : null}
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.membership', 'Recourse Pool membership')}</Text>
-          <Text style={styles.status}>{state.grace ? t('recourse.grace', 'Protected — in grace') : state.enrolled ? t('recourse.active', 'Protected') : t('recourse.inactive', 'Not enrolled')}</Text>
+          <Text style={styles.status}>{state.membershipState === 'unavailable' ? t('recourse.membershipUnavailable', 'Private membership status is temporarily unavailable. Refresh after pending actions finish.') : state.grace ? t('recourse.grace', 'Protected — in grace') : state.enrolled ? t('recourse.active', 'Protected') : t('recourse.inactive', 'Not enrolled')}</Text>
           <Text style={styles.body}>{t('recourse.monthly', 'Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from holdings in a month with no earnings.', {
             burn: pvtAmount(state.participationBurnAtomic), percent: state.earningsBps / 100, reserve: pvtAmount(state.noEarningsContributionAtomic),
           })}</Text>
           <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.')}</Text>
-          {state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
-          <Text style={styles.small}>{t('recourse.consent', 'Membership authorizes the pool to collect its monthly obligations. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
-          {state.enrolled ? <>
+          {state.membershipState === 'available' && state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
+          <Text style={styles.small}>{t('recourse.consent', 'Each debit from your holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
+          {state.membershipState === 'available' ? state.enrolled ? <>
             {button(t('recourse.catchUp', 'Complete monthly obligations'), () => { void act('settleMonth'); })}
             {button(t('recourse.leave', 'Leave Recourse Pool'), () => { void act('leave'); })}
-          </> : button(t('recourse.join', 'Join Recourse Pool'), () => { void act('enroll'); })}
+          </> : button(t('recourse.join', 'Join Recourse Pool'), () => { void act('enroll'); }) : null}
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>

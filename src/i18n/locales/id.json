@@ -5104,7 +5104,7 @@
     "monthly": "Setiap bulan: musnahkan {{burn}} PVT. Secara terpisah, kontribusikan {{percent}}% dari penghasilan bruto, atau {{reserve}} PVT dari saldo pada bulan tanpa penghasilan.",
     "graceRule": "Satu bulan yang terlewat mendapat tenggang satu bulan kalender. Penuhi kewajiban dalam masa tenggang agar perlindungan tidak terputus. Setelah itu keanggotaan berakhir; bergabung kembali melindungi sejak hari tersebut, bukan untuk kehilangan saat keanggotaan terputus.",
     "outstanding": "Pemusnahan dan kontribusi yang belum dipenuhi: {{amount}} PVT",
-    "consent": "Keanggotaan memberi wewenang kepada dana bersama untuk mengambil kewajiban bulanan. Ketiga jumlah dapat berubah untuk masa mendatang menurut aturan bertanda tangan yang diterbitkan. Pemulihan bersifat diskresioner, tanpa hak kontraktual untuk menerima dana. Keputusan bersifat final. Provian Technologies bukan pihak dalam pengaturan ini, tidak menyumbang, tidak memegang dana, dan tidak menjanjikan apa pun.",
+    "consent": "Setiap pendebitan dari saldo Anda memerlukan persetujuan Anda atas jumlah yang tepat. Ketiga jumlah dapat berubah untuk masa mendatang menurut aturan bertanda tangan yang diterbitkan. Pemulihan bersifat diskresioner, tanpa hak kontraktual untuk menerima dana. Keputusan bersifat final. Provian Technologies bukan pihak dalam pengaturan ini, tidak menyumbang, tidak memegang dana, dan tidak menjanjikan apa pun.",
     "catchUp": "Penuhi kewajiban bulanan",
     "leave": "Keluar dari Recourse Pool",
     "join": "Bergabung dengan Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Kirim permintaan pemulihan",
     "restoreAuthorize": "Otorisasi permintaan pemulihan Anda",
     "allocationRequest": "ID permintaan restorasi",
-    "withdrawAllocation": "Tarik restorasi yang dialokasikan"
+    "withdrawAllocation": "Tarik restorasi yang dialokasikan",
+    "membershipUnavailable": "Status keanggotaan privat sementara tidak tersedia. Muat ulang setelah tindakan tertunda selesai."
   }
 }

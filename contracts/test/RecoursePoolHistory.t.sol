@@ -86,7 +86,6 @@ contract RecoursePoolHistoryTest is Test {
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.bind(ID,address(this));
         RecourseAddressConsent.ConsentAuthorization memory consent;
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.setAddressConsent(consent,"","");
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.leaveAddressConsent(ID);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.cancelMembershipDebit(ID,0);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.divertIssuance(address(this),1,1);
         RecourseAddressConsent.DebitAuthorization memory debit;

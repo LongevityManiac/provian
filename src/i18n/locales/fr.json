@@ -5104,7 +5104,7 @@
     "monthly": "Chaque mois : détruisez {{burn}} PVT. Contribuez séparément à hauteur de {{percent}} % des gains bruts, ou de {{reserve}} PVT prélevés sur vos avoirs pour un mois sans gains.",
     "graceRule": "Un mois manqué ouvre un mois civil de grâce. Régularisez pendant ce délai et il n’y a aucune interruption. Ensuite, l’adhésion prend fin ; une nouvelle adhésion protège à partir de ce jour, jamais pour une perte survenue pendant l’interruption.",
     "outstanding": "Destruction et contribution restantes : {{amount}} PVT",
-    "consent": "L’adhésion autorise le fonds à prélever les obligations mensuelles. Les trois montants peuvent changer pour l’avenir selon la règle signée publiée. La restitution est discrétionnaire et ne confère aucun droit contractuel à recevoir des fonds. Les déterminations sont définitives. Provian Technologies n’est pas partie à cet arrangement, ne contribue rien, ne détient rien et ne promet rien.",
+    "consent": "Chaque débit de vos avoirs nécessite votre autorisation pour ses montants exacts. Les trois montants peuvent changer pour l’avenir selon la règle signée publiée. La restitution est discrétionnaire et ne confère aucun droit contractuel à recevoir des fonds. Les déterminations sont définitives. Provian Technologies n’est pas partie à cet arrangement, ne contribue rien, ne détient rien et ne promet rien.",
     "catchUp": "Remplir les obligations mensuelles",
     "leave": "Quitter Recourse Pool",
     "join": "Rejoindre Recourse Pool",
@@ -5137,6 +5137,7 @@
     "submitRequest": "Envoyer une demande de restitution",
     "restoreAuthorize": "Autorisez votre demande de restauration",
     "allocationRequest": "Identifiant de demande de restauration",
-    "withdrawAllocation": "Retirer la restauration attribuée"
+    "withdrawAllocation": "Retirer la restauration attribuée",
+    "membershipUnavailable": "Le statut privé de votre adhésion est temporairement indisponible. Actualisez après la fin des opérations en attente."
   }
 }

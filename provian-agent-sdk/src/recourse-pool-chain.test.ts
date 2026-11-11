@@ -7,7 +7,7 @@ import type { ProtocolDeployment } from './protocol-pointer';
 const pool = `0x${'12'.repeat(20)}`, kernel = `0x${'13'.repeat(20)}`, identity = `0x${'34'.repeat(32)}`;
 const blockHash = `0x${'56'.repeat(32)}`, code = '0x6000';
 const token = new Interface(['function restorationAuthority() view returns(address)']);
-function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: boolean; changed?: boolean } = {}): OwnerChainNetwork {
+function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: boolean; changed?: boolean; historyPending?: boolean } = {}): OwnerChainNetwork {
   let deployments = 0;
   const rpc = (index: number): OwnerChainNetwork['rpcs'][0] => ({ async request(method: string, args: readonly unknown[]) {
     if (method === 'eth_getBlockByHash') return { hash: blockHash, number: '0x64', timestamp: '0x697e8680' };
@@ -19,11 +19,10 @@ function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: bo
     const parsed = RECOURSE_POOL_ABI.parseTransaction({ data: call.data });
     if (!parsed) throw new Error('unexpected_method');
     const values: Record<string, readonly unknown[]> = {
-      token: [options.wrongToken ? pool : kernel], membershipState: [true, false, 1, 0], enrollment: [true, 24312, 24312, 24312, 0, 1],
+      token: [options.wrongToken ? pool : kernel], addressConsent: [1, 1, true], debitNonce: [7], poolHistoryReady: [!options.historyPending],
       calendarMonth: [24312], primaryAddress: [pool], allocatedRestorations: [50], outcomeRevision: [2],
       monthlyRule: [[0, 100, 100, 100, identity]],
       availableReserve: [options.disagree && index === 1 ? 101 : 100],
-      obligations: [true, false, 100, 0, 100, 0, 100, 100, 0],
     };
     return RECOURSE_POOL_ABI.encodeFunctionResult(parsed.name, values[parsed.name]);
   } });
@@ -34,12 +33,15 @@ function network(options: { disagree?: boolean; wrongToken?: boolean; reorg?: bo
   return { deployment: async () => ({ ...deployment,
     manifestHash: options.changed && deployments++ > 0 ? 'changed' : 'current' }), rpcs: [rpc(0), rpc(1)] };
 }
-it('reads membership and nonrefundable restoration reserves with no relay transport', async () => {
-  expect(await readRecoursePoolChain(identity, network())).toMatchObject({ pool, kernel, enrolled: true,
-    reserveAtomic: '100', outstandingAtomic: '50', grace: false, participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', earningsBps: 100, unpaidAtomic: '0', block: 100, blockHash });
+it('reads independent consent and restoration reserves without revealing private invoices', async () => {
+  const state = await readRecoursePoolChain(identity, network());
+  for (const key of ['enrolled', 'grace', 'unpaidAtomic', 'ownerIdentity', 'invoices', 'issuedInMonth']) expect(state).not.toHaveProperty(key);
+  expect(state).toMatchObject({ pool, kernel, addressConsent: true, consentGeneration: '1', consentNonce: '1', debitNonce: '7',
+    reserveAtomic: '100', outstandingAtomic: '50', participationBurnAtomic: '100',
+    noEarningsContributionAtomic: '100', earningsBps: 100, block: 100, blockHash });
 });
 it('disagreement, wrong token, reorganization and changed deployment refuse the financial view', async () => {
+  await expect(readRecoursePoolChain(identity, network({ historyPending: true }))).rejects.toThrow('history_pending');
   await expect(readRecoursePoolChain(identity, network({ disagree: true }))).rejects.toThrow('disagreement');
   await expect(readRecoursePoolChain(identity, network({ wrongToken: true }))).rejects.toThrow('token_mismatch');
   await expect(readRecoursePoolChain(identity, network({ reorg: true }))).rejects.toThrow('reorg');

@@ -107,11 +107,19 @@ contract RecourseAddressConsentTest is Test {
         vm.expectRevert(); pool.executeMembershipDebit(d, owner, attestor);
         assertEq(pool.debitNonce(BINDING), 1); assertEq(pool.burned(), 0);
     }
-    function testLeavingWorksWithoutAttestorAndRevokesInvoiceAcrossSameMonthRejoin() public {
+    function testCoordinatedLeaveRequiresBothSignaturesAndRevokesInvoiceAcrossRejoin() public {
         enroll(); RecourseAddressConsent.DebitAuthorization memory d = debit(); bytes32 digest = pool.debitDigest(d);
         bytes memory owner = signature(OWNER_KEY, digest); bytes memory attestor = signature(ATTESTOR_KEY, digest);
-        vm.expectRevert(); pool.leaveAddressConsent(BINDING);
-        vm.prank(vm.addr(OWNER_KEY)); pool.leaveAddressConsent(BINDING);
+        RecourseAddressConsent.ConsentAuthorization memory departure = consent();
+        departure.nonce = 1; departure.joined = false;
+        bytes32 leaveDigest = pool.consentDigest(departure);
+        bytes memory ownerLeave = signature(OWNER_KEY, leaveDigest);
+        bytes memory attestorLeave = signature(ATTESTOR_KEY, leaveDigest);
+        vm.expectRevert(); pool.setAddressConsent(departure, ownerLeave, "");
+        vm.expectRevert(); pool.setAddressConsent(departure, "", attestorLeave);
+        pool.setAddressConsent(departure, ownerLeave, attestorLeave);
+        (uint256 departureNonce,, bool departed) = pool.addressConsent(BINDING);
+        assertEq(departureNonce, 2); assertFalse(departed);
         RecourseAddressConsent.ConsentAuthorization memory c = consent(); c.nonce = 2;
         bytes32 joinDigest = pool.consentDigest(c);
         pool.setAddressConsent(c, signature(OWNER_KEY, joinDigest), signature(ATTESTOR_KEY, joinDigest));
