@@ -194,11 +194,18 @@ export async function openChangeoverJournal(db: Firestore, input: {
       && Number(key) < count), 'attempt_sequence');
     const index = changed[0], expectedRevision = revision;
     await db.runTransaction(async tx => {
-      const [head, old, ...leases] = await Promise.all([tx.get(headRef), tx.get(attemptRef(index)), ...leaseRefs.map(ref => tx.get(ref))]);
+      const feeRef = db.collection(CHANGEOVER_ATTEMPTS).doc(`${stageDigest}:${index}:fee`);
+      const [head, old, fee, ...leases] = await Promise.all([tx.get(headRef), tx.get(attemptRef(index)), tx.get(feeRef), ...leaseRefs.map(ref => tx.get(ref))]);
       assertLeaseRows(leases);
       requireValue(head.get('revision') === expectedRevision && head.get('completed') === false
         && head.get('attemptCount') === previousCount, 'concurrent_write');
       requireValue(JSON.stringify(old.get('attempt')) === JSON.stringify(state.attempts[String(index)]), 'record_changed');
+      const signed = next.attempts[String(index)].raw;
+      if (signed !== null && head.get('feeBudgetWei') !== undefined) {
+        requireValue(fee.exists && fee.get('stageDigest') === stageDigest && fee.get('index') === index
+          && fee.get('from') === steps[index].from && fee.get('nonce') === next.attempts[String(index)].nonce
+          && fee.get('unsignedHash') === keccak256(Transaction.from(signed).unsignedSerialized), 'fee_reservation_required');
+      }
       tx.set(attemptRef(index), { stageDigest, index, attempt: next.attempts[String(index)] });
       tx.update(headRef, { revision: expectedRevision + 1, attemptCount: count });
     });

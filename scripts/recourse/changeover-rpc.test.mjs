@@ -15,9 +15,9 @@ function fixture(){
   if(method==='eth_getTransactionByHash'){const tx=Transaction.from(raw);return{hash:tx.hash,blockHash:h,blockNumber:'0x64',from:mode==='sender'?to:tx.from,to:tx.to,nonce:mode==='nonce'?'0x4':'0x3',value:'0x0',chainId:'0x2105',input:tx.data};}
   throw Error('unexpected '+method);
  };
- const signer={getAddress:async()=>wallet.address,signTransaction:async tx=>{signed++;raw=await wallet.signTransaction(tx);return raw;}};
+ const signer={getAddress:async()=>wallet.address,signTransaction:async tx=>{signed++;if(mode==="mutating-signer")tx.maxFeePerGas++;raw=await wallet.signTransaction(mode==="oversign"?{...tx,maxFeePerGas:tx.maxFeePerGas+1n}:tx);return raw;}};
  const port=changeoverRpcPort({rpcs:[{request:request(0)},{request:request(1)}],signer,
-  assertLease:async()=>{if(!lease)throw Error('lease lost');},approveFee:async quote=>{assert.equal(quote.transaction.gasLimit,48000n);if(!approved)throw Error('fee refused');},
+  assertLease:async()=>{if(!lease)throw Error('lease lost');},approveFee:async quote=>{assert.equal(quote.transaction.gasLimit,48000n);if(!approved)throw Error('fee refused');if(mode==='mutating-fee')quote.transaction.maxFeePerGas++;},
   maxFeePerGas:100n,maxPriorityFeePerGas:1n,maxGas:100000n});
  return{port,step,mode:v=>mode=v,final:v=>final=v,lease:v=>lease=v,approved:v=>approved=v,counts:()=>({signed,sent})};
 }
@@ -42,4 +42,17 @@ test('rechecks canonical membership after finalized-head reads and lease after b
  await assert.rejects(f.port.finalized(raw),/reorg/);
  const expired=fixture(),pending=await expired.port.prepare(expired.step);expired.mode('expire-lease');
  await assert.rejects(expired.port.broadcast(pending),/lease lost/);assert.equal(expired.counts().sent,0);
+});
+
+test('a signer cannot return an unreserved fee transaction',async()=>{
+ const f=fixture();f.mode('oversign');await assert.rejects(f.port.prepare(f.step),/signed_fee_binding/);
+ assert.deepEqual(f.counts(),{signed:1,sent:0});
+});
+
+test('mutable callbacks cannot change the simulated transaction or comparison baseline',async()=>{
+ const signer=fixture();signer.mode('mutating-signer');
+ await assert.rejects(signer.port.prepare(signer.step),/signed_fee_binding/);
+ assert.equal(signer.counts().sent,0);
+ const fee=fixture();fee.mode('mutating-fee');const raw=await fee.port.prepare(fee.step);
+ assert.equal(Transaction.from(raw).maxFeePerGas,100n);
 });

@@ -50,6 +50,7 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
   },
   finalized:raw=>included(raw,true),
   prepare:async(step)=>{
+   step={...step};
    await assertLease();await chain();ensure(lower(await signer.getAddress())===step.from,'signer');
    const call={from:step.from,...(step.to?{to:step.to}:{}),data:step.data,value:'0x0',nonce:toQuantity(step.nonce)};
    // Compare the simulation at the same canonical head; taking the lesser head
@@ -62,9 +63,14 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
    const estimate=estimates.reduce((a,b)=>a>b?a:b),gasLimit=(estimate*120n+99n)/100n;
    ensure(gasLimit>0n&&gasLimit<=maxGas,'gas_bound');
    const prepared={type:2,chainId:8453,nonce:step.nonce,to:step.to??null,data:step.data,value:0n,gasLimit,maxFeePerGas,maxPriorityFeePerGas};
-   await approveFee({step,transaction:prepared,blockHash:header.hash,blockNumber:height});
+   const expectedUnsigned=Transaction.from(prepared).unsignedSerialized;
+   await approveFee({step:{...step},transaction:{...prepared},blockHash:header.hash,blockNumber:height});
    ensure(object(await agree('eth_getBlockByNumber',[tag,false])).hash===header.hash,'reorg');
-   await assertLease();const raw=await signer.signTransaction(prepared);await assertLease();return raw;
+   await assertLease();const raw=await signer.signTransaction({...prepared});await assertLease();
+   const signed=Transaction.from(raw);
+   ensure(signed.signature&&signed.from?.toLowerCase()===step.from
+    &&signed.unsignedSerialized===expectedUnsigned,'signed_fee_binding');
+   return raw;
   },
   broadcast:async(raw)=>{
    await assertLease();await chain();const tx=Transaction.from(raw);
