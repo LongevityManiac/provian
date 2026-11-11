@@ -10,7 +10,7 @@ const position = (n: number) => ({ chainId: '8453' as const, kernel: a(1), pool:
 function setup() {
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
   const first = joinPrivateMembership(null, 10, rules), ref = db.collection('accounts').doc(h(9));
-  const append = async (block: number, kind: MembershipJournalEntry['kind'] = 'admission') => db.runTransaction(async tx => {
+  const append = async (block: number, kind: Exclude<MembershipJournalEntry['kind'], 'succession'> = 'admission') => db.runTransaction(async tx => {
     const row = await tx.get(ref), account = row.exists ? row.data() as MembershipJournalAccount : null;
     const episode = kind === 'closure' ? leavePrivateMembership(first, 10, rules) : first;
     const prepared = await prepareMembershipJournalAppend(db, tx, { ownerIdentity: h(9), account, episode, position: position(block), kind, evidenceId: h(10) });

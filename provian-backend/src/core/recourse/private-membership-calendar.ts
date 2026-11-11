@@ -58,10 +58,22 @@ export function privateMembershipStatus(prior: PrivateMembershipEpisode, nowMont
 
 /** Pure plan only. The durable journal must retain the previous episode and
  * commit credits solely after exact independently verified chain receipts. */
+/** A break cutoff can precede the owner's first admission. This is an explicit
+ * absence of membership, with no invoices or debt imported from the discarded branch. */
+export function unadmittedPrivateMembership(nowMonth: number): PrivateMembershipEpisode {
+  month(nowMonth);
+  return { generation: 0, joined: false, startMonth: nowMonth, admissionMonth: nowMonth,
+    observedMonth: nowMonth, lastAssessedMonth: nowMonth, firstUnpaidMonth: nowMonth,
+    endMonthExclusive: null, invoices: {} };
+}
 export function assessPrivateMembership(prior: PrivateMembershipEpisode, nowMonth: number,
   rules: PrivateCalendarRules): PrivateMembershipEpisode {
   month(nowMonth);
   if (nowMonth < prior.observedMonth) throw Error('recourse_private_calendar_rollback');
+  if (prior.generation === 0) {
+    if (prior.joined || Object.keys(prior.invoices).length !== 0 || prior.endMonthExclusive !== null) invalid();
+    return unadmittedPrivateMembership(nowMonth);
+  }
   const invoices = { ...prior.invoices };
   let state: PrivateMembershipEpisode = { ...prior, observedMonth: nowMonth, invoices };
   if (!state.joined) {

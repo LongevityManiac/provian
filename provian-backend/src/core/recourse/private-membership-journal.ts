@@ -9,9 +9,14 @@ export interface MembershipJournalPosition {
 }
 export interface MembershipJournalEntry {
   readonly id: string; readonly ownerIdentity: string; readonly previousId: string | null;
-  readonly salt: string; readonly kind: 'admission' | 'closure' | 'debit' | 'issuance';
+  readonly salt: string; readonly kind: 'admission' | 'closure' | 'debit' | 'issuance' | 'succession';
+  readonly succession?: MembershipJournalSuccession;
   readonly beforeEpisodeHash: string; readonly episode: PrivateMembershipEpisode;
   readonly position: MembershipJournalPosition; readonly evidenceId: string;
+}
+export interface MembershipJournalSuccession {
+  readonly cutoff: MembershipJournalPosition; readonly ancestorId: string | null;
+  readonly afterBreak: boolean; readonly manifestHash: string; readonly previousManifestHash: string;
 }
 export interface MembershipJournalAccount {
   readonly ownerIdentity: string; readonly episode: PrivateMembershipEpisode; readonly journalHead?: string;
@@ -38,8 +43,17 @@ export function checkMembershipJournalEntry(value: MembershipJournalEntry): void
   if (!HASH.test(id) || id !== membershipJournalHash(body) || !HASH.test(value.ownerIdentity) || !HASH.test(value.salt)
     || !HASH.test(value.beforeEpisodeHash) || !HASH.test(value.evidenceId)
     || (value.previousId !== null && !HASH.test(value.previousId))
-    || !['admission', 'closure', 'debit', 'issuance'].includes(value.kind) || !value.episode) fail('entry');
+    || !['admission', 'closure', 'debit', 'issuance', 'succession'].includes(value.kind) || !value.episode) fail('entry');
   validatePosition(value.position);
+  if (value.kind === 'succession') {
+    const s = value.succession;
+    if (!s || !HASH.test(s.manifestHash) || !HASH.test(s.previousManifestHash) || typeof s.afterBreak !== 'boolean'
+      || (s.ancestorId !== null && !HASH.test(s.ancestorId)) || value.previousId === null) return fail('succession');
+    validatePosition(s.cutoff);
+    if (s.cutoff.logIndex !== Number.MAX_SAFE_INTEGER || s.cutoff.block >= value.position.block
+      || s.cutoff.timestamp > value.position.timestamp || s.cutoff.pool === value.position.pool
+      || s.cutoff.kernel === value.position.kernel) return fail('succession');
+  } else if (value.succession !== undefined) return fail('succession');
 }
 
 /** Called inside the already authenticated receipt/transition transaction,
@@ -47,9 +61,10 @@ export function checkMembershipJournalEntry(value: MembershipJournalEntry): void
  * No caller-provided journal head, salt or history is accepted from an API. */
 export async function prepareMembershipJournalAppend(db: Firestore, tx: Transaction, input: {
   readonly ownerIdentity: string; readonly account: MembershipJournalAccount | null; readonly episode: PrivateMembershipEpisode;
-  readonly position: MembershipJournalPosition; readonly kind: MembershipJournalEntry['kind']; readonly evidenceId: string;
+  readonly position: MembershipJournalPosition; readonly kind: Exclude<MembershipJournalEntry['kind'], 'succession'>; readonly evidenceId: string;
 }): Promise<{ readonly head: string; write(): void }> {
   const detached = JSON.parse(stable(input)) as typeof input;
+  if (String(detached.kind) === 'succession') return fail('unauthenticated_succession');
   if (!HASH.test(detached.ownerIdentity) || !HASH.test(detached.evidenceId)) return fail('identity');
   validatePosition(detached.position);
   let previous: MembershipJournalEntry | null = null;
@@ -91,10 +106,34 @@ export async function readMembershipJournal(db: Firestore, account: MembershipJo
     if (next && (membershipJournalHash(entry.episode) !== next.beforeEpisodeHash
       || !beforeMembershipPosition(entry.position, next.position) || entry.position.timestamp > next.position.timestamp
       || (entry.position.block === next.position.block && entry.position.blockHash !== next.position.blockHash)
-      || entry.position.kernel !== next.position.kernel || entry.position.pool !== next.position.pool)) return fail('chain');
+      || (next.kind !== 'succession' && (entry.position.kernel !== next.position.kernel || entry.position.pool !== next.position.pool)))) return fail('chain');
     result.push(entry); id = entry.previousId;
   }
   if (result.length === 0 || membershipJournalHash(result[0].episode) !== membershipJournalHash(account.episode)
     || result[result.length - 1].beforeEpisodeHash !== membershipJournalHash(null) || result[result.length - 1].kind !== 'admission') return fail('chain');
-  return result.reverse();
+  result.reverse();
+  activeMembershipJournal(result); // Validate explicit branch ancestry before any projection.
+  return result;
 }
+
+/** Audit history retains all entries; eligibility follows only this selected
+ * branch. A succession entry must select its ancestor from the branch that was
+ * active immediately before it, never from a previously discarded branch. */
+export function activeMembershipJournal(audit: readonly MembershipJournalEntry[]): readonly MembershipJournalEntry[] {
+  let active: MembershipJournalEntry[] = [];
+  for (const entry of audit) {
+    if (entry.kind !== 'succession') { active.push(entry); continue; }
+    const s = entry.succession;
+    if (!s || active.length === 0) return fail('succession');
+    const previous = active[active.length - 1];
+    if (previous.position.kernel !== s.cutoff.kernel || previous.position.pool !== s.cutoff.pool) return fail('succession_domain');
+    const retained = active.filter(e => beforeMembershipPosition(e.position, s.cutoff)
+      || (e.position.block === s.cutoff.block && e.position.logIndex === s.cutoff.logIndex));
+    const ancestor = retained[retained.length - 1];
+    if ((ancestor?.id ?? null) !== s.ancestorId || (!s.afterBreak && ancestor?.id !== previous.id)
+      || (ancestor && ancestor.position.timestamp > s.cutoff.timestamp)) return fail('succession_ancestor');
+    active = [...retained, entry];
+  }
+  return active;
+}
+

@@ -102,3 +102,15 @@ test('a scan captured before atomic binding cannot clear its later confirmation 
   expect(s.fake.store.get(ownerKey)?.membershipScanRequired).toBe(true);
   await expect(readPrivateMembershipScan(s.db, h(500))).rejects.toThrow('checkpoint');
 });
+
+test('an explicit finalized old-domain cutoff can reconcile after a pointer change without clearing a newer binding freeze', async () => {
+  const s = setup(); s.f.state.endRevision = 2;
+  const ownerKey = `${RECOURSE_COLLECTIONS.owners}/${h(500)}`;
+  s.fake.store.set(ownerKey, { ownerIdentity: h(500), membershipScanRequired: true });
+  const proof = await readPrivateMembershipScan(s.db, h(500), { pool: old[8], block: 99, blockHash: h(99) });
+  expect(proof.historical).toBe(true); await commitPrivateMembershipScan(s.db, proof);
+  expect(s.fake.store.get(key)).toMatchObject({ needsScan: true, checkpoint: { block: 99 } });
+  expect(s.fake.store.get(ownerKey)?.membershipScanRequired).toBe(true);
+  await expect(readPrivateMembershipScan(s.db, h(500), { pool: old[8], block: 101, blockHash: h(101) })).rejects.toThrow('checkpoint');
+  await expect(readPrivateMembershipScan(s.db, h(500), { pool: old[8], block: 99, blockHash: h(98) })).rejects.toThrow('reorg');
+});

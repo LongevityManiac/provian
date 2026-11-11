@@ -21,7 +21,7 @@ interface RequiredConsent {
 }
 export interface PrivateMembershipTransition {
   readonly id: string; readonly ownerIdentity: string; readonly kind: 'join' | 'leave';
-  readonly status: 'preparing' | 'consenting' | 'complete';
+  readonly status: 'preparing' | 'consenting' | 'complete' | 'superseded';
   readonly bindingSetVersion: number; readonly portfolioHash: string;
   readonly pool: string; readonly kernel: string; readonly checkpoint: Position;
   readonly bindings: readonly RequiredConsent[];

@@ -15,6 +15,7 @@ interface Binding { readonly identity: string; readonly address: string; readonl
 interface Counters { nonce: bigint; generation: bigint; joined: boolean; debit: bigint }
 export interface PrivateMembershipScan {
   readonly ownerIdentity: string; readonly accountVersion: number; readonly bindingHash: string;
+  readonly historical: boolean;
   readonly fromBlock: number; readonly fromBlockHash: string; readonly pool: string;
   readonly block: number; readonly blockHash: string; readonly timestamp: number;
   readonly receipts: readonly VerifiedMembershipReceipt[];
@@ -45,7 +46,8 @@ function quantity(value: unknown): number {
  * debit/cancellation/consent counter must reconcile with canonical endpoint
  * state. Issuance is additionally fenced by the private pending reservation:
  * it cannot be cleared by scanning or by an absent log. */
-export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: string): Promise<PrivateMembershipScan> {
+export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: string,
+  end?: { readonly pool: string; readonly block: number; readonly blockHash: string }): Promise<PrivateMembershipScan> {
   if (!/^0x[0-9a-f]{64}$/.test(ownerIdentity)) return fail('owner');
   const accountRow = await db.collection(C.owners).doc(ownerIdentity).get();
   if (!accountRow.exists) return fail('missing_account');
@@ -65,8 +67,11 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
   const pointer = PROTOCOL_POINTER_PIN.address, runtimeHash = PROTOCOL_POINTER_PIN.runtimeHash;
   if (!pointer || !runtimeHash) return fail('pointer');
   const from = account.checkpoint, chain = createRecourseChainPort();
-  const block = await chain.finalizedBlock(), blockHash = await chain.blockHash(block);
-  if (block < from.block || !blockHash || portfolio.some(b => b.boundBlock !== null && b.boundBlock > block)) return fail('checkpoint');
+  const finalized = await chain.finalizedBlock(), block = end?.block ?? finalized;
+  if (!Number.isSafeInteger(block) || block < 0 || block > finalized || (end && end.pool !== from.pool)) return fail('checkpoint');
+  const blockHash = await chain.blockHash(block);
+  if (end && blockHash !== end.blockHash) return fail('reorg');
+  if (block < from.block || !blockHash || (!end && portfolio.some(b => b.boundBlock !== null && b.boundBlock > block))) return fail('checkpoint');
   const [before, after] = await Promise.all([
     resolveHistoricalProtocolDeployment(rpcs, pointer, runtimeHash, from.block, from.blockHash),
     resolveHistoricalProtocolDeployment(rpcs, pointer, runtimeHash, block, blockHash),
@@ -129,7 +134,7 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
   for (const tx of transactions) receipts.push(await readMembershipReceipt(tx, from.pool));
   receipts.sort((a, b) => a.block - b.block || a.events[0].logIndex - b.events[0].logIndex);
   if (await chain.blockHash(from.block) !== from.blockHash || await chain.blockHash(block) !== blockHash) return fail('reorg');
-  const result = Object.freeze({ ownerIdentity, accountVersion: account.version, bindingHash: hash(portfolio),
+  const result = Object.freeze({ ownerIdentity, historical: end !== undefined, accountVersion: account.version, bindingHash: hash(portfolio),
     fromBlock: from.block, fromBlockHash: from.blockHash, pool: from.pool, block, blockHash, timestamp,
     receipts: Object.freeze(receipts), requiredEffects: Object.freeze(effects.map(e => Object.freeze(e))) });
   authentic.add(result); return result;
@@ -153,8 +158,8 @@ export async function commitPrivateMembershipScan(db: Firestore, proof: PrivateM
       || hash(bindings(portfolio.docs)) !== proof.bindingHash) return fail('concurrent');
     if (effectRows.some(row => !row.exists || row.get('ownerIdentity') !== proof.ownerIdentity)) return fail('uncredited_effect');
     if (!Number.isSafeInteger(state.version + 1)) return fail('version');
-    if (owner.exists && owner.get('membershipScanRequired') === true) tx.update(ownerRef, { membershipScanRequired: false });
+    if (!proof.historical && owner.exists && owner.get('membershipScanRequired') === true) tx.update(ownerRef, { membershipScanRequired: false });
     tx.update(ref, { checkpoint: { pool: proof.pool, block: proof.block, blockHash: proof.blockHash },
-      needsScan: false, version: state.version + 1 });
+      needsScan: proof.historical, version: state.version + 1 });
   });
 }

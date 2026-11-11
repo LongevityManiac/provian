@@ -1,6 +1,6 @@
 import { utcCalendarMonth } from './calendar-month';
 import { assessPrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
-import { beforeMembershipPosition, membershipJournalHash, type MembershipJournalEntry, type MembershipJournalPosition } from './private-membership-journal';
+import { activeMembershipJournal, beforeMembershipPosition, membershipJournalHash, type MembershipJournalEntry, type MembershipJournalPosition } from './private-membership-journal';
 
 export interface LossMembershipEvidence {
   readonly active: boolean; readonly periodIndex: number | null;
@@ -20,7 +20,13 @@ export function privateMembershipAtLoss(identity: string, journal: readonly Memb
     || ![loss.block, loss.logIndex, loss.timestamp, consent.admissionLogIndex, consent.closureLogIndex].every(n => Number.isSafeInteger(n) && n >= 0))
     throw Error('recourse_loss_position_invalid');
   const month = utcCalendarMonth(loss.timestamp);
-  const history = journal.filter(entry => beforeMembershipPosition(entry.position, loss));
+  for (const entry of journal) {
+    const cutoff = entry.succession?.cutoff;
+    if (cutoff && cutoff.kernel === loss.kernel && cutoff.pool === loss.pool && beforeMembershipPosition(cutoff, loss)) {
+      throw Error('recourse_membership_loss_after_cutoff');
+    }
+  }
+  const history = activeMembershipJournal(journal).filter(entry => beforeMembershipPosition(entry.position, loss));
   const last = history[history.length - 1];
   if (last && (last.position.kernel !== loss.kernel || last.position.pool !== loss.pool || last.position.timestamp > loss.timestamp
     || (last.position.block === loss.block && last.position.blockHash !== loss.blockHash))) throw Error('recourse_membership_history_invalid');
