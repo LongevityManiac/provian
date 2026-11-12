@@ -111,3 +111,22 @@ test('recovery releases an interrupted unsigned gas reservation without erasing 
   expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).not.toHaveBeenCalled();
   expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBeNull();
 });
+
+test('leave intent accepted during simulation refuses admission at queue commit', async () => {
+  const f = await fixture(), original = f.p.chain.agree;
+  const selector = new Interface(STANDING_MEMBERSHIP_ABI.fragments).getFunction('setStandingConsent')!.selector;
+  let raced = false;
+  f.p.chain.agree = async (method, args) => {
+    const result = await original(method, args);
+    const call = args[0] as { data?: string };
+    if (method === 'eth_call' && call.data?.startsWith(selector)) {
+      f.fake.store.get(`${T}/${f.id}`)!.departureRequested = true;
+      raced = true;
+    }
+    return result;
+  };
+  await expect(queueMembershipConsent(f.db, f.owner, f.input, f.attestor, f.p))
+    .rejects.toThrow('recourse_membership_consent_finished');
+  expect(raced).toBe(true);
+  expect([...f.fake.store.keys()].filter(key => key.startsWith(Q + '/'))).toHaveLength(0);
+});
