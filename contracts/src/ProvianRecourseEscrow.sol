@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseInstitutionSeeds} from "./RecourseInstitutionSeeds.sol";
 
 /// @notice Successor institution with explicit PVT custody obligations.
 /// Direct donations do not increase obligations; recorded exits remain backed.
@@ -13,7 +14,7 @@ interface IArbitratorRewardSink {
     function fundEscrowDisputeReward(bytes32 escrowId, uint256 amount) external;
 }
 
-contract ProvianRecourseEscrow {
+contract ProvianRecourseEscrow is RecourseInstitutionSeeds {
 
     string public constant VERSION = "v4";
 
@@ -205,8 +206,8 @@ contract ProvianRecourseEscrow {
         address _pvt,
         address _epochClock,
         address _issuanceIndex,
-        EscrowSeed[] memory seedEscrows
-    ) {
+        SeedManifest memory seedManifest
+    ) RecourseInstitutionSeeds(_pvt, 1, seedManifest) {
         if (_admin == address(0) || _feeWallet == address(0) ||
             _usdc == address(0) || _pvt == address(0) || _epochClock == address(0) ||
             _issuanceIndex == address(0)) {
@@ -219,8 +220,11 @@ contract ProvianRecourseEscrow {
         epochClock = IEpochClock(_epochClock);
         issuanceIndex = IIssuanceIndex(_issuanceIndex);
 
-        for (uint256 i = 0; i < seedEscrows.length; ++i) {
-            EscrowSeed memory s = seedEscrows[i];
+
+    }
+
+    function _applyCustodySeed(bytes calldata data) internal override returns (uint256) {
+        EscrowSeed memory s = abi.decode(data, (EscrowSeed));
             if (
                 s.escrowId == bytes32(0) || s.depositor == address(0) || s.recipient == address(0) || s.amount == 0
                     || s.fee > s.amount || escrows[s.escrowId].depositor != address(0)
@@ -236,7 +240,7 @@ contract ProvianRecourseEscrow {
                 feePaidInPVT: false
             });
             emit EscrowCarried(s.escrowId, s.depositor, s.recipient, s.amount, s.fee, s.autoReleaseAt, s.currency);
-        }
+        return s.amount;
     }
 
     modifier onlyAdmin() {
@@ -254,7 +258,7 @@ contract ProvianRecourseEscrow {
         _;
     }
 
-    function setCourtContract(address _court) external onlyAdmin {
+    function setCourtContract(address _court) external onlyAdmin whenCustodyReady {
         if (_court == address(0)) revert InvalidAddress();
         if (courtContractSet) revert CourtAlreadySet();
         courtContract = _court;
@@ -262,7 +266,7 @@ contract ProvianRecourseEscrow {
         emit CourtContractSet(_court);
     }
 
-    function transferAdmin(address newAdmin) external onlyAdmin {
+    function transferAdmin(address newAdmin) external onlyAdmin whenCustodyReady {
         if (newAdmin == address(0)) revert InvalidAddress();
         address oldAdmin = admin;
         admin = newAdmin;
@@ -350,7 +354,7 @@ contract ProvianRecourseEscrow {
         return (a.exists, a.value);
     }
 
-    function scheduleFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyAdmin {
+    function scheduleFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyAdmin whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (bps > FEE_BPS_MAX) revert CostOutOfDomain(); 
         if (scheduledFeeBps[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -359,7 +363,7 @@ contract ProvianRecourseEscrow {
         emit FeeBpsScheduled(effectiveEpoch, bps);
     }
 
-    function schedulePrincipalCap(uint64 effectiveEpoch, uint256 capAtomic) external onlyAdmin {
+    function schedulePrincipalCap(uint64 effectiveEpoch, uint256 capAtomic) external onlyAdmin whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (capAtomic < PRINCIPAL_CAP_MIN || capAtomic > PRINCIPAL_CAP_MAX) revert CostOutOfDomain();
         if (scheduledPrincipalCap[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -368,7 +372,7 @@ contract ProvianRecourseEscrow {
         emit PrincipalCapScheduled(effectiveEpoch, capAtomic);
     }
 
-    function scheduleAutoReleasePeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyAdmin {
+    function scheduleAutoReleasePeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyAdmin whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (periodSeconds < AUTO_RELEASE_PERIOD_MIN || periodSeconds > AUTO_RELEASE_PERIOD_MAX) revert CostOutOfDomain();
         if (scheduledAutoReleasePeriod[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -377,7 +381,7 @@ contract ProvianRecourseEscrow {
         emit AutoReleasePeriodScheduled(effectiveEpoch, periodSeconds);
     }
 
-    function scheduleAgreementDeadline(uint64 effectiveEpoch, uint256 deadlineSeconds) external onlyAdmin {
+    function scheduleAgreementDeadline(uint64 effectiveEpoch, uint256 deadlineSeconds) external onlyAdmin whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (deadlineSeconds < AGREEMENT_DEADLINE_MIN || deadlineSeconds > AGREEMENT_DEADLINE_MAX) revert CostOutOfDomain();
         if (scheduledAgreementDeadline[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -386,7 +390,7 @@ contract ProvianRecourseEscrow {
         emit AgreementDeadlineScheduled(effectiveEpoch, deadlineSeconds);
     }
 
-    function scheduleDisputeTimeout(uint64 effectiveEpoch, uint256 timeoutSeconds) external onlyAdmin {
+    function scheduleDisputeTimeout(uint64 effectiveEpoch, uint256 timeoutSeconds) external onlyAdmin whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (timeoutSeconds < DISPUTE_TIMEOUT_MIN || timeoutSeconds > DISPUTE_TIMEOUT_MAX) revert CostOutOfDomain();
         if (scheduledDisputeTimeout[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -401,7 +405,7 @@ contract ProvianRecourseEscrow {
         uint256 amount,
         uint256 autoReleaseAt,
         Currency currencyType
-    ) external {
+    ) external whenCustodyReady {
         if (recipient == address(0)) revert InvalidAddress();
         if (amount == 0) revert InvalidAmount();
 
@@ -445,7 +449,7 @@ contract ProvianRecourseEscrow {
         }
     }
 
-    function fundEscrow(bytes32 escrowId, bool payFeeInPVT) external onlyDepositor(escrowId) {
+    function fundEscrow(bytes32 escrowId, bool payFeeInPVT) external onlyDepositor(escrowId) whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Created) {
             revert InvalidStatus(Status.Created, e.status);
@@ -474,7 +478,7 @@ contract ProvianRecourseEscrow {
         emit EscrowFunded(escrowId, e.amount);
     }
 
-    function releaseEscrow(bytes32 escrowId) external {
+    function releaseEscrow(bytes32 escrowId) external whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Funded) {
             revert InvalidStatus(Status.Funded, e.status);
@@ -506,7 +510,7 @@ contract ProvianRecourseEscrow {
         emit EscrowReleased(escrowId, e.recipient, netAmount, e.fee, isAutoRelease);
     }
 
-    function disputeEscrow(bytes32 escrowId) external onlyDepositor(escrowId) {
+    function disputeEscrow(bytes32 escrowId) external onlyDepositor(escrowId) whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Funded) {
             revert InvalidStatus(Status.Funded, e.status);
@@ -521,7 +525,7 @@ contract ProvianRecourseEscrow {
         emit EscrowDisputed(escrowId);
     }
 
-    function resolveDispute(bytes32 escrowId, bool releaseToRecipient) external onlyAdminOrCourt {
+    function resolveDispute(bytes32 escrowId, bool releaseToRecipient) external onlyAdminOrCourt whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Disputed) {
             revert InvalidStatus(Status.Disputed, e.status);
@@ -532,7 +536,7 @@ contract ProvianRecourseEscrow {
         _settleResolution(escrowId, e, releaseToRecipient);
     }
 
-    function claimDisputeTimeout(bytes32 escrowId) external {
+    function claimDisputeTimeout(bytes32 escrowId) external whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Disputed) {
             revert InvalidStatus(Status.Disputed, e.status);
@@ -581,7 +585,7 @@ contract ProvianRecourseEscrow {
         }
     }
 
-    function withdrawResolvedFunds(bytes32 escrowId) external {
+    function withdrawResolvedFunds(bytes32 escrowId) external whenCustodyReady {
         uint256 amount = pendingWithdrawal[escrowId];
         if (amount == 0) revert NothingToWithdraw();
         address to = pendingBeneficiary[escrowId];
@@ -594,7 +598,7 @@ contract ProvianRecourseEscrow {
         emit ResolvedFundsWithdrawn(escrowId, to, amount);
     }
 
-    function delegateToCourt(bytes32 escrowId) external {
+    function delegateToCourt(bytes32 escrowId) external whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Disputed) {
             revert InvalidStatus(Status.Disputed, e.status);
@@ -610,7 +614,7 @@ contract ProvianRecourseEscrow {
         emit DisputeDelegatedToCourt(escrowId);
     }
 
-    function cancelEscrow(bytes32 escrowId) external onlyDepositor(escrowId) {
+    function cancelEscrow(bytes32 escrowId) external onlyDepositor(escrowId) whenCustodyReady {
         Escrow storage e = escrows[escrowId];
         if (e.status != Status.Created) {
             revert InvalidStatus(Status.Created, e.status);

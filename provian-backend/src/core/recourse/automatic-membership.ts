@@ -1,3 +1,5 @@
+import { advanceMembershipDeparture } from './membership-departure';
+import { PRIVATE_MEMBERSHIP_TRANSITIONS as T } from './private-membership-transition';
 import type { Firestore } from 'firebase-admin/firestore';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
@@ -6,8 +8,6 @@ import { queueMembershipDebit } from './membership-debit-operation';
 import { reconcileCurrentPrivateMembership, prepareMembershipTransition } from './membership-preparation';
 import { readRecoursePoolState } from './pool-state';
 import { breakDeploymentChain } from './break-deployment-queue';
-import { readMembershipWiring } from './membership-wiring';
-import { STANDING_MEMBERSHIP_ABI } from './membership-authorization';
 
 export const AUTOMATIC_MEMBERSHIP_SWEEP='recourse_private_membership_sweep_v1';
 export type AutomaticMembershipResult='queued'|'settled'|'pending'|'approval_required'|'left';
@@ -19,19 +19,16 @@ export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity
   const owner=await db.collection(R.owners).doc(ownerIdentity).get();
   if(!owner.exists||owner.get('ownerIdentity')!==ownerIdentity)throw Error('recourse_automatic_owner');
   const transition:unknown=owner.get('membershipTransition');
-  if(typeof transition==='string'){await prepareMembershipTransition(db,ownerIdentity,{id:transition});return 'pending';}
-  const binding:unknown=owner.get('primaryBinding');
+  if(typeof transition==='string'){
+    const view=await prepareMembershipTransition(db,ownerIdentity,{id:transition});
+    if(view.kind==='leave')await advanceMembershipDeparture(db,ownerIdentity,transition);
+    return 'pending';
+  }
+  const binding:unknown=owner.get('membershipFixedDebitBinding');
   if(typeof binding!=='string'||!/^0x[0-9a-f]{64}$/.test(binding))return 'approval_required';
   const chain=breakDeploymentChain(),deployment=await chain.deployment();
   const state=await readRecoursePoolState(binding,deployment);
   if(!state.addressConsent)return 'left';
-  const wiring=await readMembershipWiring(chain,deployment);
-  const raw=await chain.agree('eth_call',[{to:wiring.standingMembership,
-    data:STANDING_MEMBERSHIP_ABI.encodeFunctionData('standingMandate',[binding])},wiring.pin]);
-  if(typeof raw!=='string')throw Error('recourse_automatic_state');
-  const m=STANDING_MEMBERSHIP_ABI.decodeFunctionResult('standingMandate',raw);
-  if(!m.active||String(m.consentNonce)!==state.consentNonce||BigInt(m.burnLimit)<BigInt(state.participationBurnAtomic)
-    ||BigInt(m.reserveLimit)<BigInt(state.noEarningsContributionAtomic)||Number(m.earningsBpsLimit)<state.earningsBps)return 'approval_required';
   const prepared=await prepareMembershipDebit(db,ownerIdentity,state.currentAddress);
   if(prepared.status!=='ready')return prepared.status;
   const {reservationId,domain,debit}=prepared.challenge;
@@ -61,5 +58,20 @@ export async function runAutomaticMembershipSweep(db:Firestore):Promise<{visited
     await cursorRef.set({after:owner,updatedAtMs:Date.now()});
   }
   if(page.size<10)await cursorRef.set({after:null,updatedAtMs:Date.now()});
+  // A first join may never have opened a membership account. Its retained
+  // departure still needs unattended reconciliation after the app closes.
+  const departureCursor=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('departures'), saved=await departureCursor.get();
+  const departureAfter:unknown=saved.get('after');
+  if(departureAfter!=null&&(typeof departureAfter!=='string'||!/^0x[0-9a-f]{64}$/.test(departureAfter)))throw Error('recourse_automatic_cursor');
+  let departures=db.collection(T).where('departureRequested','==',true).where('status','in',['preparing','consenting']).orderBy('id').limit(10);
+  if(typeof departureAfter==='string')departures=departures.startAfter(departureAfter);
+  const rows=await departures.get();
+  for(const row of rows.docs){
+    const id:unknown=row.get('id'),ownerIdentity:unknown=row.get('ownerIdentity');
+    if(typeof id!=='string'||typeof ownerIdentity!=='string'||!/^0x[0-9a-f]{64}$/.test(id)||!/^0x[0-9a-f]{64}$/.test(ownerIdentity))throw Error('recourse_automatic_owner');
+    try{await advanceMembershipDeparture(db,ownerIdentity,id);}catch{++result.retry;}
+    await departureCursor.set({after:id,updatedAtMs:Date.now()});
+  }
+  if(rows.size<10)await departureCursor.set({after:null,updatedAtMs:Date.now()});
   return result;
 }

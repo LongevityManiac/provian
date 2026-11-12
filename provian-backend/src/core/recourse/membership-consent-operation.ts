@@ -1,15 +1,16 @@
+import {assertMembershipDepartureAttestation} from './membership-departure-attestation';
 import { getBytes, getCreateAddress } from 'ethers';
 import { readMembershipWiring } from './membership-wiring';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import { breakDeploymentChain } from './break-deployment-queue';
-import { STANDING_MEMBERSHIP_ABI as POOL, standingMembershipSigningHash, parseStandingMembershipAuthorization, type StandingMembershipAuthorization,
+import { STANDING_MEMBERSHIP_ABI as POOL, standingMembershipSigningHash, authenticatedDepartureSigningHash, parseStandingMembershipAuthorization, type StandingMembershipAuthorization,
   parseAddressMembershipConsent, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
   type MembershipAuthorizationDomain } from './membership-authorization';
 import { configuredIdentityAttestor, assertIdentityAttestation, type IdentityAttestor } from './identity-attestor';
 import { ownedMembershipTransition } from './membership-preparation';
-import { nextPrivateAddressConsent } from './private-membership-transition';
+import { nextPrivateAddressConsent, PRIVATE_MEMBERSHIP_TRANSITIONS, type PrivateMembershipTransition } from './private-membership-transition';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { readRecoursePoolState, type RecoursePoolState } from './pool-state';
@@ -42,13 +43,16 @@ export function parseMembershipConsentRequest(value: unknown): MembershipConsent
       ||!signature(row.ownerSignature)||!signature(row.attestorSignature))return fail('input');
     return {transitionId:row.transitionId,domain,consent,standing,exitSecret:null,ownerSignature:row.ownerSignature,attestorSignature:row.attestorSignature};
   }
-  if(row.standing!==null||row.ownerSignature!==null||row.attestorSignature!==null
-    ||typeof row.exitSecret!=='string'||!/^0x[0-9a-f]{64}$/.test(row.exitSecret))return fail('input');
+  if(row.standing!==null||row.attestorSignature!==null) return fail('input');
+  if (row.exitSecret === null && signature(row.ownerSignature)) return {transitionId:row.transitionId,domain,consent,
+    standing:null,exitSecret:null,ownerSignature:row.ownerSignature,attestorSignature:null};
+  if(row.ownerSignature!==null||typeof row.exitSecret!=='string'||!/^0x[0-9a-f]{64}$/.test(row.exitSecret))return fail('input');
   return {transitionId:row.transitionId,domain,consent,standing:null,exitSecret:row.exitSecret,ownerSignature:null,attestorSignature:null};
 }
 export function membershipConsentCalldata(request: MembershipConsentRequest): string {
   return request.standing ? POOL.encodeFunctionData('setStandingConsent', [request.standing, request.ownerSignature, request.attestorSignature])
-    : POOL.encodeFunctionData('leaveStandingMembership',[request.consent.binding,request.consent.nonce,request.exitSecret,request.consent.revision]);
+    : request.exitSecret !== null ? POOL.encodeFunctionData('leaveStandingMembership',[request.consent.binding,request.consent.nonce,request.exitSecret,request.consent.revision])
+    : POOL.encodeFunctionData('leaveSuspendedMembership',[request.consent,request.ownerSignature]);
 }
 
 async function consentContext(db: Firestore, request: MembershipConsentRequest,
@@ -59,6 +63,7 @@ async function consentContext(db: Firestore, request: MembershipConsentRequest,
   const binding = await db.collection(R.identities).doc(consent.binding).get(), ownerIdentity: unknown = binding.get('ownerIdentity');
   if (!binding.exists || typeof ownerIdentity !== 'string') return fail('owner');
   const operation = await ownedMembershipTransition(db, ownerIdentity, request.transitionId);
+  if (operation.departureRequested && operation.kind !== 'leave') return fail('finished');
   const [owner, account, address] = await Promise.all([db.collection(R.owners).doc(ownerIdentity).get(),
     db.collection(C.owners).doc(ownerIdentity).get(), db.collection(R.addresses).doc(consent.account).get()]);
   const selected = operation.bindings.find(b => b.binding === consent.binding);
@@ -77,7 +82,8 @@ async function consentContext(db: Firestore, request: MembershipConsentRequest,
   if (!expected || Object.entries(expected).some(([key, value]) => key !== 'expiresAt' && (consent.joined || key !== 'ruleHash') && consent[key as keyof AddressMembershipConsent] !== value)
     || consent.nonce !== state.consentNonce || (operation.kind === 'renew' ? !state.addressConsent : consent.joined === state.addressConsent)
     || (consent.joined && (BigInt(consent.expiresAt) < BigInt(state.timestamp) || BigInt(consent.expiresAt) > BigInt(expected.expiresAt)))) return fail('stale');
-  if(request.standing && (request.standing.fixedChargePayer !== (owner.get('primaryBinding')===consent.binding)
+  if(request.standing && (!operation.fixedDebitBinding || owner.get('membershipFixedDebitBinding') !== operation.fixedDebitBinding
+    || request.standing.fixedChargePayer !== (operation.fixedDebitBinding===consent.binding)
     || request.standing.burnLimit !== (request.standing.fixedChargePayer?state.participationBurnAtomic:'0')
     || request.standing.reserveLimit !== (request.standing.fixedChargePayer?state.noEarningsContributionAtomic:'0')
     || request.standing.earningsBpsLimit !== state.earningsBps))return fail('amount');
@@ -97,6 +103,9 @@ export async function checkMembershipConsent(db: Firestore, value: unknown, p = 
     if(!request.ownerSignature||!request.attestorSignature)return fail('signature');
     await assertIdentityAttestation(p.chain, request.consent.account, context.deployment.blockHash, bytes, request.ownerSignature);
     await assertIdentityAttestation(p.chain, context.identityAttestor, context.deployment.blockHash, bytes, request.attestorSignature);
+  } else if (request.ownerSignature) {
+    await assertMembershipDepartureAttestation(p.chain, request.consent.account, context.deployment.blockHash,
+      getBytes(authenticatedDepartureSigningHash(request.domain,request.consent)), request.ownerSignature);
   }
   const calldata = membershipConsentCalldata(request);
   if (await p.chain.agree('eth_call', [{ to: context.standingMembership, from: context.gasPayer, data: calldata }, context.pin]) !== '0x') return fail('simulation');
@@ -107,6 +116,16 @@ export async function checkMembershipConsent(db: Firestore, value: unknown, p = 
 }
 export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredOperationAdapter<MembershipConsentRequest, CheckedMembershipConsent> {
   return { collection: MEMBERSHIP_CONSENT_OPERATIONS, parse: parseMembershipConsentRequest, id: membershipConsentOperationId,
+    beforeQueue: async (tx, request) => {
+      const transition = await tx.get(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(request.transitionId));
+      if (!transition.exists || (transition.get('departureRequested') && request.consent.joined) || transition.get('status') === 'superseded'
+        || transition.get('status') === 'complete') return fail('finished');
+      const operation = transition.data() as PrivateMembershipTransition;
+      const expected = nextPrivateAddressConsent(operation,request.consent.binding,
+        {revision:request.consent.revision,ruleHash:request.consent.ruleHash,timestamp:0});
+      if (!expected || Object.entries(expected).some(([key,value]) => key !== 'expiresAt'
+        && request.consent[key as keyof AddressMembershipConsent] !== value)) return fail('finished');
+    },
     target: r => getCreateAddress({from:r.domain.pool,nonce:1}).toLowerCase(), calldata: membershipConsentCalldata, check: r => checkMembershipConsent(db, r, p), assert: assertCheckedMembershipConsent,
     satisfied: () => false, obsolete: e => e instanceof Error && ['retired', 'finished', 'stale', 'owner'].some(s => e.message === `recourse_membership_consent_${s}`),
     finalized: finalizedOwnerTransaction, reconcileConfirmed: async (request, transactionHash) => {

@@ -71,7 +71,10 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   const iface=new Interface(artifacts[name].abi),actual=await read(name,method,args);
   ensure(iface.encodeFunctionResult(method,actual)===iface.encodeFunctionResult(method,values),`state:${name}:${method}`);
  };
- await exact('ProvianRecoveryHistory','state',[],[state]);
+ await exact('ProvianRecoveryHistory','baseState',[],[plan.economicSeeds.state]);
+ for(const row of plan.economicSeeds.rows) await exact('ProvianRecoveryHistory','economicEntry',[row.index],[row.data,row.index<state.epochs.length]);
+ await exact('ProvianRecoveryHistory','appliedEconomicEntries',[a.ProvianRecourseKernel],[plan.economicSeeds.rows.length]);
+ await exact('ProvianRecoveryHistory','importedEconomicEntries',[],[plan.economicSeeds.rows.length]);
  // Earlier epochs retain their historical settlement hashes. The armed current
  // epoch changes only its verifier and kernel-domain hash, never economics.
  for(const epoch of state.epochs){
@@ -112,14 +115,20 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
  // permissionless even while the new settlement lane is administratively held.
  const mapping={escrowV4:'ProvianRecourseEscrow',promiseV3:'ProvianPromiseV3',poolV3:'ProvianRecourseProjectPool',
   bondPool:'ProvianRecourseBondPool',courtV2:'ProvianRecourseCourt'};
- // Imports install kernel schedules without emitting scheduling events. The
- // only planned new schedule events are the BondPool constructor's fee/burn
- // seeds at epoch zero. Refuse every additional pre-publication schedule,
- // including a new epoch or an otherwise absent flag on an imported epoch.
+ // Exact history callbacks emit the inherited kernel schedule events; custody
+ // constructors emit their fixed fee/burn seeds. Refuse every extra schedule.
  const scheduledAddresses=new Map([[lower(a.ProvianRecourseKernel),'ProvianRecourseKernel'],
   ...Object.values(mapping).map(name=>[lower(a[name]),name])]);
  const expectedSchedules=new Set(institutions.seedBps.map(seed=>
   `ProvianRecourseBondPool:${['DepositBurnBps','DepositFeeBps','RenewalBurnBps','RenewalFeeBps'][seed.param]}Scheduled:0:${seed.bps}`));
+ for(const schedule of state.schedules)for(const [flag,event,args]of [
+  ['mintRateSet','MintRateScheduled',[schedule.epoch,schedule.mintRate]],
+  ['foundationRateSet','AgentFoundationRateScheduled',[schedule.epoch,schedule.foundationRate]],
+  ['capsSet','CapPolicyScheduled',[schedule.epoch,1,schedule.genesisCap,schedule.combinedCap]],
+  ['treasuriesSet','TreasuryDestinationsScheduled',[schedule.epoch,schedule.provianTreasury,schedule.foundationTreasury]],
+  ['beneficiaryVerifierSet','BeneficiaryVerifierScheduled',[schedule.epoch,...Object.values(schedule.beneficiaryVerifier)]],
+  ['eligibilityVerifierSet','EligibilityVerifierScheduled',[schedule.epoch,...Object.values(schedule.eligibilityVerifier)]],
+ ])if(schedule[flag])expectedSchedules.add('ProvianRecourseKernel:'+event+':'+args.map(String).join(':'));
  const seenSchedules=new Set();
  const logs=await port.logs([...scheduledAddresses.keys()],plan.cutoff.number,block.number);
  for(const log of logs){
@@ -147,6 +156,13 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
    const value=(await read(name,policy.method)).toArray().map(v=>typeof v==='bigint'?v.toString():v);
    ensure(JSON.stringify(value)===JSON.stringify(policy.values),`institution_policy:${name}:${policy.method}`);
   }
+ }
+ for(const [name,seedPlan] of Object.entries(plan.custodySeeds)){
+  ensure(await scalar(name,'custodySeedsReady')===true,'custody_seed_incomplete');
+  for(const [method,value] of [['custodySeedDomain',seedPlan.domain],['custodySeedRoot',seedPlan.manifest.root],
+   ['custodySeedCount',seedPlan.manifest.count],['custodySeedTotal',seedPlan.manifest.total],
+   ['importedCustodySeeds',seedPlan.manifest.count],['importedCustodyTotal',seedPlan.manifest.total]])
+    await exact(name,method,[],[value]);
  }
  for(const seed of institutions.seedBonds){
   const b=await read('ProvianRecourseBondPool','bonds',[seed.agent]);

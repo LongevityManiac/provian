@@ -9,6 +9,9 @@ contract ProvianHashAccount {
     uint256 public nonce;
     mapping(bytes32 => bool) public usedCommitment;
     bool private executing;
+    // Write-once storage preserves identical runtime bytes across accounts.
+    // This root authorizes membership revocation only, never spending.
+    bytes32 public departureKeyCommitment;
 
     error InvalidKey();
     error InvalidSignature();
@@ -19,6 +22,7 @@ contract ProvianHashAccount {
     constructor(bytes32 initialKeyCommitment) {
         if (initialKeyCommitment == bytes32(0)) revert InvalidKey();
         keyCommitment = initialKeyCommitment;
+        departureKeyCommitment = initialKeyCommitment;
         usedCommitment[initialKeyCommitment] = true;
     }
 
@@ -37,6 +41,20 @@ contract ProvianHashAccount {
         bytes calldata signature = proof[32:];
         return sha256(publicKey) == keyCommitment
             && SlhDsaSha2128s.verify(signatureDigest(digest), signature, publicKey)
+            ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
+    }
+
+    function membershipDepartureDigest(bytes32 digest) public view returns (bytes32) {
+        return sha256(abi.encode("Provian hash account membership departure", block.chainid,
+            address(this), departureKeyCommitment, digest));
+    }
+    /// @notice A delayed revocation survives ordinary spending-key rotation.
+    /// Consumers must bind the current membership account and consent nonce.
+    function isValidMembershipDepartureSignature(bytes32 digest, bytes calldata proof) external view returns (bytes4) {
+        if (proof.length != 32 + 7856) return bytes4(0xffffffff);
+        bytes calldata publicKey = proof[:32];
+        return sha256(publicKey) == departureKeyCommitment
+            && SlhDsaSha2128s.verify(membershipDepartureDigest(digest), proof[32:], publicKey)
             ? bytes4(0x1626ba7e) : bytes4(0xffffffff);
     }
 

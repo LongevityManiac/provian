@@ -14,6 +14,7 @@ contract ProvianBreakRecoveryHistory is ProvianRecoveryHistory {
     constructor(address previous, uint256 cutoff, bytes32 historyRoot, uint256 count,
         State memory source, TreasuryRecovery[] memory recoveries)
         ProvianRecoveryHistory(previous, cutoff, historyRoot, count, source) {
+        if (source.economicRoot != bytes32(0)) revert InvalidHistory();
         bytes32 codeHash = keccak256(type(ProvianHashAccount).runtimeCode);
         for (uint256 i; i < recoveries.length; ++i) {
             TreasuryRecovery memory r = recoveries[i];
@@ -45,6 +46,7 @@ contract ProvianBreakRecoveryHistory is ProvianRecoveryHistory {
         return previous;
     }
     function sourceState() external view returns (State memory) { return abi.decode(encodedState, (State)); }
+    function baseState() external view override returns (State memory) { return abi.decode(recoveredState, (State)); }
     function state() external view override returns (State memory) { return abi.decode(recoveredState, (State)); }
     function afterCryptographicBreak() external pure override returns (bool) { return true; }
     /// @notice Broken curve keys cannot establish a trustworthy retirement of

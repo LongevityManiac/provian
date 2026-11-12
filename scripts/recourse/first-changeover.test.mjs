@@ -3,7 +3,8 @@ import { keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { advanceFirstChangeover } from './first-changeover.mjs';
 const checks = vi.hoisted(() => Object.fromEntries(['retirePrepare', 'retireVerify', 'retireValidator', 'pointerPrepare', 'pointerVerify', 'pointerValidator',
   'snapshot', 'institutions', 'runtimeHash', 'locations', 'build', 'preflight', 'interval', 'verify', 'steps', 'deployValidator', 'progress',
-  'activationPrepare', 'activationVerify', 'activationValidator'].map(name => [name, vi.fn()])));
+  'activationPrepare', 'activationVerify', 'activationValidator', 'prepareGas', 'validateGas', 'gasStep'].map(name => [name, vi.fn()])));
+vi.mock('./all-plan-gas.mjs', () => ({prepareAllPlanGas: checks.prepareGas, validateGasCertificate: checks.validateGas, assertGasStep: checks.gasStep}));
 vi.mock('./predecessor-retirement.mjs', () => ({ preparePredecessorRetirement: checks.retirePrepare, verifyPredecessorRetirement: checks.retireVerify, predecessorRetirementValidator: checks.retireValidator }));
 vi.mock('./pointer-deployment.mjs', () => ({ preparePointerDeployment: checks.pointerPrepare, verifyPointerDeployment: checks.pointerVerify, pointerDeploymentValidator: checks.pointerValidator }));
 vi.mock('./snapshot.mjs', () => ({ buildSuccessionSnapshot: checks.snapshot }));
@@ -22,7 +23,7 @@ beforeEach(() => { for (const fn of Object.values(checks)) fn.mockReset(); });
 function fixture() {
   const files = new Map(), state = { height: 100, done: {}, actions: [], calls: [], pause: null, lose: null, reorg: null };
   const row = n => ({ from: a(1), to: a(n), value: '0', data: '0x1234' });
-  const plans = { retirement: { digest: h(1), steps: [row(2)] }, pointer: { digest: h(2), steps: [row(20)] },
+  const plans = { retirement: { digest: h(1), state: {verifier:a(3)}, steps: [row(2)] }, pointer: { digest: h(2), steps: [row(20)] },
     successor: { digest: h(3) }, activation: { digest: h(4), steps: [row(30)] } };
   const inventory = { inventory: ['escrowV4', 'promiseV3', 'poolV3', 'bondPool', 'courtV2'].map((key, i) => ({ key, address: a(10 + i) })) };
   const institutions = { ...inventory, digest: digest(inventory) }; plans.successor.institutionDigest = institutions.digest;
@@ -41,6 +42,8 @@ function fixture() {
     artifacts: { ProvianPVT9: { bytecode: { object: '0x6001' }, deployedBytecode: { object: '0x6001' }, abi: [] } },
     pointerPlan: { fixed: true }, pin: { address: a(20) }, rule: { signed: true }, legacyTokens: [a(9)],
     deployer: a(4), identityAttestor: a(5), batchApprover: a(6), submitter: a(7), importBatchSize: 128, callGas: '2000000', port };
+  checks.prepareGas.mockResolvedValue({certificateDigest:h(90)});
+  checks.validateGas.mockReturnValue({maximum:16777216n});
   const verify = phase => async input => {
     if (input.complete && !state.done[phase]) throw Error('phase_incomplete');
     const block = await input.port.finalizedBlock(); return { block, verifiedAt: block, active: Boolean(state.done[phase]) };
@@ -131,4 +134,17 @@ test('successor completion must retain the same checkpoint that passed unused-po
   });
   await f.run();
   expect(f.files.get('successor-complete').checkpoint).toEqual({number:130,hash:h(130)});
+});
+
+test.each(['uncovered_family','artifact_changed','source_changed','transaction_gas_budget'])('gas %s refusal occurs before retirement', async reason => {
+  const f=fixture(); checks.prepareGas.mockRejectedValue(Error('all_plan_gas_'+reason));
+  await expect(f.run()).rejects.toThrow(reason);
+  expect(f.runtime).not.toHaveBeenCalled(); expect(f.publish).not.toHaveBeenCalled();
+  expect(f.state.actions).toEqual([]); expect(checks.snapshot).not.toHaveBeenCalled();
+});
+test('gas certificate drift on restart refuses new signing', async () => {
+  const f=fixture(); await f.run(); const before=f.runtime.mock.calls.length;
+  checks.prepareGas.mockResolvedValue({certificateDigest:h(91)});
+  await expect(f.run()).rejects.toThrow('conflicting_record');
+  expect(f.runtime.mock.calls.length).toBe(before);
 });

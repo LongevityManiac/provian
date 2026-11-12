@@ -817,7 +817,7 @@ export type { GitHubPrRequest, SignedGitHubPrRequest } from './github-pr-request
 
 export { bindRecourseOwnership, readRecourseOwnership, recourseBindingMessage, submitAgentRestorationRequest, readRestorationRequests } from './recourse';
 export type { RecourseConfig, RecourseBinding } from './recourse';
-export { recourseMembershipRelay, beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent } from './recourse';
+export { recourseMembershipRelay, beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent, leaveAgentMembership } from './recourse';
 export { beginMembershipTransition, readMembershipTransition, prepareMembershipDebit,
   validateMembershipConsent, validateMembershipDebit, submitMembershipConsent, submitMembershipDebit } from './recourse-membership-client';
 export type { MembershipRelay, MembershipRequestPath, MembershipConsentChallenge, MembershipDebitChallenge,

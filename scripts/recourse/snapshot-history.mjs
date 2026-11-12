@@ -15,9 +15,21 @@ export async function inheritedMonetaryHistory({prior,historyAddress,port,blockH
  ensure(complete&&root===prior.historyRoot&&count===BigInt(prior.historyCount)
    &&getAddress(old)===getAddress(prior.predecessor)&&cutoff===BigInt(prior.block),'snapshot_prior_history_mismatch');
  ensure(merkle(prior.history.map(e=>e.leaf)).root===root,'snapshot_prior_population_incomplete');
- const frozenState = await call('state');
+ const base = await call('baseState');
+ let frozenState = base;
+ if (base.economicCount > 0n) {
+  ensure(base.economicCount <= BigInt(Number.MAX_SAFE_INTEGER),'snapshot_economic_count_invalid');
+  const shape=historyAbi.getFunction('baseState').outputs[0],epochs=[],schedules=[];
+  for(let index=0;index<Number(base.economicCount);index++){
+   const [data,isEpoch]=historyAbi.decodeFunctionResult('economicEntry',await port.call(historyAddress,
+    historyAbi.encodeFunctionData('economicEntry',[index]),blockHash));
+   const type=shape.components.find(p=>p.name===(isEpoch?'epochs':'schedules')).arrayChildren;
+   (isEpoch?epochs:schedules).push(coder.decode([type],data)[0]);
+  }
+  frozenState={...base.toObject(),epochs,schedules};
+ }
  const publishedState=prior.deployedHistoryState??prior.state;
- ensure(publishedState && coder.encode([historyAbi.getFunction('state').outputs[0]],[publishedState])
+ ensure(publishedState && coder.encode([historyAbi.getFunction('state').outputs[0]],[{economicRoot:'0x'+'00'.repeat(32),economicCount:0,...publishedState}])
    ===coder.encode([historyAbi.getFunction('state').outputs[0]],[frozenState]),'snapshot_prior_state_mismatch');
  const entries=[],claims=new Set(),anchors=new Set(),wallets=new Set(),batches=new Set();let minted=0n;
  for(const entry of prior.history){

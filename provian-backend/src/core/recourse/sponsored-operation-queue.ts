@@ -40,6 +40,7 @@ export async function queueSponsoredOperation<R, P extends SponsoredOperationPla
     const archiveRef = oldRaw === undefined ? null : db.collection(`${adapter.collection}_attempts`).doc(`${id}_${keccak256(String(oldRaw))}`);
     const archive = archiveRef ? await tx.get(archiveRef) : null;
     if (oldSigner !== null && (await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id) throw Error('recourse_sponsor_retry_unreconciled');
+    if (adapter.beforeQueue) await adapter.beforeQueue(tx, request);
     if (archiveRef && !archive?.exists) tx.create(archiveRef, { operation: id, signedTransaction: oldRaw,
       transactionHash: keccak256(String(oldRaw)), status: 'finalized_revert', archivedAtMs: Date.now() });
     tx.set(ref, { request, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash,

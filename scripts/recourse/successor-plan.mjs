@@ -1,5 +1,6 @@
-import {Interface,getCreateAddress,keccak256,ZeroAddress,ZeroHash,sha256,toUtf8Bytes} from 'ethers';
+import {AbiCoder,Interface,getCreateAddress,keccak256,ZeroAddress,ZeroHash,sha256,toUtf8Bytes} from 'ethers';
 import {balanceLeaf,merkle,verifyProof} from './snapshot.mjs';
+import {importLeafBound,importGasUpper,importGroupFits} from './import-gas-bound.mjs';
 import {LEGACY_INSTITUTIONS} from './institution-snapshot.mjs';
 const ensure=(v,code)=>{if(!v)throw Error('successor_plan_'+code);};
 const address=value=>{ensure(typeof value==='string'&&/^0x[0-9a-f]{40}$/i.test(value)&&value!==ZeroAddress,'address_invalid');return value.toLowerCase();};
@@ -38,6 +39,36 @@ export function remapSuccessionBalances(snapshot,destinations){
  return {...snapshot,balanceRoot:tree.root,balances:balances.map((row,i)=>({...row,proof:tree.proofs[i]}))};
 }
 
+/** Snapshot leaves bind the exact successor token, predecessor, canonical
+ * cutoff and institution kind. Import size is independent of inventory size. */
+export function custodySeedPlan({kernel,predecessor,block,blockHash,kind,seeds}) {
+ const abi=AbiCoder.defaultAbiCoder();
+ const domain=sha256(abi.encode(['string','uint256','address','uint8','address','uint256','bytes32'],
+  ['Provian custody snapshot',8453,kernel,kind,predecessor,block,blockHash]));
+ const tuple=kind===1?'tuple(bytes32 escrowId,address depositor,address recipient,uint256 amount,uint256 fee,uint256 autoReleaseAt,uint8 currency)':
+  'tuple(address agent,uint256 amount,uint8 autonomyLevel,uint256 createdAt,uint256 lastRenewalAt,uint256 renewalDeadline,uint256 requiredAtPost)';
+ const rows=seeds.map((seed,index)=>{const data=abi.encode([tuple],[seed]);return {index,data,
+  leaf:sha256(abi.encode(['bytes32','uint256','bytes32'],[domain,index,sha256(data)]))};});
+ const tree=merkle(rows.map(row=>row.leaf));
+ return {domain,manifest:{predecessor,cutoffBlock:block,cutoffHash:blockHash,root:rows.length?tree.root:ZeroHash,
+  count:rows.length,total:seeds.reduce((total,seed)=>total+BigInt(seed.amount),0n).toString()},
+  rows:rows.map((row,index)=>({...row,proof:tree.proofs[index]}))};
+}
+
+/** Economic history grows indefinitely. Only scalar state enters creation;
+ * authenticated historical epochs and future schedules enter one at a time. */
+export function economicSeedPlan({state,predecessor,block,artifact}) {
+ const abi=AbiCoder.defaultAbiCoder(),type=new Interface(artifact.abi).deploy.inputs[4];
+ const epochs=type.components.find(p=>p.name==='epochs').arrayChildren;
+ const schedules=type.components.find(p=>p.name==='schedules').arrayChildren;
+ const records=[...state.epochs.map(value=>abi.encode([epochs],[value])),...state.schedules.map(value=>abi.encode([schedules],[value]))];
+ const rows=records.map((data,index)=>({index,data,leaf:sha256(abi.encode(['string','address','uint256','uint256','bytes32'],
+  ['Provian economic history',predecessor,block,index,sha256(data)]))}));
+ const tree=merkle(rows.map(row=>row.leaf)),economicRoot=rows.length?tree.root:ZeroHash;
+ return {state:{...state,epochs:[],schedules:[],economicRoot,economicCount:rows.length},
+  rows:rows.map((row,index)=>({...row,proof:tree.proofs[index]}))};
+}
+
 /** Assemble reviewable, unsigned first-changeover creation/import calls.
  * A runner must verify the signed rule and inventories, acquire its durable
  * signer lease, and revalidate the nonce and chain before using this plan.
@@ -64,19 +95,25 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
   ensure(row&&row.name===name&&row.address===old,'inventory_address');
  }
  const carried=remapSuccessionBalances(snapshot,destinations),a=addresses,kernel=a.ProvianRecourseKernel,state=carried.state;
+ const economicSeeds=economicSeedPlan({state,predecessor:carried.predecessor,block:carried.block,artifact:artifacts.ProvianRecoveryHistory});
+ const custodySeeds=Object.fromEntries([
+  ['ProvianRecourseEscrow',1,'escrowV4',institutions.seedEscrows],
+  ['ProvianRecourseBondPool',2,'bondPool',institutions.seedBonds],
+ ].map(([name,kind,key,seeds])=>[name,custodySeedPlan({kernel,predecessor:deployment.contracts[key].address,
+  block:carried.block,blockHash:carried.blockHash,kind,seeds})]));
  const params={
   ProvianOwnershipRegistry:[pointer,identityAttestor,false],
-  ProvianRecoveryHistory:[carried.predecessor,carried.block,carried.historyRoot,carried.historyCount,state],
+  ProvianRecoveryHistory:[carried.predecessor,carried.block,carried.historyRoot,carried.historyCount,economicSeeds.state],
   ProvianRestorationAuthorization:[kernel,carried.balanceRoot,carried.predecessor,carried.block,false,
     keccak256(artifacts.ProvianHashAccount.deployedBytecode.object),0],
   ProvianRecourseKernel:[{authority:admin,root:carried.balanceRoot,previousKernel:carried.predecessor,snapshotBlock:carried.block,
     snapshotTotal:carried.supply,history:a.ProvianRecoveryHistory,pointer,registry:a.ProvianOwnershipRegistry,
     afterCryptographicBreak:false,authorization:a.ProvianRestorationAuthorization}],
   ProvianRecourseEligibilityVerifier:[kernel,state.eligibilityVerifier.configurationId,state.eligibilityVerifier.version],
-  ProvianRecourseEscrow:[admin,deployment.wiring.feeWallet,deployment.wiring.usdc,kernel,kernel,kernel,institutions.seedEscrows],
+  ProvianRecourseEscrow:[admin,deployment.wiring.feeWallet,deployment.wiring.usdc,kernel,kernel,kernel,custodySeeds.ProvianRecourseEscrow.manifest],
   ProvianPromiseV3:[admin,deployment.wiring.feeWallet,deployment.wiring.usdc,kernel,kernel],
   ProvianRecourseProjectPool:[admin,deployment.wiring.feeWallet,deployment.wiring.usdc,kernel,kernel],
-  ProvianRecourseBondPool:[admin,deployment.wiring.provianTechWallet,kernel,kernel,kernel,institutions.seedBonds,institutions.seedBps],
+  ProvianRecourseBondPool:[admin,deployment.wiring.provianTechWallet,kernel,kernel,kernel,custodySeeds.ProvianRecourseBondPool.manifest,institutions.seedBps],
   ProvianRecourseCourt:[admin,a.ProvianRecourseEscrow,kernel,kernel,kernel],
   ProvianMemberRecoursePool:[kernel,a.ProvianOwnershipRegistry,submitter,pointer,
     [0,rule.rule.participationBurnAtomic,rule.rule.noEarningsContributionAtomic,rule.rule.earningsBps,rule.ruleHash],
@@ -96,6 +133,11 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
  for(const row of carried.history)call('ProvianRecoveryHistory',row.type==='batch'?'importBatch':'importEntry',
    row.type==='batch'?[row.key,row.record,row.proof]:[row.kind,row.key,row.value,row.proof]);
  for(const row of carried.balances)call('ProvianRestorationAuthorization','importBalance',[row.previousOwner,row.destination,row.amount,row.proof]);
+ const economicImports=economicSeeds.rows.flatMap(row=>[
+  operation('ProvianRecoveryHistory','importEconomicEntry',[row.index,row.data,row.proof]),
+  operation('ProvianRecoveryHistory','applyEconomicEntry',[kernel,row.index])]);
+ const custodyImports=Object.entries(custodySeeds).flatMap(([name,seedPlan])=>seedPlan.rows.map(row=>
+  operation(name,'importCustodySeed',[row.index,row.data,row.proof])));
  const settlement=getCreateAddress({from:a.ProvianMemberRecoursePool,nonce:2}).toLowerCase();
  const configuration=[
   operation('ProvianRecourseEscrow','setCourtContract',[a.ProvianRecourseCourt],admin),
@@ -120,9 +162,9 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
   a.ProvianPromiseV3,a.ProvianRecourseProjectPool,a.ProvianRecourseBondPool,a.ProvianRecourseCourt,a.ProvianMemberRecoursePool,settlement];
  const plan={schema:'provian.successor-plan.v1',chainId:8453,predecessor:carried.predecessor,cutoff:{number:carried.block,hash:carried.blockHash},
   deployer,nonce,admin,identityAttestor,submitter,batchApprover,pointer,pointerAuthority:pointerPlan.authority,
-  ruleHash:rule.ruleHash,institutionDigest:institutions.digest,addresses,components,creations,imports:calls,configuration,
+  ruleHash:rule.ruleHash,institutionDigest:institutions.digest,addresses,components,creations,imports:calls,economicSeeds,economicImports,custodySeeds,custodyImports,configuration,
   retireAfterImport:[a.ProvianSuccessionImporter],
-  activation:operation('ProvianRecourseKernel','resumeFromAdministrativeHold',[],admin),snapshot:carried};
+  activation:operation('ProvianRecourseKernel','resumeFromAdministrativeHold',[],admin),snapshot:{...carried,deployedHistoryState:{...state,economicRoot:economicSeeds.state.economicRoot,economicCount:economicSeeds.state.economicCount}}};
  return {...plan,digest:sha256(toUtf8Bytes(stringify(plan)))};
 }
 
@@ -130,13 +172,26 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
  * The runner may reduce batch size after a gas estimate, without changing any
  * leaf, destination, amount or proof. Completed leaves are idempotently skipped
  * by the importer, including a permissionless caller winning the same race. */
-export function batchSuccessorImports(plan,importerAbi,batchSize=128){
+export function batchSuccessorImports(plan,artifacts,batchSize=128,maximum){
+ if(maximum!==undefined)maximum=BigInt(maximum);
  ensure(Number.isSafeInteger(batchSize)&&batchSize>=1&&batchSize<=128,'import_batch_size');
- const iface=new Interface(importerAbi),batches=[];
+ ensure(plan.imports.every(row=>row.label.startsWith('ProvianRecoveryHistory:')||row.label.startsWith('ProvianRestorationAuthorization:')),'unknown_import_family');
+ const iface=new Interface(artifacts.ProvianSuccessionImporter.abi),batches=[];
  for(const [label,method]of [['ProvianRecoveryHistory:','importHistory'],['ProvianRestorationAuthorization:','importBalances']]){
   const rows=plan.imports.filter(row=>row.label.startsWith(label));
-  for(let start=0;start<rows.length;start+=batchSize)batches.push({label:method+':'+start,from:plan.deployer,
-   to:plan.addresses.ProvianSuccessionImporter,value:'0',data:iface.encodeFunctionData(method,[rows.slice(start,start+batchSize).map(row=>row.data)])});
+  for(let start=0;start<rows.length;){
+   let end=start,accepted=null;
+   const leaves=[];
+   while(end<rows.length&&end-start<batchSize){
+    const candidate=[...leaves,importLeafBound(rows[end],artifacts[label.slice(0,-1)])];
+    const data=iface.encodeFunctionData(method,[rows.slice(start,end+1).map(row=>row.data)]);
+    if(!importGroupFits(importGasUpper(candidate,data),maximum))break;
+    leaves.push(candidate[candidate.length-1]);accepted=data;++end;
+   }
+   ensure(accepted&&end>start,'single_import_exceeds_gas_cap');
+   batches.push({label:method+':'+start,from:plan.deployer,to:plan.addresses.ProvianSuccessionImporter,value:'0',data:accepted});
+   start=end;
+  }
  }
  ensure(batches.length>0,'empty_import_population');return batches;
 }

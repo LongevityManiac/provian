@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {RecourseClaimValidation} from "./RecourseClaimValidation.sol";
 import {ProvianRecoveryHistory} from "./ProvianRecoveryHistory.sol";
 import {ProvianRestorationAuthorization} from "./ProvianRestorationAuthorization.sol";
 import {RecourseOwnerAuthorization} from "./RecourseOwnerAuthorization.sol";
@@ -54,7 +55,9 @@ contract ProvianRecourseKernel {
         bool afterCryptographicBreak;
         ProvianRestorationAuthorization authorization;
     }
+    RecourseClaimValidation private immutable claimValidation;
     constructor(SuccessionConfig memory config) {
+        claimValidation = new RecourseClaimValidation();
         bytes32 accountCodeHash = keccak256(type(ProvianHashAccount).runtimeCode);
         // Deployed first at the predicted kernel address; keeping the executor's
         // creation code outside this constructor preserves the chain init-code limit.
@@ -85,7 +88,7 @@ contract ProvianRecourseKernel {
         _kernelRulesHash = _computeKernelRulesHash();
         snapshotBalance = snapshotTotal;
         predecessorHistory = history_;
-        ProvianRecoveryHistory.State memory prior = history_.state();
+        ProvianRecoveryHistory.State memory prior = history_.baseState();
         epochZeroStartsAt = prior.epochZeroStartsAt;
         genesisStartsAt = prior.genesisStartsAt;
         genesisEndsAt = prior.genesisEndsAt;
@@ -99,16 +102,17 @@ contract ProvianRecourseKernel {
         _activeGenesisCap = prior.genesisCap;
         _activeFixedCombinedCap = prior.combinedCap;
         _activeCombinedCapMode = CombinedCapMode.Fixed;
-        epochGenesisIssued[prior.lastOpenedEpoch] = prior.epochGenesisIssued;
-        epochTotalIssued[prior.lastOpenedEpoch] = prior.epochTotalIssued;
+        _epochGenesisIssued[prior.lastOpenedEpoch] = prior.epochGenesisIssued;
+        _epochTotalIssued[prior.lastOpenedEpoch] = prior.epochTotalIssued;
+        _inheritedEpochCount = history_.economicRoot() == bytes32(0) ? 0 : prior.lastOpenedEpoch;
         for (uint256 i; i < prior.epochs.length; ++i) {
             ProvianRecoveryHistory.HistoricalEpoch memory epoch = prior.epochs[i];
             // Identical ABI; preserve historical hashes rather than recomputing
             // them in the successor's settlement domain.
             EpochPolicy memory policy = abi.decode(abi.encode(epoch.policy), (EpochPolicy));
             _epochPolicies[policy.epoch] = policy;
-            epochGenesisIssued[policy.epoch] = epoch.genesisIssued;
-            epochTotalIssued[policy.epoch] = epoch.totalIssued;
+            _epochGenesisIssued[policy.epoch] = epoch.genesisIssued;
+            _epochTotalIssued[policy.epoch] = epoch.totalIssued;
         }
         for (uint256 i; i < prior.schedules.length; ++i) {
             ProvianRecoveryHistory.EconomicSchedule memory schedule = prior.schedules[i];
@@ -129,6 +133,7 @@ contract ProvianRecourseKernel {
                 abi.decode(abi.encode(schedule.eligibilityVerifier), (VerifierConfig)));
         }
     }
+
 
     function bindRestorationOwner(bytes32 identity, bytes32 commitment, bytes32 signingRoot) external {
         if (msg.sender != registryOperator) revert InvalidRestoration();
@@ -302,6 +307,7 @@ contract ProvianRecourseKernel {
         uint256 claimCount;
     }
 
+    struct RecipientMint { address account; uint256 amount; uint256 gross; }
     struct ScheduledUint256 {
         bool exists;
         uint256 value;
@@ -342,8 +348,9 @@ contract ProvianRecourseKernel {
     bool public administrativeHold;
 
     mapping(uint64 => EpochPolicy) private _epochPolicies;
-    mapping(uint64 => uint256) public epochGenesisIssued;
-    mapping(uint64 => uint256) public epochTotalIssued;
+    mapping(uint64 => uint256) private _epochGenesisIssued;
+    mapping(uint64 => uint256) private _epochTotalIssued;
+    uint64 private immutable _inheritedEpochCount;
     mapping(bytes32 => BatchRecord) private _batchRecords;
     mapping(bytes32 => bool) private _claimSettled;
     mapping(bytes32 => bool) private _genesisAnchorUsed;
@@ -471,6 +478,11 @@ contract ProvianRecourseKernel {
     error InsufficientBalance();
     error InsufficientAllowance();
 
+    function _economicImport() private view returns (bool) { return msg.sender == address(predecessorHistory) && !epochZeroArmed; }
+    modifier onlyPolicySetter() {
+        if (msg.sender != BOOTSTRAP_ADMIN && !_economicImport()) revert OnlyBootstrapAdmin();
+        _;
+    }
     modifier onlyBootstrapAdmin() {
         if (msg.sender != BOOTSTRAP_ADMIN) revert OnlyBootstrapAdmin();
         _;
@@ -526,8 +538,10 @@ contract ProvianRecourseKernel {
             // two current addresses are the complete collection authority.
             if (msg.sender != protocolPointer.component(8) || address(this) != protocolPointer.component(0)) revert InsufficientAllowance();
         } else if (available != type(uint256).max) {
-            allowance[holder][msg.sender] = available - amount;
-            emit Approval(holder, msg.sender, available - amount);
+            // This branch already established available >= amount.
+            unchecked { available -= amount; }
+            allowance[holder][msg.sender] = available;
+            emit Approval(holder, msg.sender, available);
         }
     }
 
@@ -575,6 +589,7 @@ contract ProvianRecourseKernel {
     /// @notice Installs secure successor authorities without resetting predecessor economics.
     function armEpochZero(EpochZeroConfig calldata config) external onlyBootstrapAdmin {
         if (epochZeroArmed) revert EpochZeroAlreadyArmed();
+        if (predecessorHistory.appliedEconomicEntries(address(this)) != predecessorHistory.economicEntryCount()) revert InvalidRestoration();
         if (!ownerAuthorization.successionReady()) revert InvalidRestoration();
         if (operationalMinter == address(0)) revert OperationalMinterUnconfigured();
         if (!IRecourseBatchHistory(address(predecessorHistory)).validArming(config, _activeBeneficiaryVerifier)) revert InvalidRestoration();
@@ -601,7 +616,7 @@ contract ProvianRecourseKernel {
             && block.timestamp <= genesisEndsAt;
     }
 
-    function scheduleMintRate(uint64 effectiveEpoch, uint256 mintRate) external onlyBootstrapAdmin {
+    function scheduleMintRate(uint64 effectiveEpoch, uint256 mintRate) external onlyPolicySetter {
         _requireScheduleEpoch(effectiveEpoch);
         if (mintRate == 0) revert InvalidConfiguration();
         if (scheduledMintRates[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -609,7 +624,7 @@ contract ProvianRecourseKernel {
         emit MintRateScheduled(effectiveEpoch, mintRate);
     }
 
-    function scheduleAgentFoundationRate(uint64 effectiveEpoch, uint256 foundationBps) external onlyBootstrapAdmin {
+    function scheduleAgentFoundationRate(uint64 effectiveEpoch, uint256 foundationBps) external onlyPolicySetter {
         _requireScheduleEpoch(effectiveEpoch);
         if (foundationBps < HUMAN_FOUNDATION_BPS || foundationBps > MAX_AGENT_FOUNDATION_BPS) {
             revert AgentFoundationRateOutOfDomain();
@@ -623,7 +638,7 @@ contract ProvianRecourseKernel {
 
     function scheduleTreasuryDestinations(uint64 effectiveEpoch, address provianTreasury, address foundationTreasury)
         external
-        onlyBootstrapAdmin
+        onlyPolicySetter
     {
         _requireScheduleEpoch(effectiveEpoch);
         if (provianTreasury == address(0) || foundationTreasury == address(0)) revert InvalidAddress();
@@ -636,7 +651,7 @@ contract ProvianRecourseKernel {
 
     function scheduleBeneficiaryVerifier(uint64 effectiveEpoch, VerifierConfig calldata config)
         external
-        onlyBootstrapAdmin
+        onlyPolicySetter
     {
         _requireScheduleEpoch(effectiveEpoch);
         _requireOptionalVerifier(config);
@@ -649,7 +664,7 @@ contract ProvianRecourseKernel {
 
     function scheduleEligibilityVerifier(uint64 effectiveEpoch, VerifierConfig calldata config)
         external
-        onlyBootstrapAdmin
+        onlyPolicySetter
     {
         _requireScheduleEpoch(effectiveEpoch);
         _requireConfiguredVerifier(config);
@@ -663,7 +678,7 @@ contract ProvianRecourseKernel {
         CombinedCapMode mode,
         uint256 genesisCap,
         uint256 fixedCombinedCap
-    ) external onlyBootstrapAdmin {
+    ) external onlyPolicySetter {
         _requireScheduleEpoch(effectiveEpoch);
         if (mode == CombinedCapMode.Automatic && fixedCombinedCap != 0) revert InvalidConfiguration();
         if (scheduledCapPolicies[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -675,8 +690,10 @@ contract ProvianRecourseKernel {
     function openNextEpoch() external returns (bytes32 policyHash) {
         if (!epochZeroArmed) revert EpochZeroNotArmed();
         if (lastOpenedEpoch == type(uint64).max) revert ArithmeticDomainExceeded();
-        uint64 nextEpoch = lastOpenedEpoch + 1;
-        uint256 startsAt = uint256(epochZeroStartsAt) + uint256(nextEpoch) * EPOCH_DURATION;
+        uint64 nextEpoch;
+        unchecked { nextEpoch = lastOpenedEpoch + 1; }
+        uint256 startsAt;
+        unchecked { startsAt = uint256(epochZeroStartsAt) + uint256(nextEpoch) * EPOCH_DURATION; }
         if (block.timestamp < startsAt) revert EpochNotReady();
 
         _applySchedules(nextEpoch);
@@ -695,7 +712,7 @@ contract ProvianRecourseKernel {
     ) external whenNotHeld onlyOperationalMinter {
         EpochPolicy memory policy = _requireSettlementPolicy(epoch, expectedPolicyHash);
         _validateBatchHeader(batchId, finalizedCursorStart, finalizedCursorEnd, recipients.length, claims.length);
-        _validateStandardInputs(policy, recipients, claims);
+        claimValidation.validateStandard(policy.agentFoundationBps != HUMAN_FOUNDATION_BPS, recipients, claims);
 
         bytes32 claimsHash = hashStandardClaims(recipients, claims);
         bytes32 digest = computeSettlementDigest(
@@ -712,7 +729,7 @@ contract ProvianRecourseKernel {
             _verifyBeneficiaries(policy.beneficiaryVerifier, digest);
         }
 
-        uint256[] memory contributorMints = new uint256[](recipients.length);
+        RecipientMint[] memory contributorMints = new RecipientMint[](recipients.length);
         uint256 claimIndex;
         uint256 grossInput;
         uint256 contributorTotal;
@@ -737,7 +754,7 @@ contract ProvianRecourseKernel {
             uint256 contributorShare = gross.mulDiv(contributorBps, BPS_DENOMINATOR);
             uint256 foundationShare = gross.mulDiv(foundationBps, BPS_DENOMINATOR);
 
-            contributorMints[i] = contributorShare;
+            contributorMints[i] = RecipientMint(recipients[i].contributor,contributorShare,gross);
             grossInput += gross;
             contributorTotal += contributorShare;
             foundationTotal += foundationShare;
@@ -762,7 +779,7 @@ contract ProvianRecourseKernel {
             claims.length,
             0
         );
-        _mintRecipients(recipients, contributorMints, claims, policy.mintRate);
+        _mintRecipients(contributorMints);
         _mint(policy.provianTreasury, provianTotal);
         _mint(policy.foundationTreasury, foundationTotal);
     }
@@ -778,7 +795,7 @@ contract ProvianRecourseKernel {
     ) external whenNotHeld onlyOperationalMinter {
         EpochPolicy memory policy = _requireSettlementPolicy(epoch, expectedPolicyHash);
         _validateBatchHeader(batchId, finalizedCursorStart, finalizedCursorEnd, recipients.length, claims.length);
-        _validateGenesisInputs(recipients, claims);
+        claimValidation.validateGenesis(recipients, claims);
 
         bytes32 claimsHash = hashGenesisClaims(recipients, claims);
         bytes32 digest = computeSettlementDigest(
@@ -792,7 +809,7 @@ contract ProvianRecourseKernel {
         );
         _verifyEligibility(policy.eligibilityVerifier, SettlementLane.GenesisPE, digest);
 
-        uint256[] memory contributorMints = new uint256[](recipients.length);
+        RecipientMint[] memory contributorMints = new RecipientMint[](recipients.length);
         uint256 claimIndex;
         uint256 grossInput;
         uint256 contributorTotal;
@@ -818,7 +835,7 @@ contract ProvianRecourseKernel {
 
             uint256 contributorShare = recipientGross.mulDiv(HUMAN_CONTRIBUTOR_BPS, BPS_DENOMINATOR);
             uint256 foundationShare = recipientGross.mulDiv(HUMAN_FOUNDATION_BPS, BPS_DENOMINATOR);
-            contributorMints[i] = contributorShare;
+            contributorMints[i] = RecipientMint(recipients[i].contributor,contributorShare,recipientGross);
             grossInput += recipientGross;
             contributorTotal += contributorShare;
             foundationTotal += foundationShare;
@@ -843,17 +860,49 @@ contract ProvianRecourseKernel {
             claims.length,
             totalMinted
         );
-        _mintGenesisRecipients(recipients, contributorMints, claims);
+        _mintRecipients(contributorMints);
         _mint(policy.provianTreasury, provianTotal);
         _mint(policy.foundationTreasury, foundationTotal);
     }
 
     function getEpochPolicy(uint64 epoch) external view returns (EpochPolicy memory) {
+        if (epoch < _inheritedEpochCount) {
+            // The immutable history returns the identical fixed policy ABI.
+            // Forward that value without a second struct decode/re-encode.
+            address history = address(predecessorHistory);
+            bytes4 selector = ProvianRecoveryHistory.historicalPolicy.selector;
+            assembly ("memory-safe") {
+                let ptr := mload(0x40)
+                mstore(ptr,selector)
+                mstore(add(ptr,4),epoch)
+                let ok := staticcall(gas(),history,ptr,36,ptr,544)
+                if and(ok,eq(returndatasize(),544)) { return(ptr,544) }
+            }
+            revert InvalidRestoration();
+        }
         return _epochPolicies[epoch];
+    }
+    function epochGenesisIssued(uint64 epoch) external view returns (uint256) { return _issuedAt(epoch,true); }
+    function epochTotalIssued(uint64 epoch) public view returns (uint256) { return _issuedAt(epoch,false); }
+    function _issuedAt(uint64 epoch,bool genesis) private view returns (uint256) {
+        if (epoch < _inheritedEpochCount) return predecessorHistory.historicalIssued(epoch,genesis);
+        return genesis ? _epochGenesisIssued[epoch] : _epochTotalIssued[epoch];
     }
 
     function getBatchRecord(bytes32 batchId) external view returns (BatchRecord memory) {
-        if (!_batchRecords[batchId].settled) return IRecourseBatchHistory(address(predecessorHistory)).getBatchRecord(batchId);
+        if (!_batchRecords[batchId].settled) {
+            // The immutable history validates and returns the identical 15-word ABI.
+            address history = address(predecessorHistory);
+            bytes4 selector = IRecourseBatchHistory.getBatchRecord.selector;
+            assembly ("memory-safe") {
+                let ptr := mload(0x40)
+                mstore(ptr,selector)
+                mstore(add(ptr,4),batchId)
+                let ok := staticcall(gas(),history,ptr,36,ptr,480)
+                if and(ok,eq(returndatasize(),480)) { return(ptr,480) }
+            }
+            revert InvalidRestoration();
+        }
         return _batchRecords[batchId];
     }
 
@@ -869,20 +918,22 @@ contract ProvianRecourseKernel {
         if (!epochZeroArmed) revert EpochZeroNotArmed();
         uint64 boundary = lastOpenedEpoch;
         if (block.timestamp >= epochZeroStartsAt) {
-            uint256 timeEpoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION;
+            uint256 timeEpoch;
+            unchecked { timeEpoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION; }
             if (timeEpoch > type(uint64).max) revert ArithmeticDomainExceeded();
             // forge-lint: disable-next-line(unsafe-typecast)
             uint64 activeTimeEpoch = uint64(timeEpoch);
             if (activeTimeEpoch > boundary) boundary = activeTimeEpoch;
         }
         if (boundary == type(uint64).max) revert ArithmeticDomainExceeded();
-        return boundary + 1;
+        unchecked { return boundary + 1; }
     }
 
     function currentEpoch() external view returns (uint64) {
         if (!epochZeroArmed) revert EpochZeroNotArmed();
         if (block.timestamp < epochZeroStartsAt) revert EpochNotStarted();
-        uint256 epoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION;
+        uint256 epoch;
+        unchecked { epoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION; }
         if (epoch > type(uint64).max) revert ArithmeticDomainExceeded();
         // forge-lint: disable-next-line(unsafe-typecast)
         return uint64(epoch);
@@ -968,17 +1019,8 @@ contract ProvianRecourseKernel {
         revert InvalidGenesisGrant();
     }
 
-    function trailingAverageForEpoch(uint64 epoch) public view returns (uint256 average) {
-        if (epoch < TRAILING_AVERAGE_EPOCHS) return 0;
-        uint256 quotientTotal;
-        uint256 remainderTotal;
-        uint64 first = epoch - TRAILING_AVERAGE_EPOCHS;
-        for (uint64 i = first; i < epoch; ++i) {
-            uint256 issued = epochTotalIssued[i];
-            quotientTotal += issued / TRAILING_AVERAGE_EPOCHS;
-            remainderTotal += issued % TRAILING_AVERAGE_EPOCHS;
-        }
-        average = quotientTotal + remainderTotal / TRAILING_AVERAGE_EPOCHS;
+    function trailingAverageForEpoch(uint64 epoch) public view returns (uint256) {
+        return claimValidation.trailingAverageForEpoch(epoch);
     }
 
     function _writeEpochPolicy(uint64 epoch) private returns (EpochPolicy memory policy) {
@@ -987,7 +1029,9 @@ contract ProvianRecourseKernel {
             _requireConfiguredVerifier(_activeBeneficiaryVerifier);
         }
 
-        uint256 startsAt = uint256(epochZeroStartsAt) + uint256(epoch) * EPOCH_DURATION;
+        uint256 startsAt;
+        // Both input clocks are uint64; this expression is below 2**84.
+        unchecked { startsAt = uint256(epochZeroStartsAt) + uint256(epoch) * EPOCH_DURATION; }
         if (startsAt > type(uint64).max) revert ArithmeticDomainExceeded();
         uint256 combinedCap = _effectiveCombinedCap(epoch);
         policy = EpochPolicy({
@@ -1082,7 +1126,8 @@ contract ProvianRecourseKernel {
     {
         if (!epochZeroArmed) revert EpochZeroNotArmed();
         if (block.timestamp < epochZeroStartsAt) revert EpochNotStarted();
-        uint256 activeEpoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION;
+        uint256 activeEpoch;
+        unchecked { activeEpoch = (block.timestamp - epochZeroStartsAt) / EPOCH_DURATION; }
         // forge-lint: disable-next-line(unsafe-typecast)
         if (activeEpoch > type(uint64).max || uint64(activeEpoch) != epoch) revert EpochMismatch();
         policy = _epochPolicies[epoch];
@@ -1105,78 +1150,7 @@ contract ProvianRecourseKernel {
         if (recipientCount > MAX_RECIPIENTS_PER_BATCH) revert TooManyRecipients();
         if (cursorEnd <= cursorStart) revert InvalidCursorRange();
         if (cursorStart != nextFinalizedCursor) revert CursorDiscontinuity();
-        if (cursorEnd - cursorStart != claimCount) revert ClaimRangeMismatch();
-    }
-
-    function _validateStandardInputs(
-        EpochPolicy memory policy,
-        StandardRecipient[] calldata recipients,
-        StandardPEClaim[] calldata claims
-    ) private view {
-        if (claims.length == 0) revert EmptyBatch();
-        uint256 expectedClaims;
-        address previous;
-        bool differential = policy.agentFoundationBps != HUMAN_FOUNDATION_BPS;
-        for (uint256 i = 0; i < recipients.length; ++i) {
-            StandardRecipient calldata recipient = recipients[i];
-            if (recipient.contributor <= previous) revert RecipientsNotStrictlyOrdered();
-            previous = recipient.contributor;
-            if (recipient.claimCount == 0 || expectedClaims + recipient.claimCount > claims.length) {
-                revert ClaimRangeMismatch();
-            }
-            if (uint8(recipient.beneficiaryClass) > uint8(BeneficiaryClass.AutonomousAgent)) {
-                revert BeneficiaryClassificationInvalid();
-            }
-            if (differential && recipient.beneficiaryClass == BeneficiaryClass.Unknown) {
-                revert BeneficiaryClassificationRequired();
-            }
-            expectedClaims += recipient.claimCount;
-        }
-        if (expectedClaims != claims.length) revert ClaimRangeMismatch();
-        for (uint256 i = 0; i < claims.length; ++i) {
-            if (claims[i].claimId == bytes32(0) || claims[i].recordPointsAtomic == 0) revert InvalidClaim();
-            if (claimSettled(claims[i].claimId)) revert ClaimAlreadySettled();
-        }
-    }
-
-    function _validateGenesisInputs(GenesisRecipient[] calldata recipients, GenesisPEClaim[] calldata claims)
-        private
-        view
-    {
-        if (claims.length == 0) revert EmptyBatch();
-        uint256 expectedClaims;
-        address previous;
-        uint64 lastQualifyingAt = genesisAdmissionClosed ? genesisAdmissionCutoff : genesisEndsAt;
-        for (uint256 i = 0; i < recipients.length; ++i) {
-            GenesisRecipient calldata recipient = recipients[i];
-            if (recipient.contributor <= previous) revert RecipientsNotStrictlyOrdered();
-            previous = recipient.contributor;
-            if (recipient.claimCount == 0 || expectedClaims + recipient.claimCount > claims.length) {
-                revert ClaimRangeMismatch();
-            }
-            expectedClaims += recipient.claimCount;
-        }
-        if (expectedClaims != claims.length) revert ClaimRangeMismatch();
-        for (uint256 i = 0; i < claims.length; ++i) {
-            GenesisPEClaim calldata claim = claims[i];
-            if (
-                claim.claimId == bytes32(0) || claim.walletId == bytes32(0) || claim.oneTimeAnchor == bytes32(0)
-                    || claim.reservedGrossAtomic == 0
-            ) revert InvalidClaim();
-            if (claimSettled(claim.claimId)) revert ClaimAlreadySettled();
-            if (
-                claim.qualifiedAt < genesisStartsAt || claim.qualifiedAt > lastQualifyingAt
-                    || claim.qualifiedAt > block.timestamp
-            ) revert GenesisQualificationOutsideWindow();
-            uint256 maximum = genesisGrantMaximum(claim.grantType);
-            if (claim.reservedGrossAtomic > maximum) revert InvalidGenesisGrant();
-            if (genesisAnchorUsed(genesisAnchorKey(claim.grantType, claim.oneTimeAnchor))) {
-                revert GenesisAnchorAlreadyUsed();
-            }
-            if (genesisWalletGrossIssued(claim.walletId) > GENESIS_WALLET_GROSS_CEILING - claim.reservedGrossAtomic) {
-                revert GenesisWalletCeilingExceeded();
-            }
-        }
+        unchecked { if (cursorEnd - cursorStart != claimCount) revert ClaimRangeMismatch(); }
     }
 
     function _verifyEligibility(VerifierConfig memory config, SettlementLane lane, bytes32 digest) private view {
@@ -1202,13 +1176,13 @@ contract ProvianRecourseKernel {
 
     function _requireTrueVerifierResult(address verifier, bytes memory callData) private view {
         if (verifier.code.length == 0) revert VerifierStateInvalid();
-        (bool success, bytes memory result) = verifier.staticcall(callData);
-        if (!success || result.length != 32) revert VerificationFailed();
-        uint256 verdict;
+        bool valid;
         assembly ("memory-safe") {
-            verdict := mload(add(result, 32))
+            let ptr := mload(0x40)
+            let success := staticcall(gas(),verifier,add(callData,32),mload(callData),ptr,32)
+            valid := and(and(success,eq(returndatasize(),32)),eq(mload(ptr),1))
         }
-        if (verdict != 1) revert VerificationFailed();
+        if (!valid) revert VerificationFailed();
     }
 
     function _finalizeBatch(
@@ -1228,14 +1202,15 @@ contract ProvianRecourseKernel {
         uint256 claimCount,
         uint256 genesisIssued
     ) private {
-        uint256 nextGenesisIssued = epochGenesisIssued[policy.epoch] + genesisIssued;
+        uint256 nextGenesisIssued = _epochGenesisIssued[policy.epoch] + genesisIssued;
         if (nextGenesisIssued > policy.genesisCap) revert GenesisEpochCapExceeded();
-        uint256 nextTotalIssued = epochTotalIssued[policy.epoch] + totalMinted;
+        uint256 nextTotalIssued = _epochTotalIssued[policy.epoch] + totalMinted;
         if (nextTotalIssued > policy.combinedCap) revert CombinedEpochCapExceeded();
-        if (totalSupply > type(uint256).max - totalMinted) revert ArithmeticDomainExceeded();
+        // Any uint256 is at most its type maximum; this subtraction cannot underflow.
+        unchecked { if (totalSupply > type(uint256).max - totalMinted) revert ArithmeticDomainExceeded(); }
 
-        epochGenesisIssued[policy.epoch] = nextGenesisIssued;
-        epochTotalIssued[policy.epoch] = nextTotalIssued;
+        _epochGenesisIssued[policy.epoch] = nextGenesisIssued;
+        _epochTotalIssued[policy.epoch] = nextTotalIssued;
         nextFinalizedCursor = cursorEnd;
         _batchRecords[batchId] = BatchRecord({
             settled: true,
@@ -1274,26 +1249,11 @@ contract ProvianRecourseKernel {
         address pool = protocolPointer.component(8);
         uint256 contribution = IKernelMemberContribution(pool).divertIssuance(account, gross, amount);
         if (contribution > amount) revert InvalidConfiguration();
-        _mint(account, amount - contribution);
+        unchecked { _mint(account, amount - contribution); }
         _mint(pool, contribution);
     }
-    function _mintRecipients(StandardRecipient[] calldata recipients, uint256[] memory amounts,
-        StandardPEClaim[] calldata claims, uint256 rate) private {
-        uint256 cursor;
-        for (uint256 i; i < recipients.length; ++i) {
-            uint256 points;
-            for (uint256 j; j < recipients[i].claimCount; ++j) points += claims[cursor++].recordPointsAtomic;
-            _mintContributor(recipients[i].contributor, amounts[i], points.mulDiv(rate, 1 ether));
-        }
-    }
-    function _mintGenesisRecipients(GenesisRecipient[] calldata recipients, uint256[] memory amounts,
-        GenesisPEClaim[] calldata claims) private {
-        uint256 cursor;
-        for (uint256 i; i < recipients.length; ++i) {
-            uint256 gross;
-            for (uint256 j; j < recipients[i].claimCount; ++j) gross += claims[cursor++].reservedGrossAtomic;
-            _mintContributor(recipients[i].contributor, amounts[i], gross);
-        }
+    function _mintRecipients(RecipientMint[] memory mints) private {
+        for (uint256 i; i < mints.length; ++i) _mintContributor(mints[i].account, mints[i].amount, mints[i].gross);
     }
 
     function _mint(address to, uint256 amount) private {
@@ -1311,8 +1271,9 @@ contract ProvianRecourseKernel {
     }
 
     function _debit(address holder, uint256 amount) private {
-        if (balanceOf[holder] < amount) revert InsufficientBalance();
-        balanceOf[holder] -= amount;
+        uint256 balance = balanceOf[holder];
+        if (balance < amount) revert InsufficientBalance();
+        unchecked { balanceOf[holder] = balance - amount; }
         if (amount != 0) ++outgoingSequence[holder];
     }
 
@@ -1324,6 +1285,7 @@ contract ProvianRecourseKernel {
     }
 
     function _requireScheduleEpoch(uint64 effectiveEpoch) private view {
+        if (_economicImport()) { if (effectiveEpoch <= lastOpenedEpoch) revert InvalidRestoration(); return; }
         if (!epochZeroArmed) revert EpochZeroNotArmed();
         if (effectiveEpoch < earliestSchedulableEpoch()) revert PolicyNotProspective();
     }
@@ -1347,10 +1309,11 @@ contract ProvianRecourseKernel {
         private
         view
     {
+        if (_economicImport()) return;
         if (foundationBps == HUMAN_FOUNDATION_BPS) return;
         _requireConfiguredVerifier(_effectiveBeneficiaryVerifierAt(effectiveEpoch));
 
-        (bool hasNextRate, uint64 nextRateEpoch) = _nextAgentFoundationRateScheduleAfter(effectiveEpoch);
+        (bool hasNextRate, uint64 nextRateEpoch) = _nextScheduleAfter(_agentFoundationRateScheduleEpochs,effectiveEpoch);
         for (uint256 i = 0; i < _beneficiaryVerifierScheduleEpochs.length; ++i) {
             uint64 verifierEpoch = _beneficiaryVerifierScheduleEpochs[i];
             if (verifierEpoch > effectiveEpoch && (!hasNextRate || verifierEpoch < nextRateEpoch)) {
@@ -1363,12 +1326,13 @@ contract ProvianRecourseKernel {
         private
         view
     {
+        if (_economicImport()) return;
         if (config.verifier != address(0)) return;
         if (_effectiveAgentFoundationRateAt(effectiveEpoch) != HUMAN_FOUNDATION_BPS) {
             revert VerifierStateInvalid();
         }
 
-        (bool hasNextVerifier, uint64 nextVerifierEpoch) = _nextBeneficiaryVerifierScheduleAfter(effectiveEpoch);
+        (bool hasNextVerifier, uint64 nextVerifierEpoch) = _nextScheduleAfter(_beneficiaryVerifierScheduleEpochs,effectiveEpoch);
         for (uint256 i = 0; i < _agentFoundationRateScheduleEpochs.length; ++i) {
             uint64 rateEpoch = _agentFoundationRateScheduleEpochs[i];
             if (rateEpoch > effectiveEpoch && (!hasNextVerifier || rateEpoch < nextVerifierEpoch)) {
@@ -1407,33 +1371,16 @@ contract ProvianRecourseKernel {
         }
     }
 
-    function _nextAgentFoundationRateScheduleAfter(uint64 effectiveEpoch)
-        private
-        view
-        returns (bool exists, uint64 nextEpoch)
-    {
-        for (uint256 i = 0; i < _agentFoundationRateScheduleEpochs.length; ++i) {
-            uint64 rateEpoch = _agentFoundationRateScheduleEpochs[i];
-            if (rateEpoch > effectiveEpoch && (!exists || rateEpoch < nextEpoch)) {
-                exists = true;
-                nextEpoch = rateEpoch;
+    function _nextScheduleAfter(uint64[] storage epochs,uint64 effectiveEpoch)
+        private view returns (bool exists,uint64 nextEpoch) {
+        for (uint256 i; i < epochs.length; ++i) {
+            uint64 epoch = epochs[i];
+            if (epoch > effectiveEpoch && (!exists || epoch < nextEpoch)) {
+                exists = true; nextEpoch = epoch;
             }
         }
     }
 
-    function _nextBeneficiaryVerifierScheduleAfter(uint64 effectiveEpoch)
-        private
-        view
-        returns (bool exists, uint64 nextEpoch)
-    {
-        for (uint256 i = 0; i < _beneficiaryVerifierScheduleEpochs.length; ++i) {
-            uint64 verifierEpoch = _beneficiaryVerifierScheduleEpochs[i];
-            if (verifierEpoch > effectiveEpoch && (!exists || verifierEpoch < nextEpoch)) {
-                exists = true;
-                nextEpoch = verifierEpoch;
-            }
-        }
-    }
 }
 
 interface IRecourseBatchHistory {

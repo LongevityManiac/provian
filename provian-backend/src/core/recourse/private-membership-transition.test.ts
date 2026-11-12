@@ -46,7 +46,7 @@ test('first join freezes the whole portfolio and activates only after every inde
   expect(s.fake.store.get(ownerKey)?.membershipTransition).toBe(op.id);
   expect(s.fake.store.has(accountKey)).toBe(false);
   expect(await beginPrivateMembershipTransition(s.db, ownerId, 'join')).toEqual(op);
-  await expect(beginPrivateMembershipTransition(s.db, ownerId, 'leave')).rejects.toThrow('busy');
+  await expect(beginPrivateMembershipTransition(s.db, ownerId, 'renew')).rejects.toThrow('busy');
   const ready = await openPrivateMembershipConsents(s.db, op.id);
   expect(nextPrivateAddressConsent(ready, h(3), { revision: '1', ruleHash: h(9), timestamp: now })).toMatchObject({ binding: h(3), account: a(3), nonce: '0', joined: true });
   expect(JSON.stringify(nextPrivateAddressConsent(ready, h(3), { revision: '1', ruleHash: h(9), timestamp: now }))).not.toContain(ownerId);
@@ -156,4 +156,16 @@ test('one-action departure records public revocations while money is pending, th
   expect((await openPrivateMembershipConsents(s.db,op.id)).status).toBe('complete');
   expect(s.fake.store.get(accountKey)).toMatchObject({pendingReservation:null,episode:{joined:false}});
   expect(s.fake.store.get(ownerKey)?.membershipTransition).toBeNull();
+});
+
+test('departure intent retains queued admission and prevents a late receipt from opening membership',async()=>{
+ const s=setup(),op=await beginPrivateMembershipTransition(s.db,ownerId,'join');
+ await openPrivateMembershipConsents(s.db,op.id);
+ const leaving=await beginPrivateMembershipTransition(s.db,ownerId,'leave');
+ expect(leaving.departureRequested).toBe(true);expect(leaving.id).toBe(op.id);
+ await expect(beginPrivateMembershipTransition(s.db,ownerId,'join')).rejects.toThrow('busy');
+ s.effects([{binding:h(3),joined:true,nonce:0,generation:1,index:5},{binding:h(4),joined:true,nonce:0,generation:1,index:6}]);
+ const recorded=await recordPrivateMembershipConsent(s.db,op.id,await s.f.read());
+ expect(recorded.status).toBe('consenting');expect(recorded.bindings.every(b=>b.admission)).toBe(true);
+ expect(s.fake.store.has(accountKey)).toBe(false);expect(s.fake.store.get(ownerKey)?.membershipTransition).toBe(op.id);
 });

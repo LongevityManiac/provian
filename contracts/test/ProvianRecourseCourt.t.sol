@@ -603,7 +603,7 @@ contract RecourseProvianRecourseCourtTest is Test {
         address e2eArb3 = address(0xEE33);
 
         realPvt;
-        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         ProvianRecourseCourt realCourt = new ProvianRecourseCourt(e2eAdmin, address(realEscrow), address(new MockEpochClock(0)), address(pvt), address(new MockIssuanceIndex()));
         vm.prank(e2eAdmin);
         realEscrow.setCourtContract(address(realCourt));
@@ -664,7 +664,7 @@ contract RecourseProvianRecourseCourtTest is Test {
         address e2eArb3 = address(0xEF33);
 
         realPvt;
-        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         ProvianRecourseCourt realCourt = new ProvianRecourseCourt(e2eAdmin, address(realEscrow), address(new MockEpochClock(0)), address(pvt), address(new MockIssuanceIndex()));
         vm.prank(e2eAdmin);
         realEscrow.setCourtContract(address(realCourt));
@@ -942,7 +942,7 @@ contract RecourseProvianRecourseCourtBondClaimTest is Test {
     function setUp() public {
         escrow = new RecourseMockEscrowV3();
         pvt = new MockPVT();
-        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         court = new ProvianRecourseCourt(admin, address(escrow), address(new MockEpochClock(0)), address(pvt), address(new MockIssuanceIndex()));
 
         vm.startPrank(admin);

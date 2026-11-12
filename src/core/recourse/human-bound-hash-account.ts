@@ -17,6 +17,12 @@ export interface BoundHumanHashAccount {
  * An account generation and its spending nonce are independent key domains. */
 export async function discoverBoundHumanHashAccount(mnemonic: string, identity: string,
   network: OwnerChainNetwork): Promise<BoundHumanHashAccount> {
+  return discoverBoundAccount(mnemonic,identity,network,true);
+}
+export async function discoverBoundHumanDepartureAccount(mnemonic:string,identity:string,network:OwnerChainNetwork):Promise<BoundHumanHashAccount>{
+  return discoverBoundAccount(mnemonic,identity,network,false);
+}
+async function discoverBoundAccount(mnemonic:string,identity:string,network:OwnerChainNetwork,spending:boolean):Promise<BoundHumanHashAccount>{
   if (!/^0x[0-9a-f]{64}$/.test(identity) || /^0x0+$/.test(identity)) throw Error('recourse_hash_identity_invalid');
   const breakOrigin = await readBreakRecoveryContext(network), owner = await readOwnerChainState(identity, network);
   if (owner.destination === ZeroAddress || !Number.isSafeInteger(owner.nonce) || owner.nonce < 1) throw Error('recourse_hash_account_not_restored');
@@ -36,13 +42,13 @@ export async function discoverBoundHumanHashAccount(mnemonic: string, identity: 
     const recoverySecret = humanBreakKey(mnemonic, base, 'recovery-secret', String(owner.nonce));
     const recoverySeed = humanBreakKey(mnemonic, base, 'recovery-signing', String(owner.nonce));
     try {
-      if (await recoverySigningRoot(spendingSeed) !== account.currentRoot) throw Error('recourse_hash_account_key_mismatch');
+      if (spending && await recoverySigningRoot(spendingSeed) !== account.currentRoot) throw Error('recourse_hash_account_key_mismatch');
       const recoveryRoot = await recoverySigningRoot(recoverySeed);
       if (recoveryRoot !== owner.signingRoot || recoveryCommitment(recoverySecret, recoveryRoot) !== owner.commitment) throw Error('recourse_hash_account_recovery_mismatch');
     } finally { spendingSeed.fill(0); recoverySecret.fill(0); recoverySeed.fill(0); }
     const confirmed = await discoverHashAccount(initialRoot, network, breakOrigin), latest = await readOwnerChainState(identity, network);
     if (confirmed.manifestHash !== account.manifestHash || confirmed.account !== account.account
-      || confirmed.currentRoot !== account.currentRoot || confirmed.nonce !== account.nonce
+      || (spending && (confirmed.currentRoot !== account.currentRoot || confirmed.nonce !== account.nonce))
       || latest.deployment.manifestHash !== owner.deployment.manifestHash || latest.nonce !== owner.nonce
       || latest.commitment !== owner.commitment || latest.signingRoot !== owner.signingRoot || latest.destination !== owner.destination) {
       throw Error('recourse_hash_account_state_changed');

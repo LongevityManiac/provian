@@ -1,6 +1,6 @@
 import { concat } from 'ethers';
 import { recoverySigningRoot, signRecoveryIntent } from './recourse-hash-authorization';
-import { hashAccountContractDigest, hashAccountIntentDigest, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account-data';
+import { hashAccountContractDigest, hashAccountDepartureDigest, hashAccountIntentDigest, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account-data';
 export * from './hash-account-data';
 
 /** Stateless message proof for EIP-1271 consumers. It cannot execute an account
@@ -11,6 +11,12 @@ export async function signHashAccountMessage(account: string, digest: string, si
     async reserve() { /* Message signing does not rotate account material. */ },
   });
   return concat([proof.publicKey, proof.signature]);
+}
+/** Revocation-only proof under the account's constructor-bound departure root. */
+export async function signHashAccountDeparture(account:string,digest:string,initialSeed:Uint8Array):Promise<string>{
+  const root=await recoverySigningRoot(initialSeed);
+  const proof=await signRecoveryIntent(initialSeed,hashAccountDepartureDigest(account,root,digest),{async reserve(){}});
+  return concat([proof.publicKey,proof.signature]);
 }
 /** The durable callback must encrypt and retain both the exact intent and the
  * successor seed before any public signature is returned. A failed inner call

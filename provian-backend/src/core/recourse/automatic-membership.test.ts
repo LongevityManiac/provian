@@ -1,3 +1,4 @@
+import { advanceMembershipDeparture } from './membership-departure';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { collectAutomaticMembershipOwner,runAutomaticMembershipSweep,AUTOMATIC_MEMBERSHIP_SWEEP } from './automatic-membership';
@@ -10,6 +11,7 @@ import { readMembershipWiring } from './membership-wiring';
 import { STANDING_MEMBERSHIP_ABI } from './membership-authorization';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
+jest.mock('./membership-departure',()=>({advanceMembershipDeparture:jest.fn()}));
 jest.mock('./membership-debit-preparation',()=>({prepareMembershipDebit:jest.fn()}));
 jest.mock('./membership-debit-operation',()=>({queueMembershipDebit:jest.fn()}));
 jest.mock('./membership-preparation',()=>({reconcileCurrentPrivateMembership:jest.fn(),prepareMembershipTransition:jest.fn()}));
@@ -21,7 +23,7 @@ function setup(){
  jest.resetAllMocks();
  const fake=createFakeFirestore({strictTransactionOrder:true}),db=fake as unknown as Firestore;
  const owner=h(1),binding=h(2),payer=a(3),domain={chainId:'8453',pointer:a(4),kernel:a(5),pool:a(6)};
- fake.store.set(`${R.owners}/${owner}`,{ownerIdentity:owner,primaryBinding:binding});
+ fake.store.set(`${R.owners}/${owner}`,{ownerIdentity:owner,membershipFixedDebitBinding:binding});
  fake.store.set(`${C.owners}/${owner}`,{ownerIdentity:owner});
  const state={addressConsent:true,currentAddress:payer,consentNonce:'1',participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100};
  (readRecoursePoolState as jest.Mock).mockResolvedValue(state);
@@ -31,6 +33,7 @@ function setup(){
  (readMembershipWiring as jest.Mock).mockResolvedValue({standingMembership:a(9),pin:{blockHash:h(10)}});
  const challenge={reservationId:h(11),domain,debit:{binding,payer,month:'1',burn:'100',reserve:'0',nonce:'1',generation:'1',revision:'1',ruleHash:h(12),expiresAt:'1000'}};
  (prepareMembershipDebit as jest.Mock).mockResolvedValue({status:'ready',challenge});
+ (prepareMembershipTransition as jest.Mock).mockResolvedValue({kind:'leave'});
  return {fake,db,owner,binding,payer,state,mandate,challenge,agree};
 }
 test('scheduled collection needs only the retained approval, never member presence, a key or ETH',async()=>{
@@ -39,11 +42,15 @@ test('scheduled collection needs only the retained approval, never member presen
  expect(prepareMembershipDebit).toHaveBeenCalledWith(s.db,s.owner,s.payer);
  expect(queueMembershipDebit).toHaveBeenCalledWith(s.db,s.owner,s.challenge);
 });
-test.each(['burn','reserve','earnings','suspended','nonce'])('an increased or unavailable standing approval creates no debit reservation: %s',async kind=>{
- const s=setup();if(kind==='burn')s.state.participationBurnAtomic='101';if(kind==='reserve')s.state.noEarningsContributionAtomic='101';
- if(kind==='earnings')s.state.earningsBps=101;if(kind==='suspended')s.mandate[8]=false;if(kind==='nonce')s.mandate[5]=2n;
+test('an invoice outside the standing approval is not queued',async()=>{
+ const s=setup();(prepareMembershipDebit as jest.Mock).mockResolvedValue({status:'approval_required'});
  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('approval_required');
- expect(prepareMembershipDebit).not.toHaveBeenCalled();expect(queueMembershipDebit).not.toHaveBeenCalled();
+ expect(queueMembershipDebit).not.toHaveBeenCalled();
+});
+test('a later primary change never redirects the fixed payer',async()=>{
+ const s=setup();s.fake.store.get(`${R.owners}/${s.owner}`)!.primaryBinding=h(99);
+ expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
+ expect(readRecoursePoolState).toHaveBeenCalledWith(s.binding,expect.anything());
 });
 test('a departure is advanced in the background and freezes new debits',async()=>{
  const s=setup();s.fake.store.get(`${R.owners}/${s.owner}`)!.membershipTransition=h(20);
@@ -56,8 +63,16 @@ test('a completed departure or already settled month causes no debit',async()=>{
  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('settled');expect(queueMembershipDebit).not.toHaveBeenCalled();
 });
 test('a failing owner cannot starve the next owner and the sweep cursor resets after a full pass',async()=>{
- const s=setup(),other=h(21);s.fake.store.set(`${C.owners}/${other}`,{ownerIdentity:other});s.fake.store.set(`${R.owners}/${other}`,{ownerIdentity:other,primaryBinding:h(22)});
+ const s=setup(),other=h(21);s.fake.store.set(`${C.owners}/${other}`,{ownerIdentity:other});s.fake.store.set(`${R.owners}/${other}`,{ownerIdentity:other,membershipFixedDebitBinding:h(22)});
  (reconcileCurrentPrivateMembership as jest.Mock).mockRejectedValueOnce(Error('temporarily_unavailable'));
  expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({visited:2,retry:1,queued:1});
  expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)?.after).toBeNull();
+});
+
+test('a never-admitted first join still reconciles departure after the app closes',async()=>{
+ const {PRIVATE_MEMBERSHIP_TRANSITIONS:T}=await import('./private-membership-transition');
+ const s=setup();s.fake.store.delete(`${C.owners}/${s.owner}`);
+ s.fake.store.set(`${T}/${h(88)}`,{id:h(88),ownerIdentity:s.owner,departureRequested:true,status:'preparing'});
+ await runAutomaticMembershipSweep(s.db);
+ expect(advanceMembershipDeparture).toHaveBeenCalledWith(s.db,s.owner,h(88));
 });

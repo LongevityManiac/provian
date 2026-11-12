@@ -5,7 +5,7 @@ import { currentProtocolDeployment } from '../protocol/runtime';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, releaseRevokedPrivateDebit, type PrivateMembershipReservation } from './private-membership-reservation';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, beginPrivateMembershipTransition, openPrivateMembershipConsents,
-  refreshRecoveredMembershipTransition, nextPrivateAddressConsent, type PrivateMembershipTransition } from './private-membership-transition';
+  refreshRecoveredMembershipTransition, replaceAdmissionWithDeparture, nextPrivateAddressConsent, type PrivateMembershipTransition } from './private-membership-transition';
 import { reconcilePrivateMembershipDomain } from './private-membership-domain';
 import { reconcilePrivateMembershipThrough, reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
 import { reconcileMembershipDebit } from './membership-debit-revocation';
@@ -82,9 +82,19 @@ export async function ownedMembershipTransition(db: Firestore, ownerIdentity: st
 export async function prepareMembershipTransition(db: Firestore, ownerIdentity: string,
   input: { readonly kind: 'join' | 'leave' | 'renew' } | { readonly id: string }): Promise<MembershipTransitionView> {
   if ('id' in input) await ownedMembershipTransition(db, ownerIdentity, input.id);
+  // Persist departure before reconciliation: a pending financial receipt must
+  // never prevent the owner from durably refusing further admissions.
+  const departure = 'kind' in input && input.kind === 'leave'
+    ? await beginPrivateMembershipTransition(db, ownerIdentity, 'leave') : null;
   await reconcileCurrentPrivateMembership(db, ownerIdentity);
-  let operation = 'id' in input ? await ownedMembershipTransition(db, ownerIdentity, input.id)
-    : await beginPrivateMembershipTransition(db, ownerIdentity, input.kind);
+  let operation = departure ?? ('id' in input ? await ownedMembershipTransition(db, ownerIdentity, input.id)
+    : await beginPrivateMembershipTransition(db, ownerIdentity, input.kind));
+  if (operation.departureRequested && operation.kind !== 'leave') {
+    const queued = await pendingMembershipConsents(db, operation.id);
+    if (queued.length) return { id: operation.id, kind: 'leave', status: 'preparing', challenges: [],
+      pending: queued.map(row => ({ binding: row.consent.binding, account: row.consent.account, operation: row.operation })) };
+    operation = await replaceAdmissionWithDeparture(db, operation.id);
+  }
   if (operation.status === 'preparing') {
     await reconcileCurrentPrivateMembership(db, ownerIdentity);
     const account = await db.collection(C.owners).doc(ownerIdentity).get();
@@ -106,9 +116,8 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
   const deployment = await currentProtocolDeployment();
   if (operation.pool !== deployment.addresses.recoursePool.toLowerCase() || operation.kernel !== deployment.addresses.kernel.toLowerCase()) throw Error('recourse_membership_retired');
   const domain: MembershipAuthorizationDomain = { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: operation.kernel, pool: operation.pool };
-  const privateOwner = await db.collection(R.owners).doc(ownerIdentity).get();
-  const primary: unknown = privateOwner.get('primaryBinding');
-  if (typeof primary !== 'string' || !operation.bindings.some(b=>b.binding===primary)) throw Error('recourse_membership_primary_binding_required');
+  const payer = operation.fixedDebitBinding;
+  if (operation.kind !== 'leave' && (typeof payer !== 'string' || !operation.bindings.some(b => b.binding === payer))) throw Error('recourse_membership_payer_required');
   const challenges: MembershipConsentChallenge[] = [];
   const queued = await pendingMembershipConsents(db, operation.id);
   const pending: MembershipTransitionView['pending'][number][] = [];
@@ -122,8 +131,8 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
       const inFlight = queued.filter(row => row.domain.pool === domain.pool && row.domain.kernel === domain.kernel && row.domain.pointer === domain.pointer
         && Object.entries(consent).every(([key, value]) => key === 'expiresAt' || row.consent[key as keyof AddressMembershipConsent] === value));
       if (inFlight.length) pending.push(...inFlight.map(row => ({ binding: consent.binding, account: consent.account, operation: row.operation })));
-      else challenges.push({ domain, consent, fixedChargePayer:consent.binding===primary, burnLimit:consent.binding===primary?state.participationBurnAtomic:'0',
-        reserveLimit:consent.binding===primary?state.noEarningsContributionAtomic:'0', earningsBpsLimit:state.earningsBps, messageHex: addressMembershipSigningHash(domain, consent) });
+      else challenges.push({ domain, consent, fixedChargePayer:consent.joined && consent.binding===payer, burnLimit:consent.joined && consent.binding===payer?state.participationBurnAtomic:'0',
+        reserveLimit:consent.joined && consent.binding===payer?state.noEarningsContributionAtomic:'0', earningsBpsLimit:state.earningsBps, messageHex: addressMembershipSigningHash(domain, consent) });
     }
   }
   if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');

@@ -7,6 +7,29 @@ const address = value => {
 };
 const digest = value => sha256(toUtf8Bytes(JSON.stringify(value)));
 
+/** The fixed first successor plan cannot invent replacements for a separately
+ * scheduled verifier. Detect that unsupported migration before holding funds
+ * issuance, rather than discovering it in the post-retirement snapshot. */
+async function verifyScheduledVerifierCompatibility({deployment,artifacts,port,block}) {
+  const kernel=address(deployment.wiring.pvt),abi=new Interface(artifacts.ProvianPVT9.abi);
+  const from=deployment.successorKernel?.pvt9Kernel?.block;
+  ensure(Number.isSafeInteger(from)&&from>0&&from<=block.number,'deployment_boundary_missing');
+  const epoch=abi.decodeFunctionResult('lastOpenedEpoch',await port.call(kernel,abi.encodeFunctionData('lastOpenedEpoch'),block.hash))[0];
+  const names=['BeneficiaryVerifierScheduled','EligibilityVerifierScheduled'];
+  const logs=await port.logs(kernel,from,block.number,[names.map(name=>abi.getEvent(name).topicHash)]);
+  for(const log of logs){
+    const event=abi.parseLog(log);
+    if(!event||!names.includes(event.name))continue;
+    ensure(!log.removed&&address(log.address)===kernel&&BigInt(log.blockNumber)>=BigInt(from)
+      &&BigInt(log.blockNumber)<=BigInt(block.number)&&await port.blockHash(Number(BigInt(log.blockNumber)))===log.blockHash,'history_invalid');
+    if(event.args.effectiveEpoch<=epoch)continue;
+    const method=event.name==='BeneficiaryVerifierScheduled'?'getScheduledBeneficiaryVerifier':'getScheduledEligibilityVerifier';
+    const schedule=abi.decodeFunctionResult(method,await port.call(kernel,abi.encodeFunctionData(method,[event.args.effectiveEpoch]),block.hash))[0];
+    ensure(!schedule.exists||address(schedule.config.verifier)===ZeroAddress,'scheduled_verifier_successor_required');
+  }
+  ensure(await port.blockHash(block.number)===block.hash,'reorg');
+}
+
 async function readState({ deployment, artifacts, port, block }) {
   const kernel = address(deployment.wiring.pvt), admin = address(deployment.wiring.admin);
   ensure(kernel !== ZeroAddress && admin !== ZeroAddress && Number.isSafeInteger(block.number) && block.number > 0
@@ -50,6 +73,7 @@ function planFromState(state, block, artifacts) {
  * an independently agreed finalized block. Ordinary transfers remain ungated. */
 export async function preparePredecessorRetirement({ deployment, artifacts, port }) {
   const block = await port.finalizedBlock();
+  await verifyScheduledVerifierCompatibility({deployment,artifacts,port,block});
   return planFromState(await readState({ deployment, artifacts, port, block }), block, artifacts);
 }
 /** Authenticate an exact stage against its original canonical source, then
@@ -61,6 +85,7 @@ export async function verifyPredecessorRetirement({ plan, deployment, artifacts,
   const original = await readState({ deployment, artifacts, port, block: plan.checkpoint });
   ensure(JSON.stringify(plan) === JSON.stringify(planFromState(original, plan.checkpoint, artifacts)), 'plan_changed');
   const block = await port.finalizedBlock();
+  await verifyScheduledVerifierCompatibility({deployment,artifacts,port,block});
   ensure(block.number >= plan.checkpoint.number, 'finality_regressed');
   const current = await readState({ deployment, artifacts, port, block });
   for (const field of ['kernel', 'admin', 'verifier', 'kernelRuntimeHash', 'verifierRuntimeHash']) ensure(current[field] === original[field], 'domain_changed');

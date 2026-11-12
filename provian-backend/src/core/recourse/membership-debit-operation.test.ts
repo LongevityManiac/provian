@@ -140,3 +140,14 @@ test('sponsor confirmation consumes a real branded receipt once before crediting
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.version).toBe(version);
   expect([...f.fake.store.keys()].filter(k => k.startsWith(C.effects + '/'))).toHaveLength(1);
 });
+
+test('departure recorded after simulation fences a new debit queue without clearing its money reservation', async () => {
+  const f=await fixture(),original=f.db.runTransaction.bind(f.db);
+  f.db.runTransaction=(async action=>{
+    f.fake.store.get(`${R.owners}/${f.owner}`)!.membershipTransition=h('ff');
+    return original(action);
+  }) as Firestore['runTransaction'];
+  await expect(queueMembershipDebit(f.db,f.owner,f.input,f.attestor,f.p)).rejects.toThrow('leaving');
+  expect([...f.fake.store.keys()].filter(key=>key.startsWith(Q+'/'))).toHaveLength(0);
+  expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.pendingReservation).toBe(f.reservation.id);
+});

@@ -181,6 +181,36 @@ contract RecourseStandingConsentTest is Test {
         join(bytes32(uint256(1002)),true); collect(debit(100,0,100)); reject(debit(100,1,0));
         vm.expectRevert(); consent.leaveStandingMembership(ID,2,EXIT,1); assertTrue(consent.permitsEarnings(ID,100));
     }
+    function testSuspendedRecoveredOwnerCanLeaveWithoutFinancialRenewalAfterGrace() public {
+        host.setReady(false); host.setConsent(ID,1,1,true); host.requireRecovery(ID); host.setMonth(105);
+        host.importState(9,abi.encode(ID,RecourseAddressConsentState.StandingMandate(100,100,100,100,0,1,
+            sha256(abi.encodePacked(EXIT)),sha256("salt"),true)));
+        host.importState(10,abi.encode(ID,uint256(100),RecourseAddressConsentState.MonthlyCollection(100,0)));
+        host.setReady(true); host.bind(ID,vm.addr(OTHER));
+        vm.expectRevert(); consent.leaveStandingMembership(ID,1,EXIT,1);
+        RecourseAddressConsent.ConsentAuthorization memory c=RecourseAddressConsent.ConsentAuthorization(
+            ID,vm.addr(OTHER),1,false,1,sha256("old rule is irrelevant"),block.timestamp+300);
+        bytes32 digest=consent.authenticatedDepartureDigest(c);
+        bytes memory oldSignature=sign(OWNER,digest); vm.expectRevert(); consent.leaveSuspendedMembership(c,oldSignature);
+        bytes memory recoveredSignature=sign(OTHER,digest); consent.leaveSuspendedMembership(c,recoveredSignature);
+        (uint256 nonce,,bool joined)=host.addressConsent(ID); assertEq(nonce,2); assertFalse(joined);
+        assertFalse(consent.permitsEarnings(ID,100)); assertEq(host.burned(),0); assertEq(host.reserve(),0);
+        (uint256 paid,)=consent.monthlyCollection(ID,100); assertEq(paid,100);
+        vm.expectRevert(); consent.leaveSuspendedMembership(c,recoveredSignature);
+    }
+    function testSuspendedDepartureRefusesActiveMandateAndUnrecoveredOwnerButSurvivesDelay() public {
+        join(EXIT,true);
+        RecourseAddressConsent.ConsentAuthorization memory c=RecourseAddressConsent.ConsentAuthorization(
+            ID,vm.addr(OWNER),1,false,1,sha256("rule"),block.timestamp+300);
+        bytes memory signature=sign(OWNER,consent.authenticatedDepartureDigest(c));
+        vm.expectRevert(); consent.leaveSuspendedMembership(c,signature);
+        host.setReady(false);host.requireRecovery(ID);
+        host.importState(9,abi.encode(ID,RecourseAddressConsentState.StandingMandate(100,100,100,100,0,1,
+            sha256(abi.encodePacked(EXIT)),sha256("salt"),true)));host.setReady(true);
+        host.bind(ID,address(0));vm.expectRevert();consent.leaveSuspendedMembership(c,signature);
+        host.bind(ID,vm.addr(OWNER));vm.warp(block.timestamp+301);consent.leaveSuspendedMembership(c,signature);
+        (,,bool joined)=host.addressConsent(ID);assertFalse(joined);
+    }
     function testStandingImportOnlyThroughIncompleteHostPreservesLimitsAndMonthCounters() public {
         RecourseAddressConsentState.StandingMandate memory mandate=RecourseAddressConsentState.StandingMandate(100,100,100,100,0,1,sha256(abi.encodePacked(EXIT)),sha256("salt"),true);
         bytes memory data=abi.encode(ID,mandate); vm.expectRevert(); consent.importState(9,data);

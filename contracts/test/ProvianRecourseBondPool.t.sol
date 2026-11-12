@@ -46,7 +46,7 @@ contract RecourseProvianRecourseBondPoolTest is Test {
         pvt = new MockPVT();
 
         court = address(new MockCourtRewardSink());
-        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
 
         vm.startPrank(admin);
         bondPool.setCourtContract(court);
@@ -78,8 +78,18 @@ contract RecourseProvianRecourseBondPoolTest is Test {
     function testSeededBondObligationExistsBeforeBackingAndRemainsExact() public {
         ProvianRecourseBondPool.BondSeed[] memory seeds = new ProvianRecourseBondPool.BondSeed[](1);
         seeds[0] = ProvianRecourseBondPool.BondSeed(agent, 750 ether + 1, 2, 1, 1, 180 days + 1, 750 ether);
+        bytes memory data = abi.encode(seeds[0]);
+        bytes32 domain = sha256(abi.encode("Provian custody snapshot", block.chainid, address(pvt), uint8(2), address(bondPool), uint256(1), bytes32(uint256(1))));
+        bytes32 leaf = sha256(abi.encode(domain, uint256(0), sha256(data)));
         ProvianRecourseBondPool carried = new ProvianRecourseBondPool(admin, techWallet, address(pvt),
-            address(new MockEpochClock(0)), address(new MockIssuanceIndex()), seeds, new ProvianRecourseBondPool.BpsSeed[](0));
+            address(new MockEpochClock(0)), address(new MockIssuanceIndex()),
+            RecourseInstitutionSeeds.SeedManifest(address(bondPool),1,bytes32(uint256(1)),leaf,1,seeds[0].amount), new ProvianRecourseBondPool.BpsSeed[](0));
+        assertFalse(carried.custodySeedsReady());
+        vm.prank(agent); vm.expectRevert(); carried.postBond(2, 0);
+        carried.importCustodySeed(0, data, new bytes32[](0));
+        carried.importCustodySeed(0, data, new bytes32[](0));
+        assertTrue(carried.custodySeedsReady());
+        assertEq(carried.importedCustodySeeds(), 1);
         assertEq(carried.encumberedPVT(), 750 ether + 1);
         vm.prank(agent); vm.expectRevert(); carried.withdrawBond();
         assertEq(carried.encumberedPVT(), 750 ether + 1);
@@ -108,16 +118,16 @@ contract RecourseProvianRecourseBondPoolTest is Test {
         address clk = address(new MockEpochClock(0));
         address idx = address(new MockIssuanceIndex());
         vm.expectRevert(ProvianRecourseBondPool.InvalidAddress.selector);
-        new ProvianRecourseBondPool(address(0), techWallet, address(pvt), clk, idx, new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        new ProvianRecourseBondPool(address(0), techWallet, address(pvt), clk, idx, RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.expectRevert(ProvianRecourseBondPool.InvalidAddress.selector);
-        new ProvianRecourseBondPool(admin, address(0), address(pvt), clk, idx, new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        new ProvianRecourseBondPool(admin, address(0), address(pvt), clk, idx, RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.expectRevert(ProvianRecourseBondPool.InvalidAddress.selector);
-        new ProvianRecourseBondPool(admin, techWallet, address(0), clk, idx, new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        new ProvianRecourseBondPool(admin, techWallet, address(0), clk, idx, RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.expectRevert(ProvianRecourseBondPool.InvalidAddress.selector);
-        new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(0), idx, new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(0), idx, RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
 
         vm.expectRevert(ProvianRecourseBondPool.InvalidAddress.selector);
-        new ProvianRecourseBondPool(admin, techWallet, address(pvt), clk, address(0), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        new ProvianRecourseBondPool(admin, techWallet, address(pvt), clk, address(0), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
     }
 
     function test_constants_matchTestMirror() public view {
@@ -130,7 +140,7 @@ contract RecourseProvianRecourseBondPoolTest is Test {
 
     function test_setCourtContract_oneTimeOnly() public {
 
-        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.prank(admin);
         fresh.setCourtContract(court);
         vm.prank(admin);
@@ -139,14 +149,14 @@ contract RecourseProvianRecourseBondPoolTest is Test {
     }
 
     function test_setCourtContract_onlyAdmin() public {
-        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.prank(rando);
         vm.expectRevert(ProvianRecourseBondPool.OnlyAdmin.selector);
         fresh.setCourtContract(court);
     }
 
     function test_setExecutor_oneTimeOnly() public {
-        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.prank(admin);
         fresh.setExecutor(governance);
         vm.prank(admin);
@@ -159,7 +169,7 @@ contract RecourseProvianRecourseBondPoolTest is Test {
         bondPool.transferAdmin(newAdmin);
         assertEq(bondPool.admin(), newAdmin);
 
-        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        ProvianRecourseBondPool fresh = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.prank(admin);
         fresh.transferAdmin(newAdmin);
         vm.prank(admin);
@@ -1380,7 +1390,7 @@ contract RecourseProvianRecourseBondPoolInvariantTest is Test {
     function setUp() public {
         pvt = new MockPVT();
         court = address(new MockCourtRewardSink());
-        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseBondPool.BondSeed[](0), new ProvianRecourseBondPool.BpsSeed[](0));
+        bondPool = new ProvianRecourseBondPool(admin, techWallet, address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0), new ProvianRecourseBondPool.BpsSeed[](0));
         vm.startPrank(admin);
         bondPool.setCourtContract(court);
         bondPool.setExecutor(governance);

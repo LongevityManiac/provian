@@ -89,6 +89,15 @@ export async function checkMembershipDebit(db: Firestore, value: unknown, p = po
 export function membershipDebitAdapter(db: Firestore, p = ports()): SponsoredOperationAdapter<MembershipDebitRequest, CheckedMembershipDebit> {
   return { collection: MEMBERSHIP_DEBIT_OPERATIONS, parse: parseMembershipDebitRequest, id: membershipDebitOperationId,
     target: r => getCreateAddress({from: r.domain.pool, nonce: 1}).toLowerCase(), calldata: membershipDebitCalldata, check: r => checkMembershipDebit(db, r, p), assert: assertCheckedMembershipDebit,
+    beforeQueue: async (tx, request) => {
+      const row = await tx.get(db.collection(C.reservations).doc(request.reservationId));
+      const r = row.get('reservation') as PrivateDebitReservation;
+      if (!r || r.id !== request.reservationId || row.get('status') !== 'pending') return fail('finished');
+      const owner = await tx.get(db.collection(R.owners).doc(r.ownerIdentity));
+      if (owner.get('membershipTransition') != null) return fail('leaving');
+      const account = await tx.get(db.collection(C.owners).doc(r.ownerIdentity));
+      if (account.get('pendingReservation') !== r.id) return fail('reservation');
+    },
     satisfied: () => false, obsolete: e => e instanceof Error && ['retired', 'finished', 'stale', 'owner', 'leaving'].some(s => e.message === `recourse_membership_debit_${s}`),
     finalized: finalizedOwnerTransaction, reconcileConfirmed: async (request, hash) => {
       const row = await db.collection(C.reservations).doc(request.reservationId).get(), r = row.get('reservation') as PrivateDebitReservation;

@@ -1,12 +1,14 @@
+import { readStandingMembershipState } from './recourse-standing-state';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { Wallet, getBytes, verifyMessage } from 'ethers';
 import { readRecoursePoolChain } from './recourse-pool-chain';
 import { RECOURSE_POOL_ABI } from './recourse-pool-abi';
-import { addressMembershipSigningHash, standingMembershipDebitSigningHash, standingMembershipSigningHash, type StandingMembershipAuthorization } from './recourse-membership-authorization';
+import { addressMembershipSigningHash, standingMembershipDebitSigningHash, standingMembershipSigningHash, membershipExitCommitment, authenticatedDepartureSigningHash, type StandingMembershipAuthorization } from './recourse-membership-authorization';
 import { parseMembershipTransitionView, validateMembershipConsent, validateMembershipDebit, submitMembershipConsent,
-  submitMembershipDebit, parseMembershipDebitChallenge } from './recourse-membership-client';
+  submitMembershipDebit, parseMembershipDebitChallenge, retainMembershipDeparture } from './recourse-membership-client';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import type { ProtocolDeployment } from './protocol-pointer';
+vi.mock('./recourse-standing-state',()=>({readStandingMembershipState:vi.fn()}));
 vi.mock('./recourse-pool-chain', () => ({ readRecoursePoolChain: vi.fn() }));
 const a = (b: string) => `0x${b.repeat(20)}`, h = (b: string) => `0x${b.repeat(32)}`;
 const wallet = new Wallet(h('11')), payer = wallet.address.toLowerCase();
@@ -29,10 +31,24 @@ function fixture(joined = false) {
   return { state, deployment, network, relay, rpc };
 }
 beforeEach(() => vi.clearAllMocks());
+it.each([{expiresAt:'999'},{ruleHash:h('77')},{burnLimit:'0'},{reserveLimit:'0'},{earningsBpsLimit:0}])('departure ignores admission-only presentation fields %j',async patch=>{
+ const f=fixture(true), {expiresAt,ruleHash,...limits}=patch;
+ const leaving={...consent,joined:false,...(expiresAt ? {expiresAt}:{}),...(ruleHash ? {ruleHash}:{})};
+ const challenge={...consentChallenge(),...limits,consent:leaving,messageHex:addressMembershipSigningHash(domain,leaving)};
+ await expect(validateMembershipConsent(challenge,payer,'leave',f.network)).resolves.toEqual(challenge);
+});
+it.each([{account:a('ff')},{nonce:'4'},{revision:'2'},{joined:true}])('departure still refuses scope changes %j',async patch=>{
+ const f=fixture(true), leaving={...consent,joined:false,...patch};
+ const challenge={...consentChallenge(),consent:leaving,messageHex:addressMembershipSigningHash(domain,leaving)};
+ await expect(validateMembershipConsent(challenge,payer,'leave',f.network)).rejects.toThrow();
+});
 it('consent signs raw validated bytes and refuses a pointer change during signing', async () => {
   const f = fixture(), sign = vi.fn((bytes: Uint8Array) => wallet.signMessage(bytes));
   await submitMembershipConsent(f.relay, f.network, { transitionId: h('21'), kind: 'join', account: payer, challenge: consentChallenge(), signBytes: sign,exitSecret:async()=>h('23') });
   const body = f.relay.request.mock.calls[0][1] as { ownerSignature: string; standing:StandingMembershipAuthorization };
+  expect(body.standing.burnLimit).toBe(f.state.participationBurnAtomic);
+  expect(body.standing.reserveLimit).toBe(f.state.noEarningsContributionAtomic);
+  expect(body.standing.earningsBpsLimit).toBe(f.state.earningsBps);
   const bytes=getBytes(standingMembershipSigningHash(domain,body.standing));
   expect(sign).toHaveBeenCalledWith(bytes);
   expect(verifyMessage(bytes,body.ownerSignature)).toBe(wallet.address);
@@ -82,4 +98,30 @@ it('resume status is bounded to pending public operation metadata', () => {
   expect(() => parseMembershipTransitionView({ ...view, challenges: [consentChallenge()] })).toThrow('invalid');
   expect(() => parseMembershipTransitionView({ ...view, pending: [{ ...entry, ownerSignature: '0x1234' }] })).toThrow('invalid');
   expect(() => parseMembershipTransitionView({ ...view, pending: [{ ...entry, operation: { ...entry.operation, status: 'confirmed' } }] })).toThrow('invalid');
+});
+
+it('one leave action retains current and pending-next exit proofs without financial signatures',async()=>{
+ const f=fixture(true),signBytes=vi.fn(),exitSecret=vi.fn(async(_c:unknown,salt:string)=>salt===h('a1')?h('b1'):h('b2'));
+ const challenges=[{domain,consent:{...consent,joined:false},exitSalt:h('a1'),exitCommitment:membershipExitCommitment(h('b1'))},
+   {domain,consent:{...consent,joined:false,nonce:'4'},exitSalt:h('a2'),exitCommitment:membershipExitCommitment(h('b2'))}];
+ const relay={request:vi.fn(async(_path:string,body?:unknown)=>body?{retained:true}:challenges)};
+ await retainMembershipDeparture(relay,f.network,{transitionId:h('21'),exitSecret,signBytes});
+ expect(signBytes).not.toHaveBeenCalled();expect(exitSecret).toHaveBeenCalledTimes(2);
+ expect(relay.request.mock.calls[1][1]).toEqual(challenges.map((challenge,i)=>({challenge,exitSecret:i?h('b2'):h('b1'),ownerSignature:null})));
+});
+it('suspended departure uses the recovered owner domain and no renewed financial approval',async()=>{
+ const f=fixture(true),challenge={domain,consent:{...consent,joined:false,expiresAt:'999'},exitSalt:null,exitCommitment:null};
+ vi.mocked(readStandingMembershipState).mockResolvedValue({controller:a('99'),mandate:{active:false,consentNonce:'3'}} as Awaited<ReturnType<typeof readStandingMembershipState>>);
+ const relay={request:vi.fn(async(_path:string,body?:unknown)=>body?{retained:true}:[challenge])},exitSecret=vi.fn();
+ const signBytes=vi.fn(async(_a:string,_b:string,bytes:Uint8Array)=>wallet.signMessage(bytes));
+ await retainMembershipDeparture(relay,f.network,{transitionId:h('21'),exitSecret,signBytes});
+ expect(exitSecret).not.toHaveBeenCalled();expect(signBytes).toHaveBeenCalledWith(payer,consent.binding,getBytes(authenticatedDepartureSigningHash(domain,challenge.consent)));
+});
+it.each(['account','nonce','commitment'])('departure refuses unverifiable material before retaining any proof: %s',async mutation=>{
+ const f=fixture(true),challenge={domain,consent:{...consent,joined:false},exitSalt:h('a1'),exitCommitment:membershipExitCommitment(h('b1'))};
+ if(mutation==='account')challenge.consent.account=a('ff');if(mutation==='nonce')challenge.consent.nonce='5';
+ if(mutation==='commitment')challenge.exitCommitment=h('ff');
+ const relay={request:vi.fn(async()=>[challenge])};
+ await expect(retainMembershipDeparture(relay,f.network,{transitionId:h('21'),exitSecret:async()=>h('b1'),signBytes:vi.fn()})).rejects.toThrow();
+ expect(relay.request).toHaveBeenCalledTimes(1);
 });

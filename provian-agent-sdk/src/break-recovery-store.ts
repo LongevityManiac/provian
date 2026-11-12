@@ -11,8 +11,8 @@ import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { readAddressRecoveryBinding } from './recourse-binding-chain';
 import { withArchivedRecoveryMaterial, archivedAgentRestorations } from './recourse-recovery';
 import { assertCurrentProtocolTransaction } from './protocol-transaction';
-import { readHashAccountState, verifyHashAccountVariantReceipt } from './hash-account-chain';
-import { prepareHashAccountOperation, signHashAccountMessage, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account';
+import { readHashAccountState, readHashAccountDepartureRoot, verifyHashAccountVariantReceipt } from './hash-account-chain';
+import { prepareHashAccountOperation, signHashAccountMessage, signHashAccountDeparture, type HashAccountIntent, type SignedHashAccountOperation } from './hash-account';
 import { readOwnerChainState } from './recourse-owner-chain';
 import { breakRestorationDetails, parseBreakRestorationRequest } from './break-restoration-data';
 import { verifyBreakRecoveryReceipt } from './break-recovery-receipt';
@@ -506,6 +506,81 @@ export async function signActiveHashWalletMessage(input: { directory: string; pa
       if (after.root !== state.root || after.nonce !== state.nonce || after.manifestHash !== state.manifestHash) throw Error('hash_wallet_state_changed');
       return signature;
     } finally { seed.fill(0); }
+  });
+}
+/** A recovered auxiliary address is independently keyed and never selected by
+ * the primary-wallet index. Both its recovery binding and spending root must
+ * still match the independently read chain before and after signing. */
+export async function signBoundHashWalletMessage(input: { directory: string; passphrase: string; account: string;
+  binding: string; message: Uint8Array; network: OwnerChainNetwork }): Promise<string | null> {
+  if (!hash.test(input.binding) || !/^0x[0-9a-f]{40}$/.test(input.account)) throw Error('hash_wallet_account_changed');
+  const directory = path.resolve(input.directory);
+  return locked(directory, input.passphrase, async () => {
+    let names: string[];
+    try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
+    const context = await readBreakRecoveryContext(input.network);
+    const candidates: BreakRecord[] = [];
+    for (const name of names.sort()) {
+      if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name)
+        || !name.startsWith(input.binding.slice(2)+'-') || !name.endsWith('-'+context.slice(2)+'.json')) continue;
+      const commitment = '0x'+name.slice(65,129);
+      const record = readRecord(recordFile(directory,input.binding,commitment,context),input.passphrase,input.binding,commitment,context);
+      if (record?.destination === input.account) candidates.push(record);
+    }
+    if (!candidates.length) return null;
+    const owner = await readOwnerChainState(input.binding,input.network), state = await readHashAccountState(input.account,input.network);
+    if (owner.destination !== input.account || owner.deployment.manifestHash !== state.manifestHash) throw Error('hash_wallet_account_changed');
+    for (const record of candidates) {
+      const seed = Buffer.from((record.accountSigningSeed ?? record.destinationSigningSeed).slice(2),'hex');
+      try {
+        if (await recoverySigningRoot(seed) !== state.root) continue;
+        const signature = await signHashAccountMessage(input.account,hashMessage(input.message),seed);
+        const latest = await readOwnerChainState(input.binding,input.network), after = await readHashAccountState(input.account,input.network);
+        if (after.root !== state.root || after.nonce !== state.nonce || after.manifestHash !== state.manifestHash
+          || latest.destination !== owner.destination || latest.commitment !== owner.commitment || latest.nonce !== owner.nonce
+          || latest.signingRoot !== owner.signingRoot || latest.deployment.manifestHash !== owner.deployment.manifestHash) throw Error('hash_wallet_state_changed');
+        return signature;
+      } finally { seed.fill(0); }
+    }
+    throw Error('hash_wallet_reconcile_pending_receipt');
+  });
+}
+/** A separate revocation-only signer retains the constructor seed. Ordinary
+ * account messages above still require the current spending key and nonce. */
+export async function signBoundHashWalletDeparture(input: { directory: string; passphrase: string; account: string;
+  binding: string; message: Uint8Array; network: OwnerChainNetwork }): Promise<string | null> {
+  if (!hash.test(input.binding) || !/^0x[0-9a-f]{40}$/.test(input.account)) throw Error('hash_wallet_account_changed');
+  const directory = path.resolve(input.directory);
+  return locked(directory, input.passphrase, async () => {
+    let names: string[];
+    try { names = fs.readdirSync(path.join(directory, 'break-recoveries')); }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; }
+    const context = await readBreakRecoveryContext(input.network);
+    const candidates: BreakRecord[] = [];
+    for (const name of names.sort()) {
+      if (!/^[0-9a-f]{64}-[0-9a-f]{64}-[0-9a-f]{40}\.json$/.test(name)
+        || !name.startsWith(input.binding.slice(2)+'-') || !name.endsWith('-'+context.slice(2)+'.json')) continue;
+      const commitment = '0x'+name.slice(65,129);
+      const record = readRecord(recordFile(directory,input.binding,commitment,context),input.passphrase,input.binding,commitment,context);
+      if (record?.destination === input.account) candidates.push(record);
+    }
+    if (!candidates.length) return null;
+    const owner = await readOwnerChainState(input.binding,input.network), state = await readHashAccountDepartureRoot(input.account,input.network);
+    if (owner.destination !== input.account || owner.deployment.manifestHash !== state.manifestHash) throw Error('hash_wallet_account_changed');
+    for (const record of candidates) {
+      const seed = Buffer.from(record.destinationSigningSeed.slice(2),'hex');
+      try {
+        if (await recoverySigningRoot(seed) !== state.root) continue;
+        const signature = await signHashAccountDeparture(input.account,hashMessage(input.message),seed);
+        const latest = await readOwnerChainState(input.binding,input.network), after = await readHashAccountDepartureRoot(input.account,input.network);
+        if (after.root !== state.root || after.manifestHash !== state.manifestHash
+          || latest.destination !== owner.destination || latest.commitment !== owner.commitment || latest.nonce !== owner.nonce
+          || latest.signingRoot !== owner.signingRoot || latest.deployment.manifestHash !== owner.deployment.manifestHash) throw Error('hash_wallet_state_changed');
+        return signature;
+      } finally { seed.fill(0); }
+    }
+    throw Error('hash_wallet_reconcile_pending_receipt');
   });
 }
 /** A hash-wallet operation rotates a signing key even when its inner call fails.

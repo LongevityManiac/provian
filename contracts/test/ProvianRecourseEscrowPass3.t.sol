@@ -28,7 +28,7 @@ contract RecourseProvianRecourseEscrowPass3Test is Test {
     function setUp() public {
         usdc = new MockUSDC();
         pvt = new MockPVT();
-        escrow = new ProvianRecourseEscrow(admin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        escrow = new ProvianRecourseEscrow(admin, feeWallet, address(usdc), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
 
         usdc.mint(depositor, 100_000e6);
         pvt.mint(depositor, 100_000e18);
@@ -160,7 +160,7 @@ contract RecourseProvianRecourseEscrowPass3Test is Test {
 
     function _escrowWithBlacklistUSDC() internal returns (ProvianRecourseEscrow e, MockBlacklistUSDC bl) {
         bl = new MockBlacklistUSDC();
-        e = new ProvianRecourseEscrow(admin, feeWallet, address(bl), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        e = new ProvianRecourseEscrow(admin, feeWallet, address(bl), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         vm.prank(admin);
         e.setCourtContract(court);
         bl.mint(depositor, 100_000e6);
@@ -206,7 +206,7 @@ contract RecourseProvianRecourseEscrowPass3Test is Test {
 
     function test_18_resolveRelease_toBlacklistedRecipient_creditsPull_PVT() public {
         MockBlacklistPVT blpvt = new MockBlacklistPVT();
-        ProvianRecourseEscrow e = new ProvianRecourseEscrow(admin, feeWallet, address(usdc), address(blpvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        ProvianRecourseEscrow e = new ProvianRecourseEscrow(admin, feeWallet, address(usdc), address(blpvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         vm.prank(admin);
         e.setCourtContract(court);
         blpvt.mint(depositor, 100_000e18);
@@ -255,7 +255,7 @@ contract RecourseProvianRecourseEscrowPass3Test is Test {
 
         realPvt;
 
-        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(bl), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        ProvianRecourseEscrow realEscrow = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(bl), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         ProvianRecourseCourt realCourt = new ProvianRecourseCourt(e2eAdmin, address(realEscrow), address(new MockEpochClock(0)), address(pvt), address(new MockIssuanceIndex()));
         vm.prank(e2eAdmin);
         realEscrow.setCourtContract(address(realCourt));
@@ -347,7 +347,7 @@ contract RecourseProvianRecourseEscrowPass3Test is Test {
         MockPVT p = new MockPVT();
         address e2eAdmin = address(0xEA5);
         p;
-        ProvianRecourseEscrow esc = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(u), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), new ProvianRecourseEscrow.EscrowSeed[](0));
+        ProvianRecourseEscrow esc = new ProvianRecourseEscrow(e2eAdmin, feeWallet, address(u), address(pvt), address(new MockEpochClock(0)), address(new MockIssuanceIndex()), RecourseInstitutionSeeds.SeedManifest(address(0),0,bytes32(0),bytes32(0),0,0));
         ProvianRecourseCourt crt = new ProvianRecourseCourt(e2eAdmin, address(esc), address(new MockEpochClock(0)), address(pvt), address(new MockIssuanceIndex()));
         vm.prank(e2eAdmin);
         esc.setCourtContract(address(crt));

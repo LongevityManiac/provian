@@ -11,8 +11,8 @@ import { addressRecoveryBinding } from './recourse-address-binding';
 import { signEip191Message } from './link-signing';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
 import { waitForRecourseBinding } from './recourse-binding-chain';
-import { signActiveHashWalletMessage } from './break-recovery-store';
-import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent,
+import { signActiveHashWalletMessage, signBoundHashWalletMessage, signBoundHashWalletDeparture } from './break-recovery-store';
+import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent, retainMembershipDeparture,
   type MembershipConsentChallenge, type MembershipRelay } from './recourse-membership-client';
 import { loadKeystore } from './keystore';
 import * as path from 'path';
@@ -39,10 +39,11 @@ async function request(config: RecourseConfig, path: string, body?: unknown): Pr
 export function recourseMembershipRelay(config: RecourseConfig): MembershipRelay {
   return { request: (path, body) => request(config, path, body) };
 }
-async function signAgentMembership(config: RecourseConfig, input: { directory: string; passphrase: string; account: string }, bytes: Uint8Array): Promise<string> {
+async function signAgentMembership(config: RecourseConfig, input: { directory: string; passphrase: string; account: string; binding?: string; departure?: boolean }, bytes: Uint8Array): Promise<string> {
   const keystore = loadKeystore(path.join(input.directory, 'agent-keystore.json'));
   if (!keystore || keystore.wallet_id !== config.walletId) throw Error('recourse_wallet_mismatch');
-  const hashed = await signActiveHashWalletMessage({ ...input, message: bytes, network: ownerChainNetwork() });
+  const hashed = input.binding ? await (input.departure ? signBoundHashWalletDeparture : signBoundHashWalletMessage)({ ...input, binding: input.binding, message: bytes, network: ownerChainNetwork() })
+    : await signActiveHashWalletMessage({ ...input, message: bytes, network: ownerChainNetwork() });
   if (hashed !== null) return hashed;
   if (keystore.address.toLowerCase() !== input.account.toLowerCase()) throw Error('recourse_wallet_mismatch');
   return withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
@@ -57,9 +58,15 @@ export async function authorizeAgentMembershipConsent(config: RecourseConfig, in
   transitionId: string; kind: 'join' | 'leave' | 'renew'; challenge: MembershipConsentChallenge }) {
   const account = input.challenge.consent.account;
   return submitMembershipConsent(recourseMembershipRelay(config), ownerChainNetwork(), { ...input, account,
-    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes),
+    signBytes: bytes => signAgentMembership(config, { ...input, account, binding: input.challenge.consent.binding, departure:input.kind==='leave' }, bytes),
     exitSecret:(salt,expectedCommitment)=>retainedMembershipExitSecret({directory:input.directory,passphrase:input.passphrase,
       walletId:config.walletId,domain:input.challenge.domain,binding:input.challenge.consent.binding,salt,expectedCommitment}) });
+}
+export async function leaveAgentMembership(config:RecourseConfig,input:{directory:string;passphrase:string;transitionId:string}):Promise<void>{
+  return retainMembershipDeparture(recourseMembershipRelay(config),ownerChainNetwork(),{transitionId:input.transitionId,
+    signBytes:(account,binding,bytes)=>signAgentMembership(config,{...input,account,binding,departure:true},bytes),
+    exitSecret:(challenge,salt,expectedCommitment)=>retainedMembershipExitSecret({...input,walletId:config.walletId,
+      domain:challenge.domain,binding:challenge.consent.binding,salt,expectedCommitment})});
 }
 /** Durably encrypt an independent secret before registering only its hash. */
 export async function bindRecourseOwnership(config: RecourseConfig, input: {

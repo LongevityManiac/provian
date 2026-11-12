@@ -10,6 +10,7 @@ import { MEMBERSHIP_RECEIPT_ABI, assertMembershipReceipt, type VerifiedMembershi
 import type { AddressMembershipConsent } from './membership-authorization';
 import { utcCalendarMonth } from './calendar-month';
 import { createRecourseChainPort } from './chain-ledger';
+import { MEMBERSHIP_CONSENT_OPERATIONS } from './membership-operation-identifiers';
 
 export const PRIVATE_MEMBERSHIP_TRANSITIONS = 'recourse_private_membership_transitions_v1';
 interface Position { readonly block: number; readonly blockHash: string; readonly logIndex: number; readonly timestamp: number }
@@ -25,6 +26,10 @@ export interface PrivateMembershipTransition {
   readonly bindingSetVersion: number; readonly portfolioHash: string;
   readonly pool: string; readonly kernel: string; readonly checkpoint: Position;
   readonly bindings: readonly RequiredConsent[];
+  /** Private, stable billing choice. Never included in a public portfolio digest. */
+  readonly fixedDebitBinding?: string;
+  readonly departureRequested?: boolean;
+  readonly departureCredentials?: readonly unknown[];
   readonly closure: Position | null;
 }
 const fail = (reason: string): never => { throw Error(`recourse_membership_transition_${reason}`); };
@@ -78,7 +83,16 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
   if (typeof existing === 'string') {
     const row = await db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(existing).get();
     const operation = row.data() as PrivateMembershipTransition;
-    if (!row.exists || operation.ownerIdentity !== ownerIdentity || operation.kind !== kind || operation.status === 'complete') return fail('busy');
+    if (!row.exists || operation.ownerIdentity !== ownerIdentity || operation.status === 'complete' || operation.status === 'superseded') return fail('busy');
+    if (kind === 'leave' && operation.kind !== 'leave') {
+      await db.runTransaction(async tx => {
+        const current = await tx.get(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(existing)), currentOwner = await tx.get(ownerRef);
+        if (digest(current.data()) !== digest(operation) || currentOwner.get('membershipTransition') !== operation.id) return fail('concurrent');
+        tx.update(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(existing), { departureRequested: true });
+      });
+      return { ...operation, departureRequested: true };
+    }
+    if (operation.kind !== kind || (operation.departureRequested && kind !== 'leave')) return fail('busy');
     return operation;
   }
   const rows = await db.collection(R.addresses).where('ownerIdentity', '==', ownerIdentity).get();
@@ -110,7 +124,11 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
   }
   // The public reader independently authenticates this canonical block. The
   // timestamp is used only for the private calendar, never the local clock.
-  const operation: PrivateMembershipTransition = { id: digest([ownerIdentity, randomUUID()]), ownerIdentity, kind,
+  const retainedPayer: unknown = owner.get('membershipFixedDebitBinding');
+  const primary: unknown = owner.get('primaryBinding');
+  const fixedDebitBinding = kind === 'leave' ? undefined : retainedPayer ?? (typeof primary === 'string' && ids.includes(primary) ? primary : [...ids].sort()[0]);
+  if (kind !== 'leave' && (typeof fixedDebitBinding !== 'string' || !ids.includes(fixedDebitBinding))) return fail('payer_changed');
+  const operation: PrivateMembershipTransition = { ...(kind === 'leave' ? {departureRequested:true} : {}), ...(typeof fixedDebitBinding === 'string' ? { fixedDebitBinding } : {}), id: digest([ownerIdentity, randomUUID()]), ownerIdentity, kind,
     status: 'preparing', bindingSetVersion: version(owner.get('bindingSetVersion')), portfolioHash: digest(rawPortfolio),
     pool: first.pool, kernel: first.kernel, checkpoint: { block: first.block, blockHash: first.blockHash, logIndex: -1,
       timestamp: first.timestamp }, bindings: selected, closure: null };
@@ -119,10 +137,11 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
       tx.get(db.collection(R.addresses).where('ownerIdentity', '==', ownerIdentity))]);
     if (!currentOwner.exists || currentOwner.get('membershipTransition') != null
       || version(currentOwner.get('bindingSetVersion')) !== operation.bindingSetVersion || digest(portfolio(currentRows.docs)) !== operation.portfolioHash) return fail('concurrent');
+    if (currentOwner.get('membershipFixedDebitBinding') !== owner.get('membershipFixedDebitBinding')) return fail('concurrent');
     if (account.exists !== priorRow.exists || (account.exists && account.get('version') !== prior?.version)) return fail('concurrent');
     if (kind === 'leave' && !account.exists) return fail('not_joined');
     tx.create(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(operation.id), operation);
-    tx.update(ownerRef, { membershipTransition: operation.id });
+    tx.update(ownerRef, { membershipTransition: operation.id, ...(operation.fixedDebitBinding ? { membershipFixedDebitBinding: operation.fixedDebitBinding } : {}) });
   });
   return operation;
 }
@@ -155,7 +174,6 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
       || account.checkpoint.block < operation.checkpoint.block
       || (account.checkpoint.block === operation.checkpoint.block && account.checkpoint.blockHash !== operation.checkpoint.blockHash)
       || account.version !== initialAccount?.version || account.checkpoint.block !== pool.block || account.checkpoint.blockHash !== pool.blockHash)) return fail('reconciliation_pending');
-    if (operation.kind === 'leave' && !account) return fail('not_joined');
     if (operation.kind === 'join' && account) joinPrivateMembership(account.episode, month, rules);
     const closure = operation.kind === 'leave' ? { block: pool.block, blockHash: pool.blockHash, logIndex: Number.MAX_SAFE_INTEGER, timestamp: pool.timestamp } : null;
     const complete = operation.kind === 'leave' && operation.bindings.every(b => !b.initiallyJoined || b.departure !== null);
@@ -235,7 +253,7 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
     if (consumed.length === 0) return fail('missing_consent');
     const effects = consumed.map(logIndex => db.collection(C.effects).doc(digest([operation.kernel, operation.pool, receipt.transactionHash, logIndex])));
     if ((await Promise.all(effects.map(r => tx.get(r)))).some(r => r.exists)) return fail('effect_replay');
-    const complete = !earlyLeave && bindings.every(b => operation.kind !== 'leave' ? b.admission !== null : !b.initiallyJoined || b.departure !== null);
+    const complete = !earlyLeave && !(operation.departureRequested && operation.kind !== 'leave') && bindings.every(b => operation.kind !== 'leave' ? b.admission !== null : !b.initiallyJoined || b.departure !== null);
     const next: PrivateMembershipTransition = { ...operation, bindings, status: earlyLeave ? 'preparing' : complete ? 'complete' : 'consenting' };
     const account = accountRow.exists ? accountRow.data() as PrivateMembershipAccount : null;
     if (account?.pendingReservation != null && !earlyLeave) return fail('reconciliation_pending');
@@ -314,5 +332,39 @@ export async function refreshRecoveredMembershipTransition(db: Firestore, id: st
     tx.update(ref, { bindings: next.bindings, portfolioHash: next.portfolioHash, bindingSetVersion: next.bindingSetVersion });
   });
   return next;
+}
+
+/** Retain the original transition and every signed operation. Only after all
+ * queued operations have reached a canonical terminal outcome can departure
+ * snapshot the resulting consent nonces. A late admission never opens a private
+ * episode once departure has been requested. */
+export async function replaceAdmissionWithDeparture(db: Firestore, id: string): Promise<PrivateMembershipTransition> {
+  const operation = await refreshRecoveredMembershipTransition(db, id);
+  if (!operation.departureRequested || operation.kind === 'leave') return fail('departure_not_requested');
+  const chain = createRecourseChainPort(), block = await chain.finalizedBlock(), blockHash = await chain.blockHash(block);
+  if (!blockHash) return fail('checkpoint');
+  const bindings: RequiredConsent[] = [];
+  let timestamp = 0;
+  for (const prior of operation.bindings) {
+    const state = await readHistoricalRecoursePoolState(prior.binding, { block, blockHash });
+    if (state.pool !== operation.pool || state.kernel !== operation.kernel || state.currentAddress !== prior.address
+      || state.consentNonce !== String(BigInt(prior.nonce) + (prior.departure ? 1n : 0n) + (prior.admission ? 1n : 0n))) return fail('reconciliation_pending');
+    timestamp = state.timestamp;
+    bindings.push({ ...prior, nonce: state.consentNonce, generation: state.consentGeneration,
+      initiallyJoined: state.addressConsent, departure: null, admission: null });
+  }
+  const departure: PrivateMembershipTransition = { ...operation, kind: 'leave',
+    departureRequested: true, status: 'preparing', bindings,
+    checkpoint: { block, blockHash, timestamp, logIndex: -1 }, closure: null };
+  await db.runTransaction(async tx => {
+    const ref = db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(id), current = await tx.get(ref);
+    const pending = await tx.get(db.collection(MEMBERSHIP_CONSENT_OPERATIONS).where('request.transitionId', '==', id).where('status', 'in', ['queued', 'submitted']));
+    if (digest(current.data()) !== digest(operation) || !pending.empty) return fail('reconciliation_pending');
+    await checkedPortfolio(tx, db, operation);
+    tx.create(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(digest([id, 'superseded-admission'])),
+      { ...operation, status: 'superseded', continuedBy: id });
+    tx.set(ref, departure);
+  });
+  return departure;
 }
 import { assertNoPendingAddressIssuance } from './issuance-lock';

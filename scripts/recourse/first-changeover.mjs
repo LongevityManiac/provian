@@ -1,4 +1,5 @@
 import { assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
+import { prepareAllPlanGas, validateGasCertificate, assertGasStep } from './all-plan-gas.mjs';
 import { keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { preparePredecessorRetirement, verifyPredecessorRetirement, predecessorRetirementValidator } from './predecessor-retirement.mjs';
 import { preparePointerDeployment, verifyPointerDeployment, pointerDeploymentValidator } from './pointer-deployment.mjs';
@@ -57,7 +58,9 @@ export async function advanceFirstChangeover({ inputs, state, execute, runtime, 
     if (row) ensure(row.schema === 'provian.changeover-completion.v1' && row.phase === phase && row.planDigest === planDigest, 'completion_changed');
     return row;
   };
+  let gasProof, gasInputs;
   const stage = async (phase, plan, steps, verify, validator) => {
+    for (const step of steps) assertGasStep(step, gasInputs, gasProof);
     const done = await completion(phase, plan.digest), checkedPort = done ? await historicalPort(port, done.checkpoint) : port;
     const verifyAtCheckpoint = async (source, finished) => {
       const checkpoint = await source.finalizedBlock();
@@ -86,6 +89,13 @@ export async function advanceFirstChangeover({ inputs, state, execute, runtime, 
 
   const retirement = await stored('retirement-plan', () => preparePredecessorRetirement({ deployment, artifacts, port }));
   const pointer = await stored('pointer-plan', () => preparePointerDeployment({ pointerPlan, deployer: addresses.deployer, port, pin }));
+  // This closed-family proof covers even the post-retirement inventory, whose
+  // cutoff must remain after retirement. Never retire on measured gas alone.
+  const gasRecord = await prepareAllPlanGas(inputs, retirement, pointer);
+  await state.create('pre-retirement-gas', gasRecord);
+  ensure(equal(await state.read('pre-retirement-gas'), gasRecord), 'gas_proof_changed');
+  gasProof = validateGasCertificate(inputs);
+  gasInputs = { ...inputs, retirementVerifier: retirement.state.verifier };
   let waiting = await stage('retirement', retirement, retirement.steps,
     (checkedPort, done) => verifyPredecessorRetirement({ plan: retirement, deployment, artifacts, port: checkedPort, complete: done }),
     checkedPort => predecessorRetirementValidator({ plan: retirement, deployment, artifacts, port: checkedPort }));
@@ -117,7 +127,7 @@ export async function advanceFirstChangeover({ inputs, state, execute, runtime, 
   const successor = bundle.plan, institutions = bundle.institutions, operators = bundle.operators;
   const inventoryBody = { ...institutions }; delete inventoryBody.digest;
   ensure(digest(inventoryBody) === institutions.digest && successor.institutionDigest === institutions.digest, 'institution_inventory_changed');
-  const deploymentSteps = successorDeploymentSteps(successor, artifacts, importBatchSize);
+  const deploymentSteps = successorDeploymentSteps(successor, artifacts, importBatchSize, gasProof.maximum);
   const successorFacts = { plan: successor, pointerPlan, verifiedRule: rule, operators, deployment, artifacts };
   waiting = await stage('successor', successor, deploymentSteps, async (checkedPort, done) => {
     const preflight = await preflightSuccessorPlan({ ...successorFacts, port: checkedPort });

@@ -17,11 +17,11 @@ const ensure = (value, reason) => { if (!value) throw Error('successor_deploy_' 
 const read = file => JSON.parse(readFileSync(resolve(file), 'utf8'));
 const exec = promisify(execFile);
 
-export function successorDeploymentSteps(plan, artifacts, batchSize) {
+export function successorDeploymentSteps(plan, artifacts, batchSize, maximum) {
   ensure(plan.creations.length === 12 && plan.configuration.length > 0, 'empty_stage');
   ensure(Number.isSafeInteger(batchSize) && batchSize >= 1 && batchSize <= 128, 'batch_size');
   return structuredClone([...plan.creations,
-    ...batchSuccessorImports(plan, artifacts.ProvianSuccessionImporter.abi, batchSize), ...plan.configuration]);
+    ...batchSuccessorImports(plan, artifacts, batchSize, maximum), ...plan.economicImports, ...plan.custodyImports, ...plan.configuration]);
 }
 export function successorDeploymentValidator({ plan, pointerPlan, deployment, artifacts, port, steps }) {
   plan = structuredClone(plan); steps = structuredClone(steps);
@@ -72,7 +72,7 @@ async function main() {
   const artifacts = readSuccessorArtifacts(root), pointerPlan = read(input.pointerPlanPath);
   const preflight = await preflightSuccessorPlan({ plan: read(input.planPath), pointerPlan, verifiedRule,
     operators: read(input.operatorsPath), deployment, artifacts, port });
-  const steps = successorDeploymentSteps(preflight.plan, artifacts, input.importBatchSize);
+  const steps = successorDeploymentSteps(preflight.plan, artifacts, input.importBatchSize, input.executionLimits?.maxGas);
   const assertPlan = successorDeploymentValidator({ plan: preflight.plan, pointerPlan, deployment, artifacts, port, steps });
   if (!execute) {
     console.log(JSON.stringify({ result: 'preflight_passed', planDigest: preflight.plan.digest, steps: steps.length,

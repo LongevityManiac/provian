@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Transaction, keccak256 } from 'ethers';
-import type { Firestore } from 'firebase-admin/firestore';
+import type { Firestore, Transaction as FirestoreTransaction } from 'firebase-admin/firestore';
 import { acquireSignerLease, releaseSignerLease, listAllUnresolvedBatches, SETTLEMENT_CYCLES_COLLECTION,
   SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
 import { finalizedOwnerTransaction } from './transaction-finality';
@@ -27,6 +27,8 @@ export interface SponsoredOperationAdapter<R, P extends SponsoredOperationPlan> 
   /** Optional durable consumer receipt application. Complete this before the
    * operation leaves the retry queue or releases its reserved nonce. */
   reconcileConfirmed?(request: R, transactionHash: string): Promise<void>;
+  /** Fence queue admission against a concurrently persisted owner intent. */
+  beforeQueue?(tx: FirestoreTransaction, request: R): Promise<void>;
 }
 function validateTransaction(raw: string, signer: string, target: string, data: string): void {
   const tx = Transaction.from(raw);

@@ -44,7 +44,7 @@ function fixture() {
 test('deployment command derives only creation/import/configuration steps and validates exact stage plus live retirement', async () => {
   const f = fixture(); await f.validate(f.checked);
   assert.equal(f.steps.length, f.plan.creations.length + f.plan.configuration.length
-    + batchSuccessorImports(f.plan, f.artifacts.ProvianSuccessionImporter.abi, 16).length);
+    + batchSuccessorImports(f.plan, f.artifacts, 16).length);
   assert.ok(f.steps.every(step => step.value === '0'));
   assert.ok(!f.steps.some(step => step.label === f.plan.activation.label));
   assert.throws(() => successorDeploymentSteps(f.plan, f.artifacts), /batch_size/);

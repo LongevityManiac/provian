@@ -1,3 +1,4 @@
+import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';
 import { MEMBERSHIP_CONSENT_OPERATIONS, membershipConsentOperationId } from './membership-operation-identifiers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -125,4 +126,39 @@ test('a retained address issuance cannot hide departure challenges or authorize 
   const joining = fixture();
   joining.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a('03')}`, { batchId: h('77') });
   await expect(prepareMembershipTransition(joining.db, owner, { kind: 'join' })).rejects.toThrow('issuance_reconciliation_pending');
+});
+
+test('auxiliary-only membership pins one payer and departure needs no primary',async()=>{
+ const f=fixture();delete f.fake.store.get(`${R.owners}/${owner}`)!.primaryBinding;
+ const view=await prepareMembershipTransition(f.db,owner,{kind:'join'});
+ expect(view.challenges.filter(c=>c.fixedChargePayer)).toHaveLength(1);
+ expect(view.challenges.find(c=>c.fixedChargePayer)!.consent.binding).toBe(h('03'));
+ f.fake.store.get(`${R.owners}/${owner}`)!.primaryBinding=h('04');
+ const resumed=await prepareMembershipTransition(f.db,owner,{id:view.id});
+ expect(resumed.challenges.find(c=>c.fixedChargePayer)!.consent.binding).toBe(h('03'));
+ const leaving=fixture(true);delete leaving.fake.store.get(`${R.owners}/${owner}`)!.primaryBinding;
+ leaving.fake.store.set(`${C.owners}/${owner}`,seedMembershipJournal(leaving.fake.store,{ownerIdentity:owner,version:0,pendingReservation:null,needsScan:false,
+ checkpoint:{pool:a('12'),block:99,blockHash:h('99')},episode:joinPrivateMembership(null,utcCalendarMonth(now),rules)},
+ {chainId:'8453',kernel:a('11'),pool:a('12'),block:98,blockHash:h('98'),logIndex:1,timestamp:now-1}));
+ const departure=await prepareMembershipTransition(leaving.db,owner,{kind:'leave'});
+ expect(departure.challenges).toHaveLength(2);expect(departure.challenges.every(c=>!c.consent.joined&&!c.fixedChargePayer)).toBe(true);
+});
+
+test('an unsigned pending join can become a completed departure without creating membership',async()=>{
+ const f=fixture(),joining=await prepareMembershipTransition(f.db,owner,{kind:'join'});
+ const leaving=await prepareMembershipTransition(f.db,owner,{kind:'leave'});
+ expect(leaving).toMatchObject({id:joining.id,kind:'leave',status:'complete',challenges:[],pending:[]});
+ expect(f.fake.store.has(`${C.owners}/${owner}`)).toBe(false);
+ expect([...f.fake.store.values()].filter(r=>r.status==='superseded')).toHaveLength(1);
+});
+test('departure retains pending signed admissions and exposes no new admission challenges',async()=>{
+ const f=fixture(),joining=await prepareMembershipTransition(f.db,owner,{kind:'join'}),challenge=joining.challenges[0];
+ const standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
+ const id=membershipConsentOperationId({...challenge,standing,exitSecret:null});
+ const request={transitionId:joining.id,domain:challenge.domain,consent:challenge.consent,standing,exitSecret:null,ownerSignature:'PRIVATE_OWNER',attestorSignature:'PRIVATE_ATTESTOR'};
+ f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`,{request,status:'submitted',transactionHash:h('e3'),signedTransaction:'RETAINED_BYTES'});
+ const leaving=await prepareMembershipTransition(f.db,owner,{kind:'leave'});
+ expect(leaving).toMatchObject({kind:'leave',status:'preparing',challenges:[]});expect(leaving.pending).toHaveLength(1);
+ expect(f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.signedTransaction).toBe('RETAINED_BYTES');
+ expect(f.fake.store.has(`${C.owners}/${owner}`)).toBe(false);
 });

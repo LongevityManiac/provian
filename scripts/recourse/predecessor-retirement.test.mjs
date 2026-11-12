@@ -19,7 +19,7 @@ function fixture() {
   const policy = empty(tokenAbi.getFunction('getEpochPolicy').outputs[0]);
   policy.eligibilityVerifier = { verifier, configurationId: h(6), version: 1n };
   const state = { height: 100, held: false, minter: initialMinter, verifierHeld: false, approver: initialApprover, reorg: false, logs: [] };
-  const deployment = { wiring: { pvt: kernel, admin } };
+  const deployment = { wiring: { pvt: kernel, admin }, successorKernel:{pvt9Kernel:{block:1}} };
   const port = {
     finalizedBlock: async () => ({ number: state.height, hash: h(state.height) }),
     blockHash: async n => state.reorg && n === 100 ? h(999) : h(n),
@@ -129,4 +129,16 @@ it('retired flags cannot skip receipt reconciliation for a nonempty original jou
   Object.assign(f.state, { height: 110, held: true, minter: ZeroAddress, verifierHeld: true, approver: ZeroAddress });
   await expect(advancePredecessorRetirement({ ...f, plan, execute: true, runtime: async () => { throw Error('journal refuses stale receipt'); } }))
     .rejects.toThrow('journal refuses stale receipt');
+});
+
+it('unsupported future verifier migration is refused before a retirement plan exists',async()=>{
+ const f=fixture(),event=tokenAbi.encodeEventLog(tokenAbi.getEvent('EligibilityVerifierScheduled'),[2,a(88),h(89),1]);
+ f.state.logs.push({address:kernel,blockNumber:'0x63',blockHash:h(99),removed:false,...event});
+ const original=f.port.call;
+ f.port.call=async(target,data,pin)=>{
+  if(target===kernel&&tokenAbi.parseTransaction({data}).name==='getScheduledEligibilityVerifier')return tokenAbi.encodeFunctionResult('getScheduledEligibilityVerifier',[[true,[a(88),h(89),1]]]);
+  return original(target,data,pin);
+ };
+ await expect(preparePredecessorRetirement(f)).rejects.toThrow('scheduled_verifier_successor_required');
+ expect(f.state.held).toBe(false);expect(f.state.verifierHeld).toBe(false);
 });

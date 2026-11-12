@@ -19,10 +19,10 @@ async function fixture() {
   const domain = { chainId: '8453', pointer: a('40'), kernel: a('41'), pool: a('42') };
   const consent: AddressMembershipConsent = { binding, account: ownerWallet.address.toLowerCase(), nonce: '0', joined: true,
     revision: '1', ruleHash: h('43'), expiresAt: '1200' };
-  const transition: PrivateMembershipTransition = { id, ownerIdentity: owner, kind: 'join', status: 'consenting', bindingSetVersion: 1,
+  const transition: PrivateMembershipTransition = { id, fixedDebitBinding: binding, ownerIdentity: owner, kind: 'join', status: 'consenting', bindingSetVersion: 1,
     portfolioHash: h('44'), pool: domain.pool, kernel: domain.kernel, checkpoint: { block: 10, blockHash: h('45'), timestamp: 999, logIndex: -1 },
     bindings: [{ binding, address: consent.account, nonce: '0', generation: '0', initiallyJoined: false, recoveryGeneration: 0, admission: null, departure: null }], closure: null };
-  fake.store.set(`${T}/${id}`, { ...transition }); fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, membershipTransition: id, bindingSetVersion: 1, primaryBinding: binding });
+  fake.store.set(`${T}/${id}`, { ...transition }); fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, membershipTransition: id, bindingSetVersion: 1, primaryBinding: binding, membershipFixedDebitBinding: binding });
   fake.store.set(`${R.identities}/${binding}`, { identity: binding, ownerIdentity: owner, recoveryGeneration: 0 });
   fake.store.set(`${R.addresses}/${consent.account}`, { identity: binding, ownerIdentity: owner, recoveryGeneration: 0, kernel: domain.kernel, chainBindingStatus: 'confirmed' });
   const deployment = { pointer: domain.pointer, addresses: { kernel: domain.kernel, recoursePool: domain.pool, settlement: a('46') },

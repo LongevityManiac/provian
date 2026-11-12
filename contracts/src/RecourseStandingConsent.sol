@@ -22,6 +22,9 @@ interface IStandingMembershipHost {
 }
 interface IStandingRestorationAuthority { function restorationAuthority() external view returns (address); }
 interface IStandingIdentityAttestor { function identityAttestor() external view returns (address); }
+interface IMembershipDepartureAccount {
+    function isValidMembershipDepartureSignature(bytes32 digest, bytes calldata proof) external view returns (bytes4);
+}
 
 /// @notice Immutable pool companion. One owner approval permits bounded monthly
 /// collection; its independent exit preimage only revokes that address's consent.
@@ -100,6 +103,38 @@ contract RecourseStandingConsent {
             || sha256(abi.encodePacked(exitSecret)) != mandate.exitCommitment) revert InvalidStandingConsent();
         mandate.active = false; mandate.closedMonth = pool.calendarMonth(block.timestamp);
         pool.applyStandingConsent(binding, address(0), nonce, false);
+    }
+    /// @notice A recovered owner can close a suspended mandate without renewing
+    /// financial consent. Its old exit preimage remains unusable after a break.
+    function authenticatedDepartureDigest(RecourseAddressConsent.ConsentAuthorization calldata c) public view returns (bytes32) {
+        return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian authenticated membership departure",
+            block.chainid, address(pool.pointer()), pool.pvt(), address(pool), c.binding, c.account, c.nonce, false)));
+    }
+    function leaveSuspendedMembership(RecourseAddressConsent.ConsentAuthorization calldata c, bytes calldata ownerSignature) external {
+        // Revocation only: current account, deployment and nonce bind the proof.
+        // A delayed sponsor must not require another financial approval to exit.
+        _current(c.revision);
+        RecourseAddressConsentState.StandingMandate storage mandate = standingMandate[c.binding];
+        (uint256 nonce,, bool joined) = pool.addressConsent(c.binding);
+        address owner = pool.consentAccount(c.binding);
+        if (c.joined || !joined || mandate.active || owner == address(0) || c.account != owner
+            || nonce != c.nonce || mandate.consentNonce != nonce
+            || !_validDeparture(owner, authenticatedDepartureDigest(c), ownerSignature)) revert InvalidStandingConsent();
+        mandate.closedMonth = pool.calendarMonth(block.timestamp);
+        pool.applyStandingConsent(c.binding, address(0), nonce, false);
+    }
+    function _validDeparture(address owner,bytes32 digest,bytes calldata proof) private view returns(bool) {
+        if (owner.code.length == 0) return owner.isValidSignatureNow(digest,proof);
+        // Dedicated domain: the stable root is never consulted by join/renew.
+        bytes memory data=abi.encodeCall(IMembershipDepartureAccount.isValidMembershipDepartureSignature,(digest,proof));
+        bool valid;
+        assembly ("memory-safe") {
+            let ptr:=mload(0x40)
+            let ok:=staticcall(gas(),owner,add(data,32),mload(data),ptr,32)
+            valid:=and(and(ok,eq(returndatasize(),32)),eq(mload(ptr),shl(224,0x1626ba7e)))
+        }
+        if(valid)return true;
+        return owner.isValidSignatureNow(digest,proof);
     }
     function permitsEarnings(bytes32 binding, uint16 bps) external view returns (bool) {
         RecourseAddressConsentState.StandingMandate storage mandate = standingMandate[binding];

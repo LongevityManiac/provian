@@ -163,7 +163,7 @@ test('successor exporter carries imported history and restored balances without 
   f.input.port.logs=async target=>target.toLowerCase()===authAddress?[]:f.logs;
   f.input.port.call=async(to,data,pin)=>{
     if(to.toLowerCase()===historyAddress){const q=hAbi.parseTransaction({data});return hAbi.encodeFunctionResult(q.name,[{
-      root:prior.historyRoot,entryCount:prior.historyCount,predecessor:prior.predecessor,lastGoodBlock:prior.block,complete:true,state:prior.state}[q.name]]);}
+      root:prior.historyRoot,entryCount:prior.historyCount,predecessor:prior.predecessor,lastGoodBlock:prior.block,complete:true,baseState:{economicRoot:ZeroHash,economicCount:0,...prior.state}}[q.name]]);}
     if(to.toLowerCase()===kernel){const q=next.parseTransaction({data});
       if(['predecessorHistory','restoredBalance','ownerAuthorization'].includes(q.name))return next.encodeFunctionResult(q.name,[{
         predecessorHistory:historyAddress,restoredBalance:70n*unit,ownerAuthorization:authAddress}[q.name]]);}

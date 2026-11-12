@@ -48,11 +48,11 @@ test('creation plan preserves owner balances and history while moving custody on
  assert.equal(args[1].toLowerCase(),addr(111));assert.equal(args[2],700n);
  assert.equal(creation.nonce,5);
  assert.ok(plan.creations.every(c=>c.value==='0'));assert.equal(plan.pointer,f.pointerPlan.pointer);
- const batches=batchSuccessorImports(plan,f.artifacts.ProvianSuccessionImporter.abi),helper=new Interface(f.artifacts.ProvianSuccessionImporter.abi);
+ const batches=batchSuccessorImports(plan,f.artifacts),helper=new Interface(f.artifacts.ProvianSuccessionImporter.abi);
  assert.equal(batches.length,2);
  assert.deepEqual(helper.decodeFunctionData('importBalances',batches[1].data)[0].toArray(),plan.imports.slice(1).map(r=>r.data));
  assert.deepEqual(plan.retireAfterImport,[plan.addresses.ProvianSuccessionImporter]);
- assert.throws(()=>batchSuccessorImports(plan,f.artifacts.ProvianSuccessionImporter.abi,0),/import_batch_size/);
+ assert.throws(()=>batchSuccessorImports(plan,f.artifacts,0),/import_batch_size/);
 });
 test('altered ownership, omitted balances, inventory drift, wrong rule and authority conflation refuse',()=>{
  const changes=[f=>{f.snapshot.balances[0].previousOwner=addr(999);},f=>{f.snapshot.balances.pop();},

@@ -1,3 +1,4 @@
+import { prepareDepartureCredentials, retainDepartureCredentials, advanceMembershipDeparture } from '../core/recourse/membership-departure';
 import { discoverOwnerRecovery } from '../core/recourse/owner-recovery-discovery';
 import { discoverRestorationHistory } from '../core/recourse/restoration-history';
 import { runOwnerOperationWorker } from '../core/recourse/owner-operation-runtime';
@@ -212,6 +213,21 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const owner = await resolveOwner(req, deps);
       res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { id: String(req.params.id) }));
     } catch { res.status(404).json({ error: 'recourse_membership_unavailable' }); }
+  });
+  router.get('/membership-departures/:id', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req, deps);
+      res.json(await prepareDepartureCredentials(deps.db,identityHash(owner.type,owner.id),String(req.params.id)));
+    } catch { res.status(400).json({error:'recourse_departure_refused'}); }
+  });
+  router.post('/membership-departures/:id', async (req, res) => {
+    try {
+      const owner = await resolveOwner(req,deps), ownerIdentity = identityHash(owner.type,owner.id), id=String(req.params.id);
+      await retainDepartureCredentials(deps.db,ownerIdentity,id,req.body);
+      try { await advanceMembershipDeparture(deps.db,ownerIdentity,id); } catch { /* Retained revocation proofs remain retryable. */ }
+      res.status(202).json({retained:true});
+    } catch { res.status(400).json({error:'recourse_departure_refused'}); }
+    finally { req.body=undefined;req.rawBody=undefined; }
   });
   router.post('/membership-consents', async (req, res) => {
     try {

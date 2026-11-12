@@ -25,6 +25,15 @@ export async function readHashAccountState(account: string, network: OwnerChainN
   if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw Error('hash_wallet_protocol_changed');
   return { root, nonce, manifestHash: deployment.manifestHash, blockHash: deployment.blockHash };
 }
+export async function readHashAccountDepartureRoot(account:string,network:OwnerChainNetwork):Promise<{root:string;manifestHash:string}>{
+  const state=await readHashAccountState(account,network);
+  const values=await Promise.all(network.rpcs.map(rpc=>rpc.request('eth_call',[{to:account,
+    data:HASH_ACCOUNT_ABI.encodeFunctionData('departureKeyCommitment')},{blockHash:state.blockHash,requireCanonical:true}])));
+  if(typeof values[0]!=='string'||values[0]!==values[1])throw Error('hash_wallet_rpc_disagreement');
+  const root=String(HASH_ACCOUNT_ABI.decodeFunctionResult('departureKeyCommitment',values[0])[0]);
+  if(/^0x0+$/.test(root)||(await network.deployment()).manifestHash!==state.manifestHash)throw Error('hash_wallet_protocol_changed');
+  return {root,manifestHash:state.manifestHash};
+}
 /** The outer transaction can succeed while its target call fails. Both outcomes
  * consume the signing key; verify the exact calldata and rotate in either case. */
 export async function verifyHashAccountReceipt(operation: SignedHashAccountOperation, transactionHash: string,

@@ -10,6 +10,10 @@ import { reconcileCurrentPrivateMembership } from './membership-preparation';
 import { readRecoursePoolState, readHistoricalRecoursePoolState, type RecoursePoolState } from './pool-state';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { utcCalendarMonth } from './calendar-month';
+import { breakDeploymentChain } from './break-deployment-queue';
+import { readMembershipWiring } from './membership-wiring';
+import { STANDING_MEMBERSHIP_ABI } from './membership-authorization';
+import type { ProtocolDeployment } from '../protocol/pointer';
 import { standingMembershipDebitSigningHash, type MembershipAuthorizationDomain, type ExactMembershipDebit } from './membership-authorization';
 
 export interface MembershipPaymentSelection { readonly month: string; readonly burn: string; readonly reserve: string }
@@ -18,7 +22,7 @@ export interface MembershipDebitChallenge {
   readonly messageHex: string; readonly allowanceAtomic: string;
 }
 export type MembershipDebitPreparation = { readonly status: 'ready'; readonly challenge: MembershipDebitChallenge }
-  | { readonly status: 'settled' } | { readonly status: 'pending'; readonly operation: SponsoredOperationStatus | null };
+  | { readonly status: 'settled' | 'approval_required' } | { readonly status: 'pending'; readonly operation: SponsoredOperationStatus | null };
 const fail = (reason: string): never => { throw Error(`recourse_membership_debit_${reason}`); };
 export function parseMembershipPaymentSelection(value: unknown): MembershipPaymentSelection {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('amount');
@@ -63,6 +67,29 @@ export function debitMatchesCheckpoint(state: RecoursePoolState, checkpoint: Rec
     || state.consentGeneration !== checkpoint.consentGeneration) return fail('reconciliation_pending');
 }
 
+/** Check the invoice's historical rule before reserving it. The newest month's
+ * higher price cannot invalidate an already approved prior-month obligation. */
+async function standingDebitApproved(binding: string, state: RecoursePoolState, deployment: ProtocolDeployment,
+  selected: MembershipPaymentSelection, rules: PrivateCalendarRules): Promise<boolean> {
+  const chain = breakDeploymentChain(), wiring = await readMembershipWiring(chain, deployment);
+  const read = async (name: string, args: readonly unknown[]) => {
+    const raw = await chain.agree('eth_call', [{ to: wiring.standingMembership,
+      data: STANDING_MEMBERSHIP_ABI.encodeFunctionData(name, args) }, wiring.pin]);
+    if (typeof raw !== 'string') return fail('standing_reply');
+    return STANDING_MEMBERSHIP_ABI.decodeFunctionResult(name, raw);
+  };
+  const mandate = await read('standingMandate', [binding]);
+  const collected = await read('monthlyCollection', [binding, selected.month]);
+  const rule = rules(Number(selected.month)).rule;
+  return Boolean(mandate.active) && String(mandate.consentNonce) === state.consentNonce
+    && BigInt(selected.month) >= BigInt(mandate.startMonth)
+    && BigInt(rule.participationBurnAtomic) <= BigInt(mandate.burnLimit)
+    && BigInt(rule.noEarningsContributionAtomic) <= BigInt(mandate.reserveLimit)
+    && rule.earningsBps <= Number(mandate.earningsBpsLimit)
+    && BigInt(collected[0]) + BigInt(selected.burn) <= BigInt(rule.participationBurnAtomic)
+    && BigInt(collected[1]) + BigInt(selected.reserve) <= BigInt(rule.noEarningsContributionAtomic);
+}
+
 /** Reserve exact bytes before returning signing material. An abandoned request
  * remains the owner's one financial reservation until canonical reconciliation
  * proves execution or permanent revocation, including after key recovery. */
@@ -97,6 +124,8 @@ export async function prepareMembershipDebit(db: Firestore, ownerIdentity: strin
   const rules = await readPrivateCalendarRules(db, state), month = utcCalendarMonth(state.timestamp);
   const selected = selectMembershipPayment(account, month, rules, requested);
   if (!selected) return { status: 'settled' };
+  if (owner.get('membershipFixedDebitBinding') !== binding
+    || !await standingDebitApproved(binding, state, deployment, selected, rules)) return { status: 'approval_required' };
   const domain: MembershipAuthorizationDomain = { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: state.kernel, pool: state.pool };
   const debit: ExactMembershipDebit = { binding, payer, ...selected, nonce: state.debitNonce, generation: state.consentGeneration,
     revision: String(deployment.revision), ruleHash: rules(Number(selected.month)).ruleHash, expiresAt: String(state.timestamp + 300) };

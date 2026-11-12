@@ -31,6 +31,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
     setLoading(true); setError(false);
     try {
       let current = await readHumanMembershipTransition(operationId.current);
+      if (route.params.kind === 'leave' && current && current.kind !== 'leave') current = await beginHumanMembership('leave');
       if (!current && route.params.kind !== 'resume') current = await beginHumanMembership(route.params.kind);
       if (!active.current || run !== sequence.current) return;
       operationId.current = current?.id; setView(current); setSelected(null);
@@ -88,13 +89,13 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
           <Text style={styles.body}>{t('recourse.flow.pending', 'Authorization submitted. Refresh to check its confirmation.')}</Text>
           {pending.operation.transactionHash ? <Text selectable style={styles.address}>{pending.operation.transactionHash}</Text> : null}
         </View>)}
-        {view.kind === 'leave' && view.challenges.length ? button(t('recourse.leave', 'Leave Recourse Pool'), () => { void run(() => leaveHumanMembership(view)); }) : null}
+        {view.kind === 'leave' && view.status !== 'complete' && view.status !== 'superseded' ? button(t('recourse.leave', 'Leave Recourse Pool'), () => { void run(() => leaveHumanMembership(view)); }) : null}
         {view.kind !== 'leave' ? view.challenges.map(challenge => <View key={challenge.consent.binding} style={styles.card}>
           <Text selectable style={styles.address}>{challenge.consent.account}</Text>
           <Text style={styles.body}>{challenge.consent.joined ? t('recourse.flow.enable', 'Include this wallet') : t('recourse.flow.disable', 'End this wallet’s participation')}</Text>
           <Text style={styles.body}>{t('recourse.standing.limits', 'Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s holdings. Earnings contribution: {{percent}}%.', {burn:pvtAmount(challenge.burnLimit),reserve:pvtAmount(challenge.reserveLimit),percent:challenge.earningsBpsLimit/100})}</Text>
-          {challenge.consent.account === account ? button(t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })
-            : button(t('recourse.flow.external', 'Authorize in this wallet'), () => { setSelected(challenge); setError(false); })}
+          {button(t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })}
+          {challenge.consent.account !== account ? button(t('recourse.flow.external', 'Authorize in this wallet'), () => { setSelected(challenge); setError(false); }) : null}
         </View>) : null}
         {view.status === 'complete' ? button(t('recourse.flow.done', 'Return to Recourse'), () => navigation.goBack()) : null}
         {view.status === 'superseded' && route.params.kind !== 'resume' ? button(t('recourse.flow.restart', 'Continue with the current contracts'), () => {

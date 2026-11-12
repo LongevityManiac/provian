@@ -93,6 +93,8 @@ export const STANDING_MEMBERSHIP_ABI = new Interface([
   `function debitDigest(${DEBIT}) view returns(bytes32)`,
   `function executeStandingDebit(${DEBIT},bytes)`,
   'function leaveStandingMembership(bytes32 binding,uint256 consentNonce,bytes32 exitSecret,uint256 revision)',
+  `function authenticatedDepartureDigest(${CONSENT}) view returns(bytes32)`,
+  `function leaveSuspendedMembership(${CONSENT},bytes)`,
   'function pool() view returns(address)',
   'function standingMandate(bytes32) view returns(uint256 burnLimit,uint256 reserveLimit,uint16 earningsBpsLimit,uint256 startMonth,uint256 closedMonth,uint256 consentNonce,bytes32 exitCommitment,bytes32 exitSalt,bool active)',
   'function monthlyCollection(bytes32,uint256) view returns(uint256 burn,uint256 reserve)',
@@ -117,6 +119,12 @@ export function standingMembershipDebitSigningHash(domain: MembershipAuthorizati
   const d = parseMembershipAuthorizationDomain(domain), debit = parseExactMembershipDebit(input);
   return sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','address','address',DEBIT],
     ['Provian standing membership debit',d.chainId,d.pointer,d.kernel,d.pool,debit]));
+}
+export function authenticatedDepartureSigningHash(domain: MembershipAuthorizationDomain, input: AddressMembershipConsent): string {
+  const d = parseMembershipAuthorizationDomain(domain), consent = parseAddressMembershipConsent(input);
+  if (consent.joined) return invalid();
+  return sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','address','address','bytes32','address','uint256','bool'],
+    ['Provian authenticated membership departure',d.chainId,d.pointer,d.kernel,d.pool,consent.binding,consent.account,consent.nonce,false]));
 }
 export function standingMembershipDigest(domain: MembershipAuthorizationDomain, authorization: StandingMembershipAuthorization): string {
   return hashMessage(getBytes(standingMembershipSigningHash(domain,authorization)));

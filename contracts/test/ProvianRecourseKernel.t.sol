@@ -816,4 +816,54 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         vm.expectRevert("runtime_exceeds_chain_limit"); this.checkDeploymentSize();
     }
 
+
+    function testPagedHistoricalPolicyAndIssuanceRemainExactWithoutConstructorArrays() public {
+        ProvianRecoveryHistory.State memory prior = kernel.predecessorHistory().state();
+        ProvianRecoveryHistory.HistoricalEpoch memory epoch;
+        epoch.policy = abi.decode(abi.encode(kernel.getEpochPolicy(0)), (ProvianPVT9.EpochPolicy));
+        epoch.policy.opened = true; epoch.policy.startsAt = prior.epochZeroStartsAt;
+        epoch.policy.genesisCap = prior.genesisCap; epoch.policy.combinedCap = prior.combinedCap;
+        epoch.genesisIssued = 12; epoch.totalIssued = 24;
+        bytes memory data = abi.encode(epoch);
+        prior.lastOpenedEpoch = 1; prior.epochGenesisIssued = 0; prior.epochTotalIssued = 0;
+        prior.economicRoot = sha256(abi.encode("Provian economic history",address(0x1234),uint256(100),uint256(0),sha256(data)));
+        prior.economicCount = 1;
+        ProvianRecoveryHistory history = new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior);
+        ProvianRecourseKernel next = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(
+            ADMIN,bytes32(uint256(1)),address(0x1234),100,0,history,pointer,address(this),false,ProvianRestorationAuthorization(address(0))));
+        vm.expectRevert();next.getEpochPolicy(0);
+        history.importEconomicEntry(0,data,new bytes32[](0));
+        assertEq(keccak256(abi.encode(next.getEpochPolicy(0))),keccak256(abi.encode(epoch.policy)));
+        assertEq(next.epochGenesisIssued(0),12);assertEq(next.epochTotalIssued(0),24);
+        assertEq(next.trailingAverageForEpoch(12),2);
+        history.applyEconomicEntry(address(next),0);history.applyEconomicEntry(address(next),0);
+        assertEq(history.appliedEconomicEntries(address(next)),1);
+    }
+    function testPagedScheduleCallbacksHaveNoGeneralOrPostArmingAuthority() public {
+        ProvianRecoveryHistory.State memory prior=kernel.predecessorHistory().state();
+        ProvianRecoveryHistory.EconomicSchedule memory schedule;
+        schedule.epoch=2;schedule.mintRateSet=true;schedule.mintRate=2 ether;
+        schedule.foundationRateSet=true;schedule.foundationRate=50;
+        schedule.capsSet=true;schedule.genesisCap=7_500_000 ether;schedule.combinedCap=10_000_000 ether;
+        schedule.treasuriesSet=true;schedule.provianTreasury=address(0x91);schedule.foundationTreasury=address(0x92);
+        schedule.beneficiaryVerifierSet=true;schedule.beneficiaryVerifier=prior.beneficiaryVerifier;
+        schedule.eligibilityVerifierSet=true;schedule.eligibilityVerifier=prior.eligibilityVerifier;
+        vm.etch(prior.eligibilityVerifier.verifier,hex"00");
+        vm.etch(prior.beneficiaryVerifier.verifier,hex"00");
+        bytes memory data=abi.encode(schedule);
+        prior.economicRoot=sha256(abi.encode("Provian economic history",address(0x1234),uint256(100),uint256(0),sha256(data)));
+        prior.economicCount=1;
+        ProvianRecoveryHistory history=new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior);
+        ProvianRecourseKernel next=this.deployKernel(ProvianRecourseKernel.SuccessionConfig(
+            ADMIN,bytes32(uint256(1)),address(0x1234),100,0,history,pointer,address(this),false,ProvianRestorationAuthorization(address(0))));
+        vm.prank(ADMIN);vm.expectRevert();next.scheduleMintRate(2,2 ether);
+        vm.prank(address(history));vm.expectRevert();next.appointOperationalMinter(address(this));
+        vm.prank(address(0xBAD));vm.expectRevert();next.scheduleMintRate(2,2 ether);
+        vm.expectRevert();history.applyEconomicEntry(address(next),0);
+        history.importEconomicEntry(0,data,new bytes32[](0));
+        history.applyEconomicEntry(address(next),0);
+        (bool exists,uint256 rate)=next.scheduledMintRates(2);assertTrue(exists);assertEq(rate,2 ether);
+        assertEq(history.appliedEconomicEntries(address(next)),1);
+        vm.expectRevert();history.applyEconomicEntry(address(next),1);
+    }
 }

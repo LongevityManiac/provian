@@ -2363,6 +2363,24 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "recourse_private_membership_transitions_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "departureRequested",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "id",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

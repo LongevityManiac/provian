@@ -5,6 +5,8 @@ export const HASH_ACCOUNT_ABI = new Interface([
   'function intentDigest(address,uint256,uint256,bytes,bytes32) view returns(bytes32)',
   'function signatureDigest(bytes32) view returns(bytes32)',
   'function isValidSignature(bytes32,bytes) view returns(bytes4)',
+  'function departureKeyCommitment() view returns(bytes32)',
+  'function isValidMembershipDepartureSignature(bytes32,bytes) view returns(bytes4)',
   'function execute(address,uint256,uint256,bytes,bytes32,bytes,bytes) returns(bool)',
   'event Executed(uint256 indexed nonce,address indexed target,bool success)',
 ]);
@@ -25,6 +27,11 @@ export function hashAccountContractDigest(account: string, commitment: string, d
   }
   return sha256(AbiCoder.defaultAbiCoder().encode(['string', 'uint256', 'address', 'bytes32', 'bytes32'],
     ['Provian hash account signature', 8453, account, commitment, digest]));
+}
+export function hashAccountDepartureDigest(account: string, commitment: string, digest: string): string {
+  hashAccountContractDigest(account,commitment,digest);
+  return sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','bytes32','bytes32'],
+    ['Provian hash account membership departure',8453,account,commitment,digest]));
 }
 function uint(value: string): boolean { return /^(0|[1-9][0-9]*)$/.test(value) && BigInt(value) < 2n ** 256n; }
 export function hashAccountIntentDigest(intent: HashAccountIntent): string {

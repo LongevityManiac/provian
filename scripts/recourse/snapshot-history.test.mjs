@@ -16,9 +16,9 @@ function fixture(){
  const verifier={verifier:a(8),configurationId:h('verifier'),version:1};
  prior.state={epochZeroStartsAt:1,genesisStartsAt:1,genesisEndsAt:100,genesisClosed:false,genesisCutoff:0,lastOpenedEpoch:0,nextCursor:1,
  administrativeHold:true,mintRate:1,agentFoundationBps:50,genesisCap:100,combinedCap:100,epochGenesisIssued:75,epochTotalIssued:75,
- schedules:[],epochs:[],provianTreasury:a(9),foundationTreasury:a(10),beneficiaryVerifier:verifier,eligibilityVerifier:verifier};
+ schedules:[],epochs:[],provianTreasury:a(9),foundationTreasury:a(10),beneficiaryVerifier:verifier,eligibilityVerifier:verifier,economicRoot:ZeroHash,economicCount:0};
  const tree=merkle(prior.history.map(e=>e.leaf));prior.historyRoot=tree.root;prior.history=prior.history.map((e,i)=>({...e,proof:tree.proofs[i]}));
- const chain={root:tree.root,entryCount:4n,predecessor:a(1),lastGoodBlock:10n,complete:true,state:structuredClone(prior.state)};
+ const chain={root:tree.root,entryCount:4n,predecessor:a(1),lastGoodBlock:10n,complete:true,baseState:structuredClone(prior.state)};
  const facts={getBatchRecord:iface.decodeFunctionResult('getBatchRecord',iface.encodeFunctionResult('getBatchRecord',[record]))[0],
  claimSettled:true,genesisAnchorUsed:true,genesisWalletGrossIssued:100n};
  const input={prior,historyAddress:a(2),blockHash:h('block'),iface,predecessor:a(3),block:20,

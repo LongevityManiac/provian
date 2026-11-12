@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseInstitutionSeeds} from "./RecourseInstitutionSeeds.sol";
 
 /// @notice Successor institution with explicit PVT custody obligations.
 /// Direct donations do not increase obligations; recorded exits remain backed.
@@ -16,7 +17,7 @@ interface IBondClaimCourt {
     function bondClaimCaseOpen(bytes32 claimId) external view returns (bool);
 }
 
-contract ProvianRecourseBondPool {
+contract ProvianRecourseBondPool is RecourseInstitutionSeeds {
 
     enum BondStatus {
         None,       
@@ -257,9 +258,9 @@ contract ProvianRecourseBondPool {
         address _pvt,
         address _epochClock,
         address _issuanceIndex,
-        BondSeed[] memory seedBonds,
+        SeedManifest memory seedManifest,
         BpsSeed[] memory seedBps
-    ) {
+    ) RecourseInstitutionSeeds(_pvt, 2, seedManifest) {
         if (
             _admin == address(0) || _provianTechWallet == address(0) || _pvt == address(0)
                 || _epochClock == address(0) || _issuanceIndex == address(0)
@@ -272,8 +273,15 @@ contract ProvianRecourseBondPool {
         epochClock = IEpochClock(_epochClock);
         issuanceIndex = IIssuanceIndex(_issuanceIndex);
 
-        for (uint256 i = 0; i < seedBonds.length; ++i) {
-            BondSeed memory s = seedBonds[i];
+
+        if (seedBps.length > 4) revert InvalidSeed();
+        for (uint256 i = 0; i < seedBps.length; ++i) {
+            _seedBpsSchedule(seedBps[i].param, seedBps[i].bps);
+        }
+    }
+
+    function _applyCustodySeed(bytes calldata data) internal override returns (uint256) {
+        BondSeed memory s = abi.decode(data, (BondSeed));
             if (
                 s.agent == address(0) || (s.autonomyLevel != 2 && s.autonomyLevel != 3) || s.amount == 0
                     || s.requiredAtPost == 0 || s.createdAt == 0 || s.lastRenewalAt < s.createdAt
@@ -291,10 +299,7 @@ contract ProvianRecourseBondPool {
             requiredAtPost[s.agent] = s.requiredAtPost;
             encumberedPVT += s.amount;
             emit BondCarried(s.agent, s.amount, s.autonomyLevel, s.renewalDeadline);
-        }
-        for (uint256 i = 0; i < seedBps.length; ++i) {
-            _seedBpsSchedule(seedBps[i].param, seedBps[i].bps);
-        }
+        return s.amount;
     }
 
     function _seedBpsSchedule(uint8 param, uint256 bps) private {
@@ -538,7 +543,7 @@ contract ProvianRecourseBondPool {
         );
     }
 
-    function scheduleDepositBurnBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor {
+    function scheduleDepositBurnBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (bps > BOND_DEPOSIT_BURN_BPS_MAX) revert CostOutOfDomain();
         if (scheduledDepositBurnBps[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -547,7 +552,7 @@ contract ProvianRecourseBondPool {
         emit DepositBurnBpsScheduled(effectiveEpoch, bps);
     }
 
-    function scheduleDepositFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor {
+    function scheduleDepositFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (bps > BOND_DEPOSIT_FEE_BPS_MAX) revert CostOutOfDomain();
         if (scheduledDepositFeeBps[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -556,7 +561,7 @@ contract ProvianRecourseBondPool {
         emit DepositFeeBpsScheduled(effectiveEpoch, bps);
     }
 
-    function scheduleRenewalBurnBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor {
+    function scheduleRenewalBurnBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (bps > BOND_RENEWAL_BURN_BPS_MAX) revert CostOutOfDomain();
         if (scheduledRenewalBurnBps[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -565,7 +570,7 @@ contract ProvianRecourseBondPool {
         emit RenewalBurnBpsScheduled(effectiveEpoch, bps);
     }
 
-    function scheduleRenewalFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor {
+    function scheduleRenewalFeeBps(uint64 effectiveEpoch, uint256 bps) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (bps > BOND_RENEWAL_FEE_BPS_MAX) revert CostOutOfDomain();
         if (scheduledRenewalFeeBps[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -574,7 +579,7 @@ contract ProvianRecourseBondPool {
         emit RenewalFeeBpsScheduled(effectiveEpoch, bps);
     }
 
-    function scheduleSlashShares(uint64 effectiveEpoch, uint256 burnBps, uint256 payoutBps) external onlyExecutor {
+    function scheduleSlashShares(uint64 effectiveEpoch, uint256 burnBps, uint256 payoutBps) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (burnBps + payoutBps != MAX_BPS) revert SlashBpsInvariant();
         if (payoutBps < MIN_SLASH_PAYOUT_BPS) revert SlashPayoutBelowFloor();
@@ -584,7 +589,7 @@ contract ProvianRecourseBondPool {
         emit SlashSharesScheduled(effectiveEpoch, burnBps, payoutBps);
     }
 
-    function scheduleClaimsProcessingFee(uint64 effectiveEpoch, uint256 feeAtomic) external onlyExecutor {
+    function scheduleClaimsProcessingFee(uint64 effectiveEpoch, uint256 feeAtomic) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (feeAtomic > MAX_FEE) revert CostOutOfDomain(); 
         if (scheduledClaimsProcessingFee[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -593,7 +598,7 @@ contract ProvianRecourseBondPool {
         emit ClaimsProcessingFeeScheduled(effectiveEpoch, feeAtomic);
     }
 
-    function scheduleClaimFilingFee(uint64 effectiveEpoch, uint256 feeAtomic) external onlyExecutor {
+    function scheduleClaimFilingFee(uint64 effectiveEpoch, uint256 feeAtomic) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (feeAtomic > MAX_FILING_FEE) revert CostOutOfDomain(); 
         if (scheduledClaimFilingFee[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -602,7 +607,7 @@ contract ProvianRecourseBondPool {
         emit ClaimFilingFeeScheduled(effectiveEpoch, feeAtomic);
     }
 
-    function scheduleRenewalPeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyExecutor {
+    function scheduleRenewalPeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (periodSeconds < MIN_RENEWAL_PERIOD || periodSeconds > MAX_RENEWAL_PERIOD) revert CostOutOfDomain();
         if (scheduledRenewalPeriod[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -611,7 +616,7 @@ contract ProvianRecourseBondPool {
         emit RenewalPeriodScheduled(effectiveEpoch, periodSeconds);
     }
 
-    function scheduleAbandonmentPeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyExecutor {
+    function scheduleAbandonmentPeriod(uint64 effectiveEpoch, uint256 periodSeconds) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (periodSeconds < MIN_ABANDONMENT_PERIOD || periodSeconds > MAX_ABANDONMENT_PERIOD) revert CostOutOfDomain();
         if (scheduledAbandonmentPeriod[effectiveEpoch].exists) revert PolicyAlreadyScheduled();
@@ -620,7 +625,7 @@ contract ProvianRecourseBondPool {
         emit AbandonmentPeriodScheduled(effectiveEpoch, periodSeconds);
     }
 
-    function scheduleBaseBonds(uint64 effectiveEpoch, uint256 newLevel2, uint256 newLevel3) external onlyExecutor {
+    function scheduleBaseBonds(uint64 effectiveEpoch, uint256 newLevel2, uint256 newLevel3) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (newLevel2 < MIN_BASE_BOND || newLevel2 > MAX_BASE_BOND) revert BaseBondOutOfBounds();
         if (newLevel3 < MIN_BASE_BOND || newLevel3 > MAX_BASE_BOND) revert BaseBondOutOfBounds();
@@ -631,7 +636,7 @@ contract ProvianRecourseBondPool {
         emit BaseBondsScheduled(effectiveEpoch, newLevel2, newLevel3);
     }
 
-    function scheduleMaxBondDeposit(uint64 effectiveEpoch, uint256 newMax) external onlyExecutor {
+    function scheduleMaxBondDeposit(uint64 effectiveEpoch, uint256 newMax) external onlyExecutor whenCustodyReady {
         _requireScheduleEpoch(effectiveEpoch);
         if (newMax < MIN_MAX_BOND_DEPOSIT || newMax > MAX_MAX_BOND_DEPOSIT) revert CostOutOfDomain();
         (, uint256 effL3) = _effBaseBonds();
@@ -642,7 +647,7 @@ contract ProvianRecourseBondPool {
         emit MaxBondDepositScheduled(effectiveEpoch, newMax);
     }
 
-    function postBond(uint8 autonomyLevel, uint256 trustDiscountBps) external {
+    function postBond(uint8 autonomyLevel, uint256 trustDiscountBps) external whenCustodyReady {
         if (autonomyLevel != 2 && autonomyLevel != 3) revert InvalidAutonomyLevel();
         if (trustDiscountBps > MAX_TRUST_DISCOUNT) revert InvalidTrustDiscount();
         if (bonds[msg.sender].status == BondStatus.Active) revert BondAlreadyExists();
@@ -688,7 +693,7 @@ contract ProvianRecourseBondPool {
         emit BondPosted(msg.sender, totalDeposit, lockedAmount, autonomyLevel);
     }
 
-    function renewBond() external {
+    function renewBond() external whenCustodyReady {
         Bond storage bond = bonds[msg.sender];
         if (bond.status != BondStatus.Active) revert BondNotActive();
 
@@ -712,7 +717,7 @@ contract ProvianRecourseBondPool {
         emit BondRenewed(msg.sender, bond.renewalDeadline);
     }
 
-    function topUpBond(uint256 amount) external {
+    function topUpBond(uint256 amount) external whenCustodyReady {
         Bond storage bond = bonds[msg.sender];
         if (bond.status != BondStatus.Active) revert BondNotActive();
         if (amount == 0) revert InvalidAmount();
@@ -729,7 +734,7 @@ contract ProvianRecourseBondPool {
         emit BondToppedUp(msg.sender, amount, bond.amount);
     }
 
-    function withdrawBond() external {
+    function withdrawBond() external whenCustodyReady {
         Bond storage bond = bonds[msg.sender];
         if (bond.status != BondStatus.Active) revert BondNotActive();
         if (bond.pendingClaims > 0) revert ClaimsPending();
@@ -745,7 +750,7 @@ contract ProvianRecourseBondPool {
         emit BondWithdrawn(msg.sender, returnAmount);
     }
 
-    function fileClaim(address agent, bytes32 claimId) external {
+    function fileClaim(address agent, bytes32 claimId) external whenCustodyReady {
         if (msg.sender == agent) revert SelfClaimNotAllowed();
         if (claimExists[claimId]) revert ClaimAlreadyExists();
         if (bonds[agent].status != BondStatus.Active) revert BondNotActive();
@@ -774,7 +779,7 @@ contract ProvianRecourseBondPool {
         address agent,
         uint256 slashAmount,
         bytes32 claimId
-    ) external onlyCourt {
+    ) external onlyCourt whenCustodyReady {
         Bond storage bond = bonds[agent];
         if (bond.status != BondStatus.Active) revert BondNotActive();
 
@@ -821,7 +826,7 @@ contract ProvianRecourseBondPool {
         emit BondSlashed(agent, claimId, claim.claimant, claimantAmount, burnAmount);
     }
 
-    function dismissClaim(address agent, bytes32 claimId) external onlyCourt {
+    function dismissClaim(address agent, bytes32 claimId) external onlyCourt whenCustodyReady {
         Claim storage claim = claims[claimId];
         if (!claimExists[claimId]) revert ClaimNotFound();
         if (claim.status != ClaimStatus.Filed) revert ClaimAlreadyResolved();
@@ -846,7 +851,7 @@ contract ProvianRecourseBondPool {
         emit ClaimDismissed(claimId, agent);
     }
 
-    function dismissClaimUnadjudicated(address agent, bytes32 claimId) external onlyCourt {
+    function dismissClaimUnadjudicated(address agent, bytes32 claimId) external onlyCourt whenCustodyReady {
         Claim storage claim = claims[claimId];
         if (!claimExists[claimId]) revert ClaimNotFound();
         if (claim.status != ClaimStatus.Filed) revert ClaimAlreadyResolved();
@@ -863,7 +868,7 @@ contract ProvianRecourseBondPool {
         emit ClaimClosedUnadjudicated(claimId, agent, claim.claimant, refund);
     }
 
-    function expireStaleClaim(bytes32 claimId) external {
+    function expireStaleClaim(bytes32 claimId) external whenCustodyReady {
         Claim storage claim = claims[claimId];
         if (!claimExists[claimId]) revert ClaimNotFound();
         if (claim.status != ClaimStatus.Filed) revert ClaimAlreadyResolved();
@@ -883,7 +888,7 @@ contract ProvianRecourseBondPool {
         emit ClaimExpired(claimId, agent);
     }
 
-    function processAbandonment(address agent) external {
+    function processAbandonment(address agent) external whenCustodyReady {
         Bond storage bond = bonds[agent];
         if (bond.status != BondStatus.Active) revert BondNotActive();
 
@@ -927,7 +932,7 @@ contract ProvianRecourseBondPool {
         return bond.status == BondStatus.Active && block.timestamp <= bond.renewalDeadline;
     }
 
-    function setCourtContract(address _court) external onlyAdmin {
+    function setCourtContract(address _court) external onlyAdmin whenCustodyReady {
         if (courtContractSet) revert CourtAlreadySet();
         if (_court == address(0)) revert InvalidAddress();
         courtContract = _court;
@@ -935,7 +940,7 @@ contract ProvianRecourseBondPool {
         emit CourtContractSet(_court);
     }
 
-    function setExecutor(address _executor) external onlyAdmin {
+    function setExecutor(address _executor) external onlyAdmin whenCustodyReady {
         if (executorSet) revert ExecutorAlreadySet();
         if (_executor == address(0)) revert InvalidAddress();
         executor = _executor;
@@ -943,7 +948,7 @@ contract ProvianRecourseBondPool {
         emit ExecutorWired(_executor);
     }
 
-    function transferAdmin(address newAdmin) external onlyAdmin {
+    function transferAdmin(address newAdmin) external onlyAdmin whenCustodyReady {
         if (newAdmin == address(0)) revert InvalidAddress();
         address oldAdmin = admin;
         admin = newAdmin;
