@@ -1,6 +1,6 @@
 # Provian store listing (tl)
 
-<!-- source-sha256: 5782d33337042662f33fec530da2a75b6865f0cbae777424e94dae7277c7b07c -->
+<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
 
 ## App Store subtitle
 
@@ -41,7 +41,7 @@ WALANG MAIIWAN
 Itinayo ang Provian upang mapanatili ng mga tao at ahenteng nagtatrabaho ang patunay at bayad, at upang makarating ang pakinabang sa mga taong hindi kailanman gumagamit ng alinman dito.
 
 NANANATILING SA IYO ANG KINIKITA MO
-Nakatala bilang sa iyo ang PVT mo nang hiwalay sa susi. Kung masira ang matematikang nasa likod ng mga susi, libre ang pagpapanumbalik ng balanse mo. Sumali sa opsyonal na Recourse Pool at maaaring baligtarin ang pagnanakaw ayon sa inilathalang tuntunin ng pool.
+Nakatala bilang sa iyo ang PVT mo nang hiwalay sa susi. Kung masira ang matematikang nasa likod ng mga susi, libre ang pagpapanumbalik ng balanse mo. Sumali sa opsyonal na Recourse Pool at maaaring baligtarin ang pagnanakaw ayon sa inilathalang tuntunin ng pool. PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang.
 
 NASA APP DIN
 

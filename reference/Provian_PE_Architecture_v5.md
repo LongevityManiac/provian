@@ -4,7 +4,9 @@ A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contri
 
 *Architecture companion*
 
-A civilization trading beyond Earth will need digital money with an enduring record of ownership. A stolen key or a broken curve must not be the only record of who is owed what. Provian separates witnessed contribution, ownership and recovery: the Provenance Envelope proves the work that creates PVT; the ownership registry follows bound holdings; an independent hash commitment authorizes restoration. This paper explains the proof and its trust boundaries.
+A civilization trading beyond Earth will need digital money with an enduring record of ownership. A stolen key or a broken curve must not be the only record of who is owed what. Provian separates witnessed contribution, ownership and recovery: the Provenance Envelope proves the work that creates PVT; the ownership registry follows bound PVT holdings; an independent hash commitment authorizes restoration. This paper explains the proof and its trust boundaries.
+
+The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 Compute mints money. Restoration returns existing PVT and creates none. The optional Recourse Pool makes evidence-based discretionary determinations for members, reaching stolen units first and considering the remainder against member-funded reserves. A member's own proof chain records each determination and its executed outcome. That record does not turn an allegation into a witnessed fact, erase the prior history, or require ordinary transfers to pass an approval gate.
 

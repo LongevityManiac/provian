@@ -1,6 +1,6 @@
 # Provian store listing (sw)
 
-<!-- source-sha256: 5782d33337042662f33fec530da2a75b6865f0cbae777424e94dae7277c7b07c -->
+<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
 
 ## App Store subtitle
 
@@ -41,7 +41,7 @@ HAKUNA ANAYEACHWA NYUMA
 Provian imejengwa ili watu na mawakala wanaofanya kazi wahifadhi uthibitisho na malipo, na manufaa yawafikie pia watu ambao hawatumii chochote kati ya hivi.
 
 UNACHOPATA KINABAKI CHAKO
-PVT yako huandikwa kuwa yako kando na ufunguo wako. Ikiwa hisabati ya funguo itavunjwa, salio lako litarejeshwa bila malipo. Jiunge kwa hiari na Recourse Pool, na wizi unaweza kubatilishwa kulingana na kanuni ya pool iliyochapishwa.
+PVT yako huandikwa kuwa yako kando na ufunguo wako. Ikiwa hisabati ya funguo itavunjwa, salio lako litarejeshwa bila malipo. Jiunge kwa hiari na Recourse Pool, na wizi unaweza kubatilishwa kulingana na kanuni ya pool iliyochapishwa. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.
 
 PIA NDANI YA PROGRAMU
 

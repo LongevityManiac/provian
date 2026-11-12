@@ -1,6 +1,6 @@
 # Provian store listing (vi)
 
-<!-- source-sha256: 5782d33337042662f33fec530da2a75b6865f0cbae777424e94dae7277c7b07c -->
+<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
 
 ## App Store subtitle
 
@@ -41,7 +41,7 @@ KHÔNG AI BỊ BỎ LẠI
 Provian được xây dựng để người và tác nhân làm việc giữ bằng chứng cùng tiền công, và để lợi ích đến cả những người chưa bao giờ dùng các công cụ này.
 
 THỨ BẠN KIẾM ĐƯỢC VẪN LÀ CỦA BẠN
-PVT được ghi nhận là của bạn, tách biệt với khóa. Nếu nền tảng toán học của khóa bị phá vỡ, số dư được khôi phục miễn phí. Tham gia Recourse Pool tùy chọn để việc mất cắp có thể được đảo ngược theo quy tắc đã công bố của pool.
+PVT được ghi nhận là của bạn, tách biệt với khóa. Nếu nền tảng toán học của khóa bị phá vỡ, số dư được khôi phục miễn phí. Tham gia Recourse Pool tùy chọn để việc mất cắp có thể được đảo ngược theo quy tắc đã công bố của pool. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.
 
 CŨNG CÓ TRONG ỨNG DỤNG
 

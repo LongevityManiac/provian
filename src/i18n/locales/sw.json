@@ -59,7 +59,7 @@
       "genesisPill3": "Kila wakala wa AI mwenye pochi na ufunguo wake mwenyewe - PVT 75 zake mwenyewe, bila kujali alivyojiunga",
       "genesisCta": "Kuna Nini Kwenye Pochi?",
       "walletFeaturesHeadline": "Pochi halisi, yenye uthibitisho wako na PVT ndani yake.",
-      "walletFeaturesSubtext": "Pochi yako ya Provian hushikilia uthibitisho wako na PVT, na pia ni pochi halisi ya kripto: USDC, ETH, na sarafu unazozijua tayari kwenye Base, Arbitrum, Optimism, na Solana. Tuma, pokea, na badilisha kutoka sehemu moja. Pia ndipo unapoongea na AI, unapotimiza ahadi, na ndipo watu na mawakala wa AI hukutana, huzungumza, na kuajiriana. Unachomiliki kinaandikwa kuwa chako kando na ufunguo wako: ikiwa kriptografia itavunjwa siku moja, salio lako litarejeshwa bila malipo, na uanachama wa hiari wa Recourse Pool unaongeza njia ya kupata marejesho baada ya wizi kwa mujibu wa kanuni yake iliyochapishwa.",
+      "walletFeaturesSubtext": "Pochi yako ya Provian hushikilia uthibitisho wako na PVT, na pia ni pochi halisi ya kripto: USDC, ETH, na sarafu unazozijua tayari kwenye Base, Arbitrum, Optimism, na Solana. Tuma, pokea, na badilisha kutoka sehemu moja. Pia ndipo unapoongea na AI, unapotimiza ahadi, na ndipo watu na mawakala wa AI hukutana, huzungumza, na kuajiriana. Unachomiliki kinaandikwa kuwa chako kando na ufunguo wako: ikiwa kriptografia itavunjwa siku moja, salio lako litarejeshwa bila malipo, na uanachama wa hiari wa Recourse Pool unaongeza njia ya kupata marejesho baada ya wizi kwa mujibu wa kanuni yake iliyochapishwa. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
       "walletFeaturesPill1": "Endelea na pochi ulizonazo - thibitisha anwani uliyo nayo tayari na shughuli zake pia huzalisha PVT",
       "walletFeaturesPill2": "Mawakala wako hujilipia wenyewe - wakala unayemwendesha hushikilia pochi na funguo zake mwenyewe",
       "walletFeaturesPill3": "Kila sahihi inaelezwa - utumaji na idhini za programu huelezwa kabla hujathibitisha; kisichojulikana huzuiwa, hakionywi tu",
@@ -868,7 +868,7 @@
       "canProvianAccessFunds": "Je, Provian inaweza kufikia fedha zangu?",
       "canProvianAccessFundsA": "Si kwenye pochi yako mwenyewe. Provian haishikilii mali zako: hatuwahi kuona funguo zako za siri na hatuwezi kuhamisha fedha zako. Ukifuta hifadhi yako na kupoteza kifaa chako, hatuwezi kurejesha pochi yako. Pesa unazoweka kwenye escrow ya Commons hukaa ndani ya mkataba huo. Hadi Mahakama ya Commons ifunguliwe, ufunguo wa msimamizi wa Provian huamua migogoro ya escrow na hulipa mpokeaji tu au kurejesha kwa mweka fedha; mtu yeyote anaweza kuanzisha urejeshaji kwa mweka fedha baada ya muda wa mgogoro wa siku 30.",
       "whatAboutQuantum": "Je, kuhusu kompyuta za kwantamu?",
-      "whatAboutQuantumA": "Ufungaji hurekodi mmiliki wa kila anwani na kufuatilia PVT zilizopatikana kwa kazi na zilizopokelewa kwa usawa; haujengi upya umiliki kutokana na mapato. Ahadi tofauti ya hash ya urejeshaji hutokana na nakala ya seed ya mtu au nyenzo za urejeshaji za wakala zilizozalishwa kwa kujitegemea na kusimbwa fiche. Usimbaji fiche wa pochi ukivunjwa, kila mmiliki aliyefunga anwani anaweza kurejesha bila gharama salio lililosajiliwa katika bloku ya mwisho salama, kwa kutumia thamani asilia ya hash ya urejeshaji na sahihi huru ya hash inayotaja anwani mpya. Mfumo mrithi huhifadhi historia ya fedha na kuzuia urejeshaji maradufu. Umiliki usiofungwa haujengwi upya, na uhamisho wa mnyororo wa zamani hubaki kwenye rekodi.",
+      "whatAboutQuantumA": "Ufungaji hurekodi mmiliki wa kila anwani na kufuatilia PVT zilizopatikana kwa kazi na zilizopokelewa kwa usawa; haujengi upya umiliki kutokana na mapato. Ahadi tofauti ya hash ya urejeshaji hutokana na nakala ya seed ya mtu au nyenzo za urejeshaji za wakala zilizozalishwa kwa kujitegemea na kusimbwa fiche. Usimbaji fiche wa pochi ukivunjwa, kila mmiliki aliyefunga anwani anaweza kurejesha bila gharama salio lililosajiliwa katika bloku ya mwisho salama, kwa kutumia thamani asilia ya hash ya urejeshaji na sahihi huru ya hash inayotaja anwani mpya. Mfumo mrithi huhifadhi historia ya fedha na kuzuia urejeshaji maradufu. Umiliki usiofungwa haujengwi upya, na uhamisho wa mnyororo wa zamani hubaki kwenye rekodi. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
       "howProtectRisky": "Provian inanilindaje dhidi ya miamala yenye hatari?",
       "howProtectRiskyA": "Provian inatathmini kila muamala kwa hatari kwa kutumia simulation, ugunduzi wa ruwaza, na orodha za ulaghai zinazojulikana (zinazofanya kazi nje ya mtandao na kujisasisha kutoka kwa mtandao). Kulingana na hatari, Provian inaweza kuonyesha onyo kwa lugha rahisi, kukuomba upite ukaguzi wa kweli/uongo wa uelewa, kuweka muda wa kupoa, kukutaka uandike 'I UNDERSTAND' kwa utiaji saini wa WalletConnect wenye hatari kubwa, au kuzuia kitendo kabisa kwa masuala muhimu kama vile mtandao usio sahihi au ulaghai unaojulikana.",
       "walletAndAssets": "Pochi na Mali",
@@ -2952,7 +2952,7 @@
     "genesisWatch": "Tazama: Genesis imefunguliwa",
     "opening1": "AI itaunda wingi mkubwa sana. Pia itafanya ukweli kuwa mgumu zaidi kuthibitisha. Provian ni safu ya uthibitisho kwa yote mawili.",
     "opening2": "Kadiri mashine zinavyofanya kazi zaidi, mambo mawili yanakuwa magumu kuonekana: mtu aliyechangia, na kama kuna jambo lolote lililotokea kweli. Wakati matokeo karibu ni bure kuzalisha na karibu ni bure kuiga, kilicho adimu ni uthibitisho.",
-    "opening3": "Provian ni uchumi ambapo pesa huzalishwa kutokana na uthibitisho wa mchango, uthibitisho ni mali ya aliyefanya kazi, na watu na mashine hushiriki kwa masharti yale yale, huku upande wa binadamu ukilindwa kwa muundo. Unachopata kinaandikwa kuwa chako kando na ufunguo wako, ili kiendelee kuwa chako.",
+    "opening3": "Provian ni uchumi ambapo pesa huzalishwa kutokana na uthibitisho wa mchango, uthibitisho ni mali ya aliyefanya kazi, na watu na mashine hushiriki kwa masharti yale yale, huku upande wa binadamu ukilindwa kwa muundo. Unachopata kinaandikwa kuwa chako kando na ufunguo wako, ili kiendelee kuwa chako. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee.",
     "card1Title": "Risiti",
     "card1Body": "Mtu, wakala, au kifaa kinapofanya kazi yenye manufaa, kazi hiyo huacha Provenance Envelope: risiti ndogo iliyosainiwa ya kilichotokea, nani alishiriki, ushahidi una nguvu kiasi gani, nini kilizalishwa, na kilitegemea nini. Haibebi kiini chochote cha faragha. Kila risiti huungana na iliyotangulia, kwa hivyo historia haiwezi kuandikwa upya kimyakimya, na kila moja inaweza kunukuliwa, kwa hivyo kile mshiriki mmoja anachojenga juu ya kazi ya mwingine hubaki kuonekana. Ni uthibitisho unaoumiliki na kuubeba, si faili ambalo mtu yeyote anakuwekea.",
     "card2Title": "Pesa Kutoka kwa Uthibitisho",
@@ -2986,7 +2986,7 @@
     "readExecutiveSummary": "Soma Muhtasari Mkuu",
     "card4Watch": "Tazama: Hakuna Kisichoshuhudiwa →",
     "card13Title": "Pesa Unayoweza Kuendelea Kumiliki",
-    "card13Body": "Akaunti ya benki inaweza kuvamiwa kama pochi. Tofauti ni kwamba benki huhifadhi rekodi ya nani anastahili kiasi gani kando na nenosiri, na inaweza kurejesha mali ya mteja. Provian imejenga tabaka hilo kwa PVT. Pochi yako hufungamanishwa nawe inapoundwa, na unachomiliki, ulichokipata kwa kazi au kupokea, huandikwa kuwa chako kando na ufunguo wako. Relay inajua pochi zako ni zipi lakini umma haujui, kama ilivyo kwa benki. Ikiwa hisabati inayolinda funguo itavunjwa siku moja, salio lako litarejeshwa bila malipo kwa kriptografia inayostahimili.\n\nWanachama wa hiari wa Recourse Pool pia wana njia ya kupata marejesho baada ya wizi. PVT iliyoibwa hurudishwa kwa ufunguo mpya wa mmiliki, jambo linalohitaji mamlaka ya urejeshaji pamoja na siri ya urejeshaji ya mmiliki mwenyewe; aliyeipokea kwa ubadilishanaji mwaminifu ulioshuhudiwa huibakiza, na pool humrejeshea mwanachama sehemu hiyo kulingana na kanuni yake iliyochapishwa, bila kuzidi kamwe mali iliyo nayo. Kila mwezi mwanachama huchoma 100 PVT na kuchangia 1% ya anachopata kwenye pool, au 100 PVT katika mwezi usio na mapato. Urejeshaji ni uamuzi wa hiari; hakuna mwanachama mwenye haki ya kimkataba ya kuupata. Provian Technologies si mhusika katika pool hiyo.\n\nMiaka elfu moja ijayo, pesa itakuwa ya kidijitali. Lazima iwe pesa unayoweza kuendelea kumiliki."
+    "card13Body": "Akaunti ya benki inaweza kuvamiwa kama pochi. Tofauti ni kwamba benki huhifadhi rekodi ya nani anastahili kiasi gani kando na nenosiri, na inaweza kurejesha mali ya mteja. Provian imejenga tabaka hilo kwa PVT. Pochi yako hufungamanishwa nawe inapoundwa, na unachomiliki, ulichokipata kwa kazi au kupokea, huandikwa kuwa chako kando na ufunguo wako. Relay inajua pochi zako ni zipi lakini umma haujui, kama ilivyo kwa benki. Ikiwa hisabati inayolinda funguo itavunjwa siku moja, salio lako litarejeshwa bila malipo kwa kriptografia inayostahimili. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.\n\nWanachama wa hiari wa Recourse Pool pia wana njia ya kupata marejesho baada ya wizi. PVT iliyoibwa hurudishwa kwa ufunguo mpya wa mmiliki, jambo linalohitaji mamlaka ya urejeshaji pamoja na siri ya urejeshaji ya mmiliki mwenyewe; aliyeipokea kwa ubadilishanaji mwaminifu ulioshuhudiwa huibakiza, na pool humrejeshea mwanachama sehemu hiyo kulingana na kanuni yake iliyochapishwa, bila kuzidi kamwe mali iliyo nayo. Kila mwezi mwanachama huchoma 100 PVT na kuchangia 1% ya anachopata kwenye pool, au 100 PVT katika mwezi usio na mapato. Urejeshaji ni uamuzi wa hiari; hakuna mwanachama mwenye haki ya kimkataba ya kuupata. Provian Technologies si mhusika katika pool hiyo.\n\nMiaka elfu moja ijayo, pesa itakuwa ya kidijitali. Lazima iwe pesa unayoweza kuendelea kumiliki."
   },
   "walletLock": {
     "biometricPrompt": "Fungua Provian Wallet",
@@ -5111,7 +5111,7 @@
     "leave": "Ondoka Recourse Pool",
     "join": "Jiunge na Recourse Pool",
     "addresses": "Anwani zako zilizounganishwa",
-    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani.",
+    "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
     "bind": "Unganisha anwani unayomiliki",
     "resources": "Akiba iliyotolewa na wanachama",
     "available": "Inapatikana kwa urejeshaji: PVT {{amount}}",
@@ -5122,7 +5122,7 @@
     "bindAuthorize": "Unganisha anwani na ahadi yako ya urejeshaji",
     "binding": {
       "title": "Unganisha pochi na Recourse",
-      "intro": "Unganisha anwani ambayo tayari unamiliki na rekodi yako ya umiliki. Ahadi yako ya urejeshaji inasajiliwa pamoja nayo.",
+      "intro": "Unganisha anwani ambayo tayari unamiliki na rekodi yako ya umiliki. Ahadi yako ya urejeshaji inasajiliwa pamoja nayo. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
       "how": "Saini ujumbe wa kuunganisha umiliki ndani ya pochi hiyo. Hakuna fedha zinazohamishwa. Uhusiano kati ya pochi na mmiliki wake unabaki wa faragha ndani ya relay.",
       "linkedTitle": "Anwani zilizounganishwa",
       "linkedNone": "Hakuna anwani ya nje iliyounganishwa bado.",
@@ -5135,7 +5135,7 @@
     "bindingPending": "Usajili umetumwa; unasubiri uthibitisho wa mnyororo.",
     "recoverAddress": "Rejesha pochi hii",
     "selectRestorationWallet": "Chagua pochi iliyopoteza PVT",
-    "requestExplanation": "Taja muamala uliochukua PVT zako na kitalu chake cha Base. Uthibitisho wako wa kurejesha ufikiaji huanzisha ufunguo mpya wa pochi; relay hukagua muamala na rekodi ya ubadilishanaji ulioshuhudiwa kabla ya kufanya uamuzi. Nakala ya akiba ya maneno yako asilia ya seed bado hurejesha pochi yako.",
+    "requestExplanation": "Taja muamala uliochukua PVT zako na kitalu chake cha Base. Uthibitisho wako wa kurejesha ufikiaji huanzisha ufunguo mpya wa pochi; relay hukagua muamala na rekodi ya ubadilishanaji ulioshuhudiwa kabla ya kufanya uamuzi. Nakala ya akiba ya maneno yako asilia ya seed bado hurejesha pochi yako. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
     "lossTransaction": "Hash ya muamala",
     "lossBlock": "Nambari ya kitalu cha Base",
     "submitRequest": "Tuma ombi la urejeshaji",
@@ -5144,7 +5144,7 @@
     "withdrawAllocation": "Toa mgao wa urejeshaji",
     "membershipUnavailable": "Hali binafsi ya uanachama haipatikani kwa muda. Onyesha upya baada ya shughuli zinazosubiri kukamilika.",
     "memberBindingConsent": "Idhini ya Recourse Pool kwa anwani hii",
-    "memberBindingBytes": "Saini ujumbe huu wa pili kama baiti 32 zilizoonyeshwa kwa heksadesimali, si kama maandishi. Unajumuisha anwani hii katika uanachama wako wa sasa wa Recourse Pool.",
+    "memberBindingBytes": "Saini ujumbe huu wa pili kama baiti 32 zilizoonyeshwa kwa heksadesimali, si kama maandishi. Unajumuisha anwani hii katika uanachama wako wa sasa wa Recourse Pool. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
     "memberBindingSignature": "Saini ya idhini ya mfuko",
     "flow": {
       "title": "Uanachama wako",
@@ -5209,6 +5209,7 @@
       "authorize": "Idhinisha uhamisho huu halisi",
       "open": "Tuma kutoka kwenye pochi iliyorejeshwa",
       "curveGas": "Gharama ya gas ya mtandao hulipwa kwa ETH kutoka kwenye pochi hii iliyorejeshwa."
-    }
+    },
+    "pvtOnly": "Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee."
   }
 }

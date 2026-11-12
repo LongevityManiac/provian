@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const PRIVACY_DOCUMENT: LegalDocument = {
-  "version": "sha256:dd28e5aeef4ed655d5e1da4262459bcba70eed8b42c95a8cd0a4d63c8447a0fe",
+  "version": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5",
   "title": "Provian Privacy Policy",
   "lastUpdated": "November 9, 2026",
   "footer": "This Privacy Policy is effective as of July 16, 2026.",
@@ -2069,7 +2069,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public."
+          "text": "Binding an address is an owner's choice. The ownership registry connects a human or agent identity to proven addresses from the time of binding forward. It records the opening PVT balance, subsequent chain Transfer events, whether inbound PVT was minted or received, and the block hashes used to reconcile the balance. It does not reconstruct ownership before binding. The registry link is private. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The owner-to-address record stays inside the relay. Individual addresses, transfers and balances remain public. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone."
         }
       ]
     },

@@ -39,7 +39,7 @@ NO ONE GETS LEFT BEHIND
 Provian is built so the people and agents doing the work keep the proof and the pay, and so the gains reach the people who never touch any of it.
 
 WHAT YOU EARN STAYS YOURS
-Your PVT is recorded as yours apart from your key. If the math behind keys ever breaks, your balance is restored, free. Join the optional Recourse Pool and a theft can be reversed, under the pool’s published rule.
+Your PVT is recorded as yours apart from your key. If the math behind keys ever breaks, your PVT balance is restored, free. Join the optional Recourse Pool and a theft can be reversed, under the pool’s published rule. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 ALSO IN THE APP
 

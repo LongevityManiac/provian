@@ -204,6 +204,7 @@ export default function DevelopersPage() {
           permanent on-chain pointer before a protocol transaction and refuses retired contracts.
           Build for ownership that survives a stolen key and a future break of the cryptography;
           the Recourse Pool is the optional theft-restoration layer, and ordinary transfers stay ungated.
+            The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
         </p>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-text-muted">
           Wallet registration records the client that created the wallet: the install line, npm SDK,

@@ -62,7 +62,7 @@ const DOCS = [
     group: 'why',
     badge: 'Read this first',
     description:
-      'Witnessed work, durable ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.',
+      'Witnessed work, durable PVT ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.',
   },
   {
     slug: 'the-provian-thesis',
@@ -70,7 +70,7 @@ const DOCS = [
     title: 'The Provian Thesis',
     group: 'why',
     description:
-      'Money for a civilization beyond Earth: proof of contribution, ownership apart from keys, recourse, agents, the Commons and shared abundance.',
+      'Money for a civilization beyond Earth: proof of contribution, PVT ownership apart from keys, recourse, agents, the Commons and shared abundance.',
   },
   {
     slug: 'the-exponential-currency',
@@ -78,7 +78,7 @@ const DOCS = [
     title: 'The Exponential Currency',
     group: 'why',
     description:
-      'How witnessed work creates PVT for an expanding economy, while restoration returns existing holdings and creates none.',
+      'How witnessed work creates PVT for an expanding economy, while restoration returns existing PVT holdings and creates none.',
   },
   {
     slug: 'founding-statement',
@@ -93,7 +93,7 @@ const DOCS = [
     title: 'Network Constitution',
     group: 'why',
     description:
-      'The founding charter: work, ownership, restoration authority, the Recourse Pool, participant rights and the Foundation.',
+      'The founding charter: work, PVT ownership, restoration authority, the Recourse Pool, participant rights and the Foundation.',
   },
 
   // ── Build on it ─────────────────────────────────────────────────────

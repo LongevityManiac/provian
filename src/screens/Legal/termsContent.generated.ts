@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:8b1d0d416c78e9fa7ea677b630c82526522cdfd3519054cf80f0a4aaa24ce334",
+  "version": "sha256:3860e769074d1ddbc7d7920ba04fd4e22f95b239319fcb6e855f0f237a25cf7a",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2024,7 +2024,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "The Recourse Pool is a member-funded risk-sharing arrangement, not insurance. Provian Technologies is not a party to it, insures nothing and promises nothing. No member has a contractual right to payment. Restoration is a discretionary determination of the pool under its published rule. Joining, making contributions, binding an address, reporting a loss, or providing evidence does not create a debt owed by the pool, Provian Technologies, or the bootstrap administrator."
+          "text": "The Recourse Pool is a member-funded risk-sharing arrangement, not insurance. Provian Technologies is not a party to it, insures nothing and promises nothing. No member has a contractual right to payment. Restoration is a discretionary determination of the pool under its published rule. Joining, making contributions, binding an address, reporting a loss, or providing evidence does not create a debt owed by the pool, Provian Technologies, or the bootstrap administrator. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone."
         }
       ]
     },
@@ -2044,7 +2044,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Every enrolled calendar month has two distinct requirements. First, the member burns 100 PVT, whether or not the member earns. This participation burn permanently destroys PVT. Second, the member contributes 1% of gross earnings at settlement to the Recourse Pool. At the human and Genesis split of 99/0.5/0.5, this leaves the member 98%, with the existing 0.5% company share and 0.5% Foundation floor unchanged. The Foundation's prospective agent-side rate may be higher. A member with no earnings in a month contributes 100 PVT from holdings to the pool instead. A no-earnings month therefore requires both the 100 PVT participation burn and the separate 100 PVT reserve contribution."
+          "text": "Every enrolled calendar month has two distinct requirements. First, the member burns 100 PVT, whether or not the member earns. This participation burn permanently destroys PVT. Second, the member contributes 1% of gross earnings at settlement to the Recourse Pool. At the human and Genesis split of 99/0.5/0.5, this leaves the member 98%, with the existing 0.5% company share and 0.5% Foundation floor unchanged. The Foundation's prospective agent-side rate may be higher. A member with no earnings in a month contributes 100 PVT from PVT holdings to the pool instead. A no-earnings month therefore requires both the 100 PVT participation burn and the separate 100 PVT reserve contribution."
         }
       ]
     },
@@ -2116,7 +2116,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "If wallet cryptography fails, successor restoration uses registered balances at a last-good-block snapshot, the recovery preimage and an independent hash-based authorization of the destination. This process is free and available to every bound owner, including nonmembers. It preserves monetary history and prevents duplicate restoration; it returns existing PVT and does not mint earnings a second time. Membership adds theft recourse; binding alone does not. Provian does not promise that every future cryptographic or infrastructure failure can be repaired."
+          "text": "If wallet cryptography fails, successor restoration uses registered PVT balances at a last-good-block snapshot, the recovery preimage and an independent hash-based authorization of the destination. This process is free and available to every bound owner, including nonmembers. It preserves monetary history and prevents duplicate restoration; it returns existing PVT and does not mint earnings a second time. Membership adds theft recourse; binding alone does not. Provian does not promise that every future cryptographic or infrastructure failure can be repaired."
         }
       ]
     },
@@ -2124,7 +2124,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves. Other recourse programs may be developed; describing them creates no present membership or restoration right."
+          "text": "The pool has no company contribution, company custody of its reserves, company withdrawal right, or company entitlement to surplus. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from PVT holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves. Other recourse programs may be developed; describing them creates no present membership or restoration right."
         }
       ]
     },

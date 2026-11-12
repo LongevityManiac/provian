@@ -28,15 +28,16 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={()=>navigation.goBack()}/><Text style={styles.title}>{t('recourse.standing.payments','Automatic payments')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>{void load();}}/>}>
+      <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
       {loading?<ActivityIndicator color={COLORS.primary}/>:null}
       {error?<Text style={styles.body}>{t('recourse.error')}</Text>:null}
       {view&&mandate?<>
         <View style={styles.card}>
           <Text style={styles.title}>{changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic payments approved')}</Text>
-          <Text style={styles.body}>{t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from holdings do not need you to open the app, sign again or keep ETH.')}</Text>
-          <Text style={styles.body}>{t('recourse.standing.limits','Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s holdings. Earnings contribution: {{percent}}%.',{
+          <Text style={styles.body}>{t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from PVT holdings do not need you to open the app, sign again or keep ETH.')}</Text>
+          <Text style={styles.body}>{t('recourse.standing.limits','Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.',{
             burn:pvtAmount(mandate.burnLimit),reserve:pvtAmount(mandate.reserveLimit),percent:mandate.earningsBpsLimit/100})}</Text>
-          <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.')}</Text>
+          <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from PVT holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.')}</Text>
           <Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
             t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>
           <Text style={styles.body}>{t('recourse.graceRule')}</Text>

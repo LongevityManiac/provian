@@ -124,6 +124,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
       <Text style={styles.lead}>{t('recourse.intro', 'Protect the PVT you hold. Bind your addresses to an ownership record that survives a change of key; choose membership for theft recourse.')}</Text>
+      <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
       <View style={styles.card}>
         <Text style={styles.small}>{t('recourse.exitRule', 'Contributions are nonrefundable and burned PVT cannot be recovered. An allocated restoration remains yours after you leave and can be withdrawn directly on-chain without the relay.')}</Text>
         <TextInput accessibilityLabel={t('recourse.allocationRequest', 'Restoration request ID')} placeholder={t('recourse.allocationRequest', 'Restoration request ID')}
@@ -140,7 +141,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.membership', 'Recourse Pool membership')}</Text>
           <Text style={styles.status}>{state.membershipState === 'unavailable' ? t('recourse.membershipUnavailable', 'Private membership status is temporarily unavailable. Refresh after pending actions finish.') : state.grace ? t('recourse.grace', 'Protected — in grace') : state.enrolled ? t('recourse.active', 'Protected') : t('recourse.inactive', 'Not enrolled')}</Text>
-          <Text style={styles.body}>{t('recourse.monthly', 'Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from holdings in a month with no earnings.', {
+          <Text style={styles.body}>{t('recourse.monthly', 'Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from PVT holdings in a month with no earnings.', {
             burn: pvtAmount(state.participationBurnAtomic), percent: state.earningsBps / 100, reserve: pvtAmount(state.noEarningsContributionAtomic),
           })}</Text>
           <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.')}</Text>
@@ -153,7 +154,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>
-          <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
+          <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound PVT holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
           {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
             {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}
             {row.confirmed && row.identity !== state.primaryIdentity

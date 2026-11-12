@@ -186,8 +186,8 @@ export default function HomePage() {
           <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             A bank account can be hacked as surely as a crypto wallet. The difference is that the bank
             keeps a record of who is owed what apart from the password, and can put a customer back.
-            Provian built that for PVT. What you hold is recorded as yours apart from your key. If the
-            math behind keys ever breaks, your balance is restored, free. And if you join the Recourse
+            Provian built that for PVT. The PVT you hold is recorded as yours apart from your key. If the
+            math behind keys ever breaks, your PVT balance is restored, free. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone. And if you join the Recourse
             Pool, a theft can be reversed.
           </p>
           <Link

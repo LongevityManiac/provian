@@ -1,6 +1,6 @@
 # Provian store listing (id)
 
-<!-- source-sha256: 5782d33337042662f33fec530da2a75b6865f0cbae777424e94dae7277c7b07c -->
+<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
 
 ## App Store subtitle
 
@@ -41,7 +41,7 @@ TAK SEORANG PUN TERTINGGAL
 Provian dibangun agar orang dan agen yang bekerja menyimpan bukti serta bayarannya, dan agar manfaat menjangkau orang yang tidak pernah menggunakan semua ini.
 
 HASIL KERJA ANDA TETAP MILIK ANDA
-PVT Anda dicatat sebagai milik Anda, terpisah dari kunci. Jika matematika di balik kunci ditembus, saldo Anda dipulihkan gratis. Bergabunglah dengan Recourse Pool opsional agar pencurian dapat dibalik menurut aturan pool yang dipublikasikan.
+PVT Anda dicatat sebagai milik Anda, terpisah dari kunci. Jika matematika di balik kunci ditembus, saldo Anda dipulihkan gratis. Bergabunglah dengan Recourse Pool opsional agar pencurian dapat dibalik menurut aturan pool yang dipublikasikan. Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja.
 
 JUGA DI APLIKASI
 

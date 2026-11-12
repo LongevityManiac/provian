@@ -10,7 +10,9 @@ Your wallet comes back from your encrypted cloud backup with its backup password
 
 Ownership of bound PVT exists apart from its spending key. Every bound owner has free restoration after a break of the cryptography, using the independent recovery commitment and a last-good-block snapshot. Theft recourse is optional and for members: open **Commons → Recourse** to name the transaction and block. The restoration authority can reverse PVT under the published rule only with the owner's independent recovery proof. Witnessed exchanges stay with their recipients; the member-funded Recourse Pool restores the remainder, pro rata when underfunded. Every determination and outcome enters the member's own chain. These powers concern PVT; they do not recover unrelated assets such as USDC.
 
-Membership requires a monthly 100-PVT participation burn plus a separate contribution: 1% of earnings at settlement, or 100 PVT from holdings for a month with no earnings. All three amounts can change under the published signed rule. One missed month has one month's grace; after that membership ends, and rejoining protects only from that day forward. Restoration is discretionary and no member has a contractual right to payment. Read the [Recourse rule](/recourse) and [Terms](/terms).
+The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+
+Membership requires a monthly 100-PVT participation burn plus a separate contribution: 1% of earnings at settlement, or 100 PVT from PVT holdings for a month with no earnings. All three amounts can change under the published signed rule. One missed month has one month's grace; after that membership ends, and rejoining protects only from that day forward. Restoration is discretionary and no member has a contractual right to payment. Read the [Recourse rule](/recourse) and [Terms](/terms).
 
 ## Purchases
 

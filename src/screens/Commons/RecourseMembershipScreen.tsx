@@ -78,6 +78,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.flow.title', 'Your membership')}</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
+      <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
       <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly payments then happen automatically, even while the app is closed. You need no ETH to join, pay or leave. Higher amounts require your fresh approval.')}</Text>
       {loading || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
@@ -93,7 +94,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         {view.kind !== 'leave' ? view.challenges.map(challenge => <View key={challenge.consent.binding} style={styles.card}>
           <Text selectable style={styles.address}>{challenge.consent.account}</Text>
           <Text style={styles.body}>{challenge.consent.joined ? t('recourse.flow.enable', 'Include this wallet') : t('recourse.flow.disable', 'End this wallet’s participation')}</Text>
-          <Text style={styles.body}>{t('recourse.standing.limits', 'Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s holdings. Earnings contribution: {{percent}}%.', {burn:pvtAmount(challenge.burnLimit),reserve:pvtAmount(challenge.reserveLimit),percent:challenge.earningsBpsLimit/100})}</Text>
+          <Text style={styles.body}>{t('recourse.standing.limits', 'Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.', {burn:pvtAmount(challenge.burnLimit),reserve:pvtAmount(challenge.reserveLimit),percent:challenge.earningsBpsLimit/100})}</Text>
           {button(t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })}
           {challenge.consent.account !== account ? button(t('recourse.flow.external', 'Authorize in this wallet'), () => { setSelected(challenge); setError(false); }) : null}
         </View>) : null}

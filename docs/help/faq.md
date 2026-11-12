@@ -221,13 +221,15 @@ A vouch rides your reputation presentation to the person or agent you vouch for:
 
 ### What is the Recourse Pool?
 
+The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+
 An optional, member-funded arrangement for discretionary restoration of stolen PVT. No member has a contractual right to payment. Members accept determinations as final. Provian Technologies is not a party to it, contributes nothing, holds nothing and promises nothing. It receives no contribution or surplus. The pool restores by its rule.
 
 ### What do members contribute?
 
-Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.
+Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from PVT holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.
 
-A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.
+A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound PVT holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.
 
 ### Does received PVT count?
 
@@ -237,7 +239,7 @@ Yes. One membership includes all PVT at the member's bound addresses, earned and
 
 Reversal comes first. In a single transaction the kernel destroys the determined PVT at named addresses and reissues exactly the same amount to the owner's new key. It never changes total supply. Both the separately appointable restoration authority and the owner's independent recovery proof must authorize that operation; neither factor alone can move anyone's PVT. The rule reaches PVT held by whoever took it or anyone who gave nothing for it. PVT received in a witnessed exchange stays with its recipient. An honest exchange is not subject to a chargeback.
 
-The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. Each executed restoration batch publishes its allocation ratio: the smaller of available reserves and accepted shortfalls, divided by those shortfalls. Each allocation rounds down to whole atomic units. This records that batch, without disclosing members’ portfolio totals or promising a future restoration percentage. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.
+The Recourse Pool restores the remainder, pro rata across accepted determinations when underfunded, never beyond available reserves. Each executed restoration batch publishes its allocation ratio: the smaller of available reserves and accepted shortfalls, divided by those shortfalls. Each allocation rounds down to whole atomic units. This records that batch, without disclosing members’ portfolio totals or promising a future restoration percentage. Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from PVT holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.
 
 ### How is a restoration request determined?
 
@@ -245,7 +247,7 @@ The determination uses the relay's own ownership, transfer, counterparty and wit
 
 ### Is cryptographic-break recovery only for members?
 
-No. It is free for every bound owner. A last-good-block snapshot records registered balances; each owner proves the preimage of the recovery commitment and independently authorizes a secure destination. Those balances reissue once on a secure successor. This returns existing PVT and preserves settled work. Theft recourse requires membership.
+No. It is free for every bound owner. A last-good-block snapshot records registered PVT balances; each owner proves the preimage of the recovery commitment and independently authorizes a secure destination. Those balances reissue once on a secure successor. This returns existing PVT and preserves settled work. Theft recourse requires membership.
 
 ### Does binding reveal anything new?
 
@@ -271,7 +273,7 @@ No, not in your own wallet. Provian is non-custodial: we never see your private 
 
 ### What about quantum computing? <!-- app:whatAboutQuantum -->
 
-Binding records who owns each address and follows earned and received PVT alike; it does not reconstruct ownership from earnings. A separate hash recovery commitment derives from a person's seed backup or an agent's independently generated, encrypted recovery material. If wallet cryptography breaks, every bound owner can restore registered balances at the last good block, free, using the recovery preimage and an independent hash signature for the new destination. A successor carries monetary history forward and prevents duplicate restoration. Unbound ownership is not reconstructed, and old-chain transfers remain in the record.
+Binding records who owns each address and follows earned and received PVT alike; it does not reconstruct ownership from earnings. A separate hash recovery commitment derives from a person's seed backup or an agent's independently generated, encrypted recovery material. If wallet cryptography breaks, every bound owner can restore registered PVT balances at the last good block, free, using the recovery preimage and an independent hash signature for the new destination. A successor carries monetary history forward and prevents duplicate restoration. Unbound ownership is not reconstructed, and old-chain transfers remain in the record. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 ### How does Provian protect me from risky transactions? <!-- app:howProtectRisky -->
 

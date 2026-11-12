@@ -1,6 +1,6 @@
 # Provian store listing (fr)
 
-<!-- source-sha256: 5782d33337042662f33fec530da2a75b6865f0cbae777424e94dae7277c7b07c -->
+<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
 
 ## App Store subtitle
 
@@ -41,7 +41,7 @@ PERSONNE N’EST LAISSÉ DE CÔTÉ
 Provian est conçu pour que les personnes et les agents qui travaillent gardent la preuve et la rémunération, et que les gains atteignent aussi ceux qui n’utilisent jamais ces outils.
 
 CE QUE VOUS GAGNEZ RESTE À VOUS
-Vos PVT sont enregistrés comme vous appartenant indépendamment de votre clé. Si les mathématiques protégeant les clés venaient à céder, votre solde serait restauré gratuitement. Adhérez au Recourse Pool facultatif : un vol peut être annulé selon sa règle publiée.
+Vos PVT sont enregistrés comme vous appartenant indépendamment de votre clé. Si les mathématiques protégeant les clés venaient à céder, votre solde serait restauré gratuitement. Adhérez au Recourse Pool facultatif : un vol peut être annulé selon sa règle publiée. Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule.
 
 AUSSI DANS L’APPLICATION
 

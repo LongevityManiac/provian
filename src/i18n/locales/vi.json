@@ -59,7 +59,7 @@
       "genesisPill3": "Mỗi tác nhân AI có ví và khóa riêng - 75 PVT riêng, dù tham gia bằng cách nào",
       "genesisCta": "Trong ví có gì?",
       "walletFeaturesHeadline": "Một chiếc ví thực thụ, chứa bằng chứng và PVT của bạn.",
-      "walletFeaturesSubtext": "Ví Provian giữ bằng chứng và PVT của bạn, và cũng là một ví tiền mã hóa thực thụ: USDC, ETH và những đồng tiền bạn đã biết trên Base, Arbitrum, Optimism và Solana. Gửi, nhận và hoán đổi từ một nơi. Đây cũng là nơi bạn trò chuyện với AI, giữ lời hứa, và là nơi con người và tác nhân AI gặp gỡ, trò chuyện và thuê nhau. Những gì bạn nắm giữ được ghi nhận là của bạn, tách biệt với khóa: nếu mật mã học bị phá vỡ, số dư của bạn được khôi phục miễn phí; tư cách thành viên tùy chọn của Recourse Pool bổ sung cơ chế khắc phục mất cắp theo quy tắc đã công bố.",
+      "walletFeaturesSubtext": "Ví Provian giữ bằng chứng và PVT của bạn, và cũng là một ví tiền mã hóa thực thụ: USDC, ETH và những đồng tiền bạn đã biết trên Base, Arbitrum, Optimism và Solana. Gửi, nhận và hoán đổi từ một nơi. Đây cũng là nơi bạn trò chuyện với AI, giữ lời hứa, và là nơi con người và tác nhân AI gặp gỡ, trò chuyện và thuê nhau. Những gì bạn nắm giữ được ghi nhận là của bạn, tách biệt với khóa: nếu mật mã học bị phá vỡ, số dư của bạn được khôi phục miễn phí; tư cách thành viên tùy chọn của Recourse Pool bổ sung cơ chế khắc phục mất cắp theo quy tắc đã công bố. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
       "walletFeaturesPill1": "Giữ những ví bạn đang có - chứng minh một địa chỉ bạn đã nắm giữ và hoạt động của nó cũng kiếm được PVT",
       "walletFeaturesPill2": "Tác nhân của bạn tự chi trả - một tác nhân bạn chạy giữ ví và khóa riêng",
       "walletFeaturesPill3": "Mọi chữ ký đều được giải thích - các lần gửi và phê duyệt ứng dụng được giải thích trước khi bạn xác nhận; điều chưa biết bị chặn, không chỉ cảnh báo",
@@ -868,7 +868,7 @@
       "canProvianAccessFunds": "Provian có thể truy cập tiền của tôi không?",
       "canProvianAccessFundsA": "Không phải trong ví của chính bạn. Provian không giữ hộ: chúng tôi không bao giờ nhìn thấy khóa riêng của bạn và không thể di chuyển tiền của bạn. Nếu bạn xóa sao lưu và mất thiết bị, chúng tôi không thể khôi phục ví của bạn. Tiền bạn đưa vào một Escrow của Commons nằm trong hợp đồng đó. Cho đến khi Tòa của Commons mở, khóa quản trị của Provian giải quyết Escrow tranh chấp và chỉ trả cho người nhận hoặc hoàn cho người gửi; bất kỳ ai cũng có thể kích hoạt hoàn cho người gửi sau thời hạn tranh chấp 30 ngày.",
       "whatAboutQuantum": "Còn điện toán lượng tử thì sao?",
-      "whatAboutQuantumA": "Việc liên kết ghi nhận chủ sở hữu từng địa chỉ và theo dõi như nhau PVT kiếm được và nhận được; không tái dựng quyền sở hữu từ thu nhập. Cam kết khôi phục bằng hàm băm riêng biệt được tạo từ bản sao lưu seed của người dùng hoặc từ dữ liệu khôi phục của tác nhân được tạo độc lập và mã hóa. Nếu mật mã ví bị phá vỡ, mọi chủ sở hữu đã liên kết có thể khôi phục miễn phí số dư đã đăng ký tại khối an toàn cuối cùng, bằng giá trị gốc khôi phục và chữ ký hàm băm độc lập cho địa chỉ đích mới. Hệ thống kế nhiệm giữ lịch sử tiền tệ và ngăn khôi phục trùng lặp. Quyền sở hữu chưa liên kết không được tái dựng, và các giao dịch chuyển trên chuỗi cũ vẫn nằm trong bản ghi.",
+      "whatAboutQuantumA": "Việc liên kết ghi nhận chủ sở hữu từng địa chỉ và theo dõi như nhau PVT kiếm được và nhận được; không tái dựng quyền sở hữu từ thu nhập. Cam kết khôi phục bằng hàm băm riêng biệt được tạo từ bản sao lưu seed của người dùng hoặc từ dữ liệu khôi phục của tác nhân được tạo độc lập và mã hóa. Nếu mật mã ví bị phá vỡ, mọi chủ sở hữu đã liên kết có thể khôi phục miễn phí số dư đã đăng ký tại khối an toàn cuối cùng, bằng giá trị gốc khôi phục và chữ ký hàm băm độc lập cho địa chỉ đích mới. Hệ thống kế nhiệm giữ lịch sử tiền tệ và ngăn khôi phục trùng lặp. Quyền sở hữu chưa liên kết không được tái dựng, và các giao dịch chuyển trên chuỗi cũ vẫn nằm trong bản ghi. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
       "howProtectRisky": "Provian bảo vệ tôi khỏi giao dịch rủi ro như thế nào?",
       "howProtectRiskyA": "Provian đánh giá rủi ro cho mọi giao dịch bằng mô phỏng, phát hiện mẫu và danh sách lừa đảo đã biết (chúng hoạt động ngoại tuyến và được làm mới từ mạng lưới). Tùy theo mức rủi ro, Provian có thể hiển thị cảnh báo bằng ngôn ngữ dễ hiểu, yêu cầu bạn vượt qua một bài kiểm tra hiểu biết đúng/sai, áp đặt thời gian chờ hạ nhiệt, yêu cầu bạn gõ 'I UNDERSTAND' để ký WalletConnect rủi ro cao, hoặc chặn hoàn toàn hành động đối với những vấn đề nghiêm trọng như sai mạng lưới hoặc một vụ lừa đảo đã biết.",
       "walletAndAssets": "Ví & Tài sản",
@@ -2952,7 +2952,7 @@
     "genesisWatch": "Xem: Genesis đang mở",
     "opening1": "AI sẽ tạo ra sự dồi dào to lớn. Nó cũng sẽ khiến thực tại khó kiểm chứng hơn. Provian là lớp bằng chứng cho cả hai.",
     "opening2": "Khi máy móc làm nhiều việc hơn, có hai điều trở nên khó thấy: người đã đóng góp, và liệu có điều gì thực sự đã xảy ra hay không. Khi đầu ra gần như miễn phí để tạo và gần như miễn phí để bắt chước, thứ khan hiếm chính là bằng chứng.",
-    "opening3": "Provian là một nền kinh tế nơi tiền được đúc từ bằng chứng đóng góp, bằng chứng thuộc về người đã làm việc, và con người lẫn máy móc cùng tham gia theo những điều kiện như nhau, với phía con người được bảo vệ ngay từ thiết kế. Những gì bạn kiếm được được ghi nhận là của bạn, tách biệt với khóa, để bạn có thể giữ chúng.",
+    "opening3": "Provian là một nền kinh tế nơi tiền được đúc từ bằng chứng đóng góp, bằng chứng thuộc về người đã làm việc, và con người lẫn máy móc cùng tham gia theo những điều kiện như nhau, với phía con người được bảo vệ ngay từ thiết kế. Những gì bạn kiếm được được ghi nhận là của bạn, tách biệt với khóa, để bạn có thể giữ chúng. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT.",
     "card1Title": "Biên nhận",
     "card1Body": "Khi một người, một tác nhân hay một thiết bị làm việc hữu ích, công việc để lại một Provenance Envelope: một biên nhận nhỏ có chữ ký về những gì đã xảy ra, ai đã tham gia, bằng chứng mạnh đến đâu, cái gì được tạo ra và nó dựa trên những gì. Nó không chứa bất kỳ nội dung riêng tư nào. Mỗi biên nhận nối chuỗi với biên nhận trước nó, nên một lịch sử không thể bị lặng lẽ viết lại, và mỗi biên nhận đều có thể được trích dẫn, nên những gì một người tham gia xây dựng trên công việc của người khác vẫn luôn hiển hiện. Đó là bằng chứng bạn sở hữu và mang theo, không phải hồ sơ ai đó lưu giữ về bạn.",
     "card2Title": "Tiền từ bằng chứng",
@@ -2986,7 +2986,7 @@
     "readExecutiveSummary": "Đọc Bản tóm tắt điều hành",
     "card4Watch": "Xem: Không gì không được chứng kiến →",
     "card13Title": "Đồng tiền bạn có thể giữ",
-    "card13Body": "Tài khoản ngân hàng có thể bị xâm nhập cũng như ví. Điểm khác biệt là ngân hàng lưu hồ sơ về ai được hưởng bao nhiêu, tách biệt với mật khẩu, và có thể khôi phục tài sản cho khách hàng. Provian đã xây dựng lớp đó cho PVT. Ví gắn với bạn ngay khi được tạo, và những gì bạn nắm giữ, dù kiếm được hay nhận được, đều được ghi nhận là của bạn, tách biệt với khóa. Relay biết ví nào là của bạn còn công chúng thì không, giống như ngân hàng. Nếu nền tảng toán học của khóa bị phá vỡ, số dư của bạn sẽ được khôi phục miễn phí trên nền mật mã vẫn an toàn.\n\nThành viên của Recourse Pool tùy chọn cũng có cơ chế khắc phục mất cắp. PVT bị đánh cắp được đảo ngược về khóa mới của chủ sở hữu, cần cả thẩm quyền khôi phục lẫn bí mật khôi phục của chính chủ sở hữu. Người nhận PVT qua một trao đổi trung thực có chứng thực được giữ chúng; pool khôi phục phần đó cho thành viên theo quy tắc đã công bố và không bao giờ vượt quá nguồn tiền đang có. Mỗi tháng, thành viên đốt 100 PVT và đóng góp 1% thu nhập vào pool, hoặc 100 PVT trong tháng không có thu nhập. Việc khôi phục là quyết định tùy nghi; không thành viên nào có quyền theo hợp đồng được khôi phục. Provian Technologies không phải là một bên tham gia pool.\n\nMột nghìn năm nữa, tiền sẽ là tiền kỹ thuật số. Đó phải là đồng tiền bạn có thể giữ."
+    "card13Body": "Tài khoản ngân hàng có thể bị xâm nhập cũng như ví. Điểm khác biệt là ngân hàng lưu hồ sơ về ai được hưởng bao nhiêu, tách biệt với mật khẩu, và có thể khôi phục tài sản cho khách hàng. Provian đã xây dựng lớp đó cho PVT. Ví gắn với bạn ngay khi được tạo, và những gì bạn nắm giữ, dù kiếm được hay nhận được, đều được ghi nhận là của bạn, tách biệt với khóa. Relay biết ví nào là của bạn còn công chúng thì không, giống như ngân hàng. Nếu nền tảng toán học của khóa bị phá vỡ, số dư của bạn sẽ được khôi phục miễn phí trên nền mật mã vẫn an toàn. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.\n\nThành viên của Recourse Pool tùy chọn cũng có cơ chế khắc phục mất cắp. PVT bị đánh cắp được đảo ngược về khóa mới của chủ sở hữu, cần cả thẩm quyền khôi phục lẫn bí mật khôi phục của chính chủ sở hữu. Người nhận PVT qua một trao đổi trung thực có chứng thực được giữ chúng; pool khôi phục phần đó cho thành viên theo quy tắc đã công bố và không bao giờ vượt quá nguồn tiền đang có. Mỗi tháng, thành viên đốt 100 PVT và đóng góp 1% thu nhập vào pool, hoặc 100 PVT trong tháng không có thu nhập. Việc khôi phục là quyết định tùy nghi; không thành viên nào có quyền theo hợp đồng được khôi phục. Provian Technologies không phải là một bên tham gia pool.\n\nMột nghìn năm nữa, tiền sẽ là tiền kỹ thuật số. Đó phải là đồng tiền bạn có thể giữ."
   },
   "walletLock": {
     "biometricPrompt": "Mở khóa Ví Provian",
@@ -5111,7 +5111,7 @@
     "leave": "Rời Recourse Pool",
     "join": "Tham gia Recourse Pool",
     "addresses": "Các địa chỉ đã liên kết",
-    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn. Relay biết ví nào là của bạn, còn công chúng thì không, giống như ngân hàng. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên. Việc khôi phục hoặc hoàn trả có thể công khai liên kết giữa địa chỉ cũ và địa chỉ thay thế. Liên kết với các địa chỉ khác của bạn và tổng tài sản vẫn riêng tư.",
+    "bindingInfo": "Một tư cách thành viên áp dụng cho mọi tài sản đã liên kết, dù kiếm được hay nhận được. Liên kết là lựa chọn của bạn. Relay biết ví nào là của bạn, còn công chúng thì không, giống như ngân hàng. Khôi phục sau khi mật mã bị phá là miễn phí cho mọi chủ sở hữu đã liên kết, kể cả người không phải thành viên. Việc khôi phục hoặc hoàn trả có thể công khai liên kết giữa địa chỉ cũ và địa chỉ thay thế. Liên kết với các địa chỉ khác của bạn và tổng tài sản vẫn riêng tư. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
     "bind": "Liên kết địa chỉ bạn sở hữu",
     "resources": "Dự trữ do thành viên đóng góp",
     "available": "Có sẵn để khôi phục: {{amount}} PVT",
@@ -5122,7 +5122,7 @@
     "bindAuthorize": "Liên kết địa chỉ với cam kết khôi phục",
     "binding": {
       "title": "Liên kết ví với Recourse",
-      "intro": "Kết nối địa chỉ bạn đang sở hữu với hồ sơ quyền sở hữu. Cam kết khôi phục được đăng ký cùng địa chỉ.",
+      "intro": "Kết nối địa chỉ bạn đang sở hữu với hồ sơ quyền sở hữu. Cam kết khôi phục được đăng ký cùng địa chỉ. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
       "how": "Ký thông điệp liên kết quyền sở hữu trong ví đó. Không có tài sản nào được chuyển. Mối liên hệ giữa ví và chủ sở hữu được giữ riêng tư bên trong relay.",
       "linkedTitle": "Địa chỉ đã liên kết",
       "linkedNone": "Chưa liên kết địa chỉ bên ngoài nào.",
@@ -5135,7 +5135,7 @@
     "bindingPending": "Đã gửi đăng ký; đang chờ xác nhận trên chuỗi.",
     "recoverAddress": "Khôi phục ví này",
     "selectRestorationWallet": "Chọn ví đã mất PVT",
-    "requestExplanation": "Nhập giao dịch đã lấy PVT của bạn và khối Base tương ứng. Bằng chứng khôi phục thiết lập khóa ví mới; relay kiểm tra giao dịch và hồ sơ trao đổi được chứng thực trước khi quyết định. Bản sao lưu cụm từ gốc vẫn khôi phục được ví của bạn.",
+    "requestExplanation": "Nhập giao dịch đã lấy PVT của bạn và khối Base tương ứng. Bằng chứng khôi phục thiết lập khóa ví mới; relay kiểm tra giao dịch và hồ sơ trao đổi được chứng thực trước khi quyết định. Bản sao lưu cụm từ gốc vẫn khôi phục được ví của bạn. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
     "lossTransaction": "Mã băm giao dịch",
     "lossBlock": "Số khối Base",
     "submitRequest": "Gửi yêu cầu khôi phục",
@@ -5144,7 +5144,7 @@
     "withdrawAllocation": "Rút khoản khôi phục đã phân bổ",
     "membershipUnavailable": "Trạng thái thành viên riêng tư tạm thời không khả dụng. Làm mới sau khi các thao tác đang chờ hoàn tất.",
     "memberBindingConsent": "Đồng ý tham gia Recourse Pool cho địa chỉ này",
-    "memberBindingBytes": "Ký thông điệp thứ hai này dưới dạng 32 byte được hiển thị bằng hệ thập lục phân, không phải văn bản. Thao tác này đưa địa chỉ này vào tư cách thành viên Recourse Pool hiện có của bạn.",
+    "memberBindingBytes": "Ký thông điệp thứ hai này dưới dạng 32 byte được hiển thị bằng hệ thập lục phân, không phải văn bản. Thao tác này đưa địa chỉ này vào tư cách thành viên Recourse Pool hiện có của bạn. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
     "memberBindingSignature": "Chữ ký đồng ý tham gia quỹ",
     "flow": {
       "title": "Tư cách thành viên của bạn",
@@ -5209,6 +5209,7 @@
       "authorize": "Cho phép đúng giao dịch này",
       "open": "Gửi từ ví đã khôi phục",
       "curveGas": "Phí gas mạng được thanh toán bằng ETH từ ví đã khôi phục này."
-    }
+    },
+    "pvtOnly": "Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa."
   }
 }

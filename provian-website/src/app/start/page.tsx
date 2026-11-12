@@ -53,7 +53,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Protect the PVT you hold.',
-    body: 'Commons → Recourse lets you bind other addresses and choose optional theft recourse. Members burn 100 PVT monthly and separately contribute 1% of earnings, or 100 PVT for a month with no earnings. The amounts can change under the published rule. Reversal comes first; the pool restores the remainder by its rule, pro rata when underfunded. Ordinary transfers stay permissionless. Free restoration after a cryptographic break applies to every bound owner, including nonmembers.',
+    body: 'Commons → Recourse lets you bind other addresses and choose optional theft recourse. Members burn 100 PVT monthly and separately contribute 1% of earnings, or 100 PVT for a month with no earnings. The amounts can change under the published rule. Reversal comes first; the pool restores the remainder by its rule, pro rata when underfunded. Ordinary transfers stay permissionless. Free restoration after a cryptographic break applies to every bound owner, including nonmembers. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
     action: { label: 'Read the Recourse rule', href: '/recourse/' },
   },
   {
