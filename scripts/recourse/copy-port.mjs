@@ -1,4 +1,5 @@
-import { toQuantity } from 'ethers';
+import { assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
+import { Transaction, toQuantity } from 'ethers';
 const ensure = (value, reason) => { if (!value) throw Error('copy_port_' + reason); };
 const writes = new Set(['anvil_impersonateAccount', 'anvil_setBalance', 'anvil_mine', 'evm_snapshot', 'evm_revert',
   'eth_sendTransaction', 'eth_sendRawTransaction']);
@@ -33,6 +34,11 @@ export function isolatedCopyPort({ url, instanceId, forkHash, fetcher = fetch })
   const request = async (method, params = []) => {
     ensure(reads.has(method) || writes.has(method), 'method_refused');
     if (writes.has(method)) await verify();
+    if (method === 'eth_sendTransaction') {
+      ensure(typeof params[0]?.gas === 'string', 'explicit_gas_required');
+      assertBaseTransactionGasLimit(BigInt(params[0].gas));
+    }
+    if (method === 'eth_sendRawTransaction') assertBaseTransactionGasLimit(Transaction.from(params[0]).gasLimit);
     return rpc(method, params);
   };
   return { verify, request };

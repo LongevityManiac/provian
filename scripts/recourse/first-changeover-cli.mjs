@@ -1,4 +1,5 @@
 #!/usr/bin/env -S tsx
+import { assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +30,7 @@ export function deliveryLimits(input) {
     && Object.keys(input.approvedBudgetsWei).sort().join(',') === [...phases].sort().join(','), 'budgets');
   ensure(['maxFeePerGasWei', 'maxPriorityFeePerGasWei', 'maxGas'].every(key => positive(input[key]))
     && BigInt(input.maxFeePerGasWei) >= BigInt(input.maxPriorityFeePerGasWei), 'fees');
+  assertBaseTransactionGasLimit(BigInt(input.maxGas));
   ensure(/^0x[0-9a-f]{40}$/.test(input.gasSigner), 'gas_signer');
   return structuredClone({ approvedBudgetsWei: input.approvedBudgetsWei, gasSigner: input.gasSigner,
     maxFeePerGasWei: input.maxFeePerGasWei, maxPriorityFeePerGasWei: input.maxPriorityFeePerGasWei, maxGas: input.maxGas });

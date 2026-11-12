@@ -1,3 +1,4 @@
+import { assertBaseTransactionGasLimit, boundedGasEstimate } from './transaction-gas-limit.mjs';
 import {Transaction,keccak256,toQuantity} from 'ethers';
 const ensure=(v,c)=>{if(!v)throw Error('changeover_rpc_'+c);};
 const lower=v=>typeof v==='string'?v.toLowerCase():v;
@@ -12,11 +13,12 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
  ensure(rpcs.length===2&&rpcs[0]!==rpcs[1]&&typeof approveFee==='function','configuration');
  ensure([maxFeePerGas,maxPriorityFeePerGas,maxGas].every(v=>typeof v==='bigint'&&v>0n)
   &&maxFeePerGas>=maxPriorityFeePerGas,'fee_configuration');
+ assertBaseTransactionGasLimit(maxGas);
  const both=(m,p)=>Promise.all(rpcs.map(r=>r.request(m,p)));
  const agree=async(m,p)=>{const v=await both(m,p);ensure(JSON.stringify(v[0])===JSON.stringify(v[1]),'disagreement');return v[0];};
  const chain=async()=>{const id=quantity(await agree('eth_chainId',[]));ensure(id===8453n,'chain');return id;};
  const included=async(raw,finalized=false)=>{
-  await chain();const tx=Transaction.from(raw);ensure(tx.signature&&tx.chainId===8453n,'signed_transaction');
+  await chain();const tx=Transaction.from(raw);assertBaseTransactionGasLimit(tx.gasLimit);ensure(tx.signature&&tx.chainId===8453n,'signed_transaction');
   const rs=await both('eth_getTransactionReceipt',[tx.hash]);
   if(rs.some(r=>r===null))return null;
   const facts=rs.map(raw=>{const r=object(raw);return{hash:lower(r.transactionHash),blockHash:lower(r.blockHash),blockNumber:number(r.blockNumber),
@@ -62,7 +64,7 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
    await agree('eth_call',[call,tag]);
    await assertLease();
    const estimates=(await both('eth_estimateGas',[call,tag])).map(quantity);
-   const estimate=estimates.reduce((a,b)=>a>b?a:b),gasLimit=(estimate*120n+99n)/100n;
+   const estimate=estimates.reduce((a,b)=>a>b?a:b),gasLimit=boundedGasEstimate(estimate,maxGas);
    ensure(gasLimit>0n&&gasLimit<=maxGas,'gas_bound');
    const prepared={type:2,chainId:8453,nonce:step.nonce,to:step.to??null,data:step.data,value:0n,gasLimit,maxFeePerGas,maxPriorityFeePerGas};
    const expectedUnsigned=Transaction.from(prepared).unsignedSerialized;
@@ -75,7 +77,7 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
    return raw;
   },
   broadcast:async(raw)=>{
-   await assertLease();await chain();const tx=Transaction.from(raw);
+   await assertLease();await chain();const tx=Transaction.from(raw);assertBaseTransactionGasLimit(tx.gasLimit);
    ensure(tx.from?.toLowerCase()===lower(await signer.getAddress())&&tx.chainId===8453n&&tx.value===0n,'signed_transaction');
    const hash=keccak256(raw);await assertLease();const result=await rpcs[0].request('eth_sendRawTransaction',[raw]);
    ensure(result===hash,'broadcast_hash');return hash;

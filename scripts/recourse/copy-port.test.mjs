@@ -13,8 +13,8 @@ test('every mutation rechecks instance and fork even on the matching Base chain 
       ? { instanceId: instance, chainId: 8453, forkedNetwork: { chainId: 8453, forkBlockHash: fork } }
       : method === 'eth_chainId' ? '0x2105' : hash }) };
   } });
-  await port.request('eth_sendTransaction', [{}]); expect(methods).toEqual(['anvil_metadata', 'eth_chainId', 'eth_sendTransaction']);
-  instance = other; await expect(port.request('eth_sendTransaction', [{}])).rejects.toThrow(/instance_changed/);
+  await port.request('eth_sendTransaction', [{gas:'0x5208'}]); expect(methods).toEqual(['anvil_metadata', 'eth_chainId', 'eth_sendTransaction']);
+  instance = other; await expect(port.request('eth_sendTransaction', [{gas:'0x5208'}])).rejects.toThrow(/instance_changed/);
   instance = hash; fork = other; await expect(port.request('eth_sendRawTransaction', ['0x'])).rejects.toThrow(/instance_changed/);
   expect(methods.filter(method => method.startsWith('eth_send'))).toHaveLength(1);
   await expect(port.request('anvil_setCode', [])).rejects.toThrow(/method_refused/);
@@ -26,4 +26,16 @@ test('only an explicit rate-limit response is marked retryable and no RPC detail
   await expect(port.request('eth_call', [])).rejects.toMatchObject({ message: 'copy_port_rate_limit',
     copyDiagnostic: { method: 'eth_call', httpStatus: 200, rpcCode: -32000 } });
   message = 'execution reverted'; await expect(port.request('eth_call', [])).rejects.toThrow('copy_port_rpc_refused');
+});
+
+test('copy refuses an oversized declared gas limit before sending', async () => {
+  const calls = [];
+  const port = isolatedCopyPort({ url: 'http://127.0.0.1:18547', instanceId: hash, forkHash: hash, fetcher: async (_url, input) => {
+    const { method } = JSON.parse(input.body); calls.push(method);
+    return { ok: true, json: async () => ({ result: method === 'anvil_metadata'
+      ? { instanceId: hash, chainId: 8453, forkedNetwork: { chainId: 8453, forkBlockHash: hash } } : '0x2105' }) };
+  } });
+  await expect(port.request('eth_sendTransaction', [{ gas: '0x1000001' }])).rejects.toThrow('changeover_transaction_gas_limit');
+  expect(calls.includes('eth_sendTransaction')).toBe(false);
+  await expect(port.request('eth_sendTransaction', [{}])).rejects.toThrow('explicit_gas_required');
 });

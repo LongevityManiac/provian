@@ -2,7 +2,7 @@ import { expect, test, vi } from 'vitest';
 vi.mock('../../provian-backend/scripts/lib/script-db.ts', () => ({ scriptDb: () => { throw Error('unexpected_database'); } }));
 import { deliveryLimits, runFirstChangeoverCli } from './first-changeover-cli.mjs';
 const config = () => ({ approvedBudgetsWei: { retirement: '1', pointer: '2', successor: '3', publication: '4', activation: '5' },
-  gasSigner: '0x' + '11'.repeat(20), maxFeePerGasWei: '10', maxPriorityFeePerGasWei: '1', maxGas: '30000000' });
+  gasSigner: '0x' + '11'.repeat(20), maxFeePerGasWei: '10', maxPriorityFeePerGasWei: '1', maxGas: '16777216' });
 test('explicit immutable budget configuration copies every phase independently', () => {
   const input = config(), limits = deliveryLimits(input); input.approvedBudgetsWei.successor = '999';
   expect(limits.approvedBudgetsWei.successor).toBe('3'); expect(Object.keys(limits.approvedBudgetsWei)).toHaveLength(5);

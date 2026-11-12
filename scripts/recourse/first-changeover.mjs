@@ -1,3 +1,4 @@
+import { assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
 import { keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { preparePredecessorRetirement, verifyPredecessorRetirement, predecessorRetirementValidator } from './predecessor-retirement.mjs';
 import { preparePointerDeployment, verifyPointerDeployment, pointerDeploymentValidator } from './pointer-deployment.mjs';
@@ -39,6 +40,8 @@ export async function advanceFirstChangeover({ inputs, state, execute, runtime, 
   ensure(Object.values(addresses).every(value => typeof value === 'string' && /^0x[0-9a-f]{40}$/.test(value))
     && Number.isSafeInteger(importBatchSize) && importBatchSize >= 1 && importBatchSize <= 128
     && typeof callGas === 'string' && /^[1-9][0-9]*$/.test(callGas), 'configuration');
+  assertBaseTransactionGasLimit(BigInt(callGas));
+  if (inputs.executionLimits) assertBaseTransactionGasLimit(BigInt(inputs.executionLimits.maxGas));
   const configuration = { schema: 'provian.first-changeover.v1', deployment, pointerPlan, pin, rule, legacyTokens,
     ...addresses, importBatchSize, callGas, executionLimits: inputs.executionLimits ?? null,
     artifactHashes: Object.fromEntries(Object.entries(artifacts).sort(([a], [b]) => a.localeCompare(b))
