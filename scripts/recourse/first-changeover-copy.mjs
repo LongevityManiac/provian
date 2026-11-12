@@ -138,7 +138,7 @@ export async function rehearseFirstChangeover(config) {
   await local.request('anvil_setBalance', [gas.address, toQuantity(100n * 10n ** 18n)]);
   const publish = (publication, options) => runPublicationDelivery({ inputs: publication, db, from: gas.address.toLowerCase(),
     store: authorityStore, vault, requireCompleted: options.requireCompleted, approvedBudgetWei: '10000000000000000000',
-    maxFeePerGas: 10000000000n, maxPriorityFeePerGas: 1000000n, maxGas: 30000000n,
+    maxFeePerGas: 10000000000n, maxPriorityFeePerGas: 1000000n, maxGas: 40000000n,
     loadSigner: async address => { ensure(address === gas.address.toLowerCase(), 'gas_signer_changed'); return gas; } });
   save('copy-description.json', { instanceId: config.instanceId, forkHash: config.forkHash, pointer: pointerPlan.pointer,
     boundary: 'Local impersonated admin; public fixture hash keys; one simulator with instant finality; no live transaction or real wallet signature.' });

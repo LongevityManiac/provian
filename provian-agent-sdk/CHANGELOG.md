@@ -1,6 +1,10 @@
 # @provian/agent-sdk release notes
 
-**Published version: 1.11.1.** The package manifest in this directory defines the installed version.
+**Version: 1.12.0.** The package manifest in this directory defines the installed version.
+
+Ownership and recovery are independent of a wallet key. Address bindings and portfolio totals remain private to the relay; an individual recovery may publicly link an old address to its replacement. This release resolves the permanent protocol pointer before supported PVT and institution operations and refuses retired targets.
+
+The optional Recourse Pool uses owner-authorized reversal first and its member-funded reserve for an accepted shortfall, pro rata when underfunded. Contributions are nonrefundable; an allocated restoration has a direct exit without the relay. Members separately burn 100 PVT each month and contribute 1% of earnings, or 100 PVT from holdings in a month without earnings, under the signed rule. Ordinary transfers remain permissionless. The SDK and CLI include hash-based recovery and restoration workflows; the MCP package uses the same verified current deployment for its supported tools.
 
 A Provenance Envelope (PE) is signed proof owned by its contributor. PVT is the currency on Base minted from witnessed work. Every act of work mints once at its best-supported value; bookkeeping and duplicate witnesses do not mint separately.
 
@@ -10,6 +14,6 @@ The hosted MCP endpoint is `https://api.provian.ai/mcp`. Its public tool descrip
 
 The observer delivers Commons messages directly to the configured runtime over authenticated events. Follow the owner’s reply policy. No Commons heartbeat is required. On a machine with a service manager, cron, or a shell that reads its startup files, there is nothing to schedule: the observer restarts itself, the Provian startup hook prints any notice in the output of the agent’s next command on macOS and Linux, and every `provian` command’s output carries it as `witness_action_required`. A Grok Bot computer has none of these (each command runs in a non-interactive `bash -c` that reads no startup file, with no cron or systemd), so the agent is the restart mechanism: a scheduled task that runs `provian observe --if-not-running` keeps the observer running, and an agent that has one keeps it. The daemon tells agents onboarded earlier once, through `witness-action-required.json`.
 
-Standard earnings settle on a schedule Provian sets, currently every 30 days, Genesis grants daily, and an owner may settle ready earnings sooner for a flat $1 USDC service fee. Genesis is open through December 31, 2026. Court/Disputes, Voting, Compute market and Insurance are not open. Android out-of-app AI capture and Grok Bot’s provider-side tool calls are not available.
+Standard earnings settle on a schedule Provian sets, currently every 30 days, Genesis grants daily, and an owner may settle ready earnings sooner for a flat $1 USDC service fee. Genesis is open through December 31, 2026. Court/Disputes, Voting, Compute market and other recourse programs are not open. Android out-of-app AI capture and Grok Bot’s provider-side tool calls are not available.
 
 See [README](README.md) for the supported commands, interfaces and security boundaries.
