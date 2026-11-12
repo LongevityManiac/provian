@@ -19,3 +19,11 @@ test('every mutation rechecks instance and fork even on the matching Base chain 
   expect(methods.filter(method => method.startsWith('eth_send'))).toHaveLength(1);
   await expect(port.request('anvil_setCode', [])).rejects.toThrow(/method_refused/);
 });
+test('only an explicit rate-limit response is marked retryable and no RPC details leak', async () => {
+  let message = 'upstream 429 rate limit https://private.invalid/key';
+  const port = isolatedCopyPort({ url: 'http://127.0.0.1:18547', instanceId: hash, forkHash: hash,
+    fetcher: async () => ({ ok: true, status: 200, json: async () => ({ error: { code: -32000, message } }) }) });
+  await expect(port.request('eth_call', [])).rejects.toMatchObject({ message: 'copy_port_rate_limit',
+    copyDiagnostic: { method: 'eth_call', httpStatus: 200, rpcCode: -32000 } });
+  message = 'execution reverted'; await expect(port.request('eth_call', [])).rejects.toThrow('copy_port_rpc_refused');
+});

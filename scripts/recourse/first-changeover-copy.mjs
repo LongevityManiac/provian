@@ -42,9 +42,18 @@ export async function rehearseFirstChangeover(config) {
     && cache.digest === hash(cache.logs) && JSON.stringify(cache.addresses) === JSON.stringify(legacy), 'history_cache_changed');
   const request = (method, params) => local.request(method, method === 'eth_getBlockByNumber' && params[0] === 'finalized' ? ['latest', false] : params);
   const immutableReads = new Map();
+  let readCount = 0;
   const immutable = async (method, params) => {
     const key = JSON.stringify([method, params]); if (!immutableReads.has(key)) {
-      const value = await request(method, params); immutableReads.set(key, value);
+      for (let attempt = 0; ; attempt++) {
+        try { const value = await request(method, params); immutableReads.set(key, value); break; }
+        catch (error) {
+          if (error.message !== 'copy_port_rate_limit' || attempt === 7) throw error;
+          save('progress.json', { phase: 'snapshot-read-retry', reads: readCount, attempt, method });
+          await new Promise(resolve => setTimeout(resolve, Math.min(30000, 2000 * 2 ** attempt)));
+        }
+      }
+      if (++readCount % 100 === 0) save('progress.json', { phase: 'pinned-read', reads: readCount, method });
     } return structuredClone(immutableReads.get(key));
   };
   const port = {

@@ -17,7 +17,12 @@ export function isolatedCopyPort({ url, instanceId, forkHash, fetcher = fetch })
     const response = await fetcher(parsed.href, { method: 'POST', redirect: 'error', signal: AbortSignal.timeout(60000),
       headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: ++nextId, method, params }) });
     const reply = await response.json();
-    ensure(response.ok && !reply.error && Object.hasOwn(reply, 'result'), 'rpc_refused'); return reply.result;
+    if (!response.ok || reply.error || !Object.hasOwn(reply, 'result')) {
+      const retryable = response.status === 429 || /\b429\b|rate limit|request limit/i.test(reply.error?.message ?? '');
+      throw Object.assign(Error(retryable ? 'copy_port_rate_limit' : 'copy_port_rpc_refused'),
+        { copyDiagnostic: { method, httpStatus: response.status, rpcCode: reply.error?.code } });
+    }
+    return reply.result;
   };
   const verify = async () => {
     const metadata = await rpc('anvil_metadata', []);

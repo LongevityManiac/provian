@@ -435,6 +435,111 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
     function testCryptographicBreakUsesSnapshotAndRealHashAuthorityWithOwnerProof() public { restoreAfterBreak(123 ether, false); }
     function testZeroBalanceOwnerRecoversAuthorizationWithoutIssuance() public { restoreAfterBreak(0, false); }
     function testUnclaimedBreakBalanceCanRestoreAfterAnOrdinarySuccession() public { restoreAfterBreak(123 ether, true); }
+    function testRehearsalTwoClaimedBreaksConserveCurrentBalanceAndRotateBothFactors() public {
+        (ProvianHashAccount first,) = rehearsalBreak(1, 3, 10, 20, true);
+        ProvianRecourseKernel firstKernel = kernel;
+        assertEq(firstKernel.balanceOf(address(first)), 123 ether);
+        (ProvianHashAccount second,) = rehearsalBreak(3, 5, 30, 40, true);
+        assertEq(kernel.balanceOf(address(second)), 123 ether);
+        assertEq(kernel.totalSupply(), 123 ether);
+        assertEq(kernel.balanceOf(address(first)), 0);
+        assertEq(firstKernel.balanceOf(address(first)), 123 ether);
+        uint256 revision = pointer.revision();
+        vm.prank(address(first)); vm.expectRevert(ProvianProtocolPointer.InvalidManifest.selector);
+        firstKernel.transferCurrent(THIEF, 1 ether, revision);
+    }
+    function testRehearsalTwoUnclaimedBreaksCarryOneRightAndIssueOnlyOnce() public {
+        rehearsalBreak(1, 3, 10, 20, false);
+        ProvianRecourseKernel firstKernel = kernel;
+        assertEq(firstKernel.totalSupply(), 0);
+        (ProvianHashAccount destination,) = rehearsalBreak(1, 3, 30, 40, true);
+        assertEq(firstKernel.totalSupply(), 0);
+        assertEq(kernel.balanceOf(address(destination)), 123 ether);
+        assertEq(kernel.totalSupply(), 123 ether);
+        assertTrue(authorization.restoredIdentity(ID));
+    }
+    function testRehearsalTheftAfterBreakRequiresOwnerEvidenceAndHashAuthority() public {
+        (ProvianHashAccount destination, ProvianHashAccount admin) = rehearsalBreak(1, 3, 10, 20, true);
+        bytes memory transfer = abi.encodeCall(kernel.transfer, (THIEF, 80 ether));
+        rehearsalHashCall(destination, 20, 21, address(kernel), transfer);
+        assertEq(kernel.balanceOf(THIEF), 80 ether);
+        ProvianRestorationAuthorization.Reversal memory r = reversal(80 ether);
+        r.poolShortfall = 0; r.destination = address(destination);
+        r.sourceSequences[0] = kernel.outgoingSequence(THIEF);
+        r.observationSequences[0] = r.sourceSequences[0];
+        signedOperation = sha256(abi.encode("Provian theft reversal", r));
+        proof.nextSigningRoot = sha256(slhPublic(5));
+        proof.nextCommitment = sha256(abi.encodePacked(sha256("post-theft owner TEST ONLY"), proof.nextSigningRoot));
+        (, proof.signature) = slhSign(3, authorization.ownerAuthorizationDigest(ID, signedOperation, proof.nextCommitment, proof.nextSigningRoot));
+        bytes memory payload = abi.encode(uint8(0), abi.encode(r, pointer.revision()));
+        bytes memory data = abi.encodeCall(authorization.execute, (ID, signedOperation, proof, payload));
+        vm.expectRevert(RecourseOwnerAuthorization.InvalidOwnerAuthorization.selector);
+        authorization.execute(ID, signedOperation, proof, payload);
+        vm.prank(address(admin)); vm.expectRevert(bytes("evidence_required"));
+        authorization.execute(ID, signedOperation, proof, payload);
+        evidence[signedOperation] = true;
+        rehearsalHashCall(admin, 11, 12, address(authorization), data);
+        assertEq(kernel.balanceOf(THIEF), 0);
+        assertEq(kernel.balanceOf(address(destination)), 123 ether);
+        assertEq(kernel.totalSupply(), 123 ether);
+        assertTrue(authorization.reversalExecuted(r.request));
+        vm.prank(address(admin)); vm.expectRevert(RecourseOwnerAuthorization.InvalidOwnerAuthorization.selector);
+        authorization.execute(ID, signedOperation, proof, payload);
+    }
+    function rehearsalPair(bytes32 a, bytes32 b) private pure returns (bytes32) {
+        return a < b ? sha256(abi.encodePacked(a, b)) : sha256(abi.encodePacked(b, a));
+    }
+    function rehearsalHashCall(ProvianHashAccount account, uint256 key, uint256 nextKey, address target, bytes memory data) private {
+        bytes memory publicKey = slhPublic(key);
+        bytes32 nextRoot = sha256(slhPublic(nextKey));
+        bytes32 digest = account.intentDigest(target, 0, 8_000_000, data, nextRoot);
+        (, bytes memory signature) = slhSign(key, digest);
+        assertTrue(account.execute(target, 0, 8_000_000, data, nextRoot, publicKey, signature));
+    }
+    function rehearsalBreak(uint256 ownerKey, uint256 nextOwnerKey, uint256 adminKey, uint256 destinationKey, bool restore)
+        private returns (ProvianHashAccount destination, ProvianHashAccount admin)
+    {
+        address previous = address(kernel); uint256 cutoff = 100 + adminKey;
+        bytes32 commitment = sha256(abi.encodePacked(proof.recoverySecret, proof.signingRoot));
+        bytes32 ownerLeaf = sha256(abi.encode("Provian restoration", previous, cutoff, ID, uint256(123 ether), commitment));
+        bytes32 reversals = sha256(abi.encode("Provian reversal history count", previous, cutoff, uint256(0)));
+        bytes32 institutions = sha256(abi.encode("Provian institution restoration count", previous, cutoff, uint256(0), uint256(0)));
+        bytes32 counts = rehearsalPair(reversals, institutions);
+        bytes32 root = rehearsalPair(ownerLeaf, counts);
+        admin = new ProvianHashAccount(sha256(slhPublic(adminKey)));
+        ProvianRecoveryHistory history = new ProvianRecoveryHistory(previous, cutoff,
+            sha256("empty money history TEST ONLY"), 0, kernel.predecessorHistory().state());
+        kernel = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(address(admin), root, previous, cutoff,
+            123 ether, history, pointer, address(this), true, ProvianRestorationAuthorization(address(0))));
+        authorization = kernel.ownerAuthorization();
+        bytes32[] memory path = new bytes32[](2); path[0] = institutions; path[1] = ownerLeaf;
+        authorization.commitReversalHistory(0, path);
+        path[0] = reversals; authorization.commitInstitutionHistory(0, 0, path);
+        assertTrue(authorization.successionReady());
+        (,, address[10] memory targets, bytes32[10] memory hashes) = pointer.current();
+        targets[0] = address(kernel); hashes[0] = address(kernel).codehash;
+        uint256 revision = pointer.revision(); vm.prank(pointer.authority()); pointer.publish(revision, targets, hashes);
+        assertEq(kernel.totalSupply(), 0);
+        if (!restore) return (ProvianHashAccount(payable(address(0))), admin);
+        bytes32[] memory ownerPath = new bytes32[](1); ownerPath[0] = counts;
+        vm.expectRevert(ProvianRestorationAuthorization.InvalidRestoration.selector);
+        authorization.registerBreakOwner(ID, 124 ether, proof.recoverySecret, proof.signingRoot, ownerPath);
+        authorization.registerBreakOwner(ID, 123 ether, proof.recoverySecret, proof.signingRoot, ownerPath);
+        destination = new ProvianHashAccount(sha256(slhPublic(destinationKey)));
+        ProvianRestorationAuthorization.BreakRestoration memory restoration = ProvianRestorationAuthorization.BreakRestoration(
+            ID, 123 ether, commitment, destination, destination.keyCommitment(), ownerPath);
+        bytes32 operation = sha256(abi.encode("Provian cryptographic break", ID, uint256(123 ether),
+            address(destination), destination.keyCommitment(), previous, cutoff));
+        bytes32 nextSecret = sha256(abi.encode("owner rotation TEST ONLY", nextOwnerKey));
+        proof.nextSigningRoot = sha256(slhPublic(nextOwnerKey));
+        proof.nextCommitment = sha256(abi.encodePacked(nextSecret, proof.nextSigningRoot));
+        (, proof.signature) = slhSign(ownerKey, authorization.ownerAuthorizationDigest(ID, operation, proof.nextCommitment, proof.nextSigningRoot));
+        bytes memory data = abi.encodeCall(authorization.execute, (ID, operation, proof, abi.encode(uint8(1), abi.encode(restoration))));
+        rehearsalHashCall(admin, adminKey, adminKey + 1, address(authorization), data);
+        assertEq(kernel.balanceOf(address(destination)), 123 ether);
+        assertEq(kernel.totalSupply(), 123 ether);
+        proof.recoverySecret = nextSecret; proof.signingRoot = proof.nextSigningRoot; proof.publicKey = slhPublic(nextOwnerKey);
+    }
     function restoreAfterBreak(uint256 amount, bool carry) private {
         bytes memory adminPublic = slhPublic(2);
         ProvianHashAccount admin = new ProvianHashAccount(sha256(adminPublic));
