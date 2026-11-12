@@ -290,11 +290,11 @@ const MUTATION_SETS = {
       find: 'verifyExerciseMembershipSignature(pending.challenge, signature);', replace: '', expectedKilledBy: 'only the requested wallet and exact signature can resolve a pending exercise command' }],
   },
   'exercise-workbench': {
-    runner: 'native-vitest', sourcePath: 'scripts/recourse/exercise-workbench.mjs', testMatchPath: 'scripts/recourse/exercise-client.test.mjs',
-    mutations: [{ id: 'EXERCISE-CLIENT-RESUME', description: 'a reload loses the only path to an outstanding owner signature',
-      find: "if(job.state==='running')await followExercise(selected);", replace: '', expectedKilledBy: 'fresh page refresh resumes a running signature request without starting a job' },
-      { id: 'EXERCISE-CLIENT-ACCOUNT', description: 'a concurrent connect changes the account used for a pending job signature',
-        find: 'params:[job.pending.challenge.messageHex,selected]', replace: 'params:[job.pending.challenge.messageHex,account]', expectedKilledBy: 'polling captures account and deduplicates concurrent resume calls' }],
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/exercise-workbench-client.mjs', testMatchPath: 'scripts/recourse/exercise-client.test.mjs',
+    mutations: [{ id: 'EXERCISE-CLIENT-RESUME', description: 'a refresh loses the explicit next action for an outstanding owner signature',
+      find: 'state = latest; job = progress;', replace: 'state = latest; job = undefined;', expectedKilledBy: 'refresh reads pending work without opening any signature prompt' },
+      { id: 'EXERCISE-CLIENT-ACCOUNT', description: 'a wallet change without an event allows a stale address to receive copied funding',
+        find: "chain.toLowerCase() !== '0x7a69' || accounts[0]?.toLowerCase() !== selected.account", replace: 'false', expectedKilledBy: 'changed account without a provider event refuses funding' }],
   },
   'hash-authority-cancellation-vault': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/hash-authority-vault.mjs', testMatchPath: 'scripts/recourse/hash-authority-cancellation.test.mjs scripts/recourse/hash-authority-vault.test.mjs',
