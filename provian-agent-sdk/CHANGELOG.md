@@ -2,9 +2,9 @@
 
 **Version: 1.12.0.** The package manifest in this directory defines the installed version.
 
-Ownership and recovery are independent of a wallet key. Address bindings and portfolio totals remain private to the relay; an individual recovery may publicly link an old address to its replacement. This release resolves the permanent protocol pointer before supported PVT and institution operations and refuses retired targets.
+Ownership and recovery are independent of a wallet key. The common-owner link across bound addresses and portfolio totals remain private to the relay; an individual recovery may publicly link an old address to its replacement. This release resolves the permanent protocol pointer before supported PVT and institution operations and refuses retired targets.
 
-The optional Recourse Pool uses owner-authorized reversal first and its member-funded reserve for an accepted shortfall, pro rata when underfunded. Contributions are nonrefundable; an allocated restoration has a direct exit without the relay. Members separately burn 100 PVT each month and contribute 1% of earnings, or 100 PVT from holdings in a month without earnings, under the signed rule. Ordinary transfers remain permissionless. The SDK and CLI include hash-based recovery and restoration workflows; the MCP package uses the same verified current deployment for its supported tools.
+The optional Recourse Pool uses reversal authorized by both the restoration authority and the owner first, then its member-funded reserve for a shortfall accepted by discretionary determination, pro rata when underfunded. Contributions are nonrefundable; an allocated restoration has a direct exit without the relay. Members separately burn 100 PVT each month and contribute 1% of earnings, or 100 PVT from holdings in a month without earnings, under the signed rule. Ordinary transfers remain permissionless. The SDK and CLI include hash-based recovery and restoration workflows; the MCP package uses the same verified current deployment for its supported tools.
 
 A Provenance Envelope (PE) is signed proof owned by its contributor. PVT is the currency on Base minted from witnessed work. Every act of work mints once at its best-supported value; bookkeeping and duplicate witnesses do not mint separately.
 
