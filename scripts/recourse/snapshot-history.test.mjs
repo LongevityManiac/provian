@@ -41,3 +41,28 @@ test('missing artifact, truncated history, wrong predecessor, proof, consumed st
  const f=fixture();mutate(f);await assert.rejects(inheritedMonetaryHistory(f.input),/snapshot_/);
  }
 });
+
+
+test('paged economic history is read by bounded entries and compared with the expanded committed artifact',async()=>{
+ const {economicSeedPlan}=await import('./successor-plan.mjs');
+ const f=fixture(),none={verifier:a(0),configurationId:ZeroHash,version:0};
+ f.input.prior.state.schedules=[{epoch:2,mintRateSet:true,mintRate:2,foundationRateSet:false,foundationRate:0,
+  capsSet:false,genesisCap:0,combinedCap:0,treasuriesSet:false,provianTreasury:a(0),foundationTreasury:a(0),
+  beneficiaryVerifierSet:false,beneficiaryVerifier:none,eligibilityVerifierSet:false,eligibilityVerifier:none}];
+ const artifact=JSON.parse(readFileSync(new URL('../../contracts/out/ProvianRecoveryHistory.sol/ProvianRecoveryHistory.json',import.meta.url)));
+ const paged=economicSeedPlan({state:f.input.prior.state,predecessor:f.input.prior.predecessor,block:f.input.prior.block,artifact});
+ f.chain.baseState=paged.state;
+ f.input.prior.deployedHistoryState={...f.input.prior.state,economicRoot:paged.state.economicRoot,economicCount:paged.state.economicCount};
+ const original=f.input.port.call,reads=[];
+ f.input.port.call=async(target,data,pin)=>{
+  const parsed=historyAbi.parseTransaction({data});
+  if(parsed.name==='economicEntry'){
+   reads.push(Number(parsed.args[0]));return historyAbi.encodeFunctionResult(parsed.name,[paged.rows[Number(parsed.args[0])].data,false]);
+  }
+  assert.notEqual(parsed.name,'state');return original(target,data,pin);
+ };
+ const result=await inheritedMonetaryHistory(f.input);
+ assert.deepEqual(reads,[0]);assert.deepEqual(result.scheduleEpochs,['2']);assert.equal(result.minted,75n);
+ f.input.prior.deployedHistoryState.schedules=[{...f.input.prior.state.schedules[0],mintRate:3}];
+ await assert.rejects(inheritedMonetaryHistory(f.input),/snapshot_prior_state_mismatch/);
+});
