@@ -16,8 +16,9 @@ export async function preparePointerPublication({ stage, successor, institutions
   ensure(['retire', 'publish'].includes(stage) && typeof callGas === 'string' && /^[1-9][0-9]*$/.test(callGas)
     && BigInt(callGas) < (1n << 256n), 'input_invalid');
   ensure(pin?.chainId === 8453 && successor.pointer === pin.address && /^0x[0-9a-f]{64}$/.test(pin.runtimeHash), 'build_pin_changed');
-  ensure(successor.predecessor === lower(deployment.wiring.pvt) && successor.admin === lower(deployment.wiring.admin), 'source_changed');
-  ensure(Array.isArray(legacyTokens) && legacyTokens.length > 0 && legacyTokens.every(address => /^0x[0-9a-fA-F]{40}$/.test(address)), 'legacy_inventory_invalid');
+  ensure(lower(successor.predecessor) === lower(deployment.wiring.pvt) && lower(successor.admin) === lower(deployment.wiring.admin), 'source_changed');
+  ensure(Array.isArray(legacyTokens) && legacyTokens.length > 0 && legacyTokens.every(address => /^0x[0-9a-fA-F]{40}$/.test(address)
+    && lower(address) !== ZeroAddress), 'legacy_inventory_invalid');
   const rebuilt = await reconstructSuccessorPlan({ plan: successor, pointerPlan, verifiedRule: rule, operators, deployment, artifacts, port });
   ensure(JSON.stringify(institutions) === JSON.stringify(rebuilt.institutions), 'institution_inventory_changed');
   successor = rebuilt.plan;
@@ -32,8 +33,17 @@ export async function preparePointerPublication({ stage, successor, institutions
   ensure(authority === successor.pointerAuthority && authority !== ZeroAddress
     && keccak256(await port.code(authority, block.hash)) === keccak256(artifacts.ProvianHashAccount.deployedBytecode.object), 'authority_changed');
   ensure(await call(successor.pointer, 'revision') === 0n, 'already_published');
+  // The client forbidden-address inventory spans chains. Only contracts present
+  // on this chain can be retired; retain absent entries as verified plan facts.
+  // Required source contracts and import helpers may never be absent.
+  const absentLegacyTokens = [], presentLegacyTokens = [];
+  for (const target of [...new Set(legacyTokens.map(lower))].sort()) {
+    const code = await port.code(target, block.hash);
+    ensure(/^0x(?:[0-9a-f]{2})*$/.test(code), 'legacy_code_invalid');
+    (code === '0x' ? absentLegacyTokens : presentLegacyTokens).push(target);
+  }
   const targets = [...new Set([successor.predecessor, successor.snapshot.state.eligibilityVerifier.verifier,
-    ...Object.keys(LEGACY_INSTITUTIONS).map(key => deployment.contracts[key].address), ...legacyTokens,
+    ...Object.keys(LEGACY_INSTITUTIONS).map(key => deployment.contracts[key].address), ...presentLegacyTokens,
     ...successor.retireAfterImport].map(lower))].sort();
   ensure(targets.length > 0 && targets.every(address => /^0x[0-9a-f]{40}$/.test(address) && address !== ZeroAddress
     && address !== successor.pointer && address !== authority && !successor.components.map(lower).includes(address)), 'legacy_target_invalid');
@@ -53,7 +63,7 @@ export async function preparePointerPublication({ stage, successor, institutions
     currentRoot, nonce: nonce.toString(), value: '0', callGas, data, targetRuntimeHash: pin.runtimeHash };
   ensure(await port.blockHash(successor.cutoff.number) === successor.cutoff.hash && await port.blockHash(block.number) === block.hash, 'reorg');
   const body = { schema: 'provian.pointer-publication.v1', stage, chainId: 8453, checkpoint: block, successorDigest: successor.digest,
-    institutionDigest: institutions.digest, ruleHash: rule.ruleHash, targets, hashes,
+    institutionDigest: institutions.digest, ruleHash: rule.ruleHash, targets, hashes, absentLegacyTokens,
     components: reconciled.components, componentHashes: reconciled.hashes, complete: stage === 'retire' && retired.every(Boolean), hashAuthorityPlan };
   return { ...body, digest: digest(body) };
 }

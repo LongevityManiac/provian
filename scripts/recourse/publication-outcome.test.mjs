@@ -73,6 +73,23 @@ test('pending publication reconciles current state while retirement may already 
   f.plan.stage = 'retire'; expect((await inspectPublicationOutcome(f.plan, f.inputs)).status).toBe('achieved');
   f.state.retired = false; expect((await inspectPublicationOutcome(f.plan, f.inputs)).status).toBe('pending');
 });
+test.each(['pending', 'parent', 'publication-block', 'later'])('retained plan checks absent legacy code at %s boundary', async mode => {
+  const f = fixture(), base = f.inputs.port.code;
+  f.plan.absentLegacyTokens = [a(90)];
+  if (mode === 'pending') { f.state.rows = []; f.state.revision = 0n; }
+  const changed = mode === 'parent' ? h(111) : mode === 'publication-block' ? h(112) : h(115);
+  f.inputs.port.code = async (address, block) => address === a(90) ? (block === changed ? '0x6000' : '0x') : base(address, block);
+  if (mode === 'later') expect((await inspectPublicationOutcome(f.plan, f.inputs)).status).toBe('achieved');
+  else await expect(inspectPublicationOutcome(f.plan, f.inputs)).rejects.toThrow('publication_outcome_absent_legacy_changed');
+});
+test('checksum predecessor spelling preserves allowed old-token interval transfers', async () => {
+  const f = fixture();
+  f.inputs.successor.predecessor = '0x8811441914381143b9408c5C32247367F86F173A';
+  f.state.rows.push(f.log(token, 'Transfer', [a(4), a(5), 100], f.inputs.successor.predecessor.toLowerCase(), 112, 4));
+  expect((await inspectPublicationOutcome(f.plan, f.inputs)).status).toBe('achieved');
+  f.state.rows[1] = f.log(token, 'Transfer', [ZeroAddress, a(5), 100], f.inputs.successor.predecessor.toLowerCase(), 112, 4);
+  await expect(inspectPublicationOutcome(f.plan, f.inputs)).rejects.toThrow('publication_outcome_prepublication_activity');
+});
 test('retirement exact inventory and runtime are required, including before publication', async () => {
   const f = fixture(); f.plan.stage = 'retire';
   f.state.rows.unshift(f.log(pointer, 'LegacyContractRetired', [a(1), f.plan.hashes[0]], a(20), 111, 1));

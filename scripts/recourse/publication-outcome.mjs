@@ -95,13 +95,21 @@ export async function inspectPublicationOutcome(incoming, inputs) {
   ensure(before.number >= original.number && hash.test(before.hash), 'prepublication_block');
   ensure(!checkpoints.has(before.number) || checkpoints.get(before.number) === before.hash, 'reorg');
   checkpoints.set(before.number, before.hash);
+  // Revalidate absent cross-chain entries even when the executable operation
+  // was retained at an older checkpoint. A published result uses its own block
+  // boundary; unrelated deployments in later blocks cannot rewrite that result.
+  for (const target of plan.absentLegacyTokens ?? []) {
+    ensure(await port.code(target, before.hash) === '0x', 'absent_legacy_changed');
+    if (publication) ensure(await port.code(target, publication.row.blockHash) === '0x', 'absent_legacy_changed');
+  }
   const reconciled = await verifySuccessorPlan({ plan: successor, institutions, rule, artifacts, port, block: before });
   ensure(equal(reconciled.components, plan.components) && equal(reconciled.hashes, plan.componentHashes), 'components_changed');
   await verifySuccessorSourceInterval({ plan: successor, deployment, artifacts, port, current: before });
   const oldInstitutions = Object.keys(LEGACY_INSTITUTIONS).map(key => lower(deployment.contracts[key].address));
   const names = new Map(successor.creations.map(row => [lower(row.address), row.label.slice('deploy:'.length)]));
   names.set(lower(successor.components[9]), 'ProvianMemberSettlement');
-  const targets = [...new Set([...names.keys(), successor.predecessor,
+  const predecessor = lower(successor.predecessor);
+  const targets = [...new Set([...names.keys(), predecessor,
     lower(successor.snapshot.state.eligibilityVerifier.verifier), ...oldInstitutions])];
   const end = publication ? position(publication.row)[0] : current.number;
   if (end > original.number) {
@@ -109,8 +117,8 @@ export async function inspectPublicationOutcome(incoming, inputs) {
     for (const row of interval) {
       if (publication && compare(row, publication.row) > 0) continue;
       const target = lower(row.address);
-      ensure(target === successor.predecessor || target === lower(successor.components[0]), 'prepublication_activity');
-      const name = target === successor.predecessor ? 'ProvianPVT9' : 'ProvianRecourseKernel';
+      ensure(target === predecessor || target === lower(successor.components[0]), 'prepublication_activity');
+      const name = target === predecessor ? 'ProvianPVT9' : 'ProvianRecourseKernel';
       const event = new Interface(artifacts[name].abi).parseLog(row);
       ensure(event && ['Transfer', 'Approval', 'Burned'].includes(event.name)
         && (event.name !== 'Transfer' || event.args.from !== ZeroAddress), 'prepublication_activity');

@@ -149,6 +149,10 @@ const MUTATION_SETS = {
   'publication-outcome': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/publication-outcome.mjs', testMatchPath: 'scripts/recourse/publication-outcome.test.mjs',
     mutations: [
+      { id: 'OUTCOME-ABSENT-PARENT', description: 'retained signature ignores a formerly absent legacy address before publication',
+        find: "ensure(await port.code(target, before.hash) === '0x', 'absent_legacy_changed');", replace: ';', expectedKilledBy: 'retained plan checks absent legacy code at parent boundary' },
+      { id: 'OUTCOME-ABSENT-BLOCK', description: 'code appears inside the publication block without retirement',
+        find: "if (publication) ensure(await port.code(target, publication.row.blockHash) === '0x', 'absent_legacy_changed');", replace: ';', expectedKilledBy: 'retained plan checks absent legacy code at publication-block boundary' },
       { id: 'OUTCOME-PLAN', description: 'skip independent reconstruction of the retained publication plan',
         find: 'await verifyPointerPublication(plan, { ...inputs, port: { ...port, finalizedBlock: async () => original } });', replace: ';', expectedKilledBy: 'plan red control refuses' },
       { id: 'OUTCOME-REVISION', description: 'missing revision events are accepted',

@@ -60,11 +60,23 @@ test('already registered legacy inventory needs no new authority operation', asy
   const f = fixture(); f.state.retired = true;
   expect((await preparePointerPublication(f)).complete).toBe(true);
 });
+test('source identity accepts checksum spelling but refuses a different predecessor or administrator', async () => {
+  const f = fixture();
+  f.successor.predecessor = '0x8811441914381143b9408c5C32247367F86F173A';
+  f.deployment.wiring.pvt = f.successor.predecessor.toLowerCase();
+  f.successor.admin = '0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3';
+  f.deployment.wiring.admin = f.successor.admin.toLowerCase();
+  expect((await preparePointerPublication(f)).targets).toContain(f.deployment.wiring.pvt);
+  for (const field of ['predecessor', 'admin']) {
+    const changed = { ...f, successor: { ...f.successor, [field]: a(99) } };
+    await expect(preparePointerPublication(changed)).rejects.toThrow('pointer_publication_source_changed');
+  }
+});
 test.each(['pin', 'runtime', 'authority-runtime', 'empty-legacy', 'current-retirement', 'missing-code', 'nonce-root', 'reorg', 'activation', 'source-activity'])('%s refuses unsigned preparation', async mode => {
   const f = fixture();
   if (mode === 'pin') f.pin.address = a(99);
   if (mode === 'runtime' || mode === 'authority-runtime' || mode === 'missing-code') {
-    const base = f.port.code, target = mode === 'runtime' ? f.pin.address : mode === 'authority-runtime' ? f.successor.pointerAuthority : a(50);
+    const base = f.port.code, target = mode === 'runtime' ? f.pin.address : mode === 'authority-runtime' ? f.successor.pointerAuthority : f.successor.predecessor;
     f.port.code = async address => address === target ? '0x' : base(address);
   }
   if (mode === 'empty-legacy') f.legacyTokens = [];
@@ -74,6 +86,22 @@ test.each(['pin', 'runtime', 'authority-runtime', 'empty-legacy', 'current-retir
   if (mode === 'activation') f.state.held = false;
   if (mode === 'source-activity') checks.interval.mockRejectedValue(Error('source_activity_after_cutoff'));
   await expect(preparePointerPublication(f)).rejects.toThrow();
+});
+test('cross-chain forbidden addresses without Base code are recorded, while later code changes refuse', async () => {
+  const f = fixture(), base = f.port.code; let absent = true;
+  f.port.code = async address => address === a(50) && absent ? '0x' : base(address);
+  const plan = await preparePointerPublication(f);
+  expect(plan.absentLegacyTokens).toEqual([a(50)]);
+  expect(plan.targets).not.toContain(a(50));
+  expect(plan.targets).toContain(a(51));
+  absent = false;
+  await expect(verifyPointerPublication(plan, f)).rejects.toThrow('pointer_publication_facts_changed');
+});
+test('listing a missing required predecessor as a forbidden address never exempts it', async () => {
+  const f = fixture(), base = f.port.code;
+  f.legacyTokens.push(f.successor.predecessor);
+  f.port.code = async address => address === f.successor.predecessor ? '0x' : base(address);
+  await expect(preparePointerPublication(f)).rejects.toThrow('pointer_publication_legacy_code_missing');
 });
 test('fresh reconstruction tolerates only a newer canonical checkpoint, not authority or call drift', async () => {
   const f = fixture(), plan = await preparePointerPublication(f); f.state.height = 111;
