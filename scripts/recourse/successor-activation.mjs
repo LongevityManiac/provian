@@ -8,20 +8,34 @@ const copyInputs = inputs => { const { port, ...facts } = inputs; return { ...st
 const institutionNames = { escrowV4: 'ProvianRecourseEscrow', promiseV3: 'ProvianPromiseV3', poolV3: 'ProvianRecourseProjectPool',
   bondPool: 'ProvianRecourseBondPool', courtV2: 'ProvianRecourseCourt' };
 
-async function readActivationState(publication, inputs, block) {
+async function readActivationState(publication, inputs, block, anchor = null) {
   const { successor, artifacts, port } = inputs, kernel = successor.components[0];
-  const outcome = await inspectPublicationOutcome(publication, { ...inputs, port: { ...port, finalizedBlock: async () => block } });
+  const outcome = anchor ? { status: 'achieved', revision: '1', publication: anchor.publication, goal: anchor.goal }
+    : await inspectPublicationOutcome(publication, { ...inputs, port: { ...port, finalizedBlock: async () => block } });
   ensure(outcome.status === 'achieved' && outcome.revision === '1' && outcome.publication, 'publication_not_current');
-  ensure(keccak256(await port.code(kernel, block.hash)) === publication.componentHashes[0], 'kernel_runtime_changed');
   const abi = new Interface(artifacts.ProvianRecourseKernel.abi);
+  const published = outcome.publication;
+  const kernelLogs = await port.logs([kernel], published.block.number, block.number);
+  const afterPublication = log => Number(BigInt(log.blockNumber)) > published.block.number
+    || Number(BigInt(log.logIndex)) > published.logIndex;
+  const ordered = [...kernelLogs].sort((a, b) => Number(BigInt(a.blockNumber) - BigInt(b.blockNumber)) || Number(BigInt(a.logIndex) - BigInt(b.logIndex)));
+  const resumed = ordered.find(log => afterPublication(log) && abi.parseLog(log)?.name === 'AdministrativeHoldResumed');
+  let stateBlock = block;
+  if (resumed) {
+    const height = Number(BigInt(resumed.blockNumber));
+    ensure(height >= published.block.number && height <= block.number && !resumed.removed, 'event_invalid');
+    stateBlock = { number: height - 1, hash: await port.blockHash(height - 1) };
+  }
+  ensure(keccak256(await port.code(kernel, stateBlock.hash)) === publication.componentHashes[0], 'kernel_runtime_changed');
   const read = async (target, iface, method) => iface.decodeFunctionResult(method,
-    await port.call(target, iface.encodeFunctionData(method), block.hash))[0];
+    await port.call(target, iface.encodeFunctionData(method), stateBlock.hash))[0];
   for (const [method, expected] of [['BOOTSTRAP_ADMIN', successor.admin], ['restorationAuthority', successor.admin],
     ['operationalMinter', successor.components[9]], ['protocolPointer', successor.pointer]])
     ensure(lower(await read(kernel, abi, method)) === lower(expected), 'binding_changed');
   ensure(await read(kernel, abi, 'epochZeroArmed') === true, 'unarmed');
-  const held = await read(kernel, abi, 'administrativeHold');
-  ensure(typeof held === 'boolean', 'hold_invalid');
+  const heldBefore = await read(kernel, abi, 'administrativeHold');
+  ensure(typeof heldBefore === 'boolean' && (!resumed || heldBefore), 'hold_invalid');
+  const held = resumed ? false : heldBefore;
   const old = new Interface(['function administrativeHold() view returns(bool)', 'function operationalMinter() view returns(address)',
     'function batchApprover() view returns(address)']);
   for (const [target, method, expected] of [[successor.predecessor, 'administrativeHold', true],
@@ -41,7 +55,7 @@ async function readActivationState(publication, inputs, block) {
     ensure(lower(await read(named[name], new Interface(artifacts[name].abi), method)) === lower(value), 'component_binding_changed');
   const pool = new Interface(artifacts.ProvianMemberRecoursePool.abi);
   const monthly = pool.decodeFunctionResult('monthlyRule', await port.call(named.ProvianMemberRecoursePool,
-    pool.encodeFunctionData('monthlyRule', [0]), block.hash))[0], rule = inputs.rule;
+    pool.encodeFunctionData('monthlyRule', [0]), stateBlock.hash))[0], rule = inputs.rule;
   ensure(String(monthly.firstMonth) === String(rule.rule.firstMonth) && String(monthly.participationBurn) === rule.rule.participationBurnAtomic
     && String(monthly.noEarningsContribution) === rule.rule.noEarningsContributionAtomic
     && Number(monthly.earningsBps) === rule.rule.earningsBps && monthly.signedRuleHash === rule.ruleHash, 'membership_rule_changed');
@@ -53,8 +67,8 @@ async function readActivationState(publication, inputs, block) {
     for (const wiring of row.wiring) ensure(lower(await read(target, iface, wiring.method))
       === lower(replacements.get(lower(wiring.address)) ?? wiring.address), 'institution_wiring_changed');
     for (const policy of row.policy) {
-      const data = iface.encodeFunctionData(policy.method), result = await port.call(target, data, block.hash);
-      if (policy.method === 'earliestSchedulableEpoch') ensure(result === await port.call(row.address, data, block.hash), 'institution_epoch_changed');
+      const data = iface.encodeFunctionData(policy.method), result = await port.call(target, data, stateBlock.hash);
+      if (policy.method === 'earliestSchedulableEpoch') ensure(result === await port.call(row.address, data, stateBlock.hash), 'institution_epoch_changed');
       else ensure(equal(iface.decodeFunctionResult(policy.method, result).toArray().map(value => typeof value === 'bigint' ? value.toString() : value), policy.values),
         'institution_policy_changed');
     }
@@ -63,18 +77,25 @@ async function readActivationState(publication, inputs, block) {
   // The first activation follows the reconciled publication without scheduling
   // or minting a different economy in the gap. Transfers, burns and owner-proof
   // reversals remain available; their token logs cannot hide a settlement or a
-  // policy event. Completed workflows verify this interval at their saved
-  // activation checkpoint, rather than rejecting later normal network activity.
-  const published = outcome.publication, pins = new Map([[block.number, block.hash], [published.block.number, published.block.hash]]);
+  // policy event. Once resumed, verify the exact historical event prefix and
+  // its parent state. Later activity, even in the same block, cannot invalidate
+  // a lost-response restart or authorize a different activation transaction.
+  const pins = new Map();
+  for (const checkpoint of [block, published.block, stateBlock]) {
+    ensure(!pins.has(checkpoint.number) || pins.get(checkpoint.number) === checkpoint.hash, 'reorg');
+    pins.set(checkpoint.number, checkpoint.hash);
+  }
   const interfaces = new Map(Object.entries(named).filter(([name]) => artifacts[name]).map(([name, address]) => [lower(address), new Interface(artifacts[name].abi)]));
   interfaces.set(lower(kernel), abi);
+  interfaces.set(lower(successor.pointer), new Interface(artifacts.ProvianProtocolPointer.abi));
   interfaces.set(lower(successor.predecessor), new Interface(artifacts.ProvianPVT9.abi));
   interfaces.set(lower(successor.snapshot.state.eligibilityVerifier.verifier), new Interface(artifacts.ProvianPVT9EligibilityVerifier.abi));
   for (const row of inputs.institutions.inventory) interfaces.set(lower(row.address), new Interface(artifacts[institutionNames[row.key]].abi));
   const source = new Set([lower(successor.predecessor), lower(successor.snapshot.state.eligibilityVerifier.verifier), ...inputs.institutions.inventory.map(row => lower(row.address))]);
   let resumes = 0;
   const seen = new Set();
-  for (const log of await port.logs([...interfaces.keys()], published.block.number, block.number)) {
+  const through = resumed ? Number(BigInt(resumed.blockNumber)) : block.number;
+  for (const log of await port.logs([...interfaces.keys()], published.block.number, through)) {
     const height = Number(BigInt(log.blockNumber)), index = Number(BigInt(log.logIndex)), key = `${height}:${index}`;
     const target = lower(log.address), iface = interfaces.get(target);
     ensure(iface && !log.removed && Number.isSafeInteger(height) && Number.isSafeInteger(index)
@@ -82,7 +103,9 @@ async function readActivationState(publication, inputs, block) {
       && /^0x[0-9a-f]{64}$/.test(log.blockHash) && !seen.has(key), 'event_invalid');
     seen.add(key); ensure(!pins.has(height) || pins.get(height) === log.blockHash, 'reorg'); pins.set(height, log.blockHash);
     if (height === published.block.number && index <= published.logIndex) continue;
+    if (resumed && height === through && index > Number(BigInt(resumed.logIndex))) continue;
     const event = iface.parseLog(log); ensure(event, 'unknown_event');
+    ensure(target !== lower(successor.pointer), 'pointer_changed_before_activation');
     if (source.has(target)) {
       ensure(target === lower(successor.predecessor) && ['Transfer', 'Approval', 'Burned'].includes(event.name)
         && (event.name !== 'Transfer' || event.args.from !== ZeroAddress), 'predecessor_activity');
@@ -98,6 +121,7 @@ async function readActivationState(publication, inputs, block) {
     } else ensure(['Transfer', 'Approval', 'Burned'].includes(event.name), 'economy_changed');
   }
   ensure(resumes === (held ? 0 : 1), 'hold_history_changed');
+  if (resumed) ensure(await port.blockHash(through) === resumed.blockHash, 'reorg');
   for (const [number, hash] of pins) ensure(await port.blockHash(number) === hash, 'reorg');
   return { held, kernel, admin: successor.admin, publication: published, goal: outcome.goal };
 }
@@ -120,7 +144,7 @@ export async function verifySuccessorActivation({ plan, publication, complete = 
   const original = await readActivationState(publication, inputs, plan.checkpoint);
   ensure(equal(plan, assemble(original, plan.checkpoint, publication, inputs)), 'plan_changed');
   const block = await inputs.port.finalizedBlock(); ensure(block.number >= plan.checkpoint.number, 'finality_regressed');
-  const current = await readActivationState(publication, inputs, block);
+  const current = await readActivationState(publication, inputs, block, original);
   ensure(plan.state.held || !current.held, 'hold_reintroduced');
   if (complete) ensure(!current.held, 'incomplete');
   ensure(await inputs.port.blockHash(plan.checkpoint.number) === plan.checkpoint.hash

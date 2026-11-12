@@ -217,6 +217,11 @@ test('source refusal cannot block canonical closure of an already consumed spons
   expect((await f.run()).status).toBe('advance'); expect(f.state.signed).toBe(1);
   await expect(f.run()).rejects.toThrow(/source_reactivated/);
 });
+test('historical workflow completion markers cannot start a missing publication journal', async () => {
+  const f = fixture(); f.input.requireCompleted = true;
+  await expect(f.run()).rejects.toThrow(/not_completed/);
+  expect(f.db.store.size).toBe(0); expect(f.state.loaded).toBe(0); expect(f.state.records).toHaveLength(0);
+});
 test.each(['latest-header', 'simulation'])('source drift during %s prevents the next executable proof RPC', async boundary => {
   const f = fixture(); let calls = 0, estimates = 0;
   for (const reader of f.input.inputs.port.rpcs) {

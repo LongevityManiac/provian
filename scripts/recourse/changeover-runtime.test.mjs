@@ -117,3 +117,20 @@ test('invalid fee configuration refuses before reserving any signer or writing a
     assert.equal(f.db.store.size, 0); assert.equal(f.state.loaded, 0);
   }
 });
+test('historical workflow revalidation requires a terminal stage and never acquires a new lease or signs', async () => {
+  const f = fixture(); f.input.requireCompleted = true;
+  await assert.rejects(f.run(), /not_completed/);
+  assert.equal(f.db.store.size, 0); assert.equal(f.state.loaded, 0);
+  f.input.requireCompleted = false; f.state.final = 30;
+  assert.equal((await f.run()).status, 'awaiting_finality');
+  f.input.requireCompleted = true;
+  const pending = JSON.stringify([...f.db.store.entries()]);
+  await assert.rejects(f.run(), /not_completed/);
+  assert.equal(JSON.stringify([...f.db.store.entries()]), pending);
+  f.input.requireCompleted = false;
+  assert.equal((await f.run()).status, 'confirmed');
+  const before = JSON.stringify([...f.db.store.entries()]), signed = f.state.signed;
+  f.input.requireCompleted = true;
+  assert.equal((await f.run()).status, 'confirmed');
+  assert.equal(f.state.signed, signed); assert.equal(JSON.stringify([...f.db.store.entries()]), before);
+});

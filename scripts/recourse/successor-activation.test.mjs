@@ -15,7 +15,7 @@ function fixture() {
   const addresses = { ProvianRecourseKernel: a(30), ProvianRecourseEligibilityVerifier: a(31), ProvianOwnershipRegistry: a(45),
     ProvianMemberRecoursePool: a(38), ProvianRecourseEscrow: a(33), ProvianPromiseV3: a(34), ProvianRecourseProjectPool: a(35),
     ProvianRecourseBondPool: a(36), ProvianRecourseCourt: a(37) };
-  const artifacts = Object.fromEntries([...Object.keys(addresses), 'ProvianMemberSettlement', 'ProvianPVT9', 'ProvianPVT9EligibilityVerifier'].map(name =>
+  const artifacts = Object.fromEntries([...Object.keys(addresses), 'ProvianProtocolPointer', 'ProvianMemberSettlement', 'ProvianPVT9', 'ProvianPVT9EligibilityVerifier'].map(name =>
     [name, JSON.parse(readFileSync(new URL(`../../contracts/out/${name}.sol/${name}.json`, import.meta.url)))]));
   const interfaces = new Map([...Object.entries(addresses), ['ProvianMemberSettlement', a(39)]]
     .map(([name, address]) => [address, new Interface(artifacts[name].abi)]));
@@ -84,7 +84,7 @@ test.each(['pointer', 'runtime', 'unarmed', 'minter', 'restoration-authority', '
   if (mode === 'old-approver') f.state.overrides[`${a(3)}:batchApprover`] = a(99);
   if (mode === 'policy') f.state.logs.push(f.log('MintRateScheduled', [1, 900]));
   if (mode === 'held-history') f.state.resumedAt = 115;
-  if (mode === 'reheld') f.state.logs.push(f.log('AdministrativeHoldResumed', [a(1)], 115, 1), f.log('AdministrativeHoldPlaced', [a(1)], 116, 1));
+  if (mode === 'reheld') f.state.logs.push(f.log('AdministrativeHoldPlaced', [a(1)], 114, 1), f.log('AdministrativeHoldResumed', [a(1)], 115, 1));
   if (mode === 'event-domain') { f.state.logs.push(f.log('Approval', [a(40), a(41), 100])); f.state.logs[0].removed = true; }
   if (mode === 'reorg') f.state.orphan = true;
   await expect(prepareSuccessorActivation(f.inputs)).rejects.toThrow();
@@ -143,4 +143,37 @@ test('legitimate postpublication member consent logs remain allowed', async () =
   const f = fixture(), iface = f.interfaces.get(a(38)), fragment = iface.getEvent('AddressBound');
   f.state.logs.push({ ...f.log('Approval', [a(1), a(2), 1]), address: a(38), ...iface.encodeEventLog(fragment, [h(55), a(55)]) });
   expect((await prepareSuccessorActivation(f.inputs)).steps).toHaveLength(1);
+});
+test('lost activation completion survives later and same-block economy changes', async () => {
+  const f = fixture(), plan = await prepareSuccessorActivation(f.inputs); f.resume();
+  f.state.logs.push(f.log('MintRateScheduled', [1, 900], 130, 8), f.log('AdministrativeHoldPlaced', [a(1)], 131, 1));
+  f.state.height = 140;
+  const call = f.inputs.port.call;
+  f.inputs.port.call = async (target, data, hash) => {
+    if (Number(BigInt(hash)) >= 130) throw Error('post_activation_getter_must_not_be_used');
+    return call(target, data, hash);
+  };
+  const before = inspect.getMockImplementation();
+  inspect.mockImplementation(async (publication, context) => {
+    if ((await context.port.finalizedBlock()).number > plan.checkpoint.number) throw Error('post_activation_pointer_must_not_be_used');
+    return before(publication, context);
+  });
+  expect((await verifySuccessorActivation({ ...f.inputs, plan, complete: true })).active).toBe(true);
+  f.state.logs.push(f.log('MintRateScheduled', [1, 900], 130, 6));
+  await expect(verifySuccessorActivation({ ...f.inputs, plan, complete: true })).rejects.toThrow(/economy_changed/);
+});
+
+test('adjacent activation cannot overwrite the authenticated publication hash', async () => {
+  const f = fixture(); f.resume(113);
+  const originalCall = f.inputs.port.call;
+  f.inputs.port.call = (target, data, pin) => originalCall(target, data, pin === h(999) ? h(112) : pin);
+  const originalHash = f.inputs.port.blockHash;
+  f.inputs.port.blockHash = async number => number === 112 ? h(999) : originalHash(number);
+  await expect(prepareSuccessorActivation(f.inputs)).rejects.toThrow(/reorg/);
+});
+test('publication and activation in the same block retain the exact log boundary', async () => {
+  const f = fixture(); f.resume(112);
+  const plan = await prepareSuccessorActivation(f.inputs);
+  expect(plan.steps).toHaveLength(0);
+  expect((await verifySuccessorActivation({ ...f.inputs, plan, complete: true })).active).toBe(true);
 });

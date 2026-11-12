@@ -70,6 +70,7 @@ function validateClosure(proof: PublicationClosure, attempt: PublicationAttempt,
 export async function openPublicationJournal(db: Firestore, input: {
   goal: PublicationGoal; from: string; approvedBudgetWei: string; readers: readonly BaseFeeReader[];
   now?: () => number; workerId?: string;
+  requireCompleted?: boolean;
 }): Promise<PublicationJournal> {
   const goal = structuredClone(input.goal), from = input.from, budget = atomic(input.approvedBudgetWei);
   check(addressPattern.test(goal.pointer) && addressPattern.test(goal.authority) && addressPattern.test(from)
@@ -133,6 +134,7 @@ export async function openPublicationJournal(db: Firestore, input: {
     if (!state.completed) await releaseSignerLease(settlement, { signer: from, workerId, nowMs: now() });
   };
   let head = await headRef.get();
+  if (input.requireCompleted === true) check(head.exists && head.get('completed') === true, 'not_completed');
   if (head.exists && head.get('completed') === true) await load(head);
   else try {
     const lease = await acquireSignerLease(settlement, { signer: from, workerId, operationId, nowMs: now(), leaseTtlMs: 120_000 });

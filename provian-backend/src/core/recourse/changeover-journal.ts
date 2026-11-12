@@ -64,6 +64,7 @@ function validateAttempt(attempt: ChangeoverAttempt, step: ChangeoverStep): void
 export async function openChangeoverJournal(db: Firestore, input: {
   readonly planDigest: string; readonly steps: readonly ChangeoverStep[];
   readonly now?: () => number; readonly workerId?: string;
+  readonly requireCompleted?: boolean;
 }): Promise<DurableChangeoverJournal> {
   // Freeze a private copy so a caller cannot change the plan after its digest is bound.
   const steps: readonly ChangeoverStep[] = structuredClone(input.steps);
@@ -111,6 +112,9 @@ export async function openChangeoverJournal(db: Firestore, input: {
   // terminal record must not reacquire or disturb a later settlement's lease.
   const terminal = await readTerminal();
   if (terminal) return terminal;
+  // A saved outer workflow checkpoint may only reopen a terminal stage. A
+  // missing/corrupted marker cannot turn historical validation into new signing.
+  requireValue(input.requireCompleted !== true, 'not_completed');
   const release = async (): Promise<void> => {
     closed = true;
     for (const signer of signers) await releaseSignerLease(settlementDb, { signer, workerId, nowMs: now() });

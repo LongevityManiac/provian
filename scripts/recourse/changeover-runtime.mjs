@@ -13,12 +13,13 @@ const ensure = (value, code) => { if (!value) throw Error('changeover_runtime_' 
  * steps/stageDigest to its independently derived authorized stage, as well as
  * rechecking source state. A plan digest alone cannot authorize arbitrary steps. */
 export async function runChangeoverStage({ db, steps, planDigest, readers, loadSigner, assertPlan,
-  approvedStageBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId }) {
+  approvedStageBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, requireCompleted = false }) {
   steps = structuredClone(steps);
   ensure(typeof approvedStageBudgetWei === 'string' && /^[1-9][0-9]*$/.test(approvedStageBudgetWei)
     && [maxFeePerGas, maxPriorityFeePerGas, maxGas].every(value => typeof value === 'bigint' && value > 0n)
     && maxFeePerGas >= maxPriorityFeePerGas, 'fee_configuration');
   ensure(typeof assertPlan === 'function' && typeof loadSigner === 'function', 'callbacks');
+  ensure(typeof requireCompleted === 'boolean', 'completion_mode');
   const stageDigest = sha256(toUtf8Bytes(JSON.stringify({ planDigest, steps })));
   const checkedPlan = async digest => {
     ensure(digest === planDigest, 'plan_changed');
@@ -28,7 +29,7 @@ export async function runChangeoverStage({ db, steps, planDigest, readers, loadS
     && typeof reader.request === 'function')
     && readers[0].operatorId !== readers[1].operatorId, 'independent_operators');
   await checkedPlan(planDigest);
-  const store = await openChangeoverJournal(db, { planDigest, steps, workerId });
+  const store = await openChangeoverJournal(db, { planDigest, steps, workerId, requireCompleted });
   try {
     const completed = store.read().completed;
     ensure(store.stageDigest === stageDigest, 'stage_changed');

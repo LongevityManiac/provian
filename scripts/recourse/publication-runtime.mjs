@@ -17,18 +17,19 @@ const callOf = record => ({ to: record.transaction.to, data: record.transaction.
  * The caller owns the explicit execution decision and private-store DB wiring.
  * Reinvoke after waiting for chain progress; terminal restarts are read-only. */
 export async function runPublicationDelivery({ inputs, db, from, store, vault, loadSigner,
-  approvedBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, cancelGas = false }) {
+  approvedBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, cancelGas = false, requireCompleted = false }) {
   const { port, ...facts } = inputs; inputs = { ...structuredClone(facts), port };
   ensure(/^0x[0-9a-f]{40}$/.test(from) && typeof approvedBudgetWei === 'string' && /^[1-9][0-9]*$/.test(approvedBudgetWei)
     && [maxFeePerGas, maxPriorityFeePerGas, maxGas].every(value => typeof value === 'bigint' && value > 0n)
-    && maxFeePerGas >= maxPriorityFeePerGas && typeof loadSigner === 'function' && typeof cancelGas === 'boolean', 'configuration');
+    && maxFeePerGas >= maxPriorityFeePerGas && typeof loadSigner === 'function' && typeof cancelGas === 'boolean'
+    && typeof requireCompleted === 'boolean', 'configuration');
   const readers = port.rpcs;
   ensure(Array.isArray(readers) && readers.length === 2 && readers.every(reader => typeof reader.operatorId === 'string'
     && reader.operatorId && typeof reader.request === 'function') && readers[0].operatorId !== readers[1].operatorId, 'independent_operators');
   const history = await readPublicationHistory(inputs, store);
   let progress = history ? null : await readPublicationProgress(inputs, store);
   const goal = history?.goal ?? progress.outcome.goal;
-  const journal = await openPublicationJournal(db, { goal, from, approvedBudgetWei, readers, workerId });
+  const journal = await openPublicationJournal(db, { goal, from, approvedBudgetWei, readers, workerId, requireCompleted });
   const closure = (attempt, checkpoint) => inspectPublicationGasClosure(attempt, port, checkpoint);
   let signer;
   try {

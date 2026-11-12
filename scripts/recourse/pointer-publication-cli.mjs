@@ -14,7 +14,7 @@ const ensure = (value, reason) => { if (!value) throw Error('pointer_publication
 const exec = promisify(execFile);
 /** Public verification uses the configured approval public key, never the key
  * embedded in an untrusted signature as its own trust anchor. */
-async function verifiedRule(path) {
+export async function verifiedRule(path) {
   const directory = mkdtempSync(join(tmpdir(), 'provian-publication-rule-'));
   try {
     const output = join(directory, 'verified.json');

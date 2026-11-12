@@ -59,6 +59,42 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '..');
 // prove each with `--contract <Name>` before merging that WP.
 // ---------------------------------------------------------------------------
 const MUTATION_SETS = {
+  'first-changeover': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/first-changeover.mjs', testMatchPath: 'scripts/recourse/first-changeover.test.mjs',
+    mutations: [
+      { id: 'WORKFLOW-CONFIG', description: 'restart adopts altered delivery configuration',
+        find: "await state.create('configuration', configuration);\n  ensure(equal(await state.read('configuration'), configuration), 'configuration_changed');",
+        replace: ';', expectedKilledBy: 'configuration corruption refuses without new signing' },
+      { id: 'WORKFLOW-TERMINAL', description: 'skip original terminal journal reconciliation',
+        find: "if (steps.length) {\n        const checked = await runtime", replace: "if (false) {\n        const checked = await runtime", expectedKilledBy: 'journal corruption refuses without new signing' },
+      { id: 'WORKFLOW-PIN', description: 'completion verification spans different chain heads',
+        find: "const pinned = { ...source, finalizedBlock: async () => structuredClone(checkpoint) };", replace: 'const pinned = source;',
+        expectedKilledBy: 'successor completion must retain the same checkpoint that passed unused-pointer preflight' },
+      { id: 'WORKFLOW-INVENTORY', description: 'saved inventory no longer matches the signed deployment plan',
+        find: "ensure(digest(inventoryBody) === institutions.digest && successor.institutionDigest === institutions.digest, 'institution_inventory_changed');",
+        replace: ';', expectedKilledBy: 'inventory corruption refuses without new signing' },
+    ],
+  },
+  'changeover-artifacts': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/changeover-artifacts.mjs', testMatchPath: 'scripts/recourse/changeover-artifacts.test.mjs',
+    mutations: [
+      { id: 'ARTIFACT-DURABILITY', description: 'ignore ancestor directory fsync',
+        find: "ensure(fstatSync(fd).isDirectory(), 'directory_invalid'); fsyncSync(fd);", replace: "ensure(fstatSync(fd).isDirectory(), 'directory_invalid');",
+        expectedKilledBy: 'new and adopted nested artifact stores require durable ancestor directory links' },
+      { id: 'ARTIFACT-CONFLICT', description: 'silently adopt an existing conflicting artifact',
+        find: "ensure(saved !== null && digest(saved) === payloadHash, 'conflicting_record');", replace: ';',
+        expectedKilledBy: 'immutable artifacts survive reopening and idempotent lost-response retries' },
+    ],
+  },
+  'copy-port': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/copy-port.mjs', testMatchPath: 'scripts/recourse/copy-port.test.mjs',
+    mutations: [
+      { id: 'COPY-WRITE-IDENTITY', description: 'write without simulator identity verification',
+        find: 'if (writes.has(method)) await verify();', replace: ';', expectedKilledBy: 'every mutation rechecks instance and fork even on the matching Base chain ID' },
+      { id: 'COPY-LOCAL-URL', description: 'accept arbitrary local/remote URL host',
+        find: "parsed.hostname === '127.0.0.1'", replace: 'true', expectedKilledBy: 'non-exact local transport refuses' },
+    ],
+  },
   'successor-activation': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/successor-activation.mjs', testMatchPath: 'scripts/recourse/successor-activation.test.mjs',
     mutations: [
