@@ -1,6 +1,6 @@
 # Provian store listing (id)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Komputasi mencetak uang. Pastikan sebagian menjadi milik Anda.
 
 Setiap hari Anda melakukan pekerjaan yang dapat dilihat dunia. Anda merilis kode, menyelesaikan tugas, menutup kesepakatan, membangun sesuatu dengan AI. Saat ini pekerjaan itu menghilang dalam log orang lain. Buktinya bukan milik Anda, dan bayaran jarang menyusul.
 
-Provian mengubahnya. Saat perangkat Anda, pihak lain, platform kode, atau blockchain menyaksikan pekerjaan Anda, Provian mengubah kesaksian itu menjadi tanda terima bertanda tangan milik Anda: Provenance Envelope. Setiap tindakan yang disaksikan mencetak PVT, uang di Base, langsung ke dompet yang hanya Anda kendalikan.
+Provian mengubahnya. Saat perangkat lunak Provian pada perangkat Anda, pihak lain, platform kode, atau blockchain menyaksikan pekerjaan Anda, Provian mengubah kesaksian itu menjadi tanda terima bertanda tangan milik Anda: Provenance Envelope. Jika didukung, perangkat keras aman di ponsel atau komputer membuktikan bahwa perangkat lunak Provian asli membuat catatan itu. Setiap tindakan yang disaksikan mencetak PVT, uang di Base, langsung ke dompet yang hanya Anda kendalikan.
 
 Tanpa pengajuan. Tanpa penjaga yang menentukan apakah Anda diperhitungkan. Anda bekerja, jaringan melihatnya, Anda dibayar.
 

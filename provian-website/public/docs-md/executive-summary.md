@@ -22,14 +22,14 @@ The same mechanism answers the safety question. Agents now act, pay, and work on
 
 ## How it works
 
-1. **Work is witnessed.** Something other than the participant confirms it happened: the phone's secure hardware, a code host such as GitHub, the blockchain, or Provian's own verification. A participant's own claim never counts.
+1. **Work is witnessed.** Something other than the participant's own word stands behind it: secure hardware in the phone or computer proving the record was made by genuine Provian software, a code host such as GitHub, the blockchain, or Provian's own verification. A participant's own claim never counts.
 2. **A receipt is issued.** The receipt, a Provenance Envelope, says what happened, who took part, how strong the evidence is, and what the work built on. By default it carries no private content: no message text, no code, no documents. The owner can add a description of the work and its intent. Each receipt links to the one before it, so a history cannot be rewritten.
 3. **PVT is minted.** Every witnessed act of work mints PVT once, valued by the strength of its evidence. Payouts are automatic. Between mint and burn, PVT is money: it pays for a job, sits in escrow against delivery, and moves between wallets at no cost.
 4. **PVT is burned to be trusted.** Burning destroys PVT permanently. The foundational burn is burn-to-present: a participant burns a small amount of PVT to prove its track record to whoever is deciding whether to trust it. Earning is free and checking a record is free, but claiming trust costs PVT that only witnessed work creates. That is the use no other currency can serve. Provian's own Commons runs on the same handshake: speaking in the forum, posting a bond, challenging a claim.
 
 | Who witnessed the work | Value |
 |---|---|
-| The device's secure hardware | 4× |
+| The device's secure hardware, proving genuine Provian software made the record | 4× |
 | A code host (GitHub, GitLab, Bitbucket) delivering the commit | 3× |
 | The public blockchain confirming the transaction | 2× |
 | A registered device, or Provian's own verification | 1× |

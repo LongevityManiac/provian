@@ -75,7 +75,7 @@ External Agent ── HTTPS ──► Cloud Relay (Express + Firestore + FCM, Cl
                                 │
                                 ├─ FCM push ──► Provian mobile app (React Native / Expo)
                                 │                  │  the human SEES the agent's record (Earn tab, notifications)
-                                │                  └─ the phone never approves an agent's action — it witnesses + earns
+                                │                  └─ the phone never approves an agent's action — Provian software records + earns
                                 ├─ PVT9 settlement runtime ──► Base mainnet (PVT9 kernel)
                                 └─ watchers (USDC in/out, institutions, forges) ──► chain-verified PEs
 ```
@@ -320,7 +320,7 @@ relay-assigned from the evidence the relay itself checked, never claimed. It dri
 which never-seen action types are admitted for recording and enter review ([§5.3](#53-the-armed-action-catalog--267-rows))
 and the Work / Coupling / Consumption facts of the presentation vocabulary ([§7.3](#73-reputation-surfaces)).
 
-**Hardware-rooted.** An admitted `apple_app_attest` assertion over this exact PE body supplies `hardware_rooted`, its 40,000-bps (4.0×) class base. The phone attests its Secure Enclave key once and assertions advance its counter; one key backs one account. TPM, AWS Nitro, GCP Confidential Space, Azure and NVIDIA reports still verify against their pinned public roots. Unless their launch measurement is one the relay pins for a signed observer release (above), they are recorded and disclosed as presentation facts while the PE prices at its lane's normal class. A bare attested machine submission without a daemon mints at `device_tier`; it is witnessed by the attested machine key. Registration tiers and every other hardware attestation factor use this same rule. An unverifiable report records its digest and reason at the ordinary class. Prior sealed PEs never reprice.
+**Hardware-rooted.** Secure hardware in the phone or computer proves the record was made by genuine Provian software. An admitted `apple_app_attest` assertion over this exact PE body supplies `hardware_rooted`, its 40,000-bps (4.0×) class base. The phone attests its Secure Enclave key once and assertions advance its counter; one key backs one account. TPM, AWS Nitro, GCP Confidential Space, Azure and NVIDIA reports still verify against their pinned public roots. Unless their launch measurement is one the relay pins for a signed observer release (above), they are recorded and disclosed as presentation facts while the PE prices at its lane's normal class. A bare attested machine submission without a daemon mints at `device_tier`; its record is bound to its source by the attested machine key. Registration tiers and every other hardware attestation factor use this same rule. An unverifiable report records its digest and reason at the ordinary class. Prior sealed PEs never reprice.
 
 Upgrades are separate evidence paths:
 - **Replication packs** qualify an act for the `software_verified` tier. On the device batch, an

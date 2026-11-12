@@ -1,6 +1,6 @@
 # Provian store listing (zh)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Provian：工作创造 PVT
 
 每天，你都在完成世界能够看见的工作。你交付代码、完成任务、达成交易、借助 AI 创造事物。如今，这些工作却消失在别人的日志里。证明不属于你，报酬也很少随之而来。
 
-Provian 改变这一切。当你的设备、交易对方、代码平台或区块链为工作作证时，Provian 会将见证转化为你拥有的签名收据：Provenance Envelope。每项有见证的行为都会铸造 PVT，即 Base 上的货币，直接进入仅由你掌控的钱包。
+Provian 改变这一切。当你设备上的 Provian 软件、交易对方、代码平台或区块链为工作作证时，Provian 会将见证转化为你拥有的签名收据：Provenance Envelope。在受支持的情况下，手机或计算机中的安全硬件证明记录由正版 Provian 软件生成。每项有见证的行为都会铸造 PVT，即 Base 上的货币，直接进入仅由你掌控的钱包。
 
 无需申请。没有守门人决定你是否算数。你完成工作，网络看见，你获得报酬。
 

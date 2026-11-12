@@ -1,6 +1,6 @@
 # Provian store listing (fr)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Le calcul crée de l’argent. Faites en sorte qu’une part vous revienne.
 
 Chaque jour, vous faites un travail visible. Vous livrez du code, terminez une mission, concluez une affaire, créez avec une IA. Aujourd’hui, ce travail disparaît dans les journaux d’un autre. La preuve ne vous appartient pas, et la rémunération suit rarement.
 
-Provian change cela. Quand votre appareil, l’autre partie, la forge logicielle ou la chaîne atteste votre travail, Provian en fait un reçu signé qui vous appartient : un Provenance Envelope. Chaque acte attesté crée des PVT, de l’argent sur Base, directement dans un portefeuille que vous seul contrôlez.
+Provian change cela. Quand le logiciel Provian sur votre appareil, l’autre partie, la forge logicielle ou la chaîne atteste votre travail, Provian en fait un reçu signé qui vous appartient : un Provenance Envelope. Lorsque cette fonction est prise en charge, le matériel sécurisé du téléphone ou de l’ordinateur prouve qu’un logiciel Provian authentique a créé l’enregistrement. Chaque acte attesté crée des PVT, de l’argent sur Base, directement dans un portefeuille que vous seul contrôlez.
 
 Aucune candidature. Aucun gardien décidant si vous comptez. Vous travaillez, le réseau le voit, vous êtes rémunéré.
 

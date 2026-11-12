@@ -1,6 +1,6 @@
 # Provian store listing (vi)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Tính toán tạo ra tiền. Hãy để một phần thuộc về bạn.
 
 Mỗi ngày bạn làm việc mà thế giới có thể thấy. Bạn phát hành mã, hoàn thành nhiệm vụ, chốt giao dịch, xây dựng cùng AI. Hiện nay công việc ấy biến mất trong nhật ký của người khác. Bằng chứng không thuộc về bạn, và tiền công hiếm khi theo sau.
 
-Provian thay đổi điều đó. Khi thiết bị, bên đối tác, nền tảng mã hoặc blockchain chứng thực công việc, Provian biến chứng thực đó thành biên nhận có chữ ký thuộc về bạn: Provenance Envelope. Mỗi hành động được chứng thực tạo PVT, tiền trên Base, thẳng vào ví chỉ bạn kiểm soát.
+Provian thay đổi điều đó. Khi phần mềm Provian trên thiết bị, bên đối tác, nền tảng mã hoặc blockchain chứng thực công việc, Provian biến chứng thực đó thành biên nhận có chữ ký thuộc về bạn: Provenance Envelope. Khi được hỗ trợ, phần cứng bảo mật trong điện thoại hoặc máy tính chứng minh phần mềm Provian chính hãng đã tạo bản ghi. Mỗi hành động được chứng thực tạo PVT, tiền trên Base, thẳng vào ví chỉ bạn kiểm soát.
 
 Không cần nộp đơn. Không người gác cổng quyết định bạn có được tính đến không. Bạn làm việc, mạng nhìn thấy, bạn được trả công.
 

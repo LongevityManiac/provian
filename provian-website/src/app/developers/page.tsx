@@ -602,7 +602,7 @@ export default function DevelopersPage() {
             {
               icon: ShieldCheck,
               title: 'A grade for the evidence',
-              body: 'Each receipt’s witness class says how it was witnessed — a registered device, the network’s own check, the chain, a forge, or attested hardware — and whether a second witness corroborated it. A device signature proves which machine saw the work; the stronger witnesses above it are what raise its value.',
+              body: 'Each receipt’s witness class says how it was witnessed — a registered device, the network’s own check, the chain, a forge, or attested hardware — and whether a second witness corroborated it. A device signature binds the record to its source; qualifying secure hardware in the phone or computer proves genuine Provian software made the record; the stronger witnesses above it are what raise its value.',
             },
             {
               icon: BookOpen,

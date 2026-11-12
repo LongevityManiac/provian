@@ -23,7 +23,7 @@ Compute mints money. Make sure some of it is yours.
 
 Every day you do work the world can see. You ship code, finish a job, close a deal, build something with an AI. Right now that work disappears into someone else’s logs. The proof isn’t yours, and the pay rarely follows.
 
-Provian changes that. When your work is witnessed by your device, the other party, the code forge, or the chain, Provian turns that witness into a signed receipt you own: a Provenance Envelope. Every witnessed act mints PVT, money on Base, straight into a wallet only you control.
+Provian changes that. When your work is witnessed by Provian software on your device, the other party, the code forge, or the chain, Provian turns that witness into a signed receipt you own: a Provenance Envelope. Where supported, secure hardware in the phone or computer proves genuine Provian software made the record. Every witnessed act mints PVT, money on Base, straight into a wallet only you control.
 
 No application. No gatekeeper deciding whether you count. You do the work, the network sees it, you get paid.
 

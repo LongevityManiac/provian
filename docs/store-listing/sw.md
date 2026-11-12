@@ -1,6 +1,6 @@
 # Provian store listing (sw)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Ukokotoaji hutengeneza pesa. Hakikisha sehemu yake ni yako.
 
 Kila siku unafanya kazi inayoonekana duniani. Unatoa msimbo, unamaliza kazi, unafunga makubaliano, unajenga kitu kwa AI. Leo kazi hiyo hupotelea kwenye kumbukumbu za mtu mwingine. Uthibitisho si wako, na malipo hayafuati mara nyingi.
 
-Provian hubadilisha hilo. Kifaa chako, mhusika mwingine, jukwaa la msimbo au blockchain inaposhuhudia kazi yako, Provian hugeuza ushuhuda huo kuwa risiti iliyotiwa saini unayoimiliki: Provenance Envelope. Kila tendo lililoshuhudiwa huzalisha PVT, pesa kwenye Base, moja kwa moja kwenye pochi unayoidhibiti wewe pekee.
+Provian hubadilisha hilo. Programu ya Provian kwenye kifaa chako, mhusika mwingine, jukwaa la msimbo au blockchain inaposhuhudia kazi yako, Provian hugeuza ushuhuda huo kuwa risiti iliyotiwa saini unayoimiliki: Provenance Envelope. Pale inapowezekana, maunzi salama kwenye simu au kompyuta yanathibitisha kuwa programu halisi ya Provian ilitengeneza rekodi. Kila tendo lililoshuhudiwa huzalisha PVT, pesa kwenye Base, moja kwa moja kwenye pochi unayoidhibiti wewe pekee.
 
 Hakuna maombi. Hakuna mlinzi anayeamua kama unahesabika. Unafanya kazi, mtandao unaiona, unalipwa.
 

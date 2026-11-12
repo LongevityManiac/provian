@@ -51,7 +51,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       },
       {
         q: 'Who decides how much an act of work mints?',
-        a: 'The evidence does. Work seen by a registered device, or checked by the network itself, mints at the base value. Work a public blockchain witnessed is worth double, work a code forge such as GitHub witnessed is worth triple, and work backed by hardware that proves Provian’s own software made the record, Apple App Attest on an iPhone or a machine running the measured observer, is worth four times the base. Other verified hardware reports remain facts at the witness lane’s normal price.',
+        a: 'The evidence does. Work seen by a registered device, or checked by the network itself, mints at the base value. Work a public blockchain witnessed is worth double, work a code forge such as GitHub witnessed is worth triple, and work backed by secure hardware in a phone or computer that proves genuine Provian software made the record, Apple App Attest on an iPhone or a machine running the measured observer, is worth four times the base. Other verified hardware reports remain facts at the witness lane’s normal price.',
       },
       {
         q: 'Can I report my own work to earn?',

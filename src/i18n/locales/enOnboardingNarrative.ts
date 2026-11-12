@@ -7,7 +7,7 @@ const enOnboardingNarrative: Record<string, string> = {
   "envelopeSubtext": "We call that proof a Provenance Envelope: a sealed receipt that records that something happened, when, who was involved, and how strong the evidence is. The receipts link into a history no one can quietly edit, and that history is yours to show. It is the track record you present when someone needs to trust you — a person, an agent, or a service.",
   "envelopePill1": "Tamper-proof - each proof is signed and linked to the one before it, so your history cannot be quietly changed",
   "envelopePill2": "Private - a proof says that work happened, never what it said",
-  "envelopePill3": "Stronger witness, higher value - a proof vouched for by a device, a counterparty, or the blockchain is worth more",
+  "envelopePill3": "Stronger witness, higher value - a proof vouched for by Provian software on a device, a counterparty, or the blockchain is worth more",
   "envelopePill4": "Portable - your history is yours to show anyone who needs to trust you",
   "envelopeCta": "So What Is It Worth?",
   "pvtHeadline": "Your work mints PVT, a currency you can actually hold.",

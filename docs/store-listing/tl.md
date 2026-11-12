@@ -1,6 +1,6 @@
 # Provian store listing (tl)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Lumilikha ng pera ang compute. Tiyaking may mapupunta sa iyo.
 
 Araw-araw, gumagawa ka ng trabahong nakikita ng mundo. Naglalabas ka ng code, tumatapos ng gawain, nagsasara ng kasunduan, bumubuo ng bagay kasama ang AI. Ngayon, nawawala ang trabahong iyon sa log ng iba. Hindi sa iyo ang patunay, at bihirang sumunod ang bayad.
 
-Binabago iyon ng Provian. Kapag nasaksihan ng iyong device, kabilang partido, code forge, o blockchain ang trabaho mo, ginagawa ng Provian ang patunay na iyon na isang pirmadong resibong pag-aari mo: isang Provenance Envelope. Bawat nasaksihang gawain ay lumilikha ng PVT, pera sa Base, diretso sa wallet na ikaw lang ang may kontrol.
+Binabago iyon ng Provian. Kapag nasaksihan ng Provian software sa iyong device, kabilang partido, code forge, o blockchain ang trabaho mo, ginagawa ng Provian ang patunay na iyon na isang pirmadong resibong pag-aari mo: isang Provenance Envelope. Kung suportado, pinatutunayan ng secure hardware sa telepono o computer na tunay na Provian software ang gumawa ng rekord. Bawat nasaksihang gawain ay lumilikha ng PVT, pera sa Base, diretso sa wallet na ikaw lang ang may kontrol.
 
 Walang aplikasyon. Walang tagapagbantay na nagpapasya kung may halaga ka. Ginagawa mo ang trabaho, nakikita ito ng network, binabayaran ka.
 

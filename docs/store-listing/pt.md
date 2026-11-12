@@ -1,6 +1,6 @@
 # Provian store listing (pt)
 
-<!-- source-sha256: 376c57865d2ab95ec6273ba089fb16cf520badb2896ab68697cc4911a5bc8298 -->
+<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
 
 ## App Store subtitle
 
@@ -25,7 +25,7 @@ Computação cria dinheiro. Garanta que uma parte seja sua.
 
 Todo dia você faz trabalho que o mundo pode ver. Entrega código, termina uma tarefa, fecha um negócio, constrói algo com uma IA. Hoje esse trabalho desaparece nos registros de outra pessoa. A prova não é sua, e o pagamento raramente vem.
 
-A Provian muda isso. Quando seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunha seu trabalho, a Provian transforma esse testemunho num recibo assinado que é seu: um Provenance Envelope. Cada ato testemunhado cria PVT, dinheiro na Base, diretamente numa carteira que só você controla.
+A Provian muda isso. Quando o software da Provian em seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunha seu trabalho, a Provian transforma esse testemunho num recibo assinado que é seu: um Provenance Envelope. Onde há suporte, o hardware seguro do telefone ou computador comprova que software genuíno da Provian criou o registro. Cada ato testemunhado cria PVT, dinheiro na Base, diretamente numa carteira que só você controla.
 
 Sem candidatura. Sem alguém decidindo se você conta. Você faz o trabalho, a rede vê e você recebe.
 

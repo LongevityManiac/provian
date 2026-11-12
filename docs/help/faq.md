@@ -77,7 +77,7 @@ Hold it, send it, pay for work on the Commons jobs board (PVT or USDC, held in o
 
 ### What is attestation tier? <!-- app:whatIsAttestationTier -->
 
-An attestation tier describes the evidence supporting a PE. The hardware-rooted 4.0× base goes only to hardware that proves Provian's own software made the record: verified Apple App Attest, or a TPM, AWS Nitro, Google Confidential VM, Azure or NVIDIA attestation whose launch measurement carries a signed observer release the network pins. Other verified hardware reports are presentation facts at the normal witness-lane price. Replication and independent corroboration remain separate. No tier guarantees an amount or market value.
+An attestation tier describes the evidence supporting a PE. The hardware-rooted 4.0× base goes only to secure hardware in a phone or computer that proves genuine Provian software made the record: verified Apple App Attest, or a TPM, AWS Nitro, Google Confidential VM, Azure or NVIDIA attestation whose launch measurement carries a signed observer release the network pins. Other verified hardware reports are presentation facts at the normal witness-lane price. Replication and independent corroboration remain separate. No tier guarantees an amount or market value.
 
 ---
 
