@@ -1,9 +1,9 @@
-import { getBytes } from 'ethers';
+import { getBytes, hexlify, randomBytes } from 'ethers';
 import { readRecoursePoolChain } from './pool-chain';
-import { parseMemberBindingChallenge, type MemberBindingChallenge, type MemberBindingConsent } from './member-binding';
-import { addressMembershipSigningHash } from './membership-authorization';
+import { parseMemberBindingChallenge, type MemberBindingConsent } from './member-binding';
+import { standingMembershipSigningHash, membershipExitCommitment, type MembershipAuthorizationDomain, type StandingMembershipAuthorization } from './membership-authorization';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
-import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
+import { humanRecoverySecret, humanRecoverySigningSeed, humanMembershipExitSecret } from './human-secret';
 import SeedManager from '../wallet/SeedManager';
 import { ActionWallet } from '../security/ActionWallet';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -13,8 +13,9 @@ import { addressRecoveryBinding } from './address-binding';
 
 import { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
 export { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
-const memberChallenges = new WeakMap<OwnershipBinding, MemberBindingChallenge>();
-export function humanBindingMemberChallenge(binding: OwnershipBinding): MemberBindingChallenge | undefined { return memberChallenges.get(binding); }
+interface PreparedMemberBinding { readonly domain: MembershipAuthorizationDomain; readonly authorization: StandingMembershipAuthorization }
+const memberChallenges = new WeakMap<OwnershipBinding, PreparedMemberBinding>();
+export function humanBindingMemberChallenge(binding: OwnershipBinding): PreparedMemberBinding | undefined { return memberChallenges.get(binding); }
 export interface RecourseBindingPort {
   request(path: 'binding-challenge' | 'bind', body: unknown): Promise<unknown>;
   userId: string;
@@ -43,10 +44,14 @@ export async function prepareHumanOwnershipBinding(port: RecourseBindingPort, ad
     || raw.message !== bindingMessage(binding)) throw new Error('recourse_challenge_invalid');
   if ('memberConsent' in raw && raw.memberConsent !== null && raw.memberConsent !== undefined) {
     const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
-    memberChallenges.set(binding, parseMemberBindingChallenge(raw.memberConsent, binding, {
+    const challenge = parseMemberBindingChallenge(raw.memberConsent, binding, {
       domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: pool.pool },
-      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp,
-    }));
+      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp, earningsBps: pool.earningsBps,
+    });
+    const exitSalt = hexlify(randomBytes(32));
+    memberChallenges.set(binding, { domain: challenge.domain, authorization: { consent: challenge.consent, fixedChargePayer: false,
+      burnLimit: "0", reserveLimit: "0", earningsBpsLimit: challenge.earningsBpsLimit, exitSalt,
+      exitCommitment: membershipExitCommitment(humanMembershipExitSecret(mnemonic, challenge.domain, binding.identity, exitSalt)) } });
   }
   return binding;
 }
@@ -64,10 +69,10 @@ export async function bindHumanOwnership(port: RecourseBindingPort, address: str
   const challenge = humanBindingMemberChallenge(binding);
   let memberConsent: MemberBindingConsent | undefined;
   if (challenge) {
-    const bytes = getBytes(addressMembershipSigningHash(challenge.domain, challenge.consent));
+    const bytes = getBytes(standingMembershipSigningHash(challenge.domain, challenge.authorization));
     const ownerSignature = externalSign ? await externalSign(bytes)
       : await new ActionWallet(await SeedManager.getEVMPrivateKey(action), action).signMessage(bytes);
-    memberConsent = { consent: challenge.consent, ownerSignature };
+    memberConsent = { authorization: challenge.authorization, ownerSignature };
   }
   await port.request('bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
   await waitForRecourseBinding(binding, ownerChainNetwork());

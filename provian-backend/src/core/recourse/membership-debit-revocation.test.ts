@@ -1,6 +1,6 @@
 import { getAgreedBaseLogs } from '../onchain/economic-discovery';
 import { reconcileMembershipDebit, assertDebitRevocation } from './membership-debit-revocation';
-import { MEMBERSHIP_AUTHORIZATION_ABI, exactMembershipDebitDigest } from './membership-authorization';
+import { MEMBERSHIP_AUTHORIZATION_ABI, standingMembershipDebitDigest } from './membership-authorization';
 import { fixture, a, h, old, pointer, tx } from './__test-helpers__/membership-receipt-fixture';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -30,7 +30,7 @@ function event(name: string, args: readonly unknown[], index = 5) {
 }
 test('leave permanently revokes the old nonce after a complete finalized scan', async () => {
   const f = setup(); f.state.debitNonceAfter = 8;
-  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([event('AddressConsentChanged', [h(2), 1, false, 1])]);
+  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([event('MembershipDebitCancelled', [h(2), 7])]);
   const result = await reconcileMembershipDebit(domain, debit, checkpoint);
   expect(result?.kind).toBe('revoked');
   if (result?.kind !== 'revoked') throw Error('missing_proof');
@@ -46,10 +46,10 @@ test('recovery or abandoned signing releases only after canonical expiry and com
   expect(result?.kind === 'revoked' && result.proof.reason).toBe('expired');
 });
 test('an earlier real execution returns its receipt instead of releasing the private owner credit', async () => {
-  const f = setup(), digest = exactMembershipDebitDigest(domain, debit);
+  const f = setup(), digest = standingMembershipDebitDigest(domain, debit);
   const executed = event('MembershipDebitExecuted', [digest, h(2), a(3), debit.month, 100, 0, 7]);
   f.state.debitNonceAfter = 9;
-  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([executed, event('AddressConsentChanged', [h(2), 1, false, 1], 6)]);
+  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([executed, event('MembershipDebitCancelled', [h(2), 8], 6)]);
   f.state.effects = [{ logIndex: '0x5', topics: executed.topics, data: executed.data }];
   const result = await reconcileMembershipDebit(domain, debit, checkpoint);
   expect(result?.kind).toBe('executed');
@@ -76,7 +76,7 @@ test('a verified leave releases the durable owner lock without inventing paid cr
   const reservation = planPrivateDebit(account, domain, debit, Number(debit.month), rules);
   await reservePrivateMembership(db, reservation);
   f.state.debitNonceAfter = 8;
-  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([event('AddressConsentChanged', [h(2), 1, false, 1])]);
+  (getAgreedBaseLogs as jest.Mock).mockResolvedValue([event('MembershipDebitCancelled', [h(2), 7])]);
   const result = await reconcileMembershipDebit(domain, debit, checkpoint);
   if (result?.kind !== 'revoked') throw Error('proof_missing');
   await expect(releaseRevokedPrivateDebit(db, h(500), reservation.id, { ...result.proof })).rejects.toThrow('unverified');

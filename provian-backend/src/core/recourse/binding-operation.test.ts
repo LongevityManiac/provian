@@ -1,6 +1,6 @@
 import { Interface, Wallet, keccak256, hashMessage, verifyMessage, getBytes } from 'ethers';
 import { memberBindingSigningHash } from './member-binding';
-import { addressMembershipSigningHash } from './membership-authorization';
+import { standingMembershipSigningHash } from './membership-authorization';
 import { joinPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { utcCalendarMonth } from './calendar-month';
@@ -55,11 +55,12 @@ async function fixture(change = '', member = false) {
       if (change === 'simulation') throw new Error('signature_refused');
       expect(verifyMessage(ownershipBindingMessage(binding), parsed.args[1])).toBe(owner.address);
       if (parsed.name === 'bindWithConsent') {
-        const consent = { binding: parsed.args[4][0], account: String(parsed.args[4][1]).toLowerCase(), nonce: String(parsed.args[4][2]), joined: parsed.args[4][3], revision: String(parsed.args[4][4]), ruleHash: parsed.args[4][5], expiresAt: String(parsed.args[4][6]) };
+        const consent = { binding: parsed.args[4].consent[0], account: String(parsed.args[4].consent[1]).toLowerCase(), nonce: String(parsed.args[4].consent[2]), joined: parsed.args[4].consent[3], revision: String(parsed.args[4].consent[4]), ruleHash: parsed.args[4].consent[5], expiresAt: String(parsed.args[4].consent[6]) };
+        const authorization={consent,fixedChargePayer:parsed.args[4].fixedChargePayer,burnLimit:String(parsed.args[4].burnLimit),reserveLimit:String(parsed.args[4].reserveLimit),earningsBpsLimit:Number(parsed.args[4].earningsBpsLimit),exitCommitment:parsed.args[4].exitCommitment,exitSalt:parsed.args[4].exitSalt};
         const domain = { chainId: '8453', pointer: deployment.pointer, kernel: binding.kernel, pool: address('99') };
-        expect(verifyMessage(getBytes(memberBindingSigningHash(domain, address('dd'), binding, consent)), parsed.args[2])).toBe(attestorWallet.address);
-        expect(verifyMessage(getBytes(addressMembershipSigningHash(domain, consent)), parsed.args[5])).toBe(owner.address);
-        expect(verifyMessage(getBytes(addressMembershipSigningHash(domain, consent)), parsed.args[6])).toBe(attestorWallet.address);
+        expect(verifyMessage(getBytes(memberBindingSigningHash(domain, address('dd'), binding, authorization)), parsed.args[2])).toBe(attestorWallet.address);
+        expect(verifyMessage(getBytes(standingMembershipSigningHash(domain, authorization)), parsed.args[5])).toBe(owner.address);
+        expect(verifyMessage(getBytes(standingMembershipSigningHash(domain, authorization)), parsed.args[6])).toBe(attestorWallet.address);
       } else expect(verifyMessage(ownershipBindingMessage(binding), parsed.args[2])).toBe(attestorWallet.address);
       return '0x';
     }
@@ -129,8 +130,9 @@ test('exact consent executed by another submitter is reconciled without signing 
 test('an active member must sign atomic consent; queue and crash retry preserve both mandates', async () => {
   const f = await fixture('', true), consent = { binding: f.binding.identity, account: f.binding.address, nonce: '0', joined: true,
     revision: '1', ruleHash: hash('a1'), expiresAt: String(f.timestamp + 200) };
-  const member = { consent, ownerSignature: await owner.signMessage(getBytes(addressMembershipSigningHash(
-    { chainId: '8453', pointer: address('aa'), kernel: f.binding.kernel, pool: address('99') }, consent))) };
+  const authorization={consent,fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:hash('a2'),exitSalt:hash('a3')};
+  const member = { authorization, ownerSignature: await owner.signMessage(getBytes(standingMembershipSigningHash(
+    { chainId: '8453', pointer: address('aa'), kernel: f.binding.kernel, pool: address('99') }, authorization))) };
   await expect(checkBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain)).rejects.toThrow('member_consent_required');
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain, member);

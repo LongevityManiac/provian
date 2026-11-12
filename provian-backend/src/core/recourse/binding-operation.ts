@@ -9,7 +9,7 @@ import { ownershipBindingMessage, RECOURSE_COLLECTIONS, type OwnershipBinding } 
 import type { OwnerOperationChain } from './owner-operation-queue';
 
 import { memberBindingSigningHash, MEMBER_BINDING_TUPLE, MEMBER_CONSENT_TUPLE, type MemberBindingConsent } from './member-binding';
-import { addressMembershipSigningHash, parseAddressMembershipConsent } from './membership-authorization';
+import { standingMembershipSigningHash, parseStandingMembershipAuthorization } from './membership-authorization';
 import { requiresMemberBinding } from './member-binding-requirement';
 
 import { createHash } from 'crypto';
@@ -103,10 +103,10 @@ export async function confirmBindingRegistration(db: Firestore, proof: Confirmed
     const matches = receipt.events.filter(event => {
       if (event.name !== 'AddressConsentChanged' || event.pool !== pool || event.kernel !== proof.kernel) return false;
       const log = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...event.topics], data: event.data });
-      return log?.args.binding === proof.identity && log.args.joined === true && String(log.args.nonce) === member.consent.nonce;
+      return log?.args.binding === proof.identity && log.args.joined === true && String(log.args.nonce) === member.authorization.consent.nonce;
     });
     if (matches.length !== 1 || receipt.block !== proof.block || receipt.blockHash !== proof.blockHash
-      || matches[0].logIndex <= proof.logIndex || member.consent.binding !== proof.identity || member.consent.account !== proof.address) throw Error('recourse_binding_member_effect_missing');
+      || matches[0].logIndex <= proof.logIndex || member.authorization.consent.binding !== proof.identity || member.authorization.consent.account !== proof.address) throw Error('recourse_binding_member_effect_missing');
     effect = { pool, logIndex: matches[0].logIndex, receipt };
   }
   const ref = db.collection(RECOURSE_COLLECTIONS.addresses).doc(proof.address);
@@ -193,16 +193,17 @@ export async function checkBindingOperation(db: Firestore, binding: OwnershipBin
   let memberConsent: CheckedBindingOperation['memberConsent'];
   let identitySignature: string;
   if (memberInput) {
-    const consent = parseAddressMembershipConsent(memberInput.consent);
+    const authorization = parseStandingMembershipAuthorization(memberInput.authorization), consent = authorization.consent;
+    if (authorization.fixedChargePayer || authorization.burnLimit !== "0" || authorization.reserveLimit !== "0") throw Error("recourse_binding_member_consent_invalid");
     if (!attestor.signBytes || consent.revision !== String(deployment.revision) || typeof memberInput.ownerSignature !== 'string'
       || !/^0x(?:[0-9a-fA-F]{2})+$/.test(memberInput.ownerSignature)) throw Error('recourse_binding_member_consent_invalid');
-    const bindingBytes = getBytes(memberBindingSigningHash(domain, registry, binding, consent));
-    const consentBytes = getBytes(addressMembershipSigningHash(domain, consent));
+    const bindingBytes = getBytes(memberBindingSigningHash(domain, registry, binding, authorization));
+    const consentBytes = getBytes(standingMembershipSigningHash(domain, authorization));
     identitySignature = await attestor.signBytes(bindingBytes);
     const attestorSignature = await attestor.signBytes(consentBytes);
     await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, bindingBytes, identitySignature);
     await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, consentBytes, attestorSignature);
-    memberConsent = Object.freeze({ consent: Object.freeze(consent), ownerSignature: memberInput.ownerSignature, attestorSignature });
+    memberConsent = Object.freeze({ authorization: Object.freeze(authorization), ownerSignature: memberInput.ownerSignature, attestorSignature });
   } else {
     identitySignature = await attestor.signMessage(message);
     await assertIdentityAttestation(chain, identitySigner, deployment.blockHash, message, identitySignature);
@@ -249,5 +250,5 @@ export function bindingOperationCalldata(binding: OwnershipBinding, ownerSignatu
   const args = [[binding.identity, binding.address, binding.recoveryCommitment, binding.signingRoot, binding.kernel, binding.nonce, binding.expiresAtMs],
     ownerSignature, identitySignature, BigInt(revision)];
   if (!member) return REGISTRY_ABI.encodeFunctionData('bind', args);
-  return REGISTRY_ABI.encodeFunctionData('bindWithConsent', [...args, parseAddressMembershipConsent(member.consent), member.ownerSignature, member.attestorSignature]);
+  return REGISTRY_ABI.encodeFunctionData('bindWithConsent', [...args, parseStandingMembershipAuthorization(member.authorization), member.ownerSignature, member.attestorSignature]);
 }

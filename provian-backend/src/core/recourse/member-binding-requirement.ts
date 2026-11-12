@@ -36,7 +36,7 @@ export async function requiresMemberBinding(db: Firestore, ownerIdentity: string
 }
 
 export async function prepareMemberBindingConsent(db: Firestore, ownerIdentity: string, binding: OwnershipBinding): Promise<{
-  readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent;
+  readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent; readonly earningsBpsLimit: number;
 } | null> {
   const deployment = await currentProtocolDeployment(), legs = getOperatorBoundRpcLegs('base');
   if (!legs[0].operatorId || !legs[1].operatorId || legs[0].operatorId === legs[1].operatorId) throw Error('recourse_binding_rpc_operators');
@@ -51,7 +51,7 @@ export async function prepareMemberBindingConsent(db: Firestore, ownerIdentity: 
   // A previously confirmed binding is returned idempotently by the bind route.
   if (state.currentAddress === binding.address) return null;
   if (state.currentAddress !== `0x${'0'.repeat(40)}` || state.addressConsent) throw Error('recourse_binding_address_already_bound');
-  return { domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: state.pool },
+  return { earningsBpsLimit: state.earningsBps, domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: state.pool },
     consent: { binding: binding.identity, account: binding.address, nonce: state.consentNonce, joined: true,
       revision: String(deployment.revision), ruleHash: state.signedRuleHash, expiresAt: String(Math.min(state.timestamp + 300, Math.floor(binding.expiresAtMs / 1000))) } };
 }

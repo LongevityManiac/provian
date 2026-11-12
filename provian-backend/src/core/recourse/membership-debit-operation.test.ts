@@ -1,4 +1,4 @@
-import { Interface, Wallet, getBytes, keccak256, verifyMessage } from 'ethers';
+import { Interface, Wallet, getBytes, getCreateAddress, keccak256, verifyMessage } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
@@ -6,7 +6,7 @@ import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, planPrivateDebit, reservePrivateMembership, type PrivateMembershipAccount } from './private-membership-reservation';
 import { joinPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { readPrivateCalendarRules } from './private-calendar-rules';
-import { MEMBERSHIP_AUTHORIZATION_ABI, exactMembershipDebitSigningHash } from './membership-authorization';
+import { STANDING_MEMBERSHIP_ABI, standingMembershipDebitSigningHash } from './membership-authorization';
 import { queueMembershipDebit, checkMembershipDebit, membershipDebitAdapter, assertCheckedMembershipDebit,
   MEMBERSHIP_DEBIT_OPERATIONS as Q, type CheckedMembershipDebit } from './membership-debit-operation';
 import { executeSponsoredOperation } from './sponsored-operation-worker';
@@ -46,28 +46,28 @@ async function fixture() {
     revision: 1n, blockHash: h('47'), manifestHash: h('48') } as ProtocolDeployment;
   const state = { pool: domain.pool, kernel: domain.kernel, block: 11, blockHash: deployment.blockHash, timestamp: now,
     currentAddress: payer, signedRuleHash: debit.ruleHash, debitNonce: '0', consentGeneration: '1', addressConsent: true } as RecoursePoolState;
-  const wire = new Interface(['function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
+  const controller=getCreateAddress({from:domain.pool,nonce:1}).toLowerCase();
+  const wire = new Interface(['function standingMembership() view returns(address)', 'function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
     'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)', 'function operationalMinter() view returns(address)',
-    'function kernel() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)', ...MEMBERSHIP_AUTHORIZATION_ABI.fragments]);
+    'function kernel() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)', ...STANDING_MEMBERSHIP_ABI.fragments]);
   const p: MembershipConsentPorts = { state: async () => state, chain: { deployment: async () => deployment, agree: async (method, args) => {
     expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
     if (method === 'eth_getCode') return '0x';
     const call = args[0] as { to: string; data: string }, parsed = wire.parseTransaction(call)!;
-    if (parsed.name === 'executeMembershipDebit') {
-      expect(call.to).toBe(domain.pool);
+    if (parsed.name === 'executeStandingDebit') {
+      expect(call.to).toBe(controller);
       expect(String(parsed.args[0].burn)).toBe('40'); expect(String(parsed.args[0].reserve)).toBe('25');
-      const bytes = getBytes(exactMembershipDebitSigningHash(domain, debit));
-      expect(verifyMessage(bytes, parsed.args[1])).toBe(ownerWallet.address);
-      expect(verifyMessage(bytes, parsed.args[2])).toBe(attestorWallet.address);
+      const bytes = getBytes(standingMembershipDebitSigningHash(domain, debit));
+      expect(verifyMessage(bytes, parsed.args[1])).toBe(attestorWallet.address);
       return '0x';
     }
-    const result: Record<string, string> = { registryOperator: a('49'), identityAttestor: attestorWallet.address, restorationAuthority: a('50'),
+    const result: Record<string, string> = { standingMembership:controller, registryOperator: a('49'), identityAttestor: attestorWallet.address, restorationAuthority: a('50'),
       pointer: domain.pointer, operationalMinter: deployment.addresses.settlement, kernel: domain.kernel, pool: domain.pool, submitter: gasWallet.address };
     return wire.encodeFunctionResult(parsed.name, [result[parsed.name]]);
   } } };
   const attestor = { address: attestorWallet.address.toLowerCase(), signMessage: (m: string) => attestorWallet.signMessage(m),
     signBytes: jest.fn((m: Uint8Array) => attestorWallet.signMessage(m)) };
-  const input = { reservationId: reservation.id, domain, debit, ownerSignature: await ownerWallet.signMessage(getBytes(exactMembershipDebitSigningHash(domain, debit))) };
+  const input = { reservationId: reservation.id, domain, debit };
   return { fake, db, owner, binding, payer, domain, debit, reservation, account, state, p, attestor, input };
 }
 test('exact prior-month partial payment is queued without credit and portfolio data never enters calldata', async () => {
@@ -78,7 +78,7 @@ test('exact prior-month partial payment is queued without credit and portfolio d
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.episode).toEqual(f.account.episode);
   await expect(queueMembershipDebit(f.db, h('ff'), f.input, f.attestor, f.p)).rejects.toThrow('unknown');
 });
-test.each(['burn', 'reserve', 'reservation', 'payer', 'month', 'generation', 'signature', 'transition'])('altered payment cannot obtain attestation: %s', async mutation => {
+test.each(['burn', 'reserve', 'reservation', 'payer', 'month', 'generation', 'transition'])('altered payment cannot obtain attestation: %s', async mutation => {
   const f = await fixture(), input = { ...f.input, debit: { ...f.debit } };
   if (mutation === 'burn') input.debit.burn = '41';
   if (mutation === 'reserve') input.debit.reserve = '26';
@@ -86,10 +86,7 @@ test.each(['burn', 'reserve', 'reservation', 'payer', 'month', 'generation', 'si
   if (mutation === 'payer') input.debit.payer = a('ff');
   if (mutation === 'month') input.debit.month = String(month);
   if (mutation === 'generation') input.debit.generation = '2';
-  if (mutation === 'signature') input.ownerSignature = await ownerWallet.signMessage(exactMembershipDebitSigningHash(f.domain, f.debit));
   if (mutation === 'transition') f.fake.store.get(`${R.owners}/${f.owner}`)!.membershipTransition = h('ff');
-  // Even a new valid owner signature cannot rewrite an already reserved sum.
-  if (mutation === 'burn' || mutation === 'reserve') input.ownerSignature = await ownerWallet.signMessage(getBytes(exactMembershipDebitSigningHash(input.domain, input.debit)));
   await expect(queueMembershipDebit(f.db, f.owner, input, f.attestor, f.p)).rejects.toThrow();
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.pendingReservation).toBe(f.reservation.id);

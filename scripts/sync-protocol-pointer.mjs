@@ -35,7 +35,8 @@ const outputs = new Map([
   ['src/core/recourse/membership-client.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-client.ts'), 'utf8')
     .replaceAll("'./recourse-owner-chain'", "'./owner-chain'").replaceAll("'./protocol-pointer'", "'../protocol/pointer'")
     .replaceAll("'./recourse-pool-chain'", "'./pool-chain'").replaceAll("'./recourse-pool-abi'", "'./pool-abi'")
-    .replaceAll("'./recourse-membership-authorization'", "'./membership-authorization'")],
+    .replaceAll("'./recourse-membership-authorization'", "'./membership-authorization'")
+    .replaceAll("'./recourse-standing-state'", "'./standing-state'")],
   ['provian-backend/src/core/recourse/hash-authorization.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-hash-authorization.ts'), 'utf8')
     .replace("import { hkdf } from '@noble/hashes/hkdf';\nimport { sha256 } from '@noble/hashes/sha256';\nimport { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';",
       "import { hkdf, sha256, bytesToHex, hexToBytes, utf8ToBytes } from './hash-primitives';")],
@@ -47,6 +48,9 @@ const outputs = new Map([
       .replace("'./recourse-binding'", "'./binding'").replace("'./recourse-membership-authorization'", "'./membership-authorization'")]),
   ...['src/core/recourse/membership-authorization.ts', 'provian-backend/src/core/recourse/membership-authorization.ts'].map(path =>
     [path, readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-authorization.ts'), 'utf8')]),
+  ...['src/core/recourse/standing-state.ts', 'provian-backend/src/core/recourse/standing-state.ts'].map(path =>
+    [path, readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-standing-state.ts'), 'utf8')
+      .replaceAll("'./protocol-pointer'", "'../protocol/pointer'").replaceAll("'./recourse-membership-authorization'", "'./membership-authorization'")]),
   ['src/core/recourse/address-binding.ts', addressBinding],
   ['provian-backend/src/core/recourse/address-binding.ts', addressBinding],
   ['src/core/recourse/address-credential.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-credential.ts'), 'utf8').replace("'./recourse-address-binding'", "'./address-binding'")],

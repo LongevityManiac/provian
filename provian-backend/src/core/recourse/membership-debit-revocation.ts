@@ -6,7 +6,7 @@ import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import { resolveHistoricalProtocolDeployment, type PointerRpc } from '../protocol/pointer';
 import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
 import { createRecourseChainPort } from './chain-ledger';
-import { exactMembershipDebitDigest, parseExactMembershipDebit, parseMembershipAuthorizationDomain,
+import { standingMembershipDebitDigest, parseExactMembershipDebit, parseMembershipAuthorizationDomain,
   MEMBERSHIP_AUTHORIZATION_ABI, type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 import { readMembershipReceipt, type VerifiedMembershipReceipt } from './membership-receipt';
 
@@ -73,7 +73,7 @@ export async function reconcileMembershipDebit(domainInput: MembershipAuthorizat
   const initial = await nonce(checkpoint.blockHash), final = await nonce(throughBlockHash);
   if (initial !== BigInt(debit.nonce) || final < initial) return fail('baseline');
   let cursor = initial, lastBlock = checkpoint.block, lastLog = -1, matched: string | null = null;
-  const digest = exactMembershipDebitDigest(domain, debit), evidence: unknown[] = [];
+  const digest = standingMembershipDebitDigest(domain, debit), evidence: unknown[] = [];
   const topics = ['MembershipDebitExecuted', 'MembershipDebitCancelled', 'AddressConsentChanged']
     .map(name => MEMBERSHIP_AUTHORIZATION_ABI.getEvent(name)!.topicHash);
   for (let from = checkpoint.block + 1; from <= throughBlock; from += 500) {
@@ -84,7 +84,7 @@ export async function reconcileMembershipDebit(domainInput: MembershipAuthorizat
       lastBlock = l.blockNumber; lastLog = l.logIndex;
       const event = MEMBERSHIP_AUTHORIZATION_ABI.parseLog({ topics: [...l.topics], data: l.data });
       if (!event || event.args.binding !== debit.binding) continue;
-      if (event.name === 'AddressConsentChanged') { if (event.args.joined) continue; }
+      if (event.name === 'AddressConsentChanged') continue;
       else if (BigInt(event.args.nonce) !== cursor) return fail('history_gap');
       ++cursor; evidence.push(l);
       if (event.name === 'MembershipDebitExecuted' && event.args.digest === digest) {

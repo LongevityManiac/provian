@@ -1,4 +1,4 @@
-import {Interface,keccak256,ZeroAddress,ZeroHash,sha256,toUtf8Bytes} from 'ethers';
+import {getCreateAddress,Interface,keccak256,ZeroAddress,ZeroHash,sha256,toUtf8Bytes} from 'ethers';
 import {verifyInstitutionRuntime} from './institution-snapshot.mjs';
 const ensure=(v,c)=>{if(!v)throw Error('successor_verify_'+c);};
 const lower=v=>String(v).toLowerCase();
@@ -12,7 +12,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
  const inventoryBody={...institutions};delete inventoryBody.digest;
  ensure(sha256(toUtf8Bytes(JSON.stringify(inventoryBody)))===plan.institutionDigest,'inventory_changed');
  ensure(rule.ruleHash===plan.ruleHash&&sha256(toUtf8Bytes('Provian Recourse Pool membership rule\n'+JSON.stringify(rule.rule)+'\n'))===rule.ruleHash,'rule_changed');
- const a={...plan.addresses,ProvianMemberSettlement:plan.components[9],ProvianProtocolPointer:plan.pointer},state=plan.snapshot.state;
+ const a={...plan.addresses,RecourseStandingConsent:getCreateAddress({from:plan.addresses.ProvianMemberRecoursePool,nonce:1}),ProvianMemberSettlement:plan.components[9],ProvianProtocolPointer:plan.pointer},state=plan.snapshot.state;
  const read=async(name,method,args=[])=>{
   const iface=new Interface(artifacts[name].abi);
   return iface.decodeFunctionResult(method,await port.call(a[name],iface.encodeFunctionData(method,args),block.hash));
@@ -22,6 +22,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   const name=creation.label.slice('deploy:'.length),runtime=await port.code(creation.address,block.hash);
   verifyInstitutionRuntime(artifacts[name],runtime);
  }
+ verifyInstitutionRuntime(artifacts.RecourseStandingConsent,await port.code(a.RecourseStandingConsent,block.hash));
  verifyInstitutionRuntime(artifacts.ProvianProtocolPointer,await port.code(plan.pointer,block.hash));
  const bindings={
   ProvianProtocolPointer:{authority:plan.pointerAuthority},
@@ -33,7 +34,8 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
    operationalMinter:plan.components[9]},
   ProvianRecourseEligibilityVerifier:{KERNEL:a.ProvianRecourseKernel,batchApprover:plan.batchApprover,BOOTSTRAP_ADMIN:plan.admin},
   ProvianMemberRecoursePool:{token:a.ProvianRecourseKernel,pointer:plan.pointer,registryOperator:a.ProvianOwnershipRegistry,
-   bootstrapAdmin:plan.admin,settlement:plan.components[9]},
+   bootstrapAdmin:plan.admin,settlement:plan.components[9],standingMembership:a.RecourseStandingConsent},
+  RecourseStandingConsent:{pool:a.ProvianMemberRecoursePool},
   ProvianMemberSettlement:{kernel:a.ProvianRecourseKernel,pointer:plan.pointer,submitter:plan.submitter,pool:a.ProvianMemberRecoursePool},
   ProvianSuccessionImporter:{history:a.ProvianRecoveryHistory,authorization:a.ProvianRestorationAuthorization},
  };

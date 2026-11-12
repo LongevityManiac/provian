@@ -6,7 +6,7 @@ import { waitForRecourseBinding } from './binding-chain';
 import { withBiometricAction } from '../security/biometricAction';
 import { translate } from '../../i18n/translate';
 import { bindingMessage, humanBindingMemberChallenge, prepareHumanOwnershipBinding, type OwnershipBinding } from './ownership';
-import { addressMembershipSigningHash } from './membership-authorization';
+import { standingMembershipSigningHash } from './membership-authorization';
 import type { ExternalWalletProofApi } from '../../screens/Agent/LinkExternalWalletScreen';
 import { recoverHumanAccount } from './human-recovery';
 import { readRecoursePoolChain } from './pool-chain';
@@ -176,7 +176,7 @@ export function recourseExternalProofApi(): ExternalWalletProofApi {
           const member = humanBindingMemberChallenge(binding);
           return { ok: true as const, challenge: { challengeId: binding.nonce, address: binding.address,
             expiresAt: binding.expiresAtMs, message: bindingMessage(binding),
-            ...(member ? { memberConsentMessageHex: addressMembershipSigningHash(member.domain, member.consent) } : {}) } };
+            ...(member ? { memberConsentMessageHex: standingMembershipSigningHash(member.domain, member.authorization) } : {}) } };
         });
       } catch { return { ok: false, error: 'challenge_failed' }; }
     },
@@ -189,7 +189,7 @@ export function recourseExternalProofApi(): ExternalWalletProofApi {
         const member = humanBindingMemberChallenge(binding);
         if (Boolean(member) !== Boolean(input.memberSignature)) throw new Error('recourse_member_signature_required');
         await RelayAPIService.recourseRequest('bind', { binding, signature: input.signature,
-          ...(member ? { memberConsent: { consent: member.consent, ownerSignature: input.memberSignature } } : {}) });
+          ...(member ? { memberConsent: { authorization: member.authorization, ownerSignature: input.memberSignature } } : {}) });
         await waitForRecourseBinding(binding, ownerChainNetwork());
         pending.delete(input.challengeId);
         return { ok: true, provenAddress: binding.address };

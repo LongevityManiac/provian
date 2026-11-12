@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
+import {RecourseStandingConsent} from "../src/RecourseStandingConsent.sol";
 import {RecourseAddressConsent} from "../src/RecourseAddressConsent.sol";
 import {RecourseIssuanceTickets} from "../src/RecourseIssuanceTickets.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -84,23 +85,21 @@ contract ProvianMemberRecoursePoolTest is Test {
         (uint256 nonce,,) = pool.addressConsent(binding);
         RecourseAddressConsent.ConsentAuthorization memory c = RecourseAddressConsent.ConsentAuthorization(binding, account, nonce,
             true, 1, sha256("signed test rule"), block.timestamp + 300);
-        bytes32 digest = pool.consentDigest(c);
-        pool.setAddressConsent(c, sign(key, digest), sign(ATTESTOR_KEY, digest));
+        RecourseStandingConsent.StandingAuthorization memory a = RecourseStandingConsent.StandingAuthorization(c,true,100 ether,100 ether,100,sha256(abi.encodePacked(sha256(abi.encode(binding,nonce)))),keccak256(abi.encode(binding,nonce)));
+        bytes32 digest = pool.standingMembership().standingConsentDigest(a);
+        pool.standingMembership().setStandingConsent(a, sign(key, digest), sign(ATTESTOR_KEY, digest));
     }
     function leaveExternally() external { leave(); }
     function leave() private {
         (uint256 nonce,,) = pool.addressConsent(ID);
-        RecourseAddressConsent.ConsentAuthorization memory c = RecourseAddressConsent.ConsentAuthorization(ID, address(this), nonce,
-            false, 1, sha256("signed test rule"), block.timestamp + 300);
-        bytes32 digest = pool.consentDigest(c);
-        pool.setAddressConsent(c, sign(OWNER_KEY, digest), sign(ATTESTOR_KEY, digest));
+        pool.standingMembership().leaveStandingMembership(ID,nonce,sha256(abi.encode(ID,nonce-1)),1);
     }
     function debit(uint256 month, uint256 burn, uint256 reserve) private {
         (, uint256 generation,) = pool.addressConsent(ID);
         RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(ID, address(this), month,
             burn, reserve, pool.debitNonce(ID), generation, 1, sha256("signed test rule"), block.timestamp + 300);
-        bytes32 digest = pool.debitDigest(d);
-        pool.executeMembershipDebit(d, sign(OWNER_KEY, digest), sign(ATTESTOR_KEY, digest));
+        bytes32 digest = pool.standingMembership().debitDigest(d);
+        pool.standingMembership().executeStandingDebit(d, sign(ATTESTOR_KEY, digest));
     }
     function testConsentAccountResolvesRecoveryBeforeAnyPoolWrite() public {
         assertEq(pool.consentAccount(ID), address(this));
@@ -148,7 +147,7 @@ contract ProvianMemberRecoursePoolTest is Test {
     }
     function testBurnAndNoEarningsContributionAreSeparateAndLeavingRefundsNeither() public {
         token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY);
-        assertEq(token.totalSupply(), 1000 ether); // Consent alone never authorizes a debit.
+        assertEq(token.totalSupply(), 1000 ether); // Joining alone does not execute a debit.
         debit(pool.calendarMonth(block.timestamp), 100 ether, 0);
         assertEq(token.totalSupply(), 900 ether); assertEq(pool.availableReserve(), 0);
         vm.warp(1706745600); debit(pool.calendarMonth(block.timestamp)-1, 0, 100 ether);
@@ -162,10 +161,11 @@ contract ProvianMemberRecoursePoolTest is Test {
         token.mint(address(this), 1000 ether); join(ID, address(this), OWNER_KEY); token.setDishonestBurn(true);
         (, uint256 generation,) = pool.addressConsent(ID);
         RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(ID, address(this), pool.calendarMonth(block.timestamp),
-            100 ether, 0, 0, generation, 1, sha256("signed test rule"), block.timestamp + 300);
-        bytes32 digest = pool.debitDigest(d); bytes memory owner = sign(OWNER_KEY, digest); bytes memory attestor = sign(ATTESTOR_KEY, digest);
-        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); pool.executeMembershipDebit(d, owner, attestor);
-        assertEq(pool.debitNonce(ID), 0); assertEq(token.balanceOf(address(this)), 1000 ether);
+            100 ether, 0, pool.debitNonce(ID), generation, 1, sha256("signed test rule"), block.timestamp + 300);
+        bytes32 digest = pool.standingMembership().debitDigest(d); bytes memory attestor = sign(ATTESTOR_KEY, digest);
+        RecourseStandingConsent standing = pool.standingMembership();
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector); standing.executeStandingDebit(d, attestor);
+        assertEq(pool.debitNonce(ID), 1); assertEq(token.balanceOf(address(this)), 1000 ether);
     }
     function testRecoveredAddressContributesOnFirstIssuanceWithExistingConsent() public {
         join(ID, address(this), OWNER_KEY); address destination = address(0xBEEF);

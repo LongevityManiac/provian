@@ -16,6 +16,7 @@ import {ProvianRecoveryHistory} from "../src/ProvianRecoveryHistory.sol";
 import {ProvianProtocolPointer} from "../src/ProvianProtocolPointer.sol";
 import {ProvianRestorationAuthorization} from "../src/ProvianRestorationAuthorization.sol";
 import {RecourseOwnerAuthorization} from "../src/RecourseOwnerAuthorization.sol";
+import {RecourseStandingConsent} from "../src/RecourseStandingConsent.sol";
 import {RecourseAddressConsent} from "../src/RecourseAddressConsent.sol";
 import {RecourseIssuanceTickets} from "../src/RecourseIssuanceTickets.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -137,6 +138,22 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         (, proof.signature) = slhSign(1, authorization.ownerAuthorizationDigest(ID, operation, proof.nextCommitment, proof.nextSigningRoot));
         vm.prank(ADMIN);
         authorization.execute(ID, operation, proof, abi.encode(uint8(3), abi.encode(intent, uint256(1))));
+    }
+    function testAllowanceBypassRejectsNonpoolAndRetiredDomains() public {
+        address oldPool = pointer.component(8);
+        vm.prank(address(0xCAFE)); vm.expectRevert(ProvianRecourseKernel.InsufficientAllowance.selector);
+        kernel.transferFrom(THIEF, address(0xCAFE), 1);
+        vm.prank(address(0xCAFE)); vm.expectRevert(ProvianRecourseKernel.InsufficientAllowance.selector);
+        kernel.burnFrom(THIEF, 1);
+        (,,address[10] memory targets,bytes32[10] memory hashes) = pointer.current();
+        targets[0]=address(0xFAAA); vm.etch(targets[0],hex"00"); hashes[0]=targets[0].codehash;
+        targets[8]=address(0xFBBB); vm.etch(targets[8],hex"00"); hashes[8]=targets[8].codehash;
+        vm.prank(pointer.authority()); pointer.publish(1,targets,hashes);
+        vm.prank(oldPool); vm.expectRevert(ProvianRecourseKernel.InsufficientAllowance.selector);
+        kernel.transferFrom(THIEF,oldPool,1);
+        vm.prank(targets[8]); vm.expectRevert(ProvianRecourseKernel.InsufficientAllowance.selector);
+        kernel.burnFrom(THIEF,1);
+        assertEq(kernel.balanceOf(THIEF),123 ether);
     }
     function testAnyGasSponsorCanRegisterExactOwnerIntentButCannotReverseIt() public {
         ProvianRestorationAuthorization.RestorationIntent memory intent = ProvianRestorationAuthorization.RestorationIntent(
@@ -729,14 +746,18 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         pool.bind(ID, THIEF);
         vm.etch(THIEF, address(new KernelMembershipSignatureFixture(vm.addr(1))).code);
         vm.etch(address(0xE), address(new KernelMembershipSignatureFixture(vm.addr(2))).code);
-        vm.prank(THIEF); kernel.approve(address(pool), type(uint256).max);
         uint256 month = pool.calendarMonth(block.timestamp); bytes32 ruleHash = pool.monthlyRule(month).signedRuleHash;
         RecourseAddressConsent.ConsentAuthorization memory consent = RecourseAddressConsent.ConsentAuthorization(ID, THIEF, 0, true, 1, ruleHash, block.timestamp + 300);
-        bytes32 consentHash = pool.consentDigest(consent);
-        pool.setAddressConsent(consent, membershipSignature(1, consentHash), membershipSignature(2, consentHash));
-        RecourseAddressConsent.DebitAuthorization memory debit = RecourseAddressConsent.DebitAuthorization(ID, THIEF, month, 100 ether, 0, 0, 1, 1, ruleHash, block.timestamp + 300);
-        bytes32 debitHash = pool.debitDigest(debit);
-        pool.executeMembershipDebit(debit, membershipSignature(1, debitHash), membershipSignature(2, debitHash));
+        RecourseStandingConsent standing = pool.standingMembership();
+        RecourseMembershipRules.MonthlyRule memory rule = pool.monthlyRule(month);
+        RecourseStandingConsent.StandingAuthorization memory authorization = RecourseStandingConsent.StandingAuthorization(
+            consent, true, rule.participationBurn, rule.noEarningsContribution, rule.earningsBps, sha256("TEST ONLY exit"), sha256("TEST ONLY salt"));
+        bytes32 consentHash = standing.standingConsentDigest(authorization);
+        standing.setStandingConsent(authorization, membershipSignature(1, consentHash), membershipSignature(2, consentHash));
+        RecourseAddressConsent.DebitAuthorization memory debit = RecourseAddressConsent.DebitAuthorization(ID, THIEF, month, 100 ether, 0, pool.debitNonce(ID), 1, 1, ruleHash, block.timestamp + 300);
+        bytes32 debitHash = standing.debitDigest(debit);
+        standing.executeStandingDebit(debit, membershipSignature(2, debitHash));
+        assertEq(kernel.allowance(THIEF,address(pool)),0);
         assertEq(kernel.balanceOf(THIEF), 23 ether);
         ProvianPVT9.StandardRecipient[] memory recipients = new ProvianPVT9.StandardRecipient[](1);
         recipients[0] = ProvianPVT9.StandardRecipient(THIEF, ProvianPVT9.BeneficiaryClass.HumanResolving, 1);

@@ -1,19 +1,19 @@
-import { getBytes, Wallet } from 'ethers';
+import { getBytes, hexlify, randomBytes, Wallet } from 'ethers';
 import { readRecoursePoolChain } from './recourse-pool-chain';
 import { parseMemberBindingChallenge, type MemberBindingConsent } from './recourse-member-binding';
-import { addressMembershipSigningHash } from './recourse-membership-authorization';
-import { recoverRecourseAgent } from './recourse-recovery';
+import { deriveMembershipExitSecret, membershipExitCommitment, standingMembershipSigningHash } from './recourse-membership-authorization';
+import { recoverRecourseAgent, retainedMembershipExitSecret } from './recourse-recovery';
 import { recoverySigningRoot, recoveryCommitment } from './recourse-hash-authorization';
 import { guardedFetcher } from './guarded-fetch';
-import { initializeRecoveryKeystore, withDecryptedKey, type AgentKeystore } from './keystore';
+import { initializeRecoveryKeystore, withDecryptedKey, withRecoveryMaterial, type AgentKeystore } from './keystore';
 import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { addressRecoveryBinding } from './recourse-address-binding';
 import { signEip191Message } from './link-signing';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
 import { waitForRecourseBinding } from './recourse-binding-chain';
-import { readActiveHashWallet, signActiveHashWalletMessage } from './break-recovery-store';
-import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent, prepareMembershipDebit, submitMembershipDebit,
-  type MembershipConsentChallenge, type MembershipDebitChallenge, type MembershipRelay } from './recourse-membership-client';
+import { signActiveHashWalletMessage } from './break-recovery-store';
+import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent,
+  type MembershipConsentChallenge, type MembershipRelay } from './recourse-membership-client';
 import { loadKeystore } from './keystore';
 import * as path from 'path';
 
@@ -47,33 +47,20 @@ async function signAgentMembership(config: RecourseConfig, input: { directory: s
   if (keystore.address.toLowerCase() !== input.account.toLowerCase()) throw Error('recourse_wallet_mismatch');
   return withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
 }
-export async function beginAgentMembership(config: RecourseConfig, kind: 'join' | 'leave') {
+export async function beginAgentMembership(config: RecourseConfig, kind: 'join' | 'leave' | 'renew') {
   return beginMembershipTransition(recourseMembershipRelay(config), kind);
 }
 export async function readAgentMembershipTransition(config: RecourseConfig, id?: string) {
   return readMembershipTransition(recourseMembershipRelay(config), id);
 }
 export async function authorizeAgentMembershipConsent(config: RecourseConfig, input: { directory: string; passphrase: string;
-  transitionId: string; kind: 'join' | 'leave'; challenge: MembershipConsentChallenge }) {
+  transitionId: string; kind: 'join' | 'leave' | 'renew'; challenge: MembershipConsentChallenge }) {
   const account = input.challenge.consent.account;
   return submitMembershipConsent(recourseMembershipRelay(config), ownerChainNetwork(), { ...input, account,
-    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes) });
+    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes),
+    exitSecret:(salt,expectedCommitment)=>retainedMembershipExitSecret({directory:input.directory,passphrase:input.passphrase,
+      walletId:config.walletId,domain:input.challenge.domain,binding:input.challenge.consent.binding,salt,expectedCommitment}) });
 }
-export async function prepareAgentMembershipDebit(config: RecourseConfig, input: { directory: string;
-  amounts?: { readonly month: string; readonly burn: string; readonly reserve: string } }) {
-  const keystore = loadKeystore(path.join(input.directory, 'agent-keystore.json'));
-  if (!keystore || keystore.wallet_id !== config.walletId) throw Error('recourse_wallet_mismatch');
-  const payer = readActiveHashWallet(input.directory)?.address ?? keystore.address;
-  return prepareMembershipDebit(recourseMembershipRelay(config), payer, input.amounts);
-}
-/** Exact token approval must be submitted separately, through the current
- * pointer-verified transaction path, before this financial mandate is signed. */
-export async function authorizeAgentMembershipDebit(config: RecourseConfig, input: { directory: string; passphrase: string; challenge: MembershipDebitChallenge }) {
-  const account = input.challenge.debit.payer;
-  return submitMembershipDebit(recourseMembershipRelay(config), ownerChainNetwork(), { payer: account, challenge: input.challenge,
-    signBytes: bytes => signAgentMembership(config, { ...input, account }, bytes) });
-}
-
 /** Durably encrypt an independent secret before registering only its hash. */
 export async function bindRecourseOwnership(config: RecourseConfig, input: {
   readonly keystore: AgentKeystore; readonly passphrase: string; readonly keystorePath: string;
@@ -103,13 +90,21 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
     const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
     const challenge = parseMemberBindingChallenge(raw.memberConsent, binding, {
       domain: { chainId: '8453', pointer: deployment.pointer.toLowerCase(), kernel: binding.kernel, pool: pool.pool },
-      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp,
+      revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp, earningsBps: pool.earningsBps,
     });
-    const bytes = getBytes(addressMembershipSigningHash(challenge.domain, challenge.consent));
+    const exitSalt = hexlify(randomBytes(32));
+    const exitCommitment = await withRecoveryMaterial(keystore, input.passphrase, async (secret, seed) => {
+      const material = new Uint8Array([...secret,...seed]);
+      try { return membershipExitCommitment(deriveMembershipExitSecret(material, challenge.domain, binding.identity, exitSalt)); }
+      finally { material.fill(0); }
+    });
+    const authorization = { consent: challenge.consent, fixedChargePayer: false, burnLimit: "0", reserveLimit: "0",
+      earningsBpsLimit: challenge.earningsBpsLimit, exitSalt, exitCommitment };
+    const bytes = getBytes(standingMembershipSigningHash(challenge.domain, authorization));
     if (input.external && !input.external.signBytes) throw Error('recourse_external_membership_signer_required');
     const ownerSignature = input.external ? await input.external.signBytes!(bytes)
       : await withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
-    memberConsent = { consent: challenge.consent, ownerSignature };
+    memberConsent = { authorization, ownerSignature };
   }
   const result = await request(config, 'bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
   await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal);

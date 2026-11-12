@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseStandingConsent} from "./RecourseStandingConsent.sol";
 import {RecourseMembershipRules} from "./RecourseMembershipRules.sol";
 import {RecourseAddressConsentState} from "./RecourseAddressConsent.sol";
 import {RecourseReserveAccounting,IRecourseReserveToken} from "./RecourseReserveAccounting.sol";
@@ -7,6 +8,7 @@ import {RecourseReserveAccounting,IRecourseReserveToken} from "./RecourseReserve
 /// @notice Complete, permissionlessly imported pool state at one committed
 /// custody cutoff. No membership operation can race a partial state import.
 abstract contract RecoursePoolHistory is RecourseMembershipRules, RecourseAddressConsentState, RecourseReserveAccounting {
+    RecourseStandingConsent public immutable standingMembership;
     mapping(address => bytes32) public ownerOf;
     mapping(bytes32 => address) public primaryAddress;
     mapping(bytes32 => uint256) public recoveryNonce;
@@ -33,6 +35,7 @@ abstract contract RecoursePoolHistory is RecourseMembershipRules, RecourseAddres
             poolHistoryReady=true;
         } else if(snapshot.predecessor==address(0)||snapshot.root==bytes32(0)||snapshot.blockNumber>=block.number) revert InvalidPoolHistory();
         poolSnapshot=snapshot;
+        standingMembership = new RecourseStandingConsent();
     }
     modifier historyReady() { if(!poolHistoryReady) revert InvalidPoolHistory(); _; }
     function _slot(uint8 kind,bytes memory key) private pure returns(bytes32) { return sha256(abi.encode(kind,key)); }
@@ -70,7 +73,7 @@ abstract contract RecoursePoolHistory is RecourseMembershipRules, RecourseAddres
             (bytes32 id,AddressConsent memory consent,address primary,uint256 nonce,uint256 revision,uint256 billingNonce,bool recoveryRequired)
                 =abi.decode(data,(bytes32,AddressConsent,address,uint256,uint256,uint256,bool));
             if(id==bytes32(0)||(consent.joined&&consent.generation==0)
-                ||consent.nonce!=(consent.joined?consent.generation+(consent.generation-1):consent.generation*2)) revert InvalidPoolHistory();
+                ||consent.nonce<(consent.joined?consent.generation+(consent.generation-1):consent.generation*2)) revert InvalidPoolHistory();
             addressConsent[id]=consent;outcomeRevision[id]=revision;debitNonce[id]=billingNonce;
             remainingConsentPeriods+=consent.generation;
             if(poolSnapshot.afterBreak||recoveryRequired){requiresSnapshotRecovery[id]=true;primaryAddress[id]=address(0);recoveryNonce[id]=0;}
@@ -103,6 +106,9 @@ abstract contract RecoursePoolHistory is RecourseMembershipRules, RecourseAddres
             if(request==bytes32(0)||id==bytes32(0)||occurrence==bytes32(0)||determined[request]||occurrenceDetermined[id][occurrence]) revert InvalidPoolHistory();
             _requireImportedOwner(id);
             determined[request]=true;occurrenceDetermined[id][occurrence]=true;slot=_slot(kind,abi.encode(request));
+        } else if(kind==9||kind==10){
+            bytes32 id=abi.decode(data,(bytes32));_requireImportedOwner(id);
+            slot=standingMembership.importState(kind,data);
         } else revert InvalidPoolHistory();
     }
     function activatePoolHistory() external {

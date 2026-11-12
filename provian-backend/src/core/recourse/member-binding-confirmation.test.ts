@@ -17,7 +17,7 @@ jest.mock('../protocol/pointer-pin.generated', () => ({ PROTOCOL_POINTER_PIN: {
 async function setup() {
   const f = fixture(), fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
   const binding = { identity: h(2), address: a(3), kernel: old[0], signingRoot: h(4), recoveryCommitment: h(5), nonce: h(6), expiresAtMs: 2000000000000 };
-  const member = { consent: { binding: h(2), account: a(3), nonce: '0', joined: true, revision: '1', ruleHash: h(9), expiresAt: '2000000000' }, ownerSignature: '0x12' };
+  const member = { authorization: { fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:h(11),exitSalt:h(12),consent: { binding: h(2), account: a(3), nonce: '0', joined: true, revision: '1', ruleHash: h(9), expiresAt: '2000000000' } }, ownerSignature: '0x12' };
   const consentLog = MEMBERSHIP_RECEIPT_ABI.encodeEventLog(MEMBERSHIP_RECEIPT_ABI.getEvent('AddressConsentChanged')!, [h(2), 1, true, 0]);
   f.state.effects = [{ logIndex: '0x5', ...consentLog }];
   const abi = new Interface([...REGISTRY_ABI.fragments, 'function registryOperator() view returns(address)', 'function balanceOf(address) view returns(uint256)']);
@@ -59,7 +59,7 @@ test('missing, earlier, wrong-nonce or wrong-binding consent cannot confirm atom
     expect(s.fake.store.get(`${R.addresses}/${a(3)}`)?.chainBindingStatus).toBe('pending');
   }
   s.f.state.effects = original;
-  for (const consent of [{ ...s.member.consent, nonce: '1' }, { ...s.member.consent, binding: h(9) }, { ...s.member.consent, account: a(9) }])
-    await expect(confirmBindingRegistration(s.db, s.proof, { ...s.member, consent })).rejects.toThrow('effect_missing');
+  for (const consent of [{ ...s.member.authorization.consent, nonce: '1' }, { ...s.member.authorization.consent, binding: h(9) }, { ...s.member.authorization.consent, account: a(9) }])
+    await expect(confirmBindingRegistration(s.db, s.proof, { ...s.member, authorization:{...s.member.authorization,consent} })).rejects.toThrow('effect_missing');
   await expect(confirmBindingRegistration(s.db, { ...s.proof }, s.member)).rejects.toThrow('unverified');
 });

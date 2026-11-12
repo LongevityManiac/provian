@@ -1,89 +1,58 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
+import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import type { AppParamList } from '../../navigation/types';
-import { pvtAmount } from '../../core/recourse/service';
-import { prepareHumanMembershipDebit, authorizeHumanMembershipDebit, readHumanMembershipApproval,
-  resumeHumanMembershipApproval, type HumanMembershipApproval } from '../../core/recourse/human-membership-debit';
-import type { MembershipDebitPreparation } from '../../core/recourse/membership-client';
+import { pvtAmount, readRecourseView, type RecourseView } from '../../core/recourse/service';
+import { readStandingMembershipState } from '../../core/recourse/standing-state';
+import { ownerChainNetwork } from '../../core/protocol/runtime';
+import type { StandingMembershipMandate } from '../../core/recourse/membership-authorization';
 
-export default function RecourseMonthlyScreen({ navigation }: NativeStackScreenProps<AppParamList, 'RecourseMonthly'>): React.JSX.Element {
-  const { t, i18n } = useTranslation();
-  const [state, setState] = useState<MembershipDebitPreparation | null>(null), [approval, setApproval] = useState<HumanMembershipApproval | null>(null);
-  const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(false);
-  const [hash, setHash] = useState<string | null>(null), [result, setResult] = useState<string | null>(null);
-  const active = useRef(true), sequence = useRef(0);
-  const load = useCallback(async () => {
-    const run = ++sequence.current; setLoading(true); setError(false);
-    try {
-      // Approval recovery stays available even if private reconciliation is pending.
-      const pending = await readHumanMembershipApproval();
-      if (active.current && run === sequence.current) setApproval(pending);
-      const current = await prepareHumanMembershipDebit();
-      if (active.current && run === sequence.current) setState(current);
-    } catch { if (active.current && run === sequence.current) { setState(null); setError(true); } }
-    finally { if (active.current && run === sequence.current) setLoading(false); }
-  }, []);
-  useEffect(() => { active.current = true; void load(); return () => { active.current = false; ++sequence.current; }; }, [load]);
-  const run = async (work: () => Promise<void>) => {
-    if (busy || loading) return;
-    setBusy(true); setError(false); setResult(null);
-    try { await work(); if (active.current) await load(); }
-    catch { if (active.current) setError(true); }
-    finally { if (active.current) setBusy(false); }
-  };
-  const button = (label: string, press: () => void) => <TouchableOpacity accessibilityRole="button" onPress={press} disabled={busy || loading}
-    style={[styles.button, (busy || loading) && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
-  const challenge = state?.status === 'ready' ? state.challenge : null;
-  const month = challenge ? new Date(Date.UTC(Math.floor(Number(challenge.debit.month) / 12), Number(challenge.debit.month) % 12, 1)) : null;
+export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProps<AppParamList,'RecourseMonthly'>):React.JSX.Element{
+  const {t}=useTranslation();
+  const [view,setView]=useState<RecourseView|null>(null),[mandate,setMandate]=useState<StandingMembershipMandate|null>(null);
+  const [loading,setLoading]=useState(true),[error,setError]=useState(false);
+  const load=useCallback(async()=>{
+    setLoading(true);setError(false);
+    try{const next=await readRecourseView();const standing=await readStandingMembershipState(next.primaryIdentity??next.identity,ownerChainNetwork());
+      setView(next);setMandate(standing.mandate);
+    }catch{setError(true);}finally{setLoading(false);}
+  },[]);
+  useFocusEffect(useCallback(()=>{void load();},[load]));
+  const changed=view&&mandate&&(!mandate.active||BigInt(view.participationBurnAtomic)>BigInt(mandate.burnLimit)
+    ||BigInt(view.noEarningsContributionAtomic)>BigInt(mandate.reserveLimit)||view.earningsBps>mandate.earningsBpsLimit);
   return <SafeAreaView style={styles.screen}>
-    <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.debit.title', 'Monthly burn and contribution')}</Text></View>
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.body}>{t('recourse.debit.explain', 'Review the exact amounts below. The burn destroys PVT; the contribution goes to the Recourse Pool and is not refundable. A separate, exact token approval may require network gas in ETH.')}</Text>
-      {loading || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
-      {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
-      {result ? <Text style={styles.body}>{t(`recourse.debit.${result}`)}</Text> : null}
-      {hash ? <Text selectable style={styles.address}>{hash}</Text> : null}
-      {approval ? <View style={styles.card}>
-        <Text style={styles.title}>{t('recourse.debit.previous', 'Finish the previous token approval')}</Text>
-        <Text style={styles.body}>{t('recourse.debit.approvalAmount', 'Token allowance: {{amount}} PVT', { amount: pvtAmount(approval.amountAtomic) })}</Text>
-        <Text style={styles.body}>{t('recourse.debit.token', 'Token contract')}</Text><Text selectable style={styles.address}>{approval.kernel}</Text>
-        <Text style={styles.body}>{t('recourse.debit.spender', 'Authorized recipient')}</Text><Text selectable style={styles.address}>{approval.pool}</Text>
-        <Text style={styles.small}>{t('recourse.debit.hashGas', 'For a recovered hash wallet, the original wallet address carries only ETH gas. The hash key controls PVT. The app confirms the result and next key before a new authorization.')}</Text>
-        {button(t('recourse.debit.resume', 'Resume exact approval'), () => { void run(async () => {
-          const delivery = await resumeHumanMembershipApproval(approval);
-          if (active.current) { setHash(delivery.transactionHash); setResult(delivery.status === 'complete' ? delivery.outcome : delivery.status); }
-        }); })}
-      </View> : null}
-      {challenge && !approval ? <View style={styles.card}>
-        <Text style={styles.title}>{month?.toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', timeZone: 'UTC' })}</Text>
-        <Text style={styles.body}>{t('recourse.debit.burn', 'Burn: {{amount}} PVT', { amount: pvtAmount(challenge.debit.burn) })}</Text>
-        <Text style={styles.body}>{t('recourse.debit.reserve', 'Contribution: {{amount}} PVT', { amount: pvtAmount(challenge.debit.reserve) })}</Text>
-        <Text style={styles.body}>{t('recourse.debit.total', 'Total from this wallet: {{amount}} PVT', { amount: pvtAmount(challenge.allowanceAtomic) })}</Text>
-        <Text selectable style={styles.address}>{challenge.debit.payer}</Text>
-        {button(t('recourse.debit.authorize', 'Authorize these exact amounts'), () => { void run(async () => {
-          const outcome = await authorizeHumanMembershipDebit(challenge);
-          if (!active.current) return;
-          if (outcome.status === 'submitted') { setHash(outcome.operation.transactionHash); setResult('submitted'); }
-          else { setHash(outcome.delivery.transactionHash); setResult(outcome.delivery.status === 'complete' ? outcome.delivery.outcome : outcome.delivery.status); }
-        }); })}
-      </View> : null}
-      {state?.status === 'settled' ? <Text style={styles.body}>{t('recourse.debit.settled', 'All obligations currently due are complete. A no-earnings contribution is determined after that month ends.')}</Text> : null}
-      {state?.status === 'pending' ? <View style={styles.card}><Text style={styles.body}>{t('recourse.debit.pending', 'An earlier action is still being reconciled. Refresh to check its result; its authorization will not be replaced while it is unresolved.')}</Text>
-        {state.operation?.transactionHash ? <Text selectable style={styles.address}>{state.operation.transactionHash}</Text> : null}</View> : null}
-      {button(t('recourse.refresh'), () => { void load(); })}
+    <View style={styles.header}><BackButton onPress={()=>navigation.goBack()}/><Text style={styles.title}>{t('recourse.standing.payments','Automatic payments')}</Text></View>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>{void load();}}/>}>
+      {loading?<ActivityIndicator color={COLORS.primary}/>:null}
+      {error?<Text style={styles.body}>{t('recourse.error')}</Text>:null}
+      {view&&mandate?<>
+        <View style={styles.card}>
+          <Text style={styles.title}>{changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic payments approved')}</Text>
+          <Text style={styles.body}>{t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from holdings do not need you to open the app, sign again or keep ETH.')}</Text>
+          <Text style={styles.body}>{t('recourse.standing.limits','Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s holdings. Earnings contribution: {{percent}}%.',{
+            burn:pvtAmount(mandate.burnLimit),reserve:pvtAmount(mandate.reserveLimit),percent:mandate.earningsBpsLimit/100})}</Text>
+          <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.')}</Text>
+          <Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
+            t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>
+          <Text style={styles.body}>{t('recourse.graceRule')}</Text>
+        </View>
+        {changed?<View style={styles.card}>
+          <Text style={styles.body}>{t('recourse.standing.increase','The current rule requires a new approval. No higher amount can be debited under your previous approval.')}</Text>
+          <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'renew'})}>
+            <Text style={styles.buttonText}>{t('recourse.standing.review','Review new amounts')}</Text>
+          </TouchableOpacity>
+        </View>:null}
+        <Text style={styles.body}>{t('recourse.standing.leave','Leaving ends future debits. Contributions already paid are nonrefundable; allocated restorations remain withdrawable.')}</Text>
+      </>:null}
     </ScrollView>
   </SafeAreaView>;
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background }, header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.m, padding: SPACING.m },
-  content: { padding: SPACING.m, paddingBottom: SPACING.xxxl, gap: SPACING.l }, title: { color: COLORS.text, fontSize: 21, fontWeight: '600' },
-  body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 23 }, small: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
-  address: { color: COLORS.text, fontSize: 12, lineHeight: 20 }, card: { padding: SPACING.l, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.l, gap: SPACING.m },
-  button: { padding: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, disabled: { opacity: 0.5 },
-});
+const styles=StyleSheet.create({screen:{flex:1,backgroundColor:COLORS.background},header:{flexDirection:'row',alignItems:'center',gap:SPACING.m,padding:SPACING.m},
+  content:{padding:SPACING.m,gap:SPACING.l},title:{fontSize:22,fontWeight:'600',color:COLORS.text},body:{fontSize:15,lineHeight:23,color:COLORS.textSecondary},
+  card:{padding:SPACING.l,borderRadius:BORDER_RADIUS.l,backgroundColor:COLORS.surface,gap:SPACING.m},button:{padding:SPACING.m,borderRadius:BORDER_RADIUS.m,backgroundColor:COLORS.primary},
+  buttonText:{color:'#FFFFFF',fontSize:15,fontWeight:'600',textAlign:'center'}});

@@ -49,8 +49,9 @@ test('an omitted consent or debit cannot pass endpoint counters', async () => {
 });
 test('real contract consent events carry the consumed nonce: join zero then departure one', async () => {
   const s = setup(); s.f.state.consentBefore = [0, 0, false]; s.f.state.consentAfter = [2, 1, false];
-  s.f.state.debitNonceAfter = 8;
-  const events = [event('AddressConsentChanged', [h(2), 1, true, 0]), event('AddressConsentChanged', [h(2), 1, false, 1], 6)];
+  s.f.state.debitNonceAfter = 9;
+  const events = [event('MembershipDebitCancelled', [h(2), 7]), event('AddressConsentChanged', [h(2), 1, true, 0], 6),
+    event('MembershipDebitCancelled', [h(2), 8], 7), event('AddressConsentChanged', [h(2), 1, false, 1], 8)];
   s.f.state.effects = events.map(e => ({ logIndex: `0x${e.logIndex.toString(16)}`, topics: e.topics, data: e.data }));
   (getAgreedBaseLogs as jest.Mock).mockResolvedValue(events);
   const proof = await readPrivateMembershipScan(s.db, h(500));

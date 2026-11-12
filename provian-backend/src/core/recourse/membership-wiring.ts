@@ -1,11 +1,11 @@
-import { Interface } from 'ethers';
+import { Interface, getCreateAddress } from 'ethers';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import type { OwnerOperationChain } from './owner-operation-queue';
 
 const wiring = new Interface(['function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
   'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)',
   'function operationalMinter() view returns(address)', 'function kernel() view returns(address)',
-  'function pool() view returns(address)', 'function submitter() view returns(address)']);
+  'function standingMembership() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)']);
 /** Identity attestation remains independent from restoration execution. The
  * sponsor is the current settlement submitter, never a caller-selected payer. */
 export async function readMembershipWiring(chain: OwnerOperationChain, deployment: ProtocolDeployment) {
@@ -22,5 +22,7 @@ export async function readMembershipWiring(chain: OwnerOperationChain, deploymen
     call(kernel, 'operationalMinter'), call(settlement, 'kernel'), call(settlement, 'pool'), call(settlement, 'submitter')]);
   if (poolRegistry !== registry || pointer !== deployment.pointer.toLowerCase() || identityAttestor === restorationAuthority || /^0x0+$/.test(identityAttestor)
     || minter !== settlement || settlementKernel !== kernel || settlementPool !== pool || /^0x0+$/.test(gasPayer)) throw Error('recourse_membership_wiring_invalid');
-  return { identityAttestor, gasPayer, pin };
+  const standingMembership = await call(pool, 'standingMembership');
+  if (standingMembership !== getCreateAddress({from: pool, nonce: 1}).toLowerCase() || await call(standingMembership, 'pool') !== pool) throw Error('recourse_membership_wiring_invalid');
+  return { identityAttestor, gasPayer, pin, standingMembership };
 }

@@ -10,6 +10,18 @@ abstract contract RecourseAddressConsentState {
         uint256 generation;
         bool joined;
     }
+    struct StandingMandate {
+        uint256 burnLimit;
+        uint256 reserveLimit;
+        uint16 earningsBpsLimit;
+        uint256 startMonth;
+        uint256 closedMonth;
+        uint256 consentNonce;
+        bytes32 exitCommitment;
+        bytes32 exitSalt;
+        bool active;
+    }
+    struct MonthlyCollection { uint256 burn; uint256 reserve; }
     struct ConsentPeriod { uint256 startBlock; uint256 endBlock; }
     mapping(bytes32 => AddressConsent) public addressConsent;
     mapping(bytes32 => mapping(uint256 => ConsentPeriod)) public consentPeriods;
@@ -30,6 +42,7 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
     }
     error InvalidAddressConsent();
     event AddressConsentChanged(bytes32 indexed binding, uint256 indexed generation, bool joined, uint256 nonce);
+    event AddressConsentRenewed(bytes32 indexed binding, uint256 nonce);
     event MembershipDebitExecuted(bytes32 indexed digest, bytes32 indexed binding, address indexed payer,
         uint256 month, uint256 burn, uint256 reserve, uint256 nonce);
     event MembershipDebitCancelled(bytes32 indexed binding, uint256 indexed nonce);
@@ -42,26 +55,26 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
     function _consentMonth() internal view virtual returns (uint256);
     function _executeMembershipDebit(bytes32 binding, address payer, uint256 burn, uint256 reserve) internal virtual;
 
-    function consentDigest(ConsentAuthorization calldata consent) public view returns (bytes32) {
+    function consentDigest(ConsentAuthorization calldata consent) public view virtual returns (bytes32) {
         (address pointer, address kernel) = _consentDomain();
         return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode(
             "Provian address membership consent", block.chainid, pointer, kernel, address(this), consent)));
     }
-    function debitDigest(DebitAuthorization calldata debit) public view returns (bytes32) {
+    function debitDigest(DebitAuthorization calldata debit) public view virtual returns (bytes32) {
         (address pointer, address kernel) = _consentDomain();
         return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode(
             "Provian exact membership debit", block.chainid, pointer, kernel, address(this), debit)));
     }
-    function _signature(address signer, bytes32 digest, bytes calldata signature) private view returns (bool) {
+    function _signature(address signer, bytes32 digest, bytes calldata signature) internal view returns (bool) {
         return signer != address(0) && SignatureChecker.isValidSignatureNow(signer, digest, signature);
     }
-    function _expiry(uint256 expiresAt) private view {
+    function _expiry(uint256 expiresAt) internal view {
         if (expiresAt < block.timestamp || expiresAt > block.timestamp + 300) revert InvalidAddressConsent();
     }
     /// @notice A common sponsor may submit independent consents. The payload
     /// includes no private owner, sibling, billing-address or invoice reference.
     function setAddressConsent(ConsentAuthorization calldata consent, bytes calldata ownerSignature,
-        bytes calldata attestorSignature) external {
+        bytes calldata attestorSignature) external virtual {
         _consentCurrent(consent.revision); _expiry(consent.expiresAt);
         address owner = _consentOwner(consent.binding);
         AddressConsent storage current = addressConsent[consent.binding];
@@ -86,7 +99,7 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
     /// @notice Exact authorization, not a standing debit mandate. Allowance alone,
     /// an attestor signature alone, or a changed payer/amount can never collect.
     function executeMembershipDebit(DebitAuthorization calldata debit, bytes calldata ownerSignature,
-        bytes calldata attestorSignature) external {
+        bytes calldata attestorSignature) external virtual {
         _consentCurrent(debit.revision); _expiry(debit.expiresAt);
         address owner = _consentOwner(debit.binding);
         AddressConsent storage current = addressConsent[debit.binding];
@@ -103,7 +116,7 @@ abstract contract RecourseAddressConsent is RecourseAddressConsentState {
     }
     /// @notice Cancel before selecting another payer. A cancelled or consumed
     /// nonce cannot later debit the old payer, even if a sponsor retained bytes.
-    function cancelMembershipDebit(bytes32 binding, uint256 expectedNonce) external {
+    function cancelMembershipDebit(bytes32 binding, uint256 expectedNonce) external virtual {
         address owner = _consentOwner(binding);
         if (owner == address(0) || msg.sender != owner || debitNonce[binding] != expectedNonce) revert InvalidAddressConsent();
         ++debitNonce[binding];

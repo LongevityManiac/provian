@@ -1,10 +1,10 @@
-import { Interface, Wallet, getBytes, keccak256, verifyMessage } from 'ethers';
+import { Interface, Wallet, getBytes, getCreateAddress, keccak256, verifyMessage } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, type PrivateMembershipTransition } from './private-membership-transition';
-import { addressMembershipSigningHash, MEMBERSHIP_AUTHORIZATION_ABI, type AddressMembershipConsent } from './membership-authorization';
+import { standingMembershipSigningHash, STANDING_MEMBERSHIP_ABI, type AddressMembershipConsent } from './membership-authorization';
 import { queueMembershipConsent, membershipConsentAdapter, checkMembershipConsent, assertCheckedMembershipConsent,
   MEMBERSHIP_CONSENT_OPERATIONS as Q, type MembershipConsentPorts, type CheckedMembershipConsent } from './membership-consent-operation';
 import type { FinalizedOwnerTransaction } from './transaction-finality';
@@ -22,36 +22,38 @@ async function fixture() {
   const transition: PrivateMembershipTransition = { id, ownerIdentity: owner, kind: 'join', status: 'consenting', bindingSetVersion: 1,
     portfolioHash: h('44'), pool: domain.pool, kernel: domain.kernel, checkpoint: { block: 10, blockHash: h('45'), timestamp: 999, logIndex: -1 },
     bindings: [{ binding, address: consent.account, nonce: '0', generation: '0', initiallyJoined: false, recoveryGeneration: 0, admission: null, departure: null }], closure: null };
-  fake.store.set(`${T}/${id}`, { ...transition }); fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, membershipTransition: id, bindingSetVersion: 1 });
+  fake.store.set(`${T}/${id}`, { ...transition }); fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, membershipTransition: id, bindingSetVersion: 1, primaryBinding: binding });
   fake.store.set(`${R.identities}/${binding}`, { identity: binding, ownerIdentity: owner, recoveryGeneration: 0 });
   fake.store.set(`${R.addresses}/${consent.account}`, { identity: binding, ownerIdentity: owner, recoveryGeneration: 0, kernel: domain.kernel, chainBindingStatus: 'confirmed' });
   const deployment = { pointer: domain.pointer, addresses: { kernel: domain.kernel, recoursePool: domain.pool, settlement: a('46') },
     revision: 1n, blockHash: h('47'), manifestHash: h('48') } as ProtocolDeployment;
   const state = { pool: domain.pool, kernel: domain.kernel, block: 11, blockHash: deployment.blockHash, timestamp: 1000,
-    currentAddress: consent.account, signedRuleHash: consent.ruleHash, consentNonce: '0', addressConsent: false } as RecoursePoolState;
-  const wire = new Interface(['function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
+    currentAddress: consent.account, signedRuleHash: consent.ruleHash, consentNonce: '0', addressConsent: false, participationBurnAtomic:'100', noEarningsContributionAtomic:'100', earningsBps:100 } as RecoursePoolState;
+  const standing = { consent, fixedChargePayer: true, burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100, exitCommitment:h('51'), exitSalt:h('52') };
+  const controller=getCreateAddress({from:domain.pool,nonce:1}).toLowerCase();
+  const wire = new Interface(['function standingMembership() view returns(address)', 'function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
     'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)',
     'function operationalMinter() view returns(address)', 'function kernel() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)',
-    ...MEMBERSHIP_AUTHORIZATION_ABI.fragments]);
+    ...STANDING_MEMBERSHIP_ABI.fragments]);
   const p: MembershipConsentPorts = { state: async () => state, chain: { deployment: async () => deployment,
     agree: async (method, args) => {
       expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
       if (method === 'eth_getCode') return '0x';
       const call = args[0] as { to: string; data: string }, parsed = wire.parseTransaction(call)!;
-      if (parsed.name === 'setAddressConsent') {
-        expect(call.to).toBe(domain.pool);
-        const bytes = getBytes(addressMembershipSigningHash(domain, consent));
+      if (parsed.name === 'setStandingConsent') {
+        expect(call.to).toBe(controller);
+        const bytes = getBytes(standingMembershipSigningHash(domain, standing));
         expect(verifyMessage(bytes, parsed.args[1])).toBe(ownerWallet.address);
         expect(verifyMessage(bytes, parsed.args[2])).toBe(attestorWallet.address);
         return '0x';
       }
-      const result: Record<string, string> = { registryOperator: a('49'), identityAttestor: attestorWallet.address, restorationAuthority: a('50'),
+      const result: Record<string, string> = { standingMembership:controller, registryOperator: a('49'), identityAttestor: attestorWallet.address, restorationAuthority: a('50'),
         pointer: domain.pointer, operationalMinter: deployment.addresses.settlement, kernel: domain.kernel, pool: domain.pool, submitter: gasWallet.address };
       return wire.encodeFunctionResult(parsed.name, [result[parsed.name]]);
     } } };
   const attestor = { address: attestorWallet.address.toLowerCase(), signMessage: (m: string) => attestorWallet.signMessage(m),
     signBytes: jest.fn((m: Uint8Array) => attestorWallet.signMessage(m)) };
-  const input = { transitionId: id, domain, consent, ownerSignature: await ownerWallet.signMessage(getBytes(addressMembershipSigningHash(domain, consent))) };
+  const input = { transitionId: id, domain, consent, standing, exitSecret:null, ownerSignature: await ownerWallet.signMessage(getBytes(standingMembershipSigningHash(domain, standing))) };
   return { fake, db, owner, id, binding, transition, domain, consent, deployment, state, p, attestor, input };
 }
 test('private owner authorizes individual consent; no portfolio data enters calldata', async () => {
@@ -72,7 +74,7 @@ test.each(['payer', 'nonce', 'joined', 'rule', 'expiry', 'generation', 'status',
   if (mutation === 'status') f.fake.store.get(`${T}/${f.id}`)!.status = 'complete';
   if (mutation === 'owner') f.fake.store.get(`${R.owners}/${f.owner}`)!.membershipTransition = h('fe');
   if (mutation === 'domain') input.domain = { ...input.domain, pool: a('fe') };
-  if (mutation === 'signature') input.ownerSignature = await ownerWallet.signMessage(addressMembershipSigningHash(f.domain, f.consent));
+  if (mutation === 'signature') input.ownerSignature = await ownerWallet.signMessage(standingMembershipSigningHash(f.domain, f.input.standing));
   await expect(queueMembershipConsent(f.db, f.owner, input, f.attestor, f.p)).rejects.toThrow();
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect([...f.fake.store.keys()].filter(k => k.startsWith(Q))).toHaveLength(0);

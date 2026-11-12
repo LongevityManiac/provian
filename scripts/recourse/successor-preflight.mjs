@@ -1,3 +1,4 @@
+import { readCompiledArtifact } from './compiled-artifact.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Interface, keccak256, ZeroAddress, zeroPadValue } from 'ethers';
@@ -10,9 +11,9 @@ const ensure = (value, reason) => { if (!value) throw Error(`successor_preflight
 const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 export function readSuccessorArtifacts(root) {
   const names = [...new Set([...SUCCESSOR_CREATION_ORDER, ...Object.values(LEGACY_INSTITUTIONS),
-    'ProvianHashAccount', 'ProvianProtocolPointer', 'ProvianMemberSettlement', 'ProvianPVT9', 'ProvianPVT9EligibilityVerifier'])];
+    'RecourseStandingConsent', 'ProvianHashAccount', 'ProvianProtocolPointer', 'ProvianMemberSettlement', 'ProvianPVT9', 'ProvianPVT9EligibilityVerifier'])];
   return Object.fromEntries(names.map(name => {
-    const artifact = JSON.parse(readFileSync(resolve(root, `contracts/out/${name}.sol/${name}.json`), 'utf8'));
+    const artifact = readCompiledArtifact(root,name);
     const sources = Object.entries(artifact.metadata?.sources ?? {});
     ensure(sources.length > 0 && Array.isArray(artifact.abi) && artifact.abi.length > 0, 'artifact_incomplete');
     ensure(/^0x[0-9a-f]+$/i.test(artifact.bytecode?.object) && /^0x[0-9a-f]+$/i.test(artifact.deployedBytecode?.object), 'artifact_incomplete');

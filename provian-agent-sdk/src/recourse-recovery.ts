@@ -1,3 +1,4 @@
+import { deriveMembershipExitSecret, membershipExitCommitment, type MembershipAuthorizationDomain } from './recourse-membership-authorization';
 import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { readAddressRecoveryBinding } from './recourse-binding-chain';
 import { recoverySigningRoot, recoveryCommitment, signRecoveryIntent } from './recourse-hash-authorization';
@@ -62,6 +63,47 @@ function loadJournal(file: string, passphrase: string): RecoveryJournal | null {
   } finally { fs.closeSync(fd); }
 }
 
+function* archivedRecoveryKeystores(directory:string,passphrase:string,active:AgentKeystore):Generator<AgentKeystore>{
+  const archive = path.join(directory, 'recoveries');
+  let names: string[] = [];
+  try { names = fs.readdirSync(archive).filter(name => /^0x[0-9a-f]{64}\.json$/.test(name)).sort(); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+  const files = [path.join(directory, 'recourse-recovery.json'), ...names.map(name => path.join(archive, name))];
+  for (const file of files) {
+    const journal = loadJournal(file, passphrase);
+    if (!journal) continue;
+    if (journal.version !== 1 || !journal.oldKeystore || !journal.nextKeystore
+      || journal.oldKeystore.wallet_id !== journal.nextKeystore.wallet_id
+      || journal.oldKeystore.wallet_id !== active.wallet_id
+      || !/^0x[0-9a-f]{64}$/.test(journal.identity) || /^0x0+$/.test(journal.identity)
+      || (file !== files[0] && path.basename(file) !== `${journal.requestId}.json`)) throw Error('Recovery journal binding mismatch');
+    yield journal.oldKeystore;
+    yield journal.nextKeystore;
+  }
+}
+
+/** Membership exits outlive spending/recovery-key rotation. Search only this
+ * wallet's authenticated encrypted journals and match the current on-chain
+ * commitment before exposing its independently derived exit preimage. */
+export async function retainedMembershipExitSecret(input:{directory:string;passphrase:string;walletId:string;
+  domain:Pick<MembershipAuthorizationDomain,'chainId'|'pointer'>;binding:string;salt:string;expectedCommitment?:string}):Promise<string>{
+ const directory=path.resolve(input.directory),active=loadKeystore(path.join(directory,'agent-keystore.json'));
+ if(!active||active.wallet_id!==input.walletId)throw Error('recourse_wallet_mismatch');
+ if(input.expectedCommitment!==undefined&&!/^0x[0-9a-f]{64}$/.test(input.expectedCommitment))throw Error('recourse_membership_exit_proof');
+ const derive=(keystore:AgentKeystore)=>withRecoveryMaterial(keystore,input.passphrase,(secret,seed)=>{
+   const material=new Uint8Array(64);material.set(secret);material.set(seed,32);
+   try{return deriveMembershipExitSecret(material,input.domain,input.binding,input.salt);}finally{material.fill(0);}
+ });
+ const current=await derive(active);
+ if(input.expectedCommitment===undefined||membershipExitCommitment(current)===input.expectedCommitment)return current;
+ for(const keystore of archivedRecoveryKeystores(directory,input.passphrase,active)){
+   if(keystore.version!==2)continue;
+   const candidate=await derive(keystore);
+   if(membershipExitCommitment(candidate)===input.expectedCommitment)return candidate;
+ }
+ throw Error('recourse_membership_exit_proof');
+}
+
 /** Find the exact recovery generation selected by an authenticated snapshot.
  * Ordinary rotations retain both encrypted keystores, including an operation
  * whose chain execution completed before the local installation did. */
@@ -73,30 +115,16 @@ export async function withArchivedRecoveryMaterial<T>(input: {
     || !/^0x[0-9a-f]{64}$/.test(input.commitment)) throw Error('Recovery lookup binding invalid');
   const active = loadKeystore(path.join(directory, 'agent-keystore.json'));
   if (!active) throw Error('Recovery lookup keystore missing');
-  const archive = path.join(directory, 'recoveries');
-  let names: string[] = [];
-  try { names = fs.readdirSync(archive).filter(name => /^0x[0-9a-f]{64}\.json$/.test(name)).sort(); }
-  catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
-  const files = [path.join(directory, 'recourse-recovery.json'), ...names.map(name => path.join(archive, name))];
-  for (const file of files) {
-    const journal = loadJournal(file, input.passphrase);
-    if (!journal) continue;
-    if (journal.version !== 1 || !journal.oldKeystore || !journal.nextKeystore
-      || journal.oldKeystore.wallet_id !== journal.nextKeystore.wallet_id
-      || journal.oldKeystore.wallet_id !== active.wallet_id
-      || !/^0x[0-9a-f]{64}$/.test(journal.identity) || /^0x0+$/.test(journal.identity)
-      || (file !== files[0] && path.basename(file) !== `${journal.requestId}.json`)) throw Error('Recovery journal binding mismatch');
+  for (const keystore of archivedRecoveryKeystores(directory,input.passphrase,active)) {
     // A primary-key rotation also archives the private root of every auxiliary
     // address credential. Match the requested address's exact snapshot
     // commitment, not the primary binding named by that rotation journal.
-    for (const keystore of [journal.oldKeystore, journal.nextKeystore]) {
       if (keystore.version !== 2) continue;
       const result = await withBoundRecoveryMaterial(keystore, input.passphrase, input.identity, async (secret, signingSeed) => {
         if (recoveryCommitment(secret, await recoverySigningRoot(signingSeed)) !== input.commitment) return { found: false } as const;
         return { found: true, value: await use(secret, signingSeed) } as const;
       });
       if (result.found) return result;
-    }
   }
   return { found: false };
 }

@@ -92,7 +92,7 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
   };
   const states = new Map<string, Counters>();
   for (const id of ids) states.set(id, await counters(id, from.blockHash));
-  const topics = ['AddressConsentChanged', 'MembershipDebitExecuted', 'MembershipDebitCancelled', 'IssuanceTicketConsumed', 'IssuanceBatchCancelled']
+  const topics = ['AddressConsentChanged', 'AddressConsentRenewed', 'MembershipDebitExecuted', 'MembershipDebitCancelled', 'IssuanceTicketConsumed', 'IssuanceBatchCancelled']
     .map(name => MEMBERSHIP_RECEIPT_ABI.getEvent(name)!.topicHash);
   const transactions = new Set<string>(), effects: { kernel: string; transactionHash: string; logIndex: number }[] = [];
   let lastBlock = from.block, lastLog = -1;
@@ -105,7 +105,7 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
       lastBlock = l.blockNumber; lastLog = l.logIndex;
       const event = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...l.topics], data: l.data });
       if (!event) return fail('event');
-      const state = ['AddressConsentChanged', 'MembershipDebitExecuted', 'MembershipDebitCancelled'].includes(event.name)
+      const state = ['AddressConsentChanged', 'AddressConsentRenewed', 'MembershipDebitExecuted', 'MembershipDebitCancelled'].includes(event.name)
         ? states.get(String(event.args.binding)) : undefined;
       const issuance = event.name === 'IssuanceTicketConsumed' && addresses.has(String(event.args.account).toLowerCase());
       if (!state && !issuance) continue;
@@ -115,14 +115,17 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
           if (joined === state.joined || BigInt(event.args.nonce) !== state.nonce
             || BigInt(event.args.generation) !== state.generation + (joined ? 1n : 0n)) return fail('history_gap');
           state.nonce++; state.joined = joined;
-          if (joined) state.generation++; else state.debit++;
+          if (joined) state.generation++;
+        } else if (event.name === 'AddressConsentRenewed') {
+          if (!state.joined || BigInt(event.args.nonce) !== state.nonce) return fail('history_gap');
+          state.nonce++;
         } else {
           if (BigInt(event.args.nonce) !== state.debit) return fail('history_gap');
           state.debit++;
         }
       }
       transactions.add(l.transactionHash);
-      if (issuance || event.name === 'MembershipDebitExecuted' || event.name === 'AddressConsentChanged') effects.push({ kernel: before.addresses.kernel.toLowerCase(),
+      if (issuance || event.name === 'MembershipDebitExecuted' || ['AddressConsentChanged','AddressConsentRenewed'].includes(event.name)) effects.push({ kernel: before.addresses.kernel.toLowerCase(),
         transactionHash: l.transactionHash, logIndex: l.logIndex });
     }
   }

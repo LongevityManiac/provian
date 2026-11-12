@@ -10,7 +10,7 @@ import { reconcileCurrentPrivateMembership } from './membership-preparation';
 import { readRecoursePoolState, readHistoricalRecoursePoolState, type RecoursePoolState } from './pool-state';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { utcCalendarMonth } from './calendar-month';
-import { exactMembershipDebitSigningHash, type MembershipAuthorizationDomain, type ExactMembershipDebit } from './membership-authorization';
+import { standingMembershipDebitSigningHash, type MembershipAuthorizationDomain, type ExactMembershipDebit } from './membership-authorization';
 
 export interface MembershipPaymentSelection { readonly month: string; readonly burn: string; readonly reserve: string }
 export interface MembershipDebitChallenge {
@@ -54,7 +54,7 @@ export function selectMembershipPayment(account: PrivateMembershipAccount, month
 }
 export function membershipDebitChallenge(reservation: PrivateDebitReservation): MembershipDebitChallenge {
   return { reservationId: reservation.id, domain: reservation.domain, debit: reservation.debit,
-    messageHex: exactMembershipDebitSigningHash(reservation.domain, reservation.debit),
+    messageHex: standingMembershipDebitSigningHash(reservation.domain, reservation.debit),
     allowanceAtomic: String(BigInt(reservation.debit.burn) + BigInt(reservation.debit.reserve)) };
 }
 export function debitMatchesCheckpoint(state: RecoursePoolState, checkpoint: RecoursePoolState): void {

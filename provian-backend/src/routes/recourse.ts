@@ -193,7 +193,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).join(',') !== 'kind'
-        || !('kind' in body) || (body.kind !== 'join' && body.kind !== 'leave')) throw Error('recourse_membership_input');
+        || !('kind' in body) || (body.kind !== 'join' && body.kind !== 'leave' && body.kind !== 'renew')) throw Error('recourse_membership_input');
       res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { kind: body.kind }));
     } catch { res.status(400).json({ error: 'recourse_membership_unavailable' }); }
   });
@@ -217,8 +217,8 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body)
-        || Object.keys(body).sort().join(',') !== 'consent,domain,ownerSignature,transitionId') throw Error('recourse_membership_input');
-      const input = parseMembershipConsentRequest({ ...body, attestorSignature: '0x00' });
+        || Object.keys(body).sort().join(',') !== 'consent,domain,exitSecret,ownerSignature,standing,transitionId') throw Error('recourse_membership_input');
+      const input = parseMembershipConsentRequest({ ...body, attestorSignature: 'standing' in body && body.standing ? '0x00' : null });
       const { attestorSignature: _unused, ...request } = input;
       const result = await queueMembershipConsent(deps.db, identityHash(owner.type, owner.id), request);
       try { await runMembershipConsentWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
@@ -249,7 +249,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     try {
       const owner = await resolveOwner(req, deps), body: unknown = req.body;
       if (!body || typeof body !== 'object' || Array.isArray(body)
-        || Object.keys(body).sort().join(',') !== 'debit,domain,ownerSignature,reservationId') throw Error('recourse_membership_input');
+        || Object.keys(body).sort().join(',') !== 'debit,domain,reservationId') throw Error('recourse_membership_input');
       const { attestorSignature: _unused, ...input } = parseMembershipDebitRequest({ ...body, attestorSignature: '0x00' });
       const result = await queueMembershipDebit(deps.db, identityHash(owner.type, owner.id), input);
       try { await runMembershipDebitWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }

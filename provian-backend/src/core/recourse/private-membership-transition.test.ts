@@ -141,3 +141,19 @@ test('first admission waits for zero-contribution issuance even when no membersh
   s.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a(3)}`, { batchId: null });
   expect((await openPrivateMembershipConsents(s.db, op.id)).status).toBe('consenting');
 });
+
+
+test('one-action departure records public revocations while money is pending, then closes after reconciliation', async () => {
+  const s=setup(true),op=await beginPrivateMembershipTransition(s.db,ownerId,'leave');
+  s.fake.store.set(accountKey,{...s.fake.store.get(accountKey),pendingReservation:h(999)});
+  expect(nextPrivateAddressConsent(op,h(3),{revision:'1',ruleHash:h(9),timestamp:now})).toMatchObject({joined:false,nonce:'1'});
+  s.effects([{binding:h(3),joined:false,nonce:1,generation:1,index:5},{binding:h(4),joined:false,nonce:1,generation:1,index:6}]);
+  const early=await recordPrivateMembershipConsent(s.db,op.id,await s.f.read());
+  expect(early.status).toBe('preparing');expect(early.bindings.every(b=>b.departure!==null)).toBe(true);
+  expect(s.fake.store.get(accountKey)).toMatchObject({pendingReservation:h(999),episode:{joined:true}});
+  await expect(openPrivateMembershipConsents(s.db,op.id)).rejects.toThrow('reconciliation_pending');
+  s.fake.store.set(accountKey,{...s.fake.store.get(accountKey),pendingReservation:null});
+  expect((await openPrivateMembershipConsents(s.db,op.id)).status).toBe('complete');
+  expect(s.fake.store.get(accountKey)).toMatchObject({pendingReservation:null,episode:{joined:false}});
+  expect(s.fake.store.get(ownerKey)?.membershipTransition).toBeNull();
+});

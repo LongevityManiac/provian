@@ -20,7 +20,7 @@ interface RequiredConsent {
   readonly departure: Position | null; readonly admission: Position | null;
 }
 export interface PrivateMembershipTransition {
-  readonly id: string; readonly ownerIdentity: string; readonly kind: 'join' | 'leave';
+  readonly id: string; readonly ownerIdentity: string; readonly kind: 'join' | 'leave' | 'renew';
   readonly status: 'preparing' | 'consenting' | 'complete' | 'superseded';
   readonly bindingSetVersion: number; readonly portfolioHash: string;
   readonly pool: string; readonly kernel: string; readonly checkpoint: Position;
@@ -70,8 +70,8 @@ async function checkedPortfolio(tx: Transaction, db: Firestore, operation: Priva
  * Existing signed money operations remain reserved; the new transition freezes
  * new signatures immediately while those old operations are reconciled. */
 export async function beginPrivateMembershipTransition(db: Firestore, ownerIdentity: string,
-  kind: 'join' | 'leave'): Promise<PrivateMembershipTransition> {
-  if (!/^0x[0-9a-f]{64}$/.test(ownerIdentity) || (kind !== 'join' && kind !== 'leave')) return fail('input');
+  kind: 'join' | 'leave' | 'renew'): Promise<PrivateMembershipTransition> {
+  if (!/^0x[0-9a-f]{64}$/.test(ownerIdentity) || (kind !== 'join' && kind !== 'leave' && kind !== 'renew')) return fail('input');
   const ownerRef = db.collection(R.owners).doc(ownerIdentity), owner = await ownerRef.get();
   if (!owner.exists) return fail('owner');
   const existing: unknown = owner.get('membershipTransition');
@@ -93,6 +93,8 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
   if (kind === 'join' && prior && privateMembershipStatus(prior.episode, utcCalendarMonth(first.timestamp),
     await readPrivateCalendarRules(db, { pool: first.pool, block: first.block, blockHash: first.blockHash })).protectedNow) return fail('already_joined');
 
+  if (kind === 'renew' && (!prior || !privateMembershipStatus(prior.episode,utcCalendarMonth(first.timestamp),
+    await readPrivateCalendarRules(db,{pool:first.pool,block:first.block,blockHash:first.blockHash})).protectedNow))return fail('join_required');
   const selected: RequiredConsent[] = [];
   for (let i = 0; i < ids.length; i++) {
     const state = publicStates[i];
@@ -101,6 +103,7 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
     if (!row || row.get('identity') !== ids[i] || row.get('kernel') !== state.kernel || row.get('chainBindingStatus') !== 'confirmed') return fail('binding_pending');
     const identity = await db.collection(R.identities).doc(ids[i]).get();
     if (!identity.exists || identity.get('ownerIdentity') !== ownerIdentity || identity.get('recoveryGeneration') !== row.get('recoveryGeneration')) return fail('binding_pending');
+    if(kind === 'renew' && !state.addressConsent)return fail('join_required');
     selected.push({ binding: ids[i], address: state.currentAddress, nonce: state.consentNonce,
       generation: state.consentGeneration, recoveryGeneration: Number(row.get('recoveryGeneration')),
       initiallyJoined: state.addressConsent, departure: null, admission: null });
@@ -155,7 +158,7 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
     if (operation.kind === 'leave' && !account) return fail('not_joined');
     if (operation.kind === 'join' && account) joinPrivateMembership(account.episode, month, rules);
     const closure = operation.kind === 'leave' ? { block: pool.block, blockHash: pool.blockHash, logIndex: Number.MAX_SAFE_INTEGER, timestamp: pool.timestamp } : null;
-    const complete = operation.kind === 'leave' && operation.bindings.every(b => !b.initiallyJoined);
+    const complete = operation.kind === 'leave' && operation.bindings.every(b => !b.initiallyJoined || b.departure !== null);
     const next: PrivateMembershipTransition = { ...operation, closure, status: complete ? 'complete' : 'consenting' };
     if (account && operation.kind === 'leave') {
       const episode = leavePrivateMembership(account.episode, month, rules);
@@ -176,9 +179,11 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
  * digest. A previous episode's public consent is closed before fresh admission. */
 export function nextPrivateAddressConsent(operation: PrivateMembershipTransition, binding: string,
   current: { readonly revision: string; readonly ruleHash: string; readonly timestamp: number }): AddressMembershipConsent | null {
-  if (operation.status !== 'consenting') return fail('not_ready');
+  if (operation.status !== 'consenting' && !(operation.kind === 'leave' && operation.status === 'preparing')) return fail('not_ready');
   const row = operation.bindings.find(r => r.binding === binding);
   if (!row) return fail('binding');
+  if(operation.kind === 'renew')return row.admission ? null : {binding,account:row.address,nonce:row.nonce,joined:true,
+    revision:current.revision,ruleHash:current.ruleHash,expiresAt:String(current.timestamp+300)};
   if (row.initiallyJoined && !row.departure) return { binding, account: row.address, nonce: row.nonce, joined: false,
     revision: current.revision, ruleHash: current.ruleHash, expiresAt: String(current.timestamp + 300) };
   if (operation.kind === 'leave' || row.admission) return null;
@@ -208,31 +213,32 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
       return operation;
     }
     if (digest(operation.bindings) !== digest(initialOp.bindings)) return fail('concurrent');
-    if (operation.status !== 'consenting' || receipt.block <= operation.checkpoint.block) return fail('not_ready');
+    const earlyLeave = operation.kind === 'leave' && operation.status === 'preparing';
+    if ((!earlyLeave && operation.status !== 'consenting') || receipt.block <= operation.checkpoint.block) return fail('not_ready');
     await checkedPortfolio(tx, db, operation, true);
     const bindings = operation.bindings.map(r => ({ ...r }));
     const consumed: number[] = [];
     for (const event of receipt.events) {
       if (event.pool !== operation.pool || event.kernel !== operation.kernel) return fail('domain');
-      if (event.name !== 'AddressConsentChanged') continue;
+      if (event.name !== (operation.kind === 'renew' ? 'AddressConsentRenewed' : 'AddressConsentChanged')) continue;
       const decoded = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...event.topics], data: event.data })!;
       const i = bindings.findIndex(r => r.binding === decoded.args.binding);
       if (i < 0) continue;
-      const b = bindings[i], departure = b.initiallyJoined && !b.departure;
+      const b = bindings[i], departure = operation.kind !== 'renew' && b.initiallyJoined && !b.departure;
       if (!departure && (operation.kind === 'leave' || b.admission)) return fail('duplicate');
-      const expectedNonce = BigInt(b.nonce) + (!departure && b.initiallyJoined ? 1n : 0n);
-      if (decoded.args.joined !== !departure || BigInt(decoded.args.nonce) !== expectedNonce
-        || BigInt(decoded.args.generation) !== BigInt(b.generation) + (departure ? 0n : 1n)) return fail('consent_mismatch');
+      const expectedNonce = BigInt(b.nonce) + (!departure && b.initiallyJoined && operation.kind !== 'renew' ? 1n : 0n);
+      if (BigInt(decoded.args.nonce) !== expectedNonce || (operation.kind !== 'renew' && (decoded.args.joined !== !departure
+        || BigInt(decoded.args.generation) !== BigInt(b.generation) + (departure ? 0n : 1n)))) return fail('consent_mismatch');
       const position = { block: receipt.block, blockHash: receipt.blockHash, logIndex: event.logIndex, timestamp: receipt.timestamp };
       bindings[i] = { ...b, [departure ? 'departure' : 'admission']: position }; consumed.push(event.logIndex);
     }
     if (consumed.length === 0) return fail('missing_consent');
     const effects = consumed.map(logIndex => db.collection(C.effects).doc(digest([operation.kernel, operation.pool, receipt.transactionHash, logIndex])));
     if ((await Promise.all(effects.map(r => tx.get(r)))).some(r => r.exists)) return fail('effect_replay');
-    const complete = bindings.every(b => operation.kind === 'join' ? b.admission !== null : !b.initiallyJoined || b.departure !== null);
-    const next: PrivateMembershipTransition = { ...operation, bindings, status: complete ? 'complete' : 'consenting' };
+    const complete = !earlyLeave && bindings.every(b => operation.kind !== 'leave' ? b.admission !== null : !b.initiallyJoined || b.departure !== null);
+    const next: PrivateMembershipTransition = { ...operation, bindings, status: earlyLeave ? 'preparing' : complete ? 'complete' : 'consenting' };
     const account = accountRow.exists ? accountRow.data() as PrivateMembershipAccount : null;
-    if (account?.pendingReservation != null) return fail('reconciliation_pending');
+    if (account?.pendingReservation != null && !earlyLeave) return fail('reconciliation_pending');
     let episode = account?.episode;
     let admission = account?.admission ?? null;
     if (complete && operation.kind === 'join') {
@@ -287,7 +293,7 @@ export async function refreshRecoveredMembershipTransition(db: Firestore, id: st
     const expectedNonce = BigInt(b.nonce) + (b.departure ? 1n : 0n) + (b.admission ? 1n : 0n);
     if (current.pool !== operation.pool || current.kernel !== operation.kernel || BigInt(current.consentNonce) !== expectedNonce
       || current.addressConsent !== (b.admission ? true : b.departure ? false : b.initiallyJoined)
-      || BigInt(current.consentGeneration) !== BigInt(b.generation) + (b.admission ? 1n : 0n)) return fail('reconciliation_pending');
+      || BigInt(current.consentGeneration) !== BigInt(b.generation) + (b.admission && operation.kind !== 'renew' ? 1n : 0n)) return fail('reconciliation_pending');
     const generation = identity.get('recoveryGeneration');
     if (!addressRow || !identity.exists || identity.get('ownerIdentity') !== operation.ownerIdentity
       || addressRow.get('identity') !== b.binding || addressRow.get('kernel') !== current.kernel

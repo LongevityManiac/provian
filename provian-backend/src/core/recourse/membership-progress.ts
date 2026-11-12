@@ -1,6 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { MEMBERSHIP_CONSENT_OPERATIONS, MEMBERSHIP_DEBIT_OPERATIONS, membershipConsentOperationId, membershipDebitOperationId } from './membership-operation-identifiers';
-import { parseAddressMembershipConsent, parseMembershipAuthorizationDomain, type MembershipAuthorizationDomain, type AddressMembershipConsent, type ExactMembershipDebit } from './membership-authorization';
+import { parseStandingMembershipAuthorization, parseAddressMembershipConsent, parseMembershipAuthorizationDomain, type MembershipAuthorizationDomain, type AddressMembershipConsent, type ExactMembershipDebit } from './membership-authorization';
 import { readSponsoredOperation, type SponsoredOperationStatus } from './sponsored-operation-queue';
 
 export interface PendingMembershipConsent {
@@ -16,7 +16,7 @@ export async function pendingMembershipConsents(db: Firestore, transitionId: str
   for (const row of rows.docs) {
     const domain = parseMembershipAuthorizationDomain(row.get('request.domain'));
     const consent = parseAddressMembershipConsent(row.get('request.consent'));
-    if (row.get('request.transitionId') !== transitionId || membershipConsentOperationId({ domain, consent }) !== row.id) throw Error('recourse_membership_progress_invalid');
+    if (row.get('request.transitionId') !== transitionId || membershipConsentOperationId({ domain, consent, standing:row.get('request.standing')===null?null:parseStandingMembershipAuthorization(row.get('request.standing')), exitSecret:row.get('request.exitSecret') }) !== row.id) throw Error('recourse_membership_progress_invalid');
     const operation = await readSponsoredOperation(db, MEMBERSHIP_CONSENT_OPERATIONS, row.id);
     // A concurrent worker may have finalized between the query and this read.
     if (operation.status === 'queued' || operation.status === 'submitted') result.push({ domain, consent, operation });

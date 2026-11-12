@@ -15,6 +15,7 @@ import { addressMembershipSigningHash } from './membership-authorization';
 jest.mock('./pool-state', () => ({ readRecoursePoolState: jest.fn(), readHistoricalRecoursePoolState: jest.fn() }));
 jest.mock('./private-calendar-rules', () => ({ readPrivateCalendarRules: jest.fn() }));
 jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: jest.fn() }));
+jest.mock('./private-membership-scan', () => ({ readPrivateMembershipScan: jest.fn(), commitPrivateMembershipScan: jest.fn() }));
 jest.mock('./private-membership-domain', () => ({ reconcilePrivateMembershipDomain: jest.fn() }));
 jest.mock('./private-membership-reconcile', () => ({ reconcilePrivateMembershipThrough: jest.fn(), reconcilePrivateMembershipReceipt: jest.fn() }));
 jest.mock('./chain-ledger', () => ({ createRecourseChainPort: () => ({ finalizedBlock: async () => 99, blockHash: async () => `0x${'99'.repeat(32)}` }) }));
@@ -25,14 +26,14 @@ const rules: PrivateCalendarRules = () => ({ ruleHash: h('12'), rule: { schema: 
 function fixture(joined = false) {
   jest.clearAllMocks();
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
-  fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, bindingSetVersion: 2 });
+  fake.store.set(`${R.owners}/${owner}`, { ownerIdentity: owner, bindingSetVersion: 2, primaryBinding:h('03') });
   for (const b of ['03','04']) {
     fake.store.set(`${R.addresses}/${a(b)}`, { address: a(b), identity: h(b), ownerIdentity: owner, kernel: a('11'), recoveryGeneration: 0, chainBindingStatus: 'confirmed' });
     fake.store.set(`${R.identities}/${h(b)}`, { identity: h(b), ownerIdentity: owner, recoveryGeneration: 0 });
   }
   const state = (binding: string) => ({ pool: a('12'), kernel: a('11'), block: 99, blockHash: h('99'), timestamp: now,
     currentAddress: binding === h('03') ? a('03') : a('04'), consentNonce: joined ? '1' : '0', consentGeneration: joined ? '1' : '0',
-    addressConsent: joined, signedRuleHash: h('12') });
+    addressConsent: joined, signedRuleHash: h('12'), participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100 });
   (readRecoursePoolState as jest.Mock).mockImplementation(async (binding: string) => state(binding));
   (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(async (binding: string) => state(binding));
   (readPrivateCalendarRules as jest.Mock).mockResolvedValue(rules);
@@ -61,7 +62,9 @@ test('leave freezes new signing but cannot erase an unresolved issuance reservat
   f.fake.store.set(`${C.owners}/${owner}`, { ownerIdentity: owner, version: 0, pendingReservation: h('fe'), needsScan: false,
     checkpoint: { pool: a('12'), block: 99, blockHash: h('99') }, episode: joinPrivateMembership(null, utcCalendarMonth(now), rules) });
   f.fake.store.set(`${C.reservations}/${h('fe')}`, { status: 'pending', reservation: { ownerIdentity: owner, kind: 'issuance' } });
-  await expect(prepareMembershipTransition(f.db, owner, { kind: 'leave' })).resolves.toMatchObject({ status: 'preparing', challenges: [] });
+  const leaving=await prepareMembershipTransition(f.db, owner, {kind:'leave'});
+  expect(leaving.status).toBe('preparing'); expect(leaving.challenges).toHaveLength(2);
+  expect(leaving.challenges.every(c=>!c.consent.joined)).toBe(true);
   const id = f.fake.store.get(`${R.owners}/${owner}`)!.membershipTransition;
   expect(f.fake.store.get(`${T}/${id}`)).toMatchObject({ status: 'preparing', closure: null });
   expect(f.fake.store.get(`${C.owners}/${owner}`)).toMatchObject({ pendingReservation: h('fe'), episode: { joined: true } });
@@ -88,9 +91,11 @@ test('recovery during interrupted preparation refreshes the replacement before o
 
 test('resume discovers exact queued consent without requesting a second signature or exposing signatures', async () => {
   const f = fixture(), view = await prepareMembershipTransition(f.db, owner, { kind: 'join' });
-  const challenge = view.challenges[0], id = membershipConsentOperationId(challenge);
+  const challenge = view.challenges[0];
+  const standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
+  const id=membershipConsentOperationId({...challenge,standing,exitSecret:null});
   const request = { transitionId: view.id, domain: challenge.domain, consent: challenge.consent,
-    ownerSignature: 'PRIVATE_OWNER_SIGNATURE', attestorSignature: 'PRIVATE_ATTESTOR_SIGNATURE' };
+    standing,exitSecret:null,ownerSignature: 'PRIVATE_OWNER_SIGNATURE', attestorSignature: 'PRIVATE_ATTESTOR_SIGNATURE' };
   f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`, { request, status: 'queued', transactionHash: null });
   const resumed = await prepareMembershipTransition(f.db, owner, { id: view.id });
   expect(resumed.challenges).toHaveLength(1);
@@ -103,4 +108,21 @@ test('resume discovers exact queued consent without requesting a second signatur
   f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.request = request;
   f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.status = 'failed';
   expect((await prepareMembershipTransition(f.db, owner, { id: view.id })).challenges).toHaveLength(2);
+});
+
+
+test('a retained address issuance cannot hide departure challenges or authorize new admission', async () => {
+  const { PRIVATE_ISSUANCE_ADDRESSES } = await import('./issuance-lock');
+  const leaving = fixture(true);
+  leaving.fake.store.set(`${C.owners}/${owner}`, { ownerIdentity: owner, version: 0, pendingReservation: null, needsScan: false,
+    checkpoint: { pool: a('12'), block: 99, blockHash: h('99') }, episode: joinPrivateMembership(null, utcCalendarMonth(now), rules) });
+  leaving.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a('03')}`, { batchId: h('77') });
+  const view = await prepareMembershipTransition(leaving.db, owner, { kind: 'leave' });
+  expect(view.status).toBe('preparing');
+  expect(view.challenges).toHaveLength(2);
+  expect(view.challenges.every(c => c.consent.joined === false)).toBe(true);
+  expect(leaving.fake.store.get(`${PRIVATE_ISSUANCE_ADDRESSES}/${a('03')}`)).toEqual({ batchId: h('77') });
+  const joining = fixture();
+  joining.fake.store.set(`${PRIVATE_ISSUANCE_ADDRESSES}/${a('03')}`, { batchId: h('77') });
+  await expect(prepareMembershipTransition(joining.db, owner, { kind: 'join' })).rejects.toThrow('issuance_reconciliation_pending');
 });

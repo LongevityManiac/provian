@@ -39,7 +39,7 @@ export type AppParamList = {
     RecourseBind: undefined;
     RecourseMonthly: undefined;
     RecoveredTransfer: { kind?: 'curve' | 'hash'; account: string; auxiliaryBinding: string | null; symbol?: string; recipient?: string; amount?: string };
-    RecourseMembership: { kind: 'join' | 'leave' | 'resume' };
+    RecourseMembership: { kind: 'join' | 'leave' | 'renew' | 'resume' };
     CommonsGovernance: undefined;
     CommonsForum: undefined;
     CommonsForumPost: { postId: string; channel?: string; focusCommentId?: string };

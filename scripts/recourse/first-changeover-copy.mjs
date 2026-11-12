@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, renameSync, openSync, closeSync, fsyncSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BASE_TRANSACTION_GAS_LIMIT, boundedGasEstimate, assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
 import { Wallet, sha256, toUtf8Bytes, toQuantity } from 'ethers';
 import { createFakeFirestore } from '../../provian-backend/src/core/pvt/__test-helpers__/fake-firestore.ts';
 import { openHashAuthorityOperationStore } from '../../provian-backend/src/core/recourse/hash-authority-operation-store.ts';
@@ -88,7 +89,7 @@ export async function rehearseFirstChangeover(config) {
     legacyTokens: read(resolve(root, 'config/pvt9-base.json')).validation.forbidden_pvt_addresses,
     deployer: deployer.address.toLowerCase(), identityAttestor: wallet('attestor').address.toLowerCase(),
     batchApprover: wallet('approver').address.toLowerCase(), submitter: wallet('submitter').address.toLowerCase(),
-    importBatchSize: 128, callGas: '25000000', port };
+    importBatchSize: config.importBatchSize ?? 32, callGas: config.callGas ?? '4000000', port };
   const state = openChangeoverArtifacts(resolve(output, 'phases'));
   const journalPath = resolve(output, 'impersonated-transactions.json');
   const journal = existsSync(journalPath) ? read(journalPath) : {};
@@ -106,8 +107,9 @@ export async function rehearseFirstChangeover(config) {
         await local.request('anvil_setBalance', [step.from, toQuantity(100n * 10n ** 18n)]);
         const nonce = Number(BigInt(await request('eth_getTransactionCount', [step.from, 'pending'])));
         ensure(step.nonce === undefined || step.nonce === nonce, 'nonce_changed');
-        txHash = await local.request('eth_sendTransaction', [{ from: step.from, ...(step.to ? { to: step.to } : {}),
-          data: step.data, value: '0x0', gas: toQuantity(29000000), nonce: toQuantity(nonce) }]);
+        const transaction={from:step.from,...(step.to?{to:step.to}:{}),data:step.data,value:'0x0',nonce:toQuantity(nonce)};
+        const gas=boundedGasEstimate(BigInt(await request('eth_estimateGas',[transaction])));
+        txHash=await local.request('eth_sendTransaction',[{...transaction,gas:toQuantity(gas)}]);
         entry.transactions[index] = txHash; save('impersonated-transactions.json', journal);
       }
       let receipt;
@@ -120,6 +122,9 @@ export async function rehearseFirstChangeover(config) {
         && tx.from.toLowerCase() === step.from && (tx.to?.toLowerCase() ?? null) === (step.to ?? null)
         && tx.input === step.data && BigInt(tx.value) === 0n
         && (step.to || !step.address || receipt.contractAddress?.toLowerCase() === step.address), 'transaction_not_proven');
+      assertBaseTransactionGasLimit(BigInt(tx.gas));
+      entry.gas ??= []; entry.gas[index]={label:step.label,transactionHash:txHash,gasLimit:String(BigInt(tx.gas)),gasUsed:String(BigInt(receipt.gasUsed))};
+      save('impersonated-transactions.json',journal);
       save('progress.json', { phase: options.phase, step: index + 1, total: stage.steps.length, label: step.label });
     }
     await stage.assertPlan({ planDigest: stage.planDigest, stageDigest, steps: stage.steps });
@@ -138,7 +143,7 @@ export async function rehearseFirstChangeover(config) {
   await local.request('anvil_setBalance', [gas.address, toQuantity(100n * 10n ** 18n)]);
   const publish = (publication, options) => runPublicationDelivery({ inputs: publication, db, from: gas.address.toLowerCase(),
     store: authorityStore, vault, requireCompleted: options.requireCompleted, approvedBudgetWei: '10000000000000000000',
-    maxFeePerGas: 10000000000n, maxPriorityFeePerGas: 1000000n, maxGas: 40000000n,
+    maxFeePerGas: 10000000000n, maxPriorityFeePerGas: 1000000n, maxGas: BASE_TRANSACTION_GAS_LIMIT,
     loadSigner: async address => { ensure(address === gas.address.toLowerCase(), 'gas_signer_changed'); return gas; } });
   save('copy-description.json', { instanceId: config.instanceId, forkHash: config.forkHash, pointer: pointerPlan.pointer,
     boundary: 'Local impersonated admin; public fixture hash keys; one simulator with instant finality; no live transaction or real wallet signature.' });
@@ -149,7 +154,16 @@ export async function rehearseFirstChangeover(config) {
       const restarted = await advanceFirstChangeover({ inputs, state, execute: false, runtime, publish, authorityStore });
       ensure(restarted.status === 'confirmed', 'terminal_restart_failed');
       save('result.json', { result, restarted, transactions: Object.values(journal).reduce((n, row) => n + row.transactions.length, 0),
-        publicationDocuments: db.store.size }); return;
+        publicationDocuments: db.store.size });
+      const phases={};
+      for(const [phase,entry]of Object.entries(journal))phases[phase]=entry.gas;
+      const publication=[];
+      for(const [,doc]of db.store){const raw=doc.variant?.raw;if(typeof raw!=='string')continue;
+        const {Transaction}=await import('ethers');const tx=Transaction.from(raw);
+        const receipt=await request('eth_getTransactionReceipt',[tx.hash]);
+        if(receipt){assertBaseTransactionGasLimit(tx.gasLimit);publication.push({transactionHash:tx.hash,gasLimit:String(tx.gasLimit),gasUsed:String(BigInt(receipt.gasUsed))});}}
+      phases.publication=publication;
+      save('gas-report.json',{limit:String(BASE_TRANSACTION_GAS_LIMIT),phases:Object.fromEntries(Object.entries(phases).map(([phase,rows])=>[phase,{transactions:rows,maxGasLimit:rows.reduce((a,r)=>BigInt(r.gasLimit)>BigInt(a)?r.gasLimit:a,'0'),maxGasUsed:rows.reduce((a,r)=>BigInt(r.gasUsed)>BigInt(a)?r.gasUsed:a,'0')}]))}); return;
     }
   }
 }

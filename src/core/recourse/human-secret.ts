@@ -1,3 +1,4 @@
+import { deriveMembershipExitSecret, type MembershipAuthorizationDomain } from './membership-authorization';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { utf8ToBytes } from '@noble/hashes/utils';
@@ -52,4 +53,10 @@ export function humanBreakKey(mnemonic: string, context: HumanBreakKeyContext,
     return hkdf(sha256, material, utf8ToBytes('provian.human.break.keys.v1'),
       utf8ToBytes(JSON.stringify([context.chainId, context.identity, context.breakOrigin, purpose, generation])), 32);
   } finally { material.fill(0); }
+}
+
+export function humanMembershipExitSecret(mnemonic:string,domain:Pick<MembershipAuthorizationDomain,'chainId'|'pointer'>,binding:string,salt:string):string {
+  const material=utf8ToBytes(mnemonic.normalize('NFKD'));
+  try { return deriveMembershipExitSecret(material,domain,binding,salt); }
+  finally { material.fill(0); }
 }

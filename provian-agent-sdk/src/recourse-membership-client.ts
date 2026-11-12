@@ -1,9 +1,11 @@
-import { Interface, getBytes } from 'ethers';
+import { getBytes, randomBytes, hexlify } from 'ethers';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import type { ProtocolDeployment } from './protocol-pointer';
 import { readRecoursePoolChain } from './recourse-pool-chain';
+import { readStandingMembershipState } from './recourse-standing-state';
 import { RECOURSE_POOL_ABI } from './recourse-pool-abi';
-import { addressMembershipSigningHash, exactMembershipDebitSigningHash, parseAddressMembershipConsent,
+import { addressMembershipSigningHash, standingMembershipDebitSigningHash, parseAddressMembershipConsent,
+  standingMembershipSigningHash, membershipExitCommitment, type StandingMembershipAuthorization,
   parseExactMembershipDebit, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
   type ExactMembershipDebit, type MembershipAuthorizationDomain } from './recourse-membership-authorization';
 
@@ -12,13 +14,14 @@ export type MembershipRequestPath = 'membership-transitions' | `membership-trans
 export interface MembershipRelay { request(path: MembershipRequestPath, body?: unknown): Promise<unknown> }
 export interface MembershipConsentChallenge {
   readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent; readonly messageHex: string;
+  readonly fixedChargePayer: boolean; readonly burnLimit: string; readonly reserveLimit: string; readonly earningsBpsLimit: number;
 }
 export interface MembershipDebitChallenge {
   readonly reservationId: string; readonly domain: MembershipAuthorizationDomain; readonly debit: ExactMembershipDebit;
   readonly messageHex: string; readonly allowanceAtomic: string;
 }
 export interface MembershipTransitionView {
-  readonly id: string; readonly kind: 'join' | 'leave'; readonly status: 'preparing' | 'consenting' | 'complete' | 'superseded';
+  readonly id: string; readonly kind: 'join' | 'leave' | 'renew'; readonly status: 'preparing' | 'consenting' | 'complete' | 'superseded';
   readonly challenges: readonly MembershipConsentChallenge[];
   readonly pending: readonly { readonly binding: string; readonly account: string; readonly operation: MembershipOperationStatus }[];
 }
@@ -36,21 +39,24 @@ function hash(value: unknown): string { return typeof value === 'string' && /^0x
 function atomic(value: unknown): string { return typeof value === 'string' && value.length <= 78 && /^(0|[1-9][0-9]*)$/.test(value)
   && BigInt(value) < (1n << 256n) ? value : fail(); }
 export function parseMembershipConsentChallenge(value: unknown): MembershipConsentChallenge {
-  const row = object(value, 'consent,domain,messageHex'), domain = parseMembershipAuthorizationDomain(row.domain), consent = parseAddressMembershipConsent(row.consent);
+  const row = object(value, 'burnLimit,consent,domain,earningsBpsLimit,fixedChargePayer,messageHex,reserveLimit'), domain = parseMembershipAuthorizationDomain(row.domain), consent = parseAddressMembershipConsent(row.consent);
   const messageHex = hash(row.messageHex);
   if (messageHex !== addressMembershipSigningHash(domain, consent)) return fail();
-  return { domain, consent, messageHex };
+  if(typeof row.fixedChargePayer!=='boolean'||typeof row.earningsBpsLimit!=='number'||!Number.isSafeInteger(row.earningsBpsLimit)
+    ||row.earningsBpsLimit<0||row.earningsBpsLimit>10000)return fail();
+  return { domain, consent, messageHex, fixedChargePayer:row.fixedChargePayer, burnLimit:atomic(row.burnLimit),
+    reserveLimit:atomic(row.reserveLimit), earningsBpsLimit:row.earningsBpsLimit };
 }
 export function parseMembershipDebitChallenge(value: unknown): MembershipDebitChallenge {
   const row = object(value, 'allowanceAtomic,debit,domain,messageHex,reservationId');
   const domain = parseMembershipAuthorizationDomain(row.domain), debit = parseExactMembershipDebit(row.debit);
   const messageHex = hash(row.messageHex), allowanceAtomic = atomic(row.allowanceAtomic), reservationId = hash(row.reservationId);
-  if (messageHex !== exactMembershipDebitSigningHash(domain, debit) || BigInt(allowanceAtomic) !== BigInt(debit.burn) + BigInt(debit.reserve)) return fail();
+  if (messageHex !== standingMembershipDebitSigningHash(domain, debit) || BigInt(allowanceAtomic) !== BigInt(debit.burn) + BigInt(debit.reserve)) return fail();
   return { domain, debit, messageHex, allowanceAtomic, reservationId };
 }
 export function parseMembershipTransitionView(value: unknown): MembershipTransitionView {
   const row = object(value, 'challenges,id,kind,pending,status');
-  if ((row.kind !== 'join' && row.kind !== 'leave') || !['preparing', 'consenting', 'complete', 'superseded'].includes(String(row.status))
+  if ((row.kind !== 'join' && row.kind !== 'leave' && row.kind !== 'renew') || !['preparing', 'consenting', 'complete', 'superseded'].includes(String(row.status))
     || !Array.isArray(row.challenges) || !Array.isArray(row.pending)) return fail();
   const challenges = row.challenges.map(parseMembershipConsentChallenge);
   const pending = row.pending.map(value => {
@@ -59,9 +65,9 @@ export function parseMembershipTransitionView(value: unknown): MembershipTransit
       || !['queued','submitted'].includes(operation.status)) return fail();
     return { binding: hash(item.binding), account: item.account, operation };
   });
-  if ((row.status !== 'consenting' && pending.length) || new Set(pending.map(p => p.operation.id)).size !== pending.length
+  if ((row.status !== 'consenting' && !(row.kind === 'leave' && row.status === 'preparing') && pending.length) || new Set(pending.map(p => p.operation.id)).size !== pending.length
     || pending.some(p => challenges.some(c => c.consent.binding === p.binding))) return fail();
-  if ((row.status !== 'consenting' && challenges.length !== 0) || new Set(challenges.map(c => c.consent.binding)).size !== challenges.length
+  if ((row.status !== 'consenting' && !(row.kind === 'leave' && row.status === 'preparing') && challenges.length !== 0) || new Set(challenges.map(c => c.consent.binding)).size !== challenges.length
     || (row.kind === 'leave' && challenges.some(c => c.consent.joined))) return fail();
   return { id: hash(row.id), kind: row.kind, status: row.status as MembershipTransitionView['status'], challenges, pending };
 }
@@ -91,13 +97,16 @@ async function poolAt(binding: string, network: OwnerChainNetwork, deployment: P
 }
 /** Relay JSON never directly reaches a signer. Verify the current independent
  * chain domain, account and exact nonce/rule, and recompute the raw-byte hash. */
-export async function validateMembershipConsent(value: unknown, account: string, kind: 'join' | 'leave', network: OwnerChainNetwork): Promise<MembershipConsentChallenge> {
+export async function validateMembershipConsent(value: unknown, account: string, kind: 'join' | 'leave' | 'renew', network: OwnerChainNetwork): Promise<MembershipConsentChallenge> {
   const challenge = parseMembershipConsentChallenge(value), c = challenge.consent, deployment = await network.deployment();
   requireDomain(challenge.domain, c.revision, deployment);
   if (c.account !== account.toLowerCase() || (kind === 'leave' && c.joined)) throw Error('recourse_membership_scope');
   const state = await poolAt(c.binding, network, deployment);
-  if (state.currentAddress !== c.account || state.consentNonce !== c.nonce || state.addressConsent === c.joined || state.signedRuleHash !== c.ruleHash
+  if (state.currentAddress !== c.account || state.consentNonce !== c.nonce || (kind === 'renew' ? !state.addressConsent || !c.joined : state.addressConsent === c.joined) || state.signedRuleHash !== c.ruleHash
     || BigInt(c.expiresAt) < BigInt(state.timestamp) || BigInt(c.expiresAt) > BigInt(state.timestamp + 300)) throw Error('recourse_membership_stale');
+  if(challenge.burnLimit!==(challenge.fixedChargePayer?state.participationBurnAtomic:'0')
+    ||challenge.reserveLimit!==(challenge.fixedChargePayer?state.noEarningsContributionAtomic:'0')
+    ||challenge.earningsBpsLimit!==state.earningsBps)throw Error('recourse_membership_amount_changed');
   return challenge;
 }
 export async function validateMembershipDebit(value: unknown, payer: string, network: OwnerChainNetwork): Promise<MembershipDebitChallenge> {
@@ -116,7 +125,7 @@ export async function validateMembershipDebit(value: unknown, payer: string, net
   if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');
   return challenge;
 }
-export async function beginMembershipTransition(relay: MembershipRelay, kind: 'join' | 'leave'): Promise<MembershipTransitionView> {
+export async function beginMembershipTransition(relay: MembershipRelay, kind: 'join' | 'leave' | 'renew'): Promise<MembershipTransitionView> {
   const view = parseMembershipTransitionView(await relay.request('membership-transitions', { kind }));
   if (view.kind !== kind) return fail(); return view;
 }
@@ -129,30 +138,35 @@ export async function readMembershipTransition(relay: MembershipRelay, id?: stri
 /** The callback owns its key and sees exact raw bytes. Signing a hex string as
  * text is a different authorization and is deliberately never requested. */
 export async function submitMembershipConsent(relay: MembershipRelay, network: OwnerChainNetwork,
-  input: { readonly transitionId: string; readonly kind: 'join' | 'leave'; readonly account: string; readonly challenge: MembershipConsentChallenge;
-    signBytes(bytes: Uint8Array): Promise<string> }): Promise<MembershipOperationStatus> {
-  const transitionId = hash(input.transitionId), challenge = await validateMembershipConsent(input.challenge, input.account, input.kind, network);
-  const ownerSignature = await input.signBytes(getBytes(challenge.messageHex));
-  await validateMembershipConsent(challenge, input.account, input.kind, network);
-  return parseMembershipOperationStatus(await relay.request('membership-consents', { transitionId, domain: challenge.domain, consent: challenge.consent, ownerSignature }));
+  input: { readonly transitionId: string; readonly kind: 'join' | 'leave' | 'renew'; readonly account: string; readonly challenge: MembershipConsentChallenge;
+    signBytes(bytes: Uint8Array): Promise<string>; exitSecret(salt:string, expectedCommitment?:string): Promise<string> }): Promise<MembershipOperationStatus> {
+  const transitionId=hash(input.transitionId),challenge=await validateMembershipConsent(input.challenge,input.account,input.kind,network);
+  let standing:StandingMembershipAuthorization|null=null,ownerSignature:string|null=null,exitSecret:string|null=null;
+  if(challenge.consent.joined){
+    const exitSalt=hexlify(randomBytes(32));
+    const secret=await input.exitSecret(exitSalt);
+    standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,
+      reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitSalt,exitCommitment:membershipExitCommitment(secret)};
+    ownerSignature=await input.signBytes(getBytes(standingMembershipSigningHash(challenge.domain,standing)));
+  }else{
+    const {mandate}=await readStandingMembershipState(challenge.consent.binding,network);
+    if(!mandate.active||mandate.consentNonce!==challenge.consent.nonce)throw Error('recourse_membership_stale');
+    exitSecret=await input.exitSecret(mandate.exitSalt,mandate.exitCommitment);
+    if(membershipExitCommitment(exitSecret)!==mandate.exitCommitment)throw Error('recourse_membership_exit_proof');
+  }
+  await validateMembershipConsent(challenge,input.account,input.kind,network);
+  return parseMembershipOperationStatus(await relay.request('membership-consents',{transitionId,domain:challenge.domain,
+    consent:challenge.consent,standing,ownerSignature,exitSecret}));
 }
 export async function prepareMembershipDebit(relay: MembershipRelay, payer: string,
   amounts?: { readonly month: string; readonly burn: string; readonly reserve: string }): Promise<MembershipDebitPreparation> {
   return parseMembershipDebitPreparation(await relay.request('membership-debit-challenges', { payer: payer.toLowerCase(), ...(amounts ? { amounts } : {}) }));
 }
-const TOKEN = new Interface(['function approveCurrent(address,uint256,uint256) returns(bool)']);
-export async function prepareMembershipApproval(challenge: MembershipDebitChallenge, payer: string, network: OwnerChainNetwork):
-  Promise<{ readonly to: string; readonly data: string; readonly value: '0'; readonly chainId: 8453 }> {
-  const parsed = await validateMembershipDebit(challenge, payer, network);
-  return { to: parsed.domain.kernel, data: TOKEN.encodeFunctionData('approveCurrent', [parsed.domain.pool, parsed.allowanceAtomic, parsed.debit.revision]), value: '0', chainId: 8453 };
-}
-/** Caller displays and approves this exact challenge before invoking signing;
- * its token allowance is separate and never substitutes for this mandate. */
+/** Optional wake-up for an already approved automatic debit. No member signature
+ * or token approval is requested; the relay and standing mandate bound it. */
 export async function submitMembershipDebit(relay: MembershipRelay, network: OwnerChainNetwork,
-  input: { readonly payer: string; readonly challenge: MembershipDebitChallenge; signBytes(bytes: Uint8Array): Promise<string> }): Promise<MembershipOperationStatus> {
+  input: { readonly payer: string; readonly challenge: MembershipDebitChallenge }): Promise<MembershipOperationStatus> {
   const challenge = await validateMembershipDebit(input.challenge, input.payer, network);
-  const ownerSignature = await input.signBytes(getBytes(challenge.messageHex));
-  await validateMembershipDebit(challenge, input.payer, network);
   return parseMembershipOperationStatus(await relay.request('membership-debits', { reservationId: challenge.reservationId,
-    domain: challenge.domain, debit: challenge.debit, ownerSignature }));
+    domain: challenge.domain, debit: challenge.debit }));
 }

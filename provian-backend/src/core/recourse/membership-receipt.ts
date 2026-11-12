@@ -16,7 +16,7 @@ export const MEMBERSHIP_RECEIPT_ABI = new Interface([
   ...MEMBERSHIP_ISSUANCE_ABI.fragments.filter(f => f.type === 'event'),
 ]);
 export interface MembershipReceiptEvent {
-  readonly name: 'AddressConsentChanged' | 'MembershipDebitExecuted' | 'MembershipDebitCancelled'
+  readonly name: 'AddressConsentChanged' | 'AddressConsentRenewed' | 'MembershipDebitExecuted' | 'MembershipDebitCancelled'
     | 'IssuanceTicketConsumed' | 'IssuanceBatchCancelled';
   readonly logIndex: number; readonly topics: readonly string[]; readonly data: string;
   readonly kernel: string; readonly pool: string; readonly revision: string; readonly manifestHash: string;

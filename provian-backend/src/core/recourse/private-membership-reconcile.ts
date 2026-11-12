@@ -47,9 +47,9 @@ export async function reconcilePrivateMembershipReceipt(db: Firestore, ownerIden
   if (typeof transitionId !== 'string') return;
   const row = await db.collection(T).doc(transitionId).get(), transition = row.data() as PrivateMembershipTransition;
   if (!row.exists || transition.ownerIdentity !== ownerIdentity) throw Error('recourse_membership_transition_invalid');
-  if (transition.status !== 'consenting' || receipt.block <= transition.checkpoint.block) return;
+  if ((transition.status !== 'consenting' && !(transition.kind === 'leave' && transition.status === 'preparing')) || receipt.block <= transition.checkpoint.block) return;
   const relevant = receipt.events.some(e => {
-    if (e.name !== 'AddressConsentChanged' || e.pool !== transition.pool || e.kernel !== transition.kernel) return false;
+    if (e.name !== (transition.kind === 'renew' ? 'AddressConsentRenewed' : 'AddressConsentChanged') || e.pool !== transition.pool || e.kernel !== transition.kernel) return false;
     const log = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...e.topics], data: e.data });
     return log !== null && transition.bindings.some(b => b.binding === log.args.binding);
   });

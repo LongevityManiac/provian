@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readCompiledArtifact } from './compiled-artifact.mjs';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -17,7 +18,7 @@ async function main(){
  if(!inputsPath||!output||extra.length)throw Error('successor_plan_usage');
  const inputs=read(inputsPath),artifacts={};
  for(const name of [...SUCCESSOR_CREATION_ORDER,'ProvianHashAccount']){
-  const compiled=read(resolve(root,`contracts/out/${name}.sol/${name}.json`));
+  const compiled=readCompiledArtifact(root,name);
   for(const[path,source]of Object.entries(compiled.metadata.sources)){
    if(keccak256(readFileSync(resolve(root,'contracts',path)))!==source.keccak256)throw Error('successor_plan_stale_artifact');
   }

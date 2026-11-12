@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {MemberTokenMock} from "./ProvianMemberRecoursePool.t.sol";
+import {RecourseStandingConsent} from "../src/RecourseStandingConsent.sol";
 import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
 import {RecourseAddressConsent, RecourseAddressConsentState} from "../src/RecourseAddressConsent.sol";
 import {RecourseReserveAccounting} from "../src/RecourseReserveAccounting.sol";
@@ -52,6 +53,8 @@ contract RecoursePoolHistoryTest is Test {
         add(5,abi.encode(REQUEST,RecourseReserveAccounting.RestorationAllocation(ID,allocation,false)));
         add(7,abi.encode(address(this),ID));
         add(8,abi.encode(REQUEST,ID,OCCURRENCE));
+        add(9,abi.encode(ID,RecourseAddressConsentState.StandingMandate(100 ether,100 ether,100,month,0,1,sha256("exit"),sha256("salt"),true)));
+        add(10,abi.encode(ID,month,RecourseAddressConsentState.MonthlyCollection(100 ether,100 ether)));
     }
     function deploy(bool afterBreak) private {
         bytes32[] memory level=leaves;uint256 size=level.length;
@@ -74,6 +77,10 @@ contract RecoursePoolHistoryTest is Test {
         assertTrue(pool.determined(REQUEST));assertTrue(pool.occurrenceDetermined(ID,OCCURRENCE));
         (uint256 nonce,uint256 generation,bool joined)=pool.addressConsent(ID);
         assertEq(nonce,1);assertEq(generation,1);assertTrue(joined);assertEq(pool.debitNonce(ID),9);
+        (uint256 burn,uint256 reserve)=pool.standingMembership().monthlyCollection(ID,month);
+        assertEq(burn,100 ether);assertEq(reserve,100 ether);
+        (uint256 burnLimit,uint256 reserveLimit,,,,,,,bool active)=pool.standingMembership().standingMandate(ID);
+        assertEq(burnLimit,100 ether);assertEq(reserveLimit,100 ether);assertTrue(active);
         assertEq(pool.withdrawRestoration(REQUEST,ID),40 ether);
         assertEq(token.balanceOf(address(this)),40 ether);assertEq(token.balanceOf(address(pool)),60 ether);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(0);
@@ -85,11 +92,11 @@ contract RecoursePoolHistoryTest is Test {
         importAt(0);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.bind(ID,address(this));
         RecourseAddressConsent.ConsentAuthorization memory consent;
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.setAddressConsent(consent,"","");
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.cancelMembershipDebit(ID,0);
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.setAddressConsent(consent,"","");
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.cancelMembershipDebit(ID,0);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.divertIssuance(address(this),1,1);
         RecourseAddressConsent.DebitAuthorization memory debit;
-        vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.executeMembershipDebit(debit,"","");
+        vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.executeMembershipDebit(debit,"","");
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.withdrawRestoration(REQUEST,ID);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
     }
@@ -98,7 +105,7 @@ contract RecoursePoolHistoryTest is Test {
         add(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(1,1,true),address(0xBAD),uint256(8),uint256(1),uint256(9),false));
         deploy(false);for(uint256 i;i<leaves.length-1;++i)importAt(i);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(leaves.length-1);
-        assertEq(pool.primaryAddress(ID),address(this));assertEq(pool.importedPoolEntries(),7);
+        assertEq(pool.primaryAddress(ID),address(this));assertEq(pool.importedPoolEntries(),9);
     }
     function testMissingAllocationAmountsCannotActivate() public {
         recordsFor(39 ether);deploy(false);importAll();token.mint(address(pool),100 ether);
@@ -112,12 +119,13 @@ contract RecoursePoolHistoryTest is Test {
         recordsFor(40 ether);
         replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(3,2,true),address(this),uint256(7),uint256(1),uint256(9),false));
         replaceRecord(3,abi.encode(ID,uint256(2),RecourseAddressConsentState.ConsentPeriod(90,0)));
+        replaceRecord(7,abi.encode(ID,RecourseAddressConsentState.StandingMandate(100 ether,100 ether,100,month,0,3,sha256("exit"),sha256("salt"),true)));
         deploy(false);importAll();token.mint(address(pool),100 ether);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);pool.activatePoolHistory();
     }
     function testCorruptedConsentReplayNonceCannotImport() public {
         recordsFor(40 ether);
-        replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(4,1,true),address(this),uint256(7),uint256(1),uint256(9),false));
+        replaceRecord(2,abi.encode(ID,RecourseAddressConsentState.AddressConsent(0,1,true),address(this),uint256(7),uint256(1),uint256(9),false));
         deploy(false);importAt(0);importAt(1);
         vm.expectRevert(RecoursePoolHistory.InvalidPoolHistory.selector);this.importExternally(2);
     }
@@ -153,6 +161,7 @@ contract RecoursePoolHistoryTest is Test {
     function testBreakDisablesOldPrimaryAndRequiresActualSnapshotRestoration() public {
         recordsFor(40 ether);deploy(true);importAll();token.mint(address(pool),100 ether);pool.activatePoolHistory();
         assertEq(pool.primaryAddress(ID),address(0));assertTrue(pool.requiresSnapshotRecovery(ID));
+        (,,,,,,,,bool active)=pool.standingMembership().standingMandate(ID);assertFalse(active);
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.bind(ID,address(this));
         token.ownerAuthorization().recover(ID,address(this)); // A prospective recovery is insufficient.
         vm.expectRevert(ProvianMemberRecoursePool.InvalidInput.selector);pool.withdrawRestoration(REQUEST,ID);

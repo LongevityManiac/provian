@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 import { creditPrivateMembership, recordPrivateMembershipIssuance, privateMembershipStatus,
   type PrivateMembershipEpisode, type PrivateCalendarRules } from './private-membership-calendar';
-import { exactMembershipDebitDigest, parseExactMembershipDebit, parseMembershipAuthorizationDomain,
+import { standingMembershipDebitDigest, parseExactMembershipDebit, parseMembershipAuthorizationDomain,
   type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 import { parseMembershipIssuanceContext, type MembershipIssuanceContext } from './issuance-ticket';
 import type { AddressIssuanceContribution, PrivateIssuanceRecipient } from './private-monthly-earnings';
@@ -75,7 +75,7 @@ export function planPrivateDebit(account: PrivateMembershipAccount, domain: Memb
   const invoiceMonth = Number(debit.month);
   if (!Number.isSafeInteger(invoiceMonth) || debit.ruleHash !== rules(invoiceMonth).ruleHash) return invalid('rule');
   creditPrivateMembership(account.episode, nowMonth, invoiceMonth, { burnAtomic: debit.burn, reserveAtomic: debit.reserve }, rules);
-  const operation = { ...common, kind: 'debit' as const, debit, digest: exactMembershipDebitDigest(domain, debit) };
+  const operation = { ...common, kind: 'debit' as const, debit, digest: standingMembershipDebitDigest(domain, debit) };
   return { ...operation, id: digest(operation) };
 }
 export function planPrivateIssuance(account: PrivateMembershipAccount, domain: MembershipAuthorizationDomain,

@@ -817,9 +817,8 @@ export type { GitHubPrRequest, SignedGitHubPrRequest } from './github-pr-request
 
 export { bindRecourseOwnership, readRecourseOwnership, recourseBindingMessage, submitAgentRestorationRequest, readRestorationRequests } from './recourse';
 export type { RecourseConfig, RecourseBinding } from './recourse';
-export { recourseMembershipRelay, beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent,
-  prepareAgentMembershipDebit, authorizeAgentMembershipDebit } from './recourse';
-export { beginMembershipTransition, readMembershipTransition, prepareMembershipDebit, prepareMembershipApproval,
+export { recourseMembershipRelay, beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent } from './recourse';
+export { beginMembershipTransition, readMembershipTransition, prepareMembershipDebit,
   validateMembershipConsent, validateMembershipDebit, submitMembershipConsent, submitMembershipDebit } from './recourse-membership-client';
 export type { MembershipRelay, MembershipRequestPath, MembershipConsentChallenge, MembershipDebitChallenge,
   MembershipTransitionView, MembershipOperationStatus, MembershipDebitPreparation } from './recourse-membership-client';
@@ -859,3 +858,8 @@ export type { ActiveHashDeliveryInput } from './active-hash-delivery';
 export { readActiveHashWalletDelivery } from './break-recovery-store';
 
 export { exportAgentRecoveryBackup, importAgentRecoveryBackup } from './agent-recovery-backup';
+
+export { readStandingMembershipState } from './recourse-standing-state';
+export { standingMembershipSigningHash, standingMembershipDebitSigningHash, deriveMembershipExitSecret,
+  membershipExitCommitment } from './recourse-membership-authorization';
+export type { StandingMembershipAuthorization, StandingMembershipMandate } from './recourse-membership-authorization';

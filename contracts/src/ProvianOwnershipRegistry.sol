@@ -5,6 +5,7 @@ import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/Messa
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ProvianProtocolPointer} from "./ProvianProtocolPointer.sol";
 import {ProvianHashAccount} from "./ProvianHashAccount.sol";
+import {RecourseStandingConsent} from "./RecourseStandingConsent.sol";
 import {RecourseAddressConsent} from "./RecourseAddressConsent.sol";
 
 interface IRegisteredRecourseKernel {
@@ -14,6 +15,7 @@ interface IRegisteredRecourseKernel {
     function bindRestorationOwner(bytes32 identity, bytes32 commitment, bytes32 signingRoot) external;
 }
 interface IRegisteredRecoursePool {
+    function standingMembership() external view returns (RecourseStandingConsent);
     function registryOperator() external view returns (address);
     function bind(bytes32 identity, address account) external;
 }
@@ -89,21 +91,22 @@ contract ProvianOwnershipRegistry {
     function bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision) external {
         _bind(b, ownerSignature, identitySignature, revision, bindingDigest(b));
     }
-    function memberBindingDigest(Binding calldata b, RecourseAddressConsent.ConsentAuthorization calldata consent) public view returns (bytes32) {
+    function memberBindingDigest(Binding calldata b, RecourseStandingConsent.StandingAuthorization calldata authorization) public view returns (bytes32) {
         return MessageHashUtils.toEthSignedMessageHash(sha256(abi.encode("Provian atomic member address binding",
-            block.chainid, address(this), address(pointer), b, consent)));
+            block.chainid, address(this), address(pointer), b, authorization)));
     }
     /// @notice An existing private member adds one independent address with its
     /// recovery commitment and pool consent in the same transaction. No sibling
     /// identifiers or private membership key enter either signed payload.
     function bindWithConsent(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature,
-        uint256 revision, RecourseAddressConsent.ConsentAuthorization calldata consent,
+        uint256 revision, RecourseStandingConsent.StandingAuthorization calldata authorization,
         bytes calldata consentOwnerSignature, bytes calldata consentAttestorSignature) external {
+        RecourseAddressConsent.ConsentAuthorization calldata consent = authorization.consent;
         if (consent.binding != b.identity || consent.account != b.account || !consent.joined
             || consent.revision != revision) revert InvalidBinding();
         // This attestation cannot be stripped and replayed through plain bind.
-        _bind(b, ownerSignature, identitySignature, revision, memberBindingDigest(b, consent));
-        RecourseAddressConsent(pointer.component(8)).setAddressConsent(consent, consentOwnerSignature, consentAttestorSignature);
+        _bind(b, ownerSignature, identitySignature, revision, memberBindingDigest(b, authorization));
+        IRegisteredRecoursePool(pointer.component(8)).standingMembership().setStandingConsent(authorization, consentOwnerSignature, consentAttestorSignature);
     }
     function _bind(Binding calldata b, bytes calldata ownerSignature, bytes calldata identitySignature, uint256 revision, bytes32 identityDigest) private {
         bytes32 existing = ownerOf(b.account);

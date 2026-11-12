@@ -13,6 +13,10 @@ export const LIFECYCLE_CURSORS = 'recourse_lifecycle_cursors_v1';
 export const LIFECYCLE_PENDING = 'recourse_lifecycle_pending_v1';
 export const LIFECYCLE_EVENTS = {
   pool: new Interface([
+    'event AddressConsentChanged(bytes32 indexed binding,uint256 indexed generation,bool joined,uint256 nonce)',
+    'event AddressConsentRenewed(bytes32 indexed binding,uint256 nonce)',
+    'event MembershipDebitExecuted(bytes32 indexed digest,bytes32 indexed binding,address indexed payer,uint256 month,uint256 burn,uint256 reserve,uint256 nonce)',
+    'event MembershipDebitCancelled(bytes32 indexed binding,uint256 indexed nonce)',
     'event MembershipChanged(bytes32 indexed identity,bool joined,uint256 generation,uint256 month)',
     'event MonthlyObligationRecorded(bytes32 indexed identity,uint256 indexed generation,uint256 indexed month,uint256 burn,uint256 contribution)',
     'event MonthlyObligationCredited(bytes32 indexed identity,uint256 indexed generation,uint256 indexed month,uint256 burn,uint256 contribution)',
@@ -42,7 +46,7 @@ export function lifecycleRecords(source: LifecycleSource, logs: readonly Canonic
     occurrences.add(occurrence);
     const decoded = LIFECYCLE_EVENTS[source.kind].parseLog({ topics: [...log.topics], data: log.data });
     if (!decoded) throw Error('recourse_lifecycle_log_invalid');
-    const identity = decoded.name === 'RestorationWithdrawn' ? String(withdrawalOwners.get(String(decoded.args.request))) : String(decoded.args.identity);
+    const identity = decoded.name === 'RestorationWithdrawn' ? String(withdrawalOwners.get(String(decoded.args.request))) : String(decoded.args.identity ?? decoded.args.binding);
     if (!/^0x[0-9a-f]{64}$/.test(identity) || /^0x0+$/.test(identity)) throw Error('recourse_lifecycle_identity_invalid');
     const values = Object.fromEntries(decoded.fragment.inputs.map((input, i) =>
       [input.name, typeof decoded.args[i] === 'boolean' ? decoded.args[i] as boolean : String(decoded.args[i]).toLowerCase()]));

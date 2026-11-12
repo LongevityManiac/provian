@@ -125,6 +125,39 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, RecourseAddressConsen
         }
         if (reserve != 0) _contributeReserve(binding, payer, reserve);
     }
+    /// @notice Exact per-debit owner signatures are retired. The immutable
+    /// standing-consent companion is the only holdings collection entrypoint.
+    function setAddressConsent(ConsentAuthorization calldata, bytes calldata, bytes calldata) external pure override { revert InvalidInput(); }
+    function consentDigest(ConsentAuthorization calldata) public pure override returns (bytes32) { revert InvalidInput(); }
+    function executeMembershipDebit(DebitAuthorization calldata, bytes calldata, bytes calldata) external pure override {
+        revert InvalidInput();
+    }
+    function cancelMembershipDebit(bytes32, uint256) external pure override { revert InvalidInput(); }
+    function debitDigest(DebitAuthorization calldata) public pure override returns (bytes32) { revert InvalidInput(); }
+    function applyStandingConsent(bytes32 binding, address account, uint256 nonce, bool joined) external returns (uint256) {
+        if (msg.sender != address(standingMembership)) revert Unauthorized();
+        _consentCurrent(pointer.revision());
+        AddressConsent storage current = addressConsent[binding];
+        if (current.nonce != nonce || (joined && _consentOwner(binding) != account) || (!joined && !current.joined)) revert InvalidInput();
+        emit MembershipDebitCancelled(binding, debitNonce[binding]);
+        ++current.nonce; ++debitNonce[binding];
+        if (current.joined != joined) {
+            current.joined = joined;
+            if (joined) { ++current.generation; consentPeriods[binding][current.generation] = ConsentPeriod(block.number, 0); }
+            else consentPeriods[binding][current.generation].endBlock = block.number;
+            emit AddressConsentChanged(binding, current.generation, joined, nonce);
+        } else emit AddressConsentRenewed(binding, nonce);
+        return current.nonce;
+    }
+    function collectStandingDebit(DebitAuthorization calldata debit) external {
+        if (msg.sender != address(standingMembership)) revert Unauthorized();
+        _consentCurrent(debit.revision);
+        if (_consentOwner(debit.binding) != debit.payer || debitNonce[debit.binding] != debit.nonce) revert InvalidInput();
+        ++debitNonce[debit.binding];
+        _executeMembershipDebit(debit.binding, debit.payer, debit.burn, debit.reserve);
+        emit MembershipDebitExecuted(standingMembership.debitDigest(debit), debit.binding, debit.payer,
+            debit.month, debit.burn, debit.reserve, debit.nonce);
+    }
     function _issuanceDomain() internal view override returns (address, address, address) {
         return (address(pointer), address(token), address(settlement));
     }
@@ -140,7 +173,8 @@ contract ProvianMemberRecoursePool is RecoursePoolHistory, RecourseAddressConsen
     }
     function _issuanceConsent(address account) internal view override returns (bool, uint256) {
         AddressConsent storage consent = addressConsent[ownerOf[account]];
-        return (consent.joined, consent.nonce);
+        return (consent.joined && standingMembership.permitsEarnings(ownerOf[account],
+            monthlyRule(calendarMonth(block.timestamp)).earningsBps), consent.nonce);
     }
     function _issuanceBatchRecord(bytes32 batchId) internal view override returns (bool, bytes32) {
         ProvianPVT9.BatchRecord memory record = token.getBatchRecord(batchId);

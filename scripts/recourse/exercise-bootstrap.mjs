@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readCompiledArtifact } from './compiled-artifact.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +16,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const artifacts = new Map();
 const artifact = name => {
   if (artifacts.has(name)) return artifacts.get(name);
-  const compiled = JSON.parse(readFileSync(resolve(root, `contracts/out/${name}.sol/${name}.json`), 'utf8'));
+  const compiled = readCompiledArtifact(root,name);
   for (const [path, source] of Object.entries(compiled.metadata.sources)) {
     if (keccak256(readFileSync(resolve(root, 'contracts', path))) !== source.keccak256) throw Error(`exercise_stale_compilation:${name}`);
   }

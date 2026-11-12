@@ -1,3 +1,4 @@
+import { membershipExitCommitment } from './recourse-membership-authorization';
 import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
@@ -8,7 +9,7 @@ import { generateAgentKeyPair } from './wallet';
 import { recoveryCommitment, recoverySigningRoot } from './recourse-hash-authorization';
 import { recoveryOperationId, type RecoveryOwnerOperation } from './recourse-owner-operation';
 import { requireConfiguredPvt9Runtime } from './pvt9-base-config.generated';
-import { recoverRecourseAgent, withArchivedRecoveryMaterial, archivedAgentRestorations } from './recourse-recovery';
+import { recoverRecourseAgent, withArchivedRecoveryMaterial, archivedAgentRestorations, retainedMembershipExitSecret } from './recourse-recovery';
 // Each recovery now performs both the chain signature and private HTTP proof.
 vi.setConfig({ testTimeout: 20000 });
 const routing = vi.hoisted(() => ({ context: vi.fn(), recover: vi.fn() }));
@@ -63,12 +64,19 @@ it('retains one destination and credential pair after a lost response, then inst
     return { ok: true, json: async () => ({ walletId, destination: request.destination, generation: 1 }) };
   });
   const old = loadKeystore(path.join(directory, 'agent-keystore.json'))!;
+  const exitInput={directory,passphrase,walletId,domain:{chainId:'8453',pointer:`0x${'10'.repeat(20)}`},binding:`0x${'92'.repeat(32)}`,salt:`0x${'33'.repeat(32)}`};
+  const approvedExit=await retainedMembershipExitSecret(exitInput);
+  const exitLookup={...exitInput,expectedCommitment:membershipExitCommitment(approvedExit)};
   await expect(recoverRecourseAgent(input())).rejects.toThrow('response lost');
   expect(loadKeystore(path.join(directory, 'agent-keystore.json'))).toEqual(old);
   const result = await recoverRecourseAgent(input());
   for (const field of ['requestId', 'destination', 'nextCommitment', 'apiKey', 'apiSecret', 'preimage']) expect(requests[1][field]).toBe(requests[0][field]);
   const next = loadKeystore(path.join(directory, 'agent-keystore.json'))!;
   expect(next.address.toLowerCase()).toBe(result.destination);
+  expect(await retainedMembershipExitSecret(exitLookup)).toBe(approvedExit);
+  expect(await retainedMembershipExitSecret(exitInput)).not.toBe(approvedExit);
+  await expect(retainedMembershipExitSecret({...exitLookup,expectedCommitment:`0x${'ee'.repeat(32)}`})).rejects.toThrow('exit_proof');
+  await expect(retainedMembershipExitSecret({...exitLookup,walletId:'another-owner'})).rejects.toThrow('wallet_mismatch');
   expect(await withRecoverySecret(next, passphrase, value => Buffer.from(value).toString('hex'))).not.toBe('17'.repeat(32));
   expect(JSON.parse(fs.readFileSync(path.join(directory, 'agent-credentials.json'), 'utf8')).api_secret).toBe(requests[0].apiSecret);
   const refreshed = JSON.stringify({ wallet_id: walletId, address: result.destination, api_key: 'newer-key', api_secret: 'newer-secret' });
@@ -98,6 +106,7 @@ it('retains one destination and credential pair after a lost response, then inst
   const archive = path.join(directory, 'recoveries'); fs.mkdirSync(archive, { mode: 0o700 });
   const archivedFile = path.join(archive, `${requests[0].requestId}.json`);
   fs.renameSync(path.join(directory, 'recourse-recovery.json'), archivedFile);
+  expect(await retainedMembershipExitSecret(exitLookup)).toBe(approvedExit);
   expect(await withArchivedRecoveryMaterial(lookup, use)).toEqual({ found: true, value: expectedSecret });
   await expect(withArchivedRecoveryMaterial({ ...lookup, passphrase: 'wrong' }, use)).rejects.toThrow();
   fs.renameSync(archivedFile, path.join(archive, `0x${'fe'.repeat(32)}.json`));

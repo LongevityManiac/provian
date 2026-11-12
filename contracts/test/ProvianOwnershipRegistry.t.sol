@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+import {RecourseStandingConsent} from "../src/RecourseStandingConsent.sol";
+import {RecourseMembershipRules} from "../src/RecourseMembershipRules.sol";
 import {RecourseAddressConsent} from "../src/RecourseAddressConsent.sol";
 import {SlhTestSigner} from "./helpers/SlhTestSigner.sol";
 import {ProvianOwnershipRegistry} from "../src/ProvianOwnershipRegistry.sol";
@@ -22,10 +24,23 @@ contract RegistryKernelFixture {
     function collapseRoles(address attestor) external { restorationAuthority = attestor; }
 }
 contract RegistryPoolFixture is RecourseAddressConsent {
+    RecourseStandingConsent public immutable standingMembership;
     address public registryOperator;
     mapping(address => bytes32) public owners;
     mapping(bytes32 => address) public accounts;
-    constructor(address registry) { registryOperator = registry; }
+    constructor(address registry) { registryOperator = registry; standingMembership = new RecourseStandingConsent(); }
+    function requiresSnapshotRecovery(bytes32) external pure returns(bool) { return false; }
+    function poolHistoryReady() external pure returns(bool) { return true; }
+    function pointer() external view returns(ProvianProtocolPointer) { return ProvianOwnershipRegistry(registryOperator).pointer(); }
+    function pvt() external view returns(address) { return ProvianOwnershipRegistry(registryOperator).pointer().component(0); }
+    function consentAccount(bytes32 id) external view returns(address) { return accounts[id]; }
+    function calendarMonth(uint256) external pure returns(uint256) { return 100; }
+    function monthlyRule(uint256) external pure returns(RecourseMembershipRules.MonthlyRule memory) { return RecourseMembershipRules.MonthlyRule(0,100,100,100,sha256("signed test rule")); }
+    function applyStandingConsent(bytes32 id,address,uint256 nonce,bool joined) external returns(uint256) {
+        require(msg.sender==address(standingMembership)); AddressConsent storage c=addressConsent[id]; require(c.nonce==nonce);
+        ++c.nonce; ++debitNonce[id]; if(joined&&!c.joined)++c.generation; c.joined=joined; return c.nonce;
+    }
+    function collectStandingDebit(RecourseAddressConsent.DebitAuthorization calldata) external pure { revert("not_a_debit_fixture"); }
     function bind(bytes32 identity, address account) external { require(msg.sender == registryOperator); owners[account] = identity; accounts[identity] = account; }
     function _consentOwner(bytes32 id) internal view override returns(address) { return accounts[id]; }
     function _consentAttestor() internal view override returns(address) { return ProvianOwnershipRegistry(registryOperator).identityAttestor(); }
@@ -103,6 +118,9 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         registry.bind(binding, ownerProof, attestorProof, 2);
     }
 
+    function standing(RecourseAddressConsent.ConsentAuthorization memory c) private pure returns(RecourseStandingConsent.StandingAuthorization memory) {
+        return RecourseStandingConsent.StandingAuthorization(c,false,0,0,100,sha256("TEST ONLY exit commitment"),sha256("TEST ONLY exit salt"));
+    }
     function sig(uint256 key, bytes32 digest) private pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest);
         return abi.encodePacked(r, s, v);
@@ -117,12 +135,12 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
     }
     function testBindingAndMemberConsentAreAtomicWithBothIndependentOwnerSignatures() public {
         RecourseAddressConsent.ConsentAuthorization memory c = joinedConsent();
-        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.consentDigest(c);
-        bytes memory identitySig = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, c));
+        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.standingMembership().standingConsentDigest(standing(c));
+        bytes memory identitySig = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, standing(c)));
         bytes memory ownerSig = sig(OWNER_KEY, bd);
         vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector);
         registry.bind(binding, ownerSig, identitySig, 1);
-        registry.bindWithConsent(binding, ownerSig, identitySig, 1, c, sig(OWNER_KEY, cd), sig(EVIDENCE_KEY, cd));
+        registry.bindWithConsent(binding, ownerSig, identitySig, 1, standing(c), sig(OWNER_KEY, cd), sig(EVIDENCE_KEY, cd));
         assertEq(registry.ownerOf(binding.account), binding.identity);
         assertEq(kernel.commitments(binding.identity), binding.recoveryCommitment);
         (uint256 nonce,uint256 generation,bool joined) = pool.addressConsent(binding.identity);
@@ -130,31 +148,37 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
     }
     function testRejectedMemberConsentRollsBackTheEntireBindingAndRecoveryCommitment() public {
         RecourseAddressConsent.ConsentAuthorization memory c = joinedConsent();
-        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.consentDigest(c);
-        bytes memory owner = sig(OWNER_KEY, bd); bytes memory attestor = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, c));
+        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.standingMembership().standingConsentDigest(standing(c));
+        bytes memory owner = sig(OWNER_KEY, bd); bytes memory attestor = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, standing(c)));
         bytes memory consentOwner = sig(OWNER_KEY, cd);
-        vm.expectRevert(); registry.bindWithConsent(binding, owner, attestor, 1, c, consentOwner, "");
+        RecourseStandingConsent.StandingAuthorization memory a = standing(c);
+        vm.expectRevert(); registry.bindWithConsent(binding, owner, attestor, 1, a, consentOwner, "");
         assertEq(registry.ownerOf(binding.account), bytes32(0));
         assertEq(kernel.commitments(binding.identity), bytes32(0));
         assertEq(pool.owners(binding.account), bytes32(0));
         assertFalse(registry.consumedBinding(bd));
         bytes memory consentAttestor = sig(EVIDENCE_KEY, cd);
-        vm.expectRevert(); registry.bindWithConsent(binding, owner, attestor, 1, c, "", consentAttestor);
+        vm.expectRevert(); registry.bindWithConsent(binding, owner, attestor, 1, a, "", consentAttestor);
         assertFalse(registry.consumedBinding(bd));
     }
     function testAtomicMemberBindingCannotConsentForAnotherAddressOrDeparture() public {
         RecourseAddressConsent.ConsentAuthorization memory c = joinedConsent();
-        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.consentDigest(c);
-        bytes memory owner = sig(OWNER_KEY, bd); bytes memory attestor = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, c));
+        bytes32 bd = registry.bindingDigest(binding); bytes32 cd = pool.standingMembership().standingConsentDigest(standing(c));
+        bytes memory owner = sig(OWNER_KEY, bd); bytes memory attestor = sig(EVIDENCE_KEY, registry.memberBindingDigest(binding, standing(c)));
         bytes memory co = sig(OWNER_KEY, cd); bytes memory ca = sig(EVIDENCE_KEY, cd);
         c.account = address(0xD);
-        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, c, co, ca);
+        RecourseStandingConsent.StandingAuthorization memory a;
+        a = standing(c);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, a, co, ca);
         c.account = binding.account; c.binding = bytes32(uint256(5));
-        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, c, co, ca);
+        a = standing(c);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, a, co, ca);
         c.binding = binding.identity; c.joined = false;
-        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, c, co, ca);
+        a = standing(c);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, a, co, ca);
         c.joined = true; c.revision = 2;
-        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, c, co, ca);
+        a = standing(c);
+        vm.expectRevert(ProvianOwnershipRegistry.InvalidBinding.selector); registry.bindWithConsent(binding, owner, attestor, 1, a, co, ca);
         assertFalse(registry.consumedBinding(bd));
     }
     function _lowerAddress(address account) private pure returns (string memory) {
@@ -171,14 +195,14 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         command[7] = string.concat('{"registry":"', _lowerAddress(address(registry)), '","binding":{"identity":"', vm.toString(binding.identity),
           '","address":"', _lowerAddress(binding.account), '","recoveryCommitment":"', vm.toString(binding.recoveryCommitment),
           '","signingRoot":"', vm.toString(binding.signingRoot), '","kernel":"', _lowerAddress(binding.kernel), '","nonce":"', vm.toString(binding.nonce),
-          '","expiresAtMs":1200000},"consent":{"binding":"', vm.toString(c.binding), '","account":"', _lowerAddress(c.account),
-          '","nonce":"0","joined":true,"revision":"1","ruleHash":"', vm.toString(c.ruleHash), '","expiresAt":"1200"}}');
+          '","expiresAtMs":1200000},"authorization":{"consent":{"binding":"', vm.toString(c.binding), '","account":"', _lowerAddress(c.account),
+          '","nonce":"0","joined":true,"revision":"1","ruleHash":"', vm.toString(c.ruleHash), '","expiresAt":"1200"},"fixedChargePayer":false,"burnLimit":"0","reserveLimit":"0","earningsBpsLimit":100,"exitCommitment":"', vm.toString(sha256("TEST ONLY exit commitment")), '","exitSalt":"', vm.toString(sha256("TEST ONLY exit salt")), '"}}');
         for (uint256 n = 4; n < 7; ++n) {
             bytes memory value = bytes(command[n]);
             for (uint256 i; i < value.length; ++i) if (uint8(value[i]) >= 65 && uint8(value[i]) <= 70) value[i] = bytes1(uint8(value[i]) + 32);
             command[n] = string(value);
         }
-        assertEq(bytes32(vm.ffi(command)), registry.memberBindingDigest(binding, c));
+        assertEq(bytes32(vm.ffi(command)), registry.memberBindingDigest(binding, standing(c)));
     }
     function testCanonicalBindingMatchesSharedClientAndRelayBytes() public view {
         string memory json = vm.readFile("test/fixtures/owner-binding.json");

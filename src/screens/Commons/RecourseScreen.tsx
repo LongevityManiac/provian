@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,8 +8,11 @@ import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { beginHumanMembership, leaveHumanMembership } from '../../core/recourse/human-membership';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import SeedManager from '../../core/wallet/SeedManager';
+import TransactionHistoryService from '../../core/history/TransactionHistoryService';
+import { theftTransferChoices, verifyTheftTransfer, type TheftTransfer } from '../../core/recourse/theft-transfer-history';
 import { ownerChainNetwork } from '../../core/protocol/runtime';
 import { discoverBoundHumanSpendingAccount } from '../../core/recourse/human-bound-spending';
 import { ExternalWalletProofFlow } from '../Agent/LinkExternalWalletScreen';
@@ -25,10 +28,34 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  const [lossTransaction, setLossTransaction] = useState('');
-  const [lossBlock, setLossBlock] = useState('');
+  const [transfers, setTransfers] = useState<readonly TheftTransfer[]>([]);
+  const [selectedTransfer, setSelectedTransfer] = useState<TheftTransfer | null>(null);
+  const [transfersLoading, setTransfersLoading] = useState(false);
+  const [transfersError, setTransfersError] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyMore, setHistoryMore] = useState(false);
   const [allocationRequest, setAllocationRequest] = useState('');
-  const [selectedBinding, setSelectedBinding] = useState<string | undefined>();
+  const [selectedHistoryAddress, setSelectedHistoryAddress] = useState<string | undefined>();
+  const [historyRefresh, setHistoryRefresh] = useState(0);
+  const historyWallet = state?.addresses.find(row => row.confirmed && row.address === selectedHistoryAddress)
+    ?? state?.addresses.find(row => row.confirmed && row.identity === state.identity);
+  const transferAccount = historyWallet?.address;
+  useEffect(() => { setHistoryPage(1); setSelectedTransfer(null); setTransfers([]); }, [transferAccount]);
+  useEffect(() => {
+    let active = true;
+    if (!transferAccount) return () => { active = false; };
+    setTransfersLoading(true); setTransfersError(false);
+    void (async () => {
+      try {
+        const deployment = await ownerChainNetwork().deployment();
+        const page = await TransactionHistoryService.getTransactions(transferAccount, { chains: ['Base'], page: historyPage, limit: 50 });
+        const rows = theftTransferChoices(page.items, transferAccount, deployment.addresses.kernel);
+        if (active) { setTransfers(previous => historyPage === 1 ? rows : [...previous, ...rows]); setHistoryMore(page.hasMore); }
+      } catch { if (active) setTransfersError(true); }
+      finally { if (active) setTransfersLoading(false); }
+    })();
+    return () => { active = false; };
+  }, [transferAccount, historyPage, historyRefresh]);
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     setLoading(true); setError(false);
@@ -37,7 +64,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       if (sequence !== loadSequence.current) return;
       setState(chain); setLoading(false);
       const history = await readRecourseHistory(chain);
-      if (sequence === loadSequence.current) setState(history);
+      if (sequence === loadSequence.current) { setState(history); setHistoryPage(1); setHistoryRefresh(value => value + 1); }
     } catch { if (sequence === loadSequence.current) setError(true); }
     finally { if (sequence === loadSequence.current) setLoading(false); }
   }, []);
@@ -45,13 +72,24 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const button = (label: string, onPress: () => void) => <TouchableOpacity accessibilityRole="button"
     disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
     <Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
+  const leave = async () => {
+    if (busy || loading) return;
+    setBusy(true); setError(false);
+    try {
+      const view = await beginHumanMembership('leave');
+      await leaveHumanMembership(view);
+      navigation.navigate('RecourseMembership', { kind: 'resume' });
+    } catch { setError(true); }
+    finally { setBusy(false); }
+  };
   const requestRestoration = async () => {
     if (busy) return;
     setBusy(true); setError(false);
     try {
-      if (!/^[0-9]+$/.test(lossBlock.trim())) throw new Error('recourse_loss_block_invalid');
-      await submitHumanRestorationRequest(lossTransaction.trim().toLowerCase(), Number(lossBlock), selectedBinding ?? state?.identity);
-      setLossTransaction(''); setLossBlock(''); await load();
+      if (!selectedTransfer || !transferAccount) throw Error('recourse_select_transfer');
+      const verified = await verifyTheftTransfer(selectedTransfer, transferAccount, ownerChainNetwork());
+      await submitHumanRestorationRequest(verified.transactionHash, verified.block, historyWallet?.identity);
+      setSelectedTransfer(null); await load();
     } catch { setError(true); }
     finally { setBusy(false); }
   };
@@ -107,10 +145,10 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           })}</Text>
           <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.')}</Text>
           {state.membershipState === 'available' && state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
-          <Text style={styles.small}>{t('recourse.consent', 'Each debit from your holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
+          <Text style={styles.small}>{t('recourse.standing.consent', 'Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
           {state.membershipState === 'available' ? state.enrolled ? <>
-            {button(t('recourse.catchUp', 'Complete monthly obligations'), () => navigation.navigate('RecourseMonthly'))}
-            {button(t('recourse.leave', 'Leave Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'leave' }))}
+            {button(t('recourse.standing.payments', 'Automatic payments'), () => navigation.navigate('RecourseMonthly'))}
+            {button(t('recourse.leave', 'Leave Recourse Pool'), () => { void leave(); })}
           </> : button(t('recourse.join', 'Join Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'join' })) : button(t('recourse.flow.resume', 'Continue unfinished action'), () => navigation.navigate('RecourseMembership', { kind: 'resume' }))}
         </View>
         <View style={styles.card}>
@@ -130,20 +168,30 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <View style={styles.card}>
           <Text style={styles.section}>{t('recourse.requests', 'Restoration requests')}</Text>
           <Text style={styles.body}>{t('recourse.rule', 'Reversal comes first, with both restoration authority and your independent recovery proof. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder, pro rata when underfunded. Every determination and outcome enters your own chain.')}</Text>
-          <Text style={styles.small}>{t('recourse.requestExplanation', 'Name the transaction that took your PVT and its Base block. Your recovery proof establishes a new wallet key; the relay checks the transaction and the witnessed exchange record before making a determination. Your original seed backup still restores your wallet.')}</Text>
+          <Text style={styles.small}>{t('recourse.transferPicker.explanation', 'Choose the transfer you did not make. The app supplies its transaction details and prepares recovery to a new wallet address. Review the transfer before authorizing your restoration request.')}</Text>
           <Text style={styles.body}>{t('recourse.selectRestorationWallet', 'Select the wallet that lost PVT')}</Text>
           {state.addresses.filter(row => row.confirmed).map(row => <TouchableOpacity key={row.address}
-            accessibilityRole="radio" accessibilityState={{ checked: (selectedBinding ?? state.identity) === row.identity }}
-            disabled={busy || loading} onPress={() => setSelectedBinding(row.identity)} style={styles.button}>
-            <Text style={styles.buttonText}>{(selectedBinding ?? state.identity) === row.identity ? '● ' : '○ '}{row.address}</Text>
+            accessibilityRole="radio" accessibilityState={{ checked: transferAccount === row.address }}
+            disabled={busy || loading} onPress={() => setSelectedHistoryAddress(row.address)} style={styles.button}>
+            <Text style={styles.buttonText}>{transferAccount === row.address ? '● ' : '○ '}{row.address}</Text>
           </TouchableOpacity>)}
-          <TextInput accessibilityLabel={t('recourse.lossTransaction', 'Transaction hash')} placeholder={t('recourse.lossTransaction', 'Transaction hash')}
-            value={lossTransaction} onChangeText={setLossTransaction} autoCapitalize="none" autoCorrect={false} editable={!busy}
-            style={styles.input} placeholderTextColor={COLORS.textSecondary} />
-          <TextInput accessibilityLabel={t('recourse.lossBlock', 'Base block number')} placeholder={t('recourse.lossBlock', 'Base block number')}
-            value={lossBlock} onChangeText={setLossBlock} keyboardType="number-pad" editable={!busy}
-            style={styles.input} placeholderTextColor={COLORS.textSecondary} />
-          {button(t('recourse.submitRequest', 'Submit restoration request'), () => { void requestRestoration(); })}
+          {transfersLoading ? <ActivityIndicator accessibilityLabel={t('recourse.transferPicker.loading', 'Loading your transfers')} color={COLORS.primary} /> : null}
+          {transfersError ? <Text style={styles.body}>{t('recourse.transferPicker.unavailable', 'We could not load your transfers. Refresh and try again.')}</Text> : null}
+          {!transfersLoading && !transfersError && transfers.length === 0 ? <Text style={styles.body}>{t('recourse.transferPicker.empty', 'No outgoing PVT transfers appear in this part of your history.')}</Text> : null}
+          {transfers.map(transfer => <TouchableOpacity key={`${transfer.transactionHash}:${transfer.to}`} accessibilityRole="radio"
+            accessibilityState={{ checked: selectedTransfer === transfer }} disabled={busy} onPress={() => setSelectedTransfer(transfer)}
+            style={[styles.transfer, selectedTransfer === transfer && styles.selectedTransfer]}>
+            <Text style={styles.body}>{transfer.amount} PVT</Text>
+            <Text style={styles.small}>{new Date(transfer.timestamp).toLocaleString()}</Text>
+            <Text style={styles.address}>{t('recourse.transferPicker.to', 'To {{address}}', { address: transfer.to })}</Text>
+          </TouchableOpacity>)}
+          {historyMore ? button(t('recourse.transferPicker.older', 'Show older transfers'), () => { if (!transfersLoading) setHistoryPage(page => page + 1); }) : null}
+          {selectedTransfer ? <View style={styles.request}>
+            <Text style={styles.section}>{t('recourse.transferPicker.review', 'Report this transfer')}</Text>
+            <Text style={styles.body}>{t('recourse.transferPicker.confirm', 'I did not authorize this transfer of {{amount}} PVT.', { amount: selectedTransfer.amount })}</Text>
+            <Text style={styles.small}>{t('recourse.transferPicker.recovery', 'Your recovery proof moves control to a replacement address. Reversal is attempted first; the pool determines restoration of any remaining loss.')}</Text>
+            {button(t('recourse.submitRequest', 'Submit restoration request'), () => { void requestRestoration(); })}
+          </View> : null}
           {state.requests.map(row => <View key={row.requestId} style={styles.request}><Text selectable style={styles.address}>{row.transactionHash}</Text>
             <Text style={styles.body}>{t(`recourse.requestStatus.${row.status}`, row.status.replace(/_/g, ' '))}</Text>
             <Text selectable style={styles.address}>{t('recourse.allocationRequest', 'Restoration request ID')}: {row.requestId}</Text>
@@ -169,5 +217,7 @@ const styles = StyleSheet.create({
   input: { color: COLORS.text, borderColor: COLORS.textSecondary, borderWidth: 1, borderRadius: BORDER_RADIUS.m, padding: SPACING.m },
   button: { backgroundColor: COLORS.primary, padding: SPACING.m, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },
   buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  transfer: { padding: SPACING.m, borderRadius: BORDER_RADIUS.m, borderWidth: 1, borderColor: COLORS.textSecondary, gap: SPACING.s },
+  selectedTransfer: { borderColor: COLORS.primary, borderWidth: 2 },
   disabled: { opacity: 0.5 }, request: { gap: SPACING.s, paddingVertical: SPACING.s },
 });
