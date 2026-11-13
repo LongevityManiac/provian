@@ -9,7 +9,7 @@ function harness({ lost = false, selected = a, chain = '0x7a69', progress = { st
     member: false, initialBurnPaid: false, sequenceStarted: false, exerciseBusy: false, ...values };
   let accounts = selected ? [selected] : [], chainId = chain, job = progress;
   const document = { querySelector: id => { if (!elements.has(id)) elements.set(id, {}); return elements.get(id); } };
-  const config = { chainId: 31337, copiedFunder: b, kernel: 'kernel', registry: 'registry', pool: 'pool' };
+  const config = { chainId: 31337, copiedFunder: b, kernel: 'kernel', registry: 'registry', pool: 'pool', standingAddress:'standing' };
   const controls = {
     accounts(value, event = true) { accounts = value; if (event) listeners.accountsChanged?.(value); },
     network(value) { chainId = value; listeners.chainChanged?.(value); },
@@ -21,7 +21,7 @@ function harness({ lost = false, selected = a, chain = '0x7a69', progress = { st
     if (path === '/exercise-signature') job = { state: 'completed', result: { completed: true } };
     const value = path === '/manifest' ? config : path === '/state' ? state : path === '/exercise-status' ? job
       : path === '/binding' ? { binding: {}, messageHex: '0xabcd', attestorSignature: 'attestor', revision: '1' }
-      : path === '/membership' ? { challenge: { messageHex: '0xbeef', summary: 'Local membership', method: 'setAddressConsent', authorization: {} }, attestorSignature: 'attestor' } : {};
+      : path === '/membership' ? { challenge: { messageHex: '0xbeef', summary: 'Local membership', method: 'setStandingConsent', authorization: {} }, attestorSignature: 'attestor' } : {};
     return { ok: true, json: async () => value };
   };
   const wallet = { isMetaMask: true, on: (name, fn) => { listeners[name] = fn; }, request: async args => {
@@ -142,4 +142,14 @@ test('unknown network addition never chains onto a failed switch prompt', async 
   await h.click('connect');
   expect(h.walletCalls.filter(c => c.method === 'wallet_addEthereumChain')).toHaveLength(1);
   expect(h.walletCalls.filter(c => c.method === 'wallet_switchEthereumChain')).toHaveLength(1);
+});
+
+test('monthly burn uses existing consent without another owner signature or allowance',async()=>{
+  const h=harness({values:{bound:true,member:true,initialBurnPaid:false}});
+  await h.click('next');
+  expect(h.calls.filter(c=>c.path==='/burn')).toHaveLength(1);
+  expect(h.signs()).toHaveLength(0);expect(h.txs()).toHaveLength(0);
+  const unjoined=harness({values:{bound:true,member:false}});await unjoined.click('next');
+  expect(unjoined.calls.filter(c=>c.path==='/burn')).toHaveLength(0);
+  expect(unjoined.signs()).toHaveLength(1);
 });

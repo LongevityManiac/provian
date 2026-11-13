@@ -3,11 +3,12 @@ import { readCompiledArtifact } from './compiled-artifact.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Contract, Interface, Wallet, getCreateAddress, hexlify, keccak256, sha256, toUtf8Bytes, toQuantity } from 'ethers';
+import { AbiCoder, Contract, Interface, Wallet, getCreateAddress, hexlify, keccak256, sha256, toUtf8Bytes, toQuantity } from 'ethers';
 import { isolatedExercisePort } from './exercise-port.mjs';
 import { exerciseRead, exerciseReceipt } from './exercise-read.mjs';
 import { exerciseJournal } from './exercise-journal.mjs';
-import { buildSuccessionSnapshot } from './snapshot.mjs';
+import { economicSeedPlan, custodySeedPlan } from './successor-plan.mjs';
+import { buildSuccessionSnapshot, merkle } from './snapshot.mjs';
 import { verifyInstitutionRuntime } from './institution-snapshot.mjs';
 import { snapshotRpcPort } from './snapshot-cli.mjs';
 import { recoverySigningRoot, signRecoveryIntent } from '../../provian-agent-sdk/dist/recourse-hash-authorization.js';
@@ -206,19 +207,32 @@ export async function bootstrapExercise(outputDirectory) {
   }
   const state = snapshot.state, a = addresses, kernel = a.ProvianRecourseKernel;
   const rootCommitment = await recoverySigningRoot(exerciseSeed('pointer root 0'));
+  const economic = economicSeedPlan({state, predecessor: oldKernel, block, artifact: artifact('ProvianRecoveryHistory')});
+  function custody(kind, predecessor, seeds) {
+    const plan = custodySeedPlan({kernel, predecessor, block, blockHash, kind, seeds});
+    const coder = AbiCoder.defaultAbiCoder();
+    const domain = sha256(coder.encode(['string','uint256','address','uint8','address','uint256','bytes32'],
+      ['Provian custody snapshot',31337,kernel,kind,predecessor,block,blockHash]));
+    const leaves = plan.rows.map(row => sha256(coder.encode(['bytes32','uint256','bytes32'],[domain,row.index,sha256(row.data)])));
+    const tree = merkle(leaves);
+    return {...plan, manifest:{...plan.manifest,root:leaves.length?tree.root:zeroHash},
+      rows:plan.rows.map((row,index)=>({...row,proof:tree.proofs[index]}))};
+  }
+  const escrowSeeds = custody(1, current.contracts.escrowV4.address, seedEscrows);
+  const bondSeeds = custody(2, current.contracts.bondPool.address, seedBonds);
   const params = {
     ProvianHashAccount: [rootCommitment], ProvianProtocolPointer: [a.ProvianHashAccount],
     ProvianOwnershipRegistry: [a.ProvianProtocolPointer, attestor, false],
-    ProvianRecoveryHistory: [oldKernel, block, snapshot.historyRoot, snapshot.historyCount, state],
+    ProvianRecoveryHistory: [oldKernel, block, snapshot.historyRoot, snapshot.historyCount, economic.state],
     ProvianRestorationAuthorization: [kernel, snapshot.balanceRoot, oldKernel, block, false, keccak256(artifact('ProvianHashAccount').deployedBytecode.object), 0],
     ProvianRecourseKernel: [{ authority: admin, root: snapshot.balanceRoot, previousKernel: oldKernel, snapshotBlock: block,
       snapshotTotal: snapshot.supply, history: a.ProvianRecoveryHistory, pointer: a.ProvianProtocolPointer,
       registry: a.ProvianOwnershipRegistry, afterCryptographicBreak: false, authorization: a.ProvianRestorationAuthorization }],
     ProvianRecourseEligibilityVerifier: [kernel, state.eligibilityVerifier.configurationId, state.eligibilityVerifier.version],
-    ProvianEscrowV4: [admin, current.wiring.feeWallet, current.wiring.usdc, kernel, kernel, kernel, seedEscrows],
+    ProvianEscrowV4: [admin, current.wiring.feeWallet, current.wiring.usdc, kernel, kernel, kernel, escrowSeeds.manifest],
     ProvianPromiseV3: [admin, current.wiring.feeWallet, current.wiring.usdc, kernel, kernel],
     ProvianPoolV3: [admin, current.wiring.feeWallet, current.wiring.usdc, kernel, kernel],
-    ProvianBondPool: [admin, current.wiring.provianTechWallet, kernel, kernel, kernel, seedBonds, seedBps],
+    ProvianBondPool: [admin, current.wiring.provianTechWallet, kernel, kernel, kernel, bondSeeds.manifest, seedBps],
     ProvianCourtV2: [admin, a.ProvianEscrowV4, kernel, kernel, kernel],
     ProvianMemberRecoursePool: [kernel, a.ProvianOwnershipRegistry, deployer, a.ProvianProtocolPointer,
       [0, 100n * 10n ** 18n, 100n * 10n ** 18n, 100, sha256(toUtf8Bytes('EXERCISE ONLY: membership rule'))], [zero, 0, zeroHash, 0, false]],
@@ -232,6 +246,12 @@ export async function bootstrapExercise(outputDirectory) {
     row.type === 'batch' ? 'importBatch' : 'importEntry', row.type === 'batch' ? [row.key, row.record, row.proof] : [row.kind, row.key, row.value, row.proof]);
   for (const row of snapshot.balances) await call(deployer, a.ProvianRestorationAuthorization, 'ProvianRestorationAuthorization',
     'importBalance', [row.previousOwner, row.destination, row.amount, row.proof]);
+  for (const row of economic.rows) {
+    await call(deployer, a.ProvianRecoveryHistory, 'ProvianRecoveryHistory', 'importEconomicEntry', [row.index,row.data,row.proof]);
+    await call(deployer, a.ProvianRecoveryHistory, 'ProvianRecoveryHistory', 'applyEconomicEntry', [kernel,row.index]);
+  }
+  for (const [name, plan] of [['ProvianEscrowV4',escrowSeeds],['ProvianBondPool',bondSeeds]])
+    for (const row of plan.rows) await call(deployer,a[name],successorArtifacts[name],'importCustodySeed',[row.index,row.data,row.proof]);
   const pool = new Contract(a.ProvianMemberRecoursePool, artifact('ProvianMemberRecoursePool').abi, provider);
   const settlement = await pool.settlement();
   const components = [kernel, a.ProvianRecourseEligibilityVerifier, state.beneficiaryVerifier.verifier, a.ProvianEscrowV4,

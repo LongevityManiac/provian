@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AbiCoder, Contract, MaxUint256, concat, getAddress, getBytes, keccak256, sha256, toQuantity, toUtf8Bytes } from 'ethers';
+import { AbiCoder, Contract, concat, getAddress, getBytes, keccak256, sha256, toQuantity, toUtf8Bytes } from 'ethers';
 import { isolatedExercisePort } from './exercise-port.mjs';
 import { exerciseReceipt } from './exercise-read.mjs';
 import { exerciseSeed, exerciseWallet } from './exercise-bootstrap.mjs';
@@ -43,6 +43,7 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet, sig
   if (attestor.address.toLowerCase() !== m.attestor.toLowerCase()) throw Error('exercise_attestor_changed');
   const a = m.addresses, kernel = new Contract(a.ProvianRecourseKernel, abi('ProvianRecourseKernel'), provider);
   const pool = new Contract(a.ProvianMemberRecoursePool, abi('ProvianMemberRecoursePool'), provider);
+  const standing = new Contract(await pool.standingMembership(), abi('RecourseStandingConsent'), provider);
   const registry = new Contract(a.ProvianOwnershipRegistry, abi('ProvianOwnershipRegistry'), provider);
   const authorization = new Contract(a.ProvianRestorationAuthorization, abi('ProvianRestorationAuthorization'), provider);
   const pointer = new Contract(a.ProvianProtocolPointer, abi('ProvianProtocolPointer'), provider);
@@ -110,12 +111,13 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet, sig
     : await send(m.deployer, registry, 'bind', [binding, owner.signingKey.sign(digest).serialized,
       attestor.signingKey.sign(digest).serialized, revision]);
   requireEqual(await registry.ownerOf(owner.address), identity, 'boundOwner');
-  await send(owner.address, kernel, 'approve', [a.ProvianMemberRecoursePool, MaxUint256]);
   async function membership(kind) {
     const prepared = await prepareExerciseMembership({ manifest: m, provider, registry, pool, account: owner.address, kind, attestor });
+    if (kind !== 'join') return send(m.deployer, standing, prepared.method,
+      [prepared.authorization, prepared.attestorSignature]);
     const signature = selectedOwner ? await signOwner(prepared.challenge) : await owner.signMessage(getBytes(prepared.challenge.messageHex));
     verifyExerciseMembershipSignature(prepared.challenge, signature);
-    return send(m.deployer, pool, prepared.challenge.method, [prepared.challenge.authorization, signature, prepared.attestorSignature]);
+    return send(m.deployer, standing, prepared.challenge.method, [prepared.challenge.authorization, signature, prepared.attestorSignature]);
   }
   if (!alreadyJoined) await membership('join');
   if (!initialBurnPaid) await membership('burn');

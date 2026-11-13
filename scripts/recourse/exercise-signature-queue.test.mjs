@@ -4,9 +4,9 @@ import { exerciseSignatureQueue } from './exercise-signature-queue.mjs';
 import { exerciseMembershipChallenge } from './exercise-membership.mjs';
 const owner = new Wallet('0x' + '11'.repeat(32)), other = new Wallet('0x' + '22'.repeat(32));
 const challenge = () => exerciseMembershipChallenge({ chainId: '31337', pointer: '0x' + '33'.repeat(20),
-  kernel: '0x' + '44'.repeat(20), pool: '0x' + '55'.repeat(20) }, 'setAddressConsent', {
+  kernel: '0x' + '44'.repeat(20), pool: '0x' + '55'.repeat(20) }, 'setStandingConsent', { consent: {
   binding: '0x' + '66'.repeat(32), account: owner.address.toLowerCase(), nonce: '0', joined: true, revision: '1',
-  ruleHash: '0x' + '77'.repeat(32), expiresAt: '1900000000' });
+  ruleHash: '0x' + '77'.repeat(32), expiresAt: '1900000000' }, fixedChargePayer:true,burnLimit:'100000000000000000000',reserveLimit:'100000000000000000000',earningsBpsLimit:100,exitCommitment:'0x'+'88'.repeat(32),exitSalt:'0x'+'99'.repeat(32),admissionMonth:'1',rejoinPayments:[] });
 test('only the requested wallet and exact signature can resolve a pending exercise command', async () => {
   const q = exerciseSignatureQueue(), original = challenge(), pending = q.request(original);
   original.summary = 'changed'; const row = q.read(owner.address);

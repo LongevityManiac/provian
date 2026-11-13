@@ -46,7 +46,7 @@ function render() {
   el('details').textContent = JSON.stringify({ account, state, job }, null, 2);
   el('progress-bind').textContent = (state?.bound ? '✓ ' : '') + 'Bind this address on the local copy.';
   el('progress-join').textContent = (state?.member ? '✓ ' : '') + 'Join the local Recourse Pool.';
-  el('progress-burn').textContent = (state?.initialBurnPaid ? '✓ ' : '') + 'Authorize and destroy 100 copied PVT for the first month.';
+  el('progress-burn').textContent = (state?.initialBurnPaid ? '✓ ' : '') + 'Burn 100 copied PVT for the first month.';
   el('progress-exercise').textContent = (job?.state === 'completed' ? '✓ ' : '') + 'Simulate a loss, reverse 60 PVT, and restore 40 PVT from the pool.';
   el('step').textContent = 'NEXT STEP';
   if (!account || !state) return choose('Connect your browser wallet', 'Compare the full address above with the account selected in MetaMask.', 'Connect first', null);
@@ -59,10 +59,9 @@ function render() {
   if (state.exerciseBusy) return choose('Another local step is running', 'Wait for it to finish, then refresh status.', 'Refresh status', refresh);
   if (BigInt(state.balance) < (state.initialBurnPaid ? 300n : 400n) * unit) return choose('Add copied PVT for the exercise', 'Bring this address to 500 copied PVT using the local test funding wallet. No wallet signature or real transfer is involved.', 'Add copied PVT', config.copiedFunder ? fund : null);
   if (!state.bound) return choose('Bind this address', 'Sign a message linking this address to public test recovery material on chain 31337. Then confirm a separate local transaction.', 'Sign local binding', bind);
-  if (!state.member) return choose('Join the local Recourse Pool', 'Sign your membership consent for this address on chain 31337. Joining itself does not debit PVT.', 'Sign membership consent', () => membership('join'));
-  if (!state.initialBurnPaid && BigInt(state.allowance) < 100n * unit) return choose('Allow the local monthly burn', 'Approve a spending limit of 100 copied PVT for the local pool. This approval alone does not destroy or transfer PVT.', 'Approve 100 copied PVT', approve);
-  if (!state.initialBurnPaid) return choose('Authorize the first monthly burn', 'Sign permission to destroy exactly 100 copied PVT. Then confirm the separate local transaction.', 'Sign 100 PVT burn', () => membership('burn'));
-  choose('Run the loss and restoration exercise', 'Advance the local clock, authorize two monthly steps, then simulate a 100 PVT loss and restore it to a public test destination. Real Base remains untouched.', 'Start local loss exercise', startExercise);
+  if (!state.member) return choose('Join the local Recourse Pool', 'Approve once: a monthly burn of 100 copied PVT and a contribution of 1% of earnings, or 100 copied PVT without earnings.', 'Approve and join', () => membership('join'));
+  if (!state.initialBurnPaid) return choose('Complete the first monthly burn', 'Your membership approval already permits this 100 copied PVT burn. No new wallet signature is needed.', 'Run monthly burn', burn);
+  choose('Report a theft and get restored', 'Advance the local clock, complete the next monthly burn and the no-earnings contribution, then report a simulated 100 PVT theft and restore it to a public test destination.', 'Report a simulated theft', startExercise);
 }
 function invalidate(message) {
   ++version; ++refreshVersion;
@@ -172,8 +171,8 @@ async function membership(kind) {
   const selected = snapshot(); await guard(selected);
   const prepared = await api('/membership', { address: selected.account, kind }), challenge = prepared.challenge;
   const signature = await sign(selected, challenge.messageHex);
-  draft = { selected, to: config.pool, description: challenge.summary,
-    data: new Interface(config.poolAbi).encodeFunctionData(challenge.method, [challenge.authorization, signature, prepared.attestorSignature]) };
+  draft = { selected, to: config.standingAddress, description: challenge.summary,
+    data: new Interface(config.standingAbi).encodeFunctionData(challenge.method, [challenge.authorization, signature, prepared.attestorSignature]) };
   show('Message signed. The next button opens its local transaction.');
 }
 async function submitDraft() {
@@ -184,10 +183,10 @@ async function submitDraft() {
   await send(pending.selected, pending.to, pending.data);
   await refresh(); show('Local transaction confirmed.');
 }
-async function approve() {
-  const selected = snapshot();
-  await send(selected, config.kernel, new Interface(config.tokenAbi).encodeFunctionData('approve', [config.pool, 100n * unit]));
-  await refresh(); show('Local allowance confirmed. No PVT burned yet.');
+async function burn() {
+  const selected = snapshot(); await guard(selected);
+  await api('/burn', { address: selected.account });
+  await refresh(); show('100 copied PVT burned under your existing approval.');
 }
 async function startExercise() {
   const selected = snapshot(); await guard(selected);
@@ -196,7 +195,7 @@ async function startExercise() {
     const progress = await api('/exercise-status', { address: selected.account });
     if (!['running', 'completed'].includes(progress.state)) throw error;
   }
-  await refresh(); show('Local exercise started. Check for the next step; each signature needs its own click.');
+  await refresh(); show('Local exercise started. Refresh to see the monthly contribution, burn and restoration result.');
 }
 async function signQueued() {
   const selected = snapshot(); await guard(selected);

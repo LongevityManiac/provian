@@ -26,6 +26,8 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
   const registryAbi = artifactAbi('ProvianOwnershipRegistry'), tokenAbi = artifactAbi('ProvianRecourseKernel'), poolAbi = artifactAbi('ProvianMemberRecoursePool');
   const registry = new Contract(a.ProvianOwnershipRegistry, registryAbi, provider);
   const pool = new Contract(a.ProvianMemberRecoursePool, poolAbi, provider);
+  const standingAddress = await pool.standingMembership(), standingAbi = artifactAbi('RecourseStandingConsent');
+  const standing = new Contract(standingAddress, standingAbi, provider);
   const token = new Contract(a.ProvianRecourseKernel, tokenAbi, provider);
   const copiedFunder = copiedFundingAddress ? getAddress(copiedFundingAddress).toLowerCase() : null;
   const mutationLock = exerciseMutationLock();
@@ -49,8 +51,8 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
       }
       await verify();
       if (req.method === 'GET' && req.url === '/manifest') return reply(200, {chainId:31337,kernel:a.ProvianRecourseKernel,
-        registry:a.ProvianOwnershipRegistry,pool:a.ProvianMemberRecoursePool,copiedFunder,registryAbi,tokenAbi,poolAbi});
-      if (req.method !== 'POST' || !['/state','/binding','/submit-binding','/fund','/exercise','/membership','/submit-membership','/exercise-status','/exercise-signature'].includes(req.url) || req.headers['content-type'] !== 'application/json'
+        registry:a.ProvianOwnershipRegistry,pool:a.ProvianMemberRecoursePool,copiedFunder,registryAbi,tokenAbi,poolAbi,standingAddress,standingAbi});
+      if (req.method !== 'POST' || !['/state','/binding','/submit-binding','/fund','/exercise','/membership','/submit-membership','/exercise-status','/exercise-signature','/burn'].includes(req.url) || req.headers['content-type'] !== 'application/json'
         || req.headers.origin !== origin) return reply(403,{error:'exercise_request_refused'});
       let body='';for await(const chunk of req){body+=chunk.toString();if(Buffer.byteLength(body)>4096)throw Error('exercise_request_too_large');}
       const input=JSON.parse(body);
@@ -62,15 +64,25 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
         signatures.submit(address,input.id,input.signature);return reply(200,{accepted:true,productionChanged:false});
       }
       if(req.url==='/membership'){
-        if(mutationLock.busy||!['join','burn'].includes(input.kind))throw Error('exercise_membership_unavailable');
+        if(mutationLock.busy||input.kind!=='join')throw Error('exercise_membership_unavailable');
         return reply(200,await prepareExerciseMembership({manifest,provider,registry,pool,account:address,kind:input.kind,attestor}));
+      }
+      if(req.url==='/burn'){
+        return await mutationLock.run(async()=>{
+          const prepared=await prepareExerciseMembership({manifest,provider,registry,pool,account:address,kind:'burn',attestor});
+          const data=standing.interface.encodeFunctionData(prepared.method,[prepared.authorization,prepared.attestorSignature]);
+          const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:standingAddress,data,gas:toQuantity(2_000_000)}]);
+          const receipt=await exerciseReceipt(provider,transactionHash);
+          if(!receipt||BigInt(receipt.status)!==1n)throw Error('exercise_burn_not_confirmed');
+          return reply(200,{transactionHash,productionChanged:false});
+        });
       }
       if(req.url==='/submit-membership'){
         return await mutationLock.run(async()=>{
           const signed=verifyExerciseMembershipSubmission(input,{chainId:'31337',pointer:a.ProvianProtocolPointer.toLowerCase(),
             kernel:a.ProvianRecourseKernel.toLowerCase(),pool:a.ProvianMemberRecoursePool.toLowerCase()},attestor.address);
-          const data=pool.interface.encodeFunctionData(signed.challenge.method,[signed.challenge.authorization,signed.ownerSignature,signed.attestorSignature]);
-          const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:a.ProvianMemberRecoursePool,data,gas:toQuantity(2_000_000)}]);
+          const data=standing.interface.encodeFunctionData(signed.challenge.method,[signed.challenge.authorization,signed.ownerSignature,signed.attestorSignature]);
+          const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:standingAddress,data,gas:toQuantity(2_000_000)}]);
           const receipt=await exerciseReceipt(provider,transactionHash);
           if(!receipt||BigInt(receipt.status)!==1n)throw Error('exercise_membership_not_confirmed');
           return reply(200,{transactionHash,productionChanged:false});

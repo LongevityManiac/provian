@@ -43,28 +43,26 @@ insufficient funds instead of minting test supply.
 Open **http://127.0.0.1:18546** for wallet binding and joining. A browser wallet
 signs the binding with its own key, scoped explicitly to chain 31337. The
 workbench supplies only the simulator's public test attestor signature and test
-recovery commitment. Joining requires the wallet's address-consent signature and
-an exact 100-PVT participation-debit signature, in addition to its simulator
-transactions. No seed or private key is entered into the workbench. The copied balance
-and membership state can be refreshed there. With an explicit copied funding
-address, the top-up button transfers enough copied PVT to bring the selected
-wallet to 500 PVT; it never mints. This is exercise funding, not a live transfer.
-After binding and joining, **Exercise reversal and pool restoration** runs the
-simulated loss and both restoration paths. The page shows each assertion and
-the local transaction receipts. The sequence advances the shared simulator's
-clock by a month; run one wallet at a time. It asks the wallet to sign the exact
-100-PVT contribution for the closed no-earnings month and the next month's
-100-PVT participation burn. Allowance alone cannot authorize either debit.
+recovery commitment. Joining requires one bounded standing-membership approval:
+100 PVT burned each month plus a contribution of 1% of earnings, or 100 PVT
+without earnings. The approval is submitted to the pool's immutable companion.
+Monthly collection uses the existing approval and a test attestor signature;
+no new owner signature or token allowance is required. No seed or private key
+is entered into the workbench. With an explicit copied funding address, the
+top-up button brings the selected wallet to 500 copied PVT; it never mints.
+After binding and joining, run the first monthly burn, then report a simulated
+theft. The exercise advances the shared simulator clock by a month, collects
+the closed month's no-earnings contribution and the new month's burn, and
+executes reversal and pool restoration. Run one wallet at a time.
 Connect or Refresh resumes a running job's signature requests after a page
 reload or lost response, without starting another sequence. Each request is
 short-lived; an expired or failed partial exercise requires a fresh fork and
 output directory. Closing the workbench rejects a pending signature request.
 
-An actual-address sequence requires those wallet signatures; the standalone
+An actual-address sequence requires the binding and joining signatures; the standalone
 sequence command is for the generated fixture wallet. Anvil impersonation is
 used solely inside the isolated copy for gas sponsorship and the simulated
-loss, reversal, and restoration. It never substitutes for the owner's debit
-signature. Recovery goes
+loss, reversal, and restoration. It never substitutes for the owner's joining signature. Recovery goes
 to a distinct public test destination. Synthetic exchange evidence and public
 test recovery material remain explicit. The sequence records its own result
 file per address and does not change the owner's real wallet or balance.
@@ -78,15 +76,14 @@ binding. Copy only the public signed output back and POST it to
 keystore stay on the agent's machine. A tunnel to the workbench, if used, must
 remain a private connection. Do not expose this test service to the Internet.
 
-Agent membership signatures use the same mechanism: `/membership` prepares a
-`join` or `burn` challenge, and a running `/exercise` exposes its next public
-challenge at `/exercise-status`. On the agent's own machine,
-`exercise-sign-membership.mjs CHALLENGE OUTPUT SDK_DIST` validates the fixed
-chain-31337 command before accessing its keystore. Return only the signed
-output. Submit a pending exercise signature to `/exercise-signature` with the
-address, pending request ID and signature. For initial consent/debit calls,
-POST `/submit-membership` with `challenge`, `ownerSignature`, and the original
-`attestorSignature` from `/membership`; the simulator sponsors the exact call.
+Agent membership uses `/membership` with `kind: "join"`. On the agent's own
+machine, `exercise-sign-membership.mjs CHALLENGE OUTPUT SDK_DIST` validates the
+fixed chain-31337 standing approval before accessing its keystore. Return only
+the signed output. POST `/submit-membership` with `challenge`, `ownerSignature`,
+and the original `attestorSignature`; the simulator sponsors the call. POST
+`/burn` with the address to collect the first monthly burn under that approval.
+POST `/exercise` to run the subsequent month and theft/restoration exercise;
+read its result at `/exercise-status`. Monthly debits need no new owner signature.
 The workbench's host and Origin restrictions apply to these routes as well.
 When copying the signer to another machine, bundle its local module dependencies
 first; the existing keystore modules are loaded from the explicit SDK directory.

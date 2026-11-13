@@ -7,10 +7,10 @@ const owner = new Wallet('0x' + '11'.repeat(32));
 const domain = { chainId: '31337', pointer: address(1), kernel: address(2), pool: address(3) };
 const consent = { binding: hash(1), account: owner.address.toLowerCase(), nonce: '0', joined: true,
   revision: '1', ruleHash: hash(2), expiresAt: '1900000000' };
-const debit = { binding: hash(1), payer: owner.address.toLowerCase(), month: '20', burn: (100n * 10n ** 18n).toString(), reserve: '0',
-  nonce: '1', generation: '1', revision: '1', ruleHash: hash(2), expiresAt: '1900000000' };
-test.each([['setAddressConsent', consent], ['executeMembershipDebit', debit],
-  ['executeMembershipDebit', { ...debit, burn: '0', reserve: debit.burn }]])('real owner signature authenticates isolated %s', async (method, authorization) => {
+const mandate = { consent, fixedChargePayer:true, burnLimit:'100000000000000000000', reserveLimit:'100000000000000000000',
+  earningsBpsLimit:100, exitCommitment:hash(3),exitSalt:hash(4),admissionMonth:'20',rejoinPayments:[] };
+test('real owner signature authenticates isolated standing consent', async () => {
+  const method='setStandingConsent', authorization=mandate;
   const challenge = exerciseMembershipChallenge(domain, method, authorization), signature = await owner.signMessage(getBytes(challenge.messageHex));
   expect(verifyExerciseMembershipChallenge(challenge)).toEqual(challenge);
   expect(verifyExerciseMembershipSignature(challenge, signature)).toBe(signature);
@@ -20,15 +20,16 @@ test.each([['setAddressConsent', consent], ['executeMembershipDebit', debit],
   }
 });
 test('live-chain, changed amount, arbitrary method and wrong-wallet signatures refuse', async () => {
-  expect(() => exerciseMembershipChallenge({ ...domain, chainId: '8453' }, 'setAddressConsent', consent)).toThrow('wrong_chain');
-  expect(() => exerciseMembershipChallenge(domain, 'approve', consent)).toThrow('method_invalid');
-  expect(() => exerciseMembershipChallenge(domain, 'executeMembershipDebit', { ...debit, burn: '1' })).toThrow('fixture_amount_changed');
-  const challenge = exerciseMembershipChallenge(domain, 'setAddressConsent', consent);
+  expect(() => exerciseMembershipChallenge({ ...domain, chainId: '8453' }, 'setStandingConsent', mandate)).toThrow('wrong_chain');
+  for(const method of ['approve','setAddressConsent','executeMembershipDebit'])
+    expect(() => exerciseMembershipChallenge(domain, method, consent)).toThrow('method_invalid');
+  expect(() => exerciseMembershipChallenge(domain, 'setStandingConsent', { ...mandate, burnLimit: '1' })).toThrow('fixture_amount_changed');
+  const challenge = exerciseMembershipChallenge(domain, 'setStandingConsent', mandate);
   const wrong = await new Wallet('0x' + '22'.repeat(32)).signMessage(getBytes(challenge.messageHex));
   expect(() => verifyExerciseMembershipSignature(challenge, wrong)).toThrow('wrong_wallet');
 });
 test('agent-sponsored submission fixes the simulator contracts and both independent signatures', async () => {
-  const challenge = exerciseMembershipChallenge(domain, 'setAddressConsent', consent), attestor = new Wallet('0x' + '22'.repeat(32));
+  const challenge = exerciseMembershipChallenge(domain, 'setStandingConsent', mandate), attestor = new Wallet('0x' + '22'.repeat(32));
   const signed = { challenge, ownerSignature: await owner.signMessage(getBytes(challenge.messageHex)),
     attestorSignature: await attestor.signMessage(getBytes(challenge.messageHex)) };
   expect(verifyExerciseMembershipSubmission(signed, domain, attestor.address)).toEqual(signed);

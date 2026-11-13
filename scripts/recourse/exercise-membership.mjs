@@ -1,6 +1,6 @@
-import { getBytes, hashMessage, recoverAddress, verifyMessage } from 'ethers';
-import { parseMembershipAuthorizationDomain, parseAddressMembershipConsent, parseExactMembershipDebit,
-  addressMembershipSigningHash, exactMembershipDebitSigningHash } from '../../provian-agent-sdk/dist/recourse-membership-authorization.js';
+import { Contract, getBytes, hashMessage, recoverAddress, verifyMessage, sha256, toUtf8Bytes } from 'ethers';
+import { parseMembershipAuthorizationDomain, parseStandingMembershipAuthorization,
+  standingMembershipSigningHash, standingMembershipDebitSigningHash, STANDING_MEMBERSHIP_ABI } from '../../provian-agent-sdk/dist/recourse-membership-authorization.js';
 const ensure = (value, reason) => { if (!value) throw Error('exercise_membership_' + reason); };
 const amount = (100n * 10n ** 18n).toString();
 
@@ -10,19 +10,17 @@ const amount = (100n * 10n ** 18n).toString();
 export function exerciseMembershipChallenge(domain, method, authorization) {
   domain = parseMembershipAuthorizationDomain(domain);
   ensure(domain.chainId === '31337', 'wrong_chain');
-  ensure(['setAddressConsent', 'executeMembershipDebit'].includes(method), 'method_invalid');
-  const consent = method === 'setAddressConsent';
-  authorization = consent ? parseAddressMembershipConsent(authorization) : parseExactMembershipDebit(authorization);
-  ensure(authorization.revision === '1', 'revision_invalid');
-  if (consent) ensure(authorization.joined, 'join_only');
-  else ensure((authorization.burn === amount && authorization.reserve === '0')
-    || (authorization.burn === '0' && authorization.reserve === amount), 'fixture_amount_changed');
-  const messageHex = consent ? addressMembershipSigningHash(domain, authorization) : exactMembershipDebitSigningHash(domain, authorization);
+  ensure(['setStandingConsent'].includes(method), 'method_invalid');
+  authorization = parseStandingMembershipAuthorization(authorization);
+  const consent = authorization.consent;
+  ensure(consent.revision === '1' && consent.joined, 'revision_invalid');
+  ensure(authorization.fixedChargePayer && authorization.burnLimit === amount
+    && authorization.reserveLimit === amount && authorization.earningsBpsLimit === 100
+    && authorization.rejoinPayments.length === 0, 'fixture_amount_changed');
+  const messageHex = standingMembershipSigningHash(domain, authorization);
   return { schema: 'provian.isolated-membership-challenge.v1', domain, method, authorization, messageHex,
-    account: consent ? authorization.account : authorization.payer,
-    summary: consent ? 'Join the isolated Recourse Pool on chain 31337.'
-      : authorization.burn !== '0' ? 'Destroy 100 copied PVT for this exercise month; no Base balance changes.'
-        : 'Contribute 100 copied PVT for the exercise no-earnings month; no Base balance changes.' };
+    account: consent.account,
+    summary: 'Join on chain 31337: approve a 100 copied PVT monthly burn and a contribution of 1% of earnings, or 100 copied PVT without earnings. No Base balance changes.' };
 }
 export function verifyExerciseMembershipChallenge(challenge) {
   challenge = structuredClone(challenge);
@@ -54,15 +52,27 @@ export async function prepareExerciseMembership({ manifest, provider, registry, 
   const rule = await pool.monthlyRule(month), expiresAt = (BigInt(head.timestamp) + 240n).toString();
   const domain = { chainId: '31337', pointer: manifest.addresses.ProvianProtocolPointer.toLowerCase(),
     kernel: manifest.addresses.ProvianRecourseKernel.toLowerCase(), pool: manifest.addresses.ProvianMemberRecoursePool.toLowerCase() };
-  const method = kind === 'join' ? 'setAddressConsent' : 'executeMembershipDebit';
+  const standing = new Contract(await pool.standingMembership(), STANDING_MEMBERSHIP_ABI, provider);
   ensure(kind === 'join' ? !state.joined : state.joined, 'consent_changed');
-  const authorization = kind === 'join' ? { binding, account, nonce: state.nonce.toString(), joined: true,
-    revision: '1', ruleHash: rule.signedRuleHash, expiresAt }
-    : { binding, payer: account, month: month.toString(), burn: kind === 'burn' ? rule.participationBurn.toString() : '0',
-      reserve: kind === 'reserve' ? rule.noEarningsContribution.toString() : '0', nonce: (await pool.debitNonce(binding)).toString(),
-      generation: state.generation.toString(), revision: '1', ruleHash: rule.signedRuleHash, expiresAt };
-  const challenge = exerciseMembershipChallenge(domain, method, authorization);
-  const digest = await pool[kind === 'join' ? 'consentDigest' : 'debitDigest'](authorization);
-  ensure(digest === hashMessage(getBytes(challenge.messageHex)), 'digest_changed');
-  return { challenge, attestorSignature: attestor.signingKey.sign(digest).serialized };
+  const consent = { binding, account, nonce: state.nonce.toString(), joined: true,
+    revision: '1', ruleHash: rule.signedRuleHash, expiresAt };
+  if (kind === 'join') {
+    const salt = sha256(toUtf8Bytes(`EXERCISE ONLY: exit salt ${manifest.instanceId} ${account} ${state.nonce}`));
+    const authorization = { consent, fixedChargePayer: true, burnLimit: rule.participationBurn.toString(),
+      reserveLimit: rule.noEarningsContribution.toString(), earningsBpsLimit: Number(rule.earningsBps),
+      exitCommitment: sha256(toUtf8Bytes(`EXERCISE ONLY: exit ${salt}`)), exitSalt: salt,
+      admissionMonth: month.toString(), rejoinPayments: [] };
+    const challenge = exerciseMembershipChallenge(domain, 'setStandingConsent', authorization);
+    const digest = await standing.standingConsentDigest(authorization);
+    ensure(digest === hashMessage(getBytes(challenge.messageHex)), 'digest_changed');
+    return { challenge, attestorSignature: attestor.signingKey.sign(digest).serialized };
+  }
+  const authorization = { binding, payer: account, month: month.toString(),
+    burn: kind === 'burn' ? rule.participationBurn.toString() : '0',
+    reserve: kind === 'reserve' ? rule.noEarningsContribution.toString() : '0',
+    nonce: (await pool.debitNonce(binding)).toString(), generation: state.generation.toString(),
+    revision: '1', ruleHash: rule.signedRuleHash, expiresAt };
+  const digest = await standing.debitDigest(authorization);
+  ensure(digest === hashMessage(getBytes(standingMembershipDebitSigningHash(domain, authorization))), 'digest_changed');
+  return { method: 'executeStandingDebit', authorization, attestorSignature: attestor.signingKey.sign(digest).serialized };
 }
