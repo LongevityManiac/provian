@@ -52,6 +52,7 @@ export const route = {
   enterprise: `${BASE}/enterprise`,
   // Public functional pages live at the domain root, not under BASE.
   download: '/download',
+  downloadAndroid: '/download/android',
   daemon: '/daemon',
   // About / Our Story and how to get involved (#get-involved).
   about: '/about',

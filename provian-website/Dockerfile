@@ -30,6 +30,7 @@ RUN npm ci
 
 COPY provian-website/ ./
 RUN npm run build
+RUN node scripts/release-apk.mjs verify out
 
 # The store-review open set, resolved against this export and written as the nginx maps
 # nginx.conf includes. Resolved in both modes (a broken list fails the build either way);

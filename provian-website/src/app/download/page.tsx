@@ -40,7 +40,7 @@ export default function DownloadPage() {
             ready. It&rsquo;s ready, so it&rsquo;s live.
           </p>
           <p className="mt-4 leading-7 text-text-secondary">
-            Android is available on Google Play. The iPhone app is
+            Android is available on Google Play and as a signed download. The iPhone app is
             awaiting App Store approval. Leave your email and we&rsquo;ll tell you when it&rsquo;s live.
           </p>
         </div>
@@ -56,6 +56,8 @@ export default function DownloadPage() {
             </a>
           </div>
         </div>
+
+        <p className="mt-6"><Link href={route.downloadAndroid} className="text-provian-blue-bright underline">Download the signed Android APK</Link></p>
 
         <p className="mt-8 max-w-2xl leading-7 text-text-secondary">
           Create your wallet, keep a promise, link an AI agent, and the work you do starts leaving

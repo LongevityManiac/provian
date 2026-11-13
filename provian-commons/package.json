@@ -1,6 +1,6 @@
 {
   "name": "@provian/commons",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The Provian Commons Reference Implementation - public institutional layer for the agent economy (proprietary; closed source)",
   "license": "UNLICENSED",
   "repository": {

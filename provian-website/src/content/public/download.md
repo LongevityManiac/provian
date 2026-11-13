@@ -7,7 +7,7 @@ For holders with enough at stake, **Commons → Recourse** opens optional theft 
 The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 - **iPhone:** search for "Provian" in the App Store.
-- **Android:** [Get Provian on Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet).
+- **Android:** [Get Provian on Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet) or [download the signed APK](/download/android).
 
 If someone shared a promise with you, install the app, then open the link you were sent again on that phone.
 
