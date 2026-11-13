@@ -5169,7 +5169,8 @@
       "submit": "Tuma saini",
       "resume": "Endelea na hatua isiyokamilika",
       "joining": "Kujiunga na Recourse Pool",
-      "rejoinClose": "Kwanza, funga uanachama wa awali wa pochi hii. Kisha kagua uchomaji na michango iliyobaki ili kujiunga tena."
+      "rejoinClose": "Kwanza, funga uanachama wa awali wa pochi hii. Kisha kagua uchomaji na michango iliyobaki ili kujiunga tena.",
+      "approveJoin": "Idhinisha na ujiunge"
     },
     "debit": {
       "title": "Uchomaji na mchango wa kila mwezi",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "PVT pekee; sarafu nyingine hazilindwi.",
     "rejoin": {
       "explain": "Ukikosa mwezi mmoja, unaendelea kulindwa kwa mwezi mmoja zaidi wa kalenda. Kamilisha uchomaji na mchango uliobaki wakati wa neema ili ulinzi uendelee. Vinginevyo ulinzi unaisha. Kujiunga tena, kamilisha miezi yote miwili iliyolindwa ambayo haijakamilika, pamoja na mwezi wa neema, ukitoa kiasi kilichochomwa au kuchangiwa tayari. Kila mwezi hufuata kanuni yake: 1% ya mapato ya mwezi huo, au PVT 100 bila mapato, pamoja na kuchoma PVT 100. Miezi bila ulinzi hailindwi wala kudaiwa mchango; ulinzi huanza tena unapojiunga tena.",
-      "payment": "{{month}}: choma {{burn}} PVT na uchangie {{reserve}} PVT kabla ya kujiunga tena."
+      "payment": "{{month}}: choma {{burn}} PVT na uchangie {{reserve}} PVT kabla ya kujiunga tena.",
+      "amount": "Jiunge tena — kamilisha {{amount}} PVT"
     },
     "standing": {
       "explain": "Idhinisha mara moja. Uchomaji na michango ya kila mwezi hufanyika kiotomatiki, hata programu ikiwa imefungwa. Huhitaji ETH kujiunga, kuchangia au kuondoka. Kiasi kikubwa zaidi kinahitaji idhini mpya.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "PVT {{amount}} ziko tayari kukusanywa kiotomatiki. Weka PVT za kutosha kwenye pochi yako.",
       "increase": "Kanuni ya sasa inahitaji idhini mpya. Kiasi cha juu hakiwezi kukatwa kwa idhini yako ya awali.",
       "leave": "Kuondoka husimamisha uchomaji na michango ya baadaye. Michango hairudishwi; PVT zilizotengwa bado zinapatikana kupokelewa.",
-      "consent": "Idhinisha mara moja unapojiunga. Uchomaji na michango ya kila mwezi hufanyika kiotomatiki ndani ya kiasi ulichoidhinisha, bila kufungua programu, kusaini tena au kushikilia ETH. Kuondoka hukomesha makato yajayo. Kiasi cha juu kinahitaji idhini mpya. Marejesho hutegemea uamuzi wa hiari, bila haki ya kimkataba ya malipo. Maamuzi ni ya mwisho. Provian Technologies si mhusika, haichangii chochote, haishikilii chochote na haiahidi chochote."
+      "consent": "Idhinisha mara moja unapojiunga. Uchomaji na michango ya kila mwezi hufanyika kiotomatiki ndani ya kiasi ulichoidhinisha, bila kufungua programu, kusaini tena au kushikilia ETH. Kuondoka hukomesha makato yajayo. Kiasi cha juu kinahitaji idhini mpya. Marejesho hutegemea uamuzi wa hiari, bila haki ya kimkataba ya malipo. Maamuzi ni ya mwisho. Provian Technologies si mhusika, haichangii chochote, haishikilii chochote na haiahidi chochote.",
+      "approvalTerms": "Idhinisha mara moja unapojiunga. Uchomaji na michango ya kila mwezi hufanyika kiotomatiki ndani ya kiasi ulichoidhinisha, bila kufungua programu, kusaini tena au kushikilia ETH. Kuondoka hukomesha makato yajayo. Kiasi cha juu kinahitaji idhini mpya."
     },
     "transferPicker": {
       "explanation": "Chagua uhamisho ambao hukufanya, kisha ukague kabla ya kutuma ripoti.",
@@ -5274,6 +5277,13 @@
       "unknown": "Kuna taarifa mpya. Onyesha upya ili kukagua ripoti yako.",
       "zero_allocation": "Urejeshaji huu una mgao wa PVT 0. Angalia uamuzi katika rekodi za pochi yako."
     },
-    "bindingDetails": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani."
+    "bindingDetails": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani.",
+    "restorationLegal": "Marejesho hutegemea uamuzi wa hiari, bila haki ya kimkataba ya malipo. Maamuzi ni ya mwisho. Provian Technologies si mhusika, haichangii chochote, haishikilii chochote na haiahidi chochote.",
+    "breakdown": {
+      "reversed": "Zilizorudishwa kwa kutengua uhamisho: {{amount}} PVT",
+      "pool": "Zilizorejeshwa kutoka kwenye mfuko: {{amount}} PVT",
+      "total": "Jumla: {{amount}} PVT",
+      "unavailable": "Maelezo ya marejesho hayapatikani. Onyesha upya ili kukagua kiasi kilichothibitishwa."
+    }
   }
 }

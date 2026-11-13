@@ -5169,7 +5169,8 @@
       "submit": "Enviar firma",
       "resume": "Continuar acción pendiente",
       "joining": "Uniéndote al Fondo de Recourse",
-      "rejoinClose": "Primero, cierra la membresía anterior de esta cartera. Luego revisa las quemas y contribuciones pendientes para volver a unirte."
+      "rejoinClose": "Primero, cierra la membresía anterior de esta cartera. Luego revisa las quemas y contribuciones pendientes para volver a unirte.",
+      "approveJoin": "Aprobar y unirme"
     },
     "debit": {
       "title": "Quema y contribución mensuales",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "Solo PVT; las demás monedas no están cubiertas.",
     "rejoin": {
       "explain": "Tras un mes incumplido, sigues protegido un mes natural más. Completa la quema y aportación pendientes durante la gracia para conservar la protección. Si no, caduca. Para volver, completa ambos meses protegidos pendientes, incluido el de gracia, descontando lo ya quemado o aportado. Cada mes aplica su regla: el 1% de sus ganancias, o 100 PVT sin ganancias, más la quema de 100 PVT. Los meses sin protección no se cubren ni se cobran; la protección empieza de nuevo al reincorporarte.",
-      "payment": "{{month}}: quema {{burn}} PVT y aporta {{reserve}} PVT antes de volver a unirte."
+      "payment": "{{month}}: quema {{burn}} PVT y aporta {{reserve}} PVT antes de volver a unirte.",
+      "amount": "Volver a unirse — completar {{amount}} PVT"
     },
     "standing": {
       "explain": "Aprueba una vez. Las quemas y aportaciones mensuales serán automáticas, incluso con la aplicación cerrada. No necesitas ETH para unirte, aportar o salir. Los importes mayores requieren otra aprobación.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "{{amount}} PVT están listos para la recogida automática. Mantén suficientes PVT en tu cartera.",
       "increase": "La regla actual requiere una nueva aprobación. Tu aprobación anterior no permite cobrar un importe superior.",
       "leave": "Salir detiene las quemas y aportaciones futuras. Las aportaciones no se devuelven; los PVT asignados siguen disponibles para recibir.",
-      "consent": "Aprueba una vez al unirte. Las quemas y los aportes mensuales se realizan automáticamente dentro de los importes aprobados, sin abrir la app, volver a firmar ni mantener ETH. Salir detiene los débitos futuros. Los importes superiores requieren una nueva aprobación. La restauración es discrecional, sin derecho contractual al pago. Las determinaciones son definitivas. Provian Technologies no es parte, no aporta, no custodia ni promete nada."
+      "consent": "Aprueba una vez al unirte. Las quemas y los aportes mensuales se realizan automáticamente dentro de los importes aprobados, sin abrir la app, volver a firmar ni mantener ETH. Salir detiene los débitos futuros. Los importes superiores requieren una nueva aprobación. La restauración es discrecional, sin derecho contractual al pago. Las determinaciones son definitivas. Provian Technologies no es parte, no aporta, no custodia ni promete nada.",
+      "approvalTerms": "Aprueba una vez al unirte. Las quemas y los aportes mensuales se realizan automáticamente dentro de los importes aprobados, sin abrir la app, volver a firmar ni mantener ETH. Salir detiene los débitos futuros. Los importes superiores requieren una nueva aprobación."
     },
     "transferPicker": {
       "explanation": "Elige la transferencia que no hiciste y revísala antes de enviar el informe.",
@@ -5274,6 +5277,13 @@
       "unknown": "Hay una actualización. Actualiza para consultar tu informe.",
       "zero_allocation": "Esta restauración tiene una asignación de 0 PVT. Consulta la decisión en los registros de tu cartera."
     },
-    "bindingDetails": "Una membresía incluye todas las tenencias vinculadas, tanto ganadas como recibidas. Tú decides vincularlas. El relay sabe qué carteras son tuyas y el público no, igual que un banco. La restitución tras una ruptura criptográfica es gratuita para todo propietario vinculado, aunque no sea miembro. Una recuperación o restitución puede vincular públicamente una dirección antigua con su reemplazo. Los vínculos con tus otras direcciones y el total de tus tenencias siguen siendo privados."
+    "bindingDetails": "Una membresía incluye todas las tenencias vinculadas, tanto ganadas como recibidas. Tú decides vincularlas. El relay sabe qué carteras son tuyas y el público no, igual que un banco. La restitución tras una ruptura criptográfica es gratuita para todo propietario vinculado, aunque no sea miembro. Una recuperación o restitución puede vincular públicamente una dirección antigua con su reemplazo. Los vínculos con tus otras direcciones y el total de tus tenencias siguen siendo privados.",
+    "restorationLegal": "La restauración es discrecional, sin derecho contractual al pago. Las determinaciones son definitivas. Provian Technologies no es parte, no aporta, no custodia ni promete nada.",
+    "breakdown": {
+      "reversed": "Devuelto por reversión: {{amount}} PVT",
+      "pool": "Restaurado desde el fondo: {{amount}} PVT",
+      "total": "Total: {{amount}} PVT",
+      "unavailable": "El desglose de la restauración no está disponible. Actualiza para consultar los importes confirmados."
+    }
   }
 }

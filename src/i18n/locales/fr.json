@@ -5169,7 +5169,8 @@
       "submit": "Envoyer la signature",
       "resume": "Reprendre l’action en attente",
       "joining": "Adhésion au fonds Recourse",
-      "rejoinClose": "Clôturez d’abord l’ancienne adhésion de ce portefeuille. Vérifiez ensuite les destructions et contributions restantes pour réadhérer."
+      "rejoinClose": "Clôturez d’abord l’ancienne adhésion de ce portefeuille. Vérifiez ensuite les destructions et contributions restantes pour réadhérer.",
+      "approveJoin": "Approuver et adhérer"
     },
     "debit": {
       "title": "Destruction et contribution mensuelles",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "PVT uniquement ; les autres monnaies ne sont pas couvertes.",
     "rejoin": {
       "explain": "Après un mois manqué, vous restez protégé un mois civil de plus. Complétez la destruction et la contribution dues pendant ce délai pour rester protégé. Sinon, la protection expire. Pour revenir, complétez les deux mois protégés restés incomplets, dont le mois de grâce, déduction faite des montants déjà brûlés ou contribués. Chaque mois suit sa règle : 1 % de ses gains, ou 100 PVT sans gains, plus 100 PVT brûlés. Les mois sans protection ne sont ni couverts ni facturés ; la protection reprend seulement à votre retour.",
-      "payment": "{{month}} : détruisez {{burn}} PVT et contribuez {{reserve}} PVT avant de rejoindre à nouveau le pool."
+      "payment": "{{month}} : détruisez {{burn}} PVT et contribuez {{reserve}} PVT avant de rejoindre à nouveau le pool.",
+      "amount": "Réadhérer — compléter {{amount}} PVT"
     },
     "standing": {
       "explain": "Approuvez une fois. Les destructions et contributions mensuelles deviennent automatiques, même application fermée. Aucun ETH n’est nécessaire pour adhérer, contribuer ou partir. Une hausse nécessite une nouvelle approbation.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "{{amount}} PVT sont prêts à être collectés automatiquement. Gardez assez de PVT dans votre portefeuille.",
       "increase": "La règle actuelle exige une nouvelle approbation. Votre approbation précédente ne permet aucun prélèvement supérieur.",
       "leave": "Partir arrête les futures destructions et contributions. Les contributions ne sont pas restituables ; les PVT alloués restent disponibles.",
-      "consent": "Approuvez une fois lors de l’adhésion. Les destructions et contributions mensuelles sont automatiques dans les limites approuvées, sans ouvrir l’application, signer de nouveau ni détenir d’ETH. Le départ arrête les prélèvements futurs. Des montants supérieurs exigent une nouvelle approbation. La restauration est discrétionnaire, sans droit contractuel au paiement. Les décisions sont définitives. Provian Technologies n’est pas partie, ne contribue rien, ne détient rien et ne promet rien."
+      "consent": "Approuvez une fois lors de l’adhésion. Les destructions et contributions mensuelles sont automatiques dans les limites approuvées, sans ouvrir l’application, signer de nouveau ni détenir d’ETH. Le départ arrête les prélèvements futurs. Des montants supérieurs exigent une nouvelle approbation. La restauration est discrétionnaire, sans droit contractuel au paiement. Les décisions sont définitives. Provian Technologies n’est pas partie, ne contribue rien, ne détient rien et ne promet rien.",
+      "approvalTerms": "Approuvez une fois lors de l’adhésion. Les destructions et contributions mensuelles sont automatiques dans les limites approuvées, sans ouvrir l’application, signer de nouveau ni détenir d’ETH. Le départ arrête les prélèvements futurs. Des montants supérieurs exigent une nouvelle approbation."
     },
     "transferPicker": {
       "explanation": "Choisissez le transfert que vous n’avez pas fait, puis vérifiez-le avant d’envoyer le signalement.",
@@ -5274,6 +5277,13 @@
       "unknown": "Une mise à jour est disponible. Actualisez pour consulter votre signalement.",
       "zero_allocation": "Cette restitution a une allocation de 0 PVT. Consultez la décision dans les enregistrements de votre portefeuille."
     },
-    "bindingDetails": "Une adhésion inclut tous les avoirs liés, gagnés comme reçus. Lier vos adresses est votre choix. Le relais sait quels portefeuilles sont les vôtres et le public ne le sait pas, comme dans une banque. La restitution après une rupture cryptographique est gratuite pour tout propriétaire lié, même sans adhésion. Une récupération ou une restitution peut relier publiquement une ancienne adresse à celle qui la remplace. Les liens avec vos autres adresses et le total de vos avoirs restent privés."
+    "bindingDetails": "Une adhésion inclut tous les avoirs liés, gagnés comme reçus. Lier vos adresses est votre choix. Le relais sait quels portefeuilles sont les vôtres et le public ne le sait pas, comme dans une banque. La restitution après une rupture cryptographique est gratuite pour tout propriétaire lié, même sans adhésion. Une récupération ou une restitution peut relier publiquement une ancienne adresse à celle qui la remplace. Les liens avec vos autres adresses et le total de vos avoirs restent privés.",
+    "restorationLegal": "La restauration est discrétionnaire, sans droit contractuel au paiement. Les décisions sont définitives. Provian Technologies n’est pas partie, ne contribue rien, ne détient rien et ne promet rien.",
+    "breakdown": {
+      "reversed": "Récupéré par annulation du transfert : {{amount}} PVT",
+      "pool": "Restauré par le fonds : {{amount}} PVT",
+      "total": "Total : {{amount}} PVT",
+      "unavailable": "Le détail de la restauration est indisponible. Actualisez pour vérifier les montants confirmés."
+    }
   }
 }

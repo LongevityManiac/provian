@@ -5169,7 +5169,8 @@
       "submit": "Isumite ang lagda",
       "resume": "Ipagpatuloy ang hindi pa tapos na aksyon",
       "joining": "Pagsali sa Recourse Pool",
-      "rejoinClose": "Isara muna ang dating membership ng wallet na ito. Pagkatapos, suriin ang natitirang burn at kontribusyon upang muling sumali."
+      "rejoinClose": "Isara muna ang dating membership ng wallet na ito. Pagkatapos, suriin ang natitirang burn at kontribusyon upang muling sumali.",
+      "approveJoin": "Aprubahan at sumali"
     },
     "debit": {
       "title": "Buwanang burn at kontribusyon",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "PVT lang; hindi sakop ang ibang coin.",
     "rejoin": {
       "explain": "Kapag may hindi nakumpletong buwan, protektado ka pa ng isang buwan sa kalendaryo. Kumpletuhin ang natitirang pagsunog at ambag sa palugit upang magpatuloy ang proteksiyon. Kung hindi, matatapos ito. Para muling sumali, kumpletuhin ang dalawang buwang protektado na hindi pa tapos, kasama ang palugit, bawas ang naihulog o nasunog na. Bawat buwan ay may sariling tuntunin: 1% ng kita sa buwang iyon, o 100 PVT kung walang kita, dagdag ang pagsunog ng 100 PVT. Hindi sakop o sinisingil ang mga buwang walang proteksiyon; magsisimula lang muli ang proteksiyon kapag sumali kang muli.",
-      "payment": "{{month}}: magsunog ng {{burn}} PVT at mag-ambag ng {{reserve}} PVT bago muling sumali."
+      "payment": "{{month}}: magsunog ng {{burn}} PVT at mag-ambag ng {{reserve}} PVT bago muling sumali.",
+      "amount": "Sumali muli — kumpletuhin ang {{amount}} PVT"
     },
     "standing": {
       "explain": "Aprubahan nang isang beses. Awtomatiko na ang buwanang pagsunog at ambag, kahit sarado ang app. Hindi kailangan ng ETH para sumali, mag-ambag o umalis. Kailangan ng bagong pag-apruba para sa mas mataas na halaga.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "Handa na ang {{amount}} PVT para sa awtomatikong pagkolekta. Magtabi ng sapat na PVT sa wallet mo.",
       "increase": "Kailangan ng bagong pag-apruba sa kasalukuyang tuntunin. Hindi maaaring magkaltas ng mas mataas na halaga gamit ang dati mong pag-apruba.",
       "leave": "Ang pag-alis ay humihinto sa mga susunod na pagsunog at ambag. Hindi naibabalik ang mga ambag; makukuha pa rin ang nakalaang PVT.",
-      "consent": "Aprubahan nang isang beses sa pagsali. Awtomatiko ang buwanang pagsunog at mga ambag sa loob ng aprubadong halaga, nang hindi binubuksan ang app, pumipirma muli o may hawak na ETH. Itinitigil ng pag-alis ang mga susunod na kaltas. Kailangan ng bagong pag-apruba sa mas mataas na halaga. Ang pagpapanumbalik ay ayon sa pagpapasya, walang kontraktuwal na karapatan sa bayad. Pinal ang mga pasya. Hindi partido ang Provian Technologies, wala itong inaambag, hinahawakan o ipinapangako."
+      "consent": "Aprubahan nang isang beses sa pagsali. Awtomatiko ang buwanang pagsunog at mga ambag sa loob ng aprubadong halaga, nang hindi binubuksan ang app, pumipirma muli o may hawak na ETH. Itinitigil ng pag-alis ang mga susunod na kaltas. Kailangan ng bagong pag-apruba sa mas mataas na halaga. Ang pagpapanumbalik ay ayon sa pagpapasya, walang kontraktuwal na karapatan sa bayad. Pinal ang mga pasya. Hindi partido ang Provian Technologies, wala itong inaambag, hinahawakan o ipinapangako.",
+      "approvalTerms": "Aprubahan nang isang beses sa pagsali. Awtomatiko ang buwanang pagsunog at mga ambag sa loob ng aprubadong halaga, nang hindi binubuksan ang app, pumipirma muli o may hawak na ETH. Itinitigil ng pag-alis ang mga susunod na kaltas. Kailangan ng bagong pag-apruba sa mas mataas na halaga."
     },
     "transferPicker": {
       "explanation": "Piliin ang transfer na hindi mo ginawa, saka suriin bago ipadala ang ulat.",
@@ -5274,6 +5277,13 @@
       "unknown": "May bagong impormasyon. I-refresh upang tingnan ang ulat mo.",
       "zero_allocation": "May alokasyong 0 PVT ang pagsasauling ito. Tingnan ang pasya sa mga tala ng wallet mo."
     },
-    "bindingDetails": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro. Maaaring ilantad ng pagbawi o pagpapanumbalik ang ugnayan ng lumang address at ng kapalit nito. Nananatiling pribado ang mga ugnayan sa iba mong address at ang kabuuan ng iyong mga hawak."
+    "bindingDetails": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro. Maaaring ilantad ng pagbawi o pagpapanumbalik ang ugnayan ng lumang address at ng kapalit nito. Nananatiling pribado ang mga ugnayan sa iba mong address at ang kabuuan ng iyong mga hawak.",
+    "restorationLegal": "Ang pagpapanumbalik ay ayon sa pagpapasya, walang kontraktuwal na karapatan sa bayad. Pinal ang mga pasya. Hindi partido ang Provian Technologies, wala itong inaambag, hinahawakan o ipinapangako.",
+    "breakdown": {
+      "reversed": "Naibalik sa pagbawi ng paglilipat: {{amount}} PVT",
+      "pool": "Naibalik mula sa pondo: {{amount}} PVT",
+      "total": "Kabuuan: {{amount}} PVT",
+      "unavailable": "Hindi makuha ang detalye ng pagpapanumbalik. I-refresh upang tingnan ang mga kumpirmadong halaga."
+    }
   }
 }

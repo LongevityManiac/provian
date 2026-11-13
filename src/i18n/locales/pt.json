@@ -5169,7 +5169,8 @@
       "submit": "Enviar assinatura",
       "resume": "Continuar ação pendente",
       "joining": "Adesão ao Fundo Recourse",
-      "rejoinClose": "Primeiro, encerre a adesão anterior desta carteira. Depois, reveja as queimas e contribuições pendentes para voltar a aderir."
+      "rejoinClose": "Primeiro, encerre a adesão anterior desta carteira. Depois, reveja as queimas e contribuições pendentes para voltar a aderir.",
+      "approveJoin": "Aprovar e aderir"
     },
     "debit": {
       "title": "Queima e contribuição mensais",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "Somente PVT; outras moedas não estão cobertas.",
     "rejoin": {
       "explain": "Após um mês não concluído, a proteção continua por mais um mês civil. Complete a queima e a contribuição pendentes durante a carência para manter a proteção. Caso contrário, ela termina. Para voltar, complete os dois meses protegidos pendentes, incluindo a carência, descontando o que já foi queimado ou contribuído. Cada mês segue sua regra: 1% dos ganhos daquele mês, ou 100 PVT sem ganhos, mais a queima de 100 PVT. Meses sem proteção não são cobertos nem cobrados; a proteção recomeça apenas ao voltar.",
-      "payment": "{{month}}: queime {{burn}} PVT e contribua com {{reserve}} PVT antes de voltar a aderir."
+      "payment": "{{month}}: queime {{burn}} PVT e contribua com {{reserve}} PVT antes de voltar a aderir.",
+      "amount": "Voltar a aderir — completar {{amount}} PVT"
     },
     "standing": {
       "explain": "Aprove uma vez. As queimas e contribuições mensais passam a ser automáticas, mesmo com o aplicativo fechado. Não precisa de ETH para aderir, contribuir ou sair. Valores maiores exigem nova aprovação.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "{{amount}} PVT estão prontos para recolhimento automático. Mantenha PVT suficientes na carteira.",
       "increase": "A regra atual exige nova aprovação. Sua aprovação anterior não permite cobrar um valor maior.",
       "leave": "Sair interrompe queimas e contribuições futuras. As contribuições não podem ser devolvidas; os PVT alocados continuam disponíveis.",
-      "consent": "Aprove uma vez ao entrar. Queimas e contribuições mensais ocorrem automaticamente dentro dos valores aprovados, sem abrir o app, assinar novamente ou manter ETH. Sair interrompe débitos futuros. Valores maiores exigem nova aprovação. A restauração é discricionária, sem direito contratual a pagamento. As determinações são finais. Provian Technologies não é parte, não contribui, não detém nem promete nada."
+      "consent": "Aprove uma vez ao entrar. Queimas e contribuições mensais ocorrem automaticamente dentro dos valores aprovados, sem abrir o app, assinar novamente ou manter ETH. Sair interrompe débitos futuros. Valores maiores exigem nova aprovação. A restauração é discricionária, sem direito contratual a pagamento. As determinações são finais. Provian Technologies não é parte, não contribui, não detém nem promete nada.",
+      "approvalTerms": "Aprove uma vez ao entrar. Queimas e contribuições mensais ocorrem automaticamente dentro dos valores aprovados, sem abrir o app, assinar novamente ou manter ETH. Sair interrompe débitos futuros. Valores maiores exigem nova aprovação."
     },
     "transferPicker": {
       "explanation": "Escolha a transferência que não fez e confira antes de enviar o relato.",
@@ -5274,6 +5277,13 @@
       "unknown": "Há uma atualização. Atualize para verificar seu relato.",
       "zero_allocation": "Esta restauração tem uma alocação de 0 PVT. Veja a decisão nos registros da carteira."
     },
-    "bindingDetails": "Uma adesão inclui todos os saldos vinculados, tanto ganhos quanto recebidos. Vincular é uma escolha sua. O relay sabe quais carteiras são suas e o público não, assim como um banco. A restauração após uma quebra criptográfica é gratuita para todo proprietário vinculado, mesmo sem adesão. Uma recuperação ou restauração pode vincular publicamente um endereço antigo ao seu substituto. Os vínculos com seus outros endereços e o total dos seus ativos permanecem privados."
+    "bindingDetails": "Uma adesão inclui todos os saldos vinculados, tanto ganhos quanto recebidos. Vincular é uma escolha sua. O relay sabe quais carteiras são suas e o público não, assim como um banco. A restauração após uma quebra criptográfica é gratuita para todo proprietário vinculado, mesmo sem adesão. Uma recuperação ou restauração pode vincular publicamente um endereço antigo ao seu substituto. Os vínculos com seus outros endereços e o total dos seus ativos permanecem privados.",
+    "restorationLegal": "A restauração é discricionária, sem direito contratual a pagamento. As determinações são finais. Provian Technologies não é parte, não contribui, não detém nem promete nada.",
+    "breakdown": {
+      "reversed": "Devolvido por reversão: {{amount}} PVT",
+      "pool": "Restaurado pelo fundo: {{amount}} PVT",
+      "total": "Total: {{amount}} PVT",
+      "unavailable": "O detalhamento da restauração não está disponível. Atualize para verificar os valores confirmados."
+    }
   }
 }

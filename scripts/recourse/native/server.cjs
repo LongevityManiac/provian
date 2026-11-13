@@ -35,14 +35,19 @@ async function main(){
  const rpcModule=moduleAt('core/onchain/rpc-provider.ts');
  rpcModule.getOperatorBoundRpcLegs=chain=>{if(chain!=='base')throw Error('isolated_chain_required');return ['local-copy-view-one','local-copy-view-two'].map(operatorId=>({operatorId,provider}));};
  moduleAt('core/protocol/pointer-pin.generated.ts').PROTOCOL_POINTER_PIN=Object.freeze(configuration.pin);
- const fixtureSeed=role=>sha256(toUtf8Bytes('PUBLIC SIMULATOR ONLY: '+input.instanceId+role));
+ // A restored, separately fenced chain may retain its public test identities.
+ const fixtureInstanceId=input.fixtureInstanceId??input.instanceId;
+ if(!/^0x[0-9a-f]{64}$/.test(fixtureInstanceId))throw Error('isolated_fixture_identity_invalid');
+ const fixtureSeed=role=>sha256(toUtf8Bytes('PUBLIC SIMULATOR ONLY: '+fixtureInstanceId+role));
  process.env.RELAY_SIGNING_KEY=fixtureSeed('relay-retention');
  const attestor=new Wallet(fixtureSeed('attestor')),submitter=new Wallet(fixtureSeed('submitter'));
  if(attestor.address.toLowerCase()!==configuration.identityAttestor||submitter.address.toLowerCase()!==configuration.submitter)throw Error('isolated_operator_mismatch');
  process.env.PVT9_SETTLEMENT_APPROVER_KEY=attestor.privateKey;process.env.PVT9_SETTLEMENT_MINTER_KEY=submitter.privateKey;
  delete process.env.RECOURSE_IDENTITY_HASH_ACCOUNT;delete process.env.RECOURSE_IDENTITY_HASH_SIGNING_SEED;
  await local.request('anvil_setBalance',[submitter.address,toQuantity(100n*10n**18n)]);
- const fixtureDirectory=path.join(out,'native-fixture-eoa');fs.mkdirSync(fixtureDirectory,{recursive:true,mode:0o700});
+ const memberFixtureId=input.memberFixtureId??'eoa';
+ if(!/^[a-z0-9-]+$/.test(memberFixtureId))throw Error('isolated_member_fixture_invalid');
+ const fixtureDirectory=path.join(out,'native-fixture-'+memberFixtureId);fs.mkdirSync(fixtureDirectory,{recursive:true,mode:0o700});
  const sshKey=path.join(fixtureDirectory,'PUBLIC-TEST-ONLY-policy-key');
  if(!fs.existsSync(sshKey))execFileSync('ssh-keygen',['-q','-t','ed25519','-N','','-C','PUBLIC TEST ONLY','-f',sshKey]);
  const publicKey=fs.readFileSync(sshKey+'.pub','utf8').trim(),keyHash='sha256:'+crypto.createHash('sha256').update(Buffer.from(publicKey.split(' ')[1],'base64')).digest('hex');
@@ -73,9 +78,9 @@ async function main(){
    recordPEAccrual:require(path.join(root,'provian-backend/src/pvt-accrual.ts')).recordPEAccrual};
  db.store.set(`${ruleModule.RECOURSE_MEMBERSHIP_RULES}/${configuration.rule.ruleHash}`,signedRule);
  // A public, instance-derived fixture avoids delegated code on widely reused test addresses.
- const wallet=Wallet.fromPhrase(Mnemonic.fromEntropy(fixtureSeed('native-member-eoa').slice(0,34)).phrase);
+ const wallet=Wallet.fromPhrase(Mnemonic.fromEntropy(fixtureSeed('native-member-'+memberFixtureId).slice(0,34)).phrase);
  if(await rawRequest('eth_getCode',[wallet.address,'latest'])!=='0x')throw Error('isolated_fixture_eoa_required');
- const userId='isolated-recourse-native-member-eoa',walletId='isolated-recourse-native-wallet-eoa';
+ const userId='isolated-recourse-native-member-'+memberFixtureId,walletId='isolated-recourse-native-wallet-'+memberFixtureId;
  if(!db.store.has(`wallets/${walletId}`))db.store.set(`wallets/${walletId}`,{id:walletId,type:'human',user_id:userId,address:wallet.address.toLowerCase(),status:'active'});
  // The pre-registered fixture carries the same canonical native index as a registered human wallet.
  const nativeIndex=moduleAt('core/pvt/native-wallet-registration.ts');
@@ -126,7 +131,7 @@ async function main(){
  // Resume genuine recovery/outcome intakes after a fixture transport restart.
  const pendingActs=await db.collection(relayActs.METER_RELAY_ACTS_COLLECTION).get();
  for(const row of pendingActs.docs)await relayActs.priceRelayAct(db,row.data());
- const token=sha256(toUtf8Bytes('PUBLIC NATIVE FIXTURE TOKEN '+input.instanceId));
+ const token=sha256(toUtf8Bytes('PUBLIC NATIVE FIXTURE TOKEN '+fixtureInstanceId));
  const nativeConfig={relay:'http://127.0.0.1:18551',userId,fixtureToken:token,instanceId:input.instanceId,
    pointer:configuration.pin.address,pointerRuntimeHash:configuration.pin.runtimeHash};
  const configPath=path.join(__dirname,'config.generated.json'),configBytes=JSON.stringify(nativeConfig,null,2)+'\n';

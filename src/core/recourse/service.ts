@@ -1,3 +1,4 @@
+import { readRestorationBreakdown, type RestorationBreakdown } from './restoration-breakdown';
 import { readRestorationAllocation, type RestorationAllocationView } from './restoration-allocation';
 import { readOwnerChainState } from './owner-chain';
 import { formatUnits } from 'ethers';
@@ -31,7 +32,7 @@ export interface RecourseView {
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
   addresses: { identity: string; address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
-  requests: { identity: string; requestId: string; status: string; transactionHash: string; allocation?: RestorationAllocationView | null }[];
+  requests: { identity: string; requestId: string; status: string; transactionHash: string; allocation?: RestorationAllocationView | null; reversalTransactionHash?: string | null; breakdown?: RestorationBreakdown }[];
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('recourse_reply_invalid');
@@ -204,9 +205,18 @@ export async function readRecourseHistory(view: RecourseView): Promise<RecourseV
       return { identity: text(row.identity, hash), address: text(row.address, address), openingBalanceAtomic: text(row.openingBalanceAtomic, atomic), boundAtMs: row.boundAtMs,
         confirmed: row.chainBindingStatus === 'confirmed' };
     }), requests: requests.map(value => { const row = object(value); return { identity: text(row.identity, hash), requestId: text(row.requestId, hash),
-      transactionHash: text(row.transactionHash, hash), status: text(row.status, /^[a-z_]+$/) }; }) };
+      transactionHash: text(row.transactionHash, hash), status: text(row.status, /^[a-z_]+$/),
+      reversalTransactionHash: row.reversalTransactionHash == null ? null : text(row.reversalTransactionHash, hash) }; }) };
     result.requests = await Promise.all(result.requests.map(async row => {
-      try { return { ...row, allocation: await readRestorationAllocation(row.identity, row.requestId, ownerChainNetwork()) }; }
+      try {
+        const network = ownerChainNetwork();
+        const allocation = await readRestorationAllocation(row.identity, row.requestId, network);
+        if (row.reversalTransactionHash && (allocation || row.status === 'restored')) {
+          try { return { ...row, allocation, breakdown: await readRestorationBreakdown(row.identity, row.requestId, row.reversalTransactionHash, allocation, network) }; }
+          catch { return { ...row, allocation }; }
+        }
+        return { ...row, allocation };
+      }
       catch { return row; }
     }));
     return result;

@@ -5169,7 +5169,8 @@
       "submit": "Submit signature",
       "resume": "Continue unfinished action",
       "joining": "Joining Recourse Pool",
-      "rejoinClose": "First, close this wallet’s previous membership. Then review the outstanding burns and contributions to rejoin."
+      "rejoinClose": "First, close this wallet’s previous membership. Then review the outstanding burns and contributions to rejoin.",
+      "approveJoin": "Approve and join"
     },
     "debit": {
       "title": "Monthly burn and contribution",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "PVT only; other coins are not covered.",
     "rejoin": {
       "explain": "After a missed month, you stay protected for one more calendar month. Complete the outstanding burn and contribution during grace to keep protection. Otherwise protection lapses. To rejoin, complete both unpaid protected months, including grace, less any amounts already burned or contributed. Each month uses its own rule: 1% of that month’s earnings, or 100 PVT if there were no earnings, plus the 100 PVT burn. Lapsed months are never covered or charged; protection restarts only when you rejoin.",
-      "payment": "{{month}}: burn {{burn}} PVT and contribute {{reserve}} PVT before rejoining."
+      "payment": "{{month}}: burn {{burn}} PVT and contribute {{reserve}} PVT before rejoining.",
+      "amount": "Rejoin — complete {{amount}} PVT"
     },
     "standing": {
       "explain": "Approve once. Monthly burns and contributions then happen automatically, even with the app closed. No ETH is needed to join, contribute or leave. Higher amounts need a new approval.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "{{amount}} PVT is ready for automatic collection. Keep enough PVT in your wallet.",
       "increase": "The current rule requires a new approval. No higher amount can be debited under your previous approval.",
       "leave": "Leaving stops future burns and contributions. Contributions cannot be returned; allocated PVT remains available to receive.",
-      "consent": "Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing."
+      "consent": "Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.",
+      "approvalTerms": "Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval."
     },
     "transferPicker": {
       "explanation": "Choose the transfer you did not make, then review it before sending your report.",
@@ -5274,6 +5277,13 @@
       "unknown": "An update is available. Refresh to check your report.",
       "zero_allocation": "This restoration has an allocation of 0 PVT. See the decision in your wallet’s records."
     },
-    "bindingDetails": "One membership includes all bound PVT holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. Cryptographic-break restoration is free for every bound owner, including nonmembers. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private."
+    "bindingDetails": "One membership includes all bound PVT holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. Cryptographic-break restoration is free for every bound owner, including nonmembers. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private.",
+    "restorationLegal": "Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.",
+    "breakdown": {
+      "reversed": "Returned by reversal: {{amount}} PVT",
+      "pool": "Restored from the pool: {{amount}} PVT",
+      "total": "Total: {{amount}} PVT",
+      "unavailable": "The restoration breakdown is unavailable. Refresh to check the confirmed amounts."
+    }
   }
 }

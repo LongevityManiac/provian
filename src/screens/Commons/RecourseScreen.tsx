@@ -150,7 +150,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state.membershipState === 'available' ? state.enrolled ? <>
             {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
             {button(t('recourse.leave'), () => { void leave(); })}
-          </> : button(t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
+          </> : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
             : button(t('recourse.refresh'), () => { void load(); })}
           <Text style={styles.small}>{t('recourse.graceSummary')}</Text>
           {state.membershipState === 'unavailable' ? button(t('recourse.flow.resume'), () => navigation.navigate('RecourseMembership', { kind: 'resume' })) : null}
@@ -180,7 +180,11 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state.historyState === 'available' && state.requests.length === 0 ? <Text style={styles.body}>{t('recourse.emptyRequests')}</Text> : null}
           {state.requests.map(row => <View key={row.requestId} style={styles.request}>
             <Text style={styles.body}>{requestStatus(row)}</Text>
-            {row.allocation ? <Text style={styles.body}>{t('recourse.restorationAmount', { amount: pvtAmount(row.allocation.amountAtomic) })}</Text> : null}
+            {row.breakdown ? <>
+              <Text style={styles.body}>{t('recourse.breakdown.reversed', { amount: pvtAmount(row.breakdown.reversedAtomic) })}</Text>
+              <Text style={styles.body}>{t('recourse.breakdown.pool', { amount: pvtAmount(row.breakdown.poolAtomic) })}</Text>
+              <Text style={styles.body}>{t('recourse.breakdown.total', { amount: pvtAmount(row.breakdown.totalAtomic) })}</Text>
+            </> : row.allocation || row.status === 'restored' ? <Text style={styles.body}>{t('recourse.breakdown.unavailable')}</Text> : null}
             {row.allocation && !row.allocation.withdrawn && BigInt(row.allocation.amountAtomic) > 0n
               ? button(t('recourse.withdrawAllocation'), () => { void withdraw(row.requestId, row.identity); }) : null}
           </View>)}
@@ -188,7 +192,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       </> : null}
       <View style={styles.card}>
         <Text style={styles.section}>{t('recourse.finePrint')}</Text>
-        <Text style={styles.small}>{t('recourse.standing.consent')}</Text>
+        <Text style={styles.small}>{t('recourse.restorationLegal')}</Text>
+        <Text style={styles.small}>{t('recourse.standing.approvalTerms')}</Text>
         <Text style={styles.small}>{t('recourse.rule')}</Text>
         <Text style={styles.small}>{t('recourse.bindingDetails')}</Text>
         <Text style={styles.small}>{t('recourse.exitRule')}</Text>

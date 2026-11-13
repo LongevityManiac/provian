@@ -1,3 +1,4 @@
+import { DETERMINATION_WORKFLOWS } from '../core/recourse/determination-workflow';
 import { prepareDepartureCredentials, retainDepartureCredentials, advanceMembershipDeparture } from '../core/recourse/membership-departure';
 import { discoverOwnerRecovery } from '../core/recourse/owner-recovery-discovery';
 import { discoverRestorationHistory } from '../core/recourse/restoration-history';
@@ -320,8 +321,14 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const groups = await Promise.all(bindings.docs.map(async binding => {
         const identity = await ownedBindingIdentity(deps.db, owner, binding.id);
         const rows = await deps.db.collection(RESTORATION_REQUESTS).where('identity', '==', identity).get();
-        return rows.docs.map(doc => ({ requestId: doc.id, identity, status: doc.get('status'),
-          transactionHash: doc.get('transactionHash'), destination: doc.get('destination'), createdAtMs: doc.get('createdAtMs') }));
+        return Promise.all(rows.docs.map(async doc => {
+          const workflow = await deps.db.collection(DETERMINATION_WORKFLOWS).doc(doc.id).get();
+          const transactions: unknown = workflow.get('transactions');
+          const reversalTransactionHash = transactions && typeof transactions === 'object' && 'reverse' in transactions
+            && typeof transactions.reverse === 'string' && /^0x[0-9a-f]{64}$/.test(transactions.reverse) ? transactions.reverse : null;
+          return { requestId: doc.id, identity, status: doc.get('status'), reversalTransactionHash,
+            transactionHash: doc.get('transactionHash'), destination: doc.get('destination'), createdAtMs: doc.get('createdAtMs') };
+        }));
       }));
       res.json({ requests: groups.flat() });
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }

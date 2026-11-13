@@ -69,6 +69,8 @@ test('restoration selects an owned auxiliary binding and privately lists all own
     ...owner, identity: foreign, ownerIdentity: identityHash('agent', 'other'), ownerId: 'other', walletId: 'other' });
   for (const identity of [primary, auxiliary, foreign]) fake.store.set(`${restoration.RESTORATION_REQUESTS}/${identity}`, {
     identity, status: 'prepared', transactionHash, createdAtMs: 1 });
+  fake.store.set(`recourse_determination_workflows_v1/${primary}`, { transactions: { reverse: h('31') } });
+  fake.store.set(`recourse_determination_workflows_v1/${foreign}`, { transactions: { reverse: h('32') } });
   const prepare = jest.spyOn(restoration, 'prepareRestorationRequest').mockResolvedValue({
     request: h('26'), lossHash: h('27'), maximumLoss: '100', kernel: `0x${'28'.repeat(20)}` });
   const submit = jest.spyOn(restoration, 'submitRestorationRequest').mockResolvedValue({ requestId: h('26'), status: 'authorized' });
@@ -97,6 +99,9 @@ test('restoration selects an owned auxiliary binding and privately lists all own
     expect(list.status).toBe(200); expect(list.headers['cache-control']).toBe('no-store');
     expect(list.body.requests.map((r: { identity: string }) => r.identity).sort()).toEqual([primary, auxiliary]);
     expect(JSON.stringify(list.body)).not.toContain(foreign);
+    expect(list.body.requests.find((row: { identity: string }) => row.identity === primary).reversalTransactionHash).toBe(h('31'));
+    expect(list.body.requests.find((row: { identity: string }) => row.identity === auxiliary).reversalTransactionHash).toBeNull();
+    expect(JSON.stringify(list.body)).not.toContain(h('32'));
     delete fake.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)!.primaryBinding;
     expect((await request(app).post('/v1/recourse/restoration-intents').set('Authorization', 'Bearer TEST_ONLY')
       .send({ transactionHash, block: 100, identity: auxiliary })).status).toBe(200);

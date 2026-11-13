@@ -97,7 +97,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
       {!loading && (error || (!(view?.status === 'preparing' || view?.status === 'consenting') && summary?.membershipState === 'unavailable')) ? <Text style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
       {view ? <>
-        <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : view.kind === 'join' ? t('recourse.join') : t('recourse.leave')}</Text>
+        {view.kind !== 'join' ? <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : t('recourse.leave')}</Text> : null}
         <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text>
         {view.pending.map(pending => <View style={styles.card} key={pending.operation.id}>
           <Text selectable style={styles.address}>{pending.account}</Text>
@@ -115,7 +115,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
                 burn: pvtAmount(payment.burn), reserve: pvtAmount(payment.reserve) })}
             </Text>)}
           </> : null}
-          {button(t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })}
+          {button(view.kind === 'join' && challenge.consent.joined ? t('recourse.flow.approveJoin') : t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })}
           {challenge.consent.account !== account ? button(t('recourse.flow.external', 'Authorize in this wallet'), () => { setSelected(challenge); setError(false); }) : null}
         </View>) : null}
         {view.status === 'complete' ? button(t('recourse.flow.done', 'Return to Recourse'), () => navigation.goBack()) : null}
@@ -138,7 +138,8 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       {button(t('recourse.refresh'), () => { void load(); })}
       <View style={styles.card}>
         <Text style={styles.title}>{t('recourse.finePrint')}</Text>
-        <Text style={styles.fine}>{t('recourse.standing.consent')}</Text>
+        <Text style={styles.fine}>{t('recourse.restorationLegal')}</Text>
+        <Text style={styles.fine}>{t('recourse.standing.approvalTerms')}</Text>
         <Text style={styles.fine}>{t('recourse.exitRule')}</Text>
       </View>
     </ScrollView>

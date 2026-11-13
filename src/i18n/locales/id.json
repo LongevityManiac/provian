@@ -5169,7 +5169,8 @@
       "submit": "Kirim tanda tangan",
       "resume": "Lanjutkan tindakan yang belum selesai",
       "joining": "Bergabung dengan Recourse Pool",
-      "rejoinClose": "Tutup dahulu keanggotaan lama dompet ini. Lalu tinjau pembakaran dan kontribusi yang belum diselesaikan untuk bergabung kembali."
+      "rejoinClose": "Tutup dahulu keanggotaan lama dompet ini. Lalu tinjau pembakaran dan kontribusi yang belum diselesaikan untuk bergabung kembali.",
+      "approveJoin": "Setujui dan bergabung"
     },
     "debit": {
       "title": "Pembakaran dan kontribusi bulanan",
@@ -5216,7 +5217,8 @@
     "pvtOnly": "Hanya PVT; koin lain tidak dilindungi.",
     "rejoin": {
       "explain": "Setelah satu bulan terlewat, Anda tetap dilindungi satu bulan kalender lagi. Selesaikan pembakaran dan kontribusi tertunda selama masa tenggang agar perlindungan berlanjut. Jika tidak, perlindungan berakhir. Untuk kembali, selesaikan kedua bulan terlindungi yang belum tuntas, termasuk masa tenggang, dikurangi jumlah yang sudah dibakar atau dikontribusikan. Setiap bulan mengikuti aturannya: 1% penghasilan bulan tersebut, atau 100 PVT jika tidak ada penghasilan, ditambah pembakaran 100 PVT. Bulan tanpa perlindungan tidak dilindungi atau ditagih; perlindungan dimulai lagi hanya saat Anda bergabung kembali.",
-      "payment": "{{month}}: bakar {{burn}} PVT dan kontribusikan {{reserve}} PVT sebelum bergabung kembali."
+      "payment": "{{month}}: bakar {{burn}} PVT dan kontribusikan {{reserve}} PVT sebelum bergabung kembali.",
+      "amount": "Bergabung kembali — tuntaskan {{amount}} PVT"
     },
     "standing": {
       "explain": "Setujui sekali. Pembakaran dan kontribusi bulanan kemudian berjalan otomatis, meski aplikasi ditutup. ETH tidak diperlukan untuk bergabung, berkontribusi, atau keluar. Jumlah lebih besar memerlukan persetujuan baru.",
@@ -5232,7 +5234,8 @@
       "pendingAmount": "{{amount}} PVT siap dikumpulkan otomatis. Simpan PVT yang cukup di dompet Anda.",
       "increase": "Aturan saat ini memerlukan persetujuan baru. Jumlah lebih tinggi tidak dapat didebit berdasarkan persetujuan sebelumnya.",
       "leave": "Keluar menghentikan pembakaran dan kontribusi mendatang. Kontribusi tidak dapat dikembalikan; PVT yang dialokasikan tetap dapat diterima.",
-      "consent": "Setujui sekali saat bergabung. Pembakaran dan kontribusi bulanan berlangsung otomatis dalam jumlah yang disetujui, tanpa membuka aplikasi, menandatangani ulang, atau menyimpan ETH. Keluar menghentikan debit mendatang. Jumlah lebih tinggi memerlukan persetujuan baru. Pemulihan merupakan penetapan diskresioner, tanpa hak kontraktual atas pembayaran. Penetapan bersifat final. Provian Technologies bukan pihak, tidak menyumbang, tidak memegang, dan tidak menjanjikan apa pun."
+      "consent": "Setujui sekali saat bergabung. Pembakaran dan kontribusi bulanan berlangsung otomatis dalam jumlah yang disetujui, tanpa membuka aplikasi, menandatangani ulang, atau menyimpan ETH. Keluar menghentikan debit mendatang. Jumlah lebih tinggi memerlukan persetujuan baru. Pemulihan merupakan penetapan diskresioner, tanpa hak kontraktual atas pembayaran. Penetapan bersifat final. Provian Technologies bukan pihak, tidak menyumbang, tidak memegang, dan tidak menjanjikan apa pun.",
+      "approvalTerms": "Setujui sekali saat bergabung. Pembakaran dan kontribusi bulanan berlangsung otomatis dalam jumlah yang disetujui, tanpa membuka aplikasi, menandatangani ulang, atau menyimpan ETH. Keluar menghentikan debit mendatang. Jumlah lebih tinggi memerlukan persetujuan baru."
     },
     "transferPicker": {
       "explanation": "Pilih transfer yang tidak Anda lakukan, lalu periksa sebelum mengirim laporan.",
@@ -5274,6 +5277,13 @@
       "unknown": "Ada pembaruan. Muat ulang untuk memeriksa laporan Anda.",
       "zero_allocation": "Pemulihan ini mendapat alokasi 0 PVT. Lihat keputusan di catatan dompet Anda."
     },
-    "bindingDetails": "Satu keanggotaan mencakup semua saldo tertaut, baik hasil kerja maupun yang diterima. Menautkan adalah pilihan Anda. Relay mengetahui dompet mana yang milik Anda, sedangkan publik tidak, sama seperti bank. Pemulihan setelah kriptografi dibobol gratis bagi setiap pemilik tertaut, termasuk bukan anggota. Pemulihan atau restorasi dapat menghubungkan alamat lama dengan alamat penggantinya secara publik. Hubungan dengan alamat Anda yang lain dan jumlah seluruh aset Anda tetap privat."
+    "bindingDetails": "Satu keanggotaan mencakup semua saldo tertaut, baik hasil kerja maupun yang diterima. Menautkan adalah pilihan Anda. Relay mengetahui dompet mana yang milik Anda, sedangkan publik tidak, sama seperti bank. Pemulihan setelah kriptografi dibobol gratis bagi setiap pemilik tertaut, termasuk bukan anggota. Pemulihan atau restorasi dapat menghubungkan alamat lama dengan alamat penggantinya secara publik. Hubungan dengan alamat Anda yang lain dan jumlah seluruh aset Anda tetap privat.",
+    "restorationLegal": "Pemulihan merupakan penetapan diskresioner, tanpa hak kontraktual atas pembayaran. Penetapan bersifat final. Provian Technologies bukan pihak, tidak menyumbang, tidak memegang, dan tidak menjanjikan apa pun.",
+    "breakdown": {
+      "reversed": "Dikembalikan melalui pembalikan: {{amount}} PVT",
+      "pool": "Dipulihkan dari dana bersama: {{amount}} PVT",
+      "total": "Total: {{amount}} PVT",
+      "unavailable": "Rincian pemulihan tidak tersedia. Muat ulang untuk memeriksa jumlah yang telah dikonfirmasi."
+    }
   }
 }
