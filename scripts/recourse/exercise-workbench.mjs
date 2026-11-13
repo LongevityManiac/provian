@@ -5,7 +5,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Contract, Interface, concat, getAddress, hexlify, keccak256, sha256, toQuantity, toUtf8Bytes } from 'ethers';
 import { isolatedExercisePort } from './exercise-port.mjs';
-import { exerciseReceipt } from './exercise-read.mjs';
+import { exerciseReceipt, freshExerciseHead, confirmedExerciseBinding } from './exercise-read.mjs';
 import { exerciseSeed, exerciseWallet } from './exercise-bootstrap.mjs';
 import { exerciseSequence } from './exercise-sequence.mjs';
 import { exerciseMutationLock } from './exercise-lock.mjs';
@@ -65,10 +65,12 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
       }
       if(req.url==='/membership'){
         if(mutationLock.busy||input.kind!=='join')throw Error('exercise_membership_unavailable');
+        await freshExerciseHead(port);
         return reply(200,await prepareExerciseMembership({manifest,provider,registry,pool,account:address,kind:input.kind,attestor}));
       }
       if(req.url==='/burn'){
         return await mutationLock.run(async()=>{
+          await freshExerciseHead(port);
           const prepared=await prepareExerciseMembership({manifest,provider,registry,pool,account:address,kind:'burn',attestor});
           const data=standing.interface.encodeFunctionData(prepared.method,[prepared.authorization,prepared.attestorSignature]);
           const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:standingAddress,data,gas:toQuantity(2_000_000)}]);
@@ -123,6 +125,7 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
         const digest=await registry.bindingDigest(b);
         const data=registry.interface.encodeFunctionData('bind',[b,input.ownerSignature,attestor.signingKey.sign(digest).serialized,1]);
         const transactionHash=await port.mutate('eth_sendTransaction',[{from:manifest.deployer,to:a.ProvianOwnershipRegistry,data,gas:toQuantity(2_000_000)}]);
+        await confirmedExerciseBinding(provider,transactionHash);
         return reply(200,{transactionHash,productionChanged:false});
       }
       if(req.url==='/state'){
@@ -139,9 +142,12 @@ export async function startExerciseWorkbench(directory, copiedFundingAddress) {
           initialBurnPaid,allowance:(await token.allowance(address,a.ProvianMemberRecoursePool)).toString(),balance:(await token.balanceOf(address)).toString(),
           sequenceStarted:existsSync(sequencePath),sequence:existsSync(sequencePath)?JSON.parse(readFileSync(sequencePath,'utf8')):null,exerciseBusy:mutationLock.busy,productionChanged:false});
       }
+      if(mutationLock.busy)throw Error('exercise_binding_unavailable');
       const signingRoot=await recoverySigningRoot(exerciseSeed('wallet signing '+address));
       const recoveryCommitment=sha256(concat([exerciseSeed('wallet secret '+address),signingRoot]));
-      const latest=await provider.send('eth_getBlockByNumber',['latest',false]);
+      // An idle Anvil head can be older than a short-lived signature window.
+      // Mine locally before deriving expiry; never extend a signed challenge.
+      const latest=await freshExerciseHead(port);
       const binding={identity,account:address,recoveryCommitment,signingRoot,kernel:a.ProvianRecourseKernel.toLowerCase(),
         nonce:sha256(toUtf8Bytes('EXERCISE ONLY: bind '+address+' '+latest.hash)),expiresAtMs:((BigInt(latest.timestamp)+240n)*1000n).toString()};
       const message=['Provian ownership binding','chain:31337','kernel:'+binding.kernel,'identity:'+identity,'address:'+address,

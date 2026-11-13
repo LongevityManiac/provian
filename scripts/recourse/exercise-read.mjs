@@ -25,3 +25,17 @@ export async function exerciseReceipt(provider, hash, { wait = ms => new Promise
   }
   throw failure ?? Error('exercise_receipt_unavailable');
 }
+
+/** Derive short-lived challenges from a newly mined local head. An idle fork's
+ * last block can precede the signature window; no signed expiry is extended. */
+export async function freshExerciseHead(port) {
+  await port.mutate('evm_mine', []);
+  return port.provider.send('eth_getBlockByNumber', ['latest', false]);
+}
+
+/** A submitted hash alone is not a successful binding. */
+export async function confirmedExerciseBinding(provider, hash) {
+  const receipt = await exerciseReceipt(provider, hash);
+  if (BigInt(receipt.status) !== 1n) throw Error('exercise_binding_not_confirmed');
+  return receipt;
+}
