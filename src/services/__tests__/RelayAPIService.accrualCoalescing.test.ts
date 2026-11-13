@@ -1,3 +1,4 @@
+vi.mock('../../core/protocol/runtime', async () => (await import('../../core/protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../NotificationService', () => ({ default: {} }));
@@ -63,7 +64,10 @@ describe('personal accrual reads', () => {
         expect(urls).toHaveLength(2);
         expect(urls.some(url => url.startsWith('/v1/pvt/history'))).toBe(false);
         expect(urls[0]).toMatch(/^\/v1\/pvt\/network-stats\?window=all&_=/);
-        expect(urls[1]).toMatch(/^\/v1\/pvt\/balance\/0x1111111111111111111111111111111111111111\?_=/);
+        const balanceUrl = new URL(urls[1], 'https://relay.example');
+        expect(balanceUrl.pathname).toBe('/v1/pvt/balance/0x1111111111111111111111111111111111111111');
+        expect(balanceUrl.searchParams.get('token')).toMatch(/^0x[0-9a-f]{40}$/);
+        expect(balanceUrl.searchParams.has('_')).toBe(true);
         for (const [, options] of request.mock.calls) {
             expect(options).toEqual(expect.objectContaining({ cache: 'no-store' }));
         }

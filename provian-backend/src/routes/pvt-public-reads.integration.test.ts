@@ -313,8 +313,49 @@ describe('PVT public read surface — the mount server.ts uses', () => {
     });
   });
 
+  describe('release-forward token-bound balance reads', () => {
+    const kernel = '0x1111111111111111111111111111111111111111';
+    const url = `/v1/pvt/balance/${PROBE_ADDRESS}`;
+    it('legacy requests never receive a cached successor balance, in either request order', async () => {
+      setLaunch('true');
+      for (const modernFirst of [true, false]) {
+        const legacy = jest.fn(async () => 7n), current = jest.fn(async () => 900n);
+        const deps = createDeps({}, { readPvt9Balance: legacy, currentKernel: async () => kernel, readCurrentPvtBalance: current });
+        const app = buildApp({ deps });
+        const paths = modernFirst ? [url + '?token=' + kernel, url] : [url, url + '?token=' + kernel];
+        for (const path of paths) {
+          const res = await request(app).get(path);
+          expect(res.status).toBe(200);
+          expect(res.body.balance_raw).toBe(path === url ? '7' : '900');
+          expect(res.body.token_address.toLowerCase()).toBe(path === url ? '0x8811441914381143b9408c5c32247367f86f173a' : kernel);
+        }
+        expect((await request(app).get(url)).body.balance_raw).toBe('7');
+        expect(legacy).toHaveBeenCalledTimes(1); expect(current).toHaveBeenCalledTimes(1);
+      }
+    });
+    it('refuses malformed, duplicate or stale token selectors before reading any balance', async () => {
+      setLaunch('true');
+      const legacy = jest.fn(async () => 7n), current = jest.fn(async () => 900n);
+      const app = buildApp({ deps: createDeps({}, { readPvt9Balance: legacy, currentKernel: async () => kernel, readCurrentPvtBalance: current }) });
+      for (const query of ['?token=bad', '?token=' + kernel + '&token=' + kernel]) expect((await request(app).get(url + query)).status).toBe(400);
+      expect((await request(app).get(url + '?token=0x2222222222222222222222222222222222222222')).status).toBe(409);
+      expect(legacy).not.toHaveBeenCalled(); expect(current).not.toHaveBeenCalled();
+    });
+    it('rechecks discovery before a successor cache hit and never falls back on discovery failure', async () => {
+      setLaunch('true'); let active = kernel;
+      const legacy = jest.fn(async () => 7n), current = jest.fn(async () => 900n);
+      const app = buildApp({ deps: createDeps({}, { readPvt9Balance: legacy, currentKernel: async () => { if (!active) throw Error('unreachable'); return active; }, readCurrentPvtBalance: current }) });
+      expect((await request(app).get(url + '?token=' + kernel)).status).toBe(200);
+      active = '0x2222222222222222222222222222222222222222';
+      expect((await request(app).get(url + '?token=' + kernel)).status).toBe(409);
+      active = '';
+      expect((await request(app).get(url + '?token=' + kernel)).status).toBe(500);
+      expect(current).toHaveBeenCalledTimes(1); expect(legacy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('PVT9 balance cache', () => {
-    const KEY = `pvt9:balance:${PROBE_ADDRESS.toLowerCase()}`;
+    const KEY = `pvt:balance:v2:8453:0x8811441914381143b9408c5c32247367f86f173a:${PROBE_ADDRESS.toLowerCase()}`;
     const BALANCE_URL = `/v1/pvt/balance/${PROBE_ADDRESS}`;
 
     it('writes { wei } — NOT a bare digit string, which Upstash returns as a number', async () => {

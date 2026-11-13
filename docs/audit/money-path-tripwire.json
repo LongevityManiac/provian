@@ -1217,7 +1217,7 @@
     "scripts/recourse/exercise-workbench.mjs": "882517f9f499349bf14b728e1c2823910d237ca0286869108ec5e38880c298d9",
     "scripts/recourse/first-changeover-cli.mjs": "6f6b7d31f06e78245fd1f2f7f341d2518d952be20caae9ef542b6078b16bd110",
     "scripts/recourse/first-changeover-cli.test.mjs": "783b4a7f75084d2199a8a86df85a18c1bc01769e8acdb0b6127618ba6b386ded",
-    "scripts/recourse/first-changeover-copy.mjs": "f145f626166bb51b7d937bace73d5605b3d8f7912d33ffc0b2bcfa129e640b9c",
+    "scripts/recourse/first-changeover-copy.mjs": "25d118765c76e01c3639c853093239da30a49f36295547f3a008c052baade8fd",
     "scripts/recourse/first-changeover.mjs": "51ece1cc0101db53ef4f6597c52cceaf10ad4e47c3d9f5096be8d4d9fb76d05d",
     "scripts/recourse/first-changeover.test.mjs": "459942b315e362eb623ea257fcba2bf1878a672e950955c1533c36a4a9bf4008",
     "scripts/recourse/first-succession.test.mjs": "ea2d45fc34403d9290b150cd2a3623689aa91079c2bbf80c57bc69bdbcafa9cc",
@@ -1391,7 +1391,7 @@
     "src/core/wallet/SeedManager.ts": "e62208811afd4f8706dc56e228effd00b814f8d8f06aee167067fdc976b6650d",
     "src/core/wallet/TransactionService.estimateFee.test.ts": "617232073e564208c4c9ee64fc78f4d80b0b19754e39d168a9309c197a0341bc",
     "src/core/wallet/TransactionService.ts": "11d7d086b36b8512f80e90c190002e9a7293421a77fbf5182e4adfedf6ca7ade",
-    "src/services/RelayAPIService.ts": "b59dbaf19c546b3f60c4c888540c7bdc33339a4b5756ad487d4625a1411f7a2d",
+    "src/services/RelayAPIService.ts": "4d3ee0e89bde16fa0c3f729d1808dc75a1ff560b4b203542ae0939f47841bbb5",
     "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "762ee820bf61b0a2d3dad480ac73b8705f99945a3cfc9d60126ca696c1fe44af"
   }
 }

@@ -1,3 +1,4 @@
+vi.mock('../../core/protocol/runtime', async () => (await import('../../core/protocol/__test-helpers__/runtime')).protocolRuntimeFixture);
 /**
  * The PVT read endpoints change their PRE-FLIP status code, and the client must
  * not notice.
@@ -89,5 +90,25 @@ describe('PVT reads degrade identically on 503 and 404', () => {
 
     vi.spyOn(svc, 'makeAuthenticatedRequest').mockResolvedValue(fakeResponse(200));
     await expect(RelayAPIService.getPVTAllocation('user-1')).resolves.toEqual({});
+  });
+});
+
+
+describe('token-bound PVT balance response', () => {
+  it('names the independently discovered kernel and accepts only its chain-bound response', async () => {
+    const { currentProtocolDeployment } = await import('../../core/protocol/runtime');
+    const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
+    const body = { token_address: token, chain_id: 8453, balance: '9', balance_raw: '9000000000000000000' };
+    const fetch = vi.spyOn(svc, 'makeAuthenticatedRequest').mockResolvedValue({ ok: true, json: async () => body } as Response);
+    await expect(RelayAPIService.getPVTBalance('0xabc')).resolves.toEqual({ balance: body.balance, balance_raw: body.balance_raw });
+    const url = new URL(fetch.mock.calls.at(-1)![0], 'https://api.provian.ai');
+    expect(url.pathname).toBe('/v1/pvt/balance/0xabc');
+    expect(url.searchParams.get('token')).toBe(token);
+    expect(url.searchParams.has('_')).toBe(true);
+    for (const changed of [{ ...body, token_address: '0x2222222222222222222222222222222222222222' },
+      { ...body, chain_id: 1 }, { balance: '9', balance_raw: '9000000000000000000' }, { ...body, balance_raw: 'bad' }]) {
+      fetch.mockResolvedValue({ ok: true, json: async () => changed } as Response);
+      await expect(RelayAPIService.getPVTBalance('0xabc')).resolves.toBeNull();
+    }
   });
 });

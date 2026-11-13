@@ -1591,10 +1591,14 @@ export function buildOpenAPISpec(): Record<string, unknown> {
       '/v1/pvt/balance/{wallet_address}': {
         get: {
           tags: ['PVT'],
-          summary: 'On-chain PVT balance',
+          summary: 'Token-bound on-chain PVT balance',
+          description: 'Without token, returns the historical predecessor balance for legacy clients. Pointer-aware clients supply the independently discovered current kernel as token; stale selectors are refused. The response includes token_address and chain_id.',
           security: [],
-          parameters: [{ name: 'wallet_address', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { '200': { description: 'PVT balance' } },
+          parameters: [
+            { name: 'wallet_address', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'token', in: 'query', required: false, schema: { type: 'string' }, description: 'Current kernel address from verified protocol discovery' },
+          ],
+          responses: { '200': { description: 'Balance of the identified token' }, '400': { description: 'Invalid address or token selector' }, '409': { description: 'Token no longer current; repeat protocol discovery' } },
         },
       },
       '/v1/pvt/mint-history': {

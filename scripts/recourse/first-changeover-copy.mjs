@@ -102,7 +102,27 @@ export async function rehearseFirstChangeover(config) {
     deployer: deployer.address.toLowerCase(), identityAttestor: wallet('attestor').address.toLowerCase(),
     batchApprover: wallet('approver').address.toLowerCase(), submitter: wallet('submitter').address.toLowerCase(),
     importBatchSize: config.importBatchSize ?? 32, callGas: config.callGas ?? '4000000', port };
-  const state = openChangeoverArtifacts(resolve(output, 'phases'));
+  const artifactsState = openChangeoverArtifacts(resolve(output, 'phases'));
+  const timingPath = resolve(output, 'phase-timings.json');
+  const timings = existsSync(timingPath) ? read(timingPath) : { startedAt: new Date().toISOString(), phases: {} };
+  let activePhase;
+  const beginPhase = phase => {
+    const now = Date.now();
+    if (activePhase && activePhase !== phase && !timings.phases[activePhase].endedAt) {
+      const prior = timings.phases[activePhase]; prior.endedAt = new Date(now).toISOString();
+      prior.wallClockMs = now - Date.parse(prior.startedAt);
+    }
+    if (phase && !timings.phases[phase]) timings.phases[phase] = { startedAt: new Date(now).toISOString() };
+    activePhase = phase; save('phase-timings.json', timings);
+  };
+  const nextPhase = { 'retirement-complete': 'pointer', 'pointer-complete': 'successor',
+    'successor-complete': 'publication', 'publication-complete': 'activation' };
+  const state = { read: name => artifactsState.read(name), create: async (name, value) => {
+    const result = await artifactsState.create(name, value);
+    if (nextPhase[name]) beginPhase(nextPhase[name]);
+    return result;
+  } };
+  beginPhase('retirement');
   const journalPath = resolve(output, 'impersonated-transactions.json');
   const journal = existsSync(journalPath) ? read(journalPath) : {};
   const runtime = async (stage, options) => {
@@ -165,6 +185,7 @@ export async function rehearseFirstChangeover(config) {
     if (result.status === 'confirmed') {
       const restarted = await advanceFirstChangeover({ inputs, state, execute: false, runtime, publish, authorityStore });
       ensure(restarted.status === 'confirmed', 'terminal_restart_failed');
+      beginPhase(null);
       save('result.json', { result, restarted, transactions: Object.values(journal).reduce((n, row) => n + row.transactions.length, 0),
         publicationDocuments: db.store.size });
       const phases={};

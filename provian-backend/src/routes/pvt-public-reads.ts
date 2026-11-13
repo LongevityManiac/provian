@@ -73,6 +73,7 @@ import {
 } from '../core/pvt/pe-weight-framework';
 // M5: aggregate-backed read (see economic-aggregate-read.ts).
 import { readAggregateMintStatusCounts, readEconomicAccrualProjection } from '../core/pvt/policy/economic-aggregate-read';
+import { currentProtocolDeployment } from '../core/protocol/runtime';
 import { requireConfiguredPvt9Runtime } from '../core/pvt/pvt9-base-config.generated';
 
 /** The one mount path. Exported so the mount and its tests cannot disagree. */
@@ -85,6 +86,8 @@ export interface PvtPublicReadDeps extends AgentBankDeps {
    * route without a live Base RPC — never to point the route at another token.
    */
   readPvt9Balance?: (address: string) => Promise<bigint>;
+  currentKernel?: () => Promise<string>;
+  readCurrentPvtBalance?: (address: string, token: string) => Promise<bigint>;
 }
 
 function handleError(res: Response, error: unknown): void {
@@ -97,6 +100,9 @@ const RATE_LIMIT_PER_MINUTE = 60;
 const RATE_LIMIT_WINDOW_S = 60;
 /** Blunts RPC amplification from distributed callers, which per-IP limiting cannot. */
 const BALANCE_CACHE_TTL_S = 30;
+// This unqualified API is bound to the token compiled into legacy clients.
+// It must not follow future protocol-pointer or canonical-config changes.
+const LEGACY_BALANCE_TOKEN = '0x8811441914381143b9408c5C32247367F86F173A';
 
 /**
  * Every route here is UNAUTHENTICATED once the flip opens it, and two of them do
@@ -146,7 +152,7 @@ function createDefaultPvt9BalanceReader(): (address: string) => Promise<bigint> 
         runtime.chainId,
       );
       contract = new ethers.Contract(
-        runtime.address,
+        LEGACY_BALANCE_TOKEN,
         runtime.abi as ethers.InterfaceAbi,
         provider,
       );
@@ -159,6 +165,12 @@ export function createPvtPublicReadRouter(deps: PvtPublicReadDeps): Router {
   const { db, cache } = deps;
   const router = Router();
   const readPvt9Balance = deps.readPvt9Balance ?? createDefaultPvt9BalanceReader();
+  const currentKernel = deps.currentKernel ?? (async () => (await currentProtocolDeployment()).addresses.kernel);
+  const readCurrentBalance = deps.readCurrentPvtBalance ?? (async (address: string, token: string): Promise<bigint> => {
+    const runtime = requireConfiguredPvt9Runtime();
+    const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_URL || 'https://mainnet.base.org', runtime.chainId);
+    return await new ethers.Contract(token, runtime.abi as ethers.InterfaceAbi, provider).balanceOf(address) as bigint;
+  });
   const authenticatePVTDual = createPVTDualAuthMiddleware({ db, cache });
   const limit = createPerIpLimiter(cache, 'pvt-public-read');
 
@@ -179,8 +191,9 @@ export function createPvtPublicReadRouter(deps: PvtPublicReadDeps): Router {
    * poisoned or truncated entry falls through to the chain rather than
    * throwing out of `BigInt`.
    */
-  const readCachedPvt9Balance = async (address: string): Promise<bigint> => {
-    const key = `pvt9:balance:${address.toLowerCase()}`;
+  const readCachedPvt9Balance = async (address: string, token?: string): Promise<bigint> => {
+    const target = token ?? LEGACY_BALANCE_TOKEN;
+    const key = `pvt:balance:v2:8453:${target.toLowerCase()}:${address.toLowerCase()}`;
     try {
       const cached = await cache.get<{ wei?: unknown }>(key);
       if (cached && typeof cached.wei === 'string' && /^\d+$/.test(cached.wei)) {
@@ -190,7 +203,7 @@ export function createPvtPublicReadRouter(deps: PvtPublicReadDeps): Router {
       // A malformed or unreadable cache entry must never fail the request:
       // fall through to the chain read.
     }
-    const balance = await readPvt9Balance(address);
+    const balance = token ? await readCurrentBalance(address, token) : await readPvt9Balance(address);
     try {
       await cache.set(key, { wei: balance.toString() }, BALANCE_CACHE_TTL_S);
     } catch {
@@ -265,11 +278,24 @@ export function createPvtPublicReadRouter(deps: PvtPublicReadDeps): Router {
         return;
       }
 
-      const balance = await readCachedPvt9Balance(wallet_address);
+      // Unqualified requests are the immutable predecessor-client contract.
+      // Only pointer-aware clients name a current token, and that token must
+      // match independently verified discovery before any cache is consulted.
+      const requested = req.query.token;
+      if (requested !== undefined && (typeof requested !== 'string' || !ethers.isAddress(requested))) {
+        res.status(400).json({ error: 'Invalid token address' }); return;
+      }
+      if (typeof requested === 'string' && requested.toLowerCase() !== (await currentKernel()).toLowerCase()) {
+        res.status(409).json({ error: 'PVT token changed; refresh protocol discovery' }); return;
+      }
+      const token = typeof requested === 'string' ? requested.toLowerCase() : undefined;
+      const balance = await readCachedPvt9Balance(wallet_address, token);
       res.json({
         wallet_address,
         balance: ethers.formatEther(balance),
         balance_raw: balance.toString(),
+        token_address: token ?? LEGACY_BALANCE_TOKEN,
+        chain_id: 8453,
       });
     } catch (error) {
       handleError(res, error);

@@ -1,3 +1,4 @@
+import { currentProtocolDeployment } from '../core/protocol/runtime';
 import type { MembershipRequestPath } from '../core/recourse/membership-client';
 import i18next from 'i18next';
 import { ActionWallet } from '../core/security/ActionWallet';
@@ -3897,12 +3898,19 @@ class RelayAPIService {
      */
     async getPVTBalance(walletAddress: string, biometricAction?: BiometricAction): Promise<{ balance: string; balance_raw: string } | null> {
         try {
+            const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
             const { endpoint, options } = this.noCacheGet(
-                `/v1/pvt/balance/${encodeURIComponent(walletAddress)}`,
+                `/v1/pvt/balance/${encodeURIComponent(walletAddress)}?token=${encodeURIComponent(token)}`,
             );
             const response = await this.makeAuthenticatedRequest(endpoint, options, undefined, biometricAction);
             if (response.ok) {
-                return response.json();
+                const body: unknown = await response.json();
+                if (!body || typeof body !== 'object' || !('token_address' in body)
+                    || typeof body.token_address !== 'string' || body.token_address.toLowerCase() !== token
+                    || !('chain_id' in body) || body.chain_id !== 8453
+                    || !('balance' in body) || typeof body.balance !== 'string'
+                    || !('balance_raw' in body) || typeof body.balance_raw !== 'string' || !/^\d+$/.test(body.balance_raw)) return null;
+                return { balance: body.balance, balance_raw: body.balance_raw };
             }
             return null;
         } catch (error) {
