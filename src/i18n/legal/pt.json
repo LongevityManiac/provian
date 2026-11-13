@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Termos de Serviço da Provian",
-    "terms.lastUpdated": "9 de novembro de 2026",
+    "terms.lastUpdated": "13 de novembro de 2026",
     "terms.footer": "Estes Termos de Serviço entram em vigor em 16 de julho de 2026.",
     "terms.blocks.0.spans": "IMPORTANTE: LEIA ESTES TERMOS COM ATENÇÃO. AO UTILIZAR O PROVIAN, VOCÊ CONCORDA EM ESTAR VINCULADO A ESTES TERMOS. SE VOCÊ NÃO CONCORDAR, NÃO UTILIZE ESTE APLICATIVO.",
     "terms.blocks.1.text": "Resumo em linguagem simples",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Proteger qualquer frase de recuperação exportada (caso você opte por exportar uma)",
     "terms.blocks.34.items.3": "Protegendo seu dispositivo e suas credenciais biométricas",
     "terms.blocks.34.items.4": "Compreender que perder o acesso à sua conta na nuvem, à sua senha de backup e a qualquer frase de recuperação exportada significa a perda permanente do acesso à carteira.",
-    "terms.blocks.35.text": "4.3 Sem recuperação pela Provian",
-    "terms.blocks.36.spans": "Se você perder o acesso à sua conta Apple/Google e à sua senha de backup, e não tiver exportado uma frase de recuperação, a Provian não poderá recuperar seus fundos. Não existe opção de \"esqueci a senha\". Não há suporte ao cliente capaz de restaurar o acesso aos seus ativos. Você reconhece e aceita esse risco.",
+    "terms.blocks.35.text": "4.3 Recuperação das chaves da carteira",
+    "terms.blocks.36.spans": "Se você perder o dispositivo e todos os backups de recuperação ou suas senhas, a Provian não poderá reconstruir as chaves da sua carteira. Não há redefinição de senha para essas chaves. Apenas para PVT, a autoridade de restauração, exercida pela chave da Provian até o Tribunal abrir, pode devolver PVT roubados segundo a regra publicada, com a prova de recuperação exigida do proprietário. Cada uso é público. A restauração é regida pela Seção 20A; ela não substitui o material de recuperação perdido nem restaura outros ativos.",
     "terms.blocks.37.text": "5. Envelopes de Proveniência e PVT",
     "terms.blocks.38.text": "5.1 Envelopes de procedência",
     "terms.blocks.39.spans": "Envelopes de Proveniência (PEs) são provas criptográficas geradas quando você utiliza o Provian. PEs podem ser criados para transações de carteira, atividades relacionadas a promessas, ações de agentes e outras contribuições. Um PE é uma prova de propriedade do seu contribuinte.",

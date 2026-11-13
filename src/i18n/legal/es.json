@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Términos de servicio de Provian",
-    "terms.lastUpdated": "9 de noviembre de 2026",
+    "terms.lastUpdated": "13 de noviembre de 2026",
     "terms.footer": "Estos Términos de servicio entran en vigor el 16 de julio de 2026.",
     "terms.blocks.0.spans": "IMPORTANTE: POR FAVOR, LEA ATENTAMENTE ESTOS TÉRMINOS. AL UTILIZAR PROVIAN, USTED ACEPTA QUEDAR VINCULADO POR ESTOS TÉRMINOS. SI NO ESTÁ DE ACUERDO, NO UTILICE ESTA APLICACIÓN.",
     "terms.blocks.1.text": "Resumen en lenguaje sencillo",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Proteger cualquier frase de recuperación exportada (si decides exportar una)",
     "terms.blocks.34.items.3": "Protección de su dispositivo y sus credenciales biométricas",
     "terms.blocks.34.items.4": "Comprender que perder el acceso a su cuenta en la nube, a su contraseña de respaldo y a cualquier frase de recuperación exportada implica la pérdida permanente del acceso a la billetera.",
-    "terms.blocks.35.text": "4.3 Sin recuperación por parte de Provian",
-    "terms.blocks.36.spans": "Si pierde el acceso a su cuenta de Apple o Google y a su contraseña de respaldo, y no ha exportado una frase de recuperación, Provian no podrá recuperar sus fondos. No existe una opción de \"contraseña olvidada\". No hay servicio de atención al cliente que pueda restaurar el acceso a sus activos. Usted reconoce y acepta este riesgo.",
+    "terms.blocks.35.text": "4.3 Recuperación de las claves de la billetera",
+    "terms.blocks.36.spans": "Si pierdes tu dispositivo y todos los respaldos de recuperación o sus contraseñas, Provian no puede reconstruir las claves de tu billetera. No existe un restablecimiento de contraseña para esas claves. Solo para PVT, la autoridad de restitución, ejercida mediante la clave de Provian hasta que abra el Tribunal, puede devolver PVT robados según la regla publicada y con la prueba de recuperación exigida al propietario. Cada uso es público. La sección 20A rige la restitución; esta no sustituye el material de recuperación perdido ni restituye otros activos.",
     "terms.blocks.37.text": "5. Envolventes de procedencia y PVT",
     "terms.blocks.38.text": "5.1 Sobres de procedencia",
     "terms.blocks.39.spans": "Los Provenance Envelopes (PE) son pruebas criptográficas que se generan al utilizar Provian. Se pueden crear PE para transacciones de billetera, actividades relacionadas con promesas, acciones de agentes y otras contribuciones. Un PE es una prueba que pertenece a su contribuyente.",

@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Ketentuan Layanan Provian",
-    "terms.lastUpdated": "9 November 2026",
+    "terms.lastUpdated": "13 November 2026",
     "terms.footer": "Ketentuan Layanan ini berlaku mulai 16 Juli 2026.",
     "terms.blocks.0.spans": "PENTING: HARAP BACA KETENTUAN INI DENGAN SAKSAMA. DENGAN MENGGUNAKAN PROVIAN, ANDA SETUJU UNTUK TERIKAT OLEH KETENTUAN INI. JIKA ANDA TIDAK SETUJU, JANGAN GUNAKAN APLIKASI INI.",
     "terms.blocks.1.text": "Ringkasan dalam Bahasa Sederhana",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Melindungi frasa pemulihan yang diekspor (jika Anda memilih untuk mengekspornya)",
     "terms.blocks.34.items.3": "Melindungi perangkat dan kredensial biometrik Anda",
     "terms.blocks.34.items.4": "Memahami bahwa kehilangan akses ke akun cloud Anda, kata sandi cadangan, serta frasa pemulihan yang telah diekspor berarti hilangnya akses ke dompet secara permanen.",
-    "terms.blocks.35.text": "4.3 Tidak Ada Pemulihan oleh Provian",
-    "terms.blocks.36.spans": "Jika Anda kehilangan akses ke akun Apple/Google dan kata sandi cadangan Anda, serta belum mengekspor frasa pemulihan, Provian tidak dapat memulihkan dana Anda. Tidak tersedia opsi \"lupa kata sandi\". Tidak ada layanan pelanggan yang dapat memulihkan akses ke aset Anda. Anda mengakui dan menerima risiko ini.",
+    "terms.blocks.35.text": "4.3 Pemulihan Kunci Dompet",
+    "terms.blocks.36.spans": "Jika Anda kehilangan perangkat dan semua cadangan pemulihan atau kata sandinya, Provian tidak dapat merekonstruksi kunci dompet Anda. Tidak ada pengaturan ulang kata sandi untuk kunci tersebut. Khusus PVT, kewenangan pemulihan, yang dipegang oleh kunci Provian sampai Pengadilan dibuka, dapat mengembalikan PVT yang dicuri berdasarkan aturan yang dipublikasikan dengan bukti pemulihan yang diwajibkan dari pemilik. Setiap penggunaannya terbuka untuk umum. Pemulihan diatur oleh Bagian 20A; pemulihan tidak menggantikan materi pemulihan yang hilang atau memulihkan aset lain.",
     "terms.blocks.37.text": "5. Selubung Provenans dan PVT",
     "terms.blocks.38.text": "5.1 Amplop Provenans",
     "terms.blocks.39.spans": "Provenance Envelope (PE) adalah bukti kriptografis yang dihasilkan saat Anda menggunakan Provian. PE dapat dibuat untuk transaksi dompet, aktivitas janji, tindakan agen, dan kontribusi lainnya. PE merupakan bukti yang dimiliki oleh kontributornya.",

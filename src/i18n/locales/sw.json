@@ -866,7 +866,7 @@
       "losePhone": "Nikiipoteza simu yangu je?",
       "losePhoneA": "Rejesha nakala rudufu yako ya wingu iliyosimbwa kwa kuingia katika akaunti ile ile ya iCloud au Google kwenye kifaa kipya na kuingiza nenosiri lako la chelezo. Vinginevyo, rejesha kwa kutumia kifungu cha maneno kumi na mawili cha kurejesha ulichoandika wakati wa usanidi au kuhamisha kutoka kwa Mipangilio. Provian haiwezi kuweka upya nenosiri la chelezo au kurejesha kifungu kilichopotea. Ukipoteza kifaa na njia zote mbili za kurejesha, pochi haiwezi kupatikana.",
       "canProvianAccessFunds": "Je, Provian inaweza kufikia fedha zangu?",
-      "canProvianAccessFundsA": "Si kwenye pochi yako mwenyewe. Provian haishikilii mali zako: hatuwahi kuona funguo zako za siri na hatuwezi kuhamisha fedha zako. Ukifuta hifadhi yako na kupoteza kifaa chako, hatuwezi kurejesha pochi yako. Pesa unazoweka kwenye escrow ya Commons hukaa ndani ya mkataba huo. Hadi Mahakama ya Commons ifunguliwe, ufunguo wa msimamizi wa Provian huamua migogoro ya escrow na hulipa mpokeaji tu au kurejesha kwa mweka fedha; mtu yeyote anaweza kuanzisha urejeshaji kwa mweka fedha baada ya muda wa mgogoro wa siku 30.",
+      "canProvianAccessFundsA": "Provian haihifadhi kamwe funguo za pochi yako na haiwezi kutumia fedha kutoka kwenye pochi yako. Kwa PVT pekee, mamlaka ya kurejesha, inayoshikiliwa na ufunguo wa Provian hadi Mahakama ifunguliwe, inaweza kurudisha PVT zilizoibiwa chini ya kanuni iliyochapishwa pamoja na uthibitisho wa urejeshaji unaohitajika kutoka kwa mmiliki. Kila matumizi ya mamlaka hiyo ni ya umma. Pesa unazoweka kwenye escrow ya Commons hukaa ndani ya mkataba huo. Hadi Mahakama ya Commons ifunguliwe, ufunguo wa msimamizi wa Provian huamua migogoro ya escrow na hulipa mpokeaji tu au kurejesha kwa mweka fedha; mtu yeyote anaweza kuanzisha urejeshaji kwa mweka fedha baada ya muda wa mgogoro wa siku 30.",
       "whatAboutQuantum": "Je, kuhusu kompyuta za kwantamu?",
       "whatAboutQuantumA": "Ufungaji hurekodi mmiliki wa kila anwani na kufuatilia PVT zilizopatikana kwa kazi na zilizopokelewa kwa usawa; haujengi upya umiliki kutokana na mapato. Ahadi tofauti ya hash ya urejeshaji hutokana na nakala ya seed ya mtu au nyenzo za urejeshaji za wakala zilizozalishwa kwa kujitegemea na kusimbwa fiche. Usimbaji fiche wa pochi ukivunjwa, kila mmiliki aliyefunga anwani anaweza kurejesha bila gharama salio lililosajiliwa katika bloku ya mwisho salama, kwa kutumia thamani asilia ya hash ya urejeshaji na sahihi huru ya hash inayotaja anwani mpya. Mfumo mrithi huhifadhi historia ya fedha na kuzuia urejeshaji maradufu. Umiliki usiofungwa haujengwi upya, na uhamisho wa mnyororo wa zamani hubaki kwenye rekodi. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
       "howProtectRisky": "Provian inanilindaje dhidi ya miamala yenye hatari?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "PVT zako zikiibiwa, Mfuko wa Recourse unaweza kuzirejesha.",
+    "intro": "PVT zilizoibiwa ambazo bado zinashikiliwa na aliyeziiba hurudishwa kwa kutengua uhamisho. Recourse Pool hurejesha zilizobaki kutoka kwa PVT ilizonazo, kamwe si zaidi.",
     "error": "Hatukuweza kuthibitisha hali ya karibuni au kukamilisha kitendo. Sasisha ili ukague mnyororo kabla ya kujaribu tena.",
     "refresh": "Sasisha",
     "membership": "Uanachama wa Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Onyesha uhamisho wa zamani",
       "review": "Ripoti uhamisho huu",
       "confirm": "Sikuidhinisha uhamisho huu wa {{amount}} PVT.",
-      "recovery": "Pochi yako itapata anwani mpya. Provian itachunguza wizi, kujaribu kurudisha PVT zilizoibiwa, na kuamua mfuko unaweza kurejesha kiasi gani."
+      "recovery": "Pochi yako itapata anwani mpya. PVT zilizoibiwa ambazo bado zinashikiliwa na aliyeziiba hurudishwa kwa kutengua uhamisho. Recourse Pool hurejesha zilizobaki kutoka kwa PVT ilizonazo, kamwe si zaidi. Matokeo ni uamuzi chini ya kanuni iliyochapishwa. Provian Technologies si mhusika katika mpango huu."
     },
     "lapsed": "Ulinzi umeisha",
     "graceSummary": "Mwezi mmoja wa neema; kujiunga tena kunahitaji kukamilisha uchomaji na michango iliyobaki ya miezi iliyolindwa tu.",
     "reportTheft": "Ripoti wizi",
     "closeReport": "Funga",
-    "afterReport": "Ripoti yako imetumwa. Pochi yako ina anwani mbadala. Provian itachunguza wizi, kujaribu kurudisha PVT zilizoibiwa, na kuamua mfuko unaweza kurejesha kiasi gani. Fuatilia katika Maombi yako.",
+    "afterReport": "Ripoti yako imetumwa. Pochi yako ina anwani mbadala. Matokeo ni uamuzi chini ya kanuni iliyochapishwa. Provian Technologies si mhusika katika mpango huu. Angalia Maombi yako ili kuona maendeleo.",
     "emptyRequests": "Huna ripoti za wizi.",
     "emptyWallets": "Bado hakuna pochi zilizoongezwa.",
     "finePrint": "Masharti ya kina",

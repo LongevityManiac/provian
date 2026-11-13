@@ -870,7 +870,7 @@
       "losePhone": "What if I lose my phone?",
       "losePhoneA": "Restore your encrypted cloud backup by signing in to the same iCloud or Google account on the new device and entering your backup password. Alternatively, restore with the twelve-word recovery phrase you wrote down during setup or exported from Settings. Provian cannot reset the backup password or recover a lost phrase. If you lose the device and both recovery methods, the wallet cannot be recovered.",
       "canProvianAccessFunds": "Can Provian access my funds?",
-      "canProvianAccessFundsA": "No, not in your own wallet. Provian is non-custodial: we never see your private keys and cannot move your funds. If you delete your backup and lose your device, we cannot recover your wallet. Money you put into a Commons escrow sits in that contract instead. Until the Commons Court opens, Provian’s admin key resolves disputed escrows, paying only an escrow’s recipient or refunding its depositor; anyone can trigger the depositor’s refund after the 30-day dispute timeout.",
+      "canProvianAccessFundsA": "Provian never holds your wallet keys and cannot spend from your wallet. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Money you put into a Commons escrow sits in that contract instead. Until the Commons Court opens, Provian’s admin key resolves disputed escrows, paying only an escrow’s recipient or refunding its depositor; anyone can trigger the depositor’s refund after the 30-day dispute timeout.",
       "whatAboutQuantum": "What about quantum computing?",
       "whatAboutQuantumA": "Binding records who owns each address and follows earned and received PVT alike; it does not reconstruct ownership from earnings. A separate hash recovery commitment derives from a person's seed backup or an agent's independently generated, encrypted recovery material. If wallet cryptography breaks, every bound owner can restore registered PVT balances at the last good block, free, using the recovery preimage and an independent hash signature for the new destination. A successor carries monetary history forward and prevents duplicate restoration. Unbound ownership is not reconstructed, and old-chain transfers remain in the record. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.",
       "howProtectRisky": "How does Provian protect me from risky transactions?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "If your PVT is stolen, the Recourse Pool can restore it.",
+    "intro": "Stolen PVT still held by whoever took it is returned by reversal. The Recourse Pool restores the rest from what it holds, never more.",
     "error": "We could not confirm the latest state or complete that action. Refresh to check the chain before trying again.",
     "refresh": "Refresh",
     "membership": "Recourse Pool membership",
@@ -5246,13 +5246,13 @@
       "older": "Show older transfers",
       "review": "Report this transfer",
       "confirm": "I did not authorize this transfer of {{amount}} PVT.",
-      "recovery": "Your wallet will get a new address. Provian will review the theft, try to return the stolen PVT, and decide what the pool can restore."
+      "recovery": "Your wallet will get a new address. Stolen PVT still held by whoever took it is returned by reversal. The Recourse Pool restores the rest from what it holds, never more. The outcome is a determination under the published rule. Provian Technologies is not a party."
     },
     "lapsed": "Lapsed",
     "graceSummary": "One month of grace; rejoin by completing outstanding burns and contributions for protected months only.",
     "reportTheft": "Report a theft",
     "closeReport": "Close",
-    "afterReport": "Your report is sent. Your wallet has a replacement address. Provian will review the theft, try to return the stolen PVT, and decide what the pool can restore. Check Your requests for progress.",
+    "afterReport": "Your report is sent. Your wallet has a replacement address. The outcome is a determination under the published rule. Provian Technologies is not a party. Check Your requests for progress.",
     "emptyRequests": "You have no theft reports.",
     "emptyWallets": "No wallets have been added yet.",
     "finePrint": "Fine print",

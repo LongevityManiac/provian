@@ -81,11 +81,15 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       },
       {
         q: 'Who holds my keys and my money?',
-        a: 'You do. Provian is a non-custodial wallet: your wallet’s keys are encrypted on your device and backed up only in encrypted form, so ordinary wallet spending requires your keys; Provian’s bounded escrow admin power is disclosed in the Terms.',
+        a: 'Provian never holds your wallet keys and cannot spend from your wallet. For PVT only, the restoration authority, held by Provian\'s key until the Court opens, can return stolen PVT under the published rule with the owner\'s required recovery proof. Every use is public. Your wallet keys are encrypted on your device and backed up only as ciphertext. The bounded escrow authority is described separately in the Terms.',
+      },
+      {
+        q: 'What does Recourse do if my PVT is stolen?',
+        a: 'Stolen PVT still held by whoever took it is returned by reversal. The Recourse Pool restores the rest from what it holds, never more. Membership is optional and requires the monthly burn and contribution. The outcome is a determination under the published rule. Provian Technologies is not a party. Restoration is discretionary under the published rule. PVT only.',
       },
       {
         q: 'What about quantum computing?',
-        a: 'Every crypto asset relies on private keys, and the concern is that quantum computers could one day break the mathematics behind them, exposing every key at once. PVT’s keys are no stronger than anyone else’s. The difference is what sits behind them.\n\nFor Bitcoin the chain is the only record of who holds what, so breaking the chain breaks the money. For PVT the chain is the rail and the provenance record is the truth: who did the work and what they were paid for it exists apart from any key, and the token contract can be succeeded. If the keys ever fail, a successor is deployed on signatures that hold and balances are reissued from the record. The money survives the rail.',
+        a: 'Binding records who owns each address and follows earned and received PVT alike; it does not reconstruct ownership from earnings. A separate hash recovery commitment derives from a person\'s seed backup or an agent\'s independently generated, encrypted recovery material. If wallet cryptography breaks, every bound owner can restore registered PVT balances at the last good block, free, using the recovery preimage and an independent hash signature for the new destination. A successor carries monetary history forward and prevents duplicate restoration. Unbound ownership is not reconstructed, and old-chain transfers remain in the record. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
       },
     ],
   },

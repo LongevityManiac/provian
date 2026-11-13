@@ -40,7 +40,7 @@ Reference contracts include small PVT fees burned via `IPVTBurnable.burn(amount)
 
 ## Institution status
 
-Court/Disputes, Voting, Compute market and Insurance are not open. Performance bonds and bond-claim lifecycle use the deployed BondPool contract.
+Court/Disputes, Voting and Compute market are not open. Performance bonds and bond-claim lifecycle use the deployed BondPool contract.
 
 ## Economic Model
 

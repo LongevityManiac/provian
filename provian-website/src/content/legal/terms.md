@@ -1,6 +1,6 @@
 # Provian Terms of Service
 
-**Last Updated: November 9, 2026**
+**Last Updated: November 13, 2026**
 
 > **IMPORTANT: PLEASE READ THESE TERMS CAREFULLY. BY USING PROVIAN, YOU AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE, DO NOT USE THIS APPLICATION.**
 
@@ -106,9 +106,9 @@ Provian uses a cloud backup encrypted with a backup password. Your BIP-39 seed i
 - Safeguarding your device and biometric credentials
 - Understanding that losing access to your cloud account AND your backup password AND any exported recovery phrase means permanent loss of wallet access
 
-### 4.3 No Recovery by Provian
+### 4.3 Wallet-Key Recovery
 
-> **IF YOU LOSE ACCESS TO YOUR APPLE/GOOGLE ACCOUNT AND YOUR BACKUP PASSWORD, AND HAVE NOT EXPORTED A RECOVERY PHRASE, PROVIAN CANNOT RECOVER YOUR FUNDS. THERE IS NO "FORGOT PASSWORD" OPTION. THERE IS NO CUSTOMER SUPPORT THAT CAN RESTORE ACCESS TO YOUR ASSETS. YOU ACKNOWLEDGE AND ACCEPT THIS RISK.**
+> **If you lose your device and all recovery backups or their passwords, Provian cannot reconstruct your wallet keys. There is no password reset for those keys. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Section 20A governs restoration; it does not replace missing recovery material or restore other assets.**
 
 ## 5. Provenance Envelopes and PVT
 

@@ -3,9 +3,9 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+  "version": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
   "title": "Provian Terms of Service",
-  "lastUpdated": "November 9, 2026",
+  "lastUpdated": "November 13, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
   "blocks": [
     {
@@ -542,13 +542,13 @@ export const TERMS_DOCUMENT: LegalDocument = {
     },
     {
       "type": "subsection",
-      "text": "4.3 No Recovery by Provian"
+      "text": "4.3 Wallet-Key Recovery"
     },
     {
       "type": "notice",
       "spans": [
         {
-          "text": "IF YOU LOSE ACCESS TO YOUR APPLE/GOOGLE ACCOUNT AND YOUR BACKUP PASSWORD, AND HAVE NOT EXPORTED A RECOVERY PHRASE, PROVIAN CANNOT RECOVER YOUR FUNDS. THERE IS NO \"FORGOT PASSWORD\" OPTION. THERE IS NO CUSTOMER SUPPORT THAT CAN RESTORE ACCESS TO YOUR ASSETS. YOU ACKNOWLEDGE AND ACCEPT THIS RISK.",
+          "text": "If you lose your device and all recovery backups or their passwords, Provian cannot reconstruct your wallet keys. There is no password reset for those keys. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Section 20A governs restoration; it does not replace missing recovery material or restore other assets.",
           "bold": true
         }
       ]

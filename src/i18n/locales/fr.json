@@ -866,7 +866,7 @@
       "losePhone": "Que se passe-t-il si je perds mon téléphone ?",
       "losePhoneA": "Restaurez votre sauvegarde cloud chiffrée en vous connectant au même compte iCloud ou Google sur votre nouvel appareil et en saisissant votre mot de passe de sauvegarde. Vous pouvez également la restaurer à l'aide de la phrase de récupération de douze mots que vous avez notée lors de la configuration ou exportée depuis les Réglages. Provian ne peut ni réinitialiser le mot de passe de sauvegarde ni récupérer une phrase perdue. Si vous perdez votre appareil et les deux méthodes de récupération, votre portefeuille sera définitivement perdu.",
       "canProvianAccessFunds": "Provian peut-il accéder à mes fonds ?",
-      "canProvianAccessFundsA": "Pas dans votre propre portefeuille. Provian est non dépositaire : nous ne voyons jamais vos clés privées et ne pouvons pas déplacer vos fonds. Si vous supprimez votre sauvegarde et perdez votre appareil, nous ne pouvons pas récupérer votre portefeuille. L’argent que vous placez dans un séquestre des Commons se trouve dans ce contrat. Jusqu’à l’ouverture du Tribunal des Commons, la clé d’administration de Provian résout les séquestres contestés et ne verse les fonds qu’au destinataire ou en remboursement au déposant ; tout le monde peut déclencher le remboursement au déposant après le délai de litige de 30 jours.",
+      "canProvianAccessFundsA": "Provian ne détient jamais les clés de votre portefeuille et ne peut pas dépenser depuis celui-ci. Pour les PVT uniquement, l’autorité de restitution, exercée avec la clé de Provian jusqu’à l’ouverture du Tribunal, peut rendre les PVT volés selon la règle publiée, avec la preuve de récupération exigée du propriétaire. Chaque utilisation est publique. L’argent que vous placez dans un séquestre des Commons se trouve dans ce contrat. Jusqu’à l’ouverture du Tribunal des Commons, la clé d’administration de Provian résout les séquestres contestés et ne verse les fonds qu’au destinataire ou en remboursement au déposant ; tout le monde peut déclencher le remboursement au déposant après le délai de litige de 30 jours.",
       "whatAboutQuantum": "Et l’informatique quantique ?",
       "whatAboutQuantumA": "La liaison enregistre le propriétaire de chaque adresse et suit de la même manière les PVT gagnés et reçus ; elle ne reconstitue pas la propriété à partir des gains. Un engagement de récupération par hachage distinct est dérivé de la sauvegarde de la phrase de récupération d’une personne ou du matériel de récupération d’un agent, généré indépendamment et chiffré. Si la cryptographie des portefeuilles est compromise, chaque propriétaire lié peut récupérer gratuitement les soldes enregistrés au dernier bloc sûr, à l’aide de la préimage de récupération et d’une signature par hachage indépendante pour la nouvelle destination. Un successeur conserve l’historique monétaire et empêche toute double restitution. La propriété non liée n’est pas reconstituée et les transferts de l’ancienne chaîne restent dans le registre. Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule.",
       "howProtectRisky": "Comment Provian me protège-t-il des transactions risquées ?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "Si vos PVT sont volés, le Fonds de Recourse peut les restituer.",
+    "intro": "Les PVT volés encore détenus par la personne qui les a pris sont rendus par annulation du transfert. Le Fonds de recours restitue le reste avec ce qu’il détient, jamais davantage.",
     "error": "Impossible de confirmer le dernier état ou de terminer cette action. Actualisez pour vérifier la chaîne avant de réessayer.",
     "refresh": "Actualiser",
     "membership": "Adhésion à Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Afficher les transferts antérieurs",
       "review": "Signaler ce transfert",
       "confirm": "Je n’ai pas autorisé ce transfert de {{amount}} PVT.",
-      "recovery": "Votre portefeuille aura une nouvelle adresse. Provian examinera le vol, tentera de rendre les PVT volés et décidera de ce que le fonds peut restituer."
+      "recovery": "Votre portefeuille recevra une nouvelle adresse. Les PVT volés encore détenus par la personne qui les a pris sont rendus par annulation du transfert. Le Fonds de recours restitue le reste avec ce qu’il détient, jamais davantage. Le résultat est une décision prise selon la règle publiée. Provian Technologies n’est pas partie à cet arrangement."
     },
     "lapsed": "Protection expirée",
     "graceSummary": "Un mois de grâce ; pour revenir, complétez les destructions et contributions dues pour les seuls mois protégés.",
     "reportTheft": "Signaler un vol",
     "closeReport": "Fermer",
-    "afterReport": "Votre signalement a été envoyé. Votre portefeuille a une adresse de remplacement. Provian examinera le vol, tentera de rendre les PVT volés et décidera de ce que le fonds peut restituer. Suivez Vos demandes.",
+    "afterReport": "Votre signalement est envoyé. Votre portefeuille dispose d’une adresse de remplacement. Le résultat est une décision prise selon la règle publiée. Provian Technologies n’est pas partie à cet arrangement. Consultez Vos demandes pour suivre l’avancement.",
     "emptyRequests": "Vous n’avez aucun signalement de vol.",
     "emptyWallets": "Aucun portefeuille ajouté pour le moment.",
     "finePrint": "Conditions détaillées",

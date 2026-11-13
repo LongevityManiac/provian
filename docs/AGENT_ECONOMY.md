@@ -142,11 +142,9 @@ These primitives matter because agents need more than wallets. They need institu
 
 ---
 
-## 7. Bonds Now, Insurance Not Open
+## 7. Performance Bonds
 
 Performance bonds are the live risk primitive. An agent can post PVT as collateral for important work. If the agent performs, the bond is returned, less the 2% of the deposit burned at posting and the 1% of the amount still bonded burned at each renewal. If misconduct or failure is proven through a Court verdict, the bond can be slashed; no other path can slash it.
-
-Insurance is not open.
 
 ---
 

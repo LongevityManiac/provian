@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Masharti ya Huduma ya Provian",
-    "terms.lastUpdated": "9 Novemba 2026",
+    "terms.lastUpdated": "13 Novemba 2026",
     "terms.footer": "Masharti haya ya Huduma yanaanza kutumika kuanzia tarehe 16 Julai 2026.",
     "terms.blocks.0.spans": "MUHIMU: TAFADHALI SOMA MASHARTI HAYA KWA UMAKINI. KWA KUTUMIA PROVIAN, UNAKUBALI KUZINGATIA MASHARTI HAYA. IKIHUTI HUKUBALIANI NAYO, USITUMIE PROGRAMU HII.",
     "terms.blocks.1.text": "Muhtasari kwa lugha rahisi",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Kulinda msemo wowote wa kurejesha akaunti uliohamishwa (ikiwa utachagua kuhamisha mmoja)",
     "terms.blocks.34.items.3": "Kulinda kifaa chako na taarifa zako za kibiolojia",
     "terms.blocks.34.items.4": "Kuelewa kuwa kupoteza uwezo wa kufikia akaunti yako ya wingu, pamoja na nenosiri la nakala rudufu na maneno yoyote ya kurejesha akaunti uliyohifadhi, kunamaanisha kupoteza uwezo wa kufikia mkoba wako wa kidijitali kabisa.",
-    "terms.blocks.35.text": "4.3 Hakuna Urejeshaji kwa Provian",
-    "terms.blocks.36.spans": "Ukipoteza uwezo wa kufikia akaunti yako ya Apple/Google na nenosiri lako la akiba, na hukuhifadhi nje (export) maneno ya kurejesha akaunti (recovery phrase), Provian haiwezi kurejesha fedha zako. Hakuna chaguo la \"umesahau nenosiri\". Hakuna huduma kwa wateja inayoweza kurejesha uwezo wa kufikia mali zako. Unatambua na kukubali hatari hii.",
+    "terms.blocks.35.text": "4.3 Urejeshaji wa Funguo za Pochi",
+    "terms.blocks.36.spans": "Ukipoteza kifaa chako na hifadhi zote za urejeshaji au nywila zake, Provian haiwezi kuunda upya funguo za pochi yako. Hakuna uwekaji upya wa nenosiri kwa funguo hizo. Kwa PVT pekee, mamlaka ya kurejesha, inayoshikiliwa na ufunguo wa Provian hadi Mahakama ifunguliwe, inaweza kurudisha PVT zilizoibiwa chini ya kanuni iliyochapishwa pamoja na uthibitisho wa urejeshaji unaohitajika kutoka kwa mmiliki. Kila matumizi ya mamlaka hiyo ni ya umma. Sehemu ya 20A inasimamia urejeshaji; hauchukui nafasi ya taarifa za urejeshaji zilizopotea wala kurejesha mali nyingine.",
     "terms.blocks.37.text": "5. Bahasha za Asili na PVT",
     "terms.blocks.38.text": "5.1 Bahasha za Asili",
     "terms.blocks.39.spans": "Provenance Envelopes (PEs) ni uthibitisho wa kifikra (cryptographic proof) unaozalishwa unapotumia Provian. PEs zinaweza kuundwa kwa ajili ya miamala ya pochi, shughuli za ahadi, vitendo vya wakala, na michango mingine. PE ni uthibitisho unaomilikiwa na mchangiaji wake.",

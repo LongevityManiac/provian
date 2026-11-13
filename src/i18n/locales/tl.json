@@ -866,7 +866,7 @@
       "losePhone": "Paano kung mawala ang aking phone?",
       "losePhoneA": "Ibalik ang iyong naka-encrypt na cloud backup sa pamamagitan ng pag-sign in sa parehong iCloud o Google account sa bagong device at pagpasok ng iyong backup password. Bilang kahalili, ibalik ito gamit ang labindalawang salitang parirala sa pagbawi na isinulat mo noong nag-setup o na-export mula sa Mga Setting. Hindi maaaring i-reset Provian ang backup password o mabawi ang isang nawawalang parirala. Kung mawala mo ang device at ang parehong paraan ng pagbawi, hindi na mababawi ang wallet.",
       "canProvianAccessFunds": "Maa-access ba ng Provian ang aking mga pondo?",
-      "canProvianAccessFundsA": "Hindi sa sarili mong wallet. Non-custodial ang Provian: hindi namin kailanman nakikita ang iyong mga private key at hindi namin maililipat ang iyong pondo. Kung ide-delete mo ang iyong backup at mawala ang iyong device, hindi namin mare-recover ang iyong wallet. Ang perang inilagay mo sa escrow ng Commons ay nasa kontratang iyon. Hanggang magbukas ang Commons Court, admin key ng Provian ang lumulutas sa pinagtatalunang escrow at nagbabayad lamang sa tatanggap o nagre-refund sa nagdeposito; kahit sino ay maaaring magpasimula ng refund sa nagdeposito pagkatapos ng 30-araw na palugit ng alitan.",
+      "canProvianAccessFundsA": "Hindi kailanman hawak ng Provian ang mga key ng iyong wallet at hindi ito makagagastos mula sa iyong wallet. Para lamang sa PVT, ang kapangyarihang magpanumbalik, na hawak ng key ng Provian hanggang magbukas ang Court, ay maaaring magbalik ng ninakaw na PVT ayon sa inilathalang tuntunin at sa kinakailangang patunay ng recovery mula sa may-ari. Pampubliko ang bawat paggamit nito. Ang perang inilagay mo sa escrow ng Commons ay nasa kontratang iyon. Hanggang magbukas ang Commons Court, admin key ng Provian ang lumulutas sa pinagtatalunang escrow at nagbabayad lamang sa tatanggap o nagre-refund sa nagdeposito; kahit sino ay maaaring magpasimula ng refund sa nagdeposito pagkatapos ng 30-araw na palugit ng alitan.",
       "whatAboutQuantum": "Paano ang quantum computing?",
       "whatAboutQuantumA": "Itinatala ng pag-uugnay kung sino ang may-ari ng bawat address at pareho nitong sinusubaybayan ang kinita at natanggap na PVT; hindi nito binubuo muli ang pagmamay-ari mula sa kita. Ang hiwalay na hash recovery commitment ay nagmumula sa seed backup ng tao o sa malayang binuo at naka-encrypt na recovery material ng agent. Kapag nasira ang kriptograpiya ng wallet, maaaring ibalik nang libre ng bawat nakaugnay na may-ari ang nakarehistrong balanse sa huling ligtas na block, gamit ang recovery preimage at hiwalay na hash signature para sa bagong destinasyon. Dinadala ng kahalili ang kasaysayan ng pera at pinipigilan ang dobleng pagpapanumbalik. Hindi binubuo muli ang hindi nakaugnay na pagmamay-ari, at nananatili sa tala ang mga paglilipat sa lumang chain. PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang.",
       "howProtectRisky": "Paano pinoprotektahan ng Provian ang aking mga mapanganib na transaksyon?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "Kung manakaw ang PVT mo, maaari itong maibalik ng Recourse Pool.",
+    "intro": "Ang ninakaw na PVT na hawak pa ng kumuha nito ay ibinabalik sa pamamagitan ng pagbawi sa transfer. Ibinabalik ng Recourse Pool ang natitira mula lamang sa PVT na hawak nito, hindi kailanman higit doon.",
     "error": "Hindi makumpirma ang pinakabagong kalagayan o makumpleto ang aksiyon. I-refresh upang suriin ang chain bago subukang muli.",
     "refresh": "I-refresh",
     "membership": "Pagiging miyembro ng Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Ipakita ang mas lumang transfer",
       "review": "Iulat ang transfer na ito",
       "confirm": "Hindi ko pinahintulutan ang transfer na ito ng {{amount}} PVT.",
-      "recovery": "Magkakaroon ng bagong address ang wallet mo. Susuriin ng Provian ang pagnanakaw, susubukang ibalik ang ninakaw na PVT, at magpapasya kung ano ang maibabalik ng pool."
+      "recovery": "Magkakaroon ng bagong address ang iyong wallet. Ang ninakaw na PVT na hawak pa ng kumuha nito ay ibinabalik sa pamamagitan ng pagbawi sa transfer. Ibinabalik ng Recourse Pool ang natitira mula lamang sa PVT na hawak nito, hindi kailanman higit doon. Ang resulta ay isang pagpapasya ayon sa inilathalang tuntunin. Hindi partido rito ang Provian Technologies."
     },
     "lapsed": "Natapos na ang proteksiyon",
     "graceSummary": "Isang buwang palugit; para muling sumali, kumpletuhin lang ang natitirang pagsunog at ambag para sa mga buwang protektado.",
     "reportTheft": "Mag-ulat ng pagnanakaw",
     "closeReport": "Isara",
-    "afterReport": "Naipadala na ang ulat mo. May kapalit na address ang wallet mo. Susuriin ng Provian ang pagnanakaw, susubukang ibalik ang ninakaw na PVT, at magpapasya kung ano ang maibabalik ng pool. Tingnan ang Mga kahilingan mo para sa progreso.",
+    "afterReport": "Naipadala na ang iyong ulat. May kapalit nang address ang iyong wallet. Ang resulta ay isang pagpapasya ayon sa inilathalang tuntunin. Hindi partido rito ang Provian Technologies. Tingnan ang Iyong mga kahilingan para sa progreso.",
     "emptyRequests": "Wala kang ulat ng pagnanakaw.",
     "emptyWallets": "Wala pang naidagdag na wallet.",
     "finePrint": "Mga detalyadong tuntunin",

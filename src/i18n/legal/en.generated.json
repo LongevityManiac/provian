@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Provian Terms of Service",
-    "terms.lastUpdated": "November 9, 2026",
+    "terms.lastUpdated": "November 13, 2026",
     "terms.footer": "These Terms of Service are effective as of July 16, 2026.",
     "terms.blocks.0.spans": "IMPORTANT: PLEASE READ THESE TERMS CAREFULLY. BY USING PROVIAN, YOU AGREE TO BE BOUND BY THESE TERMS. IF YOU DO NOT AGREE, DO NOT USE THIS APPLICATION.",
     "terms.blocks.1.text": "Plain English Summary",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Safeguarding any exported recovery phrase (if you choose to export one)",
     "terms.blocks.34.items.3": "Safeguarding your device and biometric credentials",
     "terms.blocks.34.items.4": "Understanding that losing access to your cloud account AND your backup password AND any exported recovery phrase means permanent loss of wallet access",
-    "terms.blocks.35.text": "4.3 No Recovery by Provian",
-    "terms.blocks.36.spans": "IF YOU LOSE ACCESS TO YOUR APPLE/GOOGLE ACCOUNT AND YOUR BACKUP PASSWORD, AND HAVE NOT EXPORTED A RECOVERY PHRASE, PROVIAN CANNOT RECOVER YOUR FUNDS. THERE IS NO \"FORGOT PASSWORD\" OPTION. THERE IS NO CUSTOMER SUPPORT THAT CAN RESTORE ACCESS TO YOUR ASSETS. YOU ACKNOWLEDGE AND ACCEPT THIS RISK.",
+    "terms.blocks.35.text": "4.3 Wallet-Key Recovery",
+    "terms.blocks.36.spans": "If you lose your device and all recovery backups or their passwords, Provian cannot reconstruct your wallet keys. There is no password reset for those keys. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Section 20A governs restoration; it does not replace missing recovery material or restore other assets.",
     "terms.blocks.37.text": "5. Provenance Envelopes and PVT",
     "terms.blocks.38.text": "5.1 Provenance Envelopes",
     "terms.blocks.39.spans": "Provenance Envelopes (PEs) are cryptographic proof generated when you use Provian. PEs may be created for wallet transactions, promise activity, agent actions, and other contributions. A PE is proof its contributor owns.",

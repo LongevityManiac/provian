@@ -866,7 +866,7 @@
       "losePhone": "E se eu perder meu celular?",
       "losePhoneA": "Restaure seu backup criptografado na nuvem fazendo login na mesma conta do iCloud ou do Google no novo dispositivo e inserindo sua senha de backup. Como alternativa, restaure usando a frase de recuperação de doze palavras que você anotou durante a configuração ou exportou das Configurações. Provian não pode redefinir a senha de backup nem recuperar uma frase perdida. Se você perder o dispositivo e ambos os métodos de recuperação, a carteira não poderá ser recuperada.",
       "canProvianAccessFunds": "Provian pode acessar meus fundos?",
-      "canProvianAccessFundsA": "Não na sua própria carteira. A Provian é não custodial: nunca vemos suas chaves privadas e não podemos mover seus fundos. Se você excluir seu backup e perder seu dispositivo, não podemos recuperar sua carteira. O dinheiro que você coloca em um Escrow do Commons fica nesse contrato. Até o Tribunal do Commons abrir, a chave administradora da Provian resolve Escrows disputados e só paga ao destinatário ou devolve ao depositante; qualquer pessoa pode acionar a devolução ao depositante após o prazo de disputa de 30 dias.",
+      "canProvianAccessFundsA": "A Provian nunca guarda as chaves da sua carteira e não pode gastar a partir dela. Apenas para PVT, a autoridade de restauração, exercida pela chave da Provian até o Tribunal abrir, pode devolver PVT roubados segundo a regra publicada, com a prova de recuperação exigida do proprietário. Cada uso é público. O dinheiro que você coloca em um Escrow do Commons fica nesse contrato. Até o Tribunal do Commons abrir, a chave administradora da Provian resolve Escrows disputados e só paga ao destinatário ou devolve ao depositante; qualquer pessoa pode acionar a devolução ao depositante após o prazo de disputa de 30 dias.",
       "whatAboutQuantum": "E a computação quântica?",
       "whatAboutQuantumA": "A vinculação registra quem possui cada endereço e acompanha igualmente os PVT ganhos e recebidos; não reconstrói a propriedade a partir dos ganhos. Um compromisso de recuperação por hash separado deriva do backup da seed de uma pessoa ou do material de recuperação de um agente, gerado de forma independente e criptografado. Se a criptografia das carteiras falhar, todo proprietário vinculado poderá restaurar gratuitamente os saldos registrados no último bloco seguro, usando a pré-imagem de recuperação e uma assinatura hash independente para o novo destino. Um sucessor preserva o histórico monetário e impede restaurações duplicadas. A propriedade não vinculada não é reconstruída, e as transferências da cadeia anterior permanecem no registro. O registro de propriedade, a restauração gratuita após uma quebra da criptografia e a participação no Recourse Pool abrangem apenas PVT. Ether, dólares e outros tokens em um endereço vinculado não são registrados nem restaurados por esses mecanismos e continuam protegidos apenas pela chave.",
       "howProtectRisky": "Como Provian me protege de transações arriscadas?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "Se seus PVT forem roubados, o Fundo de Recourse pode restaurá-los.",
+    "intro": "Os PVT roubados que ainda estiverem com quem os levou são devolvidos por reversão. O Fundo de Recurso restaura o restante com o que possui, nunca mais.",
     "error": "Não foi possível confirmar o estado mais recente ou concluir a ação. Atualize para verificar a rede antes de tentar novamente.",
     "refresh": "Atualizar",
     "membership": "Adesão ao Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Mostrar transferências anteriores",
       "review": "Informar esta transferência",
       "confirm": "Não autorizei esta transferência de {{amount}} PVT.",
-      "recovery": "Sua carteira terá um novo endereço. A Provian analisará o roubo, tentará devolver os PVT roubados e decidirá o que o fundo pode restaurar."
+      "recovery": "Sua carteira receberá um novo endereço. Os PVT roubados que ainda estiverem com quem os levou são devolvidos por reversão. O Fundo de Recurso restaura o restante com o que possui, nunca mais. O resultado é uma determinação segundo a regra publicada. A Provian Technologies não é parte desse acordo."
     },
     "lapsed": "Proteção encerrada",
     "graceSummary": "Um mês de carência; para voltar, complete as queimas e contribuições pendentes apenas dos meses protegidos.",
     "reportTheft": "Informar um roubo",
     "closeReport": "Fechar",
-    "afterReport": "Seu relato foi enviado. Sua carteira tem um endereço substituto. A Provian analisará o roubo, tentará devolver os PVT roubados e decidirá o que o fundo pode restaurar. Acompanhe em Suas solicitações.",
+    "afterReport": "Sua denúncia foi enviada. Sua carteira tem um endereço substituto. O resultado é uma determinação segundo a regra publicada. A Provian Technologies não é parte desse acordo. Consulte Suas solicitações para acompanhar o progresso.",
     "emptyRequests": "Você não tem relatos de roubo.",
     "emptyWallets": "Nenhuma carteira adicionada ainda.",
     "finePrint": "Detalhes e condições",

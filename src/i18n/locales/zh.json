@@ -867,7 +867,7 @@
       "losePhone": "如果我丢了手机怎么办？",
       "losePhoneA": "要恢复加密的云备份，请在新设备上登录相同的 iCloud 或 Google 帐户，并输入备份密码。或者，您也可以使用设置过程中记下的或从“设置”中导出的十二个单词的恢复短语进行恢复。Provian 无法重置备份密码或恢复丢失的短语。如果您丢失了设备且两种恢复方法均失效， Provian钱包将无法恢复。",
       "canProvianAccessFunds": "Provian 能访问我的资金吗？",
-      "canProvianAccessFundsA": "你自己的钱包不能。Provian 是非托管的：我们永远看不到你的私钥，也无法转移你的资金。如果你删除了备份并丢失了设备，我们无法恢复你的钱包。你放入 Commons Escrow 的钱存在于该合约中。在 Commons Court 开放之前，Provian 的管理员密钥负责解决有争议的 Escrow，只能付给收款人或退还给付款人；30 天争议期限过后，任何人都可以触发向付款人的退款。",
+      "canProvianAccessFundsA": "Provian 从不保管你的钱包密钥，也不能从你的钱包中支出资金。 仅限 PVT：在 Court 开放前由 Provian 的密钥持有的恢复权限，可依据已公布的规则和所有者必须提供的恢复证明，返还被盗 PVT。每次使用该权限都公开记录。 你放入 Commons Escrow 的钱存在于该合约中。在 Commons Court 开放之前，Provian 的管理员密钥负责解决有争议的 Escrow，只能付给收款人或退还给付款人；30 天争议期限过后，任何人都可以触发向付款人的退款。",
       "whatAboutQuantum": "量子计算怎么办？",
       "whatAboutQuantumA": "绑定会记录每个地址的所有者，并同样追踪通过工作获得和接收的 PVT；不会根据收益重建所有权。独立的哈希恢复承诺源于个人的种子备份，或代理独立生成并加密的恢复材料。如果钱包密码学被破解，每个已绑定的所有者都可以使用恢复原像及指定新目标地址的独立哈希签名，免费恢复最后一个安全区块上登记的余额。后继系统延续货币历史并防止重复恢复。未绑定的所有权不会被重建，旧链上的转账仍保留在记录中。 所有权记录、密码学遭破解后的免费恢复以及 Recourse Pool 成员资格仅涵盖 PVT。绑定地址中的以太币、美元和其他代币不会通过这些机制被记录或恢复，仍仅由密钥保护。",
       "howProtectRisky": "Provian 如何保护我免受高风险交易的侵害？",
@@ -5097,7 +5097,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "如果你的 PVT 被盗，Recourse 资金池可以帮助恢复。",
+    "intro": "被盗 PVT 中仍由盗取者持有的部分，会通过撤销转账返还。Recourse Pool 用其持有的 PVT 恢复剩余部分，绝不超过其持有量。",
     "error": "无法确认最新状态或完成操作。请刷新并检查链上状态后重试。",
     "refresh": "刷新",
     "membership": "Recourse Pool 成员资格",
@@ -5247,13 +5247,13 @@
       "older": "显示更早的转账",
       "review": "报告这笔转账",
       "confirm": "我未授权这笔{{amount}} PVT转账。",
-      "recovery": "你的钱包将获得新地址。Provian 会审查盗窃情况，尝试返还被盗 PVT，并决定资金池可恢复的部分。"
+      "recovery": "你的钱包将获得一个新地址。 被盗 PVT 中仍由盗取者持有的部分，会通过撤销转账返还。Recourse Pool 用其持有的 PVT 恢复剩余部分，绝不超过其持有量。 结果是依据已公布规则作出的裁定。Provian Technologies 不是该安排的一方。"
     },
     "lapsed": "保障已失效",
     "graceSummary": "宽限期为一个月；重新加入前，只需补齐受保障月份未完成的销毁和贡献。",
     "reportTheft": "报告盗窃",
     "closeReport": "关闭",
-    "afterReport": "报告已发送。你的钱包已有替换地址。Provian 将审查盗窃情况，尝试返还被盗 PVT，并决定资金池可恢复的部分。请在“你的申请”中查看进展。",
+    "afterReport": "你的报告已发送。你的钱包已有替代地址。 结果是依据已公布规则作出的裁定。Provian Technologies 不是该安排的一方。 请在“你的请求”中查看进展。",
     "emptyRequests": "你尚无盗窃报告。",
     "emptyWallets": "尚未添加钱包。",
     "finePrint": "详细条款",

@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Conditions d'utilisation de Provian",
-    "terms.lastUpdated": "9 novembre 2026",
+    "terms.lastUpdated": "13 novembre 2026",
     "terms.footer": "Les présentes conditions d'utilisation entrent en vigueur le 16 juillet 2026.",
     "terms.blocks.0.spans": "IMPORTANT : VEUILLEZ LIRE ATTENTIVEMENT CES CONDITIONS. EN UTILISANT PROVIAN, VOUS ACCEPTEZ D'ÊTRE LIÉ PAR CES CONDITIONS. SI VOUS N'ÊTES PAS D'ACCORD, N'UTILISEZ PAS CETTE APPLICATION.",
     "terms.blocks.1.text": "Résumé en langage clair",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Sécurisation de toute phrase de récupération exportée (si vous choisissez d'en exporter une)",
     "terms.blocks.34.items.3": "Protection de votre appareil et de vos données d'identification biométriques",
     "terms.blocks.34.items.4": "Comprendre que perdre l'accès à votre compte cloud, à votre mot de passe de sauvegarde et à toute phrase de récupération exportée entraîne la perte définitive de l'accès au portefeuille.",
-    "terms.blocks.35.text": "4.3 Absence de recouvrement par Provian",
-    "terms.blocks.36.spans": "Si vous perdez l'accès à votre compte Apple/Google ainsi qu'à votre mot de passe de secours, et que vous n'avez pas exporté de phrase de récupération, Provian ne pourra pas récupérer vos fonds. Il n'existe aucune option « mot de passe oublié ». Aucun service client ne peut rétablir l'accès à vos actifs. Vous reconnaissez et acceptez ce risque.",
+    "terms.blocks.35.text": "4.3 Récupération des clés du portefeuille",
+    "terms.blocks.36.spans": "Si vous perdez votre appareil et toutes vos sauvegardes de récupération ou leurs mots de passe, Provian ne peut pas reconstituer les clés de votre portefeuille. Aucun mot de passe ne permet de réinitialiser ces clés. Pour les PVT uniquement, l’autorité de restitution, exercée avec la clé de Provian jusqu’à l’ouverture du Tribunal, peut rendre les PVT volés selon la règle publiée, avec la preuve de récupération exigée du propriétaire. Chaque utilisation est publique. La section 20A régit la restitution ; celle-ci ne remplace pas les éléments de récupération perdus et ne restitue pas les autres actifs.",
     "terms.blocks.37.text": "5. Enveloppes de provenance et PVT",
     "terms.blocks.38.text": "5.1 Enveloppes de provenance",
     "terms.blocks.39.spans": "Les « Provenance Envelopes » (PE) sont des preuves cryptographiques générées lorsque vous utilisez Provian. Des PE peuvent être créées pour des transactions de portefeuille, des activités liées à des promesses, des actions d'agents et d'autres contributions. Une PE est une preuve dont son contributeur est propriétaire.",

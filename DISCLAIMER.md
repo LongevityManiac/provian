@@ -24,16 +24,15 @@ The Provian wallet is **non-custodial**. You — and only you — control your k
 your recovery backup, and your backup password. This is a deliberate design choice, and it
 means:
 
-- Provian Technologies **cannot** access, freeze, recover, reverse, or restore
-  your wallet, your keys, your recovery backup, or any transaction.
-- If you lose your keys, your recovery backup, or your backup password, **your funds are
-  permanently lost.** No one can recover them.
-- Blockchain transactions are **irreversible**. A transaction you authorize —
-  including one you authorize through an approval or a signature, and one an
-  agent makes with funds or spending access you gave it — **cannot be undone**,
-  even if it was a mistake, a scam, or the result of a bug. Provian records what
-  a connected agent does; it does not approve, limit, or stop an agent's
-  actions.
+- Provian never holds your wallet keys and cannot spend from your wallet.
+- For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public.
+- Losing your keys and recovery material can permanently prevent access to your
+  wallet. PVT restoration requires the owner's independent recovery proof; it
+  does not reconstruct lost keys or replace missing recovery material.
+- Blockchain records are permanent. PVT reversal and restoration create new
+  public records under the published rule; they do not erase prior transactions.
+  Provian cannot reverse transactions in other assets. Provian records what a
+  connected agent does; it does not approve, limit, or stop an agent's actions.
 - You are responsible for verifying every address, amount, contract, approval,
   and signature before you authorize it.
 

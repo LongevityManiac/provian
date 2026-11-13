@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Provian 서비스 이용약관",
-    "terms.lastUpdated": "2026년 11월 9일",
+    "terms.lastUpdated": "2026년 11월 13일",
     "terms.footer": "본 서비스 이용약관은 2026년 7월 16일부터 시행됩니다.",
     "terms.blocks.0.spans": "중요: 본 약관을 주의 깊게 읽어 주십시오. PROVIAN을 사용함으로써 귀하는 본 약관에 구속되는 것에 동의하게 됩니다. 동의하지 않으시는 경우, 본 애플리케이션을 사용하지 마십시오.",
     "terms.blocks.1.text": "쉬운 영어 요약",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "내보낸 복구 문구(내보내기를 선택한 경우)를 안전하게 보관하기",
     "terms.blocks.34.items.3": "기기 및 생체 인식 정보 보호",
     "terms.blocks.34.items.4": "클라우드 계정, 백업 비밀번호, 그리고 내보낸 복구 문구에 대한 접근 권한을 모두 잃을 경우 지갑에 영구적으로 접근할 수 없게 된다는 점을 이해함",
-    "terms.blocks.35.text": "4.3 Provian에 의한 회수 불가",
-    "terms.blocks.36.spans": "Apple/Google 계정 및 백업 비밀번호에 대한 접근 권한을 잃어버리고 복구 문구(recovery phrase)를 별도로 내보내지 않은 경우, Provian은 귀하의 자금을 복구할 수 없습니다. '비밀번호 찾기' 기능은 제공되지 않으며, 자산에 대한 접근 권한을 복구해 줄 수 있는 고객 지원 서비스도 없습니다. 귀하는 이러한 위험을 인지하고 수용합니다.",
+    "terms.blocks.35.text": "4.3 지갑 키 복구",
+    "terms.blocks.36.spans": "기기와 모든 복구 백업 또는 그 비밀번호를 잃으면 Provian은 지갑 키를 재구성할 수 없습니다. 해당 키에는 비밀번호 재설정 기능이 없습니다. PVT에 한해, Court가 열릴 때까지 Provian의 키가 보유하는 복원 권한으로 공개된 규칙과 소유자에게 요구되는 복구 증명에 따라 도난당한 PVT를 돌려줄 수 있습니다. 권한의 모든 사용은 공개됩니다. 복원에는 제20A조가 적용됩니다. 복원은 분실한 복구 자료를 대체하거나 다른 자산을 복원하지 않습니다.",
     "terms.blocks.37.text": "5. 기원 범위(Provenance Envelopes) 및 PVT",
     "terms.blocks.38.text": "5.1 출처 봉투",
     "terms.blocks.39.spans": "Provenance Envelope(PE)는 Provian을 사용할 때 생성되는 암호학적 증명입니다. PE는 지갑 거래, 약속(promise) 활동, 에이전트의 행동 및 기타 기여 활동에 대해 생성될 수 있습니다. PE는 해당 기여자(contributor)가 소유하는 증명입니다.",

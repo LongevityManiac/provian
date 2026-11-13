@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Mga Tuntunin ng Serbisyo ng Provian",
-    "terms.lastUpdated": "Nobyembre 9, 2026",
+    "terms.lastUpdated": "Nobyembre 13, 2026",
     "terms.footer": "Ang mga Tuntunin ng Serbisyo na ito ay magkakabisa simula sa Hulyo 16, 2026.",
     "terms.blocks.0.spans": "MAHALAGA: PAKIBASA NANG MABUTI ANG MGA TUNTUNING ITO. Sa paggamit ng Provian, sumasang-ayon kang sumunod sa mga tuntuning ito. Kung hindi ka sumasang-ayon, huwag gamitin ang application na ito.",
     "terms.blocks.1.text": "Buod sa Simpleng Pananalita",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Pagpapanatiling ligtas sa anumang na-export na recovery phrase (kung pipiliin mong mag-export nito)",
     "terms.blocks.34.items.3": "Pagprotekta sa iyong device at mga biometric credential",
     "terms.blocks.34.items.4": "Pag-unawa na ang pagkawala ng access sa iyong cloud account, pati na rin sa iyong backup password at anumang na-export na recovery phrase, ay nangangahulugan ng permanenteng pagkawala ng access sa iyong wallet.",
-    "terms.blocks.35.text": "4.3 Walang Mababawi ang Provian",
-    "terms.blocks.36.spans": "Kung mawawalan ka ng access sa iyong Apple/Google account at sa iyong backup password, at hindi ka nakapag-export ng recovery phrase, hindi na mababawi ng Provian ang iyong mga pondo. Walang opsyon para sa \"forgot password.\" Walang customer support na makakapagbalik ng access sa iyong mga asset. Kinikilala at tinatanggap mo ang panganib na ito.",
+    "terms.blocks.35.text": "4.3 Pag-recover ng mga Key ng Wallet",
+    "terms.blocks.36.spans": "Kung mawala ang iyong device at lahat ng recovery backup o ang mga password ng mga ito, hindi mabubuo muli ng Provian ang mga key ng iyong wallet. Walang password reset para sa mga key na iyon. Para lamang sa PVT, ang kapangyarihang magpanumbalik, na hawak ng key ng Provian hanggang magbukas ang Court, ay maaaring magbalik ng ninakaw na PVT ayon sa inilathalang tuntunin at sa kinakailangang patunay ng recovery mula sa may-ari. Pampubliko ang bawat paggamit nito. Saklaw ng Seksyon 20A ang pagpapanumbalik; hindi nito pinapalitan ang nawawalang recovery material o ibinabalik ang ibang asset.",
     "terms.blocks.37.text": "5. Mga Provenance Envelope at PVT",
     "terms.blocks.38.text": "5.1 Mga Sobre ng Pinagmulan",
     "terms.blocks.39.spans": "Ang mga Provenance Envelope (PE) ay mga cryptographic proof na nabubuo kapag ginagamit mo ang Provian. Maaaring gumawa ng mga PE para sa mga transaksyon sa wallet, aktibidad na may kaugnayan sa pangako (promise activity), mga aksyon ng agent, at iba pang mga kontribusyon. Ang PE ay isang patunay na pag-aari ng nag-ambag nito.",

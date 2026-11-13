@@ -866,7 +866,7 @@
       "losePhone": "Nếu tôi mất điện thoại thì sao?",
       "losePhoneA": "Khôi phục bản sao lưu đám mây đã mã hóa bằng cách đăng nhập vào cùng tài khoản iCloud hoặc Google trên thiết bị mới và nhập mật khẩu sao lưu của bạn. Ngoài ra, bạn cũng có thể khôi phục bằng cụm từ khôi phục gồm mười hai từ mà bạn đã ghi lại trong quá trình thiết lập hoặc xuất từ ​​Cài đặt. Provian không thể đặt lại mật khẩu sao lưu hoặc khôi phục cụm từ đã mất. Nếu bạn mất thiết bị và cả hai phương pháp khôi phục, ví điện tử sẽ không thể được khôi phục.",
       "canProvianAccessFunds": "Provian có thể truy cập tiền của tôi không?",
-      "canProvianAccessFundsA": "Không phải trong ví của chính bạn. Provian không giữ hộ: chúng tôi không bao giờ nhìn thấy khóa riêng của bạn và không thể di chuyển tiền của bạn. Nếu bạn xóa sao lưu và mất thiết bị, chúng tôi không thể khôi phục ví của bạn. Tiền bạn đưa vào một Escrow của Commons nằm trong hợp đồng đó. Cho đến khi Tòa của Commons mở, khóa quản trị của Provian giải quyết Escrow tranh chấp và chỉ trả cho người nhận hoặc hoàn cho người gửi; bất kỳ ai cũng có thể kích hoạt hoàn cho người gửi sau thời hạn tranh chấp 30 ngày.",
+      "canProvianAccessFundsA": "Provian không bao giờ giữ khóa ví của bạn và không thể chi tiêu từ ví của bạn. Chỉ đối với PVT, quyền khôi phục, do khóa của Provian nắm giữ cho đến khi Tòa mở, có thể trả lại PVT bị đánh cắp theo quy tắc đã công bố và bằng chứng khôi phục bắt buộc của chủ sở hữu. Mọi lần sử dụng quyền này đều công khai. Tiền bạn đưa vào một Escrow của Commons nằm trong hợp đồng đó. Cho đến khi Tòa của Commons mở, khóa quản trị của Provian giải quyết Escrow tranh chấp và chỉ trả cho người nhận hoặc hoàn cho người gửi; bất kỳ ai cũng có thể kích hoạt hoàn cho người gửi sau thời hạn tranh chấp 30 ngày.",
       "whatAboutQuantum": "Còn điện toán lượng tử thì sao?",
       "whatAboutQuantumA": "Việc liên kết ghi nhận chủ sở hữu từng địa chỉ và theo dõi như nhau PVT kiếm được và nhận được; không tái dựng quyền sở hữu từ thu nhập. Cam kết khôi phục bằng hàm băm riêng biệt được tạo từ bản sao lưu seed của người dùng hoặc từ dữ liệu khôi phục của tác nhân được tạo độc lập và mã hóa. Nếu mật mã ví bị phá vỡ, mọi chủ sở hữu đã liên kết có thể khôi phục miễn phí số dư đã đăng ký tại khối an toàn cuối cùng, bằng giá trị gốc khôi phục và chữ ký hàm băm độc lập cho địa chỉ đích mới. Hệ thống kế nhiệm giữ lịch sử tiền tệ và ngăn khôi phục trùng lặp. Quyền sở hữu chưa liên kết không được tái dựng, và các giao dịch chuyển trên chuỗi cũ vẫn nằm trong bản ghi. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
       "howProtectRisky": "Provian bảo vệ tôi khỏi giao dịch rủi ro như thế nào?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "Nếu PVT của bạn bị đánh cắp, Quỹ Recourse có thể khôi phục chúng.",
+    "intro": "PVT bị đánh cắp mà người lấy vẫn còn giữ sẽ được trả lại bằng cách đảo ngược giao dịch chuyển. Quỹ Recourse khôi phục phần còn lại từ PVT quỹ đang có, không bao giờ vượt quá số đó.",
     "error": "Chưa thể xác nhận trạng thái mới nhất hoặc hoàn tất thao tác. Hãy làm mới để kiểm tra chuỗi trước khi thử lại.",
     "refresh": "Làm mới",
     "membership": "Tư cách thành viên Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Hiện giao dịch cũ hơn",
       "review": "Báo cáo giao dịch này",
       "confirm": "Tôi không cho phép giao dịch chuyển {{amount}} PVT này.",
-      "recovery": "Ví của bạn sẽ có địa chỉ mới. Provian sẽ xem xét vụ mất cắp, cố gắng trả lại PVT bị đánh cắp và quyết định phần quỹ có thể khôi phục."
+      "recovery": "Ví của bạn sẽ có địa chỉ mới. PVT bị đánh cắp mà người lấy vẫn còn giữ sẽ được trả lại bằng cách đảo ngược giao dịch chuyển. Quỹ Recourse khôi phục phần còn lại từ PVT quỹ đang có, không bao giờ vượt quá số đó. Kết quả là một quyết định theo quy tắc đã công bố. Provian Technologies không phải là một bên của thỏa thuận này."
     },
     "lapsed": "Đã hết bảo vệ",
     "graceSummary": "Gia hạn một tháng; để tham gia lại, chỉ cần hoàn tất phần đốt và đóng góp còn thiếu của các tháng được bảo vệ.",
     "reportTheft": "Báo cáo mất cắp",
     "closeReport": "Đóng",
-    "afterReport": "Báo cáo đã được gửi. Ví của bạn có địa chỉ thay thế. Provian sẽ xem xét vụ mất cắp, cố gắng trả lại PVT bị đánh cắp và quyết định phần quỹ có thể khôi phục. Theo dõi trong Yêu cầu của bạn.",
+    "afterReport": "Báo cáo của bạn đã được gửi. Ví của bạn đã có địa chỉ thay thế. Kết quả là một quyết định theo quy tắc đã công bố. Provian Technologies không phải là một bên của thỏa thuận này. Xem Yêu cầu của bạn để theo dõi tiến độ.",
     "emptyRequests": "Bạn chưa có báo cáo mất cắp.",
     "emptyWallets": "Chưa có ví nào được thêm.",
     "finePrint": "Điều khoản chi tiết",

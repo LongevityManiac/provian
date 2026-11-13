@@ -594,7 +594,6 @@ Provian integration preserves:
 - institutional participation
 - coordination history
 - risk data for bonds
-- Insurance is not open.
 
 The intelligence economy requires an attribution layer.
 

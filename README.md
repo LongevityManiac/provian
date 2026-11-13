@@ -12,9 +12,10 @@
 
 > ⚠️ **No warranty. Use at your own risk.** Provian is a non-custodial,
 > self-custody wallet, provided **"AS IS", with no warranty and no liability**.
-> You alone hold your keys: lost keys, lost backups, and authorized
-> transactions **cannot be recovered or reversed**, and **loss of funds is
-> possible**. Provian Technologies is not liable for any loss of funds or other
+> Provian never holds your wallet keys and cannot spend from your wallet.
+> For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public.
+> Losing your keys and recovery material can permanently prevent wallet access.
+> **Loss of funds is possible**. Provian Technologies is not liable for any loss of funds or other
 > damages. The wallet (`src/`) and the Commons (`provian-commons/`) are
 > **proprietary** (all rights reserved, no redistribution); the Provenance
 > Envelope protocol, SDKs, and CLI are open source. **Read [`DISCLAIMER.md`](DISCLAIMER.md)

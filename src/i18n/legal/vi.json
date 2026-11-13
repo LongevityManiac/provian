@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Điều khoản Dịch vụ của Provian",
-    "terms.lastUpdated": "Ngày 9 tháng 11 năm 2026",
+    "terms.lastUpdated": "13 tháng 11 năm 2026",
     "terms.footer": "Các Điều khoản Dịch vụ này có hiệu lực kể từ ngày 16 tháng 7 năm 2026.",
     "terms.blocks.0.spans": "QUAN TRỌNG: VUI LÒNG ĐỌC KỸ CÁC ĐIỀU KHOẢN NÀY. BẰNG VIỆC SỬ DỤNG PROVIAN, BẠN ĐỒNG Ý CHỊU SỰ RÀNG BUỘC BỞI CÁC ĐIỀU KHOẢN NÀY. NẾU BẠN KHÔNG ĐỒNG Ý, VUI LÒNG KHÔNG SỬ DỤNG ỨNG DỤNG NÀY.",
     "terms.blocks.1.text": "Tóm tắt bằng ngôn ngữ dễ hiểu",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "Bảo vệ bất kỳ cụm từ khôi phục nào đã được xuất (nếu bạn chọn xuất cụm từ này)",
     "terms.blocks.34.items.3": "Bảo vệ thiết bị và thông tin xác thực sinh trắc học của bạn",
     "terms.blocks.34.items.4": "Hiểu rằng việc mất quyền truy cập vào tài khoản đám mây, mật khẩu sao lưu và bất kỳ cụm từ khôi phục nào đã được xuất ra đồng nghĩa với việc mất vĩnh viễn quyền truy cập vào ví.",
-    "terms.blocks.35.text": "4.3 Provian không thu hồi được khoản tiền nào",
-    "terms.blocks.36.spans": "Nếu bạn mất quyền truy cập vào tài khoản Apple/Google và mật khẩu dự phòng, đồng thời chưa xuất cụm từ khôi phục, Provian sẽ không thể khôi phục lại số tiền của bạn. Hệ thống không có tùy chọn \"Quên mật khẩu\". Không có bộ phận hỗ trợ khách hàng nào có thể khôi phục quyền truy cập vào tài sản của bạn. Bạn xác nhận và chấp nhận rủi ro này.",
+    "terms.blocks.35.text": "4.3 Khôi phục khóa ví",
+    "terms.blocks.36.spans": "Nếu bạn mất thiết bị và mọi bản sao lưu khôi phục hoặc mật khẩu của chúng, Provian không thể tạo lại khóa ví của bạn. Không có chức năng đặt lại mật khẩu cho những khóa đó. Chỉ đối với PVT, quyền khôi phục, do khóa của Provian nắm giữ cho đến khi Tòa mở, có thể trả lại PVT bị đánh cắp theo quy tắc đã công bố và bằng chứng khôi phục bắt buộc của chủ sở hữu. Mọi lần sử dụng quyền này đều công khai. Việc khôi phục tuân theo Mục 20A; nó không thay thế dữ liệu khôi phục bị mất hoặc khôi phục các tài sản khác.",
     "terms.blocks.37.text": "5. Các đường bao nguồn gốc và PVT",
     "terms.blocks.38.text": "5.1 Phong bì ghi thông tin nguồn gốc",
     "terms.blocks.39.spans": "Provenance Envelope (PE) là bằng chứng mật mã được tạo ra khi bạn sử dụng Provian. PE có thể được tạo cho các giao dịch ví, hoạt động cam kết, hành động của tác nhân (agent) và các đóng góp khác. PE là bằng chứng thuộc quyền sở hữu của người đóng góp.",

@@ -866,7 +866,7 @@
       "losePhone": "Bagaimana jika saya kehilangan ponsel?",
       "losePhoneA": "Pulihkan cadangan cloud terenkripsi Anda dengan masuk ke akun iCloud atau Google yang sama di perangkat baru dan masukkan kata sandi cadangan Anda. Atau, pulihkan dengan frasa pemulihan dua belas kata yang Anda catat selama pengaturan atau yang diekspor dari Pengaturan. Provian tidak dapat mengatur ulang kata sandi cadangan atau memulihkan frasa yang hilang. Jika Anda kehilangan perangkat dan kedua metode pemulihan tersebut, dompet tidak dapat dipulihkan.",
       "canProvianAccessFunds": "Bisakah Provian mengakses dana saya?",
-      "canProvianAccessFundsA": "Tidak di dompet Anda sendiri. Provian bersifat non-kustodian: kami tidak pernah melihat kunci privat Anda dan tidak dapat memindahkan dana Anda. Jika Anda menghapus cadangan dan kehilangan perangkat, kami tidak dapat memulihkan dompet Anda. Uang yang Anda masukkan ke escrow Commons berada di kontrak tersebut. Sampai Pengadilan Commons dibuka, kunci admin Provian menyelesaikan sengketa escrow dan hanya membayar penerima escrow atau mengembalikan dana kepada penyetornya; siapa pun dapat memicu pengembalian kepada penyetor setelah batas sengketa 30 hari.",
+      "canProvianAccessFundsA": "Provian tidak pernah menyimpan kunci dompet Anda dan tidak dapat membelanjakan dana dari dompet Anda. Khusus PVT, kewenangan pemulihan, yang dipegang oleh kunci Provian sampai Pengadilan dibuka, dapat mengembalikan PVT yang dicuri berdasarkan aturan yang dipublikasikan dengan bukti pemulihan yang diwajibkan dari pemilik. Setiap penggunaannya terbuka untuk umum. Uang yang Anda masukkan ke escrow Commons berada di kontrak tersebut. Sampai Pengadilan Commons dibuka, kunci admin Provian menyelesaikan sengketa escrow dan hanya membayar penerima escrow atau mengembalikan dana kepada penyetornya; siapa pun dapat memicu pengembalian kepada penyetor setelah batas sengketa 30 hari.",
       "whatAboutQuantum": "Bagaimana dengan komputasi kuantum?",
       "whatAboutQuantumA": "Pengikatan mencatat pemilik setiap alamat dan melacak PVT yang diperoleh maupun diterima secara setara; kepemilikan tidak direkonstruksi dari penghasilan. Komitmen pemulihan hash yang terpisah diturunkan dari cadangan seed seseorang atau dari material pemulihan agen yang dihasilkan secara independen dan dienkripsi. Jika kriptografi dompet rusak, setiap pemilik terikat dapat memulihkan saldo terdaftar pada blok aman terakhir secara gratis, menggunakan preimage pemulihan dan tanda tangan hash independen untuk tujuan baru. Penerus membawa riwayat moneter dan mencegah pemulihan ganda. Kepemilikan yang tidak terikat tidak direkonstruksi, dan transfer pada rantai lama tetap tercatat. Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja.",
       "howProtectRisky": "Bagaimana Provian melindungi saya dari transaksi berisiko?",
@@ -5096,7 +5096,7 @@
   },
   "recourse": {
     "title": "Recourse",
-    "intro": "Jika PVT Anda dicuri, Dana Recourse dapat memulihkannya.",
+    "intro": "PVT curian yang masih dipegang oleh pelakunya dikembalikan melalui pembalikan transfer. Recourse Pool memulihkan sisanya dari PVT yang dimilikinya, tidak pernah lebih.",
     "error": "Status terbaru belum dapat dipastikan atau tindakan belum selesai. Segarkan untuk memeriksa rantai sebelum mencoba lagi.",
     "refresh": "Segarkan",
     "membership": "Keanggotaan Recourse Pool",
@@ -5246,13 +5246,13 @@
       "older": "Tampilkan transfer lebih lama",
       "review": "Laporkan transfer ini",
       "confirm": "Saya tidak mengizinkan transfer {{amount}} PVT ini.",
-      "recovery": "Dompet Anda akan mendapat alamat baru. Provian akan meninjau pencurian, mencoba mengembalikan PVT yang dicuri, dan menentukan apa yang dapat dipulihkan dana."
+      "recovery": "Dompet Anda akan mendapatkan alamat baru. PVT curian yang masih dipegang oleh pelakunya dikembalikan melalui pembalikan transfer. Recourse Pool memulihkan sisanya dari PVT yang dimilikinya, tidak pernah lebih. Hasilnya merupakan penetapan berdasarkan aturan yang dipublikasikan. Provian Technologies bukan pihak dalam pengaturan ini."
     },
     "lapsed": "Perlindungan berakhir",
     "graceSummary": "Masa tenggang satu bulan; untuk bergabung kembali, selesaikan pembakaran dan kontribusi tertunda hanya untuk bulan yang dilindungi.",
     "reportTheft": "Laporkan pencurian",
     "closeReport": "Tutup",
-    "afterReport": "Laporan Anda terkirim. Dompet Anda memiliki alamat pengganti. Provian akan meninjau pencurian, mencoba mengembalikan PVT yang dicuri, dan menentukan apa yang dapat dipulihkan dana. Pantau di Permintaan Anda.",
+    "afterReport": "Laporan Anda telah dikirim. Dompet Anda memiliki alamat pengganti. Hasilnya merupakan penetapan berdasarkan aturan yang dipublikasikan. Provian Technologies bukan pihak dalam pengaturan ini. Lihat Permintaan Anda untuk memantau perkembangannya.",
     "emptyRequests": "Anda belum memiliki laporan pencurian.",
     "emptyWallets": "Belum ada dompet yang ditambahkan.",
     "finePrint": "Ketentuan terperinci",

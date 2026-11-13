@@ -1,11 +1,11 @@
 {
   "sourceVersions": {
-    "terms": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
+    "terms": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
     "privacy": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5"
   },
   "text": {
     "terms.title": "Provian 服务条款",
-    "terms.lastUpdated": "2026年11月9日",
+    "terms.lastUpdated": "2026年11月13日",
     "terms.footer": "本服务条款自 2026 年 7 月 16 日起生效。",
     "terms.blocks.0.spans": "重要提示：请仔细阅读这些条款。使用 PROVIAN 即表示您同意受这些条款的约束。如果您不同意，请勿使用本应用程序。",
     "terms.blocks.1.text": "通俗易懂的摘要",
@@ -79,8 +79,8 @@
     "terms.blocks.34.items.2": "妥善保管任何已导出的恢复短语（如果您选择导出的话）",
     "terms.blocks.34.items.3": "保护您的设备与生物识别凭证",
     "terms.blocks.34.items.4": "请知悉：如果同时失去对云端账户、备份密码以及任何已导出的恢复短语的访问权限，将导致永久无法访问钱包。",
-    "terms.blocks.35.text": "4.3 Provian 不得追偿",
-    "terms.blocks.36.spans": "如果您无法访问您的 Apple/Google 账户及备份密码，且未导出恢复助记词，Provian 将无法找回您的资金。系统不提供“忘记密码”选项，也没有任何客户支持能够恢复您对资产的访问权限。您承认并接受这一风险。",
+    "terms.blocks.35.text": "4.3 钱包密钥恢复",
+    "terms.blocks.36.spans": "如果你丢失设备以及所有恢复备份或其密码，Provian 无法重建你的钱包密钥。这些密钥没有密码重置功能。 仅限 PVT：在 Court 开放前由 Provian 的密钥持有的恢复权限，可依据已公布的规则和所有者必须提供的恢复证明，返还被盗 PVT。每次使用该权限都公开记录。 恢复由第 20A 节规定；它不能替代丢失的恢复材料，也不能恢复其他资产。",
     "terms.blocks.37.text": "5. 物源包络线与 PVT",
     "terms.blocks.38.text": "5.1 来源信封",
     "terms.blocks.39.spans": "溯源信封（PEs）是您使用 Provian 时生成的加密证明。针对钱包交易、承诺活动、代理行为及其他贡献，均可创建 PE。PE 是由其贡献者所拥有的证明。",

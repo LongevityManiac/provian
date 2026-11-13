@@ -269,7 +269,7 @@ Restore your encrypted cloud backup by signing in to the same iCloud or Google a
 
 ### Can Provian access my funds? <!-- app:canProvianAccessFunds -->
 
-No, not in your own wallet. Provian is non-custodial: we never see your private keys and cannot move your funds. If you delete your backup and lose your device, we cannot recover your wallet. Money you put into a Commons escrow sits in that contract instead. Until the Commons Court opens, Provian’s admin key resolves disputed escrows, paying only an escrow’s recipient or refunding its depositor; anyone can trigger the depositor’s refund after the 30-day dispute timeout.
+Provian never holds your wallet keys and cannot spend from your wallet. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Money you put into a Commons escrow sits in that contract instead. Until the Commons Court opens, Provian’s admin key resolves disputed escrows, paying only an escrow’s recipient or refunding its depositor; anyone can trigger the depositor’s refund after the 30-day dispute timeout.
 
 ### What about quantum computing? <!-- app:whatAboutQuantum -->
 
