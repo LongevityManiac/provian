@@ -11,7 +11,7 @@ Provian's reference smart contracts are the "first email client, not the email p
 1. Provian designs PE action types for an institution domain
 2. Provian deploys reference smart contracts that:
    - Emit on-chain events that the relay witnesses into contributor-owned PEs
-   - Include PVT fee sinks that self-burn via `IPVTBurnable.burn(amount)` — each sink burns PVT it already holds in its own balance; PVT9 implements no `protocolBurn` and no `setProtocolContract`, so there is no registration step
+   - Include PVT fee sinks that self-burn via `IPVTBurnable.burn(amount)` — each sink burns PVT it already holds in its own balance; PVT10 implements no `protocolBurn` and no `setProtocolContract`, so there is no registration step
    - Integrate with the Court for dispute resolution
    - Are verified and source-published on block explorers (on-chain contract source is public by nature)
 3. Provian ships a reference Commons client for that institution. The client/UI is Provian's proprietary reference implementation; the PE action types and the verified contracts are open, so anyone can build their own client against them.

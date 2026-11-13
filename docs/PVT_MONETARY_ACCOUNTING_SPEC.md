@@ -2,7 +2,8 @@
 
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
-PVT9 is deployed on Base at `0x8811441914381143b9408c5C32247367F86F173A`.
+PVT10 is the successor token on Base. Resolve its live kernel through the permanent protocol pointer `0x619eae740ce56c5a8edbb2b047e58369281ddad7`; the on-chain version label is `v10`, with name and symbol unchanged.
+The retired PVT9 kernel is `0x8811441914381143b9408c5C32247367F86F173A`.
 Genesis admits qualifying acts from 2026-08-03 through December 31, 2026;
 its admission window closes at 2027-01-01T00:00:00Z. The agent Genesis leg
 qualifies on agent-wallet creation. Settlement runs against sealed economics.
@@ -189,9 +190,9 @@ Every sealed snapshot keeps its exact beneficiary-share basis points; later
 configuration changes never reprice it. Genesis bypasses this contributor-layer
 routing but still applies the immutable treasury split to the fixed gross input.
 
-### 4.1 PVT9 contract settlement
+### 4.1 PVT10 contract settlement
 
-The live PVT9 kernel consumes the following settlement inputs. Legacy token
+The live PVT10 kernel consumes the following settlement inputs. Legacy token
 contracts supply no authority to this ABI.
 
 For the standard-PE lane, claims are grouped by a strictly ordered contributor
@@ -206,7 +207,7 @@ contributor_gross_atomic = floor(
 
 The multiplication uses full-precision 512-bit intermediate arithmetic and
 fails atomically if the quotient is outside the `uint256` domain. There is no
-PVT9 settlement-time PE weight, second weight multiplier, ZeroHash bypass,
+PVT10 settlement-time PE weight, second weight multiplier, ZeroHash bypass,
 supply scaler, effective-rate composition, automatic baseline, velocity rule,
 or emergency-rate path.
 
@@ -318,7 +319,7 @@ labels record points as final or estimated minted PVT. A current per-PE
 projection is intentionally non-final because contributor aggregation,
 settlement factors, and treasury floors are resolved at batch settlement. The
 mint worker follows the same input preparation path and then applies the exact
-PVT9 batch order.
+PVT10 batch order.
 
 ### 6.1 Operational holds
 
@@ -402,7 +403,7 @@ wallet lifetime ceiling.
 
 The qualifying act and deterministic outbox are co-written. The reservation state machine uses `pending_reservation → reserved → emitting → pe_recorded → complete`, with transactional anchor deduplication, wallet gross ledger and exact snapshot commitments. Durable identities and idempotency markers make retries refer to the same act rather than creating another grant.
 
-The completed reservation enters the PVT9 Genesis inlet. `settleGenesisPEBatch` accepts the exact fixed gross input, independent of ordinary attestation, linkage and standard mint rate. Standard beneficiary routing does not apply; the 99/0.5/0.5 treasury split does. A 75-PVT gross grant therefore gives the contributor 74.25 PVT, before any atomic flooring across the grouped batch.
+The completed reservation enters the PVT10 Genesis inlet. `settleGenesisPEBatch` accepts the exact fixed gross input, independent of ordinary attestation, linkage and standard mint rate. Standard beneficiary routing does not apply; the 99/0.5/0.5 treasury split does. A 75-PVT gross grant therefore gives the contributor 74.25 PVT, before any atomic flooring across the grouped batch.
 
 Registration clients durably prepare their identity and credentials before networking. Agent creation proves its key locally; same-key recovery replaces lost API credentials without repeating the wallet, first proof, watcher, linkage or Genesis effects. Device retries reuse the exact registration ID, `device_key` and `device_secret`. The relay receives no plaintext wallet key. Key rotation uses the separately authenticated atomic old-key/new-key proof path; it is not a new signup or grant.
 
@@ -412,7 +413,7 @@ Sources: `core/pvt/genesis-award-state-machine.ts`, `core/pvt/wp4/genesis-inlet-
 
 Admission and settlement capacity are separate. The live kernel uses Fixed caps of 7,500,000 Genesis and 10,000,000 combined PVT per seven-day epoch. A selected recipient must fit whole within both applicable headrooms; there is no 95% factor and no scaling down a recipient. Claims that do not fit remain durable for a later epoch. Standard work settles on a schedule Provian sets, currently every 30 days per payee (`0 12 * * *`), Genesis daily (`0 0 * * *`), and a payee may request ready earnings sooner for a flat $1 USDC service fee.
 
-The PVT9 cycle runner owns the durable cycle cursor, lease, fencing, claim registration, exact input preparation, transaction nonce, replacement handling and same-cycle continuation. It paginates the backlog instead of letting one full page starve later claims. The kernel checks the exact active epoch and policy, claim and batch identity, contiguous finalized cursor and actual issued totals atomically. Its contract checks are the final no-double-mint boundary.
+The PVT10 cycle runner owns the durable cycle cursor, lease, fencing, claim registration, exact input preparation, transaction nonce, replacement handling and same-cycle continuation. It paginates the backlog instead of letting one full page starve later claims. The kernel checks the exact active epoch and policy, claim and batch identity, contiguous finalized cursor and actual issued totals atomically. Its contract checks are the final no-double-mint boundary.
 
 Before broadcast, the runtime persists the signed transaction and derived hash and verifies its target, selector, calldata, nonce and zero native value. Finalization and recovery require matching canonical evidence from two distinct configured RPC operator identities and at least 12 Base confirmations. An already observed transaction is recovered by its exact bytes and receipt, rather than submitted as a new economic act. Unknown or contradictory evidence remains restrictive. Operational holds never reprice a sealed act.
 

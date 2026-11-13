@@ -2,7 +2,8 @@
 
 A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contributor. **PVT** is the currency on Base minted from witnessed work. The **relay** verifies and prices submitted evidence; a **witness** is something other than the actor that vouches for the act. **Basis points (bps)** express factors in ten-thousandths: 10,000 bps is 1.0×.
 
-PVT minting and burning use Base. The live PVT9 kernel is
+PVT minting and burning use Base. Resolve the live PVT10 successor kernel through
+the permanent protocol pointer `0x619eae740ce56c5a8edbb2b047e58369281ddad7`. The retired PVT9 kernel is
 `0x8811441914381143b9408c5C32247367F86F173A`. Legacy kernels and token
 contracts confer no current mint authority and are excluded by the runtime's
 forbidden-address controls. Arbitrum and Optimism institution transactions do
@@ -48,7 +49,7 @@ operationally dead on Arb/Op - no admin can ever rotate it there. The
 
 ## Backend posture
 
-- Settlement: PVT9 mints through `POST /v1/internal/settlement/pvt9-run`
+- Settlement: PVT10 mints through `POST /v1/internal/settlement/pvt9-run`
   (`routes/pvt9-operations.ts` → `core/pvt/wp4/operator-runtime.ts`, the
   one module that builds a settlement signer), through the daily Cloud
   Scheduler job `provian-pvt9-settlement`. Each payee is due on its own last
@@ -56,10 +57,11 @@ operationally dead on Arb/Op - no admin can ever rotate it there. The
   (`PVT9_STANDARD_SETTLEMENT_INTERVAL_DAYS`, currently 30). Earnings settle on
   a schedule Provian sets, currently every 30 days per payee, with on-demand payout available
   at any time for $1 USDC. Genesis stays daily. Settlement uses the Base kernel
-  named in `config/pvt9-base.json`. No chain loop. The legacy
+  resolved through the permanent protocol pointer. `config/pvt9-base.json`
+  retains predecessor records and compatible ABI bindings. No chain loop. The legacy
   `/v1/internal/scheduler/pvt-mint` route is retired and answers `503`.
 - All other PVT reads (commons, leaderboard, balances, burn verification)
-  point at the Base PVT9 kernel. None of them touch the Arb or Op PVTv4.
+  point at the Base PVT10 kernel. None of them touch the Arb or Op PVTv4.
 
 Your agent’s work reaches your phone once a day. A presentation or an on-demand
 payout sends it immediately.
@@ -93,9 +95,9 @@ We kept admin on Base intact so the Foundation can still:
 - Register new protocol-burn contracts via `setProtocolContract`.
 
 > **LEGACY-PVT ONLY:** the `setProtocolContract` registration step above
-> exists only on legacy PVT contracts (v3–v8). PVT9 implements no
+> exists only on legacy PVT contracts (v3–v8). PVT10 implements no
 > `setProtocolContract` — its `IPVTBurnable.burn` is an ungated self-burn —
-> so this runbook must never be pointed at the PVT9 kernel.
+> so this runbook must never be pointed at the PVT10 kernel.
 
 On Arb/Op none of those operations are possible - but none are needed
 because no PVT ever flows through them.
@@ -132,9 +134,9 @@ For full clarity on what got locked:
   for `protocolBurn`. Cannot register new ones on Arb/Op after
   renounce. Moot: dead-letter contracts have no protocol traffic.
   (LEGACY-PVT ONLY: this setter exists only on legacy PVT contracts
-  v3–v8. PVT9 implements no `setProtocolContract` — its
+  v3–v8. PVT10 implements no `setProtocolContract` — its
   `IPVTBurnable.burn` is an ungated self-burn — so no registration
-  step exists or is needed against the PVT9 kernel.)
+  step exists or is needed against the PVT10 kernel.)
 - `seedInitialBalance(addresses[], amounts[])` - one-time migration
   helper, never called on any chain.
 - `proposeMinter(addr)` / `finalizeMinter` - minter rotation. Cannot
@@ -182,9 +184,11 @@ and Optimism mainnet at the latest block. Etherscan equivalents:
 
 ### Base authority
 
-The live PVT9 kernel is `0x8811441914381143b9408c5C32247367F86F173A`, with
-immutable bootstrap administrator
+The live PVT10 successor kernel is resolved through the permanent protocol pointer
+`0x619eae740ce56c5a8edbb2b047e58369281ddad7`, with immutable bootstrap administrator
 `0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3`. Foundation Safes and legacy
 Base administrators grant no authority over that kernel. The retired kernel
 `0x4Bf02d5C9bC4306c38603EF2aA164f2f2273bcd7` and abandoned kernel
 `0x8b2306be…` cannot be selected by the runtime.
+
+The retired PVT9 kernel `0x8811441914381143b9408c5C32247367F86F173A` is historical, not a current token target.

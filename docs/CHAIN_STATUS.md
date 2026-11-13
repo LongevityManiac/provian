@@ -1,16 +1,14 @@
 # Current chain configuration
 
-The kernel and institution addresses come from `contracts/deployments/base-pvt9-institutions.json`; the complete kernel ABI and policy bindings come from `config/pvt9-base.json`.
+PVT10 is the current successor token on Base; its on-chain version label is `v10`.
+Its name and symbol remain Provian Value Token and PVT. Resolve the live kernel
+and institutions from the permanent protocol pointer `0x619eae740ce56c5a8edbb2b047e58369281ddad7` using the
+runtime pin in `config/protocol-pointer.json` and independent RPC agreement.
+Never substitute a predecessor address when discovery fails.
 
-| Base contract | Address |
-|---|---|
-| PVT9 kernel | `0x8811441914381143b9408c5C32247367F86F173A` |
-| Eligibility verifier | `0xb26Fd9d4f3b42911592B96270e8437287DE33406` |
-| escrowV4 | `0x96560fDF49e563eFCdc2d502934676DC074732d0` |
-| promiseV3 | `0x7506F4A052750260A0ddcdF5E63a77CC646d89B9` |
-| poolV3 | `0x1301BF63Cb6BaE7171f6c7D895C762B243964d26` |
-| bondPool | `0x6b09E9C72316De9d62d63f09B187d4c86bBf787E` |
-| courtV2 | `0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f` |
+`contracts/deployments/base-pvt9-institutions.json` and `config/pvt9-base.json`
+retain predecessor deployment and ABI records. The PVT9 kernel
+`0x8811441914381143b9408c5C32247367F86F173A` is retired, not the live kernel.
 
 USDC escrow is available on the configured chains. Arbitrum and Optimism defaults come from `contracts/deployments/arbitrum-live.json` and `contracts/deployments/optimism-live.json`. PVT principal uses the live Base kernel. Per-chain environment overrides are resolved by `provian-backend/src/core/agent-bank/chain-registry.ts`.
 

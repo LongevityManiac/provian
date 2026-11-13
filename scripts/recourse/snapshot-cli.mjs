@@ -29,7 +29,7 @@ function operator(url) {
   const u = new URL(url), host = u.hostname;
   if (u.protocol !== 'https:' || u.username || u.password) throw Error('snapshot_rpc_transport');
   if (host === 'mainnet.base.org') return 'base';
-  if (host === 'base.drpc.org' || host.endsWith('.drpc.org')) return 'drpc';
+  if (host === 'lb.drpc.live' || host === 'base.drpc.org' || host.endsWith('.drpc.org')) return 'drpc';
   if (host.endsWith('.alchemy.com')) return 'alchemy';
   if (host.endsWith('.publicnode.com')) return 'publicnode';
   throw Error('snapshot_rpc_operator_unknown');

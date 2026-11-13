@@ -4,18 +4,15 @@ A **Provenance Envelope (PE)** is signed proof owned by the contributor whose ac
 
 ## Base contract registry
 
-The checked-in deployment source is `deployments/base-pvt9-institutions.json`; the kernel ABI and runtime bindings are in `../config/pvt9-base.json`.
+PVT10 is the current successor token (`ProvianRecourseKernel`), with on-chain
+version label `v10` and unchanged name and symbol. Resolve the current kernel,
+eligibility verifier and institutions through the permanent protocol pointer
+`0x619eae740ce56c5a8edbb2b047e58369281ddad7` and verify `../config/protocol-pointer.json`.
 
-| Contract | Address | Role |
-|---|---|---|
-| ProvianPVT9 | `0x8811441914381143b9408c5C32247367F86F173A` | Token and settlement kernel |
-| ProvianPVT9EligibilityVerifier | `0xb26Fd9d4f3b42911592B96270e8437287DE33406` | Approves exact settlement batches |
-| ProvianEscrowV4 | `0x96560fDF49e563eFCdc2d502934676DC074732d0` | PVT/USDC escrow and timeout refunds |
-| ProvianPromiseV3 | `0x7506F4A052750260A0ddcdF5E63a77CC646d89B9` | Agent lending promises |
-| ProvianPoolV3 | `0x1301BF63Cb6BaE7171f6c7D895C762B243964d26` | Threshold pools, target execution and refunds |
-| ProvianBondPool | `0x6b09E9C72316De9d62d63f09B187d4c86bBf787E` | Performance bonds |
-| ProvianCourtV2 | `0x9a326D1ff5EC97cE466CF6fc71BA6f5372E41D7f` | Arbitration mechanics |
-| ProvianPEAnchor | `0x889A59A847e490c5Cc91f281468AbAacc100a9fD` | Daily accepted-batch Merkle roots |
+`deployments/base-pvt9-institutions.json` and `../config/pvt9-base.json` preserve
+predecessor records and compatible ABI bindings. `ProvianPVT9` at
+`0x8811441914381143b9408c5C32247367F86F173A` is the retired PVT9 kernel, not a current target.
+`ProvianPEAnchor` remains at `0x889A59A847e490c5Cc91f281468AbAacc100a9fD`.
 
 Court/Disputes and Voting are not open. Escrow disputes use the existing party-only admin resolution or the permissionless depositor refund after the contract’s 30-day dispute timeout.
 

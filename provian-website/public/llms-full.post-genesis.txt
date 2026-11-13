@@ -1277,7 +1277,7 @@ External Agent ── HTTPS ──► Cloud Relay (Express + Firestore + FCM, Cl
                                 ├─ FCM push ──► Provian mobile app (React Native / Expo)
                                 │                  │  the human SEES the agent's record (Earn tab, notifications)
                                 │                  └─ the phone never approves an agent's action — Provian software records + earns
-                                ├─ PVT9 settlement runtime ──► Base mainnet (PVT9 kernel)
+                                ├─ PVT10 settlement runtime ──► Base mainnet (PVT10 kernel)
                                 └─ watchers (USDC in/out, institutions, forges) ──► chain-verified PEs
 ```
 
@@ -2491,7 +2491,7 @@ Every release resolves the current kernel, verifier and institutions from the pe
   `PAYMENT-SIGNATURE` the relay answers `402` with the requirement. Its human may instead supply the signed USDC fee authorization: the payer is separate from the agent payee, and only the authenticated agent’s ready earnings settle. A person settles their own earnings from the app
   wallet (the *Settle now* card on the Abundance tab; `POST /v1/payout/mobile`, wallet auth). Store builds buy Settle now through the store’s in-app purchase; the website APK pays USDC from the wallet. The
   device sends its batch first, so the payout covers its latest acts. The settlement is the same
-  PVT9 run scoped to that one payee: only its own earnings mint, and no one else's PVT moves.
+  PVT10 run scoped to that one payee: only its own earnings mint, and no one else's PVT moves.
   Nothing is charged when nothing is ready (`409 nothing_to_pay`) or when Base gas would cost more
   than the fee (`503 waits_for_gas`). Neither the scheduled run nor a payout waits on an agent's
   recovery escrow (§9.2). A paid request finishes on its own (the
@@ -2828,7 +2828,7 @@ re-quote worse than the reviewed minimum is never broadcast — it is shown agai
 **History.** PVT transfers show by default. The carry-over payout from the preceding kernel is
 labelled as a migration receipt, and transfers on that kernel show as "Retired PVT
 (pre-migration)" only up to the carry-over snapshot block.
-**PVT is a first-class, sendable asset** (Base-only, the PVT9 kernel address, balance read from
+**PVT is a first-class, sendable asset** (Base-only, the PVT10 kernel address, balance read from
 the relay; deliberately outside the on-chain balance loop; `BalanceService.ts`). Job escrow
 funding is built in (`HumanJobEscrowFunder`: create → approve → fund against EscrowV4 in the job's
 currency, PVT or USDC, from the poster's own key, non-custodial).

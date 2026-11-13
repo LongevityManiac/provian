@@ -38,13 +38,13 @@ by the keeper-identity guards in the escrow-release / pool-keeper / bond-keeper
 modules: each names a privileged key that a keeper key may never be, never a
 payout destination. Set `KEEPER_FORBIDDEN_SIGNER_ADDRESS` to the Provian treasury.
 Its former name, `PROVIAN_TREASURY_ADDRESS`, is still read (and forbidden as well
-when both are set) while the deployed environment carries it. PVT9
+when both are set) while the deployed environment carries it. PVT10
 treasury destinations are set on-chain by the kernel's
 `scheduleTreasuryDestinations`, not by env. The live service sets
 `FOUNDATION_TREASURY_ADDRESS` to the Foundation Safe
 `0x94F3D06ca027dFD1e6cCaa1117b050E08D5EA936`.
 
-## PVT9 settlement and policy
+## PVT10 settlement and policy
 
 | Variable | Purpose |
 |----------|---------|
@@ -74,10 +74,10 @@ Configured in Cloud Run; never embedded in mobile builds.
 
 ## Smart contract addresses
 
-The full per-chain table (the live PVT9 kernel, the Base institutions, and
+The full per-chain table (the live PVT10 kernel, the Base institutions, and
 the legacy-chain addresses) lives in the internal contract version records; the
 current Base addresses are in [CHAIN_STATUS.md](CHAIN_STATUS.md)
-and `contracts/deployments/base-pvt9-institutions.json`. Do not duplicate
+and are resolved through the permanent protocol pointer. Do not duplicate
 addresses here.
 
 **Multi-chain dispatch (Wave J-bis):** the relay reads per-chain variants first
@@ -86,17 +86,16 @@ the legacy single-valued env var if a per-chain variant is unset. For
 multi-chain operation in production, populate all three per-chain variants
 for each of: `ESCROW`, `PROMISE`, `POOL`, `COURT`, `BOND_POOL`
 (the live service sets all of them). The PVT-principal Escrow/Promise/Pool
-resolvers prefer the addresses pinned in
-`core/agent-bank/pvt-principal-config.ts` over env while
+resolvers use the verified protocol pointer through
+`core/agent-bank/pvt-principal-config.ts` instead of env while
 `ENABLE_PVT_PRINCIPAL=true`.
 
-**Current Base lineage:** the PVT9 successor kernel (`0x88114419…`) is the
-minting token; Escrow, Promise, Pool, Court, and BondPool use the
-successor-institution addresses (`base-pvt9-institutions.json`), and PEAnchor
-`0x889A59A8…` is the live anchor. The kernel (`0x4Bf02d5C…`) and its institution deployment
-institutions (retired by), PVTv8, the Pass-3 quartet, Chunk II and
-earlier addresses are historical/legacy-chain records, not current Base
-configuration instructions.
+**Current Base lineage:** PVT10 is the successor token. Resolve its live kernel and
+institutions through the permanent protocol pointer `0x619eae740ce56c5a8edbb2b047e58369281ddad7`.
+The PVT9 kernel `0x8811441914381143b9408c5C32247367F86F173A` and the deployment recorded in
+`base-pvt9-institutions.json` are retired predecessor records used for authenticated
+succession, not current transaction targets. PEAnchor `0x889A59A8…` remains the
+anchor. Earlier kernels and institutions are historical records.
 
 ### Foundation Membership (deployed 2026-04-19)
 
@@ -123,13 +122,13 @@ checklist depends on it.
 | `ENABLE_PVT_PRINCIPAL` | unset | PVT-as-principal in the Commons institutions (`core/agent-bank/pvt-principal-config.ts`); the only enablement flag it consults. Live: `true` |
 | `COURT_MIN_ARBITRATORS` | `15` | Minimum qualified arbitrators before Court seats a panel (live: `3`) |
 
-> PVT9 reads its kernel and ABI from `config/pvt9-base.json`; the service’s token address must name that same kernel.
+> PVT10 resolves its live kernel through the permanent protocol pointer; `config/pvt9-base.json` retains predecessor configuration and compatible ABI bindings. The service’s token address must name the resolved current kernel.
 
 > **The Commons hiring board needs its escrow chain configured.** A PVT-budget
 > hire is refused at post time unless a PVT-principal chain is configured
-> (`ENABLE_PVT_PRINCIPAL=true`; the PVT address is the kernel pinned in
+> (`ENABLE_PVT_PRINCIPAL=true`; the PVT address is the current kernel resolved by
 > `core/agent-bank/pvt-principal-config.ts`, not env — PVT is minted only on
-> Base, by the PVT9 kernel). A USDC-budget hire is refused unless the
+> Base, by the PVT10 kernel). A USDC-budget hire is refused unless the
 > relay's Base USDC escrow address IS the EscrowV4 address, because only V4
 > carries the 30-day `claimDisputeTimeout` refund
 > (`resolveUsdcHireEscrowChain` in `core/commons/human-jobs.ts`,).
@@ -143,7 +142,7 @@ checklist depends on it.
 | `GCP_PROJECT_ID` | `provian-ai` | Primary GCP project ID; falls back to `GOOGLE_CLOUD_PROJECT` |
 | `CLOUD_RUN_SERVICE_URL` | `https://api.provian.ai` | Cloud Scheduler OIDC token audience (comma-separated list on the live service) |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | - | Redis cache. Missing triggers a startup warning; security-critical rate limits fail closed without it |
-| `ADMIN_API_KEY` | - | Operator/admin routes (Command Center, admin console, `/v1/admin/health`, Genesis / PVT-policy admin, PVT9 operations, burn-floor operations); falls back to `AGENT_BANK_ADMIN_SECRET`. Generate: `openssl rand -hex 32` |
+| `ADMIN_API_KEY` | - | Operator/admin routes (Command Center, admin console, `/v1/admin/health`, Genesis / PVT-policy admin, PVT10 operations, burn-floor operations); falls back to `AGENT_BANK_ADMIN_SECRET`. Generate: `openssl rand -hex 32` |
 
 ## Mobile attestation (consumed by relay when verifying device tokens)
 

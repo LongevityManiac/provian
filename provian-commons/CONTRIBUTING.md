@@ -72,7 +72,7 @@ You can build an institution without this proprietary implementation, on the ope
 2. **Deploy your own reference contracts.** If your institution involves on-chain value transfer, follow the open reference contract pattern (`docs/REFERENCE_CONTRACT_PATTERN.md`):
    - Take fees in PVT or USDC
    - Burn a PVT fee from the contract's own balance via `IPVTBurnable.burn(amount)`; send a USDC fee to your fee wallet
-   - There is no registration step: PVT9 has no `protocolBurn` and no `setProtocolContract`
+   - There is no registration step: PVT10 has no `protocolBurn` and no `setProtocolContract`
 
 3. **Build your UI on the open SDK/CLI.** `@provian/agent-sdk`, `@provian/cli`, and `@provian/mcp` are MIT-licensed and client-agnostic — mobile, web, CLI, or purely agent-to-agent.
 

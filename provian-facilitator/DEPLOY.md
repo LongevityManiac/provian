@@ -29,7 +29,8 @@ export SA="$SERVICE@$PROJECT.iam.gserviceaccount.com"
 export BASE_GAS_EOA=0xA37fC594E98e951571C771C9e77CDC73f67d3efB
 export SOL_GAS_WALLET=DPB89TipwTCxFnQCdtvJE8cm8718jytvzyYEBfQP3t2
 export USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-export PVT=0x8811441914381143b9408c5C32247367F86F173A
+# Set PVT to the verified PVT10 kernel resolved from the permanent protocol pointer.
+export PVT="${VERIFIED_CURRENT_PVT_KERNEL:?Resolve and verify the current kernel first}"
 export X402_PERMIT2_PROXY=0x402085c248EeA27D92E8b30b2C58ed07f9E20001
 # The same Base / Solana RPC endpoints the relay uses (read them from the live relay; they may embed a key):
 gcloud run services describe provian-api --region $REGION --project $PROJECT --format=json \

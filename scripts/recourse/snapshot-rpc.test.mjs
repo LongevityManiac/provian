@@ -63,3 +63,13 @@ test('custody topic filters survive provider range splitting and apply to both o
     expect(calls.filter(call => call.filter.fromBlock === call.filter.toBlock)).toHaveLength(4);
   } finally { vi.useRealTimers(); vi.mocked(guardedFetch).mockReset(); }
 });
+
+test('production dRPC endpoint is recognized without counting its aliases as independent operators', () => {
+  const drpc = 'https://lb.drpc.live';
+  expect(snapshotRpcPort(['https://base-mainnet.g.alchemy.com/v2/test', drpc]).rpcs.map(r => r.operatorId))
+    .toEqual(['alchemy', 'drpc']);
+  expect(() => snapshotRpcPort(['https://base.drpc.org', drpc])).toThrow('snapshot_independent_operators_required');
+  for (const unknown of ['https://lb.drpc.live.example.com', 'https://example.drpc.live']) {
+    expect(() => snapshotRpcPort(['https://mainnet.base.org', unknown])).toThrow('snapshot_rpc_operator_unknown');
+  }
+});

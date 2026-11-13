@@ -139,6 +139,12 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         vm.prank(ADMIN);
         authorization.execute(ID, operation, proof, abi.encode(uint8(3), abi.encode(intent, uint256(1))));
     }
+    function testSuccessorVersionKeepsTokenNameAndSymbol() public view {
+        assertEq(kernel.version(), "v10");
+        assertEq(kernel.name(), "Provian Value Token");
+        assertEq(kernel.symbol(), "PVT");
+    }
+
     function testAllowanceBypassRejectsNonpoolAndRetiredDomains() public {
         address oldPool = pointer.component(8);
         vm.prank(address(0xCAFE)); vm.expectRevert(ProvianRecourseKernel.InsufficientAllowance.selector);

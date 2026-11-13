@@ -24,7 +24,7 @@ contract ProvianRecourseKernel {
 
     string public constant name = "Provian Value Token";
     string public constant symbol = "PVT";
-    string internal constant VERSION = "v9";
+    string internal constant VERSION = "v10";
     uint8 public constant decimals = 18;
 
     address public immutable BOOTSTRAP_ADMIN;

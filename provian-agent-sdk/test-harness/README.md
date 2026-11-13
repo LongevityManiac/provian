@@ -1,4 +1,7 @@
-# Base-mainnet fork harness (agent sovereign-wallet signer)
+# Historical PVT9 fork harness (agent sovereign-wallet signer)
+
+This harness targets the retired PVT9 deployment. It does not validate the current
+PVT10 successor and must not be used as PVT10 changeover evidence.
 
 Proves the agent EVM signer (slice 1) and bond origination (slice 2) on a **real
 Base-mainnet fork** — real nonce, real gas estimate, real `eth_sendRawTransaction`,
