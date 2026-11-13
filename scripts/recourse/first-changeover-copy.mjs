@@ -105,7 +105,7 @@ export async function rehearseFirstChangeover(config) {
   const artifactsState = openChangeoverArtifacts(resolve(output, 'phases'));
   const timingPath = resolve(output, 'phase-timings.json');
   const timings = existsSync(timingPath) ? read(timingPath) : { startedAt: new Date().toISOString(), phases: {} };
-  let activePhase;
+  let activePhase = Object.keys(timings.phases).find(phase => !timings.phases[phase].endedAt);
   const beginPhase = phase => {
     const now = Date.now();
     if (activePhase && activePhase !== phase && !timings.phases[activePhase].endedAt) {
@@ -122,7 +122,10 @@ export async function rehearseFirstChangeover(config) {
     if (nextPhase[name]) beginPhase(nextPhase[name]);
     return result;
   } };
-  beginPhase('retirement');
+  // Resume the first incomplete phase, preserving elapsed wall time across interruption.
+  const pendingPhase = ['retirement', 'pointer', 'successor', 'publication', 'activation']
+    .find(phase => !artifactsState.read(`${phase}-complete`));
+  beginPhase(pendingPhase ?? null);
   const journalPath = resolve(output, 'impersonated-transactions.json');
   const journal = existsSync(journalPath) ? read(journalPath) : {};
   const runtime = async (stage, options) => {
