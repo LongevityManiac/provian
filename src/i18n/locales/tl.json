@@ -2974,7 +2974,7 @@
     "card10Title": "Binibilang at Malawak na Hawak",
     "card10Body": "Ang perang nakapirmi magpakailanman ay hindi kayang sukatin ang isang boom: ginagantimpalaan nito ang sinumang naghihintay. Ang perang inilalabas sa utos ay nagbabayad sa sinumang pinakamalapit sa naglalabas. Lumalaki ang PVT nang eksaktong kasimbilis ng paglaki ng nasaksihang trabaho, at bawat bagong yunit ay napupunta sa gumawa ng trabaho. Hindi nilikha ng Provian ang compute boom. Pinepresyuhan nito ang trabahong kung hindi ay walang presyo at binabayaran ang mga tao at agent na gumawa nito, kaya umaabot ang paglago sa lahat bilang kita sa halip na maipon sa sinumang may-ari na ng mga makina. Sa ngayon, walang bahagi sa nalilikha ng isang data center ang mga taong nakatira sa tabi nito. Ang pagbibilang ng trabaho at pagbabayad sa gumawa nito ang paraan para mabago iyon.",
     "card11Title": "Bukas na Pamantayan, Kasalukuyang Implementasyon",
-    "card11Body": "Ang Provenance Envelope ay isang bukas na pamantayan, at may lisensyang MIT ang mga developer tool at kontrata. Ang wallet, relay, at Commons ang mga reference implementation ng Provian: nakikita ang source code, at maaari ring magkaroon ng ibang implementation. Dalawa ang tuntuning pangkonstitusyon: gumawa ng mga balidong envelope at igalang ang hatian. Pinatatakbo ng Provian ang relay at hawak nito ang paunang awtoridad sa patakarang pang-ekonomiya; bawat pagbabago ay para sa hinaharap at nasa isang pirmadong rekord. Ang hiwalay na awtoridad sa pagpapanumbalik, na hawak ng susi ng tagapagtatag hanggang magbukas ang Hukuman, ay maaaring magsauli ng ninakaw na PVT sa may-ari ayon sa inilathalang tuntunin, at pampubliko ang bawat paggamit nito. Ang Konstitusyon ng Network ang saligang kasulatan, na hindi pa nararatipikahan. Bubuo ng panel ang Hukuman kapag may sapat nang kuwalipikadong arbitrator na nagboluntaryo; hindi pa bukas ang botohan at isang pamilihan ng compute.",
+    "card11Body": "Ang Provenance Envelope ay isang bukas na pamantayan, at may lisensyang MIT ang mga developer tool at kontrata. Ang wallet, relay, at Commons ang mga reference implementation ng Provian: nakikita ang source code, at maaari ring magkaroon ng ibang implementation. Dalawa ang tuntuning pangkonstitusyon: gumawa ng mga balidong envelope at igalang ang hatian. Pinatatakbo ng Provian ang relay at hawak nito ang paunang awtoridad sa patakarang pang-ekonomiya; bawat pagbabago ay para sa hinaharap at nasa isang pirmadong rekord. Ang hiwalay na awtoridad sa pagpapanumbalik, na hawak ng susi ng Provian hanggang magbukas ang Hukuman, ay maaaring magsauli ng ninakaw na PVT sa may-ari ayon sa inilathalang tuntunin, at pampubliko ang bawat paggamit nito. Ang Konstitusyon ng Network ang saligang kasulatan, na hindi pa nararatipikahan. Bubuo ng panel ang Hukuman kapag may sapat nang kuwalipikadong arbitrator na nagboluntaryo; hindi pa bukas ang botohan at isang pamilihan ng compute.",
     "card12Title": "Anumang Susunod na Magko-compute",
     "card12Body": "Mga sensor, robot, drone, metro, research cluster, energy grid: anumang nagko-compute ay maaaring kumita ayon sa lakas ng ebidensya ng ginawa nito. Binibilang lang ang resibo nito kapag may saksing hindi ito mismo na nagpapatunay sa trabaho, secure hardware man sa telepono o computer na nagpapatunay na tunay na Provian software ang gumawa ng rekord o observer sa isang rehistradong makina na pinag-uulatan nito, hindi kailanman sa sarili lang nitong salita, at naiuugnay ito pataas sa tao o agent na may-ari nito. Hindi kailangang malaman ng network nang maaga kung ano ang tutubo rito, basta't tapat na nasasaksihan ang anumang tumutubo.",
     "ladderHeading": "Ang Hagdan ng Ebidensya",
@@ -5104,7 +5104,7 @@
     "active": "Protektado",
     "inactive": "Hindi kasapi",
     "monthly": "Bawat buwan: magsunog ng {{burn}} PVT. Hiwalay dito, mag-ambag ng {{percent}}% ng kabuuang kinita, o {{reserve}} PVT mula sa hawak mong balanse sa buwang walang kita.",
-    "graceRule": "May isang buwang kalendaryong palugit kapag may nalaktawang buwan. Kumpletuhin ito sa loob ng palugit at walang mapuputol. Pagkatapos nito, matatapos ang pagiging miyembro; ang muling pagsali ay nagbibigay ng proteksiyon mula sa araw na iyon, hindi para sa nawala habang hindi kasapi.",
+    "graceRule": "May isang buwang kalendaryong palugit kapag may nalaktawang buwan. Kumpletuhin ito sa loob ng palugit at walang mapuputol. Pagkatapos nito, matatapos ang pagiging miyembro; ang muling pagsali ay nagbibigay ng proteksiyon mula sa araw na iyon, hindi para sa nawala habang hindi kasapi. Bago muling sumali, bayaran ang natitirang participation burn at kontribusyon sa pool para sa dalawang protektadong buwang hindi nabayaran, kasama ang buwan ng palugit, matapos ibawas ang mga nabayaran na. Ang kontribusyon sa bawat buwan ay 1% ng PVT na na-mint sa buwang iyon, o 100 PVT kung walang na-mint, ayon sa pirmadong tuntunin ng buwang iyon. Ang mga buwang lipas ang pagiging miyembro ay nananatiling walang proteksiyon at hindi kailanman sisingilin.",
     "outstanding": "Hindi pa natutupad na pagsunog at ambag: {{amount}} PVT",
     "consent": "Bawat bawas sa iyong hawak na pondo ay nangangailangan ng pahintulot mo para sa eksaktong halaga. Maaaring baguhin ang tatlong halaga para sa hinaharap ayon sa inilathalang pirmadong tuntunin. Nasa pagpapasiya ang pagsasauli at walang karapatang kontraktuwal na tumanggap ng pondo. Pinal ang mga pasiya. Hindi partido rito ang Provian Technologies; wala itong iniaambag, hinahawakang pondo o ipinapangako.",
     "catchUp": "Kumpletuhin ang buwanang obligasyon",
@@ -5210,6 +5210,37 @@
       "open": "Magpadala mula sa naibalik na wallet",
       "curveGas": "Binabayaran ang gas ng network sa ETH mula sa naibalik na wallet na ito."
     },
-    "pvtOnly": "PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang."
+    "pvtOnly": "PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang.",
+    "rejoin": {
+      "explain": "Bago muling sumali, bayaran ang natitirang participation burn at kontribusyon sa pool para sa dalawang protektadong buwang hindi nabayaran, kasama ang buwan ng palugit, matapos ibawas ang mga nabayaran na. Ang kontribusyon sa bawat buwan ay 1% ng PVT na na-mint sa buwang iyon, o 100 PVT kung walang na-mint, ayon sa pirmadong tuntunin ng buwang iyon. Ang mga buwang lipas ang pagiging miyembro ay nananatiling walang proteksiyon at hindi kailanman sisingilin.",
+      "payment": "{{month}}: magsunog ng {{burn}} PVT at mag-ambag ng {{reserve}} PVT bago muling sumali."
+    },
+    "standing": {
+      "explain": "Aprubahan ang pagiging miyembro nang isang beses. Awtomatiko na ang buwanang bayad kahit sarado ang app. Hindi kailangan ng ETH para sumali, magbayad o umalis. Kailangan ng bagong pag-apruba para sa mas mataas na halaga.",
+      "review": "Suriin ang mga bagong halaga",
+      "limits": "Pinakamataas bawat buwan: {{burn}} PVT na susunugin at {{reserve}} PVT na iaambag mula sa PVT ng wallet na ito. Ambag mula sa kita: {{percent}}%.",
+      "external": "Ikonekta ang wallet upang aprubahan ang pagiging miyembro nito nang isang beses. Hindi na kailangan ng bagong prompt sa wallet para sa mga susunod na bayad at pag-alis.",
+      "payments": "Awtomatikong pagbabayad",
+      "approvalNeeded": "Kailangan ng pag-apruba",
+      "enabled": "Aprubado ang awtomatikong pagbabayad",
+      "background": "Ang relay ang nagbabayad ng bayad sa network. Hindi kailangang buksan ang app, pumirma muli o maghawak ng ETH para sa buwanang pagsunog at ambag mula sa hawak na PVT.",
+      "noEarnings": "Ang ambag mula sa hawak na PVT ay para lamang sa natapos na buwang walang paglikha ng PVT. Awtomatikong kinukuha ang ambag mula sa kita sa settlement.",
+      "current": "Bayad na hanggang ngayon ang mga naitalang obligasyon mo.",
+      "pendingAmount": "{{amount}} PVT ang naghihintay ng awtomatikong pagkolekta. Magpanatili ng sapat na PVT sa wallet na pambayad.",
+      "increase": "Kailangan ng bagong pag-apruba sa kasalukuyang tuntunin. Hindi maaaring magkaltas ng mas mataas na halaga gamit ang dati mong pag-apruba.",
+      "leave": "Itinitigil ng pag-alis ang mga susunod na kaltas. Hindi maibabalik ang bayad nang mga ambag; maaari pa ring bawiin ang nakalaang pagpapanumbalik.",
+      "consent": "Aprubahan nang isang beses sa pagsali. Awtomatiko ang buwanang pagsunog at mga ambag sa loob ng aprubadong halaga, nang hindi binubuksan ang app, pumipirma muli o may hawak na ETH. Itinitigil ng pag-alis ang mga susunod na kaltas. Kailangan ng bagong pag-apruba sa mas mataas na halaga. Ang pagpapanumbalik ay ayon sa pagpapasya, walang kontraktuwal na karapatan sa bayad. Pinal ang mga pasya. Hindi partido ang Provian Technologies, wala itong inaambag, hinahawakan o ipinapangako."
+    },
+    "transferPicker": {
+      "explanation": "Piliin ang transfer na hindi mo ginawa. Ibinibigay ng app ang mga detalye nito at inihahanda ang pagbawi sa bagong address ng wallet. Suriin ang transfer bago pahintulutan ang kahilingan sa pagpapanumbalik.",
+      "loading": "Kinakarga ang mga transfer mo",
+      "unavailable": "Hindi namin makarga ang mga transfer mo. I-refresh at subukan muli.",
+      "empty": "Walang palabas na PVT transfer sa bahaging ito ng iyong kasaysayan.",
+      "to": "Patungo sa {{address}}",
+      "older": "Ipakita ang mas lumang transfer",
+      "review": "Iulat ang transfer na ito",
+      "confirm": "Hindi ko pinahintulutan ang transfer na ito ng {{amount}} PVT.",
+      "recovery": "Inililipat ng iyong patunay ng pagbawi ang kontrol sa kapalit na address. Sinusubukan muna ang pagbaligtad; ang pool ang nagpapasya sa pagpapanumbalik ng natitirang pagkawala."
+    }
   }
 }

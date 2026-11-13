@@ -229,7 +229,7 @@ An optional, member-funded arrangement for discretionary restoration of stolen P
 
 Every member burns 100 PVT each calendar month, earning or not. Separately, 1% of gross earnings is diverted into the Recourse Pool at settlement; at the human and Genesis split the member keeps 98%, with the 0.5% company allocation and 0.5% Foundation floor unchanged. A member with no earnings in a month contributes 100 PVT from PVT holdings to the reserve instead. Such a month requires both the participation burn and the reserve contribution. The burn destroys units; the reserve holds them. All three amounts are in the signed rule and can rise or fall prospectively with loss experience.
 
-A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound PVT holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse.
+A missed month receives one calendar month of grace. Making it up within grace preserves continuity; afterward membership ends. A former member can rejoin at any time and is protected from that day forward. No later catch-up restores a lapsed period. One membership includes all bound PVT holdings, earned and received alike. Membership is optional, for holders with enough at stake; a bound nonmember has no theft recourse. Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged.
 
 ### Does received PVT count?
 
@@ -243,7 +243,7 @@ The Recourse Pool restores the remainder, pro rata across accepted determination
 
 ### How is a restoration request determined?
 
-The determination uses the relay's own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Frank's key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member's own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule's prospective amounts.
+The determination uses the relay's own ownership, transfer, counterparty and witness evidence, including prior outcomes. There are no member-facing holds, limits, waiting periods, caps or second confirmations. Provian's key holds the separately appointable restoration authority until the Court opens; the role can pass to the Court or governance. Every determination and outcome enters the member's own chain, and every use of restoration authority is public. Self-theft remains an evidentiary risk and informs the rule's prospective amounts.
 
 ### Is cryptographic-break recovery only for members?
 

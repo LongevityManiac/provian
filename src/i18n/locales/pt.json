@@ -2974,7 +2974,7 @@
     "card10Title": "Contado e amplamente distribuído",
     "card10Body": "Um dinheiro fixo para sempre não consegue denominar um boom: ele recompensa quem espera. Um dinheiro emitido por decreto paga quem está mais perto do emissor. O PVT cresce exatamente na velocidade em que cresce o trabalho testemunhado, e cada nova unidade vai para quem fez o trabalho. A Provian não cria o boom da computação. Ela dá preço ao trabalho que de outra forma fica sem preço e paga as pessoas e os agentes que o fizeram, para que o crescimento chegue a todos como renda em vez de se acumular com quem já é dono das máquinas. Hoje, as pessoas que vivem ao lado de um centro de dados não têm participação no que ele produz. Contabilizar o trabalho e pagar a quem o realizou é como isso muda.",
     "card11Title": "Padrão aberto, implementação atual",
-    "card11Body": "O Provenance Envelope é um padrão aberto, e as ferramentas para desenvolvedores e os contratos têm licença MIT. A carteira, o relay e o Commons são implementações de referência da Provian: seu código é visível, e elas não são as únicas possíveis. As regras constitucionais são duas: gerar envelopes válidos e respeitar a divisão. A Provian opera o relay e detém a autoridade inicial sobre a política econômica; toda mudança é prospectiva e consta de um registro assinado. Uma autoridade de restauração separada, detida pela chave do fundador até que o Tribunal abra, pode devolver PVT roubado ao proprietário conforme a regra publicada, e cada uso é público. A Constituição da Rede é a carta fundadora, ainda não ratificada. O Tribunal forma um painel quando árbitros qualificados suficientes se inscrevem; a votação e um mercado de computação ainda não estão abertos.",
+    "card11Body": "O Provenance Envelope é um padrão aberto, e as ferramentas para desenvolvedores e os contratos têm licença MIT. A carteira, o relay e o Commons são implementações de referência da Provian: seu código é visível, e elas não são as únicas possíveis. As regras constitucionais são duas: gerar envelopes válidos e respeitar a divisão. A Provian opera o relay e detém a autoridade inicial sobre a política econômica; toda mudança é prospectiva e consta de um registro assinado. Uma autoridade de restauração separada, detida pela chave da Provian até que o Tribunal abra, pode devolver PVT roubado ao proprietário conforme a regra publicada, e cada uso é público. A Constituição da Rede é a carta fundadora, ainda não ratificada. O Tribunal forma um painel quando árbitros qualificados suficientes se inscrevem; a votação e um mercado de computação ainda não estão abertos.",
     "card12Title": "O que quer que compute a seguir",
     "card12Body": "Sensores, robôs, drones, medidores, clusters de pesquisa, redes de energia: qualquer coisa que compute pode ganhar de acordo com a força da evidência do que fez. Seu recibo só conta quando uma testemunha que não seja ele mesmo responde pelo trabalho, seja um hardware seguro do telefone ou do computador que comprova que o registro foi criado por software genuíno da Provian, seja um observador em uma máquina registrada por meio da qual ele se reporta, nunca pela própria palavra, e ele se soma à pessoa ou ao agente que é seu dono. A rede não precisa saber de antemão o que vai crescer nela, apenas que o que cresce seja testemunhado com honestidade.",
     "ladderHeading": "A escada de evidências",
@@ -5104,7 +5104,7 @@
     "active": "Proteção ativa",
     "inactive": "Sem adesão",
     "monthly": "Todo mês: queime {{burn}} PVT. Separadamente, contribua com {{percent}}% dos ganhos brutos, ou com {{reserve}} PVT dos seus saldos em um mês sem ganhos.",
-    "graceRule": "Um mês não cumprido tem um mês civil de tolerância. Regularize dentro desse prazo e não haverá interrupção. Depois, a adesão termina; uma nova adesão protege a partir daquele dia, nunca por uma perda ocorrida durante a interrupção.",
+    "graceRule": "Um mês não cumprido tem um mês civil de tolerância. Regularize dentro desse prazo e não haverá interrupção. Depois, a adesão termina; uma nova adesão protege a partir daquele dia, nunca por uma perda ocorrida durante a interrupção. Antes de voltar a aderir, pague a queima de participação e a contribuição ao fundo pendentes dos dois meses protegidos não pagos, incluindo o mês de carência, descontando os valores já pagos. A contribuição de cada mês é de 1% dos PVT emitidos naquele mês, ou 100 PVT se não houve emissões, conforme a regra assinada daquele mês. Os meses com a adesão interrompida continuam sem proteção e nunca são cobrados.",
     "outstanding": "Queima e contribuição pendentes: {{amount}} PVT",
     "consent": "Cada débito dos seus fundos exige sua autorização para os valores exatos. Os três valores podem mudar prospectivamente pela regra assinada publicada. A restauração é discricionária e não existe direito contratual a receber fundos. As determinações são finais. A Provian Technologies não é parte desse acordo, não contribui, não mantém fundos e não promete nada.",
     "catchUp": "Cumprir as obrigações mensais",
@@ -5210,6 +5210,37 @@
       "open": "Enviar da carteira recuperada",
       "curveGas": "O gás da rede é pago em ETH por esta carteira recuperada."
     },
-    "pvtOnly": "O registro de propriedade, a restauração gratuita após uma quebra da criptografia e a participação no Recourse Pool abrangem apenas PVT. Ether, dólares e outros tokens em um endereço vinculado não são registrados nem restaurados por esses mecanismos e continuam protegidos apenas pela chave."
+    "pvtOnly": "O registro de propriedade, a restauração gratuita após uma quebra da criptografia e a participação no Recourse Pool abrangem apenas PVT. Ether, dólares e outros tokens em um endereço vinculado não são registrados nem restaurados por esses mecanismos e continuam protegidos apenas pela chave.",
+    "rejoin": {
+      "explain": "Antes de voltar a aderir, pague a queima de participação e a contribuição ao fundo pendentes dos dois meses protegidos não pagos, incluindo o mês de carência, descontando os valores já pagos. A contribuição de cada mês é de 1% dos PVT emitidos naquele mês, ou 100 PVT se não houve emissões, conforme a regra assinada daquele mês. Os meses com a adesão interrompida continuam sem proteção e nunca são cobrados.",
+      "payment": "{{month}}: queime {{burn}} PVT e contribua com {{reserve}} PVT antes de voltar a aderir."
+    },
+    "standing": {
+      "explain": "Aprove a adesão uma vez. Os pagamentos mensais passam a ser automáticos, mesmo com o app fechado. Você não precisa de ETH para entrar, pagar ou sair. Valores maiores exigem nova aprovação.",
+      "review": "Revisar novos valores",
+      "limits": "Máximo mensal: {{burn}} PVT queimados e {{reserve}} PVT contribuídos dos PVT desta carteira. Contribuição dos ganhos: {{percent}}%.",
+      "external": "Conecte esta carteira para aprovar sua adesão uma vez. Pagamentos posteriores e a saída não exigem novas solicitações na carteira.",
+      "payments": "Pagamentos automáticos",
+      "approvalNeeded": "Aprovação necessária",
+      "enabled": "Pagamentos automáticos aprovados",
+      "background": "O relay paga a taxa de rede. A queima mensal e a contribuição dos PVT em carteira não exigem abrir o app, assinar novamente nem manter ETH.",
+      "noEarnings": "A contribuição dos PVT em carteira só se aplica a um mês encerrado sem emissão. A contribuição dos ganhos é cobrada automaticamente na liquidação.",
+      "current": "Suas obrigações registradas estão em dia.",
+      "pendingAmount": "{{amount}} PVT aguardam cobrança automática. Mantenha PVT suficiente na carteira de pagamento.",
+      "increase": "A regra atual exige nova aprovação. Sua aprovação anterior não permite cobrar um valor maior.",
+      "leave": "Sair encerra débitos futuros. Contribuições pagas não são reembolsáveis; restaurações alocadas continuam disponíveis para saque.",
+      "consent": "Aprove uma vez ao entrar. Queimas e contribuições mensais ocorrem automaticamente dentro dos valores aprovados, sem abrir o app, assinar novamente ou manter ETH. Sair interrompe débitos futuros. Valores maiores exigem nova aprovação. A restauração é discricionária, sem direito contratual a pagamento. As determinações são finais. Provian Technologies não é parte, não contribui, não detém nem promete nada."
+    },
+    "transferPicker": {
+      "explanation": "Escolha a transferência que você não fez. O app fornece os detalhes e prepara a recuperação para um novo endereço. Revise a transferência antes de autorizar sua solicitação de restauração.",
+      "loading": "Carregando suas transferências",
+      "unavailable": "Não foi possível carregar suas transferências. Atualize e tente novamente.",
+      "empty": "Não há transferências de saída de PVT nesta parte do histórico.",
+      "to": "Para {{address}}",
+      "older": "Mostrar transferências anteriores",
+      "review": "Informar esta transferência",
+      "confirm": "Não autorizei esta transferência de {{amount}} PVT.",
+      "recovery": "Sua prova de recuperação transfere o controle a um endereço substituto. Primeiro tenta-se a reversão; o pool determina a restauração da perda restante."
+    }
   }
 }

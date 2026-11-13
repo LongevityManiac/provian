@@ -2974,7 +2974,7 @@
     "card10Title": "Compté et largement détenu",
     "card10Body": "Une monnaie figée pour toujours ne peut pas libeller un essor : elle récompense celui qui attend. Une monnaie émise par décret paie celui qui se tient le plus près de l’émetteur. Le PVT croît exactement au rythme du travail attesté, et chaque nouvelle unité va à celui qui a fait le travail. Provian ne crée pas l’essor du calcul. Il donne un prix au travail qui autrement n’en a pas et paie les personnes et les agents qui l’ont fait, pour que la croissance atteigne chacun sous forme de revenu au lieu de s’accumuler chez ceux qui possèdent déjà les machines. Aujourd’hui, les personnes qui vivent à côté d’un centre de données ne détiennent aucune part de ce qu’il produit. Comptabiliser le travail et rémunérer ceux qui l’ont accompli permet de changer cela.",
     "card11Title": "Standard ouvert, implémentation actuelle",
-    "card11Body": "Le Provenance Envelope est un standard ouvert, et les outils de développement ainsi que les contrats sont sous licence MIT. Le portefeuille, le relais et les Commons sont les implémentations de référence de Provian : leur code source est consultable, et d’autres implémentations sont possibles. Les règles constitutionnelles sont au nombre de deux : produire des enveloppes valides et respecter la répartition. Provian exploite le relais et détient l’autorité initiale sur la politique économique ; chaque modification est prospective et consignée dans un registre signé. Une autorité de restauration distincte, détenue par la clé du fondateur jusqu’à l’ouverture du Tribunal, peut restituer les PVT volés à leur propriétaire selon la règle publiée, et chaque utilisation est publique. La Constitution du Réseau est la charte fondatrice, pas encore ratifiée. Le Tribunal constitue un panel dès qu’un nombre suffisant d’arbitres qualifiés se portent volontaires ; le vote et un marché du calcul ne sont pas encore ouverts.",
+    "card11Body": "Le Provenance Envelope est un standard ouvert, et les outils de développement ainsi que les contrats sont sous licence MIT. Le portefeuille, le relais et les Commons sont les implémentations de référence de Provian : leur code source est consultable, et d’autres implémentations sont possibles. Les règles constitutionnelles sont au nombre de deux : produire des enveloppes valides et respecter la répartition. Provian exploite le relais et détient l’autorité initiale sur la politique économique ; chaque modification est prospective et consignée dans un registre signé. Une autorité de restauration distincte, détenue par la clé de Provian jusqu’à l’ouverture du Tribunal, peut restituer les PVT volés à leur propriétaire selon la règle publiée, et chaque utilisation est publique. La Constitution du Réseau est la charte fondatrice, pas encore ratifiée. Le Tribunal constitue un panel dès qu’un nombre suffisant d’arbitres qualifiés se portent volontaires ; le vote et un marché du calcul ne sont pas encore ouverts.",
     "card12Title": "Tout ce qui calculera ensuite",
     "card12Body": "Capteurs, robots, drones, compteurs, grappes de recherche, réseaux électriques : tout ce qui calcule peut gagner selon la solidité des preuves de ce qu’il a fait. Son reçu ne compte que lorsqu’un témoin autre que lui-même répond du travail, soit un matériel sécurisé du téléphone ou de l’ordinateur prouvant que l’enregistrement a été créé par un logiciel Provian authentique, soit un observateur sur une machine enregistrée par laquelle il transmet ses relevés, jamais sur sa seule parole, et il se rattache à la personne ou à l’agent qui le possède. Le réseau n’a pas besoin de savoir à l’avance ce qui y poussera, seulement que ce qui y pousse soit attesté honnêtement.",
     "ladderHeading": "L’échelle des preuves",
@@ -5104,7 +5104,7 @@
     "active": "Protection active",
     "inactive": "Sans adhésion",
     "monthly": "Chaque mois : détruisez {{burn}} PVT. Contribuez séparément à hauteur de {{percent}} % des gains bruts, ou de {{reserve}} PVT prélevés sur vos avoirs pour un mois sans gains.",
-    "graceRule": "Un mois manqué ouvre un mois civil de grâce. Régularisez pendant ce délai et il n’y a aucune interruption. Ensuite, l’adhésion prend fin ; une nouvelle adhésion protège à partir de ce jour, jamais pour une perte survenue pendant l’interruption.",
+    "graceRule": "Un mois manqué ouvre un mois civil de grâce. Régularisez pendant ce délai et il n’y a aucune interruption. Ensuite, l’adhésion prend fin ; une nouvelle adhésion protège à partir de ce jour, jamais pour une perte survenue pendant l’interruption. Avant de rejoindre à nouveau le pool, réglez la destruction de participation et la contribution au pool restant dues pour les deux mois protégés impayés, y compris le mois de grâce, en déduisant les montants déjà payés. La contribution de chaque mois est de 1% des PVT émis ce mois-là, ou de 100 PVT si aucune émission n’a eu lieu, selon la règle signée de ce mois. Les mois sans adhésion restent sans protection et ne sont jamais facturés.",
     "outstanding": "Destruction et contribution restantes : {{amount}} PVT",
     "consent": "Chaque débit de vos avoirs nécessite votre autorisation pour ses montants exacts. Les trois montants peuvent changer pour l’avenir selon la règle signée publiée. La restitution est discrétionnaire et ne confère aucun droit contractuel à recevoir des fonds. Les déterminations sont définitives. Provian Technologies n’est pas partie à cet arrangement, ne contribue rien, ne détient rien et ne promet rien.",
     "catchUp": "Remplir les obligations mensuelles",
@@ -5210,6 +5210,37 @@
       "open": "Envoyer depuis le portefeuille récupéré",
       "curveGas": "Les frais de réseau sont payés en ETH depuis ce portefeuille récupéré."
     },
-    "pvtOnly": "Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule."
+    "pvtOnly": "Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule.",
+    "rejoin": {
+      "explain": "Avant de rejoindre à nouveau le pool, réglez la destruction de participation et la contribution au pool restant dues pour les deux mois protégés impayés, y compris le mois de grâce, en déduisant les montants déjà payés. La contribution de chaque mois est de 1% des PVT émis ce mois-là, ou de 100 PVT si aucune émission n’a eu lieu, selon la règle signée de ce mois. Les mois sans adhésion restent sans protection et ne sont jamais facturés.",
+      "payment": "{{month}} : détruisez {{burn}} PVT et contribuez {{reserve}} PVT avant de rejoindre à nouveau le pool."
+    },
+    "standing": {
+      "explain": "Approuvez votre adhésion une fois. Les paiements mensuels sont ensuite automatiques, même si l’application est fermée. Aucun ETH n’est nécessaire pour adhérer, payer ou partir. Des montants supérieurs exigent une nouvelle approbation.",
+      "review": "Examiner les nouveaux montants",
+      "limits": "Maximum mensuel : {{burn}} PVT brûlés et {{reserve}} PVT prélevés sur les PVT de ce portefeuille. Contribution sur les gains : {{percent}}%.",
+      "external": "Connectez ce portefeuille pour approuver une fois son adhésion. Les paiements suivants et le départ ne nécessitent aucune nouvelle demande au portefeuille.",
+      "payments": "Paiements automatiques",
+      "approvalNeeded": "Approbation nécessaire",
+      "enabled": "Paiements automatiques approuvés",
+      "background": "Le relais paie les frais de réseau. La destruction mensuelle et la contribution prélevée sur vos PVT ne nécessitent ni ouverture de l’application, ni nouvelle signature, ni ETH.",
+      "noEarnings": "La contribution prélevée sur les PVT détenus ne concerne qu’un mois terminé sans émission. La contribution sur les gains est prélevée automatiquement au règlement.",
+      "current": "Vos obligations enregistrées sont à jour.",
+      "pendingAmount": "{{amount}} PVT attendent le prélèvement automatique. Gardez assez de PVT dans votre portefeuille de paiement.",
+      "increase": "La règle actuelle exige une nouvelle approbation. Votre approbation précédente ne permet aucun prélèvement supérieur.",
+      "leave": "Le départ met fin aux prélèvements futurs. Les contributions payées ne sont pas remboursables ; les restaurations attribuées restent retirables.",
+      "consent": "Approuvez une fois lors de l’adhésion. Les destructions et contributions mensuelles sont automatiques dans les limites approuvées, sans ouvrir l’application, signer de nouveau ni détenir d’ETH. Le départ arrête les prélèvements futurs. Des montants supérieurs exigent une nouvelle approbation. La restauration est discrétionnaire, sans droit contractuel au paiement. Les décisions sont définitives. Provian Technologies n’est pas partie, ne contribue rien, ne détient rien et ne promet rien."
+    },
+    "transferPicker": {
+      "explanation": "Choisissez le transfert que vous n’avez pas effectué. L’application fournit ses détails et prépare la récupération vers une nouvelle adresse. Vérifiez le transfert avant d’autoriser votre demande de restauration.",
+      "loading": "Chargement de vos transferts",
+      "unavailable": "Impossible de charger vos transferts. Actualisez et réessayez.",
+      "empty": "Aucun transfert sortant de PVT ne figure dans cette partie de votre historique.",
+      "to": "Vers {{address}}",
+      "older": "Afficher les transferts antérieurs",
+      "review": "Signaler ce transfert",
+      "confirm": "Je n’ai pas autorisé ce transfert de {{amount}} PVT.",
+      "recovery": "Votre preuve de récupération transfère le contrôle à une adresse de remplacement. L’annulation est tentée en premier ; le pool détermine la restauration de la perte restante."
+    }
   }
 }

@@ -2974,7 +2974,7 @@
     "card10Title": "Được đếm và được nắm giữ rộng rãi",
     "card10Body": "Tiền bị cố định mãi mãi không thể định danh cho một thời bùng nổ: nó thưởng cho bất kỳ ai chờ đợi. Tiền phát hành theo sắc lệnh trả cho bất kỳ ai đứng gần người phát hành nhất. PVT tăng đúng bằng tốc độ tăng của công việc có nhân chứng, và mỗi đơn vị mới đều về tay người đã làm việc. Provian không tạo ra cơn bùng nổ điện toán. Nó định giá những công việc lẽ ra không được định giá và trả cho những con người và tác nhân đã làm ra chúng, để sự tăng trưởng đến với mọi người dưới dạng thu nhập thay vì dồn về những ai vốn đã sở hữu máy móc. Ngày nay, những người sống cạnh trung tâm dữ liệu không có phần sở hữu trong những gì trung tâm đó tạo ra. Ghi nhận công việc và trả cho người thực hiện là cách thay đổi điều đó.",
     "card11Title": "Chuẩn mở, bản triển khai hiện tại",
-    "card11Body": "Provenance Envelope là tiêu chuẩn mở, còn công cụ dành cho nhà phát triển và các hợp đồng sử dụng giấy phép MIT. Ví, relay và Commons là các triển khai tham chiếu của Provian: mã nguồn có thể xem được và vẫn có thể có các triển khai khác. Có hai quy tắc hiến định: tạo các phong bì hợp lệ và tuân thủ việc phân chia. Provian vận hành relay và nắm quyền khởi tạo đối với chính sách kinh tế; mọi thay đổi chỉ áp dụng về sau và được ghi trong hồ sơ có chữ ký. Một thẩm quyền khôi phục riêng, do khóa của người sáng lập nắm giữ cho đến khi Tòa mở, có thể trả PVT bị đánh cắp cho chủ sở hữu theo quy tắc đã công bố; mọi lần sử dụng đều công khai. Hiến pháp Mạng là hiến chương sáng lập, chưa được phê chuẩn. Tòa thành lập hội đồng khi có đủ trọng tài viên đủ điều kiện tự nguyện tham gia; biểu quyết và thị trường tính toán chưa mở.",
+    "card11Body": "Provenance Envelope là tiêu chuẩn mở, còn công cụ dành cho nhà phát triển và các hợp đồng sử dụng giấy phép MIT. Ví, relay và Commons là các triển khai tham chiếu của Provian: mã nguồn có thể xem được và vẫn có thể có các triển khai khác. Có hai quy tắc hiến định: tạo các phong bì hợp lệ và tuân thủ việc phân chia. Provian vận hành relay và nắm quyền khởi tạo đối với chính sách kinh tế; mọi thay đổi chỉ áp dụng về sau và được ghi trong hồ sơ có chữ ký. Một thẩm quyền khôi phục riêng, do khóa của Provian nắm giữ cho đến khi Tòa mở, có thể trả PVT bị đánh cắp cho chủ sở hữu theo quy tắc đã công bố; mọi lần sử dụng đều công khai. Hiến pháp Mạng là hiến chương sáng lập, chưa được phê chuẩn. Tòa thành lập hội đồng khi có đủ trọng tài viên đủ điều kiện tự nguyện tham gia; biểu quyết và thị trường tính toán chưa mở.",
     "card12Title": "Bất cứ thứ gì điện toán tiếp theo",
     "card12Body": "Cảm biến, robot, drone, đồng hồ đo, cụm máy nghiên cứu, lưới điện: bất cứ thứ gì có khả năng điện toán đều có thể kiếm được theo sức mạnh của bằng chứng về những gì nó đã làm. Biên nhận của nó chỉ được tính khi một nhân chứng khác ngoài chính nó xác nhận công việc, hoặc là phần cứng bảo mật trong điện thoại hoặc máy tính chứng minh bản ghi do phần mềm Provian chính hãng tạo ra, hoặc là một trình quan sát trên một máy đã đăng ký mà nó báo cáo qua, không bao giờ chỉ dựa trên lời tự nhận của nó, và nó được quy về người hoặc tác nhân sở hữu nó. Mạng lưới không cần biết trước điều gì sẽ lớn lên trên nó, chỉ cần những gì lớn lên được chứng kiến một cách trung thực.",
     "ladderHeading": "Nấc thang bằng chứng",
@@ -5104,7 +5104,7 @@
     "active": "Được bảo vệ",
     "inactive": "Chưa tham gia",
     "monthly": "Mỗi tháng: hủy {{burn}} PVT. Đồng thời, đóng góp riêng {{percent}}% tổng thu nhập, hoặc {{reserve}} PVT từ số dư trong tháng không có thu nhập.",
-    "graceRule": "Nếu bỏ lỡ một tháng, bạn có một tháng dương lịch gia hạn. Hoàn thành trong thời gian này thì không bị gián đoạn. Sau đó tư cách thành viên kết thúc; tham gia lại chỉ bảo vệ từ ngày đó, không áp dụng cho tổn thất trong thời gian gián đoạn.",
+    "graceRule": "Nếu bỏ lỡ một tháng, bạn có một tháng dương lịch gia hạn. Hoàn thành trong thời gian này thì không bị gián đoạn. Sau đó tư cách thành viên kết thúc; tham gia lại chỉ bảo vệ từ ngày đó, không áp dụng cho tổn thất trong thời gian gián đoạn. Trước khi tham gia lại, hãy thanh toán phần đốt để tham gia và khoản đóng góp vào quỹ còn thiếu của cả hai tháng được bảo vệ nhưng chưa trả, gồm tháng ân hạn, sau khi trừ các khoản đã trả. Khoản đóng góp mỗi tháng bằng 1% PVT được đúc trong tháng đó, hoặc 100 PVT nếu không có đúc, theo quy tắc đã ký của tháng đó. Các tháng tư cách thành viên hết hiệu lực vẫn không được bảo vệ và không bao giờ bị tính phí.",
     "outstanding": "Số PVT còn phải hủy và đóng góp: {{amount}} PVT",
     "consent": "Mỗi lần trừ vào số dư của bạn cần được bạn cho phép với số tiền chính xác. Cả ba mức có thể thay đổi cho tương lai theo quy tắc có chữ ký đã công bố. Việc khôi phục tùy thuộc quyết định của quỹ, không có quyền theo hợp đồng được nhận tiền. Các quyết định là cuối cùng. Provian Technologies không phải bên tham gia, không đóng góp, không giữ tài sản và không hứa hẹn điều gì.",
     "catchUp": "Hoàn thành nghĩa vụ hằng tháng",
@@ -5210,6 +5210,37 @@
       "open": "Gửi từ ví đã khôi phục",
       "curveGas": "Phí gas mạng được thanh toán bằng ETH từ ví đã khôi phục này."
     },
-    "pvtOnly": "Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa."
+    "pvtOnly": "Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.",
+    "rejoin": {
+      "explain": "Trước khi tham gia lại, hãy thanh toán phần đốt để tham gia và khoản đóng góp vào quỹ còn thiếu của cả hai tháng được bảo vệ nhưng chưa trả, gồm tháng ân hạn, sau khi trừ các khoản đã trả. Khoản đóng góp mỗi tháng bằng 1% PVT được đúc trong tháng đó, hoặc 100 PVT nếu không có đúc, theo quy tắc đã ký của tháng đó. Các tháng tư cách thành viên hết hiệu lực vẫn không được bảo vệ và không bao giờ bị tính phí.",
+      "payment": "{{month}}: đốt {{burn}} PVT và đóng góp {{reserve}} PVT trước khi tham gia lại."
+    },
+    "standing": {
+      "explain": "Chấp thuận tư cách thành viên một lần. Các khoản thanh toán hằng tháng sau đó tự động diễn ra ngay cả khi ứng dụng đã đóng. Không cần ETH để tham gia, thanh toán hoặc rời đi. Số tiền cao hơn cần chấp thuận mới.",
+      "review": "Xem xét số tiền mới",
+      "limits": "Tối đa mỗi tháng: đốt {{burn}} PVT và đóng góp {{reserve}} PVT từ số PVT ví này nắm giữ. Đóng góp từ thu nhập: {{percent}}%.",
+      "external": "Kết nối ví này để chấp thuận tư cách thành viên một lần. Các lần thanh toán sau và việc rời đi không cần thêm yêu cầu xác nhận trong ví.",
+      "payments": "Thanh toán tự động",
+      "approvalNeeded": "Cần chấp thuận",
+      "enabled": "Đã chấp thuận thanh toán tự động",
+      "background": "Relay trả phí mạng. Việc đốt hằng tháng và đóng góp từ PVT đang giữ không đòi hỏi mở ứng dụng, ký lại hoặc giữ ETH.",
+      "noEarnings": "Đóng góp từ PVT đang giữ chỉ áp dụng cho tháng đã kết thúc mà không có phát hành. Đóng góp từ thu nhập được tự động khấu trừ khi quyết toán.",
+      "current": "Các nghĩa vụ đã ghi nhận của bạn đều đã được thanh toán.",
+      "pendingAmount": "{{amount}} PVT đang chờ thu tự động. Hãy giữ đủ PVT trong ví thanh toán.",
+      "increase": "Quy tắc hiện tại cần chấp thuận mới. Không thể khấu trừ số tiền cao hơn theo chấp thuận trước đó.",
+      "leave": "Rời đi chấm dứt các khoản khấu trừ trong tương lai. Các khoản đóng góp đã trả không được hoàn lại; khoản khôi phục đã phân bổ vẫn có thể rút.",
+      "consent": "Chấp thuận một lần khi tham gia. Việc đốt và đóng góp hằng tháng diễn ra tự động trong các mức đã chấp thuận, không cần mở ứng dụng, ký lại hoặc giữ ETH. Rời đi dừng các khoản khấu trừ tương lai. Số tiền cao hơn cần chấp thuận mới. Khôi phục là quyết định tùy nghi, không có quyền thanh toán theo hợp đồng. Các quyết định là cuối cùng. Provian Technologies không phải một bên, không đóng góp, nắm giữ hay hứa hẹn điều gì."
+    },
+    "transferPicker": {
+      "explanation": "Chọn giao dịch chuyển mà bạn không thực hiện. Ứng dụng cung cấp chi tiết và chuẩn bị phục hồi sang địa chỉ ví mới. Xem xét giao dịch trước khi cho phép yêu cầu khôi phục.",
+      "loading": "Đang tải các giao dịch chuyển",
+      "unavailable": "Không thể tải các giao dịch chuyển. Hãy làm mới và thử lại.",
+      "empty": "Không có giao dịch chuyển PVT đi trong phần lịch sử này.",
+      "to": "Đến {{address}}",
+      "older": "Hiện giao dịch cũ hơn",
+      "review": "Báo cáo giao dịch này",
+      "confirm": "Tôi không cho phép giao dịch chuyển {{amount}} PVT này.",
+      "recovery": "Bằng chứng phục hồi chuyển quyền kiểm soát sang địa chỉ thay thế. Việc đảo ngược được thử trước; pool quyết định khôi phục phần tổn thất còn lại."
+    }
   }
 }

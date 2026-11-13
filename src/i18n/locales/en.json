@@ -3017,7 +3017,7 @@
     "card10Title": "Counted and Broadly Held",
     "card10Body": "Money fixed forever can't denominate a boom: it rewards whoever waits. Money issued by decree pays whoever stands nearest the issuer. PVT grows exactly as fast as witnessed work grows, and every new unit goes to the one who did the work. Provian doesn't create the compute boom. It prices the work that otherwise goes unpriced and pays the people and agents who did it, so the growth reaches everyone as income instead of pooling with whoever already owns the machines. Today the people who live beside a data center hold no share of what it produces. Counting the work and paying whoever did it is how that changes.",
     "card11Title": "Open Standard, Present Implementation",
-    "card11Body": "The Provenance Envelope is an open standard, and the developer tools and contracts are MIT-licensed. The wallet, the relay, and the Commons are Provian's reference implementations: source-visible, and not the only possible ones. The constitutional rules are two: generate valid envelopes and honor the split. Provian operates the relay and holds bootstrap authority over economic policy, and every change is prospective, on a signed record. A separate restoration authority, held by the founder's key until the Court opens, can return stolen PVT to its owner under the published rule, and every use of it is public. The Network Constitution is the founding charter, not yet ratified. The Court seats a panel once enough qualified arbitrators opt in; voting and a compute market are not yet open.",
+    "card11Body": "The Provenance Envelope is an open standard, and the developer tools and contracts are MIT-licensed. The wallet, the relay, and the Commons are Provian's reference implementations: source-visible, and not the only possible ones. The constitutional rules are two: generate valid envelopes and honor the split. Provian operates the relay and holds bootstrap authority over economic policy, and every change is prospective, on a signed record. A separate restoration authority, held by Provian's key until the Court opens, can return stolen PVT to its owner under the published rule, and every use of it is public. The Network Constitution is the founding charter, not yet ratified. The Court seats a panel once enough qualified arbitrators opt in; voting and a compute market are not yet open.",
     "card12Title": "Whatever Computes Next",
     "card12Body": "Sensors, robots, drones, meters, research clusters, energy grids: anything that computes can earn at the strength of the evidence for what it did. Its receipt counts only when a witness other than itself vouches for the work, either secure hardware in the phone or computer proving the record was made by genuine Provian software or an observer on a registered machine it reports through, never on its own say-so, and it rolls up to the person or agent who owns it. The network doesn't need to know in advance what will grow on it, only that what grows is honestly witnessed.",
     "ladderHeading": "The Evidence Ladder",
@@ -5104,7 +5104,7 @@
     "active": "Protected",
     "inactive": "Not enrolled",
     "monthly": "Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from PVT holdings in a month with no earnings.",
-    "graceRule": "A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.",
+    "graceRule": "A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed. Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged.",
     "outstanding": "Outstanding burn and contribution: {{amount}} PVT",
     "consent": "Each debit from your PVT holdings requires your authorization for its exact amounts. All three amounts can change prospectively under the published signed rule. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.",
     "catchUp": "Complete monthly obligations",
@@ -5210,6 +5210,37 @@
       "open": "Send from recovered wallet",
       "curveGas": "Network gas is paid in ETH from this recovered wallet."
     },
-    "pvtOnly": "The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone."
+    "pvtOnly": "The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.",
+    "rejoin": {
+      "explain": "Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged.",
+      "payment": "{{month}}: burn {{burn}} PVT and contribute {{reserve}} PVT before rejoining."
+    },
+    "standing": {
+      "explain": "Approve membership once. Monthly payments then happen automatically, even while the app is closed. You need no ETH to join, pay or leave. Higher amounts require your fresh approval.",
+      "review": "Review new amounts",
+      "limits": "Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.",
+      "external": "Connect this wallet to approve its membership once. Later payments and leaving require no further wallet prompts.",
+      "payments": "Automatic payments",
+      "approvalNeeded": "Approval needed",
+      "enabled": "Automatic payments approved",
+      "background": "The relay pays the network fee. Your monthly burn and contribution from PVT holdings do not need you to open the app, sign again or keep ETH.",
+      "noEarnings": "The contribution from PVT holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.",
+      "current": "Your recorded obligations are up to date.",
+      "pendingAmount": "{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.",
+      "increase": "The current rule requires a new approval. No higher amount can be debited under your previous approval.",
+      "leave": "Leaving ends future debits. Contributions already paid are nonrefundable; allocated restorations remain withdrawable.",
+      "consent": "Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing."
+    },
+    "transferPicker": {
+      "explanation": "Choose the transfer you did not make. The app supplies its transaction details and prepares recovery to a new wallet address. Review the transfer before authorizing your restoration request.",
+      "loading": "Loading your transfers",
+      "unavailable": "We could not load your transfers. Refresh and try again.",
+      "empty": "No outgoing PVT transfers appear in this part of your history.",
+      "to": "To {{address}}",
+      "older": "Show older transfers",
+      "review": "Report this transfer",
+      "confirm": "I did not authorize this transfer of {{amount}} PVT.",
+      "recovery": "Your recovery proof moves control to a replacement address. Reversal is attempted first; the pool determines restoration of any remaining loss."
+    }
   }
 }

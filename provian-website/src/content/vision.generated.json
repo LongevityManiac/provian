@@ -72,7 +72,7 @@
   {
     "title": "Open Standard, Present Implementation",
     "paragraphs": [
-      "The Provenance Envelope is an open standard, and the developer tools and contracts are MIT-licensed. The wallet, the relay, and the Commons are Provian's reference implementations: source-visible, and not the only possible ones. The constitutional rules are two: generate valid envelopes and honor the split. Provian operates the relay and holds bootstrap authority over economic policy, and every change is prospective, on a signed record. A separate restoration authority, held by the founder's key until the Court opens, can return stolen PVT to its owner under the published rule, and every use of it is public. The Network Constitution is the founding charter, not yet ratified. The Court seats a panel once enough qualified arbitrators opt in; voting and a compute market are not yet open."
+      "The Provenance Envelope is an open standard, and the developer tools and contracts are MIT-licensed. The wallet, the relay, and the Commons are Provian's reference implementations: source-visible, and not the only possible ones. The constitutional rules are two: generate valid envelopes and honor the split. Provian operates the relay and holds bootstrap authority over economic policy, and every change is prospective, on a signed record. A separate restoration authority, held by Provian's key until the Court opens, can return stolen PVT to its owner under the published rule, and every use of it is public. The Network Constitution is the founding charter, not yet ratified. The Court seats a panel once enough qualified arbitrators opt in; voting and a compute market are not yet open."
     ]
   },
   {

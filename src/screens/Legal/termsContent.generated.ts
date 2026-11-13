@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:3860e769074d1ddbc7d7920ba04fd4e22f95b239319fcb6e855f0f237a25cf7a",
+  "version": "sha256:e11c1d1aacfddca8c7f414d17693777224650932ea47f41f3476b078611ef5cd",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2060,7 +2060,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "A missed month's obligations receive one calendar month of grace. Membership remains protected during that grace month, and making up the missed obligations within it preserves continuity. After grace expires, membership ends. No later catch-up restores a lapsed period. A former member can rejoin at any time and is protected from that day forward; a loss during a lapsed period receives no theft restoration. Leaving ends membership prospectively. One membership includes every address bound to the member's identity, with earned and received PVT treated alike. Membership is optional and intended for holders with enough at stake to justify the standing participation burn."
+          "text": "A missed month's obligations receive one calendar month of grace. Membership remains protected during that grace month, and making up the missed obligations within it preserves continuity. After grace expires, membership ends. No later catch-up restores a lapsed period. A former member can rejoin at any time and is protected from that day forward; a loss during a lapsed period receives no theft restoration. Leaving ends membership prospectively. One membership includes every address bound to the member's identity, with earned and received PVT treated alike. Membership is optional and intended for holders with enough at stake to justify the standing participation burn. Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged."
         }
       ]
     },
@@ -2072,7 +2072,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "A member may submit a restoration request for a recorded loss to a fresh address bound through the recovery process. The pool considers the ownership and transfer history, available signing-device evidence, destinations and counterparties, and prior restoration outcomes. Evidence informs a discretionary determination; no observation or score guarantees acceptance. There are no member-facing holds, amount limits, waiting periods, caps or second confirmations in this determination process. Frank Drew's key holds the separately appointable restoration authority and executes the published rule's output until the Court opens. The role can pass to the Court or governance. Neither the authority alone nor the owner's recovery proof alone can execute a reversal."
+          "text": "A member may submit a restoration request for a recorded loss to a fresh address bound through the recovery process. The pool considers the ownership and transfer history, available signing-device evidence, destinations and counterparties, and prior restoration outcomes. Evidence informs a discretionary determination; no observation or score guarantees acceptance. There are no member-facing holds, amount limits, waiting periods, caps or second confirmations in this determination process. Provian's key holds the separately appointable restoration authority and executes the published rule's output until the Court opens. The role can pass to the Court or governance. Neither the authority alone nor the owner's recovery proof alone can execute a reversal."
         }
       ]
     },

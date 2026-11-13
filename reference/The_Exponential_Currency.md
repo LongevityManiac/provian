@@ -310,7 +310,7 @@ Reversal comes first. In a single transaction the token contract destroys the st
 
 There are no chargebacks. A reversal reaches PVT still held by whoever took it, or by anyone who gave nothing for it. PVT that someone received in a witnessed exchange stays with them: a person or agent who did honest business keeps what they were paid. The pool restores the member for that part.
 
-The restoration authority is a real power, and it is stated plainly. It can return stolen PVT to its owner under the published rule, and every use of it is on the public record. It is a separately appointable role: Frank Drew's key holds it until the Court opens, and it can pass to the Court or to governance. Ordinary transfers are never gated by it.
+The restoration authority is a real power, and it is stated plainly. It can return stolen PVT to its owner under the published rule, and every use of it is on the public record. It is a separately appointable role: Provian's key holds it until the Court opens, and it can pass to the Court or to governance. Ordinary transfers are never gated by it.
 
 ### The Recourse Pool
 
@@ -318,7 +318,7 @@ The Recourse Pool restores what a reversal cannot reach. It is an on-chain pool 
 
 A member does two separate things every month, and both are required. It burns 100 PVT, earning or not: a true burn, and the largest standing burn in the system. And it contributes to the pool 1% of what it earns, diverted at settlement, so that at the human split a member keeps 98% of a mint where another contributor keeps 99%; a member with no earnings that month contributes 100 PVT from its holdings instead. The burn destroys units. The contribution is what restores members. All three amounts live in the signed policy and can be raised or lowered for future months as loss experience accumulates. They are uses of an earned token inside its own economy.
 
-A member who misses a month stays protected for one more month, and making it up inside that month means nothing lapsed. After that the membership ends. A former member can rejoin at any time and is protected from that day forward; nothing stolen while lapsed is restored, and there is no catching up afterward. One membership takes in all of a member's bound PVT, earned and received alike. Contributions are not refundable.
+A member who misses a month stays protected for one more month, and making it up inside that month means nothing lapsed. After that the membership ends. A former member can rejoin at any time and is protected from that day forward; nothing stolen while lapsed is restored, and there is no restoring protection afterward. One membership takes in all of a member's bound PVT, earned and received alike. Contributions are not refundable. Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged.
 
 The pool restores in PVT, pro rata when it holds less than its accepted shortfalls, and never more than it holds. It publishes the ratio each time it does. A restoration allocated to a member can be withdrawn on chain without the relay. Every determination and its outcome is recorded in the member's own chain, so a later request meets that record.
 

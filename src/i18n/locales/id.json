@@ -2974,7 +2974,7 @@
     "card10Title": "Terhitung dan Dimiliki Secara Luas",
     "card10Body": "Uang yang tetap selamanya tidak dapat menjadi satuan bagi sebuah ledakan pertumbuhan: ia menghadiahi siapa pun yang menunggu. Uang yang diterbitkan berdasarkan dekret membayar siapa pun yang berdiri paling dekat dengan penerbitnya. PVT tumbuh persis secepat pertumbuhan pekerjaan yang disaksikan, dan setiap unit baru jatuh kepada orang yang melakukan pekerjaan. Provian tidak menciptakan ledakan komputasi. Provian memberi harga pada pekerjaan yang selama ini tidak dihargai dan membayar orang serta agen yang melakukannya, sehingga pertumbuhan sampai ke semua orang sebagai pendapatan alih-alih menumpuk pada mereka yang sudah memiliki mesin. Saat ini, orang yang tinggal di dekat pusat data tidak memiliki bagian dari hasil produksinya. Menghitung pekerjaan dan membayar siapa pun yang mengerjakannya adalah cara mengubah keadaan itu.",
     "card11Title": "Standar Terbuka, Implementasi Saat Ini",
-    "card11Body": "Provenance Envelope adalah standar terbuka, dan alat pengembang serta kontraknya berlisensi MIT. Dompet, relay, dan Commons adalah implementasi referensi Provian: kode sumbernya dapat dilihat, dan implementasi lain juga dimungkinkan. Ada dua aturan konstitusional: menghasilkan envelope yang valid dan menghormati pembagian. Provian mengoperasikan relay dan memegang kewenangan awal atas kebijakan ekonomi; setiap perubahan berlaku ke depan dan dicatat dalam rekaman bertanda tangan. Kewenangan pemulihan yang terpisah, dipegang oleh kunci pendiri hingga Pengadilan dibuka, dapat mengembalikan PVT yang dicuri kepada pemiliknya menurut aturan yang dipublikasikan, dan setiap penggunaannya bersifat publik. Konstitusi Jaringan merupakan piagam pendirian yang belum diratifikasi. Pengadilan membentuk panel setelah cukup banyak arbiter berkualifikasi mendaftar; pemungutan suara dan pasar komputasi belum dibuka.",
+    "card11Body": "Provenance Envelope adalah standar terbuka, dan alat pengembang serta kontraknya berlisensi MIT. Dompet, relay, dan Commons adalah implementasi referensi Provian: kode sumbernya dapat dilihat, dan implementasi lain juga dimungkinkan. Ada dua aturan konstitusional: menghasilkan envelope yang valid dan menghormati pembagian. Provian mengoperasikan relay dan memegang kewenangan awal atas kebijakan ekonomi; setiap perubahan berlaku ke depan dan dicatat dalam rekaman bertanda tangan. Kewenangan pemulihan yang terpisah, dipegang oleh kunci Provian hingga Pengadilan dibuka, dapat mengembalikan PVT yang dicuri kepada pemiliknya menurut aturan yang dipublikasikan, dan setiap penggunaannya bersifat publik. Konstitusi Jaringan merupakan piagam pendirian yang belum diratifikasi. Pengadilan membentuk panel setelah cukup banyak arbiter berkualifikasi mendaftar; pemungutan suara dan pasar komputasi belum dibuka.",
     "card12Title": "Apa Pun yang Berkomputasi Berikutnya",
     "card12Body": "Sensor, robot, drone, meteran, klaster riset, jaringan energi: apa pun yang berkomputasi dapat menghasilkan sesuai kekuatan bukti atas apa yang dilakukannya. Tanda terimanya hanya dihitung ketika saksi selain dirinya sendiri menjamin pekerjaan itu, entah perangkat keras aman di ponsel atau komputer yang membuktikan catatan itu dibuat oleh perangkat lunak Provian asli atau pengamat di mesin terdaftar tempat ia melapor, tidak pernah atas pengakuannya sendiri, dan hasilnya terhimpun ke orang atau agen yang memilikinya. Jaringan tidak perlu tahu sebelumnya apa yang akan tumbuh di atasnya, hanya bahwa apa yang tumbuh disaksikan dengan jujur.",
     "ladderHeading": "Tangga Bukti",
@@ -5104,7 +5104,7 @@
     "active": "Terlindungi",
     "inactive": "Belum bergabung",
     "monthly": "Setiap bulan: musnahkan {{burn}} PVT. Secara terpisah, kontribusikan {{percent}}% dari penghasilan bruto, atau {{reserve}} PVT dari saldo pada bulan tanpa penghasilan.",
-    "graceRule": "Satu bulan yang terlewat mendapat tenggang satu bulan kalender. Penuhi kewajiban dalam masa tenggang agar perlindungan tidak terputus. Setelah itu keanggotaan berakhir; bergabung kembali melindungi sejak hari tersebut, bukan untuk kehilangan saat keanggotaan terputus.",
+    "graceRule": "Satu bulan yang terlewat mendapat tenggang satu bulan kalender. Penuhi kewajiban dalam masa tenggang agar perlindungan tidak terputus. Setelah itu keanggotaan berakhir; bergabung kembali melindungi sejak hari tersebut, bukan untuk kehilangan saat keanggotaan terputus. Sebelum bergabung kembali, bayar sisa pembakaran partisipasi dan kontribusi pool untuk kedua bulan terlindungi yang belum dibayar, termasuk bulan tenggang, setelah dikurangi jumlah yang sudah dibayar. Kontribusi setiap bulan adalah 1% dari PVT yang dicetak bulan itu, atau 100 PVT jika tidak ada pencetakan, menurut aturan bertanda tangan bulan tersebut. Bulan saat keanggotaan terputus tetap tidak terlindungi dan tidak pernah ditagih.",
     "outstanding": "Pemusnahan dan kontribusi yang belum dipenuhi: {{amount}} PVT",
     "consent": "Setiap pendebitan dari saldo Anda memerlukan persetujuan Anda atas jumlah yang tepat. Ketiga jumlah dapat berubah untuk masa mendatang menurut aturan bertanda tangan yang diterbitkan. Pemulihan bersifat diskresioner, tanpa hak kontraktual untuk menerima dana. Keputusan bersifat final. Provian Technologies bukan pihak dalam pengaturan ini, tidak menyumbang, tidak memegang dana, dan tidak menjanjikan apa pun.",
     "catchUp": "Penuhi kewajiban bulanan",
@@ -5210,6 +5210,37 @@
       "open": "Kirim dari dompet yang dipulihkan",
       "curveGas": "Gas jaringan dibayar dalam ETH dari dompet yang dipulihkan ini."
     },
-    "pvtOnly": "Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja."
+    "pvtOnly": "Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja.",
+    "rejoin": {
+      "explain": "Sebelum bergabung kembali, bayar sisa pembakaran partisipasi dan kontribusi pool untuk kedua bulan terlindungi yang belum dibayar, termasuk bulan tenggang, setelah dikurangi jumlah yang sudah dibayar. Kontribusi setiap bulan adalah 1% dari PVT yang dicetak bulan itu, atau 100 PVT jika tidak ada pencetakan, menurut aturan bertanda tangan bulan tersebut. Bulan saat keanggotaan terputus tetap tidak terlindungi dan tidak pernah ditagih.",
+      "payment": "{{month}}: bakar {{burn}} PVT dan kontribusikan {{reserve}} PVT sebelum bergabung kembali."
+    },
+    "standing": {
+      "explain": "Setujui keanggotaan sekali. Pembayaran bulanan kemudian otomatis, meski aplikasi ditutup. Anda tidak perlu ETH untuk bergabung, membayar, atau keluar. Jumlah yang lebih tinggi memerlukan persetujuan baru.",
+      "review": "Tinjau jumlah baru",
+      "limits": "Maksimum bulanan: {{burn}} PVT dibakar dan {{reserve}} PVT disumbangkan dari saldo PVT dompet ini. Kontribusi penghasilan: {{percent}}%.",
+      "external": "Hubungkan dompet ini untuk menyetujui keanggotaannya sekali. Pembayaran berikutnya dan keluar tidak memerlukan permintaan dompet lagi.",
+      "payments": "Pembayaran otomatis",
+      "approvalNeeded": "Perlu persetujuan",
+      "enabled": "Pembayaran otomatis disetujui",
+      "background": "Relay membayar biaya jaringan. Pembakaran bulanan dan kontribusi dari saldo PVT tidak memerlukan aplikasi dibuka, tanda tangan ulang, atau ETH.",
+      "noEarnings": "Kontribusi dari saldo PVT hanya berlaku untuk bulan yang sudah berakhir tanpa penerbitan. Kontribusi penghasilan diambil otomatis saat penyelesaian.",
+      "current": "Kewajiban tercatat Anda sudah lunas.",
+      "pendingAmount": "{{amount}} PVT menunggu penagihan otomatis. Simpan cukup PVT di dompet pembayaran.",
+      "increase": "Aturan saat ini memerlukan persetujuan baru. Jumlah lebih tinggi tidak dapat didebit berdasarkan persetujuan sebelumnya.",
+      "leave": "Keluar menghentikan debit mendatang. Kontribusi yang sudah dibayar tidak dapat dikembalikan; pemulihan yang dialokasikan tetap dapat ditarik.",
+      "consent": "Setujui sekali saat bergabung. Pembakaran dan kontribusi bulanan berlangsung otomatis dalam jumlah yang disetujui, tanpa membuka aplikasi, menandatangani ulang, atau menyimpan ETH. Keluar menghentikan debit mendatang. Jumlah lebih tinggi memerlukan persetujuan baru. Pemulihan merupakan penetapan diskresioner, tanpa hak kontraktual atas pembayaran. Penetapan bersifat final. Provian Technologies bukan pihak, tidak menyumbang, tidak memegang, dan tidak menjanjikan apa pun."
+    },
+    "transferPicker": {
+      "explanation": "Pilih transfer yang tidak Anda lakukan. Aplikasi menyediakan detail transaksi dan menyiapkan pemulihan ke alamat dompet baru. Tinjau transfer sebelum mengizinkan permintaan pemulihan.",
+      "loading": "Memuat transfer Anda",
+      "unavailable": "Transfer tidak dapat dimuat. Segarkan dan coba lagi.",
+      "empty": "Tidak ada transfer PVT keluar di bagian riwayat ini.",
+      "to": "Ke {{address}}",
+      "older": "Tampilkan transfer lebih lama",
+      "review": "Laporkan transfer ini",
+      "confirm": "Saya tidak mengizinkan transfer {{amount}} PVT ini.",
+      "recovery": "Bukti pemulihan memindahkan kendali ke alamat pengganti. Pembalikan dicoba terlebih dahulu; pool menetapkan pemulihan atas kerugian yang tersisa."
+    }
   }
 }

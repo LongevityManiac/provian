@@ -2974,7 +2974,7 @@
     "card10Title": "Imehesabiwa na Kumilikiwa na Wengi",
     "card10Body": "Pesa iliyowekwa milele haiwezi kupima kipindi cha ukuaji mkubwa: huwatuza wanaosubiri. Pesa inayotolewa kwa amri huwalipa walio karibu zaidi na mtoaji. PVT hukua kwa kasi ile ile hasa ambayo kazi iliyoshuhudiwa inakua, na kila kipimo kipya huenda kwa aliyefanya kazi. Provian haiundi ukuaji mkubwa wa kompyuta. Inaweka bei kwa kazi ambayo vinginevyo haipewi bei na inawalipa watu na mawakala walioifanya, ili ukuaji uwafikie wote kama mapato badala ya kujilimbikiza kwa wale ambao tayari wanamiliki mashine. Leo, watu wanaoishi karibu na kituo cha data hawana sehemu ya kile kinachozalishwa humo. Kuhesabu kazi na kumlipa aliyeifanya ndiyo njia ya kubadilisha hali hiyo.",
     "card11Title": "Kiwango Wazi, Utekelezaji wa Sasa",
-    "card11Body": "Provenance Envelope ni kiwango wazi, na zana za wasanidi pamoja na mikataba zina leseni ya MIT. Pochi, relay na Commons ni utekelezaji wa marejeo wa Provian: msimbo wake unaonekana, na utekelezaji mwingine unawezekana. Kanuni za kikatiba ni mbili: kuzalisha bahasha halali na kuheshimu mgao. Provian inaendesha relay na ina mamlaka ya awali juu ya sera ya uchumi; kila mabadiliko yanahusu siku zijazo na yana rekodi iliyotiwa saini. Mamlaka tofauti ya urejeshaji, inayoshikiliwa na ufunguo wa mwanzilishi hadi Mahakama ifunguliwe, inaweza kurudisha PVT iliyoibwa kwa mmiliki wake kwa mujibu wa kanuni iliyochapishwa, na kila matumizi yake yako wazi kwa umma. Katiba ya Mtandao ni hati ya kuanzisha mtandao, ambayo bado haijaridhiwa. Mahakama huunda jopo baada ya waamuzi wenye sifa wa kutosha kujitolea; upigaji kura na soko la ukokotoaji bado havijafunguliwa.",
+    "card11Body": "Provenance Envelope ni kiwango wazi, na zana za wasanidi pamoja na mikataba zina leseni ya MIT. Pochi, relay na Commons ni utekelezaji wa marejeo wa Provian: msimbo wake unaonekana, na utekelezaji mwingine unawezekana. Kanuni za kikatiba ni mbili: kuzalisha bahasha halali na kuheshimu mgao. Provian inaendesha relay na ina mamlaka ya awali juu ya sera ya uchumi; kila mabadiliko yanahusu siku zijazo na yana rekodi iliyotiwa saini. Mamlaka tofauti ya urejeshaji, inayoshikiliwa na ufunguo wa Provian hadi Mahakama ifunguliwe, inaweza kurudisha PVT iliyoibwa kwa mmiliki wake kwa mujibu wa kanuni iliyochapishwa, na kila matumizi yake yako wazi kwa umma. Katiba ya Mtandao ni hati ya kuanzisha mtandao, ambayo bado haijaridhiwa. Mahakama huunda jopo baada ya waamuzi wenye sifa wa kutosha kujitolea; upigaji kura na soko la ukokotoaji bado havijafunguliwa.",
     "card12Title": "Chochote Kitakachokokotoa Baadaye",
     "card12Body": "Vihisi, roboti, droni, mita, vikundi vya kompyuta za utafiti, gridi za nishati: chochote kinachokokotoa kinaweza kupata mapato kulingana na nguvu ya ushahidi wa kile kilichofanya. Risiti yake huhesabiwa tu pale shahidi mwingine asiye kitu hicho chenyewe anapothibitisha kazi hiyo, iwe maunzi salama kwenye simu au kompyuta yanayothibitisha kuwa rekodi ilitengenezwa na programu halisi ya Provian au mtazamaji kwenye mashine iliyosajiliwa ambayo kupitia kwayo kinaripoti, kamwe si kwa kauli yake yenyewe, na mapato yake hujumlishwa kwa mtu au wakala anayekimiliki. Mtandao hauhitaji kujua mapema nini kitakua juu yake, ila tu kwamba kinachokua kinashuhudiwa kwa uaminifu.",
     "ladderHeading": "Ngazi ya Ushahidi",
@@ -5104,7 +5104,7 @@
     "active": "Unalindwa",
     "inactive": "Si mwanachama",
     "monthly": "Kila mwezi: teketeza PVT {{burn}}. Kando na hayo, changia {{percent}}% ya mapato ghafi, au PVT {{reserve}} kutoka salio lako katika mwezi usio na mapato.",
-    "graceRule": "Ukikosa kutimiza wajibu wa mwezi mmoja, unapata mwezi mmoja wa kalenda wa nyongeza. Ukikamilisha ndani ya muda huo, hakuna pengo la ulinzi. Baadaye uanachama unaisha; ukijiunga tena, ulinzi huanza siku hiyo na hauhusu hasara ya wakati ambao hukuwa mwanachama.",
+    "graceRule": "Ukikosa kutimiza wajibu wa mwezi mmoja, unapata mwezi mmoja wa kalenda wa nyongeza. Ukikamilisha ndani ya muda huo, hakuna pengo la ulinzi. Baadaye uanachama unaisha; ukijiunga tena, ulinzi huanza siku hiyo na hauhusu hasara ya wakati ambao hukuwa mwanachama. Kabla ya kujiunga tena, lipa uchomaji wa ushiriki na mchango wa pool uliobaki kwa miezi yote miwili iliyolindwa lakini haikulipwa, ukiwemo mwezi wa neema, ukitoa kiasi kilicholipwa tayari. Mchango wa kila mwezi ni 1% ya PVT zilizozalishwa mwezi huo, au 100 PVT ikiwa hakuna zilizozalishwa, kulingana na kanuni iliyosainiwa ya mwezi huo. Miezi ambayo uanachama ulikuwa umekwisha hubaki bila ulinzi na haitozwi kamwe.",
     "outstanding": "Uteketezaji na mchango ambao haujakamilika: PVT {{amount}}",
     "consent": "Kila makato kutoka kwenye salio lako yanahitaji idhini yako ya kiasi halisi. Kiasi chote kitatu kinaweza kubadilishwa kwa siku zijazo chini ya kanuni iliyochapishwa na kusainiwa. Urejeshaji ni uamuzi wa hiari; hakuna haki ya kimkataba ya kupokea fedha. Maamuzi ni ya mwisho. Provian Technologies si mshiriki wa mpango huu, haichangii, haishikilii fedha na haiahidi chochote.",
     "catchUp": "Kamilisha wajibu wa kila mwezi",
@@ -5210,6 +5210,37 @@
       "open": "Tuma kutoka kwenye pochi iliyorejeshwa",
       "curveGas": "Gharama ya gas ya mtandao hulipwa kwa ETH kutoka kwenye pochi hii iliyorejeshwa."
     },
-    "pvtOnly": "Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee."
+    "pvtOnly": "Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
+    "rejoin": {
+      "explain": "Kabla ya kujiunga tena, lipa uchomaji wa ushiriki na mchango wa pool uliobaki kwa miezi yote miwili iliyolindwa lakini haikulipwa, ukiwemo mwezi wa neema, ukitoa kiasi kilicholipwa tayari. Mchango wa kila mwezi ni 1% ya PVT zilizozalishwa mwezi huo, au 100 PVT ikiwa hakuna zilizozalishwa, kulingana na kanuni iliyosainiwa ya mwezi huo. Miezi ambayo uanachama ulikuwa umekwisha hubaki bila ulinzi na haitozwi kamwe.",
+      "payment": "{{month}}: choma {{burn}} PVT na uchangie {{reserve}} PVT kabla ya kujiunga tena."
+    },
+    "standing": {
+      "explain": "Idhinisha uanachama mara moja. Malipo ya kila mwezi yatafanyika kiotomatiki, hata programu ikiwa imefungwa. Huhitaji ETH kujiunga, kulipa au kuondoka. Kiasi cha juu kinahitaji idhini mpya.",
+      "review": "Kagua kiasi kipya",
+      "limits": "Kiwango cha juu kila mwezi: {{burn}} PVT huchomwa na {{reserve}} PVT huchangiwa kutoka PVT za pochi hii. Mchango wa mapato: {{percent}}%.",
+      "external": "Unganisha pochi hii kuidhinisha uanachama wake mara moja. Malipo yanayofuata na kuondoka havihitaji maombi mengine ya pochi.",
+      "payments": "Malipo ya kiotomatiki",
+      "approvalNeeded": "Idhini inahitajika",
+      "enabled": "Malipo ya kiotomatiki yameidhinishwa",
+      "background": "Relay hulipa ada ya mtandao. Uchomaji wa kila mwezi na mchango kutoka PVT ulizonazo havihitaji kufungua programu, kusaini tena au kuwa na ETH.",
+      "noEarnings": "Mchango kutoka PVT ulizonazo hutumika tu kwa mwezi uliokamilika bila utoaji mpya. Mchango wa mapato hukatwa kiotomatiki wakati wa malipo.",
+      "current": "Wajibu wako uliorekodiwa umelipwa hadi sasa.",
+      "pendingAmount": "{{amount}} PVT zinasubiri kukusanywa kiotomatiki. Weka PVT za kutosha kwenye pochi yako ya malipo.",
+      "increase": "Kanuni ya sasa inahitaji idhini mpya. Kiasi cha juu hakiwezi kukatwa kwa idhini yako ya awali.",
+      "leave": "Kuondoka hukomesha makato yajayo. Michango iliyolipwa hairudishwi; marejesho yaliyotengwa bado yanaweza kutolewa.",
+      "consent": "Idhinisha mara moja unapojiunga. Uchomaji na michango ya kila mwezi hufanyika kiotomatiki ndani ya kiasi ulichoidhinisha, bila kufungua programu, kusaini tena au kushikilia ETH. Kuondoka hukomesha makato yajayo. Kiasi cha juu kinahitaji idhini mpya. Marejesho hutegemea uamuzi wa hiari, bila haki ya kimkataba ya malipo. Maamuzi ni ya mwisho. Provian Technologies si mhusika, haichangii chochote, haishikilii chochote na haiahidi chochote."
+    },
+    "transferPicker": {
+      "explanation": "Chagua uhamisho ambao hukufanya. Programu hutoa maelezo yake na kuandaa urejeshaji kwenye anwani mpya ya pochi. Kagua uhamisho kabla ya kuidhinisha ombi lako la marejesho.",
+      "loading": "Inapakia uhamisho wako",
+      "unavailable": "Hatukuweza kupakia uhamisho wako. Onyesha upya na ujaribu tena.",
+      "empty": "Hakuna uhamisho wa PVT unaotoka unaoonekana katika sehemu hii ya historia yako.",
+      "to": "Kwenda {{address}}",
+      "older": "Onyesha uhamisho wa zamani",
+      "review": "Ripoti uhamisho huu",
+      "confirm": "Sikuidhinisha uhamisho huu wa {{amount}} PVT.",
+      "recovery": "Uthibitisho wako wa urejeshaji huhamisha udhibiti kwenye anwani mbadala. Kubatilisha hujaribiwa kwanza; pool huamua marejesho ya hasara iliyobaki."
+    }
   }
 }
