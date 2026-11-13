@@ -58,7 +58,10 @@ function creationShape(name,row,artifact){
  ensure(row.data.startsWith(code),'creation_changed');
  const data='0x'+row.data.slice(code.length),args=AbiCoder.defaultAbiCoder().decode(iface.deploy.inputs,data);
  ensure(iface.encodeDeploy(args)===data&&(row.data.length-2)/2<=49152,'creation_encoding');
- if(name==='ProvianRecoveryHistory')ensure(args[4].epochs.length===0&&args[4].schedules.length===0,'unbounded_economics');
+ if(name==='ProvianRecoveryHistory'){
+  ensure(args[4].epochs.length===0&&args[4].schedules.length===0,'unbounded_economics');
+  ensure(args[5]===true,'paid_history_mode');
+ }
  if(name==='ProvianRecourseBondPool')ensure(args[6].length<=4,'unbounded_bps');
  if(name==='ProvianMemberRecoursePool')ensure(args[4].firstMonth===0n&&args[5].predecessor==='0x'+'00'.repeat(20)
   &&args[5].blockNumber===0n&&args[5].root==='0x'+'00'.repeat(32)&&args[5].getValue('entries')===0n&&!args[5].afterBreak,'unsupported_pool_snapshot');
@@ -85,13 +88,14 @@ export function assertGasStep(row,inputs,proof){
  const activation=row.label==='activate:resumeFromAdministrativeHold';
  if(activation)name='ProvianRecourseKernel';
  if(name==='retire')name=row.label.endsWith('revokeBatchApprover')||row.to===inputs.retirementVerifier?'ProvianPVT9EligibilityVerifier':'ProvianPVT9';
- if(name==='importHistory'||name==='importBalances'){
+ ensure(name!=='importHistory','paid_history_import');
+ if(name==='importBalances'){
   const parsed=canonicalCall(row,artifacts.ProvianSuccessionImporter);
   ensure(parsed.name===name&&parsed.args[0].length>0&&parsed.args[0].length<=128,'import_group');
-  const target=name==='importHistory'?'ProvianRecoveryHistory':'ProvianRestorationAuthorization';
+  const target='ProvianRestorationAuthorization';
   const leaves=parsed.args[0].map(data=>{
    const member={data},decoded=canonicalCall(member,artifacts[target]);
-   ensure(name==='importHistory'?['importEntry','importBatch'].includes(decoded.name):decoded.name==='importBalance','import_selector');
+   ensure(decoded.name==='importBalance','import_selector');
    return importLeafBound(member,artifacts[target]);
   });
   return boundedGasEstimate(importGasUpper(leaves,row.data),maximum);

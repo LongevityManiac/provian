@@ -8,6 +8,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
  const body={...plan};delete body.digest;
  ensure(sha256(toUtf8Bytes(JSON.stringify(body)))===plan.digest,'plan_changed');
  ensure(plan.creations.length===12&&plan.snapshot.balances.length>0&&Number(plan.snapshot.historyCount)>0,'empty_population');
+ ensure(plan.imports.every(row=>row.label==='ProvianRestorationAuthorization:importBalance'),'paid_history_import');
  ensure(block.number>=plan.cutoff.number&&await port.blockHash(block.number)===block.hash,'block_invalid');
  const inventoryBody={...institutions};delete inventoryBody.digest;
  ensure(sha256(toUtf8Bytes(JSON.stringify(inventoryBody)))===plan.institutionDigest,'inventory_changed');
@@ -46,7 +47,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   ['ProvianRestorationAuthorization','pendingBreakAmount',0],
   ['ProvianRestorationAuthorization','hashAccountCodeHash',keccak256(artifacts.ProvianHashAccount.deployedBytecode.object)],
   ['ProvianRecoveryHistory','root',plan.snapshot.historyRoot],['ProvianRecoveryHistory','entryCount',plan.snapshot.historyCount],
-  ['ProvianRecoveryHistory','importedCount',plan.snapshot.historyCount],['ProvianRecoveryHistory','lastGoodBlock',plan.cutoff.number],
+  ['ProvianRecoveryHistory','readPredecessor',true],['ProvianRecoveryHistory','importedCount',0],['ProvianRecoveryHistory','lastGoodBlock',plan.cutoff.number],
   ['ProvianRestorationAuthorization','restorationRoot',plan.snapshot.balanceRoot],
   ['ProvianRestorationAuthorization','ordinaryImportedBalance',plan.snapshot.supply],
   ['ProvianRestorationAuthorization','lastGoodBlock',plan.cutoff.number],

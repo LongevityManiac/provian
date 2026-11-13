@@ -16,8 +16,9 @@ interface IRetiredSettlementVerifier {
     function batchApprover() external view returns (address);
 }
 
-/// @notice Frozen predecessor monetary state. Import proofs are permissionless;
-/// the snapshot root, count, clock and economics cannot be changed after deployment.
+/// @notice Immutable predecessor monetary context. Ordinary succession reads
+/// paid history from the retired kernel; break recovery uses proven frozen entries.
+/// The root/count still commit the public inventory needed for later recovery.
 contract ProvianRecoveryHistory {
     struct EconomicSchedule {
         uint64 epoch;
@@ -77,16 +78,17 @@ contract ProvianRecoveryHistory {
     uint256 public immutable lastGoodBlock;
     uint256 public immutable entryCount;
     uint256 public importedCount;
+    bool public immutable readPredecessor;
     bytes internal encodedState;
     mapping(bytes32 => bool) public imported;
-    mapping(bytes32 => bool) public claimSettled;
-    mapping(bytes32 => bool) public genesisAnchorUsed;
-    mapping(bytes32 => uint256) public genesisWalletGrossIssued;
-    mapping(bytes32 => bool) public batchUsed;
-    mapping(bytes32 => bytes) public batchRecords;
+    mapping(bytes32 => bool) private _claimSettled;
+    mapping(bytes32 => bool) private _genesisAnchorUsed;
+    mapping(bytes32 => uint256) private _genesisWalletGrossIssued;
+    mapping(bytes32 => bool) private _batchUsed;
+    mapping(bytes32 => bytes) private _batchRecords;
     error InvalidHistory();
 
-    constructor(address predecessor_, uint256 lastGoodBlock_, bytes32 root_, uint256 entryCount_, State memory state_) {
+    constructor(address predecessor_, uint256 lastGoodBlock_, bytes32 root_, uint256 entryCount_, State memory state_, bool readPredecessor_) {
         if (predecessor_ == address(0) || root_ == bytes32(0) || state_.epochZeroStartsAt == 0 || state_.genesisStartsAt == 0
             || state_.genesisEndsAt <= state_.genesisStartsAt || state_.mintRate == 0
             || state_.agentFoundationBps < 50 || state_.agentFoundationBps > 9950
@@ -96,6 +98,7 @@ contract ProvianRecoveryHistory {
             || state_.epochGenesisIssued > state_.genesisCap || state_.epochTotalIssued > state_.combinedCap) revert InvalidHistory();
         root = root_;
         predecessor = predecessor_;
+        readPredecessor = readPredecessor_;
         lastGoodBlock = lastGoodBlock_;
         entryCount = entryCount_;
         economicRoot = state_.economicRoot;
@@ -197,7 +200,9 @@ contract ProvianRecoveryHistory {
         ++importedEconomicEntries;
     }
     function afterCryptographicBreak() external pure virtual returns (bool) { return false; }
-    function complete() external view returns (bool) { return importedCount == entryCount && importedEconomicEntries == economicEntryCount; }
+    function complete() external view returns (bool) {
+        return (readPredecessor || importedCount == entryCount) && importedEconomicEntries == economicEntryCount;
+    }
     /// @notice Migration changes verifier deployments, never their bound rule
     /// identities or version. Treasuries and economics remain the frozen values.
     /// New settlement cannot start while the predecessor can still mint.
@@ -225,35 +230,53 @@ contract ProvianRecoveryHistory {
         return true;
     }
     function getBatchRecord(bytes32 key) external view returns (ProvianPVT9.BatchRecord memory result) {
-        bytes memory encoded = batchRecords[key];
+        if (readPredecessor) return ProvianPVT9(predecessor).getBatchRecord(key);
+        bytes memory encoded = _batchRecords[key];
         if (encoded.length != 0) return abi.decode(encoded, (ProvianPVT9.BatchRecord));
+    }
+    function claimSettled(bytes32 key) external view returns (bool) {
+        return readPredecessor ? ProvianPVT9(predecessor).claimSettled(key) : _claimSettled[key];
+    }
+    function genesisAnchorUsed(bytes32 key) external view returns (bool) {
+        return readPredecessor ? ProvianPVT9(predecessor).genesisAnchorUsed(key) : _genesisAnchorUsed[key];
+    }
+    function genesisWalletGrossIssued(bytes32 key) external view returns (uint256) {
+        return readPredecessor ? ProvianPVT9(predecessor).genesisWalletGrossIssued(key) : _genesisWalletGrossIssued[key];
+    }
+    function batchUsed(bytes32 key) external view returns (bool) {
+        return readPredecessor ? ProvianPVT9(predecessor).getBatchRecord(key).settled : _batchUsed[key];
+    }
+    function batchRecords(bytes32 key) external view returns (bytes memory) {
+        if (!readPredecessor) return _batchRecords[key];
+        ProvianPVT9.BatchRecord memory record = ProvianPVT9(predecessor).getBatchRecord(key);
+        return record.settled ? abi.encode(record) : bytes("");
     }
 
     /// kind: 0 settled claim; 1 consumed Genesis anchor; 2 cumulative wallet gross; 3 used batch.
     function importEntry(uint8 kind, bytes32 key, uint256 value, bytes32[] calldata proof) external {
-        if (kind > 3 || key == bytes32(0) || (kind != 2 && value != 1)
+        if (readPredecessor || kind > 3 || key == bytes32(0) || (kind != 2 && value != 1)
             || (kind == 2 && value > 500 ether) || proof.length > 256) revert InvalidHistory();
         bytes32 leaf = sha256(abi.encode("Provian monetary history", predecessor, lastGoodBlock, kind, key, value));
         _consumeProof(leaf, proof);
-        if (kind == 0) claimSettled[key] = true;
-        else if (kind == 1) genesisAnchorUsed[key] = true;
+        if (kind == 0) _claimSettled[key] = true;
+        else if (kind == 1) _genesisAnchorUsed[key] = true;
         else if (kind == 2) {
-            if (genesisWalletGrossIssued[key] != 0) revert InvalidHistory();
-            genesisWalletGrossIssued[key] = value;
-        } else batchUsed[key] = true;
+            if (_genesisWalletGrossIssued[key] != 0) revert InvalidHistory();
+            _genesisWalletGrossIssued[key] = value;
+        } else _batchUsed[key] = true;
     }
 
     /// @notice Preserve the exact predecessor settlement record, including its
     /// original domain hashes. A boolean alone cannot support receipt lookup.
     function importBatch(bytes32 key, ProvianPVT9.BatchRecord calldata record, bytes32[] calldata proof) external {
-        if (key == bytes32(0) || !record.settled || batchRecords[key].length != 0
+        if (readPredecessor || key == bytes32(0) || !record.settled || _batchRecords[key].length != 0
             || record.finalizedCursorEnd <= record.finalizedCursorStart
             || record.totalMinted != record.contributorTotal + record.provianTotal + record.foundationTotal
             || proof.length > 256) revert InvalidHistory();
         bytes memory encoded = abi.encode(record);
         _consumeProof(sha256(abi.encode("Provian settlement history", predecessor, lastGoodBlock, key, sha256(encoded))), proof);
-        batchUsed[key] = true;
-        batchRecords[key] = encoded;
+        _batchUsed[key] = true;
+        _batchRecords[key] = encoded;
     }
 
     function _consumeProof(bytes32 leaf, bytes32[] calldata proof) private {

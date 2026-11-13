@@ -26,7 +26,7 @@ contract RecourseEconomicHistoryTest is Test {
     function testSerialProofsPreserveExactHistoryAndRefuseEarlyReadiness() public {
         (bytes memory a,bytes memory b)=records();bytes32 l0=leaf(0,a);bytes32 l1=leaf(1,b);
         ProvianRecoveryHistory.State memory s=prior();s.economicRoot=pair(l0,l1);s.economicCount=2;
-        ProvianRecoveryHistory h=new ProvianRecoveryHistory(address(9),20,bytes32(uint256(30)),0,s);
+        ProvianRecoveryHistory h=new ProvianRecoveryHistory(address(9),20,bytes32(uint256(30)),0,s, false);
         assertFalse(h.complete());assertEq(h.baseState().epochs.length,0);
         bytes32[] memory p=new bytes32[](1);p[0]=l0;
         vm.expectRevert();h.importEconomicEntry(1,b,p);
@@ -49,7 +49,7 @@ contract RecourseEconomicHistoryTest is Test {
         (bytes memory a,)=records();ProvianRecoveryHistory.HistoricalEpoch memory e=abi.decode(a,(ProvianRecoveryHistory.HistoricalEpoch));
         e.policy.epoch=1;a=abi.encode(e);
         ProvianRecoveryHistory.State memory s=prior();s.economicRoot=leaf(0,a);s.economicCount=1;
-        ProvianRecoveryHistory h=new ProvianRecoveryHistory(address(9),20,bytes32(uint256(30)),0,s);
+        ProvianRecoveryHistory h=new ProvianRecoveryHistory(address(9),20,bytes32(uint256(30)),0,s, false);
         vm.expectRevert();h.importEconomicEntry(0,a,new bytes32[](0));
         assertFalse(h.complete());assertEq(h.importedEconomicEntries(),0);
     }

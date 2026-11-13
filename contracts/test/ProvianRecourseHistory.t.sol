@@ -64,7 +64,7 @@ contract ProvianRecourseHistoryTest is Test {
             prior.epochs[i] = ProvianRecoveryHistory.HistoricalEpoch(p, (uint256(i) + 1) * 10 ether, (uint256(i) + 1) * 100 ether);
         }
         bytes32 root = sha256(abi.encode("Provian monetary history", address(0x1234), uint256(100), uint8(0), bytes32(uint256(42)), uint256(1)));
-        history = new ProvianRecoveryHistory(address(0x1234), 100, root, 1, prior);
+        history = new ProvianRecoveryHistory(address(0x1234), 100, root, 1, prior, false);
         kernel = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(ADMIN, bytes32(uint256(1)), address(0x1234), 100, 0, history, pointer, address(this), false, ProvianRestorationAuthorization(address(0))));
         ProvianMemberRecoursePool pool = new ProvianMemberRecoursePool(ProvianPVT9(address(kernel)), address(this), address(this), pointer, RecourseMembershipRules.MonthlyRule(0, 100 ether, 100 ether, 100, sha256("signed rule TEST ONLY")), RecoursePoolHistory.PoolSnapshot(address(0), 0, bytes32(0), 0, false));
         address[10] memory targets; bytes32[10] memory hashes;
@@ -175,10 +175,10 @@ contract ProvianRecourseHistoryTest is Test {
         ProvianRecoveryHistory.State memory prior = history.state();
         prior.epochs = new ProvianRecoveryHistory.HistoricalEpoch[](0);
         vm.expectRevert(ProvianRecoveryHistory.InvalidHistory.selector);
-        new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior);
+        new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior, false);
         prior = history.state(); prior.epochs[1].totalIssued = prior.epochs[1].policy.combinedCap + 1;
         vm.expectRevert(ProvianRecoveryHistory.InvalidHistory.selector);
-        new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior);
+        new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior, false);
     }
     function testHistoricalBatchReceiptIsExactAndCannotBeSubstitutedOrReimported() public {
         ProvianPVT9.BatchRecord memory record;
@@ -188,7 +188,7 @@ contract ProvianRecourseHistoryTest is Test {
         record.policyHash = sha256("historical policy TEST ONLY"); record.settlementDigest = sha256("historical settlement TEST ONLY");
         bytes32 id = sha256("old batch TEST ONLY");
         bytes32 root = sha256(abi.encode("Provian settlement history", address(0x1234), uint256(100), id, sha256(abi.encode(record))));
-        ProvianRecoveryHistory copy = new ProvianRecoveryHistory(address(0x1234), 100, root, 1, history.state());
+        ProvianRecoveryHistory copy = new ProvianRecoveryHistory(address(0x1234), 100, root, 1, history.state(), false);
         ProvianRecourseKernel next = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(ADMIN,
             bytes32(uint256(1)), address(0x1234), 100, 0, copy, pointer, address(this), false, ProvianRestorationAuthorization(address(0))));
         assertFalse(next.getBatchRecord(id).settled);

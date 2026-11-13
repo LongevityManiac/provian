@@ -554,7 +554,7 @@ const MUTATION_SETS = {
       expectedKilledBy: 'testRetainedSuspendedDepartureMustSurviveAnOrdinarySpendingKeyRotation' }],
   },
   'recourse-economic-history': {
-    sourcePath: 'contracts/src/ProvianRecoveryHistory.sol', testMatchPath: 'test/{RecourseEconomicHistory,ProvianBreakRecoveryHistory,ProvianRecourseHistory,ProvianRecourseKernel}.t.sol',
+    sourcePath: 'contracts/src/ProvianRecoveryHistory.sol', testMatchPath: 'test/{RecourseEconomicHistory,ProvianBreakRecoveryHistory,ProvianRecourseHistory,ProvianRecourseKernel,RecoursePaidHistoryRead}.t.sol',
     mutations: [{ id: 'ECONOMIC-ROOT', description: 'uncommitted economic history bypasses its proof root',
       find: 'if (digest != economicRoot) revert InvalidHistory();', replace: 'if (false) revert InvalidHistory();',
       expectedKilledBy: 'economic proof alteration is refused' }],
@@ -1985,7 +1985,7 @@ const MUTATION_SETS = {
     // the derived-suite check caught four *CostMachinery suites that construct a
     // real ProvianPVT9 (as their kernel clock / issuance index) and were out of scope.
     // KernelArmingInputs constructs a real kernel (the arming-time cap policy + window).
-    testMatchPath: 'test/{ProvianPVT9*,ProvianRecourseKernel,ProvianRecourseHistory,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*,RetiredContractReachability}.t.sol',
+    testMatchPath: 'test/{ProvianPVT9*,ProvianRecourseKernel,ProvianRecourseHistory,ProvianBondPoolCostMachinery*,ProvianCourtV2CostMachinery*,ProvianEscrowV4CostMachinery*,ProvianPoolV3CostMachinery*,KernelArmingInputs*,RetiredContractReachability,RecoursePaidHistoryRead}.t.sol',
     mutations: [
       // the arming-time cap policy and the pre-epoch-zero Genesis open.
       {
@@ -2206,7 +2206,7 @@ const MUTATION_SETS = {
   },
   ProvianSuccessionImporter: {
     sourcePath: 'contracts/src/ProvianSuccessionImporter.sol',
-    testMatchPath: 'test/ProvianSuccessionImporter.t.sol',
+    testMatchPath: 'test/{ProvianSuccessionImporter,RecoursePaidHistoryRead}.t.sol',
     mutations: [
       {
         id: 'IMPORTER-1', description: 'failed proof no longer rolls back its batch',
@@ -2281,7 +2281,7 @@ const MUTATION_SETS = {
   },
   ProvianProtocolPointer: {
     "sourcePath": "contracts/src/ProvianProtocolPointer.sol",
-    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry*,RecoursePoolHistory,RecourseStandingConsent,RecourseDepartureRotation}.t.sol",
+    "testMatchPath": "test/{ProvianProtocolPointer,ProvianMemberRecoursePool,ProvianMemberSettlementTickets,ProvianRecourseKernel,ProvianRecourseHistory,ProvianOwnershipRegistry*,RecoursePoolHistory,RecourseStandingConsent,RecourseDepartureRotation,RecoursePaidHistoryRead}.t.sol",
     "mutations": [
         {
             "id": "POINTER-1",
@@ -2486,7 +2486,7 @@ const MUTATION_SETS = {
 },
   ProvianRecourseKernel: {
     "sourcePath": "contracts/src/ProvianRecourseKernel.sol",
-    "testMatchPath": "test/{ProvianRecourseKernel,ProvianRecourseHistory}.t.sol",
+    "testMatchPath": "test/{ProvianRecourseKernel,ProvianRecourseHistory,RecoursePaidHistoryRead}.t.sol",
     "mutations": [
         {
             "id": "KERNEL-1",

@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {Interface,ZeroAddress,sha256,toUtf8Bytes} from 'ethers';
+import {AbiCoder,Interface,ZeroAddress,sha256,toUtf8Bytes} from 'ethers';
 import {buildSuccessorPlan,SUCCESSOR_CREATION_ORDER,batchSuccessorImports} from './successor-plan.mjs';
 import {LEGACY_INSTITUTIONS} from './institution-snapshot.mjs';
 import {balanceLeaf,merkle,verifyProof} from './snapshot.mjs';
@@ -35,7 +35,13 @@ export function successorFixture(){
 }
 test('creation plan preserves owner balances and history while moving custody only to predicted successors',()=>{
  const f=successorFixture(),plan=buildSuccessorPlan(f);
- assert.equal(plan.creations.length,12);assert.equal(plan.imports.length,3);
+ assert.equal(plan.creations.length,12);assert.equal(plan.imports.length,2);
+ assert.ok(plan.imports.every(row=>row.label==='ProvianRestorationAuthorization:importBalance'));
+ assert.throws(()=>batchSuccessorImports({...plan,imports:[{label:'ProvianRecoveryHistory:importEntry'}]},f.artifacts),/unknown_import_family/);
+ const historyCreation=plan.creations.find(row=>row.label==='deploy:ProvianRecoveryHistory');
+ const historyArtifact=f.artifacts.ProvianRecoveryHistory;
+ const historyArgs=AbiCoder.defaultAbiCoder().decode(new Interface(historyArtifact.abi).deploy.inputs,'0x'+historyCreation.data.slice(historyArtifact.bytecode.object.length));
+ assert.equal(historyArgs[5],true);assert.equal(historyArgs[2],f.snapshot.historyRoot);assert.equal(historyArgs[3],1n);
  assert.equal(plan.configuration.length,7);assert.ok(plan.configuration.every(c=>c.from===addr(102)));
  assert.equal(plan.activation.label,'ProvianRecourseKernel:resumeFromAdministrativeHold');
  assert.equal(plan.snapshot.balances[0].destination,addr(111));
@@ -44,13 +50,13 @@ test('creation plan preserves owner balances and history while moving custody on
  for(const r of plan.snapshot.balances)assert.ok(verifyProof(r.leaf,r.proof,plan.snapshot.balanceRoot));
  const auth=new Interface(f.artifacts.ProvianRestorationAuthorization.abi);
  const creation=plan.creations.find(c=>c.label==='deploy:ProvianRestorationAuthorization');
- const args=auth.decodeFunctionData('importBalance',plan.imports[1].data);
+ const args=auth.decodeFunctionData('importBalance',plan.imports[0].data);
  assert.equal(args[1].toLowerCase(),addr(111));assert.equal(args[2],700n);
  assert.equal(creation.nonce,5);
  assert.ok(plan.creations.every(c=>c.value==='0'));assert.equal(plan.pointer,f.pointerPlan.pointer);
  const batches=batchSuccessorImports(plan,f.artifacts),helper=new Interface(f.artifacts.ProvianSuccessionImporter.abi);
- assert.equal(batches.length,2);
- assert.deepEqual(helper.decodeFunctionData('importBalances',batches[1].data)[0].toArray(),plan.imports.slice(1).map(r=>r.data));
+ assert.equal(batches.length,1);
+ assert.deepEqual(helper.decodeFunctionData('importBalances',batches[0].data)[0].toArray(),plan.imports.map(r=>r.data));
  assert.deepEqual(plan.retireAfterImport,[plan.addresses.ProvianSuccessionImporter]);
  assert.throws(()=>batchSuccessorImports(plan,f.artifacts,0),/import_batch_size/);
 });

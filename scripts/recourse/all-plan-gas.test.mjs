@@ -43,15 +43,15 @@ test('unknown selector and noncanonical import bytes cannot enter a certified fa
  expect(()=>assertGasStep(row,f.inputs,f.proof())).toThrow('noncanonical_call');
 });
 test('canonical adaptive groups honor a lower approved maximum and preserve every leaf in order',()=>{
- const f=fixture(),art=f.inputs.artifacts,iface=new Interface(art.ProvianRecoveryHistory.abi),helper=new Interface(art.ProvianSuccessionImporter.abi);
- const imports=Array.from({length:100},(_,i)=>({label:'ProvianRecoveryHistory:importEntry',data:iface.encodeFunctionData('importEntry',[2,h,i,Array(14).fill(h)])}));
+ const f=fixture(),art=f.inputs.artifacts,iface=new Interface(art.ProvianRestorationAuthorization.abi),helper=new Interface(art.ProvianSuccessionImporter.abi);
+ const imports=Array.from({length:100},(_,i)=>({label:'ProvianRestorationAuthorization:importBalance',data:iface.encodeFunctionData('importBalance',[a,a,i+1,Array(14).fill(h)])}));
  const plan={imports,deployer:a,addresses:{ProvianSuccessionImporter:a}};
- const normal=batchSuccessorImports(plan,art,128),limited=batchSuccessorImports(plan,art,128,'14000000');
- expect(helper.decodeFunctionData('importHistory',limited[0].data)[0].length).toBeLessThan(helper.decodeFunctionData('importHistory',normal[0].data)[0].length);
+ const normal=batchSuccessorImports(plan,art,128),limited=batchSuccessorImports(plan,art,128,'4000000');
+ expect(helper.decodeFunctionData('importBalances',limited[0].data)[0].length).toBeLessThan(helper.decodeFunctionData('importBalances',normal[0].data)[0].length);
  const decoded=limited.flatMap(row=>{
-  const data=helper.decodeFunctionData('importHistory',row.data)[0].toArray();
-  const leaves=data.map(data=>importLeafBound({data},art.ProvianRecoveryHistory));
-  expect(boundedGasEstimate(importGasUpper(leaves,row.data),14000000n)).toBeLessThanOrEqual(14000000n);return data;
+  const data=helper.decodeFunctionData('importBalances',row.data)[0].toArray();
+  const leaves=data.map(data=>importLeafBound({data},art.ProvianRestorationAuthorization));
+  expect(boundedGasEstimate(importGasUpper(leaves,row.data),4000000n)).toBeLessThanOrEqual(4000000n);return data;
  });
  expect(decoded).toEqual(imports.map(row=>row.data));
  expect(()=>batchSuccessorImports(plan,art,128,100000n)).toThrow('single_import_exceeds_gas_cap');
@@ -71,4 +71,20 @@ test('all constructors emitted by the canonical successor planner satisfy the ce
  const args=AbiCoder.defaultAbiCoder().decode(iface.deploy.inputs,'0x'+row.data.slice(art.bytecode.object.length)).toArray(true);
  args[5][3]=1n;
  expect(()=>assertGasStep({...row,data:art.bytecode.object+iface.encodeDeploy(args).slice(2)},f.inputs,f.proof())).toThrow('unsupported_pool_snapshot');
+});
+
+
+test('ordinary gas admission refuses snapshot paid-history mode and every history-import wrapper',async()=>{
+ const {buildSuccessorPlan}=await import('./successor-plan.mjs');
+ const {AbiCoder}=await import('ethers');
+ const f=fixture(),plan=buildSuccessorPlan(successorFixture()),art=f.inputs.artifacts.ProvianRecoveryHistory;
+ const row=plan.creations.find(row=>row.label==='deploy:ProvianRecoveryHistory'),iface=new Interface(art.abi);
+ const args=AbiCoder.defaultAbiCoder().decode(iface.deploy.inputs,'0x'+row.data.slice(art.bytecode.object.length)).toArray(true);
+ expect(args[5]).toBe(true);args[5]=false;
+ expect(()=>assertGasStep({...row,data:art.bytecode.object+iface.encodeDeploy(args).slice(2)},f.inputs,f.proof())).toThrow('paid_history_mode');
+ const helper=new Interface(f.inputs.artifacts.ProvianSuccessionImporter.abi);
+ const data=helper.encodeFunctionData('importHistory',[[iface.encodeFunctionData('importEntry',[0,h,1,[]])]]);
+ const imported={label:'importHistory:0',value:'0',to:a,data};
+ expect(()=>assertGasStep(imported,f.inputs,f.proof())).toThrow('paid_history_import');
+ expect(()=>assertGasStep({...imported,label:'importBalances:0'},f.inputs,f.proof())).toThrow('import_group');
 });

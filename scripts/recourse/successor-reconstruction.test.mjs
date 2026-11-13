@@ -16,7 +16,7 @@ function fixture() {
   facts.rule.ruleHash = sha256(toUtf8Bytes('Provian Recourse Pool membership rule\n' + JSON.stringify(facts.rule.rule) + '\n'));
   facts.artifacts.ProvianPVT9 = facts.artifacts.ProvianRecourseKernel;
   facts.deployment.successorKernel = { pvt9Kernel: { block: 1 } };
-  const plan = buildSuccessorPlan(facts), operators = Object.fromEntries(['deployer', 'nonce', 'identityAttestor', 'submitter', 'batchApprover'].map(key => [key, facts[key]]));
+  const plan = structuredClone(buildSuccessorPlan(facts)), operators = Object.fromEntries(['deployer', 'nonce', 'identityAttestor', 'submitter', 'batchApprover'].map(key => [key, facts[key]]));
   const finalized = { number: 30, hash: '0x' + '30'.repeat(32) };
   const port = { finalizedBlock: vi.fn(async () => finalized), blockHash: vi.fn(async n => n === 20 ? facts.snapshot.blockHash : finalized.hash),
     code: vi.fn(async () => facts.artifacts.ProvianPVT9.deployedBytecode.object),

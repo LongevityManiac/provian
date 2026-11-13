@@ -13,7 +13,7 @@ contract ProvianBreakRecoveryHistory is ProvianRecoveryHistory {
     bytes32 public immutable treasuryRecoveryHash;
     constructor(address previous, uint256 cutoff, bytes32 historyRoot, uint256 count,
         State memory source, TreasuryRecovery[] memory recoveries)
-        ProvianRecoveryHistory(previous, cutoff, historyRoot, count, source) {
+        ProvianRecoveryHistory(previous, cutoff, historyRoot, count, source, false) {
         if (source.economicRoot != bytes32(0)) revert InvalidHistory();
         bytes32 codeHash = keccak256(type(ProvianHashAccount).runtimeCode);
         for (uint256 i; i < recoveries.length; ++i) {

@@ -223,7 +223,7 @@ export async function bootstrapExercise(outputDirectory) {
   const params = {
     ProvianHashAccount: [rootCommitment], ProvianProtocolPointer: [a.ProvianHashAccount],
     ProvianOwnershipRegistry: [a.ProvianProtocolPointer, attestor, false],
-    ProvianRecoveryHistory: [oldKernel, block, snapshot.historyRoot, snapshot.historyCount, economic.state],
+    ProvianRecoveryHistory: [oldKernel, block, snapshot.historyRoot, snapshot.historyCount, economic.state, true],
     ProvianRestorationAuthorization: [kernel, snapshot.balanceRoot, oldKernel, block, false, keccak256(artifact('ProvianHashAccount').deployedBytecode.object), 0],
     ProvianRecourseKernel: [{ authority: admin, root: snapshot.balanceRoot, previousKernel: oldKernel, snapshotBlock: block,
       snapshotTotal: snapshot.supply, history: a.ProvianRecoveryHistory, pointer: a.ProvianProtocolPointer,
@@ -242,8 +242,6 @@ export async function bootstrapExercise(outputDirectory) {
     const receipt = await send(deployer, null, compiled.bytecode.object + iface.encodeDeploy(params[name]).slice(2), `deploy:${name}`);
     if (receipt.contractAddress.toLowerCase() !== a[name].toLowerCase()) throw Error('exercise_deployment_nonce_changed');
   }
-  for (const row of snapshot.history) await call(deployer, a.ProvianRecoveryHistory, 'ProvianRecoveryHistory',
-    row.type === 'batch' ? 'importBatch' : 'importEntry', row.type === 'batch' ? [row.key, row.record, row.proof] : [row.kind, row.key, row.value, row.proof]);
   for (const row of snapshot.balances) await call(deployer, a.ProvianRestorationAuthorization, 'ProvianRestorationAuthorization',
     'importBalance', [row.previousOwner, row.destination, row.amount, row.proof]);
   for (const row of economic.rows) {
@@ -303,7 +301,7 @@ export async function bootstrapExercise(outputDirectory) {
   const manifest = { schema: 'provian.isolated-recourse-exercise.v1', chainId: 31337, rpc: 'http://127.0.0.1:18545',
     instanceId: metadata.instanceId, fork: metadata.forkedNetwork, cutoff: { number: block, hash: blockHash },
     addresses, successorArtifacts, settlement, admin, deployer, attestor, components, hashes, pointerRootGeneration,
-    holdersVerified: snapshot.balances.length, historyImported: snapshot.history.length, productionChanged: false };
+    holdersVerified: snapshot.balances.length, historyImported: 0, historyReadFromPredecessor: snapshot.history.length, productionChanged: false };
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', { mode: 0o600, flag: 'wx' });
   save('transactions.json', journal);
   return manifest;

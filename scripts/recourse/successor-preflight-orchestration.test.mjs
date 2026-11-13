@@ -72,7 +72,7 @@ test('preflight reconstructs custody destinations and every call, then returns a
   const f = fixture(), result = await preflightSuccessorPlan(f.input);
   assert.equal(result.broadcast, false);
   assert.deepEqual(result.plan, f.input.plan);
-  assert.deepEqual(result.facts, { holders: 2, historyEntries: 1, institutions: 5, creations: 12, importCalls: 3 });
+  assert.deepEqual(result.facts, { holders: 2, historyEntries: 1, institutions: 5, creations: 12, importCalls: 2 });
   assert.equal(reconstruction.snapshot.mock.calls.length, 1);
   assert.equal(reconstruction.institutions.mock.calls.length, 1);
   assert.equal(f.state.reads, 3);

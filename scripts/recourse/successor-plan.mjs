@@ -103,7 +103,7 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
   block:carried.block,blockHash:carried.blockHash,kind,seeds})]));
  const params={
   ProvianOwnershipRegistry:[pointer,identityAttestor,false],
-  ProvianRecoveryHistory:[carried.predecessor,carried.block,carried.historyRoot,carried.historyCount,economicSeeds.state],
+  ProvianRecoveryHistory:[carried.predecessor,carried.block,carried.historyRoot,carried.historyCount,economicSeeds.state,true],
   ProvianRestorationAuthorization:[kernel,carried.balanceRoot,carried.predecessor,carried.block,false,
     keccak256(artifacts.ProvianHashAccount.deployedBytecode.object),0],
   ProvianRecourseKernel:[{authority:admin,root:carried.balanceRoot,previousKernel:carried.predecessor,snapshotBlock:carried.block,
@@ -130,8 +130,8 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
  const operation=(name,method,args,from=deployer)=>({label:name+':'+method,from,to:a[name],value:'0',
    data:new Interface(artifacts[name].abi).encodeFunctionData(method,args)});
  const call=(name,method,args)=>calls.push(operation(name,method,args));
- for(const row of carried.history)call('ProvianRecoveryHistory',row.type==='batch'?'importBatch':'importEntry',
-   row.type==='batch'?[row.key,row.record,row.proof]:[row.kind,row.key,row.value,row.proof]);
+ // Paid-history records remain in the retired kernel; only their public
+ // inventory commitment is retained for future break recovery.
  for(const row of carried.balances)call('ProvianRestorationAuthorization','importBalance',[row.previousOwner,row.destination,row.amount,row.proof]);
  const economicImports=economicSeeds.rows.flatMap(row=>[
   operation('ProvianRecoveryHistory','importEconomicEntry',[row.index,row.data,row.proof]),
@@ -175,9 +175,9 @@ export function buildSuccessorPlan({snapshot,institutions,deployment,artifacts,p
 export function batchSuccessorImports(plan,artifacts,batchSize=128,maximum){
  if(maximum!==undefined)maximum=BigInt(maximum);
  ensure(Number.isSafeInteger(batchSize)&&batchSize>=1&&batchSize<=128,'import_batch_size');
- ensure(plan.imports.every(row=>row.label.startsWith('ProvianRecoveryHistory:')||row.label.startsWith('ProvianRestorationAuthorization:')),'unknown_import_family');
+ ensure(plan.imports.every(row=>row.label==='ProvianRestorationAuthorization:importBalance'),'unknown_import_family');
  const iface=new Interface(artifacts.ProvianSuccessionImporter.abi),batches=[];
- for(const [label,method]of [['ProvianRecoveryHistory:','importHistory'],['ProvianRestorationAuthorization:','importBalances']]){
+ for(const [label,method]of [['ProvianRestorationAuthorization:','importBalances']]){
   const rows=plan.imports.filter(row=>row.label.startsWith(label));
   for(let start=0;start<rows.length;){
    let end=start,accepted=null;

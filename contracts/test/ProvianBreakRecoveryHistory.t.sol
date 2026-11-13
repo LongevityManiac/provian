@@ -55,4 +55,31 @@ contract ProvianBreakRecoveryHistoryTest is Test {
         vm.expectRevert(ProvianRecoveryHistory.InvalidHistory.selector);
         new ProvianBreakRecoveryHistory(address(0x1234),100,historyRoot,0,original,r);
     }
+    function testBreakPaidEntriesStayFrozenRegardlessOfCurrentPredecessorReads() public {
+        address old=address(0x1234);bytes32 key=sha256("frozen key TEST ONLY");
+        for(uint8 kind;kind<4;++kind){
+            uint256 value=kind==2?300 ether:1;
+            bytes32 root=sha256(abi.encode("Provian monetary history",old,uint256(100),kind,key,value));
+            ProvianBreakRecoveryHistory h=new ProvianBreakRecoveryHistory(old,100,root,1,source(),mappings());
+            assertFalse(h.readPredecessor());assertFalse(h.complete());
+            h.importEntry(kind,key,value,new bytes32[](0));assertTrue(h.complete());
+            vm.mockCallRevert(old,abi.encodeWithSignature("claimSettled(bytes32)",key),"unavailable");
+            vm.mockCallRevert(old,abi.encodeWithSignature("genesisAnchorUsed(bytes32)",key),"unavailable");
+            vm.mockCallRevert(old,abi.encodeWithSignature("genesisWalletGrossIssued(bytes32)",key),"unavailable");
+            vm.mockCallRevert(old,abi.encodeWithSignature("getBatchRecord(bytes32)",key),"unavailable");
+            if(kind==0)assertTrue(h.claimSettled(key));
+            if(kind==1)assertTrue(h.genesisAnchorUsed(key));
+            if(kind==2)assertEq(h.genesisWalletGrossIssued(key),300 ether);
+            if(kind==3)assertTrue(h.batchUsed(key));
+        }
+        ProvianPVT9.BatchRecord memory record;
+        record.settled=true;record.finalizedCursorEnd=1;record.totalMinted=1;record.contributorTotal=1;
+        record.settlementDigest=sha256("original batch TEST ONLY");
+        bytes32 root=sha256(abi.encode("Provian settlement history",old,uint256(100),key,sha256(abi.encode(record))));
+        ProvianBreakRecoveryHistory receipt=new ProvianBreakRecoveryHistory(old,100,root,1,source(),mappings());
+        receipt.importBatch(key,record,new bytes32[](0));
+        assertEq(abi.encode(receipt.getBatchRecord(key)),abi.encode(record));
+        assertEq(receipt.batchRecords(key),abi.encode(record));assertTrue(receipt.batchUsed(key));
+    }
+
 }

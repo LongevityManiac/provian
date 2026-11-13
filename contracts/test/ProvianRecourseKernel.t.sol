@@ -87,7 +87,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         prior.epochZeroStartsAt = 1; prior.genesisStartsAt = 1; prior.genesisEndsAt = 100;
         prior.mintRate = 1 ether; prior.agentFoundationBps = 100;
         prior.genesisCap = 7_500_000 ether; prior.combinedCap = 10_000_000 ether;
-        ProvianRecoveryHistory history = new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior);
+        ProvianRecoveryHistory history = new ProvianRecoveryHistory(address(0x1234), 100, bytes32(uint256(1)), 0, prior, false);
         bytes32 root = sha256(abi.encode("Provian balance succession", address(0x1234), uint256(100), THIEF, THIEF, uint256(123 ether)));
         kernel = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(ADMIN, root, address(0x1234), 100, 123 ether, history, pointer, address(this), false, ProvianRestorationAuthorization(address(0))));
         authorization = kernel.ownerAuthorization();
@@ -531,7 +531,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         bytes32 root = rehearsalPair(ownerLeaf, counts);
         admin = new ProvianHashAccount(sha256(slhPublic(adminKey)));
         ProvianRecoveryHistory history = new ProvianRecoveryHistory(previous, cutoff,
-            sha256("empty money history TEST ONLY"), 0, kernel.predecessorHistory().state());
+            sha256("empty money history TEST ONLY"), 0, kernel.predecessorHistory().state(), false);
         kernel = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(address(admin), root, previous, cutoff,
             123 ether, history, pointer, address(this), true, ProvianRestorationAuthorization(address(0))));
         authorization = kernel.ownerAuthorization();
@@ -578,7 +578,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
             // No owner has restored: the ordinary successor retains the pending
             // original snapshot entitlement in addition to current balances.
             ProvianRecoveryHistory h = new ProvianRecoveryHistory(address(successor), 101,
-                sha256("empty monetary history TEST ONLY"), 0, successor.predecessorHistory().state());
+                sha256("empty monetary history TEST ONLY"), 0, successor.predecessorHistory().state(), false);
             successor = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(address(admin),
                 sha256("ordinary balances TEST ONLY"),address(successor),101,amount,h,pointer,address(this),false,ProvianRestorationAuthorization(address(0))));
             auth=successor.ownerAuthorization();
@@ -834,7 +834,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         prior.lastOpenedEpoch = 1; prior.epochGenesisIssued = 0; prior.epochTotalIssued = 0;
         prior.economicRoot = sha256(abi.encode("Provian economic history",address(0x1234),uint256(100),uint256(0),sha256(data)));
         prior.economicCount = 1;
-        ProvianRecoveryHistory history = new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior);
+        ProvianRecoveryHistory history = new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior, false);
         ProvianRecourseKernel next = this.deployKernel(ProvianRecourseKernel.SuccessionConfig(
             ADMIN,bytes32(uint256(1)),address(0x1234),100,0,history,pointer,address(this),false,ProvianRestorationAuthorization(address(0))));
         vm.expectRevert();next.getEpochPolicy(0);
@@ -859,7 +859,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         bytes memory data=abi.encode(schedule);
         prior.economicRoot=sha256(abi.encode("Provian economic history",address(0x1234),uint256(100),uint256(0),sha256(data)));
         prior.economicCount=1;
-        ProvianRecoveryHistory history=new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior);
+        ProvianRecoveryHistory history=new ProvianRecoveryHistory(address(0x1234),100,bytes32(uint256(1)),0,prior, false);
         ProvianRecourseKernel next=this.deployKernel(ProvianRecourseKernel.SuccessionConfig(
             ADMIN,bytes32(uint256(1)),address(0x1234),100,0,history,pointer,address(this),false,ProvianRestorationAuthorization(address(0))));
         vm.prank(ADMIN);vm.expectRevert();next.scheduleMintRate(2,2 ether);
