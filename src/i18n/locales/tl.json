@@ -5113,6 +5113,7 @@
     "addresses": "Mga nakaugnay mong address",
     "bindingInfo": "Kasama sa isang pagiging miyembro ang lahat ng nakaugnay na hawak, kinita man o natanggap. Ikaw ang pipili kung mag-uugnay. Alam ng relay kung aling mga wallet ang sa iyo, pero hindi ito alam ng publiko, gaya sa bangko. Libre ang pagpapanumbalik matapos masira ang kriptograpiya para sa bawat nakaugnay na may-ari, kahit hindi miyembro. Maaaring ilantad ng pagbawi o pagpapanumbalik ang ugnayan ng lumang address at ng kapalit nito. Nananatiling pribado ang mga ugnayan sa iba mong address at ang kabuuan ng iyong mga hawak. PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang.",
     "bind": "Iugnay ang address na pag-aari mo",
+    "bindPrimary": "Iugnay ang wallet na ito",
     "resources": "Reserbang mula sa mga miyembro",
     "available": "Magagamit sa pagsasauli: {{amount}} PVT",
     "exitRule": "Hindi naibabalik ang mga kontribusyon: hindi maaaring tubusin ng miyembro ang kontribusyong 1% ng kita o ang nakapirming kontribusyon mula sa kanyang hawak. Hindi maibabalik ang PVT na sinunog para sa pakikilahok. Kapag naitalaga na sa miyembro ang pagpapanumbalik, maaari niya itong i-withdraw nang direkta sa chain nang walang relay, kahit umalis na siya.",

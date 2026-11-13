@@ -5113,6 +5113,7 @@
     "addresses": "Anwani zako zilizounganishwa",
     "bindingInfo": "Uanachama mmoja unahusu mali yote iliyounganishwa, iwe imepatikana kwa kazi au imepokelewa. Kuunganisha ni chaguo lako. Relay inajua pochi zipi ni zako, lakini umma haujui, kama ilivyo kwa benki. Urejeshaji baada ya kriptografia kuvunjwa ni bure kwa kila mmiliki aliyeunganishwa, hata asiye mwanachama. Urejeshaji unaweza kuonyesha hadharani uhusiano kati ya anwani ya zamani na anwani inayoibadilisha. Uhusiano na anwani zako nyingine pamoja na jumla ya mali yako hubaki faraghani. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.",
     "bind": "Unganisha anwani unayomiliki",
+    "bindPrimary": "Unganisha pochi hii",
     "resources": "Akiba iliyotolewa na wanachama",
     "available": "Inapatikana kwa urejeshaji: PVT {{amount}}",
     "exitRule": "Michango hairudishwi: mwanachama hawezi kukomboa mchango wa 1% ya mapato wala mchango wa kiasi maalumu kutoka kwenye salio lake. Uchomaji wa ushiriki hauwezi kutenguliwa. Baada ya mgao wa urejeshaji kutengewa mwanachama, anaweza kuutoa moja kwa moja kwenye mnyororo bila relay, hata baada ya kuondoka.",

@@ -1942,7 +1942,7 @@ class RelayAPIService {
     async recourseRecoveryRequest(path: string, body?: unknown, privateAccess?: {
         identity: string; secret: Uint8Array; signingSeed: Uint8Array;
     }): Promise<unknown> {
-        if (!/^(recover-human|owner-operations\/recovery|owner-operations\/0x[0-9a-f]{64}|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/.test(path)) {
+        if (!/^(recover-human|restoration-history\/0x[0-9a-f]{64}|owner-recovery-state\/0x[0-9a-f]{64}\/(?:0|[1-9][0-9]*)|owner-operations\/recovery|owner-operations\/0x[0-9a-f]{64}|break-(?:entitlements|recovery-state)\/0x[0-9a-f]{40}\/0x[0-9a-f]{64}|break-(?:deployments|registrations|restorations)(?:\/0x[0-9a-f]{64})?|break-restorations\/0x[0-9a-f]{64}\/receipt)$/.test(path)) {
             throw new Error('recourse_recovery_path_invalid');
         }
         let payload = body;

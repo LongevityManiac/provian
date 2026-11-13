@@ -58,8 +58,10 @@ function height(value: unknown): bigint {
 }
 /** A relay's accepted response is only a queued request. This check requires
  * independent chain agreement on the bound owner and independent recovery root. */
-export async function isRecourseBindingConfirmed(binding: RecourseBinding, network: OwnerChainNetwork, requireFinality = true): Promise<boolean> {
-  const digest = hashMessage(recourseBindingMessage(binding));
+export async function isRecourseBindingConfirmed(binding: RecourseBinding, network: OwnerChainNetwork, requireFinality = true,
+  acceptedDigest?: string): Promise<boolean> {
+  const digest = acceptedDigest ?? hashMessage(recourseBindingMessage(binding));
+  if (!/^0x[0-9a-f]{64}$/.test(digest)) throw Error('recourse_binding_digest_invalid');
   const deployment = await network.deployment();
   if (deployment.addresses.kernel.toLowerCase() !== binding.kernel) throw new Error('recourse_binding_kernel_retired');
   let pin = { blockHash: deployment.blockHash, requireCanonical: true };
@@ -105,11 +107,25 @@ export async function isRecourseBindingConfirmed(binding: RecourseBinding, netwo
 /** Binding completes when the current canonical chain has accepted it, like an
  * ordinary wallet operation. Recovery of funds separately requires finality. */
 export async function waitForRecourseBinding(binding: RecourseBinding, network: OwnerChainNetwork,
-  signal?: AbortSignal): Promise<void> {
+  signal?: AbortSignal, acceptedDigest?: string): Promise<void> {
   while (true) {
     signal?.throwIfAborted();
-    if (await isRecourseBindingConfirmed(binding, network, false)) return;
+    if (await isRecourseBindingConfirmed(binding, network, false, acceptedDigest)) return;
     if (Date.now() > binding.expiresAtMs) throw new Error('recourse_binding_not_registered');
     await new Promise<void>(resolve => setTimeout(resolve, 2000));
   }
+}
+
+/** A repeat registration returns the original occurrence. The digest is only a
+ * lookup key: chain confirmation still checks this address, identity and both recovery roots. */
+export function acceptedBindingDigest(reply: unknown, binding: RecourseBinding): string {
+  if (!reply || typeof reply !== 'object' || !('binding' in reply) || !('operationId' in reply)
+    || !reply.binding || typeof reply.binding !== 'object') throw Error('recourse_binding_reply_invalid');
+  const record = reply.binding as Record<string, unknown>;
+  if (record.address !== binding.address || record.identity !== binding.identity || record.kernel !== binding.kernel
+    || typeof record.bindingDigest !== 'string' || !/^0x[0-9a-f]{64}$/.test(record.bindingDigest)
+    || (record.chainBindingStatus !== 'pending' && record.chainBindingStatus !== 'confirmed')) throw Error('recourse_binding_reply_invalid');
+  const digest = record.chainBindingStatus === 'confirmed' ? record.bindingDigest : hashMessage(recourseBindingMessage(binding));
+  if (reply.operationId !== digest) throw Error('recourse_binding_reply_invalid');
+  return digest;
 }

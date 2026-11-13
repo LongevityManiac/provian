@@ -20,7 +20,7 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
   const episode = assessPrivateMembership(account.episode, month, rules);
   const status = privateMembershipStatus(episode, month, rules);
   let unpaid = 0n;
-  if (status.protectedNow) for (const invoice of Object.values(episode.invoices)) {
+  for (const invoice of Object.values(episode.invoices)) {
     if (invoice.month < episode.startMonth || invoice.month > month) continue;
     unpaid += BigInt(invoice.burnDueAtomic) - BigInt(invoice.burnPaidAtomic)
       + BigInt(invoice.reserveDueAtomic) - BigInt(invoice.reservePaidAtomic);

@@ -85,7 +85,7 @@ contract ProvianMemberRecoursePoolTest is Test {
         (uint256 nonce,,) = pool.addressConsent(binding);
         RecourseAddressConsent.ConsentAuthorization memory c = RecourseAddressConsent.ConsentAuthorization(binding, account, nonce,
             true, 1, sha256("signed test rule"), block.timestamp + 300);
-        RecourseStandingConsent.StandingAuthorization memory a = RecourseStandingConsent.StandingAuthorization(c,true,100 ether,100 ether,100,sha256(abi.encodePacked(sha256(abi.encode(binding,nonce)))),keccak256(abi.encode(binding,nonce)));
+        RecourseStandingConsent.StandingAuthorization memory a = RecourseStandingConsent.StandingAuthorization(c,true,100 ether,100 ether,100,sha256(abi.encodePacked(sha256(abi.encode(binding,nonce)))),keccak256(abi.encode(binding,nonce)), pool.calendarMonth(block.timestamp), new RecourseStandingConsent.RejoinPayment[](0));
         bytes32 digest = pool.standingMembership().standingConsentDigest(a);
         pool.standingMembership().setStandingConsent(a, sign(key, digest), sign(ATTESTOR_KEY, digest));
     }

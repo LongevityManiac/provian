@@ -15,7 +15,7 @@ const wallet = new Wallet(h('11')), payer = wallet.address.toLowerCase();
 const domain = { chainId: '8453', pointer: a('12'), kernel: a('13'), pool: a('14') };
 const consent = { binding: h('15'), account: payer, nonce: '3', joined: true, revision: '1', ruleHash: h('16'), expiresAt: '1200' };
 const debit = { binding: h('15'), payer, nonce: '7', month: '24321', burn: '40', reserve: '25', generation: '2', revision: '1', ruleHash: h('16'), expiresAt: '1200' };
-const consentChallenge = () => ({ domain, consent, fixedChargePayer:true,burnLimit:'100',reserveLimit:'100',earningsBpsLimit:100, messageHex: addressMembershipSigningHash(domain, consent) });
+const consentChallenge = () => ({ domain, consent, admissionMonth:'24322',rejoinPayments:[],fixedChargePayer:true,burnLimit:'100',reserveLimit:'100',earningsBpsLimit:100, messageHex: addressMembershipSigningHash(domain, consent) });
 const debitChallenge = () => ({ reservationId: h('17'), domain, debit, messageHex: standingMembershipDebitSigningHash(domain, debit), allowanceAtomic: '65' });
 function fixture(joined = false) {
   const deployment = { pointer: domain.pointer, addresses: { kernel: domain.kernel, recoursePool: domain.pool }, revision: 1n, blockHash: h('18'), manifestHash: h('19') } as ProtocolDeployment;
@@ -124,4 +124,34 @@ it.each(['account','nonce','commitment'])('departure refuses unverifiable materi
  const relay={request:vi.fn(async()=>[challenge])};
  await expect(retainMembershipDeparture(relay,f.network,{transitionId:h('21'),exitSecret:async()=>h('b1'),signBytes:vi.fn()})).rejects.toThrow();
  expect(relay.request).toHaveBeenCalledTimes(1);
+});
+
+it('rejoin binds both historical payments and the admission month into the owner signature', async () => {
+  const f = fixture();
+  const rejoinPayments = [
+    { month: '24320', burn: '100', reserve: '500', ruleHash: h('16') },
+    { month: '24321', burn: '50', reserve: '100', ruleHash: h('16') },
+  ];
+  await submitMembershipConsent(f.relay, f.network, { transitionId: h('21'), kind: 'join', account: payer,
+    challenge: { ...consentChallenge(), rejoinPayments }, signBytes: bytes => wallet.signMessage(bytes), exitSecret: async () => h('23') });
+  const body = f.relay.request.mock.calls[0][1] as { ownerSignature: string; standing: StandingMembershipAuthorization };
+  expect(body.standing.rejoinPayments).toEqual(rejoinPayments);
+  expect(body.standing.admissionMonth).toBe('24322');
+  const altered = { ...body.standing, rejoinPayments: rejoinPayments.map((p, i) => i ? p : { ...p, reserve: '100' }) };
+  expect(verifyMessage(getBytes(standingMembershipSigningHash(domain, altered)), body.ownerSignature)).not.toBe(wallet.address);
+});
+it('rejoin refuses current-month, duplicate, excessive-burn and wrong-rule invoices before signing', async () => {
+  const f = fixture(), invoice = { month: '24321', burn: '100', reserve: '100', ruleHash: h('16') };
+  for (const rejoinPayments of [[{ ...invoice, month: '24322' }], [invoice, invoice], [{ ...invoice, burn: '101' }], [{ ...invoice, ruleHash: h('ff') }]]) {
+    await expect(validateMembershipConsent({ ...consentChallenge(), rejoinPayments }, payer, 'join', f.network)).rejects.toThrow();
+  }
+  await expect(validateMembershipConsent({ ...consentChallenge(), admissionMonth: '24321' }, payer, 'join', f.network)).rejects.toThrow();
+});
+it('a new month arriving during approval prevents relaying the old signed rejoin', async () => {
+  const f = fixture();
+  await expect(submitMembershipConsent(f.relay, f.network, { transitionId: h('21'), kind: 'join', account: payer,
+    challenge: consentChallenge(), exitSecret: async () => h('23'), signBytes: async bytes => {
+      f.state.month = '24323'; return wallet.signMessage(bytes);
+    } })).rejects.toThrow();
+  expect(f.relay.request).not.toHaveBeenCalled();
 });

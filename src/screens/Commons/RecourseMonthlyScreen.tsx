@@ -17,7 +17,7 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
   const [view,setView]=useState<RecourseView|null>(null),[mandate,setMandate]=useState<StandingMembershipMandate|null>(null);
   const [loading,setLoading]=useState(true),[error,setError]=useState(false);
   const load=useCallback(async()=>{
-    setLoading(true);setError(false);
+    setLoading(true);setError(false);setView(null);setMandate(null);
     try{const next=await readRecourseView();const standing=await readStandingMembershipState(next.primaryIdentity??next.identity,ownerChainNetwork());
       setView(next);setMandate(standing.mandate);
     }catch{setError(true);}finally{setLoading(false);}
@@ -33,16 +33,19 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
       {error?<Text style={styles.body}>{t('recourse.error')}</Text>:null}
       {view&&mandate?<>
         <View style={styles.card}>
-          <Text style={styles.title}>{changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic payments approved')}</Text>
-          <Text style={styles.body}>{t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from PVT holdings do not need you to open the app, sign again or keep ETH.')}</Text>
+          <Text style={styles.title}>{view.membershipState!=='available'?t('recourse.membershipUnavailable'):!view.enrolled?t('recourse.inactive'):changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic payments approved')}</Text>
+          <Text style={styles.body}>{view.membershipState==='available'&&!view.enrolled&&view.unpaidAtomic!=='0'?t('recourse.rejoin.explain'):t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from PVT holdings do not need you to open the app, sign again or keep ETH.')}</Text>
           <Text style={styles.body}>{t('recourse.standing.limits','Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.',{
             burn:pvtAmount(mandate.burnLimit),reserve:pvtAmount(mandate.reserveLimit),percent:mandate.earningsBpsLimit/100})}</Text>
           <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from PVT holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.')}</Text>
-          <Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
-            t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>
+          {view.membershipState==='available'?<Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
+            !view.enrolled?t('recourse.outstanding',{amount:pvtAmount(view.unpaidAtomic)}):t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>:null}
           <Text style={styles.body}>{t('recourse.graceRule')}</Text>
         </View>
-        {changed?<View style={styles.card}>
+        {view.membershipState==='available'&&!view.enrolled?<TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'join'})}>
+          <Text style={styles.buttonText}>{t('recourse.join')}</Text>
+        </TouchableOpacity>:null}
+        {view.membershipState==='available'&&view.enrolled&&changed?<View style={styles.card}>
           <Text style={styles.body}>{t('recourse.standing.increase','The current rule requires a new approval. No higher amount can be debited under your previous approval.')}</Text>
           <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'renew'})}>
             <Text style={styles.buttonText}>{t('recourse.standing.review','Review new amounts')}</Text>

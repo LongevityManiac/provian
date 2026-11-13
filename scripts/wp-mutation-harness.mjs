@@ -262,7 +262,7 @@ const MUTATION_SETS = {
       { id: 'PUBLICATION-JOURNAL-CLOSURE-HASHES', description: 'partial retained evidence releases a gas nonce',
         find: 'JSON.stringify(proof.retainedHashes) === JSON.stringify(attempt.variants.map(v => v.hash))', replace: 'true', expectedKilledBy: 'closure must bind every retained hash, exact nonce and finalized consumption' },
       { id: 'PUBLICATION-JOURNAL-CAS', description: 'stale closure accepts a concurrently appended replacement',
-        find: "head.get('revision') === expected", replace: 'true', expectedKilledBy: 'replacement racing an RPC closure is retained and stale closure cannot release it' },
+        find: "owned(lease); headValid(head);\n      check(head.get('revision') === expected", replace: "owned(lease); headValid(head);\n      check(true", expectedKilledBy: 'replacement racing an RPC closure is retained and stale closure cannot release it' },
       { id: 'PUBLICATION-JOURNAL-GOAL', description: 'gas consumption alone completes pointer publication',
         find: "check(await verifyGoal(structuredClone(goal)) === true, 'goal_unverified');", replace: '', expectedKilledBy: 'retains original and cancellation bytes across crashes' }],
   },
@@ -613,7 +613,7 @@ const MUTATION_SETS = {
     runner: 'jest', sourcePath: 'provian-backend/src/core/recourse/membership-consent-operation.ts',
     testMatchPath: 'src/core/recourse/membership-consent-operation.test.ts',
     mutations: [{ id: 'UNSIGNED-RECOVERY', description: 'obsolete unsigned request permanently holds the shared sponsor nonce',
-      find: "['retired', 'finished', 'stale', 'owner']", replace: "['retired', 'finished', 'stale']",
+      find: "['retired', 'finished', 'stale', 'owner', 'rejoin_amount']", replace: "['retired', 'finished', 'stale', 'rejoin_amount']",
       expectedKilledBy: 'recovery releases an interrupted unsigned gas reservation without erasing signed work' }],
   },
   'sponsored-operation-worker': {
@@ -1182,6 +1182,10 @@ const MUTATION_SETS = {
         find: 'if (state.firstUnpaidMonth + 1 < cursor) return',
         replace: 'if (false) return',
         expectedKilledBy: 'late keeper preserves the original deadline and neither late payment nor issuance can revive it' },
+      { id: 'REJOIN-UNPAID', description: 'rejoining discards unpaid protected-month invoices',
+        find: "if (privateRejoinPayments(old, nowMonth, rules).length) throw Error('recourse_private_membership_rejoin_unpaid');",
+        replace: "// unpaid protected invoices incorrectly ignored",
+        expectedKilledBy: 'lapsed rejoin settles both protected months, never charges or covers the lapsed interval' },
     ],
   },
   // -------------------------------------------------------------------------

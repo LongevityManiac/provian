@@ -2,8 +2,9 @@ import { assertBaseTransactionGasLimit } from './transaction-gas-limit.mjs';
 import { Transaction, toQuantity } from 'ethers';
 const ensure = (value, reason) => { if (!value) throw Error('copy_port_' + reason); };
 const writes = new Set(['anvil_impersonateAccount', 'anvil_setBalance', 'anvil_mine', 'evm_snapshot', 'evm_revert',
+  'evm_setNextBlockTimestamp',
   'eth_sendTransaction', 'eth_sendRawTransaction']);
-const reads = new Set(['eth_chainId', 'eth_getBlockByNumber', 'eth_getTransactionCount', 'eth_getTransactionByHash',
+const reads = new Set(['eth_chainId', 'eth_blockNumber', 'eth_getBlockByNumber', 'eth_getTransactionCount', 'eth_getTransactionByHash',
   'eth_getTransactionReceipt', 'eth_getBlockByHash', 'eth_call', 'eth_estimateGas', 'eth_getCode', 'eth_getLogs', 'eth_getBalance', 'eth_gasPrice']);
 /** Explicit simulator-only transport. A Base chain ID is insufficient: every
  * write re-authenticates the exact local Anvil instance and fork. This module

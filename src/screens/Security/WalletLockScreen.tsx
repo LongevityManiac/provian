@@ -25,6 +25,7 @@ import { hasCloudBackup } from '../../core/recovery/cloud/CloudBackupV2';
 import { resolveBackupGate } from '../../core/recovery/cloud/backupRequirement';
 import { landAfterUnlock } from '../../navigation/afterUnlock';
 import { legalReviewRequired } from '../../core/legal/legalAcceptance';
+import { readHumanCurrentAddresses } from '../../core/recourse/human-account';
 
 const isSimulator = !Device.isDevice;
 
@@ -74,9 +75,10 @@ const WalletLockScreen = ({ navigation }: any) => {
                 // and receiving to, the previous wallet).
                 const known = await WalletCreationService.getInstance().reconcileStoredAddresses().catch(() => null);
                 if (known) {
+                    const current = await readHumanCurrentAddresses(known);
                     const state = useWalletStore.getState();
-                    if (state.address && state.address.toLowerCase() !== known.evm.toLowerCase()) state.setAddress(known.evm);
-                    if (known.sol && state.solanaAddress && state.solanaAddress !== known.sol) state.setSolanaAddress(known.sol);
+                    if (state.address && state.address.toLowerCase() !== current.evm.toLowerCase()) state.setAddress(current.evm);
+                    if (current.sol && state.solanaAddress && state.solanaAddress !== current.sol) state.setSolanaAddress(current.sol);
                 }
                 assertBiometricAction(biometricAction);
                 // PE METER: publish the message key if the relay has none (so PEs can reach this phone).

@@ -5,7 +5,7 @@ import type { LossSnapshot } from './loss-snapshot';
 import { readHistoricalBindingLog, HISTORICAL_BINDING_ABI } from './restoration-binding-log';
 import type { LossMembershipEvidence } from './membership-at-loss';
 import { utcCalendarMonth } from './calendar-month';
-import { Interface } from 'ethers';
+import { AbiCoder, Interface, sha256 } from 'ethers';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
@@ -147,11 +147,13 @@ export async function prepareRestorationAllocation(values:readonly CheckedDeterm
  * and membership snapshot must still hash to the consumed owner ticket, while
  * the amount/evidence come from the actual immutable on-chain reversal result.
  * This path survives operator crashes between reversal and reserve allocation. */
-export async function prepareRecordedPoolExecution(db:Firestore,requests:readonly string[],kind:'allocate'|'record'|'deliver',
- port:DeterminationExecutionPort=createDeterminationExecutionPort()):Promise<CheckedRecourseExecution>{
+export async function prepareRecordedPoolExecution(db:Firestore,requests:readonly string[],kind:'eligibility'|'allocate'|'record'|'deliver',
+ port:DeterminationExecutionPort=createDeterminationExecutionPort(),attestor?:EvidenceAttestor,eligibilityRequest?:string):Promise<CheckedRecourseExecution>{
  if(requests.length===0||new Set(requests).size!==requests.length||requests.some(request=>!/^0x[0-9a-f]{64}$/.test(request))
-   ||(kind!=='allocate'&&requests.length!==1))throw Error('recourse_execution_batch_invalid');
+   ||(!['allocate','eligibility'].includes(kind)&&requests.length!==1))throw Error('recourse_execution_batch_invalid');
  const context=await executionContext(port),checks:ExecutionCheck[]=[],records=[],offsets=new Map<string,bigint>();
+ const memberships=new Map<string,LossMembershipEvidence>();
+ const snapshots=new Map<string,LossSnapshot>();
  for(const request of [...requests].sort()){
   const stored=await db.collection(RESTORATION_REQUESTS).doc(request).get();
   const snapshot=stored.get('snapshot') as LossSnapshot;
@@ -169,6 +171,7 @@ export async function prepareRecordedPoolExecution(db:Firestore,requests:readonl
   if(!executed[0]||ticket.request!==request||ticket.identity!==snapshot.identity||ticket.lossHash!==lossHash
     ||String(ticket.maximumLoss)!==snapshot.lossAtomic||outcome.identity!==snapshot.identity||outcome.evidenceHash===`0x${'0'.repeat(64)}`
     ||BigInt(outcome.shortfall)>BigInt(ticket.maximumLoss))throw Error('recourse_execution_result_invalid');
+  memberships.set(request,membership);snapshots.set(request,snapshot);
   const offset=offsets.get(snapshot.identity)??0n;
   if(kind!=='deliver'&&offset===0n)checks.push({target:context.pool,data:RECOURSE_POOL_ABI.encodeFunctionData('outcomeRevision',[snapshot.identity]),
     expected:RECOURSE_POOL_ABI.encodeFunctionResult('outcomeRevision',[revision[0]])});
@@ -176,14 +179,40 @@ export async function prepareRecordedPoolExecution(db:Firestore,requests:readonl
   records.push({request,identity:snapshot.identity,occurrence:snapshot.occurrence,shortfall:String(outcome.shortfall),evidenceHash:String(outcome.evidenceHash),
     expectedRevision:(BigInt(revision[0])+offset).toString(),membershipGeneration:membership.periodIndex+1,lossBlock:snapshot.block,lossMonth:utcCalendarMonth(membership.lossTimestamp)});
  }
+ if(kind==='allocate'||kind==='record'){
+  const tuple=RECOURSE_POOL_ABI.getFunction('determine')!.inputs[0].arrayChildren!;
+  for(const record of records){
+   const hash=sha256(AbiCoder.defaultAbiCoder().encode([tuple],[record]));
+   if(!(await context.call(context.pool,RECOURSE_POOL_ABI,'approvedLossEligibility',[hash]))[0])
+    throw Error('recourse_execution_membership_attestation_required');
+   checks.push({target:context.pool,data:RECOURSE_POOL_ABI.encodeFunctionData('approvedLossEligibility',[hash]),
+    expected:RECOURSE_POOL_ABI.encodeFunctionResult('approvedLossEligibility',[true])});
+  }
+ }
  let calldata:string;
- if(kind==='allocate'){
+ if(kind==='eligibility'){
+  const record=records.find(record=>record.request===eligibilityRequest);
+  if(!record)throw Error('recourse_execution_batch_invalid');
+  const membership=memberships.get(record.request)!,snapshot=snapshots.get(record.request)!;
+  if(typeof membership.ruleHash!=='string'||!/^0x[0-9a-f]{64}$/.test(membership.ruleHash)
+    ||![membership.admissionLogIndex,membership.closureLogIndex,snapshot.firstOutflowLogIndex].every(n=>typeof n==='number'&&Number.isSafeInteger(n)&&n>=0))
+    throw Error('recourse_execution_membership_evidence_missing');
+  const expected=String((await context.call(context.registry,DETERMINATION_EXECUTION_READ_ABI,'identityAttestor'))[0]).toLowerCase();
+  if(!attestor||attestor.address!==expected||expected===context.authority)throw Error('recourse_execution_attestor_invalid');
+  const evidence={determination:record,ruleHash:membership.ruleHash,admissionLogIndex:membership.admissionLogIndex,
+    lossLogIndex:snapshot.firstOutflowLogIndex,closureLogIndex:membership.closureLogIndex};
+  const tuple=RECOURSE_POOL_ABI.getFunction('admitLossEligibility')!.inputs[0];
+  const message=sha256(AbiCoder.defaultAbiCoder().encode(['string','uint256','address','address','address',tuple],
+    ['Provian private membership at loss',8453,context.deployment.pointer,context.kernel,context.pool,evidence]));
+  const signature=await attestor.signDigest(message);
+  calldata=RECOURSE_POOL_ABI.encodeFunctionData('admitLossEligibility',[evidence,signature]);
+ }else if(kind==='allocate'){
   if(records.some(record=>record.shortfall==='0'))throw Error('recourse_execution_batch_invalid');
   calldata=RECOURSE_POOL_ABI.encodeFunctionData('determine',[records]);
  }else if(kind==='record'){
   if(records[0].shortfall!=='0')throw Error('recourse_execution_batch_required');
   calldata=RECOURSE_POOL_ABI.encodeFunctionData('recordReversalOnly',[records[0]]);
  }else calldata=RECOURSE_POOL_ABI.encodeFunctionData('deliverRestoration',[records[0].request,records[0].identity]);
- return seal({kind,executor:context.pool,calldata,signer:kind==='deliver'?context.submitter:context.authority,
+ return seal({kind,executor:context.pool,calldata,signer:['deliver','eligibility'].includes(kind)?context.submitter:context.authority,
   manifestHash:context.deployment.manifestHash,attempt:context.deployment.blockHash},[...requests].sort(),checks,port);
 }

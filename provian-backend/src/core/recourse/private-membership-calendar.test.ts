@@ -1,5 +1,5 @@
 import { assessPrivateMembership, creditPrivateMembership, joinPrivateMembership, leavePrivateMembership,
-  privateMembershipStatus, recordPrivateMembershipIssuance, type PrivateCalendarRules } from './private-membership-calendar';
+  privateMembershipStatus, recordPrivateMembershipIssuance, privateRejoinPayments, creditPrivateRejoin, type PrivateCalendarRules } from './private-membership-calendar';
 const h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
 const rules: PrivateCalendarRules = () => ({ ruleHash: h(1), rule: {
   schema: 'provian-recourse-membership/v1', chainId: 8453, pointer: `0x${'11'.repeat(20)}`, firstMonth: 0,
@@ -45,23 +45,46 @@ test('same-month leave and rejoin preserves burn credits, exact earnings and fra
   expect(() => creditPrivateMembership(rejoined, 10, 10, { burnAtomic: '1', reserveAtomic: '0' }, rules)).toThrow('overcredit');
 });
 
-test('voluntary leave and rejoin cannot erase a still-payable prior month or extend its grace', () => {
+test('voluntary leave preserves the unpaid protected month and requires settlement before rejoining', () => {
   const left = leavePrivateMembership(start(), 10, rules);
-  const rejoined = joinPrivateMembership(left, 11, rules);
-  expect(rejoined).toMatchObject({ generation: 2, startMonth: 10, admissionMonth: 11, firstUnpaidMonth: 10 });
-  expect(privateMembershipStatus(rejoined, 11, rules).grace).toBe(true);
-  expect(privateMembershipStatus(rejoined, 12, rules).protectedNow).toBe(false);
-  const cured = creditPrivateMembership(rejoined, 11, 10, { burnAtomic: '100', reserveAtomic: '100' }, rules);
-  expect(privateMembershipStatus(cured, 11, rules).grace).toBe(false);
+  expect(() => joinPrivateMembership(left, 11, rules)).toThrow('rejoin_unpaid');
+  const payments = privateRejoinPayments(left, 11, rules);
+  expect(payments).toEqual([{ month: '10', ruleHash: h(1), burn: '100', reserve: '100' }]);
+  const credited = creditPrivateRejoin(left, 11, payments, rules);
+  expect(privateMembershipStatus(credited, 11, rules).protectedNow).toBe(false);
+  const rejoined = joinPrivateMembership(credited, 11, rules);
+  expect(rejoined).toMatchObject({ generation: 2, startMonth: 11, admissionMonth: 11, firstUnpaidMonth: 11 });
 });
 
-test('rejoin after expiry opens new protection without accepting a catch-up payment', () => {
-  const rejoined = joinPrivateMembership(start(), 12, rules);
-  expect(rejoined).toMatchObject({ generation: 2, startMonth: 12, admissionMonth: 12 });
-  expect(privateMembershipStatus(rejoined, 12, rules).protectedNow).toBe(true);
-  expect(Object.keys(rejoined.invoices)).toEqual(['12']);
-  expect(() => creditPrivateMembership(rejoined, 12, 10, { burnAtomic: '100', reserveAtomic: '100' }, rules)).toThrow('lapsed');
-  expect(() => joinPrivateMembership(rejoined, 12, rules)).toThrow('already_joined');
+test('lapsed rejoin settles both protected months, never charges or covers the lapsed interval', () => {
+  const expired = assessPrivateMembership(start(), 20, rules);
+  const payments = privateRejoinPayments(expired, 20, rules);
+  expect(payments).toEqual([10, 11].map(m => ({ month: String(m), ruleHash: h(1), burn: '100', reserve: '100' })));
+  expect(() => joinPrivateMembership(expired, 20, rules)).toThrow('rejoin_unpaid');
+  expect(() => creditPrivateRejoin(expired, 20, payments.slice(1), rules)).toThrow('rejoin_payment');
+  expect(() => creditPrivateRejoin(expired, 20, [...payments, { ...payments[0], month: '12' }], rules)).toThrow('rejoin_payment');
+  const paid = creditPrivateRejoin(expired, 20, payments, rules);
+  expect(paid).toMatchObject({ joined: false, endMonthExclusive: 12 });
+  expect(() => creditPrivateRejoin(paid, 20, payments, rules)).toThrow('rejoin_payment');
+  const rejoined = joinPrivateMembership(paid, 20, rules);
+  expect(rejoined).toMatchObject({ generation: 2, startMonth: 20, admissionMonth: 20 });
+  expect(Object.keys(rejoined.invoices)).toEqual(['20']);
+  expect(() => creditPrivateMembership(rejoined, 20, 12, { burnAtomic: '100', reserveAtomic: '100' }, rules)).toThrow('lapsed');
+  expect(() => joinPrivateMembership(rejoined, 20, rules)).toThrow('already_joined');
+});
+
+test('rejoin preserves partial payments and percentage credits under each protected month historical rule', () => {
+  const changed: PrivateCalendarRules = m => { const r = rules(m); return m < 11 ? r : { ruleHash: h(2),
+    rule: { ...r.rule, firstMonth: 11, participationBurnAtomic: '125', noEarningsContributionAtomic: '150', earningsBps: 200 } }; };
+  let state = creditPrivateMembership(start(), 10, 10, { burnAtomic: '40', reserveAtomic: '0' }, changed);
+  state = recordPrivateMembershipIssuance(state, 10, [row(1, '50000', '100')], changed).state;
+  const payments = privateRejoinPayments(state, 30, changed);
+  expect(payments).toEqual([{ month: '10', ruleHash: h(1), burn: '60', reserve: '400' },
+    { month: '11', ruleHash: h(2), burn: '125', reserve: '150' }]);
+  expect(() => creditPrivateRejoin(state, 30, [{ ...payments[0], reserve: '500' }, payments[1]], changed)).toThrow('rejoin_payment');
+  const paid = creditPrivateRejoin(state, 30, payments, changed);
+  expect(paid.invoices['10']).toMatchObject({ reserveDueAtomic: '500', reservePaidAtomic: '500', burnPaidAtomic: '100' });
+  expect(privateMembershipStatus(paid, 30, changed)).toEqual({ protectedNow: false, grace: false, endMonthExclusive: 12 });
 });
 
 test('two addresses contribute on exact owner-wide gross while immutable contributor allocations remain intact', () => {

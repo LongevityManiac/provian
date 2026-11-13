@@ -56,7 +56,7 @@ async function fixture(change = '', member = false) {
       expect(verifyMessage(ownershipBindingMessage(binding), parsed.args[1])).toBe(owner.address);
       if (parsed.name === 'bindWithConsent') {
         const consent = { binding: parsed.args[4].consent[0], account: String(parsed.args[4].consent[1]).toLowerCase(), nonce: String(parsed.args[4].consent[2]), joined: parsed.args[4].consent[3], revision: String(parsed.args[4].consent[4]), ruleHash: parsed.args[4].consent[5], expiresAt: String(parsed.args[4].consent[6]) };
-        const authorization={consent,fixedChargePayer:parsed.args[4].fixedChargePayer,burnLimit:String(parsed.args[4].burnLimit),reserveLimit:String(parsed.args[4].reserveLimit),earningsBpsLimit:Number(parsed.args[4].earningsBpsLimit),exitCommitment:parsed.args[4].exitCommitment,exitSalt:parsed.args[4].exitSalt};
+        const authorization={consent,admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:parsed.args[4].fixedChargePayer,burnLimit:String(parsed.args[4].burnLimit),reserveLimit:String(parsed.args[4].reserveLimit),earningsBpsLimit:Number(parsed.args[4].earningsBpsLimit),exitCommitment:parsed.args[4].exitCommitment,exitSalt:parsed.args[4].exitSalt};
         const domain = { chainId: '8453', pointer: deployment.pointer, kernel: binding.kernel, pool: address('99') };
         expect(verifyMessage(getBytes(memberBindingSigningHash(domain, address('dd'), binding, authorization)), parsed.args[2])).toBe(attestorWallet.address);
         expect(verifyMessage(getBytes(standingMembershipSigningHash(domain, authorization)), parsed.args[5])).toBe(owner.address);
@@ -130,7 +130,7 @@ test('exact consent executed by another submitter is reconciled without signing 
 test('an active member must sign atomic consent; queue and crash retry preserve both mandates', async () => {
   const f = await fixture('', true), consent = { binding: f.binding.identity, account: f.binding.address, nonce: '0', joined: true,
     revision: '1', ruleHash: hash('a1'), expiresAt: String(f.timestamp + 200) };
-  const authorization={consent,fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:hash('a2'),exitSalt:hash('a3')};
+  const authorization={consent,admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:hash('a2'),exitSalt:hash('a3')};
   const member = { authorization, ownerSignature: await owner.signMessage(getBytes(standingMembershipSigningHash(
     { chainId: '8453', pointer: address('aa'), kernel: f.binding.kernel, pool: address('99') }, authorization))) };
   await expect(checkBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain)).rejects.toThrow('member_consent_required');

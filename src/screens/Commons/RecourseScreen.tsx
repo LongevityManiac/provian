@@ -7,7 +7,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { pvtAmount, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, bindHumanPrimaryAddress, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
 import { beginHumanMembership, leaveHumanMembership } from '../../core/recourse/human-membership';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import SeedManager from '../../core/wallet/SeedManager';
@@ -72,6 +72,13 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const button = (label: string, onPress: () => void) => <TouchableOpacity accessibilityRole="button"
     disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
     <Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
+  const bindPrimary = async () => {
+    if (busy || loading) return;
+    setBusy(true); setError(false);
+    try { await bindHumanPrimaryAddress(); await load(); }
+    catch { setError(true); }
+    finally { setBusy(false); }
+  };
   const leave = async () => {
     if (busy || loading) return;
     setBusy(true); setError(false);
@@ -144,7 +151,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           <Text style={styles.body}>{t('recourse.monthly', 'Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from PVT holdings in a month with no earnings.', {
             burn: pvtAmount(state.participationBurnAtomic), percent: state.earningsBps / 100, reserve: pvtAmount(state.noEarningsContributionAtomic),
           })}</Text>
-          <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed.')}</Text>
+          <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed. Rejoining first requires settling both unpaid protected months, with credit for amounts already paid; lapsed months are never charged.')}</Text>
           {state.membershipState === 'available' && state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
           <Text style={styles.small}>{t('recourse.standing.consent', 'Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
           {state.membershipState === 'available' ? state.enrolled ? <>
@@ -160,6 +167,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
             {row.confirmed && row.identity !== state.primaryIdentity
               ? <>{button(t('recourse.recoverAddress', 'Recover this wallet'), () => { void recoverAddress(row.identity); })}
                 {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
+          {state.primaryIdentity === null ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
           {button(t('recourse.bind', 'Bind an address you hold'), () => navigation.navigate('RecourseBind'))}
         </View>
         <View style={styles.card}>

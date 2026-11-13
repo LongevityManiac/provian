@@ -32,6 +32,7 @@ interface IMembershipDepartureAccount {
 contract RecourseStandingConsent {
     using SignatureChecker for address;
     IStandingMembershipHost public immutable pool;
+    struct RejoinPayment { uint256 month; uint256 burn; uint256 reserve; bytes32 ruleHash; }
     struct StandingAuthorization {
         RecourseAddressConsent.ConsentAuthorization consent;
         bool fixedChargePayer;
@@ -40,6 +41,8 @@ contract RecourseStandingConsent {
         uint16 earningsBpsLimit;
         bytes32 exitCommitment;
         bytes32 exitSalt;
+        uint256 admissionMonth;
+        RejoinPayment[] rejoinPayments;
     }
     mapping(bytes32 => RecourseAddressConsentState.StandingMandate) public standingMandate;
     mapping(bytes32 => mapping(uint256 => RecourseAddressConsentState.MonthlyCollection)) public monthlyCollection;
@@ -78,7 +81,7 @@ contract RecourseStandingConsent {
         address owner = pool.consentAccount(c.binding);
         bytes32 digest = standingConsentDigest(authorization);
         RecourseAddressConsentState.StandingMandate storage previous = standingMandate[c.binding];
-        if (!c.joined || c.binding == bytes32(0) || owner == address(0) || c.account != owner
+        if (authorization.admissionMonth != month || !c.joined || c.binding == bytes32(0) || owner == address(0) || c.account != owner
             || c.nonce != nonce || c.ruleHash != rule.signedRuleHash || authorization.exitCommitment == bytes32(0)
             || authorization.burnLimit != (authorization.fixedChargePayer ? rule.participationBurn : 0)
             || authorization.reserveLimit != (authorization.fixedChargePayer ? rule.noEarningsContribution : 0)
@@ -86,6 +89,10 @@ contract RecourseStandingConsent {
             || authorization.exitSalt == bytes32(0) || authorization.exitSalt == previous.exitSalt
             || authorization.exitCommitment == previous.exitCommitment
             || !owner.isValidSignatureNow(digest, ownerSignature) || !_attestor().isValidSignatureNow(digest, attestorSignature)) revert InvalidStandingConsent();
+        // Historical collection requires this fresh owner approval of every
+        // exact amount as well as the attestor's private-calendar verification.
+        // A failure rolls back every payment and the admission together.
+        _collectRejoin(authorization, month);
         uint256 next = pool.applyStandingConsent(c.binding, owner, nonce, true);
         uint256 start = (joined && previous.exitCommitment != bytes32(0)) || (previous.exitCommitment != bytes32(0)
             && previous.closedMonth + 1 >= month) ? previous.startMonth : month;
@@ -94,6 +101,29 @@ contract RecourseStandingConsent {
         standingMandate[c.binding] = RecourseAddressConsentState.StandingMandate(burn, reserve, rule.earningsBps,
             start, 0, next, authorization.exitCommitment, authorization.exitSalt, true);
         emit StandingConsentApproved(c.binding, next, burn, reserve, rule.earningsBps, start, authorization.exitCommitment, authorization.exitSalt);
+    }
+    function _collectRejoin(StandingAuthorization calldata a, uint256 nowMonth) private {
+        if (a.rejoinPayments.length == 0) return;
+        (,, bool joined) = pool.addressConsent(a.consent.binding);
+        if (joined || !a.fixedChargePayer) revert InvalidStandingConsent();
+        (, uint256 generation,) = pool.addressConsent(a.consent.binding);
+        for (uint256 i; i < a.rejoinPayments.length; ++i) {
+            RejoinPayment calldata payment = a.rejoinPayments[i];
+            RecourseMembershipRules.MonthlyRule memory rule = pool.monthlyRule(payment.month);
+            RecourseAddressConsentState.MonthlyCollection storage collected = monthlyCollection[a.consent.binding][payment.month];
+            if (payment.month >= nowMonth || (i != 0 && payment.month <= a.rejoinPayments[i - 1].month)
+                || payment.ruleHash != rule.signedRuleHash || (payment.burn == 0 && payment.reserve == 0)
+                || collected.burn + payment.burn > rule.participationBurn) revert InvalidStandingConsent();
+            // The flat zero-earnings amount is not a ceiling on a percentage
+            // invoice. The independently checked exact net reserve is signed by
+            // both owner and attestor; gross earnings remain private.
+            collected.burn += payment.burn; collected.reserve += payment.reserve;
+            RecourseAddressConsent.DebitAuthorization memory d = RecourseAddressConsent.DebitAuthorization(
+                a.consent.binding, a.consent.account, payment.month, payment.burn, payment.reserve,
+                pool.debitNonce(a.consent.binding), generation, a.consent.revision, payment.ruleHash, a.consent.expiresAt);
+            pool.collectStandingDebit(d);
+            emit MonthlyCollectionRecorded(d.binding, d.month, collected.burn, collected.reserve);
+        }
     }
     function leaveStandingMembership(bytes32 binding, uint256 consentNonce, bytes32 exitSecret, uint256 revision) external {
         _current(revision);

@@ -2,6 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { Interface, ZeroAddress, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import { readFileSync } from 'node:fs';
 import { prepareSuccessorActivation, verifySuccessorActivation, successorActivationValidator, advanceSuccessorActivation } from './successor-activation.mjs';
+import { assertGasStep, readGasCertificate } from './all-plan-gas.mjs';
 const inspect = vi.hoisted(() => vi.fn());
 vi.mock('./publication-outcome.mjs', () => ({ inspectPublicationOutcome: inspect }));
 const a = n => `0x${n.toString(16).padStart(40, '0')}`, h = n => `0x${n.toString(16).padStart(64, '0')}`;
@@ -61,6 +62,16 @@ test('activation fixes one exact admin call and reconciles its published deploym
     data: abi.encodeFunctionData('resumeFromAdministrativeHold') }]);
   expect((await verifySuccessorActivation({ ...f.inputs, plan })).active).toBe(false);
   f.resume(); expect((await verifySuccessorActivation({ ...f.inputs, plan, complete: true })).active).toBe(true);
+});
+test('the real activation planner stays inside the certified resume family', async () => {
+  const f = fixture(), plan = await prepareSuccessorActivation(f.inputs);
+  const proof = { certificate: readGasCertificate(), maximum: 16777216n };
+  const row = plan.steps[0];
+  expect(assertGasStep(row, f.inputs, proof)).toBeGreaterThan(0n);
+  const anotherCertifiedCall = abi.encodeFunctionData('appointOperationalMinter', [a(99)]);
+  expect(() => assertGasStep({ ...row, data: anotherCertifiedCall }, f.inputs, proof)).toThrow('activation_selector');
+  expect(() => assertGasStep({ ...row, label: 'activate:armEpochZero' }, f.inputs, proof)).toThrow();
+  expect(() => assertGasStep({ ...row, data: row.data + '00' }, f.inputs, proof)).toThrow();
 });
 test('owner transfers, burns and supply-neutral reversal token logs remain allowed', async () => {
   const f = fixture();

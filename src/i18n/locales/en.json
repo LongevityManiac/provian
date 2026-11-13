@@ -5113,6 +5113,7 @@
     "addresses": "Your bound addresses",
     "bindingInfo": "One membership includes all bound PVT holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. Cryptographic-break restoration is free for every bound owner, including nonmembers. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.",
     "bind": "Bind an address you hold",
+    "bindPrimary": "Bind this wallet",
     "resources": "Member-funded reserves",
     "available": "Available for restoration: {{amount}} PVT",
     "exitRule": "Contributions are nonrefundable: a member cannot redeem the 1% earnings contribution or the flat contribution from PVT holdings. Participation burns are irreversible. Once a restoration is allocated to a member, that allocation can be withdrawn directly on-chain without the relay, including after the member leaves.",

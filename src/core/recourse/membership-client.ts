@@ -5,7 +5,7 @@ import { readRecoursePoolChain } from './pool-chain';
 import { readStandingMembershipState } from './standing-state';
 import { RECOURSE_POOL_ABI } from './pool-abi';
 import { addressMembershipSigningHash, standingMembershipDebitSigningHash, parseAddressMembershipConsent,
-  standingMembershipSigningHash, authenticatedDepartureSigningHash, membershipExitCommitment, type StandingMembershipAuthorization,
+  parseRejoinPayments, type RejoinPayment, standingMembershipSigningHash, authenticatedDepartureSigningHash, membershipExitCommitment, type StandingMembershipAuthorization,
   parseExactMembershipDebit, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
   type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 
@@ -15,6 +15,8 @@ export type MembershipRequestPath = 'membership-transitions' | `membership-trans
 export interface MembershipRelay { request(path: MembershipRequestPath, body?: unknown): Promise<unknown> }
 export interface MembershipConsentChallenge {
   readonly domain: MembershipAuthorizationDomain; readonly consent: AddressMembershipConsent; readonly messageHex: string;
+  readonly admissionMonth: string;
+  readonly rejoinPayments: readonly RejoinPayment[];
   readonly fixedChargePayer: boolean; readonly burnLimit: string; readonly reserveLimit: string; readonly earningsBpsLimit: number;
 }
 export interface MembershipDebitChallenge {
@@ -40,12 +42,12 @@ function hash(value: unknown): string { return typeof value === 'string' && /^0x
 function atomic(value: unknown): string { return typeof value === 'string' && value.length <= 78 && /^(0|[1-9][0-9]*)$/.test(value)
   && BigInt(value) < (1n << 256n) ? value : fail(); }
 export function parseMembershipConsentChallenge(value: unknown): MembershipConsentChallenge {
-  const row = object(value, 'burnLimit,consent,domain,earningsBpsLimit,fixedChargePayer,messageHex,reserveLimit'), domain = parseMembershipAuthorizationDomain(row.domain), consent = parseAddressMembershipConsent(row.consent);
+  const row = object(value, 'admissionMonth,burnLimit,consent,domain,earningsBpsLimit,fixedChargePayer,messageHex,rejoinPayments,reserveLimit'), domain = parseMembershipAuthorizationDomain(row.domain), consent = parseAddressMembershipConsent(row.consent);
   const messageHex = hash(row.messageHex);
   if (messageHex !== addressMembershipSigningHash(domain, consent)) return fail();
   if(typeof row.fixedChargePayer!=='boolean'||typeof row.earningsBpsLimit!=='number'||!Number.isSafeInteger(row.earningsBpsLimit)
     ||row.earningsBpsLimit<0||row.earningsBpsLimit>10000)return fail();
-  return { domain, consent, messageHex, fixedChargePayer:row.fixedChargePayer, burnLimit:atomic(row.burnLimit),
+  return { domain, consent, messageHex, admissionMonth: atomic(row.admissionMonth), rejoinPayments: parseRejoinPayments(row.rejoinPayments), fixedChargePayer:row.fixedChargePayer, burnLimit:atomic(row.burnLimit),
     reserveLimit:atomic(row.reserveLimit), earningsBpsLimit:row.earningsBpsLimit };
 }
 export function parseMembershipDebitChallenge(value: unknown): MembershipDebitChallenge {
@@ -108,9 +110,21 @@ export async function validateMembershipConsent(value: unknown, account: string,
       || BigInt(c.expiresAt) > BigInt(state.timestamp + 300)))) throw Error('recourse_membership_stale');
   // Departure authenticates the current domain, account, nonce and exit proof.
   // Admission limits and rule expiry never authorize or withhold a departure.
-  if(c.joined && (challenge.burnLimit!==(challenge.fixedChargePayer?state.participationBurnAtomic:'0')
+  if(c.joined && (challenge.admissionMonth !== state.month || challenge.burnLimit!==(challenge.fixedChargePayer?state.participationBurnAtomic:'0')
     ||challenge.reserveLimit!==(challenge.fixedChargePayer?state.noEarningsContributionAtomic:'0')
     ||challenge.earningsBpsLimit!==state.earningsBps))throw Error('recourse_membership_amount_changed');
+  if (challenge.rejoinPayments.length) {
+    if (kind !== 'join' || !c.joined || !challenge.fixedChargePayer) throw Error('recourse_membership_scope');
+    for (const payment of challenge.rejoinPayments) {
+      if (BigInt(payment.month) >= BigInt(state.month)) throw Error('recourse_membership_rule_invalid');
+      const values = await Promise.all(network.rpcs.map(rpc => rpc.request('eth_call', [{ to: challenge.domain.pool,
+        data: RECOURSE_POOL_ABI.encodeFunctionData('monthlyRule', [payment.month]) }, { blockHash: deployment.blockHash, requireCanonical: true }])));
+      if (typeof values[0] !== 'string' || values[0] !== values[1]) throw Error('recourse_membership_rule_disagreement');
+      const rule = RECOURSE_POOL_ABI.decodeFunctionResult('monthlyRule', values[0])[0];
+      if (rule[4] !== payment.ruleHash || BigInt(payment.burn) > BigInt(rule[1])) throw Error('recourse_membership_rule_invalid');
+    }
+    if ((await network.deployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');
+  }
   return challenge;
 }
 export async function validateMembershipDebit(value: unknown, payer: string, network: OwnerChainNetwork): Promise<MembershipDebitChallenge> {
@@ -149,7 +163,7 @@ export async function submitMembershipConsent(relay: MembershipRelay, network: O
   if(challenge.consent.joined){
     const exitSalt=hexlify(randomBytes(32));
     const secret=await input.exitSecret(exitSalt);
-    standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,
+    standing={admissionMonth:challenge.admissionMonth,rejoinPayments:challenge.rejoinPayments,consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,
       reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitSalt,exitCommitment:membershipExitCommitment(secret)};
     ownerSignature=await input.signBytes(getBytes(standingMembershipSigningHash(challenge.domain,standing)));
   }else{
@@ -204,7 +218,7 @@ export async function retainMembershipDeparture(relay:MembershipRelay,network:Ow
       proofs.push({challenge,exitSecret:null,ownerSignature:await input.signBytes(consent.account,consent.binding,getBytes(authenticatedDepartureSigningHash(domain,consent)))});
     }else{
       const salt=hash(r.exitSalt),commitment=hash(r.exitCommitment);
-      const secret=await input.exitSecret({domain,consent,fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:0,
+      const secret=await input.exitSecret({domain,consent,admissionMonth:state.month,rejoinPayments:[],fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:0,
         messageHex:addressMembershipSigningHash(domain,consent)},salt,commitment);
       if(membershipExitCommitment(secret)!==commitment)throw Error('recourse_membership_exit_proof');
       proofs.push({challenge,exitSecret:secret,ownerSignature:null});

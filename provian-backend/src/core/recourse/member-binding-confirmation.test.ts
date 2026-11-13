@@ -17,7 +17,7 @@ jest.mock('../protocol/pointer-pin.generated', () => ({ PROTOCOL_POINTER_PIN: {
 async function setup() {
   const f = fixture(), fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
   const binding = { identity: h(2), address: a(3), kernel: old[0], signingRoot: h(4), recoveryCommitment: h(5), nonce: h(6), expiresAtMs: 2000000000000 };
-  const member = { authorization: { fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:h(11),exitSalt:h(12),consent: { binding: h(2), account: a(3), nonce: '0', joined: true, revision: '1', ruleHash: h(9), expiresAt: '2000000000' } }, ownerSignature: '0x12' };
+  const member = { authorization: { admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:h(11),exitSalt:h(12),consent: { binding: h(2), account: a(3), nonce: '0', joined: true, revision: '1', ruleHash: h(9), expiresAt: '2000000000' } }, ownerSignature: '0x12' };
   const consentLog = MEMBERSHIP_RECEIPT_ABI.encodeEventLog(MEMBERSHIP_RECEIPT_ABI.getEvent('AddressConsentChanged')!, [h(2), 1, true, 0]);
   f.state.effects = [{ logIndex: '0x5', ...consentLog }];
   const abi = new Interface([...REGISTRY_ABI.fragments, 'function registryOperator() view returns(address)', 'function balanceOf(address) view returns(uint256)']);

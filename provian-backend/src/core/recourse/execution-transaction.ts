@@ -5,7 +5,7 @@ import { acquireSignerLease,releaseSignerLease,listAllUnresolvedBatches,SETTLEME
   SETTLEMENT_CYCLES_COLLECTION,type SettlementDb } from '../pvt/wp4/durable-settlement-store';
 import { finalizedOwnerTransaction,type FinalizedOwnerTransaction } from './transaction-finality';
 export interface RecourseExecutionCall {
-  readonly kind:'attest'|'reverse'|'allocate'|'decline'|'record'|'deliver';
+  readonly kind:'attest'|'reverse'|'eligibility'|'allocate'|'decline'|'record'|'deliver';
   readonly executor:string; readonly calldata:string; readonly manifestHash:string; readonly signer:string;
   /** Canonical preparation block distinguishes a fresh attempt after a
    * finalized revert without ever replacing an unresolved signed nonce. */
@@ -126,7 +126,7 @@ export async function resumeRecourseCall(db:Firestore,id:string,signer:Pick<Reco
  const row=await db.collection(RECOURSE_EXECUTIONS).doc(id).get(),value:unknown=row.get('plan');
  if(!row.exists||typeof row.get('signedTransaction')!=='string'||!value||typeof value!=='object')throw Error('recourse_execution_signed_record_required');
  const raw=value as Record<string,unknown>;
- if(!['attest','reverse','allocate','decline','record','deliver'].includes(String(raw.kind))||typeof raw.executor!=='string'
+ if(!['attest','reverse','eligibility','allocate','decline','record','deliver'].includes(String(raw.kind))||typeof raw.executor!=='string'
    ||typeof raw.signer!=='string'||typeof raw.calldata!=='string'||typeof raw.manifestHash!=='string')throw Error('recourse_execution_record_changed');
  if(raw.attempt!==undefined&&(typeof raw.attempt!=='string'||!/^0x[0-9a-f]{64}$/.test(raw.attempt)))throw Error('recourse_execution_record_changed');
  const plan:RecourseExecutionCall={kind:raw.kind as RecourseExecutionCall['kind'],executor:raw.executor,signer:raw.signer,calldata:raw.calldata,manifestHash:raw.manifestHash,

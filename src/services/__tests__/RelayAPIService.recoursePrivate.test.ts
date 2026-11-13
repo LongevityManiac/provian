@@ -33,3 +33,29 @@ test('only private refusals permit predecessor-credential retry; the independent
   await RelayAPIService.recourseRecoveryRequest('recover-human', request);
   expect(JSON.parse(String(vi.mocked(apiFetch).mock.calls[2][1]?.body))).toEqual(request);
 }, 15000);
+
+test.each([`restoration-history/${identity}`, `owner-recovery-state/${identity}/0`])(
+  'recovery discovery transport binds its private proof to %s', async route => {
+    await expect(RelayAPIService.recourseRecoveryRequest(route)).rejects.toThrow('private_access_required');
+    expect(apiFetch).not.toHaveBeenCalled();
+    vi.mocked(apiFetch).mockResolvedValue(new Response(JSON.stringify({ candidates: [] })));
+    await expect(RelayAPIService.recourseRecoveryRequest(route, undefined, material())).resolves.toEqual({ candidates: [] });
+    const [url, options] = vi.mocked(apiFetch).mock.calls[0];
+    expect(String(url)).toBe(`https://relay.test/v1/recourse/${route}`);
+    expect(options?.method).toBe('POST');
+    const body = JSON.parse(String(options?.body)) as { authorization: RecoursePrivateAuthorization; request: unknown };
+    expect(body.request).toBeNull();
+    const { slh_dsa_sha2_128s } = await import('@noble/post-quantum/slh-dsa.js');
+    expect(slh_dsa_sha2_128s.verify(getBytes(body.authorization.signature), getBytes(privateRecourseIntent(body.authorization, route)),
+      getBytes(body.authorization.publicKey))).toBe(true);
+    expect(slh_dsa_sha2_128s.verify(getBytes(body.authorization.signature), getBytes(privateRecourseIntent(body.authorization, path)),
+      getBytes(body.authorization.publicKey))).toBe(false);
+  }, 15000);
+test.each([`restoration-history/${identity}?public=true`, `restoration-history/${identity}/extra`,
+  `owner-recovery-state/${identity}/-1`, `owner-recovery-state/${identity}/01`,
+  `owner-recovery-state/${identity}/1/extra`, `owner-recovery-state/${identity}/1?public=true`,
+  'https://elsewhere.test/recover-human', '../recover-human'])(
+  'recovery discovery rejects malformed or unlisted route %s before transport', async route => {
+    await expect(RelayAPIService.recourseRecoveryRequest(route, undefined, material())).rejects.toThrow('recourse_recovery_path_invalid');
+    expect(apiFetch).not.toHaveBeenCalled();
+  });

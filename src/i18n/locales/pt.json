@@ -5113,6 +5113,7 @@
     "addresses": "Seus endereços vinculados",
     "bindingInfo": "Uma adesão inclui todos os saldos vinculados, tanto ganhos quanto recebidos. Vincular é uma escolha sua. O relay sabe quais carteiras são suas e o público não, assim como um banco. A restauração após uma quebra criptográfica é gratuita para todo proprietário vinculado, mesmo sem adesão. Uma recuperação ou restauração pode vincular publicamente um endereço antigo ao seu substituto. Os vínculos com seus outros endereços e o total dos seus ativos permanecem privados. O registro de propriedade, a restauração gratuita após uma quebra da criptografia e a participação no Recourse Pool abrangem apenas PVT. Ether, dólares e outros tokens em um endereço vinculado não são registrados nem restaurados por esses mecanismos e continuam protegidos apenas pela chave.",
     "bind": "Vincular um endereço que você possui",
+    "bindPrimary": "Vincular esta carteira",
     "resources": "Reservas constituídas pelos membros",
     "available": "Disponível para restauração: {{amount}} PVT",
     "exitRule": "As contribuições não são reembolsáveis: o membro não pode resgatar a contribuição de 1% dos ganhos nem a contribuição fixa de seus saldos. As queimas de participação são irreversíveis. Depois que uma restauração é alocada a um membro, ela pode ser retirada diretamente na cadeia sem o relay, inclusive após sua saída.",

@@ -74,6 +74,12 @@ export async function readHumanAccountSelection(rootAddress: string): Promise<Hu
   validate(value, rootAddress);
   return value;
 }
+/** The stored seed identifies the backup; its protected selector identifies
+ * the current receiving accounts after recovery. Selector failures stay closed. */
+export async function readHumanCurrentAddresses(root: { evm: string; sol: string }): Promise<{ evm: string; sol: string }> {
+  const selected = await readHumanAccountSelection(root.evm);
+  return selected ? { evm: selected.evm, sol: selected.sol } : root;
+}
 /** A cloud copy is a lower bound only within its own authorization domain.
  * Spending and recovery have independent counters; neither may roll backward. */
 export function assertHumanBackupSelection(prior: HumanAccountSelection,

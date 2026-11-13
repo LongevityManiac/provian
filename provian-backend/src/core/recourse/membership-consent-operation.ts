@@ -1,3 +1,6 @@
+import { privateRejoinPayments } from './private-membership-calendar';
+import { readPrivateCalendarRules } from './private-calendar-rules';
+import { utcCalendarMonth } from './calendar-month';
 import {assertMembershipDepartureAttestation} from './membership-departure-attestation';
 import { getBytes, getCreateAddress } from 'ethers';
 import { readMembershipWiring } from './membership-wiring';
@@ -87,6 +90,16 @@ async function consentContext(db: Firestore, request: MembershipConsentRequest,
     || request.standing.burnLimit !== (request.standing.fixedChargePayer?state.participationBurnAtomic:'0')
     || request.standing.reserveLimit !== (request.standing.fixedChargePayer?state.noEarningsContributionAtomic:'0')
     || request.standing.earningsBpsLimit !== state.earningsBps))return fail('amount');
+  if (request.standing) {
+    if (request.standing.admissionMonth !== state.month || (operation.kind === 'join' && operation.admissionMonth !== undefined
+      && String(operation.admissionMonth) !== state.month)) return fail('stale');
+    const expectedPayments = consent.binding === operation.fixedDebitBinding ? operation.rejoinPayments ?? [] : [];
+    if (JSON.stringify(request.standing.rejoinPayments) !== JSON.stringify(expectedPayments)) return fail('rejoin_amount');
+    if (operation.kind === 'join' && account.exists && consent.binding === operation.fixedDebitBinding) {
+      const rules = await readPrivateCalendarRules(db, { pool: state.pool, block: state.block, blockHash: state.blockHash });
+      if (JSON.stringify(privateRejoinPayments(account.get('episode'), utcCalendarMonth(state.timestamp), rules)) !== JSON.stringify(expectedPayments)) return fail('rejoin_amount');
+    }
+  }
   return { deployment, ownerIdentity, ...await readMembershipWiring(p.chain, deployment) };
 }
 export interface CheckedMembershipConsent {
@@ -121,13 +134,16 @@ export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredO
       if (!transition.exists || (transition.get('departureRequested') && request.consent.joined) || transition.get('status') === 'superseded'
         || transition.get('status') === 'complete') return fail('finished');
       const operation = transition.data() as PrivateMembershipTransition;
+      if (request.standing && (JSON.stringify(request.standing.rejoinPayments) !== JSON.stringify(
+        request.consent.binding === operation.fixedDebitBinding ? operation.rejoinPayments ?? [] : [])
+        || (operation.kind === 'join' && operation.admissionMonth !== undefined && request.standing.admissionMonth !== String(operation.admissionMonth)))) return fail('stale');
       const expected = nextPrivateAddressConsent(operation,request.consent.binding,
         {revision:request.consent.revision,ruleHash:request.consent.ruleHash,timestamp:0});
       if (!expected || Object.entries(expected).some(([key,value]) => key !== 'expiresAt'
         && request.consent[key as keyof AddressMembershipConsent] !== value)) return fail('finished');
     },
     target: r => getCreateAddress({from:r.domain.pool,nonce:1}).toLowerCase(), calldata: membershipConsentCalldata, check: r => checkMembershipConsent(db, r, p), assert: assertCheckedMembershipConsent,
-    satisfied: () => false, obsolete: e => e instanceof Error && ['retired', 'finished', 'stale', 'owner'].some(s => e.message === `recourse_membership_consent_${s}`),
+    satisfied: () => false, obsolete: e => e instanceof Error && ['retired', 'finished', 'stale', 'owner', 'rejoin_amount'].some(s => e.message === `recourse_membership_consent_${s}`),
     finalized: finalizedOwnerTransaction, reconcileConfirmed: async (request, transactionHash) => {
       const binding = await db.collection(R.identities).doc(request.consent.binding).get(), ownerIdentity: unknown = binding.get('ownerIdentity');
       if (typeof ownerIdentity !== 'string') return fail('owner');

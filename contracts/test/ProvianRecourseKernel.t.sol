@@ -751,7 +751,7 @@ contract ProvianRecourseKernelTest is SlhTestSigner {
         RecourseStandingConsent standing = pool.standingMembership();
         RecourseMembershipRules.MonthlyRule memory rule = pool.monthlyRule(month);
         RecourseStandingConsent.StandingAuthorization memory authorization = RecourseStandingConsent.StandingAuthorization(
-            consent, true, rule.participationBurn, rule.noEarningsContribution, rule.earningsBps, sha256("TEST ONLY exit"), sha256("TEST ONLY salt"));
+            consent, true, rule.participationBurn, rule.noEarningsContribution, rule.earningsBps, sha256("TEST ONLY exit"), sha256("TEST ONLY salt"), pool.calendarMonth(block.timestamp), new RecourseStandingConsent.RejoinPayment[](0));
         bytes32 consentHash = standing.standingConsentDigest(authorization);
         standing.setStandingConsent(authorization, membershipSignature(1, consentHash), membershipSignature(2, consentHash));
         RecourseAddressConsent.DebitAuthorization memory debit = RecourseAddressConsent.DebitAuthorization(ID, THIEF, month, 100 ether, 0, pool.debitNonce(ID), 1, 1, ruleHash, block.timestamp + 300);

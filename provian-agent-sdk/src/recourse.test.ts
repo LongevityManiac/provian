@@ -1,8 +1,8 @@
 import { Wallet, getBytes, verifyMessage } from 'ethers';
-import { addressMembershipSigningHash } from './recourse-membership-authorization';
+import { standingMembershipSigningHash } from './recourse-membership-authorization';
 vi.mock('./protocol-runtime', () => ({ currentProtocolDeployment: async () => ({ pointer: `0x${'34'.repeat(20)}`, revision: 1n, addresses: { kernel: requireConfiguredPvt9Runtime().address } }), ownerChainNetwork: () => ({}) }));
-vi.mock('./recourse-pool-chain', () => ({ readRecoursePoolChain: async () => ({ pool: `0x${'56'.repeat(20)}`, consentNonce: '0', signedRuleHash: `0x${'78'.repeat(32)}`, timestamp: Math.floor(Date.now()/1000) }) }));
-vi.mock('./recourse-binding-chain', () => ({ waitForRecourseBinding: (...args: unknown[]) => h.confirm(...args) }));
+vi.mock('./recourse-pool-chain', () => ({ readRecoursePoolChain: async () => ({ pool: `0x${'56'.repeat(20)}`, consentNonce: '0', signedRuleHash: `0x${'78'.repeat(32)}`, month: '24322', earningsBps: 100, timestamp: Math.floor(Date.now()/1000) }) }));
+vi.mock('./recourse-binding-chain', async importOriginal => ({ ...(await importOriginal<typeof import('./recourse-binding-chain')>()), waitForRecourseBinding: (...args: unknown[]) => h.confirm(...args) }));
 import { recoverySigningRoot, recoveryCommitment as commitmentHash } from './recourse-hash-authorization';
 import { addressRecoveryBinding } from './recourse-address-binding';
 import { deriveBoundRecoveryCredential } from './recourse-address-credential';
@@ -53,15 +53,17 @@ beforeEach(() => {
       const binding: RecourseBinding = { address, identity, recoveryCommitment, signingRoot,
         kernel: requireConfiguredPvt9Runtime().address.toLowerCase(), nonce: `0x${'ab'.repeat(32)}`,
         expiresAtMs: Date.now() + 60_000, ...change };
-      const memberConsent = member ? { domain: { chainId: '8453', pointer: `0x${'34'.repeat(20)}`, kernel: binding.kernel, pool: `0x${'56'.repeat(20)}` },
+      const memberConsent = member ? { earningsBpsLimit: 100, domain: { chainId: '8453', pointer: `0x${'34'.repeat(20)}`, kernel: binding.kernel, pool: `0x${'56'.repeat(20)}` },
         consent: { binding: identity, account: address, nonce: '0', joined: true, revision: '1', ruleHash: `0x${'78'.repeat(32)}`, expiresAt: String(Math.floor(binding.expiresAtMs/1000)) } } : null;
       return { ok: true, json: async () => ({ binding, message: recourseBindingMessage(binding), memberConsent }) };
     }
-    return { ok: true, json: async () => ({ bound: true }) };
+    const binding=JSON.parse(text).binding;
+    return { ok: true, json: async () => ({ binding:{...binding,chainBindingStatus:'confirmed',bindingDigest:`0x${'cc'.repeat(32)}`},operationId:`0x${'cc'.repeat(32)}` }) };
   });
 });
 it('persists independent recovery material before transmitting only its hash and exact binding signature', async () => {
-  expect(await bindRecourseOwnership(config, input)).toEqual({ bound: true });
+  expect(await bindRecourseOwnership(config, input)).toHaveProperty('operationId',`0x${'cc'.repeat(32)}`);
+  expect(h.confirm.mock.calls[0][3]).toBe(`0x${'cc'.repeat(32)}`);
   expect(h.sign).toHaveBeenCalledOnce();
   const body = JSON.parse(h.fetch.mock.calls[1][1].body);
   expect(body.signature).toBe('0xsignature');
@@ -85,7 +87,7 @@ it('signs exact member consent bytes with the sovereign key and sends only the s
   await bindRecourseOwnership(config, input);
   const body = JSON.parse(h.fetch.mock.calls[1][1].body), domain = { chainId: '8453', pointer: `0x${'34'.repeat(20)}`,
     kernel: body.binding.kernel, pool: `0x${'56'.repeat(20)}` };
-  const hash = addressMembershipSigningHash(domain, body.memberConsent.consent);
+  const hash = standingMembershipSigningHash(domain, body.memberConsent.authorization);
   expect(verifyMessage(getBytes(hash), body.memberConsent.ownerSignature)).toBe(testWallet.address);
   expect(verifyMessage(hash, body.memberConsent.ownerSignature)).not.toBe(testWallet.address);
 });

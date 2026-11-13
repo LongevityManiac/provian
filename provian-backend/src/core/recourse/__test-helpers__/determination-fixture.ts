@@ -8,7 +8,7 @@ import { prepareDetermination,type DeterminationPorts,type RestorationJudgment }
 import type { RecoursePoolState } from '../pool-state';
 export async function packetFixture() {
   const f = fixture(), fake = createFakeFirestore();
-  const membership = { active:true, periodIndex:0, unpaidAtomic:'0', completedNonissuanceMonths:[], evidenceHash:hash(90), lossTimestamp:100 };
+  const membership = { active:true, periodIndex:0, unpaidAtomic:'0', completedNonissuanceMonths:[], evidenceHash:hash(90), lossTimestamp:100, admissionLogIndex:0, closureLogIndex:0, ruleHash:hash(91) };
   const ticket = { request:f.snapshot.occurrence, identity:f.snapshot.identity, destination:address(50), currentDestination:address(50), maximumLoss:'100',
     lossHash:`0x${createHash('sha256').update(JSON.stringify({snapshot:f.snapshot,membership})).digest('hex')}` };
   const path = `${RESTORATION_REQUESTS}/${ticket.request}`;

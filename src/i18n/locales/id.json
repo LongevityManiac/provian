@@ -5113,6 +5113,7 @@
     "addresses": "Alamat tertaut Anda",
     "bindingInfo": "Satu keanggotaan mencakup semua saldo tertaut, baik hasil kerja maupun yang diterima. Menautkan adalah pilihan Anda. Relay mengetahui dompet mana yang milik Anda, sedangkan publik tidak, sama seperti bank. Pemulihan setelah kriptografi dibobol gratis bagi setiap pemilik tertaut, termasuk bukan anggota. Pemulihan atau restorasi dapat menghubungkan alamat lama dengan alamat penggantinya secara publik. Hubungan dengan alamat Anda yang lain dan jumlah seluruh aset Anda tetap privat. Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja.",
     "bind": "Tautkan alamat yang Anda miliki",
+    "bindPrimary": "Tautkan dompet ini",
     "resources": "Cadangan dari kontribusi anggota",
     "available": "Tersedia untuk pemulihan: {{amount}} PVT",
     "exitRule": "Kontribusi tidak dapat dikembalikan: anggota tidak dapat menebus kontribusi 1% dari pendapatan maupun kontribusi tetap dari saldo miliknya. Pembakaran partisipasi tidak dapat dibatalkan. Setelah restorasi dialokasikan kepada anggota, alokasi itu dapat ditarik langsung di chain tanpa relay, termasuk setelah anggota keluar.",

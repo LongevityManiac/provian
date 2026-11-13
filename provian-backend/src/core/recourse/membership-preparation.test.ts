@@ -32,7 +32,7 @@ function fixture(joined = false) {
     fake.store.set(`${R.addresses}/${a(b)}`, { address: a(b), identity: h(b), ownerIdentity: owner, kernel: a('11'), recoveryGeneration: 0, chainBindingStatus: 'confirmed' });
     fake.store.set(`${R.identities}/${h(b)}`, { identity: h(b), ownerIdentity: owner, recoveryGeneration: 0 });
   }
-  const state = (binding: string) => ({ pool: a('12'), kernel: a('11'), block: 99, blockHash: h('99'), timestamp: now,
+  const state = (binding: string) => ({ pool: a('12'), kernel: a('11'), block: 99, blockHash: h('99'), timestamp: now, month: String(utcCalendarMonth(now)),
     currentAddress: binding === h('03') ? a('03') : a('04'), consentNonce: joined ? '1' : '0', consentGeneration: joined ? '1' : '0',
     addressConsent: joined, signedRuleHash: h('12'), participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100 });
   (readRecoursePoolState as jest.Mock).mockImplementation(async (binding: string) => state(binding));
@@ -93,7 +93,7 @@ test('recovery during interrupted preparation refreshes the replacement before o
 test('resume discovers exact queued consent without requesting a second signature or exposing signatures', async () => {
   const f = fixture(), view = await prepareMembershipTransition(f.db, owner, { kind: 'join' });
   const challenge = view.challenges[0];
-  const standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
+  const standing={admissionMonth:challenge.admissionMonth,rejoinPayments:challenge.rejoinPayments,consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
   const id=membershipConsentOperationId({...challenge,standing,exitSecret:null});
   const request = { transitionId: view.id, domain: challenge.domain, consent: challenge.consent,
     standing,exitSecret:null,ownerSignature: 'PRIVATE_OWNER_SIGNATURE', attestorSignature: 'PRIVATE_ATTESTOR_SIGNATURE' };
@@ -153,7 +153,7 @@ test('an unsigned pending join can become a completed departure without creating
 });
 test('departure retains pending signed admissions and exposes no new admission challenges',async()=>{
  const f=fixture(),joining=await prepareMembershipTransition(f.db,owner,{kind:'join'}),challenge=joining.challenges[0];
- const standing={consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
+ const standing={admissionMonth:challenge.admissionMonth,rejoinPayments:challenge.rejoinPayments,consent:challenge.consent,fixedChargePayer:challenge.fixedChargePayer,burnLimit:challenge.burnLimit,reserveLimit:challenge.reserveLimit,earningsBpsLimit:challenge.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
  const id=membershipConsentOperationId({...challenge,standing,exitSecret:null});
  const request={transitionId:joining.id,domain:challenge.domain,consent:challenge.consent,standing,exitSecret:null,ownerSignature:'PRIVATE_OWNER',attestorSignature:'PRIVATE_ATTESTOR'};
  f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`,{request,status:'submitted',transactionHash:h('e3'),signedTransaction:'RETAINED_BYTES'});
@@ -161,4 +161,56 @@ test('departure retains pending signed admissions and exposes no new admission c
  expect(leaving).toMatchObject({kind:'leave',status:'preparing',challenges:[]});expect(leaving.pending).toHaveLength(1);
  expect(f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.signedTransaction).toBe('RETAINED_BYTES');
  expect(f.fake.store.has(`${C.owners}/${owner}`)).toBe(false);
+});
+
+
+test.each(['queued','submitted'])('month rollover preserves visibility and bytes of %s consent',async status=>{
+  const f=fixture(),view=await prepareMembershipTransition(f.db,owner,{kind:'join'}),c=view.challenges[0];
+  const standing={admissionMonth:c.admissionMonth,rejoinPayments:c.rejoinPayments,consent:c.consent,fixedChargePayer:c.fixedChargePayer,burnLimit:c.burnLimit,reserveLimit:c.reserveLimit,earningsBpsLimit:c.earningsBpsLimit,exitCommitment:h('e1'),exitSalt:h('e2')};
+  const id=membershipConsentOperationId({...c,standing,exitSecret:null});
+  const request={transitionId:view.id,domain:c.domain,consent:c.consent,standing,exitSecret:null,ownerSignature:'PRIVATE_OWNER',attestorSignature:'PRIVATE_ATTESTOR'};
+  f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`,{request,status,transactionHash:status==='submitted'?h('e3'):null,...(status==='submitted'?{signedTransaction:'RETAINED_BYTES'}:{})});
+  const before=JSON.stringify(f.fake.store.get(`${T}/${view.id}`));
+  const prior=(readHistoricalRecoursePoolState as jest.Mock).getMockImplementation()!;
+  const later=async(binding:string)=>({...await prior(binding),timestamp:now+32*86400,month:String(utcCalendarMonth(now+32*86400))});
+  (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(later);
+  (readRecoursePoolState as jest.Mock).mockImplementation(later);
+  const resumed=await prepareMembershipTransition(f.db,owner,{id:view.id});
+  expect(resumed.challenges).toHaveLength(0);
+  expect(resumed.pending).toEqual([{binding:c.consent.binding,account:c.consent.account,operation:{id,status,transactionHash:status==='submitted'?h('e3'):null}}]);
+  expect(JSON.stringify(f.fake.store.get(`${T}/${view.id}`))).toBe(before);
+  if(status==='submitted')expect(f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.signedTransaction).toBe('RETAINED_BYTES');
+});
+
+test('unfinished renewal advances its approval month without losing partial renewal receipts',async()=>{
+  const f=fixture(true),m=utcCalendarMonth(now);
+  f.fake.store.set(`${C.owners}/${owner}`,seedMembershipJournal(f.fake.store,{ownerIdentity:owner,version:0,pendingReservation:null,needsScan:false,
+    checkpoint:{pool:a('12'),block:99,blockHash:h('99')},episode:joinPrivateMembership(null,m,rules)},
+    {chainId:'8453',kernel:a('11'),pool:a('12'),block:98,blockHash:h('98'),logIndex:1,timestamp:now-1}));
+  const view=await prepareMembershipTransition(f.db,owner,{kind:'renew'});
+  const op=f.fake.store.get(`${T}/${view.id}`)!;
+  const bindings=op.bindings as {binding:string;admission:{block:number;blockHash:string;logIndex:number;timestamp:number}|null}[];
+  bindings[0].admission={block:99,blockHash:h('99'),logIndex:5,timestamp:now};
+  const retained=JSON.stringify(bindings[0].admission);
+  const prior=(readHistoricalRecoursePoolState as jest.Mock).getMockImplementation()!;
+  const later=async(binding:string)=>({...await prior(binding),timestamp:now+32*86400,month:String(m+1),consentNonce:binding===bindings[0].binding?'2':'1'});
+  (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(later);(readRecoursePoolState as jest.Mock).mockImplementation(later);
+  const resumed=await prepareMembershipTransition(f.db,owner,{id:view.id});
+  expect(resumed.challenges).toHaveLength(1);
+  expect(resumed.challenges[0].admissionMonth).toBe(String(m+1));
+  expect(JSON.stringify((f.fake.store.get(`${T}/${view.id}`)!.bindings as typeof bindings)[0].admission)).toBe(retained);
+});
+
+test('confirmed recovery at a new month refreshes the replacement before rolling over admission',async()=>{
+ const f=fixture(),initial=await prepareMembershipTransition(f.db,owner,{kind:'join'});
+ f.fake.store.set(`${R.addresses}/${a('05')}`,{ownerIdentity:owner,address:a('05'),identity:h('03'),kernel:a('11'),recoveryGeneration:1,chainBindingStatus:'confirmed'});
+ f.fake.store.get(`${R.identities}/${h('03')}`)!.recoveryGeneration=1;
+ f.fake.store.get(`${R.owners}/${owner}`)!.bindingSetVersion=3;
+ const prior=(readHistoricalRecoursePoolState as jest.Mock).getMockImplementation()!;
+ const recovered=async(binding:string)=>({...await prior(binding),timestamp:now+32*86400,month:String(utcCalendarMonth(now+32*86400)),currentAddress:binding===h('03')?a('05'):a('04')});
+ (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(recovered);(readRecoursePoolState as jest.Mock).mockImplementation(recovered);
+ const resumed=await prepareMembershipTransition(f.db,owner,{id:initial.id});
+ expect(resumed.status).toBe('consenting');expect(resumed.challenges.find(c=>c.consent.binding===h('03'))!.consent.account).toBe(a('05'));
+ expect(resumed.challenges.every(c=>c.admissionMonth===String(utcCalendarMonth(now+32*86400)))).toBe(true);
+ expect(f.fake.store.get(`${T}/${initial.id}`)!.bindingSetVersion).toBe(3);
 });

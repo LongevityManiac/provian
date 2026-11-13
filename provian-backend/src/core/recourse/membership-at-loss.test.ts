@@ -1,5 +1,5 @@
 import { privateMembershipAtLoss } from './membership-at-loss';
-import { joinPrivateMembership, leavePrivateMembership, creditPrivateMembership, type PrivateMembershipEpisode, type PrivateCalendarRules } from './private-membership-calendar';
+import { joinPrivateMembership, leavePrivateMembership, creditPrivateMembership, creditPrivateRejoin, privateRejoinPayments, type PrivateMembershipEpisode, type PrivateCalendarRules } from './private-membership-calendar';
 import { membershipJournalHash, type MembershipJournalEntry } from './private-membership-journal';
 import { utcCalendarMonth } from './calendar-month';
 const h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
@@ -29,7 +29,7 @@ test('later payment cannot change earlier loss evidence, but a timely prior paym
   expect(privateMembershipAtLoss(h(5), [admitted, entry(paid, 99, feb)], loss, consent, rules).active).toBe(true);
 });
 test('exact same-block order excludes the loss position itself and later admission, closure and rejoin', () => {
-  const closed = leavePrivateMembership(joined(), month + 1, rules), rejoined = joinPrivateMembership(closed, month + 1, rules);
+  const closed = leavePrivateMembership(joined(), month + 1, rules), rejoined = joinPrivateMembership(creditPrivateRejoin(closed, month + 1, privateRejoinPayments(closed, month + 1, rules), rules), month + 1, rules);
   const history = [entry(joined(), 1, jan), entry(closed, 50, feb, 2), entry(rejoined, 50, feb, 4)];
   expect(privateMembershipAtLoss(h(5), history, point(50, feb, 2), consent, rules).active).toBe(true);
   expect(privateMembershipAtLoss(h(5), history, point(50, feb, 3), consent, rules).active).toBe(false);
@@ -37,7 +37,7 @@ test('exact same-block order excludes the loss position itself and later admissi
   expect(privateMembershipAtLoss(h(5), history, point(50, feb, 5), consent, rules).active).toBe(true);
 });
 test('public single-address consent is required and a future rejoin cannot qualify a lapsed loss', () => {
-  const history = [entry(joined(), 1, jan), entry(joinPrivateMembership(joined(), month + 2, rules), 100, mar, 5)];
+  const history = [entry(joined(), 1, jan), entry(joinPrivateMembership(creditPrivateRejoin(joined(), month + 2, privateRejoinPayments(joined(), month + 2, rules), rules), month + 2, rules), 100, mar, 5)];
   expect(privateMembershipAtLoss(h(5), history, point(100, mar, 4), consent, rules).active).toBe(false);
   expect(privateMembershipAtLoss(h(5), history, point(100, mar, 6), { ...consent, active: false }, rules).active).toBe(false);
   expect(privateMembershipAtLoss(h(5), [], point(100, mar, 6), consent, rules).active).toBe(false);

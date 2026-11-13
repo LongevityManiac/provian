@@ -76,7 +76,10 @@ export function exactMembershipDebitDigest(domain: MembershipAuthorizationDomain
   return hashMessage(getBytes(exactMembershipDebitSigningHash(domain, debit)));
 }
 
+export interface RejoinPayment { readonly month: string; readonly burn: string; readonly reserve: string; readonly ruleHash: string }
 export interface StandingMembershipAuthorization {
+  readonly admissionMonth: string;
+  readonly rejoinPayments: readonly RejoinPayment[];
   readonly consent: AddressMembershipConsent;
   readonly fixedChargePayer: boolean;
   readonly burnLimit: string; readonly reserveLimit: string; readonly earningsBpsLimit: number;
@@ -86,7 +89,7 @@ export interface StandingMembershipMandate {
   readonly burnLimit: string; readonly reserveLimit: string; readonly earningsBpsLimit: number;
   readonly startMonth: string; readonly closedMonth: string; readonly consentNonce: string; readonly exitCommitment: string; readonly exitSalt: string; readonly active: boolean;
 }
-export const STANDING_CONSENT_TUPLE = `tuple(${CONSENT} consent,bool fixedChargePayer,uint256 burnLimit,uint256 reserveLimit,uint16 earningsBpsLimit,bytes32 exitCommitment,bytes32 exitSalt)`;
+export const STANDING_CONSENT_TUPLE = `tuple(${CONSENT} consent,bool fixedChargePayer,uint256 burnLimit,uint256 reserveLimit,uint16 earningsBpsLimit,bytes32 exitCommitment,bytes32 exitSalt,uint256 admissionMonth,tuple(uint256 month,uint256 burn,uint256 reserve,bytes32 ruleHash)[] rejoinPayments)`;
 export const STANDING_MEMBERSHIP_ABI = new Interface([
   `function standingConsentDigest(${STANDING_CONSENT_TUPLE}) view returns(bytes32)`,
   `function setStandingConsent(${STANDING_CONSENT_TUPLE},bytes,bytes)`,
@@ -103,11 +106,11 @@ export const STANDING_MEMBERSHIP_ABI = new Interface([
   'event MonthlyCollectionRecorded(bytes32 indexed binding,uint256 indexed month,uint256 burn,uint256 reserve)',
 ]);
 export function parseStandingMembershipAuthorization(value: unknown): StandingMembershipAuthorization {
-  const r = record(value, 'burnLimit,consent,earningsBpsLimit,exitCommitment,exitSalt,fixedChargePayer,reserveLimit');
+  const r = record(value, 'admissionMonth,burnLimit,consent,earningsBpsLimit,exitCommitment,exitSalt,fixedChargePayer,rejoinPayments,reserveLimit');
   const consent = parseAddressMembershipConsent(r.consent);
   if (!consent.joined || typeof r.fixedChargePayer !== 'boolean' || typeof r.earningsBpsLimit !== 'number'
     || !Number.isSafeInteger(r.earningsBpsLimit) || r.earningsBpsLimit < 0 || r.earningsBpsLimit > 10000) return invalid();
-  return { consent, fixedChargePayer: r.fixedChargePayer, burnLimit: uint(r.burnLimit), reserveLimit: uint(r.reserveLimit),
+  return { consent, admissionMonth: uint(r.admissionMonth), rejoinPayments: parseRejoinPayments(r.rejoinPayments), fixedChargePayer: r.fixedChargePayer, burnLimit: uint(r.burnLimit), reserveLimit: uint(r.reserveLimit),
     earningsBpsLimit: r.earningsBpsLimit, exitCommitment: hex(r.exitCommitment,64), exitSalt: hex(r.exitSalt,64) };
 }
 export function standingMembershipSigningHash(domain: MembershipAuthorizationDomain, input: StandingMembershipAuthorization): string {
@@ -146,4 +149,16 @@ export function deriveMembershipExitSecret(secretMaterial: Uint8Array, domain: P
   const bytes = AbiCoder.defaultAbiCoder().encode(['string','uint256','address','bytes32','bytes32'],
     ['Provian membership exit',uint(domain.chainId,true),hex(domain.pointer,40),hex(binding,64),hex(salt,64)]);
   return computeHmac('sha256',secretMaterial,getBytes(bytes));
+}
+
+export function parseRejoinPayments(value: unknown): readonly RejoinPayment[] {
+  if (!Array.isArray(value)) return invalid();
+  const rows = value.map(v => {
+    const r = record(v, 'burn,month,reserve,ruleHash');
+    const payment = { month: uint(r.month), ruleHash: hex(r.ruleHash, 64), burn: uint(r.burn), reserve: uint(r.reserve) };
+    if (payment.burn === '0' && payment.reserve === '0') return invalid();
+    return payment;
+  });
+  if (rows.some((p, i) => i > 0 && BigInt(rows[i - 1].month) >= BigInt(p.month))) return invalid();
+  return rows;
 }

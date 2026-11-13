@@ -204,3 +204,69 @@ test('lost signed append response reopens exact variant and fee without a second
   await reopened.complete(f.closure, async () => true);
   expect(await f.otherLease()).toMatchObject({ kind: 'acquired' });
 });
+
+type Phase = 'quote' | 'close' | 'complete';
+async function delayed(phase:Phase, interfere:(f:ReturnType<typeof fixture>)=>Promise<void>) {
+ const f=fixture();let invoked=false;
+ const pause=async()=>{if(!invoked){invoked=true;await interfere(f);}};
+ const readers=f.input.readers.map(reader=>({...reader,request:async(method:string,params:readonly unknown[])=>{
+  if(phase==='quote')await pause();return reader.request(method,params);
+ }}));
+ const journal=await openPublicationJournal(f.db,{...f.input,readers,workerId:'first'});
+ await journal.reserve(7,f.authorityTransaction);
+ if(phase!=='quote')await f.append(journal);
+ if(phase==='complete')await journal.close(f.closure);
+ const saved=journal.read();
+ const operation=phase==='quote'?()=>journal.reserveFee('call',f.transaction(),block)
+  :phase==='close'?()=>journal.close(async value=>{await pause();return f.closure(value);})
+  :()=>journal.complete(f.closure,async()=>{await pause();return true;});
+ return {f,journal,saved,operation};
+}
+test.each<Phase>(['quote','close','complete'])('long %s read renews only its unchanged owner before journal commit',async phase=>{
+ const {f,journal,saved,operation}=await delayed(phase,async f=>{f.clock(200000);});
+ await expect(operation()).resolves.toBeUndefined();
+ expect(journal.read().attempts[0].variants).toEqual(saved.attempts[0].variants);
+ if(phase==='quote')expect(journal.read().feeReservedWei).toBe('200800');
+ if(phase==='close')expect(journal.read().attempts[0].closed).toBe(true);
+ if(phase==='complete'){
+  expect(journal.read().completed).toBe(true);
+  expect(await f.otherLease()).toMatchObject({kind:'acquired'});
+ }
+});
+test.each(['active','expired','released'] as const)('a %s successor lease cannot be reclaimed by a delayed completion',async mode=>{
+ let successor:PublicationJournal|undefined;
+ const {f,journal,saved,operation}=await delayed('complete',async f=>{
+  f.clock(200000);successor=await f.open('successor');
+  if(mode==='expired')f.clock(400000);
+  if(mode==='released')await successor.release();
+ });
+ await expect(operation()).rejects.toThrow('lease_lost');
+ expect(journal.read()).toEqual(saved);
+ const leaseKey=`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`;
+ expect(f.fake.store.get(leaseKey)?.owner).toBe('successor');
+ await journal.release();
+ expect(f.fake.store.get(leaseKey)?.owner).toBe('successor');
+});
+test('delayed quote cannot change fees after expired successor takeover',async()=>{
+ const {f,journal,saved,operation}=await delayed('quote',async f=>{f.clock(200000);await f.open('successor');f.clock(400000);});
+ await expect(operation()).rejects.toThrow('lease_lost');expect(journal.read()).toEqual(saved);
+ expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`)?.owner).toBe('successor');
+});
+test('delayed closure cannot close bytes after released successor takeover',async()=>{
+ const {f,journal,saved,operation}=await delayed('close',async f=>{f.clock(200000);const next=await f.open('successor');await next.release();});
+ await expect(operation()).rejects.toThrow('lease_lost');expect(journal.read()).toEqual(saved);
+ expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`)?.owner).toBe('successor');
+});
+test('assertLease itself never reacquires a successor that later expires',async()=>{
+ const f=fixture(),first=await f.open();f.clock(200000);await f.open('successor');f.clock(400000);
+ await expect(first.assertLease()).rejects.toThrow('lease_lost');
+ expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`)?.owner).toBe('successor');
+});
+test('completed replay remains read-only after arbitrarily slow verification',async()=>{
+ const f=fixture(),first=await f.open();await first.reserve(7,f.authorityTransaction);await f.append(first);await first.close(f.closure);
+ await first.complete(f.closure,async()=>true);expect(await f.otherLease()).toMatchObject({kind:'acquired'});
+ const key=`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`,before=structuredClone(f.fake.store.get(key));
+ const restarted=await f.open('restart');
+ await restarted.complete(async value=>{f.clock(300000);return f.closure(value);},async()=>{f.clock(600000);return true;});
+ expect(f.fake.store.get(key)).toEqual(before);
+});

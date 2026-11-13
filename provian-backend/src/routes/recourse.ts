@@ -10,6 +10,7 @@ import { queueBreakRegistration, readBreakRegistration, runBreakRegistrationWork
 import { queueBreakRestoration, readBreakRestoration, reconcileBreakRestoration, confirmBreakRestoration } from '../core/recourse/break-restoration-queue';
 import { queueOwnerOperation, readOwnerOperation } from '../core/recourse/owner-operation-queue';
 import { randomBytes } from 'crypto';
+import { bindingChallengeExpiry } from '../core/recourse/binding-expiry';
 import { Router, type RequestHandler, type Request } from 'express';
 import type { AgentBankDeps } from '../core/agent-bank/types';
 import { isActiveHumanWallet } from '../core/wallet/active-human-wallet';
@@ -352,10 +353,12 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         res.status(400).json({ error: 'recourse_binding_invalid' }); return;
       }
       const deployment = await currentProtocolDeployment();
-      const binding: OwnershipBinding = { identity: addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: body.address.toLowerCase() }),
+      const identity = addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: body.address.toLowerCase() });
+      const pool = await readRecoursePoolState(identity, deployment);
+      const binding: OwnershipBinding = { identity,
         address: body.address.toLowerCase(), signingRoot: body.signingRoot.toLowerCase(), recoveryCommitment: body.recoveryCommitment.toLowerCase(),
         kernel: deployment.addresses.kernel.toLowerCase(), nonce: `0x${randomBytes(32).toString('hex')}`,
-        expiresAtMs: Date.now() + 5 * 60_000 };
+        expiresAtMs: bindingChallengeExpiry(pool.timestamp, Date.now()) };
       const memberConsent = await prepareMemberBindingConsent(deps.db, identityHash(owner.type, owner.id), binding);
       res.json({ binding, message: ownershipBindingMessage(binding), memberConsent });
     } catch (error: unknown) {

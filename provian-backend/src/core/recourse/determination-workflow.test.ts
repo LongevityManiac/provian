@@ -93,3 +93,63 @@ test('fresh adjudication may replace a safely deferred finding but never an acti
  await queueDetermination(f.db,revised);
  expect(f.fake.store.get(`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`)).toMatchObject({phase:'reviewed',pending:null,evidenceHash:revised.evidenceHash});
 });
+
+test('a lost membership-attestation response resumes before allocation without repeating reversal',async()=>{
+ const f=await fixture(),original=f.port.execute;
+ f.port.execute=jest.fn(async plan=>{const result=await original(plan);if(plan.kind==='eligibility')throw Error('response lost');return result;});
+ await expect(runDeterminationWorkflow(f.db,f.port)).rejects.toThrow('response lost');
+ expect(f.fake.store.get(`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`)).toMatchObject({phase:'reversed',pending:{kind:'eligibility'}});
+ f.port.execute=original;
+ expect(await runDeterminationWorkflow(f.db,f.port)).toEqual({pending:false,completed:1});
+ expect((f.port.prepare as jest.Mock).mock.calls.filter(call=>call[1]==='reverse')).toHaveLength(1);
+ expect((f.port.recorded as jest.Mock).mock.calls.filter(call=>call[1]==='eligibility')).toHaveLength(1);
+});
+
+test('an unsigned allocation with a changed revision re-admits membership for the durable cohort',async()=>{
+ const f=await fixture(),original=f.port.recorded;
+ let stale=true;
+ f.port.recorded=jest.fn(async(requests,kind,request)=>{
+  if(kind==='allocate'&&stale){stale=false;throw Error('recourse_execution_membership_attestation_required');}
+  return original(requests,kind,request);
+ });
+ expect(await runDeterminationWorkflow(f.db,f.port)).toEqual({pending:true,completed:0});
+ expect(f.fake.store.get(`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`)).toMatchObject({phase:'reversed',pending:null});
+ expect(await runDeterminationWorkflow(f.db,f.port)).toEqual({pending:false,completed:1});
+ expect((f.port.recorded as jest.Mock).mock.calls.filter(call=>call[1]==='eligibility')).toHaveLength(2);
+ expect((f.port.prepare as jest.Mock).mock.calls.filter(call=>call[1]==='reverse')).toHaveLength(1);
+});
+
+test('full reversal admits membership before recording without allocating reserves',async()=>{
+ const f=await fixture(),path=`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`;
+ f.fake.store.set(path,{...f.fake.store.get(path),phase:'reversed',shortfall:'0'});
+ expect(await runDeterminationWorkflow(f.db,f.port)).toEqual({pending:false,completed:1});
+ expect((f.port.recorded as jest.Mock).mock.calls.map(call=>call[1])).toEqual(['eligibility','record']);
+});
+
+
+test('a signed pending allocation error cannot erase its reservation or re-admit membership',async()=>{
+ const f=await fixture(),path=`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`;
+ const pending={id:recourseExecutionId(f.plan('allocate')),kind:'allocate'};
+ f.fake.store.set(path,{...f.fake.store.get(path),phase:'eligible',pending});
+ f.port.resume=jest.fn(async()=>{throw Error('recourse_execution_membership_attestation_required');});
+ await expect(runDeterminationWorkflow(f.db,f.port)).rejects.toThrow('membership_attestation_required');
+ expect(f.fake.store.get(path)).toMatchObject({phase:'eligible',pending});
+ expect(f.port.recorded).not.toHaveBeenCalled();
+ expect(f.port.execute).not.toHaveBeenCalled();
+});
+
+test('a full reversal in a mixed cohort admits its current revision only after reserve allocation',async()=>{
+ const f=await fixture(),path=`${DETERMINATION_WORKFLOWS}/${f.ticket.request}`,zero=`0x${'55'.repeat(32)}`;
+ const row=f.fake.store.get(path)!;
+ f.fake.store.set(path,{...row,phase:'reversed',shortfall:'100'});
+ f.fake.store.set(`${DETERMINATION_WORKFLOWS}/${zero}`,{...row,request:zero,phase:'reversed',shortfall:'0'});
+ f.fake.store.set(f.path.replace(f.ticket.request,zero),{...f.fake.store.get(f.path)});
+ expect(await runDeterminationWorkflow(f.db,f.port)).toEqual({pending:false,completed:2});
+ const calls=(f.port.recorded as jest.Mock).mock.calls;
+ const allocation=calls.findIndex(call=>call[1]==='allocate');
+ const zeroAdmission=calls.findIndex(call=>call[1]==='eligibility'&&call[2]===zero);
+ expect(allocation).toBeGreaterThanOrEqual(0);
+ expect(zeroAdmission).toBeGreaterThan(allocation);
+ expect(calls[allocation][0]).toEqual([f.ticket.request]);
+ expect(calls[zeroAdmission][0]).toEqual([zero]);
+});

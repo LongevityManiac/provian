@@ -4,9 +4,9 @@ import type { AgentBankDeps } from '../core/agent-bank/types';
 import { createRecourseRouter } from './recourse';
 import { identityHash, RECOURSE_COLLECTIONS } from '../core/recourse/ownership';
 import { createFakeFirestore } from '../core/pvt/__test-helpers__/fake-firestore';
-import { MEMBERSHIP_CONSENT_OPERATIONS } from '../core/recourse/membership-consent-operation';
+import { MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS } from '../core/recourse/private-membership-transition';
-import { MEMBERSHIP_DEBIT_OPERATIONS } from '../core/recourse/membership-debit-operation';
+import { MEMBERSHIP_DEBIT_OPERATIONS, parseMembershipDebitRequest } from '../core/recourse/membership-debit-operation';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS } from '../core/recourse/private-membership-reservation';
 import * as restoration from '../core/recourse/restoration-request';
 import * as auxiliaryRecovery from '../core/recourse/auxiliary-recovery';
@@ -134,10 +134,13 @@ test('membership operation status is owner-only, no-store and never returns priv
   const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
   const transitionId = h('12'), id = h('13');
   fake.store.set(`${PRIVATE_MEMBERSHIP_TRANSITIONS}/${transitionId}`, { ownerIdentity: identityHash('agent', 'other') });
-  fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`, { status: 'queued', transactionHash: null,
-    request: { transitionId, domain: { chainId: '8453', pointer: a('14'), kernel: a('15'), pool: a('16') },
-      consent: { binding: h('17'), account: a('18'), nonce: '0', joined: true, revision: '1', ruleHash: h('19'), expiresAt: '2000' },
-      ownerSignature: '0x1111', attestorSignature: '0x2222' } });
+  const consent = { binding: h('17'), account: a('18'), nonce: '0', joined: true, revision: '1', ruleHash: h('19'), expiresAt: '2000' };
+  const operationRequest = { transitionId, domain: { chainId: '8453', pointer: a('14'), kernel: a('15'), pool: a('16') }, consent,
+    standing: { consent, admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:true, burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100,
+      exitCommitment: h('20'), exitSalt: h('21') }, exitSecret: null, ownerSignature: '0x1111', attestorSignature: '0x2222' };
+  // Invalid persisted payloads also return 404; prove this fixture reaches the ownership check.
+  expect(parseMembershipConsentRequest(operationRequest)).toEqual(operationRequest);
+  fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`, { status: 'queued', transactionHash: null, request: operationRequest });
   const app = express(); app.use(express.json());
   app.use('/v1/recourse', createRecourseRouter({ db: fake } as unknown as AgentBankDeps, (req, res, next) => {
     if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
@@ -145,7 +148,9 @@ test('membership operation status is owner-only, no-store and never returns priv
   }));
   expect((await request(app).get(`/v1/recourse/membership-consents/${id}`)).status).toBe(401);
   expect((await request(app).post('/v1/recourse/membership-transitions').send({ kind: 'join' })).status).toBe(401);
-  expect((await request(app).get(`/v1/recourse/membership-consents/${id}`).set('Authorization', 'Bearer TEST_ONLY')).status).toBe(404);
+  const denied = await request(app).get(`/v1/recourse/membership-consents/${id}`).set('Authorization', 'Bearer TEST_ONLY');
+  expect(denied.status).toBe(404); expect(denied.headers['cache-control']).toBe('no-store');
+  expect(denied.body).toEqual({ error: 'recourse_membership_unavailable' });
   fake.store.get(`${PRIVATE_MEMBERSHIP_TRANSITIONS}/${transitionId}`)!.ownerIdentity = ownerIdentity;
   const response = await request(app).get(`/v1/recourse/membership-consents/${id}`).set('Authorization', 'Bearer TEST_ONLY');
   expect(response.status).toBe(200); expect(response.headers['cache-control']).toBe('no-store');
@@ -157,17 +162,21 @@ test('payment status does not expose another owner reservation or its exact fina
   const reservationId = h('12'), id = h('13');
   fake.store.set(`${PRIVATE_MEMBERSHIP_COLLECTIONS.reservations}/${reservationId}`, {
     reservation: { ownerIdentity: identityHash('agent', 'other'), id: reservationId, kind: 'debit' } });
-  fake.store.set(`${MEMBERSHIP_DEBIT_OPERATIONS}/${id}`, { status: 'queued', transactionHash: null,
-    request: { reservationId, domain: { chainId: '8453', pointer: a('14'), kernel: a('15'), pool: a('16') },
-      debit: { binding: h('17'), payer: a('18'), nonce: '0', month: '24322', burn: '100', reserve: '0', generation: '1', revision: '1', ruleHash: h('19'), expiresAt: '2000' },
-      ownerSignature: '0x1111', attestorSignature: '0x2222' } });
+  const operationRequest = { reservationId, domain: { chainId: '8453', pointer: a('14'), kernel: a('15'), pool: a('16') },
+    debit: { binding: h('17'), payer: a('18'), nonce: '0', month: '24322', burn: '100', reserve: '0', generation: '1', revision: '1', ruleHash: h('19'), expiresAt: '2000' },
+    attestorSignature: '0x2222' };
+  // Invalid persisted payloads also return 404; prove this fixture reaches the ownership check.
+  expect(parseMembershipDebitRequest(operationRequest)).toEqual(operationRequest);
+  fake.store.set(`${MEMBERSHIP_DEBIT_OPERATIONS}/${id}`, { status: 'queued', transactionHash: null, request: operationRequest });
   const app = express(); app.use(express.json());
   app.use('/v1/recourse', createRecourseRouter({ db: fake } as unknown as AgentBankDeps, (req, res, next) => {
     if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
     req.agentWallet = { id: walletId } as Request['agentWallet']; next();
   }));
   expect((await request(app).post('/v1/recourse/membership-debits').send({})).status).toBe(401);
-  expect((await request(app).get(`/v1/recourse/membership-debits/${id}`).set('Authorization', 'Bearer TEST_ONLY')).status).toBe(404);
+  const denied = await request(app).get(`/v1/recourse/membership-debits/${id}`).set('Authorization', 'Bearer TEST_ONLY');
+  expect(denied.status).toBe(404); expect(denied.headers['cache-control']).toBe('no-store');
+  expect(denied.body).toEqual({ error: 'recourse_membership_debit_unavailable' });
   fake.store.set(`${PRIVATE_MEMBERSHIP_COLLECTIONS.reservations}/${reservationId}`, { reservation: { ownerIdentity, id: reservationId, kind: 'debit' } });
   const response = await request(app).get(`/v1/recourse/membership-debits/${id}`).set('Authorization', 'Bearer TEST_ONLY');
   expect(response.status).toBe(200); expect(response.headers['cache-control']).toBe('no-store');

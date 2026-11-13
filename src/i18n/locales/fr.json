@@ -5113,6 +5113,7 @@
     "addresses": "Vos adresses liées",
     "bindingInfo": "Une adhésion inclut tous les avoirs liés, gagnés comme reçus. Lier vos adresses est votre choix. Le relais sait quels portefeuilles sont les vôtres et le public ne le sait pas, comme dans une banque. La restitution après une rupture cryptographique est gratuite pour tout propriétaire lié, même sans adhésion. Une récupération ou une restitution peut relier publiquement une ancienne adresse à celle qui la remplace. Les liens avec vos autres adresses et le total de vos avoirs restent privés. Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule.",
     "bind": "Lier une adresse que vous détenez",
+    "bindPrimary": "Lier ce portefeuille",
     "resources": "Réserves constituées par les membres",
     "available": "Disponible pour restitution : {{amount}} PVT",
     "exitRule": "Les contributions ne sont pas remboursables : un membre ne peut récupérer ni la contribution de 1% de ses gains ni la contribution forfaitaire prélevée sur ses avoirs. Les destructions de participation sont irréversibles. Une fois une restauration attribuée à un membre, celui-ci peut la retirer directement sur la chaîne sans le relais, même après son départ.",

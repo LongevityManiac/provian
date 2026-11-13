@@ -5,7 +5,7 @@ import { currentProtocolDeployment, ownerChainNetwork } from '../protocol/runtim
 import { waitForRecourseBinding } from './binding-chain';
 import { withBiometricAction } from '../security/biometricAction';
 import { translate } from '../../i18n/translate';
-import { bindingMessage, humanBindingMemberChallenge, prepareHumanOwnershipBinding, type OwnershipBinding } from './ownership';
+import { acceptedBindingDigest, bindingMessage, humanBindingMemberChallenge, prepareHumanOwnershipBinding, type OwnershipBinding } from './ownership';
 import { standingMembershipSigningHash } from './membership-authorization';
 import type { ExternalWalletProofApi } from '../../screens/Agent/LinkExternalWalletScreen';
 import { recoverHumanAccount } from './human-recovery';
@@ -35,6 +35,20 @@ function text(value: unknown, pattern: RegExp): string {
 }
 const atomic = /^(0|[1-9][0-9]*)$/, address = /^0x[0-9a-f]{40}$/, hash = /^0x[0-9a-f]{64}$/;
 export function pvtAmount(value: string): string { return formatUnits(value, 18); }
+
+/** Retry an interrupted primary registration using the current wallet's own signature. */
+export async function bindHumanPrimaryAddress(): Promise<void> {
+  await withBiometricAction(translate('recourse.bindPrimary', 'Bind this wallet'), async action => {
+    const account = useWalletStore.getState().address;
+    if (!account) throw Error('recourse_address_unavailable');
+    if (!await RelayAPIService.registerHumanWallet(account.toLowerCase(), undefined, action)) {
+      throw Error('recourse_registration_required');
+    }
+    const identity = await readAddressRecoveryBinding(account.toLowerCase(), ownerChainNetwork());
+    const owner = object(await RelayAPIService.readRecourseOwnership());
+    if (owner.identity !== identity) throw Error('recourse_primary_binding_required');
+  });
+}
 
 /** Recover only the selected auxiliary lineage. Membership is irrelevant to
  * restoring registered balances after a break; primary login stays untouched. */
@@ -188,9 +202,9 @@ export function recourseExternalProofApi(): ExternalWalletProofApi {
         if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('protocol_pointer_changed');
         const member = humanBindingMemberChallenge(binding);
         if (Boolean(member) !== Boolean(input.memberSignature)) throw new Error('recourse_member_signature_required');
-        await RelayAPIService.recourseRequest('bind', { binding, signature: input.signature,
+        const reply = await RelayAPIService.recourseRequest('bind', { binding, signature: input.signature,
           ...(member ? { memberConsent: { authorization: member.authorization, ownerSignature: input.memberSignature } } : {}) });
-        await waitForRecourseBinding(binding, ownerChainNetwork());
+        await waitForRecourseBinding(binding, ownerChainNetwork(), undefined, acceptedBindingDigest(reply, binding));
         pending.delete(input.challengeId);
         return { ok: true, provenAddress: binding.address };
       } catch { return { ok: false, error: 'verification_failed' }; }

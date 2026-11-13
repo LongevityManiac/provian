@@ -8,7 +8,7 @@ import {verifySuccessorPlan} from './successor-verification.mjs';
 const fixturePath=process.env.RECOURSE_SUCCESSOR_FIXTURE;
 function fixture(){
  const f=JSON.parse(readFileSync(fixturePath)),artifacts={};
- for(const name of [...Object.keys(f.plan.addresses),'ProvianHashAccount','ProvianProtocolPointer','ProvianMemberSettlement'])
+ for(const name of [...Object.keys(f.plan.addresses),'RecourseStandingConsent','ProvianHashAccount','ProvianProtocolPointer','ProvianMemberSettlement'])
   artifacts[name]=JSON.parse(readFileSync(new URL(`../../contracts/out/${name}.sol/${name}.json`,import.meta.url)));
  const port={
   logs:async()=>f.logs,

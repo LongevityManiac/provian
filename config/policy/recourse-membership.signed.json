@@ -2,18 +2,18 @@
   "rule": {
     "schema": "provian-recourse-membership/v1",
     "chainId": 8453,
-    "pointer": "0x45e312d974b3d04445bc7ba79d2134d298a39dbc",
+    "pointer": "0x619eae740ce56c5a8edbb2b047e58369281ddad7",
     "firstMonth": 0,
     "participationBurnAtomic": "100000000000000000000",
     "noEarningsContributionAtomic": "100000000000000000000",
     "earningsBps": 100
   },
-  "ruleHash": "0x84841f37bed9d5ea0f6b34bb91d6fc29e8fd88517e1345257fcf9b61dc34969c",
+  "ruleHash": "0x13f08b0b80cf291557114500c692c8e2056c937cb939eacba3ba42d9923da4ff",
   "signature": {
     "scheme": "sshsig-ed25519",
     "signer_identity": "frank",
     "namespace": "provian-pvt-policy",
     "public_key_sha256": "sha256:200b11f0842bdf578eeb2ebb4859c9fcd3ba870159e53d6747ffaff893462974",
-    "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQKYrZUiTF4xpnup0hSGaX2DDbsC1M/KMMmw/XZKMG836lN\nLJQ+JwPLZJOKxA9ldFTWRPnfE9vduVxHSWzs8L7gw=\n-----END SSH SIGNATURE-----\n"
+    "armored_signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgUB/0kKB7GhF3pkygXWgk4hLbmG\naio+uJRPGXPetVnp4AAAAScHJvdmlhbi1wdnQtcG9saWN5AAAAAAAAAAZzaGE1MTIAAABT\nAAAAC3NzaC1lZDI1NTE5AAAAQCLMzVkAcNJvU4k9X3v2/4Waqdf+GHL+y4U8AQjLVAok80\nr6haqmCcn/iK+siv9PJBYEhlHks3Ss9b65XbeHUAA=\n-----END SSH SIGNATURE-----\n"
   }
 }

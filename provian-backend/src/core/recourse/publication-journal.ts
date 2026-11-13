@@ -162,11 +162,17 @@ export async function openPublicationJournal(db: Firestore, input: {
   }
   async function assertLease(): Promise<void> {
     check(!released && !state.completed, 'closed');
-    const lease = await acquireSignerLease(settlement, { signer: from, workerId, operationId, nowMs: now(), leaseTtlMs: 120_000 });
-    check(lease.kind === 'acquired', 'lease_lost');
-    owned(await leaseRef.get());
-    const row = await headRef.get(); headValid(row);
-    check(row.get('revision') === revision && row.get('completed') === false, 'concurrent_write');
+    const expected = revision;
+    // Renewal can extend our own expired lease after slow reads. Only opening
+    // a new journal instance may take over another worker's expired lease.
+    await db.runTransaction(async tx => {
+      const [head, lease] = await Promise.all([tx.get(headRef), tx.get(leaseRef)]);
+      check(!released && !state.completed, 'closed');
+      check(lease.get('owner') === workerId && lease.get('pending_operation') === operationId, 'lease_lost');
+      headValid(head);
+      check(head.get('revision') === expected && head.get('completed') === false, 'concurrent_write');
+      tx.update(leaseRef, { expires_at_ms: now() + 120_000 });
+    });
   }
   async function mutate(expected: number, action: (tx: DbTransaction, head: DocumentSnapshot) => Promise<void>): Promise<void> {
     check(!released && !state.completed, 'closed');
@@ -211,6 +217,7 @@ export async function openPublicationJournal(db: Firestore, input: {
       const unsignedHash = keccak256(transaction.unsignedSerialized), slot = attempt.variants.length;
       await assertLease();
       const quote = await estimateBaseTransactionFees(readers, transaction, blockHash);
+      await assertLease();
       await mutate(expected, async (tx, head) => {
         const [row, fee] = await Promise.all([tx.get(attemptRef(index)), tx.get(feeRef(index, slot))]);
         check(row.get('closed') === false && row.get('variantCount') === slot, 'attempt_changed');
@@ -243,6 +250,7 @@ export async function openPublicationJournal(db: Firestore, input: {
       const proof = attempt.variants.length ? structuredClone(await inspect({ from, nonce: attempt.nonce,
         authorityTransaction: structuredClone(attempt.authorityTransaction), variants: structuredClone(attempt.variants) })) : null;
       if (proof) validateClosure(proof, attempt, from);
+      await assertLease();
       await mutate(expected, async tx => {
         const row = await tx.get(attemptRef(index));
         check(row.get('closed') === false && row.get('variantCount') === attempt.variants.length, 'attempt_changed');
@@ -255,6 +263,7 @@ export async function openPublicationJournal(db: Firestore, input: {
       for (const attempt of snapshot.attempts) await verifyClosed(attempt, inspect);
       check(await verifyGoal(structuredClone(goal)) === true, 'goal_unverified');
       if (snapshot.completed) return; // Read-only restart cannot seize a later lease.
+      await assertLease();
       await mutate(expected, async tx => {
         tx.update(headRef, { completed: true });
         tx.update(leaseRef, { pending_operation: null, owner: null, expires_at_ms: 0 });

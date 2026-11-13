@@ -3,11 +3,11 @@ import { createHash, randomUUID } from 'crypto';
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
-import { joinPrivateMembership, leavePrivateMembership, privateMembershipStatus } from './private-membership-calendar';
+import { joinPrivateMembership, leavePrivateMembership, privateMembershipStatus, privateRejoinPayments, creditPrivateRejoin } from './private-membership-calendar';
 import { readHistoricalRecoursePoolState } from './pool-state';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { MEMBERSHIP_RECEIPT_ABI, assertMembershipReceipt, type VerifiedMembershipReceipt } from './membership-receipt';
-import type { AddressMembershipConsent } from './membership-authorization';
+import { type RejoinPayment, type AddressMembershipConsent } from './membership-authorization';
 import { utcCalendarMonth } from './calendar-month';
 import { createRecourseChainPort } from './chain-ledger';
 import { MEMBERSHIP_CONSENT_OPERATIONS } from './membership-operation-identifiers';
@@ -28,6 +28,8 @@ export interface PrivateMembershipTransition {
   readonly bindings: readonly RequiredConsent[];
   /** Private, stable billing choice. Never included in a public portfolio digest. */
   readonly fixedDebitBinding?: string;
+  readonly admissionMonth?: number;
+  readonly rejoinPayments?: readonly RejoinPayment[];
   readonly departureRequested?: boolean;
   readonly departureCredentials?: readonly unknown[];
   readonly closure: Position | null;
@@ -174,10 +176,10 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
       || account.checkpoint.block < operation.checkpoint.block
       || (account.checkpoint.block === operation.checkpoint.block && account.checkpoint.blockHash !== operation.checkpoint.blockHash)
       || account.version !== initialAccount?.version || account.checkpoint.block !== pool.block || account.checkpoint.blockHash !== pool.blockHash)) return fail('reconciliation_pending');
-    if (operation.kind === 'join' && account) joinPrivateMembership(account.episode, month, rules);
+    const rejoinPayments = operation.kind === 'join' ? privateRejoinPayments(account?.episode ?? null, month, rules) : [];
     const closure = operation.kind === 'leave' ? { block: pool.block, blockHash: pool.blockHash, logIndex: Number.MAX_SAFE_INTEGER, timestamp: pool.timestamp } : null;
     const complete = operation.kind === 'leave' && operation.bindings.every(b => !b.initiallyJoined || b.departure !== null);
-    const next: PrivateMembershipTransition = { ...operation, closure, status: complete ? 'complete' : 'consenting' };
+    const next: PrivateMembershipTransition = { ...operation, closure, admissionMonth: month, rejoinPayments, status: complete ? 'complete' : 'consenting' };
     if (account && operation.kind === 'leave') {
       const episode = leavePrivateMembership(account.episode, month, rules);
       const journal = await prepareMembershipJournalAppend(db, tx, { ownerIdentity: op.ownerIdentity, account, episode,
@@ -187,7 +189,7 @@ export async function openPrivateMembershipConsents(db: Firestore, id: string): 
         status: 'closed', position: closure, previousEpisode: account.episode, episode, previousVersion: account.version });
       tx.update(db.collection(C.owners).doc(op.ownerIdentity), { episode, closure, journalHead: journal.head, version: account.version + 1 });
     }
-    tx.update(ref, { status: next.status, closure });
+    tx.update(ref, { status: next.status, closure, admissionMonth: month, rejoinPayments });
     if (complete) tx.update(db.collection(R.owners).doc(operation.ownerIdentity), { membershipTransition: null });
     return next;
   });
@@ -205,6 +207,8 @@ export function nextPrivateAddressConsent(operation: PrivateMembershipTransition
   if (row.initiallyJoined && !row.departure) return { binding, account: row.address, nonce: row.nonce, joined: false,
     revision: current.revision, ruleHash: current.ruleHash, expiresAt: String(current.timestamp + 300) };
   if (operation.kind === 'leave' || row.admission) return null;
+  if (operation.rejoinPayments?.length && binding !== operation.fixedDebitBinding
+    && !operation.bindings.find(b => b.binding === operation.fixedDebitBinding)?.admission) return null;
   return { binding, account: row.address, nonce: String(BigInt(row.nonce) + (row.initiallyJoined ? 1n : 0n)), joined: true,
     revision: current.revision, ruleHash: current.ruleHash, expiresAt: String(current.timestamp + 300) };
 }
@@ -251,23 +255,53 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
       bindings[i] = { ...b, [departure ? 'departure' : 'admission']: position }; consumed.push(event.logIndex);
     }
     if (consumed.length === 0) return fail('missing_consent');
-    const effects = consumed.map(logIndex => db.collection(C.effects).doc(digest([operation.kernel, operation.pool, receipt.transactionHash, logIndex])));
-    if ((await Promise.all(effects.map(r => tx.get(r)))).some(r => r.exists)) return fail('effect_replay');
     const complete = !earlyLeave && !(operation.departureRequested && operation.kind !== 'leave') && bindings.every(b => operation.kind !== 'leave' ? b.admission !== null : !b.initiallyJoined || b.departure !== null);
     const next: PrivateMembershipTransition = { ...operation, bindings, status: earlyLeave ? 'preparing' : complete ? 'complete' : 'consenting' };
     const account = accountRow.exists ? accountRow.data() as PrivateMembershipAccount : null;
     if (account?.pendingReservation != null && !earlyLeave) return fail('reconciliation_pending');
     let episode = account?.episode;
+    const payer = operation.bindings.find(b => b.binding === operation.fixedDebitBinding);
+    const payerAfter = bindings.find(b => b.binding === operation.fixedDebitBinding);
+    const paysRejoin = operation.kind === 'join' && operation.rejoinPayments?.length
+      && !payer?.admission && payerAfter?.admission?.block === receipt.block;
+    let paymentPosition: Position | null = null;
+    if (paysRejoin) {
+      if (!episode || !payerAfter?.admission) return fail('rejoin_account');
+      const payments = operation.rejoinPayments!;
+      const debits = receipt.events.filter(e => e.name === 'MembershipDebitExecuted').map(e => ({ e,
+        log: MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...e.topics], data: e.data })! }));
+      if (debits.length !== payments.length) return fail('rejoin_receipt');
+      const cancellation = receipt.events.filter(e => e.name === 'MembershipDebitCancelled')
+        .map(e => MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...e.topics], data: e.data })!)
+        .find(log => log.args.binding === operation.fixedDebitBinding);
+      if (!cancellation) return fail('rejoin_receipt');
+      for (let i = 0; i < payments.length; ++i) {
+        const { e, log } = debits[i], payment = payments[i];
+        if (e.pool !== operation.pool || e.kernel !== operation.kernel || log.args.binding !== payerAfter.binding
+          || String(log.args.payer).toLowerCase() !== payerAfter.address || String(log.args.month) !== payment.month
+          || String(log.args.burn) !== payment.burn || String(log.args.reserve) !== payment.reserve
+          || BigInt(log.args.nonce) + BigInt(payments.length - i) !== BigInt(cancellation.args.nonce)
+          || e.logIndex >= payerAfter.admission.logIndex || (i > 0 && e.logIndex <= debits[i - 1].e.logIndex)) return fail('rejoin_receipt');
+        consumed.push(e.logIndex);
+        paymentPosition = { block: receipt.block, blockHash: receipt.blockHash, timestamp: receipt.timestamp, logIndex: e.logIndex };
+      }
+      episode = creditPrivateRejoin(episode, utcCalendarMonth(receipt.timestamp), payments, rules);
+    }
+    const effects = consumed.map(logIndex => db.collection(C.effects).doc(digest([operation.kernel, operation.pool, receipt.transactionHash, logIndex])));
+    if ((await Promise.all(effects.map(r => tx.get(r)))).some(r => r.exists)) return fail('effect_replay');
     let admission = account?.admission ?? null;
     if (complete && operation.kind === 'join') {
       const last = bindings.map(b => b.admission!).sort((a, b) => b.block - a.block || b.logIndex - a.logIndex)[0];
-      episode = joinPrivateMembership(account?.episode ?? null, utcCalendarMonth(last.timestamp), rules);
+      episode = joinPrivateMembership(episode ?? null, utcCalendarMonth(last.timestamp), rules);
       admission = last;
     }
     const journal = complete && operation.kind === 'join' && episode && admission
       ? await prepareMembershipJournalAppend(db, tx, { ownerIdentity: operation.ownerIdentity, account, episode,
         kind: 'admission', evidenceId: digest([id, receipt.transactionHash]),
-        position: { chainId: '8453', kernel: operation.kernel, pool: operation.pool, ...admission } }) : null;
+        position: { chainId: '8453', kernel: operation.kernel, pool: operation.pool, ...admission } })
+      : paymentPosition && account && episode ? await prepareMembershipJournalAppend(db, tx, { ownerIdentity: operation.ownerIdentity, account, episode,
+        kind: 'debit', evidenceId: digest([id, receipt.transactionHash]),
+        position: { chainId: '8453', kernel: operation.kernel, pool: operation.pool, ...paymentPosition } }) : null;
     if (journal) journal.write();
     tx.create(receiptRef, { ownerIdentity: operation.ownerIdentity, transitionId: id, receiptHash: digest(receipt), receipt,
       previousEpisode: account?.episode ?? null, episode: episode ?? null, previousVersion: account?.version ?? null,
@@ -275,6 +309,9 @@ export async function recordPrivateMembershipConsent(db: Firestore, id: string, 
     effects.forEach((ref, i) => tx.create(ref, { ownerIdentity: operation.ownerIdentity, transitionId: id,
       transactionHash: receipt.transactionHash, logIndex: consumed[i], block: receipt.block, blockHash: receipt.blockHash }));
     tx.update(ref, { bindings, status: next.status });
+    if (!complete && paymentPosition && account && episode && journal) {
+      tx.update(db.collection(C.owners).doc(operation.ownerIdentity), { episode, journalHead: journal.head, version: account.version + 1, needsScan: true });
+    }
     if (complete) {
       tx.update(db.collection(R.owners).doc(operation.ownerIdentity), { membershipTransition: null });
       if (episode) {
@@ -368,3 +405,43 @@ export async function replaceAdmissionWithDeparture(db: Firestore, id: string): 
   return departure;
 }
 import { assertNoPendingAddressIssuance } from './issuance-lock';
+
+/** A partial admission is not protection. At a new calendar month, reconcile
+ * every retained transaction before closing the old public consents and asking
+ * for fresh, month-bound approvals. Credits and journals are never reset. */
+export async function rolloverPrivateMembershipTransition(db: Firestore, id: string): Promise<PrivateMembershipTransition> {
+  const ref = db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(id), row = await ref.get();
+  if (!row.exists) return fail('missing');
+  const operation = row.data() as PrivateMembershipTransition;
+  if (operation.kind !== 'join' || operation.status !== 'consenting' || operation.departureRequested) return operation;
+  const chain = createRecourseChainPort(), block = await chain.finalizedBlock(), blockHash = await chain.blockHash(block);
+  if (!blockHash) return fail('checkpoint');
+  const states = await Promise.all(operation.bindings.map(b => readHistoricalRecoursePoolState(b.binding, { block, blockHash })));
+  const nowMonth = utcCalendarMonth(states[0].timestamp);
+  if (operation.admissionMonth === nowMonth) return operation;
+  const bindings: RequiredConsent[] = operation.bindings.map((b, i) => {
+    const state = states[i];
+    if (state.pool !== operation.pool || state.kernel !== operation.kernel || state.currentAddress !== b.address
+      || state.consentNonce !== String(BigInt(b.nonce) + (b.departure ? 1n : 0n) + (b.admission ? 1n : 0n))
+      || utcCalendarMonth(state.timestamp) !== nowMonth) return fail('reconciliation_pending');
+    return { ...b, nonce: state.consentNonce, generation: state.consentGeneration,
+      initiallyJoined: state.addressConsent, departure: null, admission: null };
+  });
+  const next: PrivateMembershipTransition = { ...operation, status: 'preparing', bindings,
+    admissionMonth: nowMonth, rejoinPayments: [], checkpoint: { block, blockHash, timestamp: states[0].timestamp, logIndex: -1 } };
+  return db.runTransaction(async tx => {
+    const current = await tx.get(ref);
+    const pending = await tx.get(db.collection(MEMBERSHIP_CONSENT_OPERATIONS).where('request.transitionId', '==', id).where('status', 'in', ['queued', 'submitted']));
+    const account = await tx.get(db.collection(C.owners).doc(operation.ownerIdentity));
+    if (digest(current.data()) !== digest(operation)) return fail('concurrent');
+    if (!pending.empty || account.get('pendingReservation') != null) return operation;
+    await checkedPortfolio(tx, db, operation);
+    // Reopening cannot skip unreconciled earnings or an incomplete scan.
+    if (account.exists && (account.get('needsScan') || account.get('checkpoint')?.block !== block
+      || account.get('checkpoint')?.blockHash !== blockHash)) return fail('reconciliation_pending');
+    tx.create(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(digest([id, 'month', operation.checkpoint, operation.bindings])),
+      { ...operation, status: 'superseded', continuedBy: id });
+    tx.set(ref, next);
+    return next;
+  });
+}

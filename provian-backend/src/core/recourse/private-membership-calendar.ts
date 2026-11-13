@@ -1,5 +1,6 @@
 import { emptyPrivateMonthlyEarnings, planPrivateMonthlyEarnings,
   type PrivateMonthlyEarnings, type PrivateIssuanceRecipient, type AddressIssuanceContribution } from './private-monthly-earnings';
+import type { RejoinPayment } from './membership-authorization';
 import type { RecourseMembershipRule } from './membership-rule';
 
 /** Owner-wide accounting. Every field stays in encrypted relay storage; public
@@ -112,15 +113,11 @@ export function joinPrivateMembership(prior: PrivateMembershipEpisode | null, no
   // Rejoining in the same calendar month cannot duplicate either obligation,
   // discard an earned-issuance remainder, or erase a previously paid amount.
   const invoice = old?.invoices[String(nowMonth)] ?? initialInvoice(nowMonth, rules);
-  // Leaving and rejoining during grace must not erase an unpaid prior month.
-  // Expired episodes remain in the receipt journal, but cannot be paid late.
-  const earliest = old && Object.values(old.invoices).filter(i => i.month >= old.startMonth
-    && i.month < nowMonth && unpaid(i, true)).sort((a, b) => a.month - b.month)[0];
-  const carry = earliest && nowMonth < earliest.month + 2;
-  return { generation, joined: true, startMonth: carry ? old!.startMonth : nowMonth,
+  if (privateRejoinPayments(old, nowMonth, rules).length) throw Error('recourse_private_membership_rejoin_unpaid');
+  return { generation, joined: true, startMonth: nowMonth,
     admissionMonth: nowMonth, observedMonth: nowMonth, lastAssessedMonth: nowMonth,
-    firstUnpaidMonth: carry ? earliest.month : nowMonth, endMonthExclusive: null,
-    invoices: { ...(carry ? old!.invoices : {}), [String(nowMonth)]: invoice } };
+    firstUnpaidMonth: nowMonth, endMonthExclusive: null,
+    invoices: { [String(nowMonth)]: invoice } };
 }
 export function leavePrivateMembership(prior: PrivateMembershipEpisode, nowMonth: number,
   rules: PrivateCalendarRules): PrivateMembershipEpisode {
@@ -153,4 +150,32 @@ export function recordPrivateMembershipIssuance(prior: PrivateMembershipEpisode,
   const next = { ...invoice, earnings: planned.next, reserveDueAtomic: planned.next.dueAtomic,
     reservePaidAtomic: String(amount(invoice.reservePaidAtomic) + paid) };
   return { state: { ...state, invoices: { ...state.invoices, [String(nowMonth)]: next } }, contributions: planned.contributions };
+}
+
+/** Only invoices for actual protected months exist. Never manufacture invoices
+ * between the lapse and rejoin. Each retained invoice keeps its original rule
+ * and all receipt-backed credits, including contributions withheld at issuance. */
+export function privateRejoinPayments(prior: PrivateMembershipEpisode | null, nowMonth: number,
+  rules: PrivateCalendarRules): readonly RejoinPayment[] {
+  if (!prior) return [];
+  const state = assessPrivateMembership(prior, nowMonth, rules);
+  return Object.values(state.invoices).filter(i => i.month < nowMonth && unpaid(i, true))
+    .sort((a, b) => a.month - b.month).map(i => ({ month: String(i.month), ruleHash: i.ruleHash,
+      burn: String(amount(i.burnDueAtomic) - amount(i.burnPaidAtomic)),
+      reserve: String(amount(i.reserveDueAtomic) - amount(i.reservePaidAtomic)) }));
+}
+/** Called only with independently verified finalized payment receipts. Paying
+ * a closed episode changes its credits, never its protection interval. */
+export function creditPrivateRejoin(prior: PrivateMembershipEpisode, nowMonth: number,
+  payments: readonly RejoinPayment[], rules: PrivateCalendarRules): PrivateMembershipEpisode {
+  const state = assessPrivateMembership(prior, nowMonth, rules);
+  const expected = privateRejoinPayments(state, nowMonth, rules);
+  if (privateMembershipStatus(state, nowMonth, rules).protectedNow || expected.length === 0
+    || JSON.stringify(payments) !== JSON.stringify(expected)) throw Error('recourse_private_membership_rejoin_payment');
+  const invoices = { ...state.invoices };
+  for (const payment of expected) {
+    const invoice = invoices[payment.month];
+    invoices[payment.month] = { ...invoice, burnPaidAtomic: invoice.burnDueAtomic, reservePaidAtomic: invoice.reserveDueAtomic };
+  }
+  return { ...state, invoices };
 }

@@ -82,6 +82,8 @@ export function assertGasStep(row,inputs,proof){
   return boundedGasEstimate(BigInt(certificate.creations[name])+20000n,maximum);
  }
  let name=row.label.split(':')[0];
+ const activation=row.label==='activate:resumeFromAdministrativeHold';
+ if(activation)name='ProvianRecourseKernel';
  if(name==='retire')name=row.label.endsWith('revokeBatchApprover')||row.to===inputs.retirementVerifier?'ProvianPVT9EligibilityVerifier':'ProvianPVT9';
  if(name==='importHistory'||name==='importBalances'){
   const parsed=canonicalCall(row,artifacts.ProvianSuccessionImporter);
@@ -96,6 +98,7 @@ export function assertGasStep(row,inputs,proof){
  }
  ensure(artifacts[name],'uncovered_contract');
  const parsed=canonicalCall(row,artifacts[name]),family=name+':'+parsed.name;
+ if(activation)ensure(parsed.name==='resumeFromAdministrativeHold','activation_selector');
  if(['ProvianRecourseEscrow:importCustodySeed','ProvianRecourseBondPool:importCustodySeed','ProvianRecoveryHistory:importEconomicEntry'].includes(family)){
   return boundedGasEstimate(importGasUpper([importLeafBound(row,artifacts[name])],row.data),maximum);
  }

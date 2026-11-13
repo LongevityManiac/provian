@@ -27,9 +27,9 @@ async function fixture() {
   fake.store.set(`${R.addresses}/${consent.account}`, { identity: binding, ownerIdentity: owner, recoveryGeneration: 0, kernel: domain.kernel, chainBindingStatus: 'confirmed' });
   const deployment = { pointer: domain.pointer, addresses: { kernel: domain.kernel, recoursePool: domain.pool, settlement: a('46') },
     revision: 1n, blockHash: h('47'), manifestHash: h('48') } as ProtocolDeployment;
-  const state = { pool: domain.pool, kernel: domain.kernel, block: 11, blockHash: deployment.blockHash, timestamp: 1000,
+  const state = { pool: domain.pool, kernel: domain.kernel, block: 11, blockHash: deployment.blockHash, timestamp: 1000, month: '23640',
     currentAddress: consent.account, signedRuleHash: consent.ruleHash, consentNonce: '0', addressConsent: false, participationBurnAtomic:'100', noEarningsContributionAtomic:'100', earningsBps:100 } as RecoursePoolState;
-  const standing = { consent, fixedChargePayer: true, burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100, exitCommitment:h('51'), exitSalt:h('52') };
+  const standing = { consent, admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:true, burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100, exitCommitment:h('51'), exitSalt:h('52') };
   const controller=getCreateAddress({from:domain.pool,nonce:1}).toLowerCase();
   const wire = new Interface(['function standingMembership() view returns(address)', 'function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
     'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)',
@@ -129,4 +129,48 @@ test('leave intent accepted during simulation refuses admission at queue commit'
     .rejects.toThrow('recourse_membership_consent_finished');
   expect(raced).toBe(true);
   expect([...f.fake.store.keys()].filter(key => key.startsWith(Q + '/'))).toHaveLength(0);
+});
+
+// Independent adversarial regression: queue commit must bind the exact current invoice set.
+test('rejoin invoice replacement during simulation refuses stale admission at queue commit', async () => {
+  const f = await fixture(), original = f.p.chain.agree;
+  const selector = new Interface(STANDING_MEMBERSHIP_ABI.fragments).getFunction('setStandingConsent')!.selector;
+  let raced = false;
+  f.p.chain.agree = async (method, args) => {
+    const result = await original(method, args);
+    const call = args[0] as { data?: string };
+    if (method === 'eth_call' && call.data?.startsWith(selector)) {
+      f.fake.store.get(`${T}/${f.id}`)!.rejoinPayments = [{ month: '0', ruleHash: h('43'), burn: '100', reserve: '100' }];
+      raced = true;
+    }
+    return result;
+  };
+  await expect(queueMembershipConsent(f.db, f.owner, f.input, f.attestor, f.p)).rejects.toThrow();
+  expect(raced).toBe(true);
+  expect([...f.fake.store.keys()].filter(key => key.startsWith(Q + '/'))).toHaveLength(0);
+});
+
+test('admission month replacement during simulation refuses stale queue bytes', async () => {
+  const f = await fixture(), original = f.p.chain.agree;
+  f.fake.store.get(`${T}/${f.id}`)!.admissionMonth = 23640;
+  const selector = new Interface(STANDING_MEMBERSHIP_ABI.fragments).getFunction('setStandingConsent')!.selector;
+  let raced = false;
+  f.p.chain.agree = async (method, args) => {
+    const result = await original(method,args);
+    if (method === 'eth_call' && (args[0] as {data?:string}).data?.startsWith(selector)) {
+      f.fake.store.get(`${T}/${f.id}`)!.admissionMonth = 23641; raced = true;
+    }
+    return result;
+  };
+  await expect(queueMembershipConsent(f.db,f.owner,f.input,f.attestor,f.p)).rejects.toThrow('stale');
+  expect(raced).toBe(true);
+  expect([...f.fake.store.keys()].filter(key=>key.startsWith(Q+'/'))).toHaveLength(0);
+});
+
+test('fresh month-bound renewal remains queueable after its transition opened in a prior month',async()=>{
+ const f=await fixture();
+ Object.assign(f.fake.store.get(`${T}/${f.id}`)!,{kind:'renew',admissionMonth:23639,rejoinPayments:[]});
+ f.p.state=async()=>({...f.state,addressConsent:true});
+ const queued=await queueMembershipConsent(f.db,f.owner,f.input,f.attestor,f.p);
+ expect(queued.status).toBe('queued');
 });

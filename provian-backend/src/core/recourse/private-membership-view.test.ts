@@ -14,7 +14,7 @@ test('membership, grace and amounts derive from the private calendar without pub
   expect(projectPrivateMembershipView(state, 100, rules)).toMatchObject({ enrolled: true, grace: false, unpaidAtomic: '100' });
   expect(projectPrivateMembershipView(state, 101, rules)).toMatchObject({ enrolled: true, grace: true, unpaidAtomic: '300', endMonthExclusive: '102' });
   const expired = projectPrivateMembershipView(state, 102, rules);
-  expect(expired).toMatchObject({ enrolled: false, grace: false, unpaidAtomic: '0', endMonthExclusive: '102' });
+  expect(expired).toMatchObject({ enrolled: false, grace: false, unpaidAtomic: '400', endMonthExclusive: '102' });
   expect(JSON.stringify(expired)).not.toContain(state.ownerIdentity);
   expect(JSON.stringify(state)).toBe(original);
 });

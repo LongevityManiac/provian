@@ -2,12 +2,12 @@ import { seedMembershipJournal } from './__test-helpers__/membership-journal-fix
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { beginPrivateMembershipTransition, openPrivateMembershipConsents, recordPrivateMembershipConsent,
-  nextPrivateAddressConsent, refreshRecoveredMembershipTransition, PRIVATE_MEMBERSHIP_TRANSITIONS as T } from './private-membership-transition';
+  nextPrivateAddressConsent, refreshRecoveredMembershipTransition, rolloverPrivateMembershipTransition, PRIVATE_MEMBERSHIP_TRANSITIONS as T } from './private-membership-transition';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, planPrivateDebit, reservePrivateMembership, type PrivateMembershipAccount } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { readHistoricalRecoursePoolState } from './pool-state';
 import { readPrivateCalendarRules } from './private-calendar-rules';
-import { joinPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
+import { joinPrivateMembership, leavePrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { MEMBERSHIP_RECEIPT_ABI } from './membership-receipt';
 import { fixture, a, h, old, pointer } from './__test-helpers__/membership-receipt-fixture';
 import { utcCalendarMonth } from './calendar-month';
@@ -17,11 +17,13 @@ jest.mock('../protocol/pointer-pin.generated', () => ({ PROTOCOL_POINTER_PIN: {
 } }));
 jest.mock('./pool-state', () => ({ readHistoricalRecoursePoolState: jest.fn() }));
 jest.mock('./private-calendar-rules', () => ({ readPrivateCalendarRules: jest.fn() }));
-jest.mock('./chain-ledger', () => ({ createRecourseChainPort: () => ({ finalizedBlock: async () => 99, blockHash: async () => `0x${'0'.repeat(62)}63` }) }));
+let mockFinalizedBlock = 99;
+jest.mock('./chain-ledger', () => ({ createRecourseChainPort: () => ({ finalizedBlock: async () => mockFinalizedBlock, blockHash: async () => `0x${mockFinalizedBlock.toString(16).padStart(64,'0')}` }) }));
 const now = 1700000000, month = utcCalendarMonth(now), ownerId = h(500), ownerKey = `${R.owners}/${ownerId}`, accountKey = `${C.owners}/${ownerId}`;
 const rules: PrivateCalendarRules = () => ({ ruleHash: h(9), rule: { schema: 'provian-recourse-membership/v1', chainId: 8453, pointer,
   firstMonth: 0, participationBurnAtomic: '100', noEarningsContributionAtomic: '100', earningsBps: 100 } });
 function setup(joined = false) {
+  mockFinalizedBlock = 99;
   const f = fixture(); f.state.priorRevision = 1; f.state.publications = []; f.state.effects = [];
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true }), db = fake as unknown as Firestore;
   fake.store.set(ownerKey, { ownerIdentity: ownerId, bindingSetVersion: 2 });
@@ -168,4 +170,65 @@ test('departure intent retains queued admission and prevents a late receipt from
  const recorded=await recordPrivateMembershipConsent(s.db,op.id,await s.f.read());
  expect(recorded.status).toBe('consenting');expect(recorded.bindings.every(b=>b.admission)).toBe(true);
  expect(s.fake.store.has(accountKey)).toBe(false);expect(s.fake.store.get(ownerKey)?.membershipTransition).toBe(op.id);
+});
+
+
+async function rejoinReceiptSetup(departureRequested=false) {
+  const s=setup();
+  const episode=leavePrivateMembership(joinPrivateMembership(null,month-1,rules),month,rules);
+  s.fake.store.set(accountKey,seedMembershipJournal(s.fake.store,{ownerIdentity:ownerId,version:0,needsScan:false,pendingReservation:null,
+    checkpoint:{pool:old[8],block:99,blockHash:h(99)},episode},
+    {chainId:'8453',kernel:old[0],pool:old[8],block:98,blockHash:h(98),logIndex:1,timestamp:now-1}));
+  const historical=(readHistoricalRecoursePoolState as jest.Mock).getMockImplementation()!;
+  (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(async(id:string)=>({...await historical(id),consentNonce:'2',consentGeneration:'1'}));
+  const op=await beginPrivateMembershipTransition(s.db,ownerId,'join');
+  const ready=await openPrivateMembershipConsents(s.db,op.id);
+  expect(ready.rejoinPayments).toEqual([{month:String(month-1),ruleHash:h(9),burn:'100',reserve:'100'}]);
+  if(departureRequested)s.fake.store.get(`${T}/${op.id}`)!.departureRequested=true;
+  const log=(name:string,args:readonly unknown[],index:number)=>({logIndex:`0x${index.toString(16)}`,
+    ...MEMBERSHIP_RECEIPT_ABI.encodeEventLog(MEMBERSHIP_RECEIPT_ABI.getEvent(name)!,args)});
+  s.f.state.effects=[log('MembershipDebitExecuted',[h(700),h(3),a(3),month-1,100,100,7],5),
+    log('MembershipDebitCancelled',[h(3),8],6),log('AddressConsentChanged',[h(3),2,true,2],7)];
+  return {...s,op,ready,log};
+}
+test.each([false,true])('partial rejoin payer receipt retains exact credits and replay protection with departure intent %s',async departure=>{
+  const s=await rejoinReceiptSetup(departure),receipt=await s.f.read();
+  const result=await recordPrivateMembershipConsent(s.db,s.op.id,receipt);
+  expect(result.status).toBe('consenting');expect(result.bindings.find(b=>b.binding===h(3))!.admission).not.toBeNull();
+  const account=s.fake.store.get(accountKey)!;
+  expect(account).toMatchObject({version:1,needsScan:true,episode:{joined:false,invoices:{[month-1]:{burnPaidAtomic:'100',reservePaidAtomic:'100'},[month]:{burnPaidAtomic:'0',reservePaidAtomic:'0'}}}});
+  const head=account.journalHead;
+  const {readMembershipJournal}=await import('./private-membership-journal');
+  const journal=await readMembershipJournal(s.db,account as unknown as PrivateMembershipAccount);
+  expect(journal.at(-1)!.kind).toBe('debit');expect(journal.at(-1)!.position.logIndex).toBe(5);
+  await recordPrivateMembershipConsent(s.db,s.op.id,receipt);
+  expect(s.fake.store.get(accountKey)).toMatchObject({version:1,journalHead:head});
+  expect([...s.fake.store.keys()].filter(k=>k.startsWith(C.effects+'/'))).toHaveLength(2);
+});
+test.each(['amount','payer','nonce'])('partial rejoin refuses altered %s receipt without private credits',async mutation=>{
+  const s=await rejoinReceiptSetup();
+  s.f.state.effects[0]=s.log('MembershipDebitExecuted',[h(700),h(3),mutation==='payer'?a(4):a(3),month-1,mutation==='amount'?99:100,100,mutation==='nonce'?6:7],5);
+  await expect(recordPrivateMembershipConsent(s.db,s.op.id,await s.f.read())).rejects.toThrow('rejoin_receipt');
+  expect(s.fake.store.get(accountKey)).toMatchObject({version:0,episode:{invoices:{[month-1]:{burnPaidAtomic:'0',reservePaidAtomic:'0'}}}});
+});
+
+test('month rollover retains paid invoice journal and closes partial payer consent before fresh debt admission',async()=>{
+ const s=await rejoinReceiptSetup();
+ await recordPrivateMembershipConsent(s.db,s.op.id,await s.f.read());
+ const account=s.fake.store.get(accountKey)!,head=account.journalHead;
+ mockFinalizedBlock=101;
+ const later=now+32*86400;
+ (readHistoricalRecoursePoolState as jest.Mock).mockImplementation(async(id:string)=>({pool:old[8],kernel:old[0],block:101,blockHash:h(101),timestamp:later,
+ currentAddress:id===h(3)?a(3):a(4),consentNonce:id===h(3)?'3':'2',consentGeneration:id===h(3)?'2':'1',addressConsent:id===h(3)}));
+ // The scanner has independently consumed the already-tested receipt and reached the new checkpoint.
+ Object.assign(account,{needsScan:false,checkpoint:{pool:old[8],block:101,blockHash:h(101)}});
+ const rolled=await rolloverPrivateMembershipTransition(s.db,s.op.id);
+ expect(rolled.status).toBe('preparing');
+ expect(rolled.bindings.find(b=>b.binding===h(3))).toMatchObject({initiallyJoined:true,nonce:'3',admission:null,departure:null});
+ const reopened=await openPrivateMembershipConsents(s.db,s.op.id);
+ expect(reopened.rejoinPayments).toEqual([{month:String(month),ruleHash:h(9),burn:'100',reserve:'100'}]);
+ expect(nextPrivateAddressConsent(reopened,h(3),{revision:'1',ruleHash:h(9),timestamp:later})).toMatchObject({joined:false,nonce:'3'});
+ expect(nextPrivateAddressConsent(reopened,h(4),{revision:'1',ruleHash:h(9),timestamp:later})).toBeNull();
+ expect(s.fake.store.get(accountKey)).toMatchObject({journalHead:head,episode:{joined:false,invoices:{[month-1]:{burnPaidAtomic:'100',reservePaidAtomic:'100'}}}});
+ expect([...s.fake.store.values()].filter(r=>r.status==='superseded')).toHaveLength(1);
 });

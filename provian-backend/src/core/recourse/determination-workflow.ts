@@ -7,7 +7,7 @@ import { recourseExecutionId, RECOURSE_EXECUTIONS, cancelUnsignedRecourseCall, t
 
 export const DETERMINATION_WORKFLOWS = 'recourse_determination_workflows_v1';
 export const DETERMINATION_COORDINATION = 'recourse_determination_coordination_v1';
-type Phase = 'reviewed' | 'attested' | 'reversed' | 'allocated' | 'delivered' | 'recorded' | 'declined' | 'needs_review';
+type Phase = 'reviewed' | 'attested' | 'reversed' | 'eligible' | 'allocated' | 'delivered' | 'recorded' | 'declined' | 'needs_review';
 interface Workflow {
   readonly request: string;
   readonly accepted: boolean;
@@ -52,7 +52,7 @@ export async function queueDetermination(db: Firestore, value: CheckedDeterminat
 export interface DeterminationWorkflowPort {
   recheck(row: Workflow): Promise<CheckedDetermination>;
   prepare(value: CheckedDetermination, kind: 'attest' | 'reverse' | 'decline'): Promise<RecourseExecutionCall>;
-  recorded(requests: readonly string[], kind: 'allocate' | 'record' | 'deliver'): Promise<RecourseExecutionCall>;
+  recorded(requests: readonly string[], kind: 'eligibility' | 'allocate' | 'record' | 'deliver', request?: string): Promise<RecourseExecutionCall>;
   execute(plan: RecourseExecutionCall): Promise<{ status: 'submitted' | 'confirmed' | 'reverted'; transactionHash: string }>;
   /** Null means no signed bytes were persisted; only a freshly checked plan may sign. */
   resume(id: string): Promise<{ status: 'submitted' | 'confirmed' | 'reverted'; transactionHash: string } | null>;
@@ -79,7 +79,7 @@ export async function runDeterminationWorkflow(db: Firestore, port: Determinatio
     if (state.get('owner') && Number(state.get('expiresAtMs')) > Date.now()) throw Error('recourse_determination_worker_busy');
     let requests = state.get('requests') as string[] | undefined;
     if (!requests?.length) {
-      const rows = await tx.get(db.collection(DETERMINATION_WORKFLOWS).where('phase', 'in', ['reviewed', 'attested', 'reversed', 'allocated']));
+      const rows = await tx.get(db.collection(DETERMINATION_WORKFLOWS).where('phase', 'in', ['reviewed', 'attested', 'reversed', 'eligible', 'allocated']));
       requests = rows.docs.map(row => row.id).sort();
     }
     tx.set(lock, { owner: worker, expiresAtMs: Date.now() + ttl, requests }, { merge: true });
@@ -127,7 +127,19 @@ export async function runDeterminationWorkflow(db: Firestore, port: Determinatio
       // No signed bytes exist: release the old reservation before deriving a
       // fresh capability at today's canonical preparation block.
       if(pending)await cancelUnsignedRecourseCall(db,pending.id);
-      const plan = await prepare(), id = recourseExecutionId(plan);
+      let plan:RecourseExecutionCall;
+      try{plan=await prepare();}catch(error){
+        if(!(error instanceof Error)||error.message!=='recourse_execution_membership_attestation_required'
+          ||!['allocate','record'].includes(kind))throw error;
+        // No signed attempt exists here. Re-admit the exact current revision
+        // before deriving a new allocation; signed pending bytes never enter here.
+        await db.runTransaction(async tx=>{
+          await requireLease(tx);
+          for(const request of requests)tx.update(db.collection(DETERMINATION_WORKFLOWS).doc(request),{phase:'reversed',pending:null});
+        });
+        return false;
+      }
+      const id = recourseExecutionId(plan);
       if (plan.kind !== kind) throw Error('recourse_determination_plan_changed');
       await db.runTransaction(async tx => {
         await requireLease(tx);
@@ -137,13 +149,14 @@ export async function runDeterminationWorkflow(db: Firestore, port: Determinatio
     }
     if (result.status === 'submitted') return false;
     if (result.status === 'reverted') {
-      if(['allocate','record','deliver'].includes(kind)){
+      if(['eligibility','allocate','record','deliver'].includes(kind)){
         // The reversal is final and must not be repeated or repriced. A fresh
         // pool attempt derives its amounts from that recorded on-chain result.
         await db.runTransaction(async tx=>{
           await requireLease(tx);
           for(const request of requests)tx.update(db.collection(DETERMINATION_WORKFLOWS).doc(request),{
             pending:null,lastRevertedTransaction:result!.transactionHash,
+            ...(kind==='allocate'||kind==='record'?{phase:'reversed'}:{}),
           });
         });
         return false;
@@ -179,11 +192,19 @@ export async function runDeterminationWorkflow(db: Firestore, port: Determinatio
       }
     }
     const ready = await Promise.all(cohort.map(read));
-    const allocations = ready.filter(row => row.phase === 'reversed' && row.shortfall !== '0').map(row => row.request);
+    const allocations = ready.filter(row => ['reversed','eligible'].includes(row.phase) && row.shortfall !== '0').map(row => row.request).sort();
+    for(const request of allocations){
+      if((await read(request)).phase==='reversed'
+        && !await step([request],'eligibility','eligible',()=>port.recorded(allocations,'eligibility',request))) return {pending:true,completed};
+    }
     if (allocations.length && !await step(allocations, 'allocate', 'allocated', () => port.recorded(allocations, 'allocate'))) return { pending: true, completed };
     for (const request of cohort) {
       let row = await read(request);
       if (row.phase === 'reversed') {
+        if(!await step([request],'eligibility','eligible',()=>port.recorded([request],'eligibility',request))) return {pending:true,completed};
+        row=await read(request);
+      }
+      if(row.phase==='eligible'){
         if (!await step([request], 'record', 'delivered', () => port.recorded([request], 'record'))) return { pending: true, completed };
         row = await read(request);
       }

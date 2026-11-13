@@ -1,15 +1,18 @@
+import 'react-native-get-random-values';
 import * as Device from 'expo-device';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { LogBox, Text, View } from 'react-native';
 import config from './config';
 
 if (!__DEV__ || Device.isDevice || config.relay !== 'http://127.0.0.1:18551') throw Error('isolated_native_build_required');
+// Background features outside this exercise remain refused; keep their known warnings out of the test UI.
+LogBox.ignoreLogs(['isolated_native_route_refused']);
 // This entry is selected only by the explicit simulator Metro configuration.
 // Reject every external fetch, including unrelated background registrations.
 function requireLocalUrl(value:string, socket=false):void {
  const url=new URL(value);
  const relay=url.hostname==='127.0.0.1'&&url.port==='18551';
- const metro=['127.0.0.1','localhost'].includes(url.hostname)&&url.port==='8083';
+ const metro=['127.0.0.1','localhost'].includes(url.hostname)&&['8081','8083'].includes(url.port);
  if (!(relay||metro) || !(url.protocol==='http:'||(socket&&metro&&url.protocol==='ws:')))
    throw Error('isolated_native_external_network_refused');
 }
@@ -33,18 +36,18 @@ Relay.getUserId=async()=>config.userId;
 // Keep the real recovery envelope/signing code, substituting only its transport.
 Reflect.set(Relay,'getBackendUrl',async()=>config.relay);
 Reflect.set(Relay,'makeAuthenticatedRequest',async(path:string,options:RequestInit={})=>{
- if(!path.startsWith('/v1/recourse/'))throw Error('isolated_native_route_refused');
- return fetch(config.relay+path,{...options,headers:{...options.headers,'content-type':'application/json',authorization:`Bearer ${config.fixtureToken}`}});
+ const endpoint=path.split('?')[0];
+ const mailbox=endpoint==='/v1/meter/mobile/mailbox'||endpoint==='/v1/meter/mobile/mailbox/ack'||endpoint==='/v1/meter/mobile/batch-proofs';
+ if(!path.startsWith('/v1/recourse/') && path!=='/v1/wallet/human/register'&&!mailbox)throw Error('isolated_native_route_refused');
+ const response=await fetch(config.relay+path,{...options,headers:{...options.headers,'content-type':'application/json',authorization:`Bearer ${config.fixtureToken}`}});
+ if(!response.ok&&path.startsWith('/v1/recourse/'))console.warn('[Isolated recourse response]',path,response.status,(await response.clone().json()).error);
+ return response;
 });
 const Transactions=require('../../../src/core/wallet/TransactionService').default as typeof import('../../../src/core/wallet/TransactionService').default;
 const {JsonRpcProvider}=require('ethers') as typeof import('ethers');
 const localProvider=new JsonRpcProvider(`${config.relay}/rpc/one`,8453,{staticNetwork:true,batchMaxCount:1});
 Transactions.providerFor=(chainId)=>{if(chainId!==8453)throw Error('isolated_chain_required');return localProvider;};
 Reflect.set(Transactions,'getProvider',Transactions.providerFor);
-Relay.recourseRequest=async(path,body)=>{
- const response=await fetch(`${config.relay}/v1/recourse/${path}`,{method:body===undefined?'GET':'POST',headers:{'content-type':'application/json',authorization:`Bearer ${config.fixtureToken}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
- if(!response.ok)throw Error('recourse_request_refused');return response.json();
-};
 // The history adapter reads actual Transfer logs from the isolated contracts.
 History.getTransactions=async(addresses,options)=>{
  const address=typeof addresses==='string'?addresses:addresses.Base;

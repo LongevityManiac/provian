@@ -118,8 +118,8 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
         registry.bind(binding, ownerProof, attestorProof, 2);
     }
 
-    function standing(RecourseAddressConsent.ConsentAuthorization memory c) private pure returns(RecourseStandingConsent.StandingAuthorization memory) {
-        return RecourseStandingConsent.StandingAuthorization(c,false,0,0,100,sha256("TEST ONLY exit commitment"),sha256("TEST ONLY exit salt"));
+    function standing(RecourseAddressConsent.ConsentAuthorization memory c) private view returns(RecourseStandingConsent.StandingAuthorization memory) {
+        return RecourseStandingConsent.StandingAuthorization(c,false,0,0,100,sha256("TEST ONLY exit commitment"),sha256("TEST ONLY exit salt"), pool.calendarMonth(block.timestamp), new RecourseStandingConsent.RejoinPayment[](0));
     }
     function sig(uint256 key, bytes32 digest) private pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(key, digest);
@@ -196,7 +196,7 @@ contract ProvianOwnershipRegistryTest is SlhTestSigner {
           '","address":"', _lowerAddress(binding.account), '","recoveryCommitment":"', vm.toString(binding.recoveryCommitment),
           '","signingRoot":"', vm.toString(binding.signingRoot), '","kernel":"', _lowerAddress(binding.kernel), '","nonce":"', vm.toString(binding.nonce),
           '","expiresAtMs":1200000},"authorization":{"consent":{"binding":"', vm.toString(c.binding), '","account":"', _lowerAddress(c.account),
-          '","nonce":"0","joined":true,"revision":"1","ruleHash":"', vm.toString(c.ruleHash), '","expiresAt":"1200"},"fixedChargePayer":false,"burnLimit":"0","reserveLimit":"0","earningsBpsLimit":100,"exitCommitment":"', vm.toString(sha256("TEST ONLY exit commitment")), '","exitSalt":"', vm.toString(sha256("TEST ONLY exit salt")), '"}}');
+          '","nonce":"0","joined":true,"revision":"1","ruleHash":"', vm.toString(c.ruleHash), '","expiresAt":"1200"},"admissionMonth":"', vm.toString(pool.calendarMonth(block.timestamp)), '","rejoinPayments":[],"fixedChargePayer":false,"burnLimit":"0","reserveLimit":"0","earningsBpsLimit":100,"exitCommitment":"', vm.toString(sha256("TEST ONLY exit commitment")), '","exitSalt":"', vm.toString(sha256("TEST ONLY exit salt")), '"}}');
         for (uint256 n = 4; n < 7; ++n) {
             bytes memory value = bytes(command[n]);
             for (uint256 i; i < value.length; ++i) if (uint8(value[i]) >= 65 && uint8(value[i]) <= 70) value[i] = bytes1(uint8(value[i]) + 32);

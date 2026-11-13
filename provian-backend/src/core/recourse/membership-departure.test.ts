@@ -21,7 +21,7 @@ function fixture(){
  const wallet=new Wallet(h('11')),owner=h('12'),id=h('13'),binding=h('14');
  const domain={chainId:'8453',pointer:a('15'),kernel:a('16'),pool:a('17')};
  const consent={binding,account:wallet.address.toLowerCase(),nonce:'0',joined:true,revision:'1',ruleHash:h('18'),expiresAt:'1300'};
- const standing={consent,fixedChargePayer:true,burnLimit:'100',reserveLimit:'100',earningsBpsLimit:100,exitCommitment:sha256(h('19')),exitSalt:h('20')};
+ const standing={consent,admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:true,burnLimit:'100',reserveLimit:'100',earningsBpsLimit:100,exitCommitment:sha256(h('19')),exitSalt:h('20')};
  const request={transitionId:id,domain,consent,standing,exitSecret:null};
  const qid=membershipConsentOperationId(request);
  const operation={id,ownerIdentity:owner,kind:'join',departureRequested:true,status:'consenting',pool:domain.pool,kernel:domain.kernel,bindings:[{binding}]};

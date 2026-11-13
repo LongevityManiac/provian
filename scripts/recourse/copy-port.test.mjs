@@ -1,6 +1,17 @@
 import { expect, test } from 'vitest';
 import { isolatedCopyPort } from './copy-port.mjs';
 const hash = '0x' + '11'.repeat(32), other = '0x' + '22'.repeat(32);
+test('native pointer discovery can read the head without admitting arbitrary methods', async () => {
+  const calls = [];
+  const port = isolatedCopyPort({ url: 'http://127.0.0.1:18547', instanceId: hash, forkHash: hash,
+    fetcher: async (_url, input) => {
+      calls.push(JSON.parse(input.body).method);
+      return { ok: true, json: async () => ({ result: '0x123' }) };
+    } });
+  expect(await port.request('eth_blockNumber', [])).toBe('0x123');
+  await expect(port.request('eth_sign', [])).rejects.toThrow('method_refused');
+  expect(calls).toEqual(['eth_blockNumber']);
+});
 test.each(['https://base-rpc.publicnode.com', 'http://localhost:18547', 'http://127.0.0.1:18547/relay',
   'http://user@127.0.0.1:18547', 'http://127.0.0.1:18547/?url=https://base.org'])('non-exact local transport refuses %s', url => {
   expect(() => isolatedCopyPort({ url, instanceId: hash, forkHash: hash })).toThrow();
@@ -14,6 +25,9 @@ test('every mutation rechecks instance and fork even on the matching Base chain 
       : method === 'eth_chainId' ? '0x2105' : hash }) };
   } });
   await port.request('eth_sendTransaction', [{gas:'0x5208'}]); expect(methods).toEqual(['anvil_metadata', 'eth_chainId', 'eth_sendTransaction']);
+  await port.request('evm_setNextBlockTimestamp', [1900000000]);
+  instance = other; await expect(port.request('evm_setNextBlockTimestamp', [1900000001])).rejects.toThrow(/instance_changed/);
+  expect(methods.filter(method => method === 'evm_setNextBlockTimestamp')).toHaveLength(1);
   instance = other; await expect(port.request('eth_sendTransaction', [{gas:'0x5208'}])).rejects.toThrow(/instance_changed/);
   instance = hash; fork = other; await expect(port.request('eth_sendRawTransaction', ['0x'])).rejects.toThrow(/instance_changed/);
   expect(methods.filter(method => method.startsWith('eth_send'))).toHaveLength(1);

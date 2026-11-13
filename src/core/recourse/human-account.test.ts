@@ -5,7 +5,7 @@ import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 import { mnemonicToSeedSync } from '@scure/bip39';
 import { HDKey } from '@scure/bip32';
-import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection, readHumanAccountSelection } from './human-account';
+import { deriveHumanAccount, humanAccountPaths, installHumanAccountSelection, readHumanAccountSelection, readHumanCurrentAddresses } from './human-account';
 import { humanRecoverySecret, humanRecoverySigningSeed } from './human-secret';
 import { recoveryCommitment, recoverySigningRoot } from './hash-authorization';
 import type { BiometricAction } from '../security/biometricAction';
@@ -63,4 +63,18 @@ it('restoration proof rotation can advance independently of the active spending 
   expect(await readHumanAccountSelection(root.evm)).toEqual(restored);
   await expect(installHumanAccountSelection(mnemonic, initial, action)).rejects.toThrow('rollback');
   await expect(installHumanAccountSelection(mnemonic, { ...restored, recoveryGeneration: 0 }, action)).rejects.toThrow('state_invalid');
+});
+
+it('unlock uses the protected current accounts while retaining the original backup identity', async () => {
+  const root = await deriveHumanAccount(mnemonic, 0), next = await deriveHumanAccount(mnemonic, 1);
+  expect(await readHumanCurrentAddresses(root)).toEqual(root);
+  const selection = { rootAddress: root.evm, generation: 1, ...next, recoveryCommitment: await commitment(1), requestId: `0x${'11'.repeat(32)}` };
+  await installHumanAccountSelection(mnemonic, selection, action);
+  expect(await readHumanCurrentAddresses(root)).toEqual(next);
+  expect((await readHumanAccountSelection(root.evm))?.rootAddress).toBe(root.evm);
+  fault.unreadable = true;
+  await expect(readHumanCurrentAddresses(root)).rejects.toThrow('keystore_unavailable');
+  fault.unreadable = false;
+  memory.set(`provian_recourse_account_${root.evm.slice(2)}`, JSON.stringify({ ...selection, generation: -1 }));
+  await expect(readHumanCurrentAddresses(root)).rejects.toThrow();
 });

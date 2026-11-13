@@ -12,7 +12,7 @@
     "ProvianRecourseProjectPool": "2490368",
     "ProvianRecourseBondPool": "5832704",
     "ProvianRecourseCourt": "4259840",
-    "ProvianMemberRecoursePool": "9109504",
+    "ProvianMemberRecoursePool": "9502720",
     "ProvianSuccessionImporter": "983040",
     "ProvianHashAccount": "1572864",
     "ProvianProtocolPointer": "851968"
@@ -36,7 +36,7 @@
   "publication": "9634280",
   "publicationInner": "1050786",
   "artifacts": {
-    "ProvianOwnershipRegistry": "0x02c2a0126d21076cfbf115f2329f282df135e1fe2af899ce111e8366796c936b",
+    "ProvianOwnershipRegistry": "0xe70277aad4216b1170aa9abe3cb2bc05c6f5521e5693489628839dbc5fb7112e",
     "ProvianRecoveryHistory": "0x5037846856aec353f6ccc28c31bef89c44e3a49d7108e309190474fb8f65e29f",
     "ProvianRestorationAuthorization": "0x2a38932ec922f7d3d6f531e160a1aaa884721ef8c0804167d92351108d4aa863",
     "ProvianRecourseKernel": "0x446eeb7cf68795e82d6bc1932ebddb7fc87406e72195634acc68064faa7250e9",
@@ -46,13 +46,13 @@
     "ProvianRecourseProjectPool": "0x20403d321ab792f2bc13a61470135df6e8d75a829f613406d7745c844293614a",
     "ProvianRecourseBondPool": "0x5cadfad3871a406b0b0525682fecb232ffca6fb1ce83ef4bf88b8cf072c717cd",
     "ProvianRecourseCourt": "0xfeff200ad6f1362728751e03c84fbf18f33b2790ce9230e42556fd16ec54279a",
-    "ProvianMemberRecoursePool": "0x1b4b6d8992910388d54b566c7571672307e60cda562b433e7c08acd7eb973df6",
+    "ProvianMemberRecoursePool": "0x835c3c8e9df051f1db93fbfbffbff3dfa555ab89ce61e3647876c570600809e7",
     "ProvianSuccessionImporter": "0xa1604a207b2c3ecb302727200889cd572fce675f6e13fe899392db6730cf676c",
     "ProvianEscrowV4": "0x46c7a339648abd1e581d966131c8d2b530cc8a725125779c19ed95f84738ee37",
     "ProvianPoolV3": "0x3b853b04b64b779ec66b04e1310afcf0ea3c101bcab61bd37683dbc87dc5dfa8",
     "ProvianBondPool": "0xc5af45019052106bdfe895805c17cf43725a7f20139994292d6266dd3351ce7b",
     "ProvianCourtV2": "0x9dec101967632f56d2688aadce325db1d208a0e7b7c0d438063913262d9b1c03",
-    "RecourseStandingConsent": "0x15ec92691f9e81446e6b80a7d061348e42cdfe54dba0939371b5333509f3e21c",
+    "RecourseStandingConsent": "0xd8bbcb5d206d9c15b3cd7c514b6ab0a6bafa1cac93db33285745df34ab32af7d",
     "ProvianHashAccount": "0x19af3f67c1e9bf6b71bff6befc9b5ba884f008dae3e9db61c4a380eab75dd46e",
     "ProvianProtocolPointer": "0x5b361b5f4232e8a88c8910ea15cd1ff066625d6bf09a35c5e76dc6fb687f5dff",
     "ProvianMemberSettlement": "0x0146ee2bc2f1a92eac2428be5e1c4c427cf76deb1fa9034f8ce45deff6a35e0f",
@@ -60,7 +60,7 @@
     "ProvianPVT9EligibilityVerifier": "0xa79c539c48c8da35ca76ca38dac42aba68b3d23ca60a1f806bc9625f5579f321"
   },
   "sources": {
-    "scripts/recourse/all-plan-gas.mjs": "0x4785cf2acd23b33bb1d1e3af9e75a8927de40fa3a823ed0d46f65a7e1095e9f1",
+    "scripts/recourse/all-plan-gas.mjs": "0xb3151501956c4b5723cb339b7459b494b2e8c481f605d725ca46ad5930d49ec3",
     "scripts/recourse/import-gas-bound.mjs": "0x6d7c8c61f9b9a5ad7c2854f4bb1e3714dfba5d822698a1792f9765456bd955fb",
     "scripts/recourse/transaction-gas-limit.mjs": "0xfbc45a804f59a84d7e5f4d5a23a5f3d5055b03faf9acde0c1c5f0c2fb0683071",
     "scripts/recourse/first-changeover.mjs": "0x51ece1cc0101db53ef4f6597c52cceaf10ad4e47c3d9f5096be8d4d9fb76d05d",

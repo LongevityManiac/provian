@@ -8,7 +8,7 @@ import SeedManager from '../wallet/SeedManager';
 import { ActionWallet } from '../security/ActionWallet';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
 import { currentProtocolDeployment, ownerChainNetwork } from '../protocol/runtime';
-import { waitForRecourseBinding } from './binding-chain';
+import { acceptedBindingDigest, waitForRecourseBinding } from './binding-chain';
 import { addressRecoveryBinding } from './address-binding';
 
 import { recourseBindingMessage as bindingMessage, type RecourseBinding as OwnershipBinding } from './binding';
@@ -49,7 +49,7 @@ export async function prepareHumanOwnershipBinding(port: RecourseBindingPort, ad
       revision: String(deployment.revision), nonce: pool.consentNonce, ruleHash: pool.signedRuleHash, timestamp: pool.timestamp, earningsBps: pool.earningsBps,
     });
     const exitSalt = hexlify(randomBytes(32));
-    memberChallenges.set(binding, { domain: challenge.domain, authorization: { consent: challenge.consent, fixedChargePayer: false,
+    memberChallenges.set(binding, { domain: challenge.domain, authorization: { consent: challenge.consent, admissionMonth: pool.month, rejoinPayments:[],fixedChargePayer:false,
       burnLimit: "0", reserveLimit: "0", earningsBpsLimit: challenge.earningsBpsLimit, exitSalt,
       exitCommitment: membershipExitCommitment(humanMembershipExitSecret(mnemonic, challenge.domain, binding.identity, exitSalt)) } });
   }
@@ -74,6 +74,8 @@ export async function bindHumanOwnership(port: RecourseBindingPort, address: str
       : await new ActionWallet(await SeedManager.getEVMPrivateKey(action), action).signMessage(bytes);
     memberConsent = { authorization: challenge.authorization, ownerSignature };
   }
-  await port.request('bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
-  await waitForRecourseBinding(binding, ownerChainNetwork());
+  const reply = await port.request('bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
+  await waitForRecourseBinding(binding, ownerChainNetwork(), undefined, acceptedBindingDigest(reply, binding));
 }
+
+export { acceptedBindingDigest } from './binding-chain';

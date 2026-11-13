@@ -72,6 +72,7 @@ contract RecourseStandingConsentTest is Test {
         (uint256 nonce,,) = host.addressConsent(ID);
         a.consent = RecourseAddressConsent.ConsentAuthorization(ID, host.consentAccount(ID), nonce, true, 1,
             host.monthlyRule(host.month()).signedRuleHash, block.timestamp+300);
+        a.admissionMonth = host.month();
         a.fixedChargePayer = payer; a.burnLimit = payer ? host.monthlyRule(host.month()).participationBurn : 0;
         a.reserveLimit = payer ? host.monthlyRule(host.month()).noEarningsContribution : 0;
         a.earningsBpsLimit = host.monthlyRule(host.month()).earningsBps; a.exitCommitment = sha256(abi.encodePacked(exitSecret)); a.exitSalt = keccak256(abi.encode(exitSecret));
@@ -142,6 +143,63 @@ contract RecourseStandingConsentTest is Test {
     function testRejoinAfterGraceCannotCollectBeforeNewAdmission() public {
         join(EXIT,true); consent.leaveStandingMembership(ID,1,EXIT,1); host.setMonth(103);
         join(bytes32(uint256(1002)),true); reject(debit(102,100,100)); collect(debit(103,100,0));
+    }
+    function testRejoinSettlesTwoProtectedMonthsAtomicallyWithFreshSignatures() public {
+        join(EXIT,true); collect(debit(100,40,0));
+        consent.leaveStandingMembership(ID,1,EXIT,1); host.setMonth(110);
+        RecourseStandingConsent.StandingAuthorization memory a = approval(bytes32(uint256(1002)),true);
+        a.rejoinPayments = new RecourseStandingConsent.RejoinPayment[](2);
+        a.rejoinPayments[0] = RecourseStandingConsent.RejoinPayment(100,60,100,sha256("rule"));
+        a.rejoinPayments[1] = RecourseStandingConsent.RejoinPayment(101,100,100,sha256("rule"));
+        bytes32 digest = consent.standingConsentDigest(a);
+        bytes memory owner = sign(OWNER,digest); bytes memory attestor = sign(ATTESTOR,digest);
+        a.rejoinPayments[0].burn = 61;
+        vm.expectRevert(); consent.setStandingConsent(a,owner,attestor);
+        assertEq(host.balances(vm.addr(OWNER)),960);
+        a.rejoinPayments[0].burn = 60;
+        consent.setStandingConsent(a,owner,attestor);
+        assertEq(host.balances(vm.addr(OWNER)),600); assertEq(host.burned(),200); assertEq(host.reserve(),200);
+        (uint256 burn,uint256 reserve) = consent.monthlyCollection(ID,100); assertEq(burn,100); assertEq(reserve,100);
+        (burn,reserve) = consent.monthlyCollection(ID,102); assertEq(burn,0); assertEq(reserve,0);
+        vm.expectRevert(); consent.setStandingConsent(a,owner,attestor);
+        reject(debit(101,1,0)); // automatic collection still cannot reach old months
+    }
+    function testRejoinFailureRollsBackAllPaymentsAndDoesNotActivateConsent() public {
+        join(EXIT,true); consent.leaveStandingMembership(ID,1,EXIT,1); host.setMonth(110);
+        RecourseStandingConsent.StandingAuthorization memory a = approval(bytes32(uint256(1002)),true);
+        a.rejoinPayments = new RecourseStandingConsent.RejoinPayment[](2);
+        a.rejoinPayments[0] = RecourseStandingConsent.RejoinPayment(100,100,100,sha256("rule"));
+        a.rejoinPayments[1] = RecourseStandingConsent.RejoinPayment(101,100,800,sha256("rule"));
+        bytes32 digest = consent.standingConsentDigest(a);
+        bytes memory owner = sign(OWNER,digest); bytes memory attestor = sign(ATTESTOR,digest);
+        uint256 nonce = host.debitNonce(ID);
+        vm.expectRevert(); consent.setStandingConsent(a,owner,attestor);
+        assertEq(host.balances(vm.addr(OWNER)),1000); assertEq(host.burned(),0); assertEq(host.reserve(),0);
+        assertEq(host.debitNonce(ID),nonce); (,,bool joined) = host.addressConsent(ID); assertFalse(joined);
+        (uint256 burn,uint256 reserve) = consent.monthlyCollection(ID,100); assertEq(burn,0); assertEq(reserve,0);
+    }
+    function testRejoinPercentageRemainderIsNotCappedAtFlatContribution() public {
+        join(EXIT,true); consent.leaveStandingMembership(ID,1,EXIT,1); host.setMonth(110);
+        RecourseStandingConsent.StandingAuthorization memory a = approval(bytes32(uint256(1002)),true);
+        a.rejoinPayments = new RecourseStandingConsent.RejoinPayment[](1);
+        a.rejoinPayments[0] = RecourseStandingConsent.RejoinPayment(100,100,500,sha256("rule"));
+        bytes32 digest = consent.standingConsentDigest(a);
+        consent.setStandingConsent(a,sign(OWNER,digest),sign(ATTESTOR,digest));
+        assertEq(host.reserve(),500); assertEq(host.burned(),100);
+    }
+    function testSignedRejoinCannotCrossInvoiceMonthBoundary() public {
+        join(EXIT,true); host.setMonth(101);
+        consent.leaveStandingMembership(ID,1,EXIT,1);
+        RecourseStandingConsent.StandingAuthorization memory a = approval(bytes32(uint256(1002)),true);
+        a.rejoinPayments = new RecourseStandingConsent.RejoinPayment[](1);
+        a.rejoinPayments[0] = RecourseStandingConsent.RejoinPayment(100,100,100,sha256("rule"));
+        bytes32 digest = consent.standingConsentDigest(a);
+        bytes memory owner = sign(OWNER,digest); bytes memory attestor = sign(ATTESTOR,digest);
+        // The 300-second owner authorization is still live, but the protected
+        // grace-month invoice has now closed and is absent from these bytes.
+        vm.warp(block.timestamp+1); host.setMonth(102);
+        vm.expectRevert(); consent.setStandingConsent(a,owner,attestor);
+        assertEq(host.balances(vm.addr(OWNER)),1000);
     }
     function testHigherRuleNeedsFreshOwnerApproval() public {
         join(EXIT,true); host.raiseRule(); reject(debit(100,101,0));

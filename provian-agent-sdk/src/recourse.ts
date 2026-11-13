@@ -10,7 +10,7 @@ import { withBoundRecoveryMaterial } from './recourse-agent-credential';
 import { addressRecoveryBinding } from './recourse-address-binding';
 import { signEip191Message } from './link-signing';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
-import { waitForRecourseBinding } from './recourse-binding-chain';
+import { acceptedBindingDigest, waitForRecourseBinding } from './recourse-binding-chain';
 import { signActiveHashWalletMessage, signBoundHashWalletMessage, signBoundHashWalletDeparture } from './break-recovery-store';
 import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent, retainMembershipDeparture,
   type MembershipConsentChallenge, type MembershipRelay } from './recourse-membership-client';
@@ -105,7 +105,7 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
       try { return membershipExitCommitment(deriveMembershipExitSecret(material, challenge.domain, binding.identity, exitSalt)); }
       finally { material.fill(0); }
     });
-    const authorization = { consent: challenge.consent, fixedChargePayer: false, burnLimit: "0", reserveLimit: "0",
+    const authorization = { consent: challenge.consent, admissionMonth: pool.month, rejoinPayments:[],fixedChargePayer:false, burnLimit: "0", reserveLimit: "0",
       earningsBpsLimit: challenge.earningsBpsLimit, exitSalt, exitCommitment };
     const bytes = getBytes(standingMembershipSigningHash(challenge.domain, authorization));
     if (input.external && !input.external.signBytes) throw Error('recourse_external_membership_signer_required');
@@ -114,7 +114,7 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
     memberConsent = { authorization, ownerSignature };
   }
   const result = await request(config, 'bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
-  await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal);
+  await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal, acceptedBindingDigest(result, binding));
   return result;
 }
 

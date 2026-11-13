@@ -7,7 +7,7 @@ const domain = { chainId: '8453', pointer: a(1), kernel: a(2), pool: a(3) };
 const binding = { identity: h(4), address: a(5), recoveryCommitment: h(6), signingRoot: h(7), kernel: a(2), nonce: h(8), expiresAtMs: 1300000 };
 const consent = { binding: h(4), account: a(5), nonce: '0', joined: true, revision: '1', ruleHash: h(9), expiresAt: '1300' };
 const expected = { domain, revision: '1', nonce: '0', ruleHash: h(9), timestamp: 1000, earningsBps:100 };
-const authorization={consent,fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:h(12),exitSalt:h(13)};
+const authorization={consent,admissionMonth:'23640',rejoinPayments:[],fixedChargePayer:false,burnLimit:'0',reserveLimit:'0',earningsBpsLimit:100,exitCommitment:h(12),exitSalt:h(13)};
 describe('atomic additional member address binding', () => {
   it('has a separate attestation domain and cannot strip the membership mandate', async () => {
     const wallet = new Wallet(h(77)), bytes = getBytes(memberBindingSigningHash(domain, a(10), binding, authorization));

@@ -5,18 +5,20 @@ import { currentProtocolDeployment } from '../protocol/runtime';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, releaseRevokedPrivateDebit, type PrivateMembershipReservation } from './private-membership-reservation';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, beginPrivateMembershipTransition, openPrivateMembershipConsents,
-  refreshRecoveredMembershipTransition, replaceAdmissionWithDeparture, nextPrivateAddressConsent, type PrivateMembershipTransition } from './private-membership-transition';
+  rolloverPrivateMembershipTransition, refreshRecoveredMembershipTransition, replaceAdmissionWithDeparture, nextPrivateAddressConsent, type PrivateMembershipTransition } from './private-membership-transition';
 import { reconcilePrivateMembershipDomain } from './private-membership-domain';
 import { reconcilePrivateMembershipThrough, reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
 import { reconcileMembershipDebit } from './membership-debit-revocation';
 import { readPrivateMembershipScan, commitPrivateMembershipScan } from './private-membership-scan';
 import { readRecoursePoolState, readHistoricalRecoursePoolState } from './pool-state';
 import { createRecourseChainPort } from './chain-ledger';
-import { addressMembershipSigningHash, type AddressMembershipConsent, type MembershipAuthorizationDomain } from './membership-authorization';
+import { addressMembershipSigningHash, type AddressMembershipConsent, type MembershipAuthorizationDomain, type RejoinPayment } from './membership-authorization';
 
 export interface MembershipConsentChallenge {
   readonly domain: MembershipAuthorizationDomain;
   readonly consent: AddressMembershipConsent;
+  readonly admissionMonth: string;
+  readonly rejoinPayments: readonly RejoinPayment[];
   readonly fixedChargePayer: boolean; readonly burnLimit: string; readonly reserveLimit: string; readonly earningsBpsLimit: number;
   /** Sign these raw bytes with personal_sign, never their UTF-8 hex spelling. */
   readonly messageHex: string;
@@ -95,6 +97,10 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
       pending: queued.map(row => ({ binding: row.consent.binding, account: row.consent.account, operation: row.operation })) };
     operation = await replaceAdmissionWithDeparture(db, operation.id);
   }
+  if (operation.kind === 'join' && operation.status === 'consenting') {
+    operation = await refreshRecoveredMembershipTransition(db, operation.id);
+  }
+  operation = await rolloverPrivateMembershipTransition(db, operation.id);
   if (operation.status === 'preparing') {
     await reconcileCurrentPrivateMembership(db, ownerIdentity);
     const account = await db.collection(C.owners).doc(ownerIdentity).get();
@@ -124,6 +130,11 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
   for (const binding of operation.bindings) {
     const state = await readRecoursePoolState(binding.binding);
     if (state.pool !== operation.pool || state.kernel !== operation.kernel || state.currentAddress !== binding.address) throw Error('recourse_membership_changed');
+    if (operation.kind === 'join' && operation.admissionMonth !== Number(state.month)) {
+      pending.push(...queued.filter(row => row.consent.binding === binding.binding).map(row => ({
+        binding: row.consent.binding, account: row.consent.account, operation: row.operation })));
+      continue;
+    }
     const consent = nextPrivateAddressConsent(operation, binding.binding, {
       revision: String(deployment.revision), ruleHash: state.signedRuleHash, timestamp: state.timestamp });
     if (consent) {
@@ -131,7 +142,7 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
       const inFlight = queued.filter(row => row.domain.pool === domain.pool && row.domain.kernel === domain.kernel && row.domain.pointer === domain.pointer
         && Object.entries(consent).every(([key, value]) => key === 'expiresAt' || row.consent[key as keyof AddressMembershipConsent] === value));
       if (inFlight.length) pending.push(...inFlight.map(row => ({ binding: consent.binding, account: consent.account, operation: row.operation })));
-      else challenges.push({ domain, consent, fixedChargePayer:consent.joined && consent.binding===payer, burnLimit:consent.joined && consent.binding===payer?state.participationBurnAtomic:'0',
+      else challenges.push({ domain, consent, admissionMonth: state.month, rejoinPayments: consent.joined && consent.binding === payer ? operation.rejoinPayments ?? [] : [], fixedChargePayer:consent.joined && consent.binding===payer, burnLimit:consent.joined && consent.binding===payer?state.participationBurnAtomic:'0',
         reserveLimit:consent.joined && consent.binding===payer?state.noEarningsContributionAtomic:'0', earningsBpsLimit:state.earningsBps, messageHex: addressMembershipSigningHash(domain, consent) });
     }
   }

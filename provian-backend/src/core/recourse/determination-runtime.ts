@@ -29,7 +29,9 @@ export function createDeterminationWorkflowPort(db: Firestore, wallets: {
     prepare: (value, kind) => prepareDeterminationExecution(value, kind, {
       address: wallets.attestor.address.toLowerCase(), signDigest: hash => wallets.attestor.signMessage(getBytes(hash)),
     }),
-    recorded: (requests, kind) => prepareRecordedPoolExecution(db, requests, kind),
+    recorded: (requests, kind, request) => prepareRecordedPoolExecution(db, requests, kind, undefined, {
+      address: wallets.attestor.address.toLowerCase(), signDigest: hash => wallets.attestor.signMessage(getBytes(hash)),
+    }, request),
     execute: async (value: RecourseExecutionCall) => {
       const checked = value as CheckedRecourseExecution;
       // The runtime brand, not the structural cast, grants signing capability.
