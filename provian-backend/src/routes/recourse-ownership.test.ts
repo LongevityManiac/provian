@@ -25,7 +25,8 @@ test('an auxiliary-only owner reads private membership without inventing primary
     participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100,signedRuleHash:identity,outcomeRevision:'0'};
   const readPool=jest.spyOn(poolState,'readRecoursePoolState').mockResolvedValue(pool);
   const readMembership=jest.spyOn(membershipView,'readPrivateMembershipView').mockResolvedValue({enrolled:true,grace:false,
-    month:'1',endMonthExclusive:'2',unpaidAtomic:'0',block:100,blockHash:identity});
+    month:'1',endMonthExclusive:'2',unpaidAtomic:'0',block:100,blockHash:identity,
+    details:{status:'protected',protectionStartedAtMs:1000,nextMonthAtMs:2000,nextBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100}});
   const app=express();app.use(express.json());
   app.use('/v1/recourse',createRecourseRouter({db} as unknown as AgentBankDeps,(req,_res,next)=>{
     req.agentWallet={id:walletId} as Request['agentWallet'];next();

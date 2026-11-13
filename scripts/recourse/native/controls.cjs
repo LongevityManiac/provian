@@ -41,7 +41,12 @@ module.exports=async function createControls(ctx){
    try{intent.transactionHash=await local.request('eth_sendTransaction',[tx]);persist();}
    catch(error){await find();if(!intent.transactionHash)throw error;}
   }
-  const receipt=await rawRequest('eth_getTransactionReceipt',[intent.transactionHash]);
+  let receipt;
+  for(let attempt=0;attempt<20;attempt++){
+   receipt=await rawRequest('eth_getTransactionReceipt',[intent.transactionHash]);
+   if(receipt)break;
+   await new Promise(resolve=>setTimeout(resolve,250));
+  }
   if(receipt?.status!=='0x1'||(await rawRequest('eth_getBlockByNumber',[receipt.blockNumber,false])).hash!==receipt.blockHash)
    throw Error('isolated_control_transaction_failed');
   intent.receipt={transactionHash:intent.transactionHash,block:Number(BigInt(receipt.blockNumber)),blockHash:receipt.blockHash,gasUsed:String(BigInt(receipt.gasUsed))};
@@ -95,6 +100,23 @@ module.exports=async function createControls(ctx){
      journal.funding=await send(donor.destination,'transfer',[wallet.address,parseUnits('1000',18)]);persist();
     }
     await local.request('anvil_setBalance',[wallet.address,'0x0']);await initAuthority();
+   }else if(action==='empty-for-grace'||action==='restore-funds'){
+    const holding=new Wallet(fixtureSeed('ui-balance-holding')).address;
+    const from=action==='empty-for-grace'?wallet.address:holding,to=action==='empty-for-grace'?holding:wallet.address;
+    if(!journal[action]||journal[action].complete===false){
+     if(!journal[action]){
+      // Resume a submitted transfer even when its balance has already moved.
+      const prior=Object.values(journal.transactions??{}).find(row=>row.from===from.toLowerCase()
+       &&row.data.startsWith(token.getFunction('transfer').selector)
+       &&token.decodeFunctionData('transfer',row.data)[0].toLowerCase()===to.toLowerCase());
+      const amount=prior?BigInt(token.decodeFunctionData('transfer',prior.data)[1]):BigInt(await balance(from));
+      if(amount===0n)throw Error('isolated_balance_required');
+      journal[action]={amountAtomic:String(amount),complete:false};persist();
+     }
+     const receipt=await send(from,'transfer',[to,BigInt(journal[action].amountAtomic)]);
+     journal[action]={...journal[action],receipt,complete:true};persist();
+    }
+    await local.request('anvil_setBalance',[wallet.address,'0x0']);
    }else if(action==='sync-clock'){
     await advanceMonth('clock',0,Math.floor(Date.now()/1000));
    }else if(action==='next-month'){
@@ -108,7 +130,7 @@ module.exports=async function createControls(ctx){
     if(!journal.theft)journal.theft=await send(wallet.address,'transfer',[thief,parseUnits('100',18)]);persist();
     if(!journal.unreachable)journal.unreachable=await send(thief,'burn',[parseUnits('40',18)]);
     await local.request('anvil_setBalance',[wallet.address,'0x0']);journal.theftComplete=true;persist();
-   }else if(action==='determine'){
+   }else if(action==='determine'||action==='allocate-only'){
     await initAuthority();
     if(!journal.theft)throw Error('isolated_theft_required');
     const {RESTORATION_REQUESTS}=moduleAt('core/recourse/restoration-request.ts');
@@ -126,7 +148,12 @@ module.exports=async function createControls(ctx){
       evidenceHashes:[packet.snapshot.evidenceHash,packet.membership.evidenceHash],receipts});
      await workflow.queueDetermination(db,checked);journal.determination={request,packetHash:packet.packetHash,trace:checked.trace};persist();
     }
-    journal.determinationResult=await workflow.runDeterminationWorkflow(db,port);persist();
+    const selectedPort=action==='allocate-only'?{...port,recorded:async(requests,kind,request)=>{
+     if(kind==='deliver')throw Error('isolated_ui_allocation_pause');return port.recorded(requests,kind,request);
+    }}:port;
+    try{journal.determinationResult=await workflow.runDeterminationWorkflow(db,selectedPort);persist();}
+    catch(error){if(action!=='allocate-only'||error.message!=='isolated_ui_allocation_pause')throw error;
+     journal.allocationPaused=true;persist();}
    }else throw Error('isolated_control_action_refused');
    return this.run('status');
   }

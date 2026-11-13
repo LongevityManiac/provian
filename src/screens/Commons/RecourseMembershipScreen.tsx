@@ -12,7 +12,8 @@ import type { AppParamList } from '../../navigation/types';
 import { useWalletStore } from '../../store/walletStore';
 import { beginHumanMembership, readHumanMembershipTransition, authorizeHumanMembershipConsent,
   authorizeExternalMembershipConsent, leaveHumanMembership } from '../../core/recourse/human-membership';
-import { pvtAmount } from '../../core/recourse/service';
+import { RecourseMembershipSummary } from './RecourseMembershipSummary';
+import { pvtAmount, readRecourseView, type RecourseView } from '../../core/recourse/service';
 import type { MembershipConsentChallenge, MembershipTransitionView } from '../../core/recourse/membership-client';
 import { externalWalletProofClient, accountFromSession, EXTERNAL_WALLET_APPS,
   isExternalWalletConnectConfigured, type ExternalWalletApp } from '../../core/walletconnect/ExternalWalletProofClient';
@@ -20,6 +21,7 @@ import { externalWalletProofClient, accountFromSession, EXTERNAL_WALLET_APPS,
 export default function RecourseMembershipScreen({ navigation, route }: NativeStackScreenProps<AppParamList, 'RecourseMembership'>): React.JSX.Element {
   const { t } = useTranslation();
   const account = useWalletStore(s => s.address)?.toLowerCase();
+  const [summary, setSummary] = useState<RecourseView | null>(null);
   const [view, setView] = useState<MembershipTransitionView | null>(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const [selected, setSelected] = useState<MembershipConsentChallenge | null>(null);
@@ -29,14 +31,23 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
   const load = useCallback(async () => {
     const run = ++sequence.current;
     setLoading(true); setError(false);
+    let privateSummaryPublished = false;
+    const publicView = readRecourseView(undefined, true).then(value => {
+      if (!privateSummaryPublished && active.current && run === sequence.current) setSummary(value);
+    }).catch(() => undefined);
     try {
       let current = await readHumanMembershipTransition(operationId.current);
       if (route.params.kind === 'leave' && current && current.kind !== 'leave') current = await beginHumanMembership('leave');
       if (!current && route.params.kind !== 'resume') current = await beginHumanMembership(route.params.kind);
       if (!active.current || run !== sequence.current) return;
       operationId.current = current?.id; setView(current); setSelected(null);
+      const latest = await readRecourseView(value => {
+        privateSummaryPublished = true;
+        if (active.current && run === sequence.current) setSummary(value);
+      });
+      if (active.current && run === sequence.current) setSummary(latest);
     } catch { if (active.current && run === sequence.current) setError(true); }
-    finally { if (active.current && run === sequence.current) setLoading(false); }
+    finally { await publicView; if (active.current && run === sequence.current) setLoading(false); }
   }, [route.params.kind]);
   useEffect(() => {
     active.current = true; void load();
@@ -78,10 +89,13 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.flow.title', 'Your membership')}</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
+      <Text style={styles.body}>{t('recourse.intro')}</Text>
       <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
-      <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly payments then happen automatically, even while the app is closed. You need no ETH to join, pay or leave. Higher amounts require your fresh approval.')}</Text>
+      {summary ? <RecourseMembershipSummary view={summary} pending={loading} statusText={view?.kind === 'join' && view.status !== 'complete' && view.status !== 'superseded' ? t('recourse.flow.joining') : undefined} /> : null}
+      <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly burns and contributions then happen automatically, even while the app is closed. You need no ETH to join, contribute or leave. Higher amounts require your fresh approval.')}</Text>
       {loading || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
+      {!loading && (error || (!(view?.status === 'preparing' || view?.status === 'consenting') && summary?.membershipState === 'unavailable')) ? <Text style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
       {view ? <>
         <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : view.kind === 'join' ? t('recourse.join') : t('recourse.leave')}</Text>
         <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text>
@@ -93,10 +107,9 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         {view.kind === 'leave' && view.status !== 'complete' && view.status !== 'superseded' ? button(t('recourse.leave', 'Leave Recourse Pool'), () => { void run(() => leaveHumanMembership(view)); }) : null}
         {view.kind !== 'leave' ? view.challenges.map(challenge => <View key={challenge.consent.binding} style={styles.card}>
           <Text selectable style={styles.address}>{challenge.consent.account}</Text>
-          <Text style={styles.body}>{challenge.consent.joined ? t('recourse.flow.enable', 'Include this wallet') : t('recourse.flow.disable', 'End this wallet’s participation')}</Text>
+          <Text style={styles.body}>{challenge.consent.joined ? t('recourse.flow.enable', 'Include this wallet') : view.kind === 'join' ? t('recourse.flow.rejoinClose') : t('recourse.flow.disable', 'End this wallet’s participation')}</Text>
           <Text style={styles.body}>{t('recourse.standing.limits', 'Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.', {burn:pvtAmount(challenge.burnLimit),reserve:pvtAmount(challenge.reserveLimit),percent:challenge.earningsBpsLimit/100})}</Text>
           {challenge.rejoinPayments.length ? <>
-            <Text style={styles.body}>{t('recourse.rejoin.explain')}</Text>
             {challenge.rejoinPayments.map(payment => <Text key={payment.month} style={styles.body}>
               {t('recourse.rejoin.payment', { month: `${Math.floor(Number(payment.month) / 12)}-${String(Number(payment.month) % 12 + 1).padStart(2, '0')}`,
                 burn: pvtAmount(payment.burn), reserve: pvtAmount(payment.reserve) })}
@@ -112,7 +125,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       </> : !loading ? <Text style={styles.body}>{t('recourse.flow.none', 'No unfinished membership action.')}</Text> : null}
       {selected ? <View style={styles.card}>
         <Text selectable style={styles.address}>{selected.consent.account}</Text>
-        <Text style={styles.body}>{t('recourse.standing.external', 'Connect this wallet to approve its membership once. Later payments and leaving require no further wallet prompts.')}</Text>
+        <Text style={styles.body}>{t('recourse.standing.external', 'Connect this wallet to approve its membership once. Later burns, contributions and leaving require no further wallet prompts.')}</Text>
         {isExternalWalletConnectConfigured() ? button(t('recourse.flow.connect', 'Connect the external wallet'), () => { void run(connect); }) : null}
         {uri ? <>
           <View style={styles.qr}><QRCode value={uri} size={200} /></View>
@@ -121,13 +134,20 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
           }, false)}</React.Fragment>)}
         </> : null}
       </View> : null}
+      <Text style={styles.body}>{t('recourse.graceRule')}</Text>
       {button(t('recourse.refresh'), () => { void load(); })}
+      <View style={styles.card}>
+        <Text style={styles.title}>{t('recourse.finePrint')}</Text>
+        <Text style={styles.fine}>{t('recourse.standing.consent')}</Text>
+        <Text style={styles.fine}>{t('recourse.exitRule')}</Text>
+      </View>
     </ScrollView>
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background }, header: { flexDirection: 'row', alignItems: 'center', gap: SPACING.m, padding: SPACING.m },
   content: { padding: SPACING.m, paddingBottom: SPACING.xxxl, gap: SPACING.l }, title: { color: COLORS.text, fontSize: 22, fontWeight: '600' },
+  fine: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
   body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 23 }, address: { color: COLORS.text, fontSize: 12, lineHeight: 20 },
   card: { padding: SPACING.l, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.l, gap: SPACING.m },
   button: { padding: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
+import { RecourseMembershipSummary } from './RecourseMembershipSummary';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { pvtAmount, bindHumanPrimaryAddress, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
@@ -28,6 +29,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
   const [transfers, setTransfers] = useState<readonly TheftTransfer[]>([]);
   const [selectedTransfer, setSelectedTransfer] = useState<TheftTransfer | null>(null);
   const [transfersLoading, setTransfersLoading] = useState(false);
@@ -43,7 +46,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   useEffect(() => { setHistoryPage(1); setSelectedTransfer(null); setTransfers([]); }, [transferAccount]);
   useEffect(() => {
     let active = true;
-    if (!transferAccount) return () => { active = false; };
+    if (!reportOpen || !transferAccount) return () => { active = false; };
     setTransfersLoading(true); setTransfersError(false);
     void (async () => {
       try {
@@ -55,12 +58,12 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       finally { if (active) setTransfersLoading(false); }
     })();
     return () => { active = false; };
-  }, [transferAccount, historyPage, historyRefresh]);
+  }, [reportOpen, transferAccount, historyPage, historyRefresh]);
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     setLoading(true); setError(false);
     try {
-      const chain = await readRecourseView();
+      const chain = await readRecourseView(value => { if (sequence === loadSequence.current) setState(value); });
       if (sequence !== loadSequence.current) return;
       setState(chain); setLoading(false);
       const history = await readRecourseHistory(chain);
@@ -96,7 +99,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       if (!selectedTransfer || !transferAccount) throw Error('recourse_select_transfer');
       const verified = await verifyTheftTransfer(selectedTransfer, transferAccount, ownerChainNetwork());
       await submitHumanRestorationRequest(verified.transactionHash, verified.block, historyWallet?.identity);
-      setSelectedTransfer(null); await load();
+      setSelectedTransfer(null); setReportOpen(false); setReportSubmitted(true); await load();
     } catch { setError(true); }
     finally { setBusy(false); }
   };
@@ -127,56 +130,87 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     } catch { setError(true); }
     finally { setBusy(false); }
   };
+  const requestStatus = (row: RecourseView['requests'][number]): string => {
+    const status = row.allocation ? row.allocation.amountAtomic === '0' ? 'zero_allocation' : row.allocation.withdrawn ? 'delivered' : 'allocated' : row.status;
+    return t(`recourse.requestStatus.${status}`, { defaultValue: t('recourse.requestStatus.unknown') });
+  };
   return <SafeAreaView style={styles.screen}>
-    <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title', 'Recourse')}</Text></View>
+    <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.title')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void load(); }} />}>
-      <Text style={styles.lead}>{t('recourse.intro', 'Protect the PVT you hold. Bind your addresses to an ownership record that survives a change of key; choose membership for theft recourse.')}</Text>
-      <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
+      <Text style={styles.lead}>{t('recourse.intro')}</Text>
+      <Text style={styles.small}>{t('recourse.pvtOnly')}</Text>
+      {loading && !state ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error')}</Text>
+        {button(t('recourse.refresh'), () => { void load(); })}</View> : null}
+      {state ? <>
+        {!loading && (state.historyState === 'unavailable' || state.membershipState === 'unavailable')
+          ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
+        <View style={styles.card}>
+          <RecourseMembershipSummary view={state} pending={loading} />
+          {state.membershipState === 'available' ? state.enrolled ? <>
+            {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
+            {button(t('recourse.leave'), () => { void leave(); })}
+          </> : button(t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
+            : button(t('recourse.refresh'), () => { void load(); })}
+          <Text style={styles.small}>{t('recourse.graceSummary')}</Text>
+          {state.membershipState === 'unavailable' ? button(t('recourse.flow.resume'), () => navigation.navigate('RecourseMembership', { kind: 'resume' })) : null}
+        </View>
+        {button(t('recourse.reportTheft'), () => { setHistoryPage(1); setSelectedTransfer(null); setTransfers([]); setHistoryMore(false); setReportOpen(true); setReportSubmitted(false); })}
+        {reportSubmitted ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.afterReport')}</Text> : null}
+        <View style={styles.card}>
+          <Text style={styles.section}>{t('recourse.addresses')}</Text>
+          <Text style={styles.body}>{t('recourse.bindingInfo')}</Text>
+          {state.addresses.length === 0 && state.historyState === 'available' ? <Text style={styles.body}>{t('recourse.emptyWallets')}</Text> : null}
+          {state.historyState !== 'available' && state.primaryIdentity && state.currentAddress
+            ? <Text selectable style={styles.address}>{state.currentAddress}</Text> : null}
+          {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
+            {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending')}</Text> : null}
+            {row.confirmed && row.identity !== state.primaryIdentity
+              ? <>{button(t('recourse.recoverAddress'), () => { void recoverAddress(row.identity); })}
+                {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
+          {state.primaryIdentity === null ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
+          {button(t('recourse.bind'), () => navigation.navigate('RecourseBind'))}
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.section}>{t('recourse.resources')}</Text>
+          <Text style={styles.body}>{t('recourse.available', { amount: pvtAmount(state.reserveAtomic) })}</Text>
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.section}>{t('recourse.requests')}</Text>
+          {state.historyState === 'available' && state.requests.length === 0 ? <Text style={styles.body}>{t('recourse.emptyRequests')}</Text> : null}
+          {state.requests.map(row => <View key={row.requestId} style={styles.request}>
+            <Text style={styles.body}>{requestStatus(row)}</Text>
+            {row.allocation ? <Text style={styles.body}>{t('recourse.restorationAmount', { amount: pvtAmount(row.allocation.amountAtomic) })}</Text> : null}
+            {row.allocation && !row.allocation.withdrawn && BigInt(row.allocation.amountAtomic) > 0n
+              ? button(t('recourse.withdrawAllocation'), () => { void withdraw(row.requestId, row.identity); }) : null}
+          </View>)}
+        </View>
+      </> : null}
       <View style={styles.card}>
-        <Text style={styles.small}>{t('recourse.exitRule', 'Contributions are nonrefundable and burned PVT cannot be recovered. An allocated restoration remains yours after you leave and can be withdrawn directly on-chain without the relay.')}</Text>
-        <TextInput accessibilityLabel={t('recourse.allocationRequest', 'Restoration request ID')} placeholder={t('recourse.allocationRequest', 'Restoration request ID')}
+        <Text style={styles.section}>{t('recourse.finePrint')}</Text>
+        <Text style={styles.small}>{t('recourse.standing.consent')}</Text>
+        <Text style={styles.small}>{t('recourse.rule')}</Text>
+        <Text style={styles.small}>{t('recourse.bindingDetails')}</Text>
+        <Text style={styles.small}>{t('recourse.exitRule')}</Text>
+        {state?.requests.map(row => <Text key={row.requestId} selectable style={styles.address}>{t('recourse.allocationRequest')}: {row.requestId}</Text>)}
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.small}>{t('recourse.fallback')}</Text>
+        <TextInput accessibilityLabel={t('recourse.allocationRequest')} placeholder={t('recourse.allocationRequest')}
           value={allocationRequest} onChangeText={setAllocationRequest} autoCapitalize="none" autoCorrect={false} editable={!busy}
           style={styles.input} placeholderTextColor={COLORS.textSecondary} />
         <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={() => { void withdraw(allocationRequest); }}
-          style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation', 'Withdraw allocated restoration')}</Text></TouchableOpacity>
+          style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation')}</Text></TouchableOpacity>
       </View>
-      {loading && !state ? <ActivityIndicator color={COLORS.primary} /> : null}
-      {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error', 'We could not confirm the latest state or complete that action. Refresh to check the chain before trying again.')}</Text>
-        {button(t('recourse.refresh', 'Refresh'), () => { void load(); })}</View> : null}
-      {state ? <>
-        {state.historyState === 'unavailable' ? <Text style={styles.small}>{t('recourse.historyUnavailable', 'Address and request history is temporarily unavailable. Pool reserves and allocated restoration withdrawals remain available directly on-chain.')}</Text> : null}
-        <View style={styles.card}>
-          <Text style={styles.section}>{t('recourse.membership', 'Recourse Pool membership')}</Text>
-          <Text style={styles.status}>{state.membershipState === 'unavailable' ? t('recourse.membershipUnavailable', 'Private membership status is temporarily unavailable. Refresh after pending actions finish.') : state.grace ? t('recourse.grace', 'Protected — in grace') : state.enrolled ? t('recourse.active', 'Protected') : t('recourse.inactive', 'Not enrolled')}</Text>
-          <Text style={styles.body}>{t('recourse.monthly', 'Every month: burn {{burn}} PVT. Separately contribute {{percent}}% of gross earnings, or {{reserve}} PVT from PVT holdings in a month with no earnings.', {
-            burn: pvtAmount(state.participationBurnAtomic), percent: state.earningsBps / 100, reserve: pvtAmount(state.noEarningsContributionAtomic),
-          })}</Text>
-          <Text style={styles.body}>{t('recourse.graceRule', 'A missed month has one calendar month of grace. Catch up within grace and nothing lapses. Afterward membership ends; rejoining protects from that day forward, never for a loss while lapsed. Rejoining first requires settling both unpaid protected months, with credit for amounts already paid; lapsed months are never charged.')}</Text>
-          {state.membershipState === 'available' && state.unpaidAtomic !== '0' ? <Text style={styles.body}>{t('recourse.outstanding', 'Outstanding burn and contribution: {{amount}} PVT', { amount: pvtAmount(state.unpaidAtomic) })}</Text> : null}
-          <Text style={styles.small}>{t('recourse.standing.consent', 'Approve once when joining. Monthly burns and contributions happen automatically within the amounts you approved, without opening the app, signing again or holding ETH. Leaving stops future debits. Higher amounts need fresh approval. Restoration is discretionary, with no contractual right to payment. Determinations are final. Provian Technologies is not a party, contributes nothing, holds nothing and promises nothing.')}</Text>
-          {state.membershipState === 'available' ? state.enrolled ? <>
-            {button(t('recourse.standing.payments', 'Automatic payments'), () => navigation.navigate('RecourseMonthly'))}
-            {button(t('recourse.leave', 'Leave Recourse Pool'), () => { void leave(); })}
-          </> : button(t('recourse.join', 'Join Recourse Pool'), () => navigation.navigate('RecourseMembership', { kind: 'join' })) : button(t('recourse.flow.resume', 'Continue unfinished action'), () => navigation.navigate('RecourseMembership', { kind: 'resume' }))}
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.section}>{t('recourse.addresses', 'Your bound addresses')}</Text>
-          <Text style={styles.body}>{t('recourse.bindingInfo', 'One membership includes all bound PVT holdings, earned and received alike. Binding is your choice. The relay knows which wallets are yours and the public does not, the same as a bank. A recovery or restoration may publicly link an old address to its replacement. Links to your other addresses and your total holdings remain private. Cryptographic-break restoration is free for every bound owner, including nonmembers.')}</Text>
-          {state.addresses.map(row => <View key={row.address}><Text selectable style={styles.address}>{row.address}</Text>
-            {!row.confirmed ? <Text style={styles.small}>{t('recourse.bindingPending', 'Registration submitted; awaiting chain confirmation.')}</Text> : null}
-            {row.confirmed && row.identity !== state.primaryIdentity
-              ? <>{button(t('recourse.recoverAddress', 'Recover this wallet'), () => { void recoverAddress(row.identity); })}
-                {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
-          {state.primaryIdentity === null ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
-          {button(t('recourse.bind', 'Bind an address you hold'), () => navigation.navigate('RecourseBind'))}
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.section}>{t('recourse.resources', 'Member-funded reserves')}</Text>
-          <Text style={styles.body}>{t('recourse.available', 'Available for restoration: {{amount}} PVT', { amount: pvtAmount(state.reserveAtomic) })}</Text>
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.section}>{t('recourse.requests', 'Restoration requests')}</Text>
-          <Text style={styles.body}>{t('recourse.rule', 'Reversal comes first, with both restoration authority and your independent recovery proof. PVT received in a witnessed exchange stays with its recipient. The pool restores the remainder, pro rata when underfunded. Every determination and outcome enters your own chain.')}</Text>
+      {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+    </ScrollView>
+    <Modal visible={reportOpen} animationType="slide" onRequestClose={() => { if (!busy) setReportOpen(false); }}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.header}><Text style={styles.title}>{t('recourse.reportTheft')}</Text></View>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.small}>{t('recourse.pvtOnly')}</Text>
+          {state ? <>
           <Text style={styles.small}>{t('recourse.transferPicker.explanation', 'Choose the transfer you did not make. The app supplies its transaction details and prepares recovery to a new wallet address. Review the transfer before authorizing your restoration request.')}</Text>
           <Text style={styles.body}>{t('recourse.selectRestorationWallet', 'Select the wallet that lost PVT')}</Text>
           {state.addresses.filter(row => row.confirmed).map(row => <TouchableOpacity key={row.address}
@@ -201,16 +235,17 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
             <Text style={styles.small}>{t('recourse.transferPicker.recovery', 'Your recovery proof moves control to a replacement address. Reversal is attempted first; the pool determines restoration of any remaining loss.')}</Text>
             {button(t('recourse.submitRequest', 'Submit restoration request'), () => { void requestRestoration(); })}
           </View> : null}
-          {state.requests.map(row => <View key={row.requestId} style={styles.request}><Text selectable style={styles.address}>{row.transactionHash}</Text>
-            <Text style={styles.body}>{t(`recourse.requestStatus.${row.status}`, row.status.replace(/_/g, ' '))}</Text>
-            <Text selectable style={styles.address}>{t('recourse.allocationRequest', 'Restoration request ID')}: {row.requestId}</Text>
-            {button(t('recourse.withdrawAllocation', 'Withdraw allocated restoration'), () => { void withdraw(row.requestId, row.identity); })}</View>)}
-        </View>
-      </> : null}
-      {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
-    </ScrollView>
+          </> : null}
+          {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
+          {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+          {button(t('recourse.closeReport'), () => setReportOpen(false))}
+        </ScrollView>
+      </SafeAreaView>
+      </SafeAreaProvider>
+    </Modal>
   </SafeAreaView>;
 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', padding: SPACING.m, gap: SPACING.m },

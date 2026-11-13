@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import type { AppParamList } from '../../navigation/types';
+import { RecourseMembershipSummary } from './RecourseMembershipSummary';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { pvtAmount, readRecourseView, type RecourseView } from '../../core/recourse/service';
@@ -18,7 +19,7 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
   const [loading,setLoading]=useState(true),[error,setError]=useState(false);
   const load=useCallback(async()=>{
     setLoading(true);setError(false);setView(null);setMandate(null);
-    try{const next=await readRecourseView();const standing=await readStandingMembershipState(next.primaryIdentity??next.identity,ownerChainNetwork());
+    try{const next=await readRecourseView(setView);setView(next);const standing=await readStandingMembershipState(next.primaryIdentity??next.identity,ownerChainNetwork());
       setView(next);setMandate(standing.mandate);
     }catch{setError(true);}finally{setLoading(false);}
   },[]);
@@ -26,21 +27,25 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
   const changed=view&&mandate&&(!mandate.active||BigInt(view.participationBurnAtomic)>BigInt(mandate.burnLimit)
     ||BigInt(view.noEarningsContributionAtomic)>BigInt(mandate.reserveLimit)||view.earningsBps>mandate.earningsBpsLimit);
   return <SafeAreaView style={styles.screen}>
-    <View style={styles.header}><BackButton onPress={()=>navigation.goBack()}/><Text style={styles.title}>{t('recourse.standing.payments','Automatic payments')}</Text></View>
+    <View style={styles.header}><BackButton onPress={()=>navigation.goBack()}/><Text style={styles.title}>{t('recourse.standing.payments','Automatic monthly')}</Text></View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={()=>{void load();}}/>}>
+      <Text style={styles.body}>{t('recourse.intro')}</Text>
       <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
+      {view ? <RecourseMembershipSummary view={view} pending={loading} /> : null}
+      {!loading && view?.membershipState === 'unavailable' ? <Text style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
       {loading?<ActivityIndicator color={COLORS.primary}/>:null}
       {error?<Text style={styles.body}>{t('recourse.error')}</Text>:null}
       {view&&mandate?<>
         <View style={styles.card}>
-          <Text style={styles.title}>{view.membershipState!=='available'?t('recourse.membershipUnavailable'):!view.enrolled?t('recourse.inactive'):changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic payments approved')}</Text>
+          <Text style={styles.title}>{changed?t('recourse.standing.approvalNeeded','Approval needed'):t('recourse.standing.enabled','Automatic burns and contributions approved')}</Text>
           <Text style={styles.body}>{view.membershipState==='available'&&!view.enrolled&&view.unpaidAtomic!=='0'?t('recourse.rejoin.explain'):t('recourse.standing.background','The relay pays the network fee. Your monthly burn and contribution from PVT holdings do not need you to open the app, sign again or keep ETH.')}</Text>
           <Text style={styles.body}>{t('recourse.standing.limits','Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.',{
             burn:pvtAmount(mandate.burnLimit),reserve:pvtAmount(mandate.reserveLimit),percent:mandate.earningsBpsLimit/100})}</Text>
-          <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from PVT holdings applies only to a completed month with no issuance. The earnings contribution is taken automatically at settlement.')}</Text>
+          <Text style={styles.body}>{t('recourse.standing.noEarnings','The contribution from PVT holdings applies only to a completed month with no earnings. The earnings contribution is taken automatically at settlement.')}</Text>
           {view.membershipState==='available'?<Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
-            !view.enrolled?t('recourse.outstanding',{amount:pvtAmount(view.unpaidAtomic)}):t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your payment wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>:null}
-          <Text style={styles.body}>{t('recourse.graceRule')}</Text>
+            !view.enrolled?t('recourse.outstanding',{amount:pvtAmount(view.unpaidAtomic)}):t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>:null}
+          <Text style={styles.body}>{t('recourse.graceSummary')}</Text>
+          <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'resume'})}><Text style={styles.buttonText}>{t('recourse.flow.title')}</Text></TouchableOpacity>
         </View>
         {view.membershipState==='available'&&!view.enrolled?<TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'join'})}>
           <Text style={styles.buttonText}>{t('recourse.join')}</Text>
@@ -51,7 +56,7 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
             <Text style={styles.buttonText}>{t('recourse.standing.review','Review new amounts')}</Text>
           </TouchableOpacity>
         </View>:null}
-        <Text style={styles.body}>{t('recourse.standing.leave','Leaving ends future debits. Contributions already paid are nonrefundable; allocated restorations remain withdrawable.')}</Text>
+        <Text style={styles.body}>{t('recourse.standing.leave','Leaving ends future debits. Contributions already made are nonrefundable; allocated restorations remain withdrawable.')}</Text>
       </>:null}
     </ScrollView>
   </SafeAreaView>;

@@ -144,13 +144,16 @@ async function main(){
  const {createRecourseRouter}=require(path.join(root,'provian-backend/src/routes/recourse.ts'));
  const auth=(req,res,next)=>{if(req.get('authorization')!==`Bearer ${token}`)return res.status(401).json({error:'isolated_owner_required'});
    req.user={id:userId};return next();};
- let controlBusy=false,busy=false;
+ let controlBusy=false,busy=false,privateOffline=false,workersPaused=false;
  app.post('/exercise/control',auth,async(req,res)=>{
   if(controlBusy||busy)return res.status(409).json({error:'isolated_control_busy'});
   controlBusy=true;
   try{
    if(!req.body||Object.keys(req.body).join(',')!=='action'||typeof req.body.action!=='string')throw Error('isolated_control_input');
-   res.json(await controls.run(req.body.action));
+   const action=req.body.action;
+   if(action==='private-offline'||action==='private-online'){privateOffline=action==='private-offline';return res.json({privateOffline});}
+   if(action==='pause-workers'||action==='resume-workers'){workersPaused=action==='pause-workers';return res.json({workersPaused});}
+   res.json(await controls.run(action));
   }catch(error){console.error('isolated_control',error.message,error.copyDiagnostic??'');res.status(400).json({error:error.message});}
   finally{controlBusy=false;}
  });
@@ -161,7 +164,8 @@ async function main(){
    return res.status(403).json({error:'isolated_fixture_wallet_required'});
   return res.json({walletId});
  });
- app.use('/v1/recourse',createRecourseRouter(deps,auth));
+ // Exercise private transport failure while independent chain reads stay available.
+ app.use('/v1/recourse',(_req,res,next)=>privateOffline?res.status(503).json({error:'isolated_private_offline'}):next(),createRecourseRouter(deps,auth));
  // Same owner-scoped mailbox operations as the mobile relay routes; only
  // authentication and storage are the isolated public-fixture adapters.
  const mailbox=moduleAt('core/meter/pe-mailbox.ts');
@@ -194,7 +198,7 @@ async function main(){
  const workers=[()=>moduleAt('core/recourse/binding-runtime.ts').runBindingWorker(db),()=>moduleAt('core/recourse/owner-operation-runtime.ts').runOwnerOperationWorker(db),
   ()=>moduleAt('core/recourse/membership-runtime.ts').runMembershipConsentWorker(db),()=>moduleAt('core/recourse/automatic-membership.ts').runAutomaticMembershipSweep(db),
   ()=>moduleAt('core/recourse/membership-runtime.ts').runMembershipDebitWorker(db)];
- setInterval(async()=>{if(busy||controlBusy)return;busy=true;try{for(const work of workers){try{await work();}catch(error){console.error('isolated_worker',error.message,error.copyDiagnostic??'');}}save();}finally{busy=false;}},2000);
+ setInterval(async()=>{if(busy||controlBusy||workersPaused)return;busy=true;try{for(const work of workers){try{await work();}catch(error){console.error('isolated_worker',error.message,error.copyDiagnostic??'');}}save();}finally{busy=false;}},2000);
  process.on('SIGINT',()=>{save();process.exit(0);});process.on('SIGTERM',()=>{save();process.exit(0);});
 }
 main().catch(error=>{console.error(error.stack);process.exitCode=1;});

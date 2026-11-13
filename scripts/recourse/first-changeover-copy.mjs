@@ -41,7 +41,19 @@ export async function rehearseFirstChangeover(config) {
   const legacy = [deployment.wiring.pvt, ...['escrowV4', 'promiseV3', 'poolV3', 'bondPool', 'courtV2'].map(key => deployment.contracts[key].address)];
   ensure(cache.forkHash === config.forkHash && cache.to === metadata.forkedNetwork.forkBlockNumber
     && cache.digest === hash(cache.logs) && JSON.stringify(cache.addresses) === JSON.stringify(legacy), 'history_cache_changed');
-  const request = (method, params) => local.request(method, method === 'eth_getBlockByNumber' && params[0] === 'finalized' ? ['latest', false] : params);
+  const request = async (method, params) => {
+    for (let attempt = 0; ; attempt++) {
+      try { return await local.request(method, method === 'eth_getBlockByNumber' && params[0] === 'finalized' ? ['latest', false] : params); }
+      catch (error) {
+        // Historical transaction reads are rate limited too, not just eth_call.
+        // Never replay a write here: its durable execution journal owns retries.
+        const readOnly = /^(eth_get|eth_call$|eth_estimateGas$|eth_blockNumber$|eth_chainId$|eth_gasPrice$)/.test(method);
+        if (!readOnly || error.message !== 'copy_port_rate_limit' || attempt === 7) throw error;
+        save('progress.json', { phase: 'rpc-read-retry', attempt, method });
+        await new Promise(resolve => setTimeout(resolve, Math.min(30000, 2000 * 2 ** attempt)));
+      }
+    }
+  };
   const immutableReads = new Map();
   let readCount = 0;
   const immutable = async (method, params) => {

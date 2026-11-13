@@ -3,7 +3,7 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:e11c1d1aacfddca8c7f414d17693777224650932ea47f41f3476b078611ef5cd",
+  "version": "sha256:fca635482d661efa3a9c9d1cb08f2c62b251ee6db59c2cf34e9ffd99aba03099",
   "title": "Provian Terms of Service",
   "lastUpdated": "November 9, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
@@ -2060,7 +2060,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "A missed month's obligations receive one calendar month of grace. Membership remains protected during that grace month, and making up the missed obligations within it preserves continuity. After grace expires, membership ends. No later catch-up restores a lapsed period. A former member can rejoin at any time and is protected from that day forward; a loss during a lapsed period receives no theft restoration. Leaving ends membership prospectively. One membership includes every address bound to the member's identity, with earned and received PVT treated alike. Membership is optional and intended for holders with enough at stake to justify the standing participation burn. Before rejoining, pay the outstanding participation burn and pool contribution for both unpaid protected months, including the grace month, with credit for amounts already paid. Each month's contribution is 1% of that month's mints, or 100 PVT if there were no mints, under that month's signed rule. Months while lapsed remain unprotected and are never charged."
+          "text": "A missed month's obligations receive one calendar month of grace. Membership remains protected during that grace month, and making up the missed obligations within it preserves continuity. After grace expires, membership ends. No later catch-up restores a lapsed period. A former member can rejoin at any time and is protected from that day forward; a loss during a lapsed period receives no theft restoration. Leaving ends membership prospectively. One membership includes every address bound to the member's identity, with earned and received PVT treated alike. Membership is optional and intended for holders with enough at stake to justify the standing participation burn. Before rejoining, complete the outstanding participation burn and pool contribution for both protected months, including the grace month, with credit for amounts already burned or contributed. Each month's contribution is 1% of that month's earnings, or 100 PVT if there were no earnings, under that month's signed rule. Months while lapsed remain unprotected and are never charged."
         }
       ]
     },

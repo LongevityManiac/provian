@@ -1,3 +1,4 @@
+import { readRestorationAllocation, type RestorationAllocationView } from './restoration-allocation';
 import { readOwnerChainState } from './owner-chain';
 import { formatUnits } from 'ethers';
 import RelayAPIService from '../../services/RelayAPIService';
@@ -17,13 +18,20 @@ import { readBreakRecoveryContext } from './break-recovery';
 import { recoverHumanAuxiliaryBreak } from './human-break-recovery';
 import { readContinuedRestorationStatus } from './restoration-ticket';
 
+export interface RecourseMembershipDetails {
+  status: 'not_member' | 'protected' | 'grace' | 'lapsed';
+  protectionStartedAtMs: number | null; nextMonthAtMs: number | null;
+  nextBurnAtomic: string | null; noEarningsContributionAtomic: string | null; earningsBps: number | null;
+}
 export interface RecourseView {
+  currentAddress?: string;
+  membershipDetails?: RecourseMembershipDetails;
   primaryIdentity: string | null;
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
   addresses: { identity: string; address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
-  requests: { identity: string; requestId: string; status: string; transactionHash: string }[];
+  requests: { identity: string; requestId: string; status: string; transactionHash: string; allocation?: RestorationAllocationView | null }[];
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('recourse_reply_invalid');
@@ -34,7 +42,7 @@ function text(value: unknown, pattern: RegExp): string {
   return value;
 }
 const atomic = /^(0|[1-9][0-9]*)$/, address = /^0x[0-9a-f]{40}$/, hash = /^0x[0-9a-f]{64}$/;
-export function pvtAmount(value: string): string { return formatUnits(value, 18); }
+export function pvtAmount(value: string): string { return formatUnits(value, 18).replace(/\.0$/, ''); }
 
 /** Retry an interrupted primary registration using the current wallet's own signature. */
 export async function bindHumanPrimaryAddress(): Promise<void> {
@@ -111,7 +119,25 @@ export async function submitHumanRestorationRequest(transactionHash: string, blo
   });
 }
 
-export async function readRecourseView(): Promise<RecourseView> {
+function membershipDetails(value: unknown): RecourseMembershipDetails | undefined {
+  if (value === undefined) return undefined;
+  const row = object(value);
+  if (!['not_member', 'protected', 'grace', 'lapsed'].includes(String(row.status))) throw Error('recourse_reply_invalid');
+  const date = (v: unknown): number | null => {
+    if (v === null) return null;
+    if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0 || !Number.isFinite(new Date(v).getTime())) throw Error('recourse_reply_invalid');
+    return v;
+  };
+  if (row.earningsBps !== null && (typeof row.earningsBps !== 'number' || !Number.isSafeInteger(row.earningsBps)
+    || row.earningsBps < 0 || row.earningsBps > 10000)) throw Error('recourse_reply_invalid');
+  return { status: row.status as RecourseMembershipDetails['status'], protectionStartedAtMs: date(row.protectionStartedAtMs),
+    nextMonthAtMs: date(row.nextMonthAtMs), nextBurnAtomic: row.nextBurnAtomic === null ? null : text(row.nextBurnAtomic, atomic),
+    noEarningsContributionAtomic: row.noEarningsContributionAtomic === null ? null : text(row.noEarningsContributionAtomic, atomic),
+    earningsBps: row.earningsBps as number | null };
+}
+
+/** Deliver the chain view before waiting for private membership data. */
+export async function readRecourseView(onChain?: (view: RecourseView) => void, chainOnly = false): Promise<RecourseView> {
   const userId = await RelayAPIService.getUserId();
   if (!userId) throw new Error('recourse_identity_unavailable');
   const account = useWalletStore.getState().address;
@@ -123,25 +149,40 @@ export async function readRecourseView(): Promise<RecourseView> {
     if (!(error instanceof Error) || error.message !== 'recourse_binding_required') throw error;
     // Public reserves and request-ID exits require no primary registration.
     identity = `0x${'00'.repeat(32)}`;
+
+  }
+  let pool = await readRecoursePoolChain(identity, ownerChainNetwork());
+  let details: RecourseMembershipDetails | undefined;
+  const chainView: RecourseView = { identity, primaryIdentity, currentAddress: account.toLowerCase(), historyState: 'pending',
+    membershipState: 'unavailable', enrolled: false, grace: false, earningsBps: pool.earningsBps, month: pool.month,
+    endMonthExclusive: '0', participationBurnAtomic: pool.participationBurnAtomic,
+    noEarningsContributionAtomic: pool.noEarningsContributionAtomic, unpaidAtomic: '0', reserveAtomic: pool.reserveAtomic, addresses: [], requests: [] };
+  onChain?.(chainView);
+  if (chainOnly) return chainView;
+  if (primaryIdentity === null) {
     try {
       const owner = object(await RelayAPIService.recourseRequest('ownership'));
       if (owner.identity !== null || !Array.isArray(owner.addresses)) throw Error('recourse_reply_invalid');
       const bindings = owner.addresses.map(object).filter(row => row.chainBindingStatus === 'confirmed')
         .map(row => text(row.identity, hash)).sort();
-      if (bindings.length) identity = bindings[0];
-    } catch { /* A public reserve view still works during a private-history outage. */ }
+      if (bindings.length) {
+        identity = bindings[0];
+        pool = await readRecoursePoolChain(identity, ownerChainNetwork());
+        chainView.identity = identity;
+      }
+    } catch { /* Public chain information was already delivered. */ }
   }
-  const pool = await readRecoursePoolChain(identity, ownerChainNetwork());
   let membership: { enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string; unpaidAtomic: string } | null = null;
   try {
     const reply = object(await RelayAPIService.recourseRequest('pool'));
     if (reply.identity !== identity || reply.pool !== pool.pool || reply.kernel !== pool.kernel) throw Error('recourse_reply_invalid');
     const privateView = object(reply.membership);
+    details = membershipDetails(privateView.details);
     if (typeof privateView.enrolled !== 'boolean' || typeof privateView.grace !== 'boolean') throw Error('recourse_reply_invalid');
     membership = { enrolled: privateView.enrolled, grace: privateView.grace, month: text(privateView.month, atomic),
       endMonthExclusive: text(privateView.endMonthExclusive, atomic), unpaidAtomic: text(privateView.unpaidAtomic, atomic) };
   } catch { /* The public reserve and direct allocated exit remain usable. */ }
-  return { identity, primaryIdentity, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
+  return { ...chainView, membershipDetails: details, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
     enrolled: membership?.enrolled ?? false, grace: membership?.grace ?? false, earningsBps: pool.earningsBps,
     month: membership?.month ?? pool.month, endMonthExclusive: membership?.endMonthExclusive ?? '0',
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,
@@ -157,13 +198,18 @@ export async function readRecourseHistory(view: RecourseView): Promise<RecourseV
     if (!Array.isArray(owner.addresses) || !Array.isArray(requests)
       || (owner.identity !== view.identity && (owner.identity !== null
         || (!/^0x0+$/.test(view.identity) && !owner.addresses.some(value => object(value).identity === view.identity))))) throw new Error('recourse_reply_invalid');
-    return { ...view, historyState: 'available', addresses: owner.addresses.map(value => {
+    const result: RecourseView = { ...view, historyState: 'available', addresses: owner.addresses.map(value => {
       const row = object(value);
       if (typeof row.boundAtMs !== 'number' || !Number.isSafeInteger(row.boundAtMs)) throw new Error('recourse_reply_invalid');
       return { identity: text(row.identity, hash), address: text(row.address, address), openingBalanceAtomic: text(row.openingBalanceAtomic, atomic), boundAtMs: row.boundAtMs,
         confirmed: row.chainBindingStatus === 'confirmed' };
     }), requests: requests.map(value => { const row = object(value); return { identity: text(row.identity, hash), requestId: text(row.requestId, hash),
       transactionHash: text(row.transactionHash, hash), status: text(row.status, /^[a-z_]+$/) }; }) };
+    result.requests = await Promise.all(result.requests.map(async row => {
+      try { return { ...row, allocation: await readRestorationAllocation(row.identity, row.requestId, ownerChainNetwork()) }; }
+      catch { return row; }
+    }));
+    return result;
   } catch { return { ...view, historyState: 'unavailable' }; }
 }
 export { withdrawHumanRestoration } from './human-restoration-exit';

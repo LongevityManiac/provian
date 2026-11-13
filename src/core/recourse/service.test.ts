@@ -7,8 +7,8 @@ const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], re
   register:vi.fn(), bind:vi.fn(), biometricDenied:false, ticket:vi.fn(),wrongReply:false, ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn() }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { readRecourseOwnership: async () => f.history, registerHumanWallet: (...args: unknown[]) => f.register(...args), bindRecourseOwnership: (...args: unknown[]) => f.bind(...args), getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
-  if (f.relayDown) throw Error('unavailable');
-  f.calls.push({ path, body }); if (path === 'ownership') return f.history;
+  f.calls.push({ path, body });
+  if (f.relayDown) throw Error('unavailable'); if (path === 'ownership') return f.history;
   if (path === 'restoration-requests' && body === undefined) return f.requests;
   if (path === 'pool') return { identity: h('55'), pool: a('66'), kernel: a('77'), membership: {
     enrolled: true, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } };
@@ -128,4 +128,19 @@ it('retries primary registration only with approval and verifies both chain and 
   f.primaryMissing=false; f.history={identity:null};
   await expect(bindHumanPrimaryAddress()).rejects.toThrow('primary_binding_required');
   expect(f.bind).not.toHaveBeenCalled();
+});
+
+it('shows verified public chain data before private lookup even when no wallet is bound and the relay is down', async () => {
+  f.primaryMissing = true;
+  f.relayDown = true;
+  const observed: RecourseView[] = [];
+  const view = await readRecourseView(value => {
+    expect(f.calls).toHaveLength(0);
+    expect(value.reserveAtomic).toBe('100');
+    expect(value.membershipState).toBe('unavailable');
+    observed.push(value);
+  });
+  expect(observed).toHaveLength(1);
+  expect(view.enrolled).toBe(false);
+  expect(view.membershipState).toBe('unavailable');
 });
