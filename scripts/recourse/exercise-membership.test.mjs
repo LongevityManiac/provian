@@ -23,7 +23,9 @@ test('live-chain, changed amount, arbitrary method and wrong-wallet signatures r
   expect(() => exerciseMembershipChallenge({ ...domain, chainId: '8453' }, 'setStandingConsent', mandate)).toThrow('wrong_chain');
   for(const method of ['approve','setAddressConsent','executeMembershipDebit'])
     expect(() => exerciseMembershipChallenge(domain, method, consent)).toThrow('method_invalid');
-  expect(() => exerciseMembershipChallenge(domain, 'setStandingConsent', { ...mandate, burnLimit: '1' })).toThrow('fixture_amount_changed');
+  for(const changed of [{burnLimit:'1'},{reserveLimit:'1'},{earningsBpsLimit:101},{fixedChargePayer:false},
+    {rejoinPayments:[{month:'19',burn:mandate.burnLimit,reserve:'0',ruleHash:hash(2)}]}])
+    expect(() => exerciseMembershipChallenge(domain, 'setStandingConsent', { ...mandate, ...changed })).toThrow('fixture_amount_changed');
   const challenge = exerciseMembershipChallenge(domain, 'setStandingConsent', mandate);
   const wrong = await new Wallet('0x' + '22'.repeat(32)).signMessage(getBytes(challenge.messageHex));
   expect(() => verifyExerciseMembershipSignature(challenge, wrong)).toThrow('wrong_wallet');

@@ -119,7 +119,9 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet, sig
     verifyExerciseMembershipSignature(prepared.challenge, signature);
     return send(m.deployer, standing, prepared.challenge.method, [prepared.challenge.authorization, signature, prepared.attestorSignature]);
   }
+  requireEqual(await kernel.allowance(owner.address, a.ProvianMemberRecoursePool), 0n, 'noTokenAllowanceRequired');
   if (!alreadyJoined) await membership('join');
+  requireEqual((await standing.standingMandate(identity)).active, true, 'standingApprovalActive');
   if (!initialBurnPaid) await membership('burn');
   requireEqual(await kernel.totalSupply(), initialSupply - (initialBurnPaid ? 0n : 100n * unit), 'participationIsTrueBurn');
   const now = Number(BigInt((await provider.send('eth_getBlockByNumber', ['latest', false])).timestamp));
@@ -131,6 +133,10 @@ export async function exerciseSequence(directory, copiedFunder, boundWallet, sig
   const poolOpening = await pool.accountedBacking();
   requireEqual(poolOpening - reserveOpening, 100n * unit, 'noEarningsContribution');
   requireEqual(await kernel.totalSupply(), initialSupply - (initialBurnPaid ? 100n : 200n) * unit, 'secondMonthlyBurn');
+  const collected = await standing.monthlyCollection(identity, startMonth);
+  requireEqual(collected.burn, 100n * unit, 'firstMonthBurnRecorded');
+  requireEqual(collected.reserve, 100n * unit, 'firstMonthContributionRecorded');
+  requireEqual(await kernel.allowance(owner.address, a.ProvianMemberRecoursePool), 0n, 'monthlyCollectionWithoutAllowance');
   const exchangeOpening = await kernel.balanceOf(exchange.address);
   const loss = await send(owner.address, kernel, 'transfer', [thief.address, 100n * unit]);
   await send(thief.address, kernel, 'transfer', [exchange.address, 40n * unit]);
