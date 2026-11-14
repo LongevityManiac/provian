@@ -1,3 +1,4 @@
+jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { recoursePool: `0x${'6'.padStart(40, '0')}` } }) }));
 import { advanceMembershipDeparture } from './membership-departure';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -75,4 +76,21 @@ test('a never-admitted first join still reconciles departure after the app close
  s.fake.store.set(`${T}/${h(88)}`,{id:h(88),ownerIdentity:s.owner,departureRequested:true,status:'preparing'});
  await runAutomaticMembershipSweep(s.db);
  expect(advanceMembershipDeparture).toHaveBeenCalledWith(s.db,s.owner,h(88));
+});
+
+test('a fully assessed settled member makes no chain reads until something is due or pending', async () => {
+ const s=setup();
+ const { utcCalendarMonth }=await import('./calendar-month');
+ const month=utcCalendarMonth(Math.floor(Date.now()/1000));
+ const account={ownerIdentity:s.owner,checkpoint:{pool:a(6)},needsScan:false,pendingReservation:null,
+  episode:{joined:true,observedMonth:month,lastAssessedMonth:month,invoices:{[month]:{month,burnDueAtomic:'100',burnPaidAtomic:'100',
+    reserveDueAtomic:'1',reservePaidAtomic:'1',noEarningsContributionAtomic:'100',earnings:{grossAtomic:'100'}}}}};
+ s.fake.store.set(`${C.owners}/${s.owner}`,account);
+ expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('settled');
+ expect(reconcileCurrentPrivateMembership).not.toHaveBeenCalled();
+ expect(breakDeploymentChain).not.toHaveBeenCalled();
+ expect(readRecoursePoolState).not.toHaveBeenCalled();
+ account.episode.invoices[month].reservePaidAtomic='0';
+ expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
+ expect(reconcileCurrentPrivateMembership).toHaveBeenCalledTimes(1);
 });

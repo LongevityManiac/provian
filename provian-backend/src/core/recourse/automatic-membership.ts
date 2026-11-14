@@ -1,3 +1,6 @@
+import { currentProtocolDeployment } from '../protocol/runtime';
+import { utcCalendarMonth } from './calendar-month';
+import type { PrivateMembershipAccount } from './private-membership-reservation';
 import { advanceMembershipDeparture } from './membership-departure';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T } from './private-membership-transition';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -15,9 +18,22 @@ export type AutomaticMembershipResult='queued'|'settled'|'pending'|'approval_req
  * The standing mandate independently bounds the selected payer on chain. No
  * member presence, fresh owner signature, allowance transaction or ETH is used. */
 export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity:string):Promise<AutomaticMembershipResult>{
-  await reconcileCurrentPrivateMembership(db,ownerIdentity);
-  const owner=await db.collection(R.owners).doc(ownerIdentity).get();
+  let owner=await db.collection(R.owners).doc(ownerIdentity).get();
   if(!owner.exists||owner.get('ownerIdentity')!==ownerIdentity)throw Error('recourse_automatic_owner');
+  const saved = await db.collection(C.owners).doc(ownerIdentity).get();
+  const account = saved.exists ? saved.data() as PrivateMembershipAccount : undefined;
+  const pool = (await currentProtocolDeployment()).addresses.recoursePool.toLowerCase();
+  const month = utcCalendarMonth(Math.floor(Date.now() / 1000));
+  if (account && account.checkpoint?.pool === pool && account.needsScan === false && account.pendingReservation === null
+    && owner.get('membershipTransition') == null && owner.get('membershipScanRequired') !== true
+    && account.episode && (!account.episode.joined || account.episode.invoices[String(month)]) && account.episode.observedMonth === month && account.episode.lastAssessedMonth === month
+    && Object.values(account.episode.invoices).every(invoice =>
+      BigInt(invoice.burnPaidAtomic) >= BigInt(invoice.burnDueAtomic)
+      && BigInt(invoice.reservePaidAtomic) >= BigInt(invoice.month < month && BigInt(invoice.earnings.grossAtomic) === 0n
+        ? invoice.noEarningsContributionAtomic : invoice.reserveDueAtomic))) return 'settled';
+  await reconcileCurrentPrivateMembership(db,ownerIdentity);
+  owner = await db.collection(R.owners).doc(ownerIdentity).get();
+  if (!owner.exists || owner.get('ownerIdentity') !== ownerIdentity) throw Error('recourse_automatic_owner');
   const transition:unknown=owner.get('membershipTransition');
   if(typeof transition==='string'){
     const view=await prepareMembershipTransition(db,ownerIdentity,{id:transition});

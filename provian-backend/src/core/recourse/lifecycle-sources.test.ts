@@ -1,3 +1,5 @@
+import type { Firestore } from 'firebase-admin/firestore';
+import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { Interface, keccak256 } from 'ethers';
 import { recourseLifecycleSources, type LifecycleSourcePort } from './lifecycle-sources';
 import { protocolDeploymentFixture } from '../../__test-helpers__/protocol-fixture';
@@ -31,7 +33,7 @@ function fixture() {
   return { port, cycle: () => { cycle = true; }, mismatch: () => { wrongKernel = true; }, invalidCutoff: () => { cutoff = 101; } };
 }
 test('a break preserves old source events only through its immutable custody cutoff', async () => {
-  const f = fixture(), sources = await recourseLifecycleSources(f.port);
+  const f = fixture(), sources = await recourseLifecycleSources(f.port, createFakeFirestore() as unknown as Firestore);
   expect(sources).toHaveLength(6);
   expect(sources.filter(s => s.address === a(11))).toEqual([{ address: a(11), kind: 'pool', from: 10, through: 80 }]);
   expect(sources.find(s => s.address === a(23))).toEqual({ address: a(23), kind: 'restoration', from: 85, through: 100 });
@@ -39,6 +41,6 @@ test('a break preserves old source events only through its immutable custody cut
 test('wrong executor wiring, cycles and a future cutoff cannot nominate witness contracts', async () => {
   for (const mutate of ['cycle', 'mismatch', 'invalidCutoff'] as const) {
     const f = fixture(); f[mutate]();
-    await expect(recourseLifecycleSources(f.port)).rejects.toThrow(/recourse_lifecycle_/);
+    await expect(recourseLifecycleSources(f.port, createFakeFirestore() as unknown as Firestore)).rejects.toThrow(/recourse_lifecycle_/);
   }
 });

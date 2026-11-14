@@ -69,7 +69,7 @@ export async function prepareDepartureCredentials(db:Firestore,ownerIdentity:str
     if(JSON.stringify(pending.domain)!==JSON.stringify(domain)||!operation.bindings.some(b=>b.binding===c.binding))return fail();
     result.push({domain,consent:{...c,nonce:String(BigInt(c.nonce)+1n),joined:false},exitSalt:pending.standing.exitSalt,exitCommitment:pending.standing.exitCommitment});
   }
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)return fail();
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)return fail();
   return [...new Map(result.map(c=>[key(c),c])).values()];
 }
 

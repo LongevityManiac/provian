@@ -13,6 +13,6 @@ export async function observationBaseAssets(block?: number): Promise<Readonly<Re
   for(const previous of await predecessorBurnAcceptances(kernel)){
     if(block===undefined||block<=previous.maxBlock)assets[previous.address]='PVT';
   }
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)throw Error('protocol_pointer_changed');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)throw Error('protocol_pointer_changed');
   return Object.freeze(assets);
 }

@@ -146,6 +146,6 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
         reserveLimit:consent.joined && consent.binding===payer?state.noEarningsContributionAtomic:'0', earningsBpsLimit:state.earningsBps, messageHex: addressMembershipSigningHash(domain, consent) });
     }
   }
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) throw Error('recourse_membership_retired');
   return { id: operation.id, kind: operation.kind, status: operation.status, challenges, pending };
 }

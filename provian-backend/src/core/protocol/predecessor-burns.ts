@@ -33,6 +33,6 @@ export async function predecessorBurnAcceptances(expectedKernel: string): Promis
     maximumCutoff = cutoff; currentKernel = previous;
     executor = String(await call(executor, executorAbi, 'previousAuthorization')).toLowerCase();
   }
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw new Error('protocol_pointer_changed');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) throw new Error('protocol_pointer_changed');
   return result;
 }

@@ -28,7 +28,7 @@ export function createRecourseGasSigner<T extends GasPlan>(wallet: Pick<Wallet,'
   };
   return { address: wallet.address.toLowerCase(), async sign(plan) {
     assertPlan(plan);
-    if ((await currentProtocolDeployment()).manifestHash !== plan.manifestHash) throw new Error('recourse_binding_operation_retired');
+    if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== plan.manifestHash) throw new Error('recourse_binding_operation_retired');
     const transactionNonce = await nonce();
     const height = await readAgreedBaseHead(), hash = await readAgreedBaseBlockHash(height);
     if (!hash) throw new Error('recourse_binding_block_unavailable');
@@ -50,6 +50,7 @@ export function createRecourseGasSigner<T extends GasPlan>(wallet: Pick<Wallet,'
       throw new Error('recourse_binding_gas_unavailable');
     }
     if (await nonce() !== transactionNonce || await readAgreedBaseBlockHash(height) !== hash) throw new Error('recourse_binding_state_changed');
+    if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== plan.manifestHash) throw Error('recourse_binding_operation_retired');
     return wallet.signTransaction(prepared);
   }, async broadcast(raw) {
     const tx = Transaction.from(raw), hash = keccak256(raw);

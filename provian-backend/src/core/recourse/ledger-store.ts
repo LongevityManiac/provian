@@ -1,3 +1,4 @@
+import { indexedLedgerChain } from './shared-ledger';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createHash } from 'crypto';
 import { snapshotRegisteredBalance, createRecourseChainPort, type RecourseChainPort } from './chain-ledger';
@@ -23,7 +24,8 @@ export async function advanceOwnershipLedger(db: Firestore, address: string, thr
   if (previous && through < previous.block) throw new Error('recourse_cursor_rewind');
   const baseline: RegisteredAddress = previous ? { ...binding, boundBlock: previous.block,
     boundBlockHash: previous.blockHash, openingBalanceAtomic: previous.balanceAtomic } : binding;
-  const snapshot = await snapshotRegisteredBalance(baseline, through, chain);
+  const snapshot = await snapshotRegisteredBalance(baseline, through, through === baseline.boundBlock ? chain
+    : await indexedLedgerChain(db, binding.kernel, baseline.boundBlock + 1, through, chain));
   for (const event of snapshot.events) {
     const key = createHash('sha256').update(JSON.stringify([binding.kernel, address, event.transactionHash, event.logIndex])).digest('hex');
     const eventRef = db.collection(RECOURSE_COLLECTIONS.events).doc(key);

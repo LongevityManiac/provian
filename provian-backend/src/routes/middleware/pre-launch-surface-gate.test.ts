@@ -370,6 +370,10 @@ describe('pre-launch surface gate', () => {
         // Operation status exposes only its hash-addressed public execution
         // state. Resource ratios are public chain-derived information.
         '/v1/recourse/recover-human', '/v1/recourse/recover-agent',
+        // Owner-signed recovery reads and authenticated auxiliary-address recovery
+        // retain their route-level authentication.
+        '/v1/recourse/recover-address', '/v1/recourse/owner-recovery-state/:identity/:nonce',
+        '/v1/recourse/restoration-history/:identity',
         '/v1/recourse/owner-operations/recovery', '/v1/recourse/owner-operations/:id',
         '/v1/recourse/resources',
         '/v1/recourse/membership-rules/:hash', // Signed public amounts, bound to the permanent pointer.

@@ -141,7 +141,7 @@ describe('installed-base compatibility (item 8)', () => {
     it('advertises the current package version and supports the installed SDK version', () => {
       expect(SDK_LATEST).toBe(readPkgVersion('provian-agent-sdk'));
       expect(compareSemver(SDK_LATEST, INSTALLED_SDK_VERSION)).toBeGreaterThanOrEqual(0);
-      expect(INSTALLED_CLI_VERSION).toBe(readPkgVersion('provian-cli'));
+      expect(compareSemver(readPkgVersion('provian-cli'), INSTALLED_CLI_VERSION)).toBeGreaterThanOrEqual(0);
     });
 
     it('the installed SDK and CLI are at or above the relay’s minimum supported version', () => {

@@ -10,16 +10,17 @@ jest.mock('../onchain/rpc-provider', () => ({ getOperatorBoundRpcLegs: jest.fn()
 jest.mock('../onchain/economic-discovery', () => ({ getAgreedBaseLogs: jest.fn(), readAgreedBaseBlockHash: jest.fn(), readAgreedBaseHead: jest.fn() }));
 const pool = `0x${'12'.repeat(20)}`, blockHash = `0x${'15'.repeat(32)}`, kernel = `0x${'11'.repeat(20)}`, txHash = `0x${'16'.repeat(32)}`;
 const abi = new Interface(['event RestorationRatio(uint256 availableReserve,uint256 acceptedShortfall,uint256 distributable)']);
-let wrongBirth = false, disagree = false;
+let wrongBirth = false, disagree = false, finalized = 100;
 const log = (available = 10, accepted = 100, distributable = 10) => ({ address: pool, removed: false, blockNumber: 11, blockHash, logIndex: 5, transactionHash: txHash,
   ...abi.encodeEventLog(abi.getEvent('RestorationRatio')!, [available, accepted, distributable]) });
 beforeEach(() => {
-  jest.resetAllMocks(); wrongBirth = false; disagree = false;
+  jest.resetAllMocks(); wrongBirth = false; disagree = false; finalized = 100;
   (readAgreedBaseHead as jest.Mock).mockResolvedValue(100);
   (readAgreedBaseBlockHash as jest.Mock).mockResolvedValue(blockHash);
   (getAgreedBaseLogs as jest.Mock).mockResolvedValue([log()]);
   (getOperatorBoundRpcLegs as jest.Mock).mockReturnValue([0, 1].map(index => ({ operatorId: `rpc-${index}`,
     provider: { send: jest.fn(async (method: string, params: readonly unknown[]) => {
+      if (method === 'eth_getBlockByNumber') return { number: `0x${finalized.toString(16)}`, hash: blockHash };
       if (method === 'eth_getCode') return typeof params[1] === 'string' && BigInt(params[1]) < 10n && !wrongBirth ? '0x' : '0x6000';
       expect(params[1]).toEqual({ blockHash, requireCanonical: true });
       const call = params[0] as { to: string; data: string }; expect(call.to).toBe(pool);
@@ -57,4 +58,26 @@ test('zero denominator, altered ratio, wrong emitter, omitted position, removed 
     const fake = createFakeFirestore(); (getAgreedBaseLogs as jest.Mock).mockResolvedValue(events);
     await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow(); expect(fake.store.size).toBe(0);
   }
+});
+
+test('durable cursor reads only unseen blocks and preserves the last allocation ratio', async () => {
+  const fake = createFakeFirestore();
+  await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  const original = fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)!;
+  (getAgreedBaseLogs as jest.Mock).mockClear().mockResolvedValue([]);
+  await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  expect(getAgreedBaseLogs).not.toHaveBeenCalled();
+  finalized = 1600;
+  await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  expect(getAgreedBaseLogs).toHaveBeenCalledTimes(1);
+  expect(getAgreedBaseLogs).toHaveBeenCalledWith(expect.objectContaining({ fromBlock: 101, toBlock: 1600 }));
+  expect(fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)).toMatchObject({ block: 1600, ratio: original.ratio });
+});
+test('a changed saved canonical checkpoint refuses to move the cursor', async () => {
+  const fake = createFakeFirestore();
+  await refreshRecoursePoolRatio(fake as unknown as Firestore);
+  finalized = 1600;
+  (readAgreedBaseBlockHash as jest.Mock).mockImplementation(async (n: number) => n === 100 ? `0x${'00'.repeat(32)}` : blockHash);
+  await expect(refreshRecoursePoolRatio(fake as unknown as Firestore)).rejects.toThrow('recourse_pool_reorg');
+  expect(fake.store.get(`${RECOURSE_RATIO_COLLECTION}/${pool}`)?.block).toBe(100);
 });

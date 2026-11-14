@@ -125,6 +125,6 @@ export async function prepareSettlementIssuanceCancellation(db:Firestore,parent:
     ||batch.domain.pool!==deployment.addresses.recoursePool.toLowerCase()||batch.target!==deployment.addresses.settlement.toLowerCase())return fail('domain');
   if((await readMembershipWiring(breakDeploymentChain(),deployment)).gasPayer!==gasPayer.toLowerCase())return fail('gas_payer');
   const data=MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[parent.batch_id,deployment.revision]);
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)return fail('domain');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)return fail('domain');
   return {kind:'transaction',target:batch.target,data,manifestHash:deployment.manifestHash};
 }

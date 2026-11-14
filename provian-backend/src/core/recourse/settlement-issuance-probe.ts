@@ -67,6 +67,6 @@ export async function simulatePrivateIssuanceProbe(input: {
   if (first !== second) return fail('disagreement');
   const canonical = await Promise.all(legs.map(leg => leg.provider.send('eth_getBlockByNumber', [height, false])));
   if (canonical.some(header => object(header)?.hash !== input.blockHash || object(header)?.number !== height)) return fail('reorg');
-  if ((await currentProtocolDeployment()).manifestHash !== input.manifestHash) return fail('domain');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== input.manifestHash) return fail('domain');
   return decodeIssuanceProbe(first);
 }

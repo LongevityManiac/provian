@@ -43,7 +43,7 @@ export async function readCurrentRestorationTicket(request: string): Promise<Res
   if (scope.request !== request || /^0x0+$/.test(identity) || /^0x0+$/.test(destination)
     || /^0x0+$/.test(currentDestination) || await call(executor, 'reversalExecuted', [request])
     || await call(deployment.addresses.recoursePool.toLowerCase(), 'determined', [request])) throw Error('recourse_determination_ticket_unavailable');
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_determination_checkpoint_changed');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) throw Error('recourse_determination_checkpoint_changed');
   const canonical = await Promise.all(legs.map(leg => leg.provider.send('eth_getBlockByNumber', [height, false])));
   if (canonical.some(header => headerNumber(header) !== height)) throw Error('recourse_determination_checkpoint_changed');
   return { ...scope, identity, destination, currentDestination };

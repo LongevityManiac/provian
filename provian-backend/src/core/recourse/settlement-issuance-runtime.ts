@@ -36,7 +36,7 @@ export async function finalizedIssuanceDeployment(): Promise<{ deployment:Protoc
   const rpcs:readonly [PointerRpc,PointerRpc]=[{request:(m,p)=>legs[0].provider.send(m,[...p])},{request:(m,p)=>legs[1].provider.send(m,[...p])}];
   const deployment=await resolveHistoricalProtocolDeployment(rpcs,address,runtimeHash,block,blockHash);
   const timestamp=await blockTimestamp(deployment,block);
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)return fail('publication_pending');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)return fail('publication_pending');
   return {deployment,block,timestamp};
 }
 async function blockTimestamp(deployment:ProtocolDeployment,expectedBlock?:number):Promise<number>{
@@ -112,7 +112,7 @@ export async function assertCurrentPrivateIssuance(db:Firestore,record:PrivateIs
     if(state.currentAddress!==ticket.account||state.consentNonce!==ticket.consentNonce||(ticket.protectedMember&&!state.addressConsent)
       ||state.signedRuleHash!==batch.context.membershipRuleHash)return fail('consent');
   }
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)return fail('stale');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)return fail('stale');
   return {deployment,identityAttestor:wiring.identityAttestor};
 }
 

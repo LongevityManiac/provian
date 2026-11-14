@@ -318,7 +318,7 @@ export async function currentChainRecordProfileFor(chainId: number, block?:numbe
   const addresses = Object.values(deployment.addresses).filter((value): value is string => typeof value === 'string').map(value => value.toLowerCase());
   const assets=block===undefined?baseAssetsForKernel(deployment.addresses.kernel.toLowerCase()):await observationBaseAssets(block);
   const kernels=Object.entries(assets).filter(([,symbol])=>symbol==='PVT').map(([address])=>address);
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)throw Error('protocol_pointer_changed');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)throw Error('protocol_pointer_changed');
   return baseChainRecordProfile(new Set([...CHAIN_RECORD_EXCLUDED_COUNTERPARTIES, ...addresses,...kernels]),
     new Set([...CHAIN_RECORD_INSTITUTION_TARGETS, ...[deployment.addresses.escrow, deployment.addresses.promises,
       deployment.addresses.projectPool, deployment.addresses.bonds, deployment.addresses.court,

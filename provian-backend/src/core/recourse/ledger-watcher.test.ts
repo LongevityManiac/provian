@@ -13,7 +13,7 @@ const hash = `0x${'ab'.repeat(32)}`;
 const topic = (a: string) => `0x${'0'.repeat(24)}${a.slice(2)}`;
 function fixture(failCursor = false) {
   const fake = createFakeFirestore({ strictTransactionOrder: true,
-    ...(failCursor ? { failTxnWriteOccurrence: { collection: 'recourse_ledger_cursors', occurrence: 1 } } : {}) });
+    ...(failCursor ? { failTxnWriteOccurrence: { collection: 'recourse_shared_ledger_cursors_v1', occurrence: 1 } } : {}) });
   fake.store.set(`${RECOURSE_COLLECTIONS.addresses}/${address}`, { kernel, address, identity: hash,
     boundBlock: 100, boundBlockHash: hash, bindingDigest: hash, openingBalanceAtomic: '100', recoveryGeneration: 0, chainBindingStatus: 'confirmed' });
   const log: CanonicalEconomicLog = { address: kernel, topics: [ERC20_TRANSFER_TOPIC, topic(zero), topic(address)],
@@ -21,7 +21,7 @@ function fixture(failCursor = false) {
     transactionHash: hash, transactionIndex: 0, logIndex: 0, removed: false };
   const logs = jest.fn(async () => [log]);
   const balance = jest.fn(async () => 120n);
-  const port: LedgerWatcherPort = { logs, chain: { finalizedBlock: async () => 102, blockHash: async () => hash,
+  const port: LedgerWatcherPort = { birth: async () => 100, logs, chain: { finalizedBlock: async () => 102, blockHash: async () => hash,
     balance, transfers: async () => [{ block: 101, blockHash: hash, transactionHash: hash,
       logIndex: 0, from: zero, to: address, amountAtomic: '20' }] } };
   return { fake, db: fake as unknown as Firestore, port, logs, balance, log };
@@ -29,8 +29,8 @@ function fixture(failCursor = false) {
 test('a global cursor retry does not count an already committed inbound twice', async () => {
   const { fake, db, port, logs, balance } = fixture(true);
   await expect(runOwnershipLedgerWatcher(db, port)).rejects.toThrow('Injected transaction');
-  expect(fake.store.has(`recourse_ledger_cursors/${kernel}`)).toBe(false);
-  expect(await runOwnershipLedgerWatcher(db, port)).toEqual({ through: 102, updated: 0 });
+  expect(fake.store.has(`recourse_shared_ledger_cursors_v1/${kernel}`)).toBe(false);
+  expect(await runOwnershipLedgerWatcher(db, port)).toEqual({ through: 102, updated: 1 });
   expect(balance).toHaveBeenCalledTimes(1);
   expect(logs).toHaveBeenCalledTimes(2);
   expect(fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${address}`)?.checkpoint)
@@ -45,12 +45,15 @@ test('quiet holders cause no balance polling', async () => {
 test('provisional off-chain admission does not establish an ownership ledger', async () => {
   const { fake, db, port, balance, logs } = fixture();
   fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${address}`)!.chainBindingStatus = 'pending';
-  expect(await runOwnershipLedgerWatcher(db, port)).toEqual({ updated: 0, idle: true });
-  expect(balance).not.toHaveBeenCalled(); expect(logs).not.toHaveBeenCalled();
+  expect(await runOwnershipLedgerWatcher(db, port)).toEqual({ through: 102, updated: 0 });
+  expect(balance).not.toHaveBeenCalled(); expect(logs).toHaveBeenCalledTimes(1);
 });
 test('late binding confirmation catches up even when the shared cursor already passed its transfers', async () => {
   const { fake, db, port, balance, logs } = fixture();
-  fake.store.set(`recourse_ledger_cursors/${kernel}`, { block: 102, blockHash: hash });
+  await runOwnershipLedgerWatcher(db, port);
+  balance.mockClear(); logs.mockClear();
+  const binding = fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${address}`)!;
+  delete binding.checkpoint;
   fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${address}`)!.ledgerNeedsCatchup = true;
   expect(await runOwnershipLedgerWatcher(db, port)).toEqual({ through: 102, updated: 1, idle: false });
   expect(balance).toHaveBeenCalledTimes(1); expect(logs).not.toHaveBeenCalled();
@@ -62,11 +65,12 @@ test('a malformed transfer cannot advance the global cursor', async () => {
   const { fake, db, port, logs, log } = fixture();
   logs.mockResolvedValue([{ ...log, topics: [ERC20_TRANSFER_TOPIC, topic(zero), hash] }]);
   await expect(runOwnershipLedgerWatcher(db, port)).rejects.toThrow('recourse_watcher_log_invalid');
-  expect(fake.store.has(`recourse_ledger_cursors/${kernel}`)).toBe(false);
+  expect(fake.store.has(`recourse_shared_ledger_cursors_v1/${kernel}`)).toBe(false);
 });
-test('failure to persist address evidence leaves the shared interval retryable', async () => {
+test('failed projection retains shared coverage and retries without another log scan', async () => {
   const { fake, db, port } = fixture();
   port.chain.balance = async () => { throw new Error('provider unavailable'); };
   await expect(runOwnershipLedgerWatcher(db, port)).rejects.toThrow('provider unavailable');
-  expect(fake.store.has(`recourse_ledger_cursors/${kernel}`)).toBe(false);
+  expect(fake.store.get(`recourse_shared_ledger_cursors_v1/${kernel}`)?.block).toBe(102);
+  expect(fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${address}`)?.ledgerNeedsCatchup).toBe(true);
 });

@@ -1,3 +1,4 @@
+import { SHARED_LEDGER_CURSORS, storeSharedTransfer } from './shared-ledger';
 jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () => ({ addresses: { kernel: requireConfiguredPvt9Runtime().address, recoursePool: `0x${'12'.repeat(20)}` }, runtimeHashes: Array(10).fill('0x0000000000000000000000000000000000000000000000000000000000000000') }) }));
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
@@ -30,6 +31,8 @@ test('retry after evidence commit and cursor failure preserves one event and exa
   const fake = createFakeFirestore({ strictTransactionOrder: true, rejectUndefinedValues: true,
     failTxnWriteOccurrence: { collection: RECOURSE_COLLECTIONS.addresses, occurrence: 1 } });
   fake.store.set(key, { ...binding });
+  fake.store.set(`${SHARED_LEDGER_CURSORS}/${binding.kernel}`, { fromBlock: 100, block: 102, blockHash: nextHash });
+  await storeSharedTransfer(fake as unknown as Firestore, binding.kernel, address, event);
   const db = fake as unknown as Firestore;
   await expect(advanceOwnershipLedger(db, address, 101, port())).rejects.toThrow('Injected transaction');
   expect(fake.store.get(key)?.checkpoint).toBeUndefined();
@@ -45,6 +48,8 @@ test('retry after evidence commit and cursor failure preserves one event and exa
 test('conflicting previously persisted evidence refuses cursor advance', async () => {
   const fake = createFakeFirestore({ failTxnWriteOccurrence: { collection: RECOURSE_COLLECTIONS.addresses, occurrence: 1 } });
   fake.store.set(key, { ...binding });
+  fake.store.set(`${SHARED_LEDGER_CURSORS}/${binding.kernel}`, { fromBlock: 100, block: 102, blockHash: nextHash });
+  await storeSharedTransfer(fake as unknown as Firestore, binding.kernel, address, event);
   const db = fake as unknown as Firestore;
   await expect(advanceOwnershipLedger(db, address, 101, port())).rejects.toThrow();
   const record = [...fake.store].find(([path]) => path.startsWith(`${RECOURSE_COLLECTIONS.events}/`));
@@ -57,6 +62,8 @@ test('conflicting previously persisted evidence refuses cursor advance', async (
 test('a concurrent binding mutation cannot receive the old binding checkpoint', async () => {
   const fake = createFakeFirestore();
   fake.store.set(key, { ...binding });
+  fake.store.set(`${SHARED_LEDGER_CURSORS}/${binding.kernel}`, { fromBlock: 100, block: 102, blockHash: nextHash });
+  await storeSharedTransfer(fake as unknown as Firestore, binding.kernel, address, event);
   const chain = port();
   chain.balance = async () => {
     fake.store.set(key, { ...binding, bindingDigest: nextHash });

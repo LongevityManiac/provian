@@ -94,7 +94,7 @@ export async function findPoolWithdrawal(db: Firestore, request: string): Promis
     through = Math.min(through, cutoff); address = predecessor;
   }
   if (!reachedAllocationPool || matches.length > 1) throw Error('recourse_withdrawal_history_invalid');
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw Error('recourse_withdrawal_pointer_changed');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) throw Error('recourse_withdrawal_pointer_changed');
   if (matches[0] && await readAgreedBaseBlockHash(matches[0].blockNumber) !== matches[0].blockHash) throw Error('recourse_withdrawal_log_invalid');
   return matches[0] ?? null;
 }

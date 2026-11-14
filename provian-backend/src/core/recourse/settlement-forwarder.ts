@@ -42,5 +42,5 @@ export async function verifyRecourseForwarder(config: RecourseForwarderConfig, k
   const expected = [kernel.toLowerCase(), signer.toLowerCase(), config.pool];
   if (results.some(values => values.some((value, index) => value !== expected[index]))) throw new Error('recourse_forwarder_binding_mismatch');
   if (await readAgreedBaseBlockHash(height) !== hash) throw new Error('recourse_forwarder_reorg');
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) throw new Error('recourse_forwarder_retired');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) throw new Error('recourse_forwarder_retired');
 }

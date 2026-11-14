@@ -50,9 +50,9 @@ test('a permanently unavailable owner cannot prevent intake or delivery beyond t
   const port: LifecycleWatcherPort = { sources: async () => [{ ...source, through: 800 }],
     logs: async range => [log(), later].filter(event => event.blockNumber >= range.fromBlock && event.blockNumber <= range.toBlock),
     blockHash: async height => h(height), withdrawalOwners: async () => new Map(), record };
-  expect(await runRecourseLifecycleWatcher(db, port)).toEqual({ recorded: 0, pendingSources: 1 });
-  expect(fake.store.get(`${LIFECYCLE_CURSORS}/pool:${source.address}`)?.block).toBe(598);
   expect(await runRecourseLifecycleWatcher(db, port)).toEqual({ recorded: 1, pendingSources: 1 });
+  expect(fake.store.get(`${LIFECYCLE_CURSORS}/pool:${source.address}`)?.block).toBe(800);
+  expect(await runRecourseLifecycleWatcher(db, port)).toEqual({ recorded: 0, pendingSources: 1 });
   expect(record).toHaveBeenCalledWith(db, expect.objectContaining({ identity: h(2), block: 700 }));
   expect(fake.store.get(`${LIFECYCLE_CURSORS}/pool:${source.address}`)?.block).toBe(800);
 });

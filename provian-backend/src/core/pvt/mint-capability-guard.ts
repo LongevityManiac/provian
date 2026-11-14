@@ -130,8 +130,11 @@ export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
   // verified identity/address consent. The gas worker uses the existing minter
   // signer with the shared durable nonce lease, and accepts only branded registry
   // binding plans. These are positive signing capabilities, not negative uses.
-  'src/core/recourse/binding-operation.ts',
   'src/core/recourse/binding-runtime.ts',
+  // Identity attestations use the configured approver; monthly consent and
+  // debit workers use the existing gas sponsor and shared durable nonce lease.
+  'src/core/recourse/identity-attestor.ts',
+  'src/core/recourse/membership-runtime.ts',
   // The same gas key sponsors only exact owner-proven rotation/intent calldata.
   // No reversal, reserve allocation or arbitrary transaction enters this worker.
   'src/core/recourse/owner-operation-runtime.ts',

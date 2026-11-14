@@ -44,7 +44,7 @@ export function breakPartitionChainPort(db: Firestore): BreakPartitionPort {
     if (typeof raw !== 'string' || !/^0x(?:[0-9a-fA-F]{2})*$/.test(raw)) throw Error('recourse_partition_rpc_invalid');
     return raw.toLowerCase();
   };
-  return { manifest: async () => (await currentProtocolDeployment()).manifestHash,
+  return { manifest: async () => (await currentProtocolDeployment({ fresh: true })).manifestHash,
     artifact: origin => readStoredBreakArtifact(db, origin), blockHash, call,
     async registryAccounts(registry, identity, through, throughHash, pointer) {
       if (!Number.isSafeInteger(through) || through < 1 || !hash.test(throughHash) || !hash.test(identity)

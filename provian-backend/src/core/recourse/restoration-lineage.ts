@@ -82,7 +82,7 @@ export async function readRestorationSuccessionLineage(lossKernel:string):Promis
     kernel=predecessor;executor=predecessorExecutor;
   }
   if (String(await call(executor,'kernel')).toLowerCase() !== lossKernel) throw Error('recourse_lineage_invalid');
-  if((await currentProtocolDeployment()).manifestHash!==deployment.manifestHash)throw Error('recourse_lineage_changed');
+  if((await currentProtocolDeployment({ fresh: true })).manifestHash!==deployment.manifestHash)throw Error('recourse_lineage_changed');
   for (const migration of migrations) if (await readAgreedBaseBlockHash(migration.cutoff) !== migration.cutoffHash) throw Error('recourse_lineage_changed');
   // An unchanged manifest does not prove the checkpoint or its import-ready
   // state survived. Check canonical height after the final resolver awaits.

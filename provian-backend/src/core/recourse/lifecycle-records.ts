@@ -135,7 +135,7 @@ export async function runRecourseLifecycleWatcher(db: Firestore, port: Lifecycle
       || typeof blockHash !== 'string' || await port.blockHash(block) !== blockHash)) throw Error('recourse_lifecycle_cursor_invalid');
     const from = prior.exists ? Number(block) + 1 : source.from;
     if (from > source.through) continue;
-    const through = Math.min(source.through, from + 499), hash = await port.blockHash(through);
+    const through = source.through, hash = await port.blockHash(through);
     if (!hash) throw Error('recourse_lifecycle_block_unavailable');
     for (const record of await read(source, from, through)) {
       await db.runTransaction(async tx => {

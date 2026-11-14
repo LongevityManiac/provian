@@ -40,7 +40,7 @@ export async function prepareMemberBindingConsent(db: Firestore, ownerIdentity: 
 } | null> {
   const deployment = await currentProtocolDeployment(), legs = getOperatorBoundRpcLegs('base');
   if (!legs[0].operatorId || !legs[1].operatorId || legs[0].operatorId === legs[1].operatorId) throw Error('recourse_binding_rpc_operators');
-  const chain: OwnerOperationChain = { deployment: currentProtocolDeployment, agree: async (m, p) => {
+  const chain: OwnerOperationChain = { deployment: () => currentProtocolDeployment({ fresh: true }), agree: async (m, p) => {
     const [a, b] = await Promise.all(legs.map(l => l.provider.send(m, [...p])));
     if (!rpcChainFactsEqual(a, b)) throw Error('recourse_binding_rpc_disagreement'); return a;
   } };

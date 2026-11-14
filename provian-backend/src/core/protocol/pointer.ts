@@ -123,3 +123,38 @@ async function resolveDeployment(rpcs: readonly [PointerRpc, PointerRpc], pointe
     addresses: Object.fromEntries(PROTOCOL_COMPONENTS.map((key, i) => [key, addresses[i]])) as Record<ProtocolComponent, string>,
     runtimeHashes: hashes };
 }
+
+/** Immutable component verification can be reused only while both providers
+ * still prove the same pointer manifest. This refreshes the hash-pinned read
+ * context without re-reading every component's bytecode and immutable links. */
+export async function confirmProtocolDeployment(rpcs: readonly [PointerRpc, PointerRpc],
+  verified: ProtocolDeployment, pointerRuntimeHash: string): Promise<ProtocolDeployment | null> {
+  if (quantity(await agreement(rpcs, 'eth_chainId', [])) !== 8453n) throw Error('protocol_pointer_wrong_chain');
+  const heights = await Promise.all(rpcs.map(async rpc => quantity(await rpc.request('eth_blockNumber', []))));
+  const height = heights[0] < heights[1] ? heights[0] : heights[1];
+  const block = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
+  if (!block || typeof block !== 'object' || !('hash' in block) || !('number' in block)
+    || quantity(block.number) !== height) throw Error('protocol_pointer_invalid_block');
+  const blockHash = hex(block.hash);
+  if (blockHash.length !== 66) throw Error('protocol_pointer_invalid_block');
+  const pin = { blockHash, requireCanonical: true };
+  const code = hex(await agreement(rpcs, 'eth_getCode', [verified.pointer, pin]));
+  if (code === '0x' || keccak256(code) !== pointerRuntimeHash.toLowerCase()) throw Error('protocol_pointer_runtime_mismatch');
+  const expected = iface.encodeFunctionResult('current', [verified.revision, verified.manifestHash,
+    PROTOCOL_COMPONENTS.map(key => verified.addresses[key]), verified.runtimeHashes]).toLowerCase();
+  const data = iface.encodeFunctionData('current');
+  const encoded = hex(await agreement(rpcs, 'eth_call', [{ to: verified.pointer, data }, pin]));
+  const revision = BigInt(iface.decodeFunctionResult('current', encoded)[0]);
+  if (revision < verified.revision) throw Error('protocol_pointer_rollback');
+  if (encoded !== expected) return null;
+  // The block at which full verification ran must still exist canonically.
+  const original = hex(await agreement(rpcs, 'eth_call', [{ to: verified.pointer, data },
+    { blockHash: verified.blockHash, requireCanonical: true }]));
+  if (original !== expected) throw Error('protocol_pointer_reorg');
+  if (hex(await agreement(rpcs, 'eth_call', [{ to: verified.pointer, data }, 'latest'])) !== expected)
+    throw Error('protocol_pointer_changed');
+  const canonical = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
+  if (!canonical || typeof canonical !== 'object' || !('hash' in canonical) || hex(canonical.hash) !== blockHash)
+    throw Error('protocol_pointer_reorg');
+  return { ...verified, blockHash };
+}

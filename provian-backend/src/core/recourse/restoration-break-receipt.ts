@@ -113,7 +113,7 @@ export function historicalBreakReceiptPort(db: Firestore): HistoricalBreakReceip
       await authenticateExecutor(lineage.executor, lineage.kernel, lineage.blockHash);
       return lineage;
     },
-    manifest: async () => (await currentProtocolDeployment()).manifestHash, authenticateExecutor,
+    manifest: async () => (await currentProtocolDeployment({ fresh: true })).manifestHash, authenticateExecutor,
     artifact: origin => readStoredBreakArtifact(db, origin), transaction: hash => verifyBaseTransactionEvidence({ transactionHash: hash }), call,
     logs: (executor, identity, from, through) => getAgreedBaseLogs({ address: executor,
       topics: [RESTORATION_RECEIPT_EVENTS.getEvent('IdentityRestored')!.topicHash, identity], fromBlock: from, toBlock: through }),

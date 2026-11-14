@@ -1,4 +1,6 @@
 import { Interface, keccak256 } from 'ethers';
+import type { Firestore } from 'firebase-admin/firestore';
+import { relayDb } from '../../firestore-db';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { createRecourseChainPort } from './chain-ledger';
@@ -26,7 +28,7 @@ function productionPort(): LifecycleSourcePort {
 /** All original events survive ordinary succession and a cryptographic break.
  * Immutable pool predecessors identify the old kernel/registry/executor, and
  * their custody cutoffs exclude activity on retired copies after the snapshot. */
-export async function recourseLifecycleSources(port: LifecycleSourcePort = productionPort()): Promise<readonly LifecycleSource[]> {
+export async function recourseLifecycleSources(port: LifecycleSourcePort = productionPort(), db: Firestore = relayDb()): Promise<readonly LifecycleSource[]> {
   const deployment = await port.deployment(), finalized = await port.finalized();
   const tag = { blockHash: deployment.blockHash, requireCanonical: true };
   const call = async (to: string, name: string) => abi.decodeFunctionResult(name,
@@ -34,7 +36,12 @@ export async function recourseLifecycleSources(port: LifecycleSourcePort = produ
   const birth = async (address: string, through: number): Promise<number> => {
     const code = await port.read('eth_getCode', [address, `0x${through.toString(16)}`]);
     if (code === '0x') return through + 1;
-    let left = 1, right = through;
+    const ref = db.collection('recourse_contract_births_v1').doc(`${address}:${keccak256(code)}`);
+    const saved = await ref.get();
+    const prior: unknown = saved.get('block');
+    if (saved.exists && (typeof prior !== 'number' || !Number.isSafeInteger(prior) || prior < 1 || prior > through))
+      throw Error('recourse_lifecycle_birth_invalid');
+    let left = saved.exists ? Number(prior) : 1, right = saved.exists ? Number(prior) : through;
     while (left < right) {
       const mid = left + Math.floor((right - left) / 2);
       if (await port.read('eth_getCode', [address, `0x${mid.toString(16)}`]) === '0x') left = mid + 1;
@@ -42,6 +49,11 @@ export async function recourseLifecycleSources(port: LifecycleSourcePort = produ
     }
     if (await port.read('eth_getCode', [address, `0x${(left - 1).toString(16)}`]) !== '0x'
       || await port.read('eth_getCode', [address, `0x${left.toString(16)}`]) !== code) throw Error('recourse_lifecycle_birth_invalid');
+    if (!saved.exists) await db.runTransaction(async tx => {
+      const current = await tx.get(ref);
+      if (current.exists && current.get('block') !== left) throw Error('recourse_lifecycle_birth_invalid');
+      if (!current.exists) tx.create(ref, { block: left });
+    });
     return left;
   };
   const result: LifecycleSource[] = [], seen = new Set<string>();

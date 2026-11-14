@@ -130,7 +130,7 @@ export async function prepareMembershipDebit(db: Firestore, ownerIdentity: strin
   const debit: ExactMembershipDebit = { binding, payer, ...selected, nonce: state.debitNonce, generation: state.consentGeneration,
     revision: String(deployment.revision), ruleHash: rules(Number(selected.month)).ruleHash, expiresAt: String(state.timestamp + 300) };
   const reservation = planPrivateDebit(account, domain, debit, month, rules);
-  if ((await currentProtocolDeployment()).manifestHash !== deployment.manifestHash) return fail('retired');
+  if ((await currentProtocolDeployment({ fresh: true })).manifestHash !== deployment.manifestHash) return fail('retired');
   await reservePrivateMembership(db, reservation);
   return { status: 'ready', challenge: membershipDebitChallenge(reservation) };
 }

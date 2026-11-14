@@ -31,7 +31,7 @@ const TOKEN = new Interface(['function balanceOf(address) view returns(uint256)'
 function chainPort(): OwnerOperationChain {
   const legs = getOperatorBoundRpcLegs('base');
   if (legs[0].operatorId === legs[1].operatorId) throw new Error('recourse_rpc_operators_not_independent');
-  return { deployment: currentProtocolDeployment, async agree(method, params) {
+  return { deployment: () => currentProtocolDeployment({ fresh: true }), async agree(method, params) {
     const values = await Promise.all(legs.map(leg => leg.provider.send(method, [...params])));
     if (!rpcChainFactsEqual(values[0], values[1])) throw new Error('recourse_binding_rpc_disagreement');
     return values[0];

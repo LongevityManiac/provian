@@ -36,7 +36,7 @@ export function createDeterminationExecutionPort():DeterminationExecutionPort {
   const values:unknown[]=await Promise.all(legs.map(leg=>leg.provider.send(method,[...params])));
   if(!rpcChainFactsEqual(values[0],values[1]))throw Error('recourse_execution_rpc_disagreement');return values[0];
  };
- return {deployment:currentProtocolDeployment,agree,bindingLog:async value=>readHistoricalBindingLog(value.packet.snapshot, {
+ return {deployment:() => currentProtocolDeployment({ fresh: true }),agree,bindingLog:async value=>readHistoricalBindingLog(value.packet.snapshot, {
   call:async(target,method,args,pin)=>{
    const raw=await agree('eth_call',[{to:target,data:HISTORICAL_BINDING_ABI.encodeFunctionData(method,args)},{blockHash:pin,requireCanonical:true}]);
    if(typeof raw!=='string')throw Error('recourse_execution_reply_invalid');

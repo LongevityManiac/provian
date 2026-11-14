@@ -40,4 +40,9 @@ test('gas sponsorship refuses to sign when execution is funded but L1 and operat
   await expect(signer.sign(plan)).resolves.toMatch(/^0x/);
   expect(signTransaction).toHaveBeenCalledTimes(1);
   expect(assertPlan).toHaveBeenCalledTimes(2);
+  expect((currentProtocolDeployment as jest.Mock).mock.calls.every(([options]) => options?.fresh === true)).toBe(true);
+  (currentProtocolDeployment as jest.Mock).mockResolvedValueOnce({ manifestHash })
+    .mockResolvedValueOnce({ manifestHash: `0x${'55'.repeat(32)}` });
+  await expect(signer.sign(plan)).rejects.toThrow('operation_retired');
+  expect(signTransaction).toHaveBeenCalledTimes(1);
 });

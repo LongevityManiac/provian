@@ -1,7 +1,8 @@
+import { createRecourseChainPort } from './chain-ledger';
 import type { Firestore } from 'firebase-admin/firestore';
 import { Interface, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
-import { getAgreedBaseLogs, readAgreedBaseBlockHash, readAgreedBaseHead } from '../onchain/economic-discovery';
+import { getAgreedBaseLogs, readAgreedBaseBlockHash } from '../onchain/economic-discovery';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { recoursePoolConfig, RECOURSE_POOL_ABI } from './pool-state';
 
@@ -40,7 +41,10 @@ export function publicRecourseResources(value: unknown, pool: string): RecourseR
 /** Publishes the executed batch ratio, never members' portfolio balances. */
 export async function refreshRecoursePoolRatio(db: Firestore): Promise<void> {
   const config = await recoursePoolConfig();
-  const block = await readAgreedBaseHead();
+  const ref = db.collection(RECOURSE_RATIO_COLLECTION).doc(config.address);
+  const saved = await ref.get();
+  const previous = saved.exists ? publicRecourseResources(saved.data(), config.address) : undefined;
+  const block = await createRecourseChainPort().finalizedBlock();
   const blockHash = await readAgreedBaseBlockHash(block);
   if (!blockHash) throw new Error('recourse_pool_block_unavailable');
   const tag = { blockHash, requireCanonical: true };
@@ -61,26 +65,35 @@ export async function refreshRecoursePoolRatio(db: Firestore): Promise<void> {
     const code: unknown = await leg.provider.send('eth_getCode', [config.address, tag]);
     if (typeof code !== 'string' || keccak256(code) !== config.runtimeHash) throw new Error('recourse_pool_runtime_mismatch');
   }
-  const birthKey = `${config.address}:${config.runtimeHash}`;
-  let from = births.get(birthKey);
-  if (from === undefined) {
-    let left = 0, right = block;
-    while (left < right) {
-      const middle = left + Math.floor((right - left) / 2);
-      if (await codeAt(middle) === '0x') left = middle + 1; else right = middle;
+  let from: number;
+  if (previous) {
+    if (previous.block > block || await readAgreedBaseBlockHash(previous.block) !== previous.blockHash)
+      throw Error('recourse_pool_reorg');
+    from = previous.block + 1;
+  } else {
+    const birthKey = `${config.address}:${config.runtimeHash}`;
+    let birth = births.get(birthKey);
+    if (birth === undefined) {
+      let left = 0, right = block;
+      while (left < right) {
+        const middle = left + Math.floor((right - left) / 2);
+        if (await codeAt(middle) === '0x') left = middle + 1; else right = middle;
+      }
+      birth = left;
     }
-    from = left;
+    // Derive the boundary from the current contract, never a stale deployment
+    // environment variable. Recheck even a cached boundary before each aggregate.
+    if (birth < 1 || birth > block || await codeAt(birth - 1) !== '0x'
+      || keccak256(await codeAt(birth)) !== config.runtimeHash) throw new Error('recourse_pool_deployment_block_invalid');
+    births.set(birthKey, birth);
+    from = birth;
   }
-  // Derive the boundary from the current contract, never a stale deployment
-  // environment variable. Recheck even a cached boundary before each aggregate.
-  if (from < 1 || from > block || await codeAt(from - 1) !== '0x'
-    || keccak256(await codeAt(from)) !== config.runtimeHash) throw new Error('recourse_pool_deployment_block_invalid');
-  births.set(birthKey, from);
   const kernel = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
   if (String((await call(config.address, RECOURSE_POOL_ABI, 'token'))[0]).toLowerCase() !== kernel) throw new Error('recourse_pool_token_mismatch');
-  let ratio: RecourseResources['ratio'] = null;
-  for (let start = from; start <= block; start += 500) {
-    const end = Math.min(start + 499, block);
+  if (previous && previous.kernel !== kernel) throw Error('recourse_pool_token_mismatch');
+  let ratio: RecourseResources['ratio'] = previous?.ratio ?? null;
+  if (from <= block) {
+    const start = from, end = block;
     const logs = await getAgreedBaseLogs({ address: config.address,
       topics: [RATIO.getEvent('RestorationRatio')!.topicHash], fromBlock: start, toBlock: end });
     for (const log of logs) {
@@ -104,10 +117,11 @@ export async function refreshRecoursePoolRatio(db: Firestore): Promise<void> {
   const row = publicRecourseResources({ schema: 'provian-recourse-resources/v2', pool: config.address, kernel, block, blockHash,
     reserveAtomic: reserve.toString(), allocatedAtomic: allocated.toString(), ratio, observedAtMs: Date.now() }, config.address);
   await db.runTransaction(async tx => {
-    const ref = db.collection(RECOURSE_RATIO_COLLECTION).doc(config.address);
     const prior = await tx.get(ref);
     if (prior.exists && Number(prior.get('block')) > block) return;
     if (prior.exists && prior.get('block') === block && prior.get('blockHash') !== blockHash) throw new Error('recourse_pool_reorg');
+    if (saved.exists ? prior.get('block') !== previous!.block || prior.get('blockHash') !== previous!.blockHash : prior.exists)
+      throw Error('recourse_pool_cursor_changed');
     tx.set(ref, row);
   });
 }

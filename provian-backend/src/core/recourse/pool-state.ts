@@ -18,10 +18,11 @@ export async function readRecoursePoolState(identity: string, checkpoint?: Proto
   if (!legs[0].operatorId || !legs[1].operatorId || legs[0].operatorId === legs[1].operatorId) throw Error('recourse_rpc_operators_not_independent');
   // Reuse the caller's authenticated checkpoint for one coherent signing
   // decision. The reader still re-resolves the current manifest afterward.
-  let initial = checkpoint;
+  let initial = checkpoint, first = true;
   return readRecoursePoolChain(identity, { deployment: async () => {
-    if (initial) { const selected = initial; initial = undefined; return selected; }
-    return currentProtocolDeployment();
+    if (initial) { const selected = initial; initial = undefined; first = false; return selected; }
+    const fresh = !first; first = false;
+    return currentProtocolDeployment({ fresh });
   }, rpcs: [
     { request: (method, params) => legs[0].provider.send(method, [...params]) },
     { request: (method, params) => legs[1].provider.send(method, [...params]) },

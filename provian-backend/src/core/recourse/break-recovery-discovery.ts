@@ -43,7 +43,7 @@ export async function discoverBreakRecovery(db: Firestore, origin: string, ident
     if (typeof executor !== 'string' || !/^0x[0-9a-f]{40}$/.test(executor)
       || typeof authority !== 'string' || !/^0x[0-9a-f]{40}$/.test(authority)) throw Error('break_discovery_record_changed');
     candidates.push({transactionHash:status.transactionHash,prepared:{phase:'restore_balance',...request,executor,authority,
-      identity,destination:details.destination,amount:details.amount,manifestHash:(await currentProtocolDeployment()).manifestHash}});
+      identity,destination:details.destination,amount:details.amount,manifestHash:(await currentProtocolDeployment({ fresh: true })).manifestHash}});
   }
   return {identity,origin,relayDestination:destination.toLowerCase(),candidates};
 }
