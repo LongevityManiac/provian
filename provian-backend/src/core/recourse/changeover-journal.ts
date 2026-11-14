@@ -37,6 +37,16 @@ function identity(step: ChangeoverStep): string {
   return keccak256(Transaction.from({ type: 2, chainId: 8453, nonce: 0, to: step.to ?? null,
     value: 0, data: step.data, gasLimit: 0, maxFeePerGas: 0, maxPriorityFeePerGas: 0 }).unsignedSerialized);
 }
+/** Attempt maps contain exactly five scalar fields. Database map ordering and
+ * object prototypes are not transaction identity; every field/value still is. */
+function sameAttempt(left: unknown, right: unknown): boolean {
+  if (left === undefined || right === undefined) return left === right;
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return false;
+  const fields = ['from', 'hash', 'identity', 'nonce', 'raw'];
+  if (Object.keys(left).sort().join(',') !== fields.join(',')
+    || Object.keys(right).sort().join(',') !== fields.join(',')) return false;
+  return fields.every(field => (left as Record<string, unknown>)[field] === (right as Record<string, unknown>)[field]);
+}
 function validateAttempt(attempt: ChangeoverAttempt, step: ChangeoverStep): void {
   requireValue(attempt && attempt.from === step.from && attempt.identity === identity(step)
     && Number.isSafeInteger(attempt.nonce) && attempt.nonce >= 0
@@ -184,7 +194,7 @@ export async function openChangeoverJournal(db: Firestore, input: {
     for (let index = 0; index < count; index++) {
       const after = next.attempts[String(index)], before = state.attempts[String(index)];
       validateAttempt(after, steps[index]);
-      if (JSON.stringify(after) === JSON.stringify(before)) continue;
+      if (sameAttempt(after, before)) continue;
       requireValue(!before || (before.raw === null && after.raw !== null
         && before.nonce === after.nonce && before.from === after.from && before.identity === after.identity), 'attempt_replaced');
       // A nonce reservation must be durable before signed bytes can be stored.
@@ -203,7 +213,9 @@ export async function openChangeoverJournal(db: Firestore, input: {
       assertLeaseRows(leases);
       requireValue(head.get('revision') === expectedRevision && head.get('completed') === false
         && head.get('attemptCount') === previousCount, 'concurrent_write');
-      requireValue(JSON.stringify(old.get('attempt')) === JSON.stringify(state.attempts[String(index)]), 'record_changed');
+      // Database maps have no insertion-order guarantee. Compare their values,
+      // retaining every field and the transactional revision/lease checks.
+      requireValue(sameAttempt(old.get('attempt'), state.attempts[String(index)]), 'record_changed');
       const signed = next.attempts[String(index)].raw;
       if (signed !== null && head.get('feeBudgetWei') !== undefined) {
         requireValue(fee.exists && fee.get('stageDigest') === stageDigest && fee.get('index') === index

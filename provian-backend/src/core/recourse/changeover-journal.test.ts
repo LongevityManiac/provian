@@ -131,3 +131,29 @@ test('lost completion response reopens read-only even while a later settlement o
   await reopened.release(); expect(f.fake.store.get(leaseKey)).toEqual(leaseBefore);
   await expect(reopened.complete(async () => null)).rejects.toThrow('not_finalized');
 });
+
+test('database map key order cannot block signing later attempts in the same stage', async () => {
+  const f = fixture(2), store = await f.open();
+  for (let index = 0; index < 2; index++) {
+    await store.persist({ ...store.read(), attempts: { ...store.read().attempts, [index]: f.attempt(index) } });
+    const key = `${CHANGEOVER_ATTEMPTS}/${store.stageDigest}:${index}`, row = f.fake.store.get(key)!;
+    const attempt = row.attempt as Record<string, unknown>;
+    const reordered = Object.fromEntries(Object.entries(attempt).sort(([a], [b]) => a.localeCompare(b)));
+    expect(reordered).toEqual(attempt); expect(JSON.stringify(reordered)).not.toEqual(JSON.stringify(attempt));
+    f.fake.store.set(key, { ...row, attempt: reordered });
+    const prior = Object.fromEntries(Object.entries(store.read().attempts).map(([k, v]) => [k,
+      Object.fromEntries(Object.entries(v).reverse()) as unknown as ChangeoverAttempt]));
+    await store.persist({ ...store.read(), attempts: { ...prior, [index]: await f.signed(index) } });
+  }
+  await store.complete(async raw => ({ hash: keccak256(raw), status: 1 }));
+  expect(store.read().completed).toBe(true);
+});
+
+test.each(['nonce', 'identity', 'from', 'raw', 'hash', 'unexpected'])('actual database field change still refuses signing: %s', async field => {
+  const f = fixture(), store = await f.open();
+  await store.persist({ ...store.read(), attempts: { 0: f.attempt() } });
+  const key = `${CHANGEOVER_ATTEMPTS}/${store.stageDigest}:0`, row = f.fake.store.get(key)!;
+  f.fake.store.set(key, { ...row, attempt: { ...(row.attempt as ChangeoverAttempt), [field]: field === 'nonce' ? 99 : 'changed' } });
+  await expect(store.persist({ ...store.read(), attempts: { 0: await f.signed() } })).rejects.toThrow('record_changed');
+  expect(store.read().attempts['0'].raw).toBeNull();
+});
