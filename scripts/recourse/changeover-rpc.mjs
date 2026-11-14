@@ -9,8 +9,9 @@ function object(v){ensure(v&&typeof v==='object'&&!Array.isArray(v),'reply');ret
  * bytes reach either operator only after the transaction engine persists them.
  * The fee reservation callback owns the durable stage budget, including the
  * chain's data fee; this adapter does not claim gasLimit*maxFee is the whole fee. */
-export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerGas,maxPriorityFeePerGas,maxGas}){
- ensure(rpcs.length===2&&rpcs[0]!==rpcs[1]&&typeof approveFee==='function','configuration');
+export function changeoverRpcPort({rpcs,signer,assertLease,assertBroadcast,approveFee,maxFeePerGas,maxPriorityFeePerGas,maxGas}){
+ ensure(rpcs.length===2&&rpcs[0]!==rpcs[1]&&typeof approveFee==='function'
+  &&typeof assertLease==='function'&&typeof assertBroadcast==='function','configuration');
  ensure([maxFeePerGas,maxPriorityFeePerGas,maxGas].every(v=>typeof v==='bigint'&&v>0n)
   &&maxFeePerGas>=maxPriorityFeePerGas,'fee_configuration');
  assertBaseTransactionGasLimit(maxGas);
@@ -79,7 +80,9 @@ export function changeoverRpcPort({rpcs,signer,assertLease,approveFee,maxFeePerG
   broadcast:async(raw)=>{
    await assertLease();await chain();const tx=Transaction.from(raw);assertBaseTransactionGasLimit(tx.gasLimit);
    ensure(tx.from?.toLowerCase()===lower(await signer.getAddress())&&tx.chainId===8453n&&tx.value===0n,'signed_transaction');
-   const hash=keccak256(raw);await assertLease();const result=await rpcs[0].request('eth_sendRawTransaction',[raw]);
+   // A lease is ownership, not authority. Revalidate the full source after
+   // every awaited preparation read, including on retained-byte replay.
+   const hash=keccak256(raw);await assertBroadcast();await assertLease();const result=await rpcs[0].request('eth_sendRawTransaction',[raw]);
    ensure(result===hash,'broadcast_hash');return hash;
   },
  };

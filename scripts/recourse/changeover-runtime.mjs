@@ -13,17 +13,21 @@ const ensure = (value, code) => { if (!value) throw Error('changeover_runtime_' 
  * steps/stageDigest to its independently derived authorized stage, as well as
  * rechecking source state. A plan digest alone cannot authorize arbitrary steps. */
 export async function runChangeoverStage({ db, steps, planDigest, readers, loadSigner, assertPlan,
-  approvedStageBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, requireCompleted = false }) {
+  approvedStageBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, requireCompleted = false, onProgress = () => {} }) {
   steps = structuredClone(steps);
   ensure(typeof approvedStageBudgetWei === 'string' && /^[1-9][0-9]*$/.test(approvedStageBudgetWei)
     && [maxFeePerGas, maxPriorityFeePerGas, maxGas].every(value => typeof value === 'bigint' && value > 0n)
     && maxFeePerGas >= maxPriorityFeePerGas, 'fee_configuration');
-  ensure(typeof assertPlan === 'function' && typeof loadSigner === 'function', 'callbacks');
+  ensure(typeof assertPlan === 'function' && typeof loadSigner === 'function' && typeof onProgress === 'function', 'callbacks');
   ensure(typeof requireCompleted === 'boolean', 'completion_mode');
   const stageDigest = sha256(toUtf8Bytes(JSON.stringify({ planDigest, steps })));
+  let validations = 0;
   const checkedPlan = async digest => {
     ensure(digest === planDigest, 'plan_changed');
+    const sequence=++validations, started=Date.now();
+    onProgress({event:'source_validation_started',stageDigest,sequence});
     await assertPlan({ planDigest, stageDigest, steps: structuredClone(steps) });
+    onProgress({event:'source_validation_verified',stageDigest,sequence,elapsedMs:Date.now()-started});
   };
   ensure(readers.length === 2 && readers.every(reader => typeof reader.operatorId === 'string' && reader.operatorId
     && typeof reader.request === 'function')
@@ -33,7 +37,10 @@ export async function runChangeoverStage({ db, steps, planDigest, readers, loadS
   try {
     const completed = store.read().completed;
     ensure(store.stageDigest === stageDigest, 'stage_changed');
-    const checkedLease = async () => { await store.assertLease(); await checkedPlan(planDigest); await store.assertLease(); };
+    const checkedLease = () => store.assertLease();
+    // Repeated ownership checks must not rescan the entire deployment. Full
+    // authorization remains fresh at the actual signing and send boundaries.
+    const checkedExecution = async () => { await checkedLease(); await checkedPlan(planDigest); await checkedLease(); };
     const budget = completed ? null : await openChangeoverFeeBudget(db, { stageDigest: store.stageDigest,
       approvedBudgetWei: approvedStageBudgetWei, readers, assertLease: checkedLease });
     const signers = new Map(), ports = new Map();
@@ -44,18 +51,20 @@ export async function runChangeoverStage({ db, steps, planDigest, readers, loadS
           ensure(!completed, 'terminal_read_only');
           await checkedLease();
           if (!signers.has(from)) {
+            await checkedExecution();
             const loaded = await loadSigner(from);
             ensure(String(await loaded.getAddress()).toLowerCase() === from, 'signer_mismatch');
             signers.set(from, loaded);
           }
           const unsigned = Transaction.from(transaction).unsignedSerialized;
-          await checkedLease();
+          await checkedExecution();
           const raw = await signers.get(from).signTransaction({ ...transaction });
           ensure(Transaction.from(raw).unsignedSerialized === unsigned, 'signer_mutated_request');
+          onProgress({event:'transaction_signed',stageDigest,from,nonce:transaction.nonce,hash:Transaction.from(raw).hash});
           return raw;
         },
       };
-      ports.set(from, changeoverRpcPort({ rpcs: readers, signer, assertLease: checkedLease,
+      ports.set(from, changeoverRpcPort({ rpcs: readers, signer, assertLease: checkedLease, assertBroadcast: checkedExecution,
         maxFeePerGas, maxPriorityFeePerGas, maxGas,
         approveFee: async ({ transaction, blockHash }) => {
           ensure(budget, 'terminal_read_only');

@@ -85,7 +85,8 @@ export async function runFirstChangeoverCli(path, flags = []) {
   const runtime = (stage, options) => {
     ensure(execute || options.requireCompleted, 'execution_required');
     return runChangeoverStage({ ...stage, db: db(), readers: inputs.port.rpcs, loadSigner, ...fees,
-      requireCompleted: options.requireCompleted, approvedStageBudgetWei: limits.approvedBudgetsWei[options.phase] });
+      requireCompleted: options.requireCompleted, approvedStageBudgetWei: limits.approvedBudgetsWei[options.phase],
+      onProgress: event => console.log(JSON.stringify({phase:options.phase,...event})) });
   };
   const publish = (publication, options) => {
     ensure(execute || options.requireCompleted, 'execution_required');

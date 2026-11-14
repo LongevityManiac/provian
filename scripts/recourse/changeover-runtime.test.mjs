@@ -13,7 +13,7 @@ function fixture() {
   const wallet = new Wallet('0x' + '11'.repeat(32)), from = wallet.address.toLowerCase();
   const steps = [0, 1].map(index => ({ from, to: '0x' + '22'.repeat(20), value: '0', data: '0x1234000' + index }));
   const authorizedSteps = structuredClone(steps);
-  const state = { nonce: 0, signed: 0, loaded: 0, sent: 0, final: 19, loseReply: false, refusePlan: false, refuseSimulation: false, oracleUnavailable: false };
+  const state = { nonce: 0, signed: 0, loaded: 0, sent: 0, planChecks: 0, final: 19, loseReply: false, refusePlan: false, refuseSimulation: false, oracleUnavailable: false };
   const transactions = new Map();
   const request = async (method, params) => {
     if (method === 'eth_chainId') return '0x2105';
@@ -48,6 +48,7 @@ function fixture() {
   const input = { db, steps, planDigest: hash(99), readers: ['one', 'two'].map(operatorId => ({ operatorId, request })),
     approvedStageBudgetWei: '200000', maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, maxGas: 100000n,
     assertPlan: async checked => {
+      state.planChecks++;
       assert.equal(checked.planDigest, hash(99)); assert.deepEqual(checked.steps, authorizedSteps);
       assert.equal(checked.stageDigest, sha256(toUtf8Bytes(JSON.stringify({ planDigest: hash(99), steps: authorizedSteps }))));
       if (state.refusePlan) throw Error('source changed');
@@ -72,6 +73,36 @@ test('actual journal, fee oracle and RPC runner survive a lost broadcast respons
   assert.deepEqual({ loaded: f.state.loaded, signed: f.state.signed, sent: f.state.sent }, counts);
   const head = [...f.db.store.entries()].find(([key]) => key.startsWith(CHANGEOVER_STAGES + '/'))[1];
   assert.equal(head.feeReservedWei, '145600'); assert.equal(head.completed, true);
+});
+test('full source validation scales with signatures and broadcasts, not lease renewals', async () => {
+  const f=fixture();await f.run();
+  assert.equal(f.state.signed,2);assert.equal(f.state.sent,2);
+  // Two stage checks, one key-load check and two checks for each transaction.
+  assert.ok(f.state.planChecks<=7,`unexpected full validation amplification: ${f.state.planChecks}`);
+  console.log(JSON.stringify({newTransactions:f.state.sent,fullSourceValidations:f.state.planChecks}));
+});
+test('source drift during estimates, signer loading and after signing refuses spending and preserves retained bytes', async () => {
+  for(const boundary of ['estimate','load','signed']){
+    const f=fixture();
+    if(boundary==='estimate')for(const reader of f.input.readers){const original=reader.request;reader.request=async(method,params)=>{const result=await original(method,params);if(method==='eth_estimateGas')f.state.refusePlan=true;return result;};}
+    const load=f.input.loadSigner;f.input.loadSigner=async address=>{const signer=await load(address);if(boundary==='load')f.state.refusePlan=true;
+      if(boundary==='signed'){const sign=signer.signTransaction;signer.signTransaction=async tx=>{const raw=await sign(tx);f.state.refusePlan=true;return raw;};}return signer;};
+    await assert.rejects(f.run(),/source changed/);assert.equal(f.state.sent,0);assert.equal(f.state.signed,boundary==='signed'?1:0);
+    if(boundary==='signed'){
+      const signedRows=[...f.db.store.values()].filter(row=>row.attempt?.raw);assert.equal(signedRows.length,1);
+      const retained=signedRows[0].attempt.raw;f.state.refusePlan=false;f.input.loadSigner=load;
+      await f.run();assert.equal(f.state.sent,2);assert.equal(f.state.signed,2);
+      assert.ok([...f.db.store.values()].some(row=>row.attempt?.raw===retained));
+    }
+  }
+});
+test('losing signer ownership during full source validation refuses the actual signature', async () => {
+  const f=fixture(),check=f.input.assertPlan;
+  f.input.assertPlan=async plan=>{await check(plan);if(f.state.loaded){
+    const entry=[...f.db.store.entries()].find(([key])=>key.startsWith('pvt9_settlement_signer_leases_v1/'));
+    assert.ok(entry);f.db.store.set(entry[0],{...entry[1],owner:'another-worker'});
+  }};
+  await assert.rejects(f.run(),/lease_lost/);assert.equal(f.state.signed,0);assert.equal(f.state.sent,0);
 });
 test('plan, simulation, oracle and insufficient fee budget prevent any key access', async () => {
   for (const change of [

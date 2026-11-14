@@ -64,7 +64,7 @@ export async function runPublicationDelivery({ inputs, db, from, store, vault, l
         await journal.assertLease();
       }
     };
-    const rpc = changeoverRpcPort({ rpcs: readers, maxFeePerGas, maxPriorityFeePerGas, maxGas, assertLease,
+    const rpc = changeoverRpcPort({ rpcs: readers, maxFeePerGas, maxPriorityFeePerGas, maxGas, assertLease, assertBroadcast: assertLease,
       signer: { getAddress: async () => from, signTransaction: async transaction => {
         await assertLease();
         if (!signer) { signer = await loadSigner(from); ensure(String(await signer.getAddress()).toLowerCase() === from, 'signer_changed'); }
