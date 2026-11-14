@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifiedLogHistory } from './verified-log-history.mjs';
 import { guardedFetch } from '../../provian-agent-sdk/dist/guarded-fetch.js';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
 import { verifyInstitutionRuntime } from './institution-snapshot.mjs';
@@ -103,7 +104,7 @@ export function snapshotRpcPort(urls, options = {}) {
       return [...await range(address, from, mid, topics), ...await range(address, mid + 1, to, topics)];
     }
   }
-  return {
+  const port = {
     rpcs: urls.map(url => ({ operatorId: operator(url), request: (method, params) => rpc(url, method, params) })),
     async finalizedBlock() {
       if (await agree('eth_chainId', []) !== '0x2105') throw Error('snapshot_wrong_chain');
@@ -134,6 +135,8 @@ export function snapshotRpcPort(urls, options = {}) {
       return results.sort((a, b) => Number(BigInt(a.blockNumber) - BigInt(b.blockNumber)) || Number(BigInt(a.logIndex) - BigInt(b.logIndex)));
     },
   };
+  port.logs = verifiedLogHistory({read: port.logs, blockHash: port.blockHash, finalizedBlock: port.finalizedBlock});
+  return port;
 }
 
 /** An explicit first-cutover read can precede pointer deployment/publication.

@@ -3,6 +3,8 @@ import { snapshotLogRangeRefusal, snapshotRpcPort } from './snapshot-cli.mjs';
 import { guardedFetch } from '../../provian-agent-sdk/dist/guarded-fetch.js';
 vi.mock('../../provian-agent-sdk/dist/guarded-fetch.js', () => ({ guardedFetch: vi.fn() }));
 
+function stateReply(body) {return {status:200,ok:true,json:async()=>({result:body.method==='eth_chainId'?'0x2105':{number:body.params[0]==='finalized'?'0x30d40':body.params[0],hash:'0x'+'11'.repeat(32),parentHash:'0x'+'22'.repeat(32)}})};}
+
 test('operator HTTP range refusals shrink while quotas and unrelated failures never fan out', () => {
   for (const status of [200, 400, 413]) for (const message of [
     'ranges over 10000 blocks are not supported on free plan',
@@ -22,7 +24,9 @@ test('quota retries keep the original range and pace each independent operator',
   vi.useFakeTimers();
   const calls = [], seen = new Map();
   vi.mocked(guardedFetch).mockImplementation(async (url, options) => {
-    const body = JSON.parse(options.body), count = seen.get(url) ?? 0;
+    const body = JSON.parse(options.body);
+    if (body.method !== 'eth_getLogs') return stateReply(body);
+    const count = seen.get(url) ?? 0;
     seen.set(url, count + 1); calls.push({ url, time: Date.now(), params: body.params });
     return count === 0
       ? { status: 429, ok: false, json: async () => ({ error: { code: 15, message: 'request limit' } }) }
@@ -48,7 +52,9 @@ test('custody topic filters survive provider range splitting and apply to both o
   vi.useFakeTimers();
   const calls = [], topics = ['0x' + '11'.repeat(32), null, ['0x' + '22'.repeat(32)]];
   vi.mocked(guardedFetch).mockImplementation(async (url, options) => {
-    const filter = JSON.parse(options.body).params[0]; calls.push({ url, filter });
+    const body = JSON.parse(options.body);
+    if (body.method !== 'eth_getLogs') return stateReply(body);
+    const filter = body.params[0]; calls.push({ url, filter });
     return filter.fromBlock !== filter.toBlock
       ? { status: 400, ok: false, json: async () => ({ error: { message: 'block range too large' } }) }
       : { status: 200, ok: true, json: async () => ({ result: [] }) };
