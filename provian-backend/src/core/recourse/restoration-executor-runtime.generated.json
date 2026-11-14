@@ -379,6 +379,6 @@
     ]
   },
   "proofVerifierHash": "0x1d8ec9772690f417e273ce2849b9453e871b7c9d519b679a057e3977f082bac4",
-  "hashAccountCodeHash": "0x81abf32c1c6391d6775474098f020f9aac04233ecdaf2021809afd2a405f0930",
-  "hashAccountFactoryHash": "0x0585ef0159fa99609862d6d1b11d6336d1f9ba77f9e42137002c130f85500187"
+  "hashAccountCodeHash": "0xc0e2bd9ad0d8d35730573774965e64defd603923604ff80cdceabb0226c2329b",
+  "hashAccountFactoryHash": "0x65d67a6c9792746eeabb9eb28dd3fd9c55b4a2d01a8912830688444b1036fd23"
 }
