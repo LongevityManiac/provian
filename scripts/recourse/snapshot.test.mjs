@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { AbiCoder, Interface, ZeroAddress, ZeroHash, keccak256, sha256 } from 'ethers';
 import { buildSuccessionSnapshot, merkle, verifyProof } from './snapshot.mjs';
+import { historicalSnapshotScope } from './snapshot-historical-reads.mjs';
 const kernelAbi = JSON.parse(readFileSync(new URL('../../contracts/out/ProvianPVT9.sol/ProvianPVT9.json', import.meta.url), 'utf8')).abi;
 const iface = new Interface(kernelAbi), coder = AbiCoder.defaultAbiCoder();
 const address = digit => `0x${digit.repeat(40)}`;
@@ -80,6 +81,22 @@ test('all nonempty holder, claim, anchor, wallet and batch populations reconcile
   assert.equal(batch.record.settlementDigest, digest);
   assert.equal(coder.encode([iface.getFunction('getBatchRecord').outputs[0]], [batch.record]),
     coder.encode([iface.getFunction('getBatchRecord').outputs[0]], [f.values.getBatchRecord]));
+});
+
+test('batched and reused historical state preserves every snapshot byte and Merkle proof',async()=>{
+ const direct=fixture(16),expected=await buildSuccessionSnapshot(direct.input);
+ const f=fixture(16),base={...f.input.port,finalizedBlock:async()=>({number:20,hash:blockHash})};
+ let requests=0;
+ f.input.port.withHistoricalSnapshot=historicalSnapshotScope(base,['first','second'],async(_operator,rows)=>{
+  requests+=rows.length;
+  return Promise.all(rows.map(row=>row.method==='eth_call'
+   ?base.call(row.params[0].to,row.params[0].data,row.params[1].blockHash)
+   :base.code(row.params[0],row.params[1].blockHash)));
+ });
+ assert.equal(JSON.stringify(await buildSuccessionSnapshot(f.input)),JSON.stringify(expected));
+ const first=requests;assert.ok(first>32);
+ assert.equal(JSON.stringify(await buildSuccessionSnapshot(f.input)),JSON.stringify(expected));
+ assert.equal(requests,first);
 });
 
 test('concurrent claim reads remain bounded and preserve proof order; duplicates fail before reads',async()=>{

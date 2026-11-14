@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Interface,ZeroAddress} from 'ethers';
 import {LEGACY_INSTITUTIONS,buildInstitutionSnapshot,verifyInstitutionRuntime} from './institution-snapshot.mjs';
+import {historicalSnapshotScope} from './snapshot-historical-reads.mjs';
 const addr=n=>'0x'+n.toString(16).padStart(40,'0'),hash=n=>'0x'+n.toString(16).padStart(64,'0');
 function fixture(){
  const artifacts={},contracts={},ifaces=new Map(),names=new Map();
@@ -62,6 +63,17 @@ test('all five actual institution ABIs are inventoried, with nonzero obligations
  assert.equal(result.seedBonds[0].amount,'500');assert.deepEqual(result.seedBps,[{param:1,bps:'0'}]);
  for(const row of result.inventory)assert.ok(row.policy.length>0);
  assert.equal(result.inventory[3].schedules[0].values[1],'0');
+});
+test('historical batching and replay retain exact institution inventory and digest',async()=>{
+ const expected=await buildInstitutionSnapshot(fixture().input),f=fixture();
+ const base={...f.input.port,finalizedBlock:async()=>({number:30,hash:hash(30)})};let reads=0;
+ f.input.port.withHistoricalSnapshot=historicalSnapshotScope(base,['first','second'],async(_operator,rows)=>{
+  reads+=rows.length;return Promise.all(rows.map(row=>row.method==='eth_call'
+   ?base.call(row.params[0].to,row.params[0].data,row.params[1].blockHash):base.code(row.params[0],row.params[1].blockHash)));
+ });
+ assert.equal(JSON.stringify(await buildInstitutionSnapshot(f.input)),JSON.stringify(expected));
+ const first=reads;assert.ok(first>0);
+ assert.equal(JSON.stringify(await buildInstitutionSnapshot(f.input)),JSON.stringify(expected));assert.equal(reads,first);
 });
 test('unsupported obligations, future terms, wrong backing, runtime/wiring substitution and history corruption refuse',async()=>{
  for(const mode of ['usdc','token','court','future','claim','pending','backing','code','wiring','duplicate','reorg']){

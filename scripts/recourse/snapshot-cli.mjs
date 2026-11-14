@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifiedLogHistory } from './verified-log-history.mjs';
+import { historicalSnapshotScope, checkedHistoricalBatch } from './snapshot-historical-reads.mjs';
 import { guardedFetch } from '../../provian-agent-sdk/dist/guarded-fetch.js';
 import { buildSuccessionSnapshot } from './snapshot.mjs';
 import { verifyInstitutionRuntime } from './institution-snapshot.mjs';
@@ -96,6 +97,37 @@ export function snapshotRpcPort(urls, options = {}) {
     if (JSON.stringify(canonical(projection(values[0]))) !== JSON.stringify(canonical(projection(values[1])))) throw Error('snapshot_rpc_disagreement');
     return values[0];
   }
+  let batchId=0;
+  async function historicalBatch(url,requests){
+    if(!requests.length||requests.length>8||requests.some(row=>!['eth_call','eth_getCode'].includes(row.method)
+      ||typeof row.params[1]!=='object'||row.params[1]?.requireCanonical!==true
+      ||!/^0x[0-9a-f]{64}$/.test(row.params[1]?.blockHash)))throw Error('snapshot_batch_scope');
+    const rows=requests.map(row=>({jsonrpc:'2.0',id:++batchId,...row})),results=new Map();
+    let pending=rows;
+    for(let attempt=0;attempt<8;attempt++){
+      let status;
+      try{
+        const response=await paced(url,()=>guardedFetch(url,{method:'POST',headers:{'content-type':'application/json'},
+          body:JSON.stringify(pending),signal:AbortSignal.timeout(25_000)}));
+        status=response.status;
+        if(!response.ok)throw Error('snapshot_batch_http');
+        const checked=checkedHistoricalBatch(pending,await response.json());
+        const failed=[];
+        for(let index=0;index<checked.length;index++){
+          const item=checked[index];
+          if(item.error){failed.push(pending[index]);if(item.error.code===429)status=429;}
+          else results.set(item.id,item.result);
+        }
+        pending=failed;
+        if(!pending.length)return rows.map(row=>results.get(row.id));
+      }catch(error){
+        // Malformed populations/IDs are evidence failures, not transient reads.
+        if(error.message?.startsWith('snapshot_historical_'))throw error;
+      }
+      if(attempt===7)throw Error('snapshot_batch_unavailable');
+      await pause(status===429?Math.min(30_000,5000*2**attempt):1000*(attempt+1));
+    }
+  }
   async function range(address, from, to, topics) {
     try { return await agree('eth_getLogs', [{ address, fromBlock: quantity(from), toBlock: quantity(to), ...(topics ? { topics } : {}) }]); }
     catch (error) {
@@ -136,6 +168,7 @@ export function snapshotRpcPort(urls, options = {}) {
     },
   };
   port.logs = verifiedLogHistory({read: port.logs, blockHash: port.blockHash, finalizedBlock: port.finalizedBlock});
+  port.withHistoricalSnapshot=historicalSnapshotScope(port,urls,historicalBatch);
   return port;
 }
 

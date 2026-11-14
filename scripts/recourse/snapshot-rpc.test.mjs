@@ -100,3 +100,45 @@ test('explicit transaction absence is returned immediately; missing state and RP
     }
   } finally { vi.useRealTimers(); vi.mocked(guardedFetch).mockReset(); }
 });
+
+test('historical transport matches reordered IDs and retries only failed readonly batch items',async()=>{
+ vi.useFakeTimers();
+ const calls=[],hash='0x'+'11'.repeat(32),to='0x'+'33'.repeat(20);let failed=false;
+ vi.mocked(guardedFetch).mockImplementation(async(url,options)=>{
+  const body=JSON.parse(options.body);calls.push({url,body});
+  if(!Array.isArray(body))return body.method==='eth_call'
+    ?{status:200,ok:true,json:async()=>({result:'0x12'})}:stateReply(body);
+  const reply=body.map((row,index)=>{
+   if(url==='https://mainnet.base.org'&&!failed&&index===0){failed=true;return {id:row.id,jsonrpc:'2.0',error:{code:429}};}
+   return {id:row.id,jsonrpc:'2.0',result:'0x12'};
+  }).reverse();return {status:200,ok:true,json:async()=>reply};
+ });
+ try{
+  const port=snapshotRpcPort(['https://mainnet.base.org','https://base.drpc.org']);
+  const read=p=>Promise.all(Array.from({length:8},(_,i)=>p.call(to,'0x'+i.toString(16).padStart(2,'0'),hash)));
+  const first=port.withHistoricalSnapshot({block:10,blockHash:hash},read);await vi.runAllTimersAsync();expect(await first).toEqual(Array(8).fill('0x12'));
+  const batches=calls.filter(x=>Array.isArray(x.body));expect(batches.map(x=>x.body.length).sort((a,b)=>a-b)).toEqual([1,8,8]);
+  const firstProvider=batches.filter(x=>x.url==='https://mainnet.base.org');
+  expect(firstProvider[1].body).toEqual([firstProvider[0].body[0]]);
+  const second=port.withHistoricalSnapshot({block:10,blockHash:hash},read);await vi.runAllTimersAsync();await second;
+  expect(calls.filter(x=>Array.isArray(x.body))).toHaveLength(3);
+  const fresh=Promise.all([port.call(to,'0x00',hash),port.call(to,'0x00',hash)]);await vi.runAllTimersAsync();await fresh;
+  expect(calls.filter(x=>x.body.method==='eth_call')).toHaveLength(4);
+ }finally{vi.useRealTimers();vi.mocked(guardedFetch).mockReset();}
+});
+
+test('malformed historical batch response refuses immediately without poisoning later scopes',async()=>{
+ vi.useFakeTimers();let malformed=true,batches=0;
+ const hash='0x'+'11'.repeat(32),to='0x'+'33'.repeat(20);
+ vi.mocked(guardedFetch).mockImplementation(async(_url,options)=>{
+  const body=JSON.parse(options.body);if(!Array.isArray(body))return stateReply(body);
+  batches++;return {status:200,ok:true,json:async()=>malformed?[]:body.map(row=>({jsonrpc:'2.0',id:row.id,result:'0x12'}))};
+ });
+ try{
+  const port=snapshotRpcPort(['https://mainnet.base.org','https://base.drpc.org']);
+  const failed=expect(port.withHistoricalSnapshot({block:10,blockHash:hash},p=>p.call(to,'0x00',hash))).rejects.toThrow('response_population');
+  await vi.runAllTimersAsync();await failed;expect(batches).toBe(2);
+  malformed=false;const retried=port.withHistoricalSnapshot({block:10,blockHash:hash},p=>p.call(to,'0x00',hash));
+  await vi.runAllTimersAsync();expect(await retried).toBe('0x12');expect(batches).toBe(4);
+ }finally{vi.useRealTimers();vi.mocked(guardedFetch).mockReset();}
+});

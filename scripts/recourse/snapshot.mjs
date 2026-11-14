@@ -47,6 +47,9 @@ function ensure(condition, code) { if (!condition) throw Error(code); }
  * No signer or transaction broadcast exists in the snapshot path. */
 export async function buildSuccessionSnapshot({ port, kernelAbi, predecessor, deploymentBlock, block,
   blockHash, expectedRuntimeHash, destinations = {}, verifierDestinations = {}, institutions, priorSnapshot, mode = 'ordinary' }) {
+  if(typeof port.withHistoricalSnapshot==='function')return port.withHistoricalSnapshot({block,blockHash},scoped=>
+    buildSuccessionSnapshot({port:scoped,kernelAbi,predecessor,deploymentBlock,block,blockHash,expectedRuntimeHash,
+      destinations,verifierDestinations,institutions,priorSnapshot,mode}));
   predecessor = getAddress(predecessor);
   ensure(['ordinary','cryptographic-break'].includes(mode),'snapshot_mode_invalid');
   const iface = new Interface(kernelAbi);

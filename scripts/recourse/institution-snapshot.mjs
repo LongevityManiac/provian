@@ -29,6 +29,8 @@ export function verifyInstitutionRuntime(compiled,runtime){
  * verified block. Unsupported obligations are an explicit refusal, never a
  * zero/default seed. This exporter cannot freeze a contract or move funds. */
 export async function buildInstitutionSnapshot({port, deployment, artifacts, block, blockHash}) {
+  if(typeof port.withHistoricalSnapshot==='function')return port.withHistoricalSnapshot({block,blockHash},scoped=>
+    buildInstitutionSnapshot({port:scoped,deployment,artifacts,block,blockHash}));
   ensure(Number.isSafeInteger(block)&&block>0&&/^0x[0-9a-f]{64}$/.test(blockHash),'block_invalid');
   const inventory=[],seedEscrows=[],seedBonds=[],seedBps=[];
   const sources=Object.keys(LEGACY_INSTITUTIONS).map(key=>deployment.contracts[key]);
