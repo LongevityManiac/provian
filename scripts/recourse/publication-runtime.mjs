@@ -134,6 +134,7 @@ export async function runPublicationDelivery({ inputs, db, from, store, vault, l
     }
     const nonces = await rpc.nonces(from);
     ensure(nonces.latest === nonces.pending, 'unreserved_pending_nonce');
+    await assertLease();
     await journal.reserve(nonces.pending, callOf(current.record));
     return await persistAndBroadcast({ from, ...callOf(current.record), nonce: nonces.pending }, 'call');
   } finally { await journal.release(); }

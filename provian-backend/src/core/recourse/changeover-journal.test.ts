@@ -157,3 +157,67 @@ test.each(['nonce', 'identity', 'from', 'raw', 'hash', 'unexpected'])('actual da
   await expect(store.persist({ ...store.read(), attempts: { 0: await f.signed() } })).rejects.toThrow('record_changed');
   expect(store.read().attempts['0'].raw).toBeNull();
 });
+
+async function signedJournal(count = 1) {
+  const f = fixture(count), journal = await f.open();
+  for (let index = 0; index < count; index++) {
+    await journal.persist({ ...journal.read(), attempts: { ...journal.read().attempts, [index]: f.attempt(index) } });
+    await journal.persist({ ...journal.read(), attempts: { ...journal.read().attempts, [index]: await f.signed(index) } });
+  }
+  return { f, journal };
+}
+
+test('long 35-receipt completion renews its unchanged owner without replacing retained bytes', async () => {
+  const { f, journal } = await signedJournal(35), saved = journal.read();
+  let clock = 1000, reads = 0;
+  await journal.complete(async raw => { f.clock(clock += 7000); reads++; return { hash: keccak256(raw), status: 1 }; });
+  expect(reads).toBe(35); expect(journal.read().completed).toBe(true);
+  expect(journal.read().attempts).toEqual(saved.attempts);
+  await journal.release(); expect(await f.otherLease()).toMatchObject({ kind: 'acquired' });
+});
+
+test('a single slow completion read renews only the unchanged owner', async () => {
+  const { f, journal } = await signedJournal();
+  await journal.complete(async raw => { f.clock(200000); return { hash: keccak256(raw), status: 1 }; });
+  expect(journal.read().completed).toBe(true);
+});
+
+test.each(['active', 'expired', 'released'] as const)('delayed completion cannot reclaim a competing %s owner', async mode => {
+  const { f, journal } = await signedJournal(), saved = journal.read();
+  await expect(journal.complete(async raw => {
+    f.clock(200000); const successor = await f.open('successor');
+    if (mode === 'expired') f.clock(400000);
+    if (mode === 'released') await successor.release();
+    return { hash: keccak256(raw), status: 1 };
+  })).rejects.toThrow('lease_lost');
+  expect(journal.read()).toEqual(saved);
+  expect(f.fake.store.get(`${CHANGEOVER_STAGES}/${journal.stageDigest}`)?.completed).toBe(false);
+  await journal.release();
+  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`)?.owner).toBe('successor');
+});
+
+test('renewal cannot reclaim a competing owner even after that owner expires', async () => {
+  const f = fixture(), first = await f.open(); f.clock(200000); await f.open('successor'); f.clock(400000);
+  await expect(first.assertLease()).rejects.toThrow('lease_lost');
+  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`)?.owner).toBe('successor');
+});
+
+test('a changed journal revision during slow finality cannot complete or renew the stage', async () => {
+  const { f, journal } = await signedJournal(), key = `${CHANGEOVER_STAGES}/${journal.stageDigest}`;
+  await expect(journal.complete(async raw => {
+    f.clock(200000); const head = f.fake.store.get(key)!;
+    f.fake.store.set(key, { ...head, revision: Number(head.revision) + 1 });
+    return { hash: keccak256(raw), status: 1 };
+  })).rejects.toThrow('concurrent_write');
+  expect(f.fake.store.get(key)?.completed).toBe(false);
+});
+
+test('completed replay stays read-only through arbitrarily slow receipts', async () => {
+  const { f, journal } = await signedJournal();
+  await journal.complete(async raw => ({ hash: keccak256(raw), status: 1 }));
+  await journal.release(); expect(await f.otherLease()).toMatchObject({ kind: 'acquired' });
+  const key = `${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.from}`, before = structuredClone(f.fake.store.get(key));
+  const replay = await f.open('replay');
+  await replay.complete(async raw => { f.clock(500000); return { hash: keccak256(raw), status: 1 }; });
+  await replay.release(); expect(f.fake.store.get(key)).toEqual(before);
+});

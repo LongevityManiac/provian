@@ -2,7 +2,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { Interface, Transaction, Wallet, sha256, toUtf8Bytes } from 'ethers';
 import { createFakeFirestore } from '../../provian-backend/src/core/pvt/__test-helpers__/fake-firestore.ts';
 import { BASE_GAS_PRICE_ORACLE } from '../../provian-backend/src/core/recourse/base-transaction-fees.ts';
-import { PUBLICATION_JOURNALS, PUBLICATION_ATTEMPTS } from '../../provian-backend/src/core/recourse/publication-journal.ts';
+import { PUBLICATION_JOURNALS, PUBLICATION_ATTEMPTS, openPublicationJournal } from '../../provian-backend/src/core/recourse/publication-journal.ts';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/wp4/durable-settlement-store.ts';
 import { runPublicationDelivery } from './publication-runtime.mjs';
 const checks = vi.hoisted(() => ({ progress: vi.fn(), history: vi.fn(), plan: vi.fn(), durable: vi.fn() }));
 vi.mock('./publication-recovery.mjs', () => ({ readPublicationProgress: checks.progress, readPublicationHistory: checks.history }));
@@ -95,8 +96,44 @@ function fixture(options = {}) {
       expect(heads).toHaveLength(1); expect(BigInt(heads[0][1].feeReservedWei)).toBeGreaterThan(0n);
       return { getAddress: async () => from, signTransaction: async tx => { state.signed++; return wallet.signTransaction(tx); } };
     } };
-  return { input, state, db, transactions, lifecycleDigest, run: () => runPublicationDelivery(input) };
+  return { input, state, db, transactions, lifecycleDigest, goal, run: () => runPublicationDelivery(input) };
 }
+test.each(['existing-progress','existing-nonces','new-nonces'])('slow %s reads renew the same owner before reserving a gas nonce',async mode=>{
+ const f=fixture();let clock=Date.now(),delayed=false;const now=vi.spyOn(Date,'now').mockImplementation(()=>clock);
+ try{
+  if(mode.startsWith('existing')){const plan=await checks.plan({stage:'retire'});await checks.durable({plan:plan.hashAuthorityPlan});}
+  if(mode==='existing-progress'){
+   const original=checks.progress.getMockImplementation();
+   checks.progress.mockImplementation(async(...args)=>{if(!delayed){delayed=true;clock+=180000;}return original(...args);});
+  }else for(const reader of f.input.inputs.port.rpcs){
+   const original=reader.request;
+   reader.request=async(method,params)=>{if(method==='eth_getTransactionCount'&&!delayed){delayed=true;clock+=180000;}return original(method,params);};
+  }
+  expect((await f.run()).status).toBe('submitted');expect(delayed).toBe(true);
+  expect([f.state.signed,f.state.sent,f.state.records.length]).toEqual([1,1,1]);
+ }finally{now.mockRestore();}
+});
+test('slow nonce reads cannot reserve or sign after a competing owner acquires and expires',async()=>{
+ const f=fixture();let clock=Date.now(),delayed=false;const now=vi.spyOn(Date,'now').mockImplementation(()=>clock);
+ try{
+  for(const reader of f.input.inputs.port.rpcs){const original=reader.request;
+   reader.request=async(method,params)=>{
+    if(method==='eth_getTransactionCount'&&!delayed){
+     delayed=true;clock+=180000;
+     await openPublicationJournal(f.db,{goal:f.goal,from:f.input.from,approvedBudgetWei:f.input.approvedBudgetWei,
+      readers:f.input.inputs.port.rpcs,workerId:'competing'});
+     clock+=180000;
+    }
+    return original(method,params);
+   };
+  }
+  await expect(f.run()).rejects.toThrow('lease_lost');
+  expect([f.state.loaded,f.state.signed,f.state.sent]).toEqual([0,0,0]);
+  const head=f.db.store.get(`${PUBLICATION_JOURNALS}/${f.lifecycleDigest}`);
+  expect(head.attemptCount).toBe(0);expect(head.feeReservedWei).toBe('0');
+  expect(f.db.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.input.from}`).owner).toBe('competing');
+ }finally{now.mockRestore();}
+});
 test('actual journal and gas persistence deliver retirement and publication, surviving a lost broadcast reply', async () => {
   const f = fixture(); f.state.loseBroadcast = true;
   await expect(f.run()).rejects.toThrow(/broadcast_reply_lost/);

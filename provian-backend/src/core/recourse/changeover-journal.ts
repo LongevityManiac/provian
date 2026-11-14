@@ -173,16 +173,17 @@ export async function openChangeoverJournal(db: Firestore, input: {
 
   const assertLease = async (expectedDigest = stageDigest): Promise<void> => {
     requireValue(!closed && !state.completed && expectedDigest === stageDigest, 'closed_or_changed');
-    // Renewal may take over an expired lease only if no other worker acquired it.
-    // Persist still checks the worker and head revision inside its transaction.
-    for (const signer of signers) {
-      const lease = await acquireSignerLease(settlementDb, { signer, workerId, operationId: reservation,
-        nowMs: now(), leaseTtlMs: 120_000 });
-      requireValue(lease.kind === 'acquired', 'lease_lost');
-    }
-    assertLeaseRows(await Promise.all(leaseRefs.map(ref => ref.get())));
-    const head = await headRef.get();
-    requireValue(head.get('revision') === revision && head.get('completed') === false, 'concurrent_write');
+    const expectedRevision = revision;
+    // Slow reads may outlast this worker's lease. Renew only its unchanged
+    // ownership and reservation; only opening a new journal can take over.
+    await db.runTransaction(async tx => {
+      const [head, ...leases] = await Promise.all([tx.get(headRef), ...leaseRefs.map(ref => tx.get(ref))]);
+      requireValue(!closed && !state.completed, 'closed_or_changed');
+      for (const lease of leases) requireValue(lease.get('owner') === workerId
+        && lease.get('pending_operation') === reservation, 'lease_lost');
+      requireValue(head.get('revision') === expectedRevision && head.get('completed') === false, 'concurrent_write');
+      for (const ref of leaseRefs) tx.update(ref, { expires_at_ms: now() + 120_000 });
+    });
   };
   const persist = async (incoming: ChangeoverJournal): Promise<void> => {
     const next = structuredClone(incoming);
@@ -238,6 +239,7 @@ export async function openChangeoverJournal(db: Firestore, input: {
       requireValue(attempt.raw !== null, 'unsigned');
       const receipt = await finalized(attempt.raw);
       requireValue(receipt?.hash === attempt.hash && receipt?.status === 1, 'not_finalized');
+      await assertLease();
     }
     const expectedRevision = revision;
     await db.runTransaction(async tx => {
