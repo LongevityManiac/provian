@@ -210,3 +210,46 @@ describe(' scheduler manifest reconcile — RED controls (each guard fed a viola
     expect(r.errors.some((e) => e.includes('SECRET IN JOB HEADER') && e.includes('provian-legacy-secret'))).toBe(true);
   });
 });
+
+
+describe('fenced changeover scheduler maintenance', () => {
+  const { reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS, assertRecourseWriterFence } = require('./recourse-scheduler-hold') as typeof import('./recourse-scheduler-hold');
+  const fence = { protocol: 'canonical-nonce-v1', active: false,
+    recourse_changeover: { run: 'test-run', source: 'a'.repeat(40), held_at_ms: 100 } };
+  const heldJobs = (): LiveJob[] => clone(SEED_LIVE_JOBS).map(job => RECOURSE_HELD_JOBS.includes(job.name) ? { ...job, state: 'PAUSED' } : job);
+  const check = (liveJobs = heldJobs(), actualFence: unknown = fence) => reconcileRecourseSchedulerHold({ manifest, codeEndpoints, liveJobs, fence: actualFence, nowMs: 200 });
+  it('admits exactly five held jobs without reporting them enabled or changing the ordinary gate', () => {
+    const jobs = heldJobs(), snapshot = structuredClone(jobs);
+    expect(jobs.filter(job => RECOURSE_HELD_JOBS.includes(job.name))).toHaveLength(5);
+    expect(reconcileScheduler({ manifest, codeEndpoints, liveJobs: jobs }).ok).toBe(false);
+    const result = check(jobs); expect(result.ok).toBe(true);
+    expect(result.checked.enabledHttpJobs).toBe(reconcileScheduler({ manifest, codeEndpoints, liveJobs: jobs }).checked.enabledHttpJobs);
+    expect(jobs).toEqual(snapshot);
+  });
+  it.each(['missing', 'enabled', 'schedule', 'name', 'target', 'duplicate', 'foreign-origin', 'secret-header'])('refuses %s drift in a held job', mode => {
+    const jobs = heldJobs(), index = jobs.findIndex(job => job.name === RECOURSE_HELD_JOBS[0]), job = jobs[index];
+    if (mode === 'missing') jobs.splice(index, 1);
+    if (mode === 'enabled') jobs[index] = { ...job, state: 'ENABLED' };
+    if (mode === 'schedule') jobs[index] = { ...job, schedule: '* * * * *' };
+    if (mode === 'name') jobs[index] = { ...job, name: 'unexpected-name' };
+    if (mode === 'target') jobs[index] = { ...job, endpoint: '/unexpected' };
+    if (mode === 'duplicate') jobs.push({ ...job, name: 'duplicate' });
+    if (mode === 'foreign-origin') jobs[index] = { ...job, uri: 'https://example.invalid' + job.endpoint };
+    if (mode === 'secret-header') jobs[index] = { ...job, headers: { 'x-admin-secret': 'synthetic-must-refuse' } };
+    expect(check(jobs).ok).toBe(false);
+  });
+  it('does not admit an unrelated paused job or orphan', () => {
+    const jobs = heldJobs(), index = jobs.findIndex(job => !RECOURSE_HELD_JOBS.includes(job.name));
+    jobs[index] = { ...jobs[index], state: 'PAUSED' }; expect(check(jobs).ok).toBe(false);
+    expect(check([...heldJobs(), { name: 'orphan', state: 'ENABLED', schedule: '* * * * *', endpoint: '/unexpected' }]).ok).toBe(false);
+  });
+  it.each([null, {}, { ...fence, active: true }, { ...fence, protocol: 'other' },
+    { ...fence, recourse_changeover: { ...fence.recourse_changeover, held_at_ms: 201 } },
+    { ...fence, recourse_changeover: { ...fence.recourse_changeover, source: 'bad' } },
+    { ...fence, recourse_changeover: { ...fence.recourse_changeover, completion: {} } },
+    { ...fence, recourse_changeover: { ...fence.recourse_changeover, run: '' } },
+  ])('refuses invalid or released fence %#', value => {
+    expect(() => assertRecourseWriterFence(value, 200)).toThrow('writer_fence_required');
+    expect(() => check(heldJobs(), value)).toThrow('writer_fence_required');
+  });
+});

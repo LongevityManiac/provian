@@ -258,6 +258,26 @@ for key in "${MANAGED_SECRET_KEYS[@]}"; do
     SECRET_PAIRS="${SECRET_PAIRS}${key}=${secret_name}:latest"
 done
 
+# --- Scheduler reconcile gate — HARD stop ---
+# The class fix for //a scheduler endpoint that shipped without
+# its Cloud Scheduler job (or a job left pointing at a retired endpoint) froze
+# silently while looking healthy. `scheduler-jobs.json` is the source of truth;
+# this reconciles it against source AND live gcloud state and BLOCKS the deploy on
+# a mismatch. Runs before the (slower) index sync + code deploy so it fails fast.
+echo ""
+echo "Reconciling Cloud Scheduler jobs against scheduler-jobs.json..."
+SCHEDULER_CHECK_ARGS=()
+if [ "${PROVIAN_RECOURSE_CHANGEOVER_DEPLOY:-}" = "1" ]; then
+    SCHEDULER_CHECK_ARGS+=(--recourse-changeover-held)
+fi
+if ! npx tsx "$SCRIPT_DIR/scripts/reconcile-scheduler.ts" "${SCHEDULER_CHECK_ARGS[@]}"; then
+    echo ""
+    echo "DEPLOY BLOCKED: scheduler reconcile failed (see above)."
+    echo " Create/enable the missing job (mirror the USDC/institution siblings), pause a job"
+    echo " on a retired endpoint, or update scheduler-jobs.json if the change is intended."
+    exit 1
+fi
+
 # --- Set env vars and secret refs on Cloud Run ---
 echo "Setting environment variables and Secret Manager refs on $SERVICE..."
 UPDATE_ARGS=(
@@ -275,22 +295,6 @@ if [ -n "$ENV_PAIRS" ]; then
 fi
 
 gcloud "${UPDATE_ARGS[@]}"
-
-# --- Scheduler reconcile gate — HARD stop ---
-# The class fix for //a scheduler endpoint that shipped without
-# its Cloud Scheduler job (or a job left pointing at a retired endpoint) froze
-# silently while looking healthy. `scheduler-jobs.json` is the source of truth;
-# this reconciles it against source AND live gcloud state and BLOCKS the deploy on
-# a mismatch. Runs before the (slower) index sync + code deploy so it fails fast.
-echo ""
-echo "Reconciling Cloud Scheduler jobs against scheduler-jobs.json..."
-if ! npx tsx "$SCRIPT_DIR/scripts/reconcile-scheduler.ts"; then
-    echo ""
-    echo "DEPLOY BLOCKED: scheduler reconcile failed (see above)."
-    echo " Create/enable the missing job (mirror the USDC/institution siblings), pause a job"
-    echo " on a retired endpoint, or update scheduler-jobs.json if the change is intended."
-    exit 1
-fi
 
 # --- Sync Firestore composite indexes (source of truth = firestore.indexes.json) ---
 # Runs BEFORE the code deploy so any new query's index is already building when

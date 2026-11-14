@@ -17,6 +17,9 @@
 import { execFileSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { isDeepStrictEqual } from 'util';
+import { scriptDb } from './lib/script-db';
+import { assertRecourseWriterFence, reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS } from '../src/core/deployment/recourse-scheduler-hold';
 import {
   loadSchedulerManifest,
   scanSchedulerEndpointsFromSource,
@@ -59,7 +62,13 @@ function fetchLiveJobs(manifestLocation: string, project: string): LiveJob[] {
   return normalize(JSON.parse(out) as RawJob[]);
 }
 
-function main(): void {
+async function main(): Promise<void> {
+  const maintenance = process.argv.includes('--recourse-changeover-held');
+  if (maintenance && (process.argv.includes('--jobs-file') || process.env.GOOGLE_CLOUD_PROJECT !== 'provian-ai'
+    || process.env.FIRESTORE_DATABASE_ID !== 'relay')) throw Error('recourse_scheduler_live_database_required');
+  const fenceRef = maintenance ? scriptDb().collection('evm_server_writer_cutovers_v1').doc('base_canonical_nonce') : null;
+  const fence = fenceRef ? (await fenceRef.get()).data() : undefined;
+  if (maintenance) assertRecourseWriterFence(fence);
   const manifest = loadSchedulerManifest(MANIFEST_PATH);
   const codeEndpoints = scanSchedulerEndpointsFromSource(SRC_DIR);
 
@@ -75,11 +84,19 @@ function main(): void {
     console.log(`[reconcile-scheduler] live mode: ${liveJobs.length} jobs from gcloud (${manifest.project}/${manifest.location})`);
   }
 
-  const result = reconcileScheduler({ manifest, codeEndpoints, liveJobs });
+  if (fenceRef) {
+    const fresh = (await fenceRef.get()).data();
+    assertRecourseWriterFence(fresh);
+    if (!isDeepStrictEqual(fresh, fence)) throw Error('recourse_scheduler_fence_changed');
+  }
+  const result = maintenance ? reconcileRecourseSchedulerHold({ manifest, codeEndpoints, liveJobs, fence })
+    : reconcileScheduler({ manifest, codeEndpoints, liveJobs });
   console.log(`[reconcile-scheduler] checked: ${JSON.stringify(result.checked)}`);
 
   if (result.ok) {
-    console.log('[reconcile-scheduler] OK — every required scheduler endpoint has an enabled job; no job points at a retired/unknown endpoint.');
+    console.log(maintenance
+      ? `[reconcile-scheduler] OK — writer fence verified; ${RECOURSE_HELD_JOBS.length} changeover jobs remain PAUSED; all other scheduler checks passed.`
+      : '[reconcile-scheduler] OK — every required scheduler endpoint has an enabled job; no job points at a retired/unknown endpoint.');
     process.exit(0);
   }
 
@@ -90,4 +107,4 @@ function main(): void {
   process.exit(1);
 }
 
-main();
+main().catch(() => { console.error('[reconcile-scheduler] live fence verification failed; deployment refused.'); process.exitCode = 1; });
