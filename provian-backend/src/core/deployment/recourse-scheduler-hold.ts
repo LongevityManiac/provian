@@ -4,6 +4,10 @@ export const RECOURSE_HELD_JOBS = Object.freeze([
   'provian-pvt9-settlement', 'provian-pvt9-genesis-settlement', 'provian-payout-sweep',
   'provian-daily-pe-anchor', 'provian-pvt9-epoch-keeper',
 ]);
+export function assertRecourseSchedulerEnvironment(env: Readonly<Record<string, string | undefined>>, offline: boolean): void {
+  if (offline || env.GOOGLE_CLOUD_PROJECT !== 'provian-ai' || env.FIRESTORE_DATABASE_ID !== 'relay'
+    || env.FIRESTORE_EMULATOR_HOST !== undefined) throw Error('recourse_scheduler_live_database_required');
+}
 export function assertRecourseWriterFence(value: unknown, nowMs = Date.now()): void {
   const row = value as { protocol?: unknown; active?: unknown; recourse_changeover?: {
     run?: unknown; source?: unknown; held_at_ms?: unknown; completion?: unknown;

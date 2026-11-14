@@ -19,7 +19,7 @@ import path from 'path';
 import fs from 'fs';
 import { isDeepStrictEqual } from 'util';
 import { scriptDb } from './lib/script-db';
-import { assertRecourseWriterFence, reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS } from '../src/core/deployment/recourse-scheduler-hold';
+import { assertRecourseSchedulerEnvironment, assertRecourseWriterFence, reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS } from '../src/core/deployment/recourse-scheduler-hold';
 import {
   loadSchedulerManifest,
   scanSchedulerEndpointsFromSource,
@@ -64,8 +64,7 @@ function fetchLiveJobs(manifestLocation: string, project: string): LiveJob[] {
 
 async function main(): Promise<void> {
   const maintenance = process.argv.includes('--recourse-changeover-held');
-  if (maintenance && (process.argv.includes('--jobs-file') || process.env.GOOGLE_CLOUD_PROJECT !== 'provian-ai'
-    || process.env.FIRESTORE_DATABASE_ID !== 'relay')) throw Error('recourse_scheduler_live_database_required');
+  if (maintenance) assertRecourseSchedulerEnvironment(process.env, process.argv.includes('--jobs-file'));
   const fenceRef = maintenance ? scriptDb().collection('evm_server_writer_cutovers_v1').doc('base_canonical_nonce') : null;
   const fence = fenceRef ? (await fenceRef.get()).data() : undefined;
   if (maintenance) assertRecourseWriterFence(fence);

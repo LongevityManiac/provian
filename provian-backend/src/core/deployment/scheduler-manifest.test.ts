@@ -213,11 +213,19 @@ describe(' scheduler manifest reconcile — RED controls (each guard fed a viola
 
 
 describe('fenced changeover scheduler maintenance', () => {
-  const { reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS, assertRecourseWriterFence } = require('./recourse-scheduler-hold') as typeof import('./recourse-scheduler-hold');
+  const { reconcileRecourseSchedulerHold, RECOURSE_HELD_JOBS, assertRecourseWriterFence, assertRecourseSchedulerEnvironment } = require('./recourse-scheduler-hold') as typeof import('./recourse-scheduler-hold');
   const fence = { protocol: 'canonical-nonce-v1', active: false,
     recourse_changeover: { run: 'test-run', source: 'a'.repeat(40), held_at_ms: 100 } };
   const heldJobs = (): LiveJob[] => clone(SEED_LIVE_JOBS).map(job => RECOURSE_HELD_JOBS.includes(job.name) ? { ...job, state: 'PAUSED' } : job);
   const check = (liveJobs = heldJobs(), actualFence: unknown = fence) => reconcileRecourseSchedulerHold({ manifest, codeEndpoints, liveJobs, fence: actualFence, nowMs: 200 });
+  it('requires the live named database and refuses an emulator or offline inventory', () => {
+    const env = { GOOGLE_CLOUD_PROJECT: 'provian-ai', FIRESTORE_DATABASE_ID: 'relay' };
+    expect(() => assertRecourseSchedulerEnvironment(env, false)).not.toThrow();
+    for (const changed of [{}, { ...env, GOOGLE_CLOUD_PROJECT: 'other' }, { ...env, FIRESTORE_DATABASE_ID: '(default)' },
+      { ...env, FIRESTORE_EMULATOR_HOST: 'localhost:8080' }, { ...env, FIRESTORE_EMULATOR_HOST: '' }])
+      expect(() => assertRecourseSchedulerEnvironment(changed, false)).toThrow('live_database_required');
+    expect(() => assertRecourseSchedulerEnvironment(env, true)).toThrow('live_database_required');
+  });
   it('admits exactly five held jobs without reporting them enabled or changing the ordinary gate', () => {
     const jobs = heldJobs(), snapshot = structuredClone(jobs);
     expect(jobs.filter(job => RECOURSE_HELD_JOBS.includes(job.name))).toHaveLength(5);
