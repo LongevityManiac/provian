@@ -9,9 +9,9 @@ function object(v){ensure(v&&typeof v==='object'&&!Array.isArray(v),'reply');ret
  * bytes reach either operator only after the transaction engine persists them.
  * The fee reservation callback owns the durable stage budget, including the
  * chain's data fee; this adapter does not claim gasLimit*maxFee is the whole fee. */
-export function changeoverRpcPort({rpcs,signer,assertLease,assertBroadcast,approveFee,maxFeePerGas,maxPriorityFeePerGas,maxGas}){
+export function changeoverRpcPort({rpcs,signer,assertLease,assertBroadcast,assertExposure=assertLease,approveFee,maxFeePerGas,maxPriorityFeePerGas,maxGas}){
  ensure(rpcs.length===2&&rpcs[0]!==rpcs[1]&&typeof approveFee==='function'
-  &&typeof assertLease==='function'&&typeof assertBroadcast==='function','configuration');
+  &&typeof assertLease==='function'&&typeof assertBroadcast==='function'&&typeof assertExposure==='function','configuration');
  ensure([maxFeePerGas,maxPriorityFeePerGas,maxGas].every(v=>typeof v==='bigint'&&v>0n)
   &&maxFeePerGas>=maxPriorityFeePerGas,'fee_configuration');
  assertBaseTransactionGasLimit(maxGas);
@@ -61,14 +61,17 @@ export function changeoverRpcPort({rpcs,signer,assertLease,assertBroadcast,appro
    const heads=await both('eth_getBlockByNumber',['latest',false]);
    const height=Math.min(...heads.map(h=>number(object(h).number))),tag=toQuantity(height);
    const header=object(await agree('eth_getBlockByNumber',[tag,false]));
-   await assertLease();
+   await assertExposure('simulation');await assertLease();
    await agree('eth_call',[call,tag]);
-   await assertLease();
+   await assertExposure('estimate');await assertLease();
    const estimates=(await both('eth_estimateGas',[call,tag])).map(quantity);
    const estimate=estimates.reduce((a,b)=>a>b?a:b),gasLimit=boundedGasEstimate(estimate,maxGas);
    ensure(gasLimit>0n&&gasLimit<=maxGas,'gas_bound');
    const prepared={type:2,chainId:8453,nonce:step.nonce,to:step.to??null,data:step.data,value:0n,gasLimit,maxFeePerGas,maxPriorityFeePerGas};
    const expectedUnsigned=Transaction.from(prepared).unsignedSerialized;
+   // A nested authority proof is executable even before its sponsor signs.
+   // Recheck before the fee oracle receives transaction bytes as calldata.
+   await assertExposure('fee');await assertLease();
    await approveFee({step:{...step},transaction:{...prepared},blockHash:header.hash,blockNumber:height});
    ensure(object(await agree('eth_getBlockByNumber',[tag,false])).hash===header.hash,'reorg');
    await assertLease();const raw=await signer.signTransaction({...prepared});await assertLease();

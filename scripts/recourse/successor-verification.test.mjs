@@ -34,14 +34,18 @@ test('rehearsed successor reconciles a nonempty real snapshot before publication
 });
 test('captured successor verification is identical through two-provider historical reads and reuse',{skip:!fixturePath},async()=>{
  const f=fixture(),expected=await verifySuccessorPlan(f),base={...f.port,finalizedBlock:async()=>f.block};
- let reads=0;
+ let reads=0;const batchSizes=[];
  f.port.withHistoricalSnapshot=historicalSnapshotScope(base,['first','second'],async(_operator,rows)=>{
-  reads+=rows.length;
+  reads+=rows.length;batchSizes.push(rows.length);
   return Promise.all(rows.map(row=>row.method==='eth_call'
    ?base.call(row.params[0].to,row.params[0].data,row.params[1].blockHash)
    :base.code(row.params[0],row.params[1].blockHash)));
  });
  assert.deepEqual(await verifySuccessorPlan(f),expected);const first=reads;assert.ok(first>100);
+ assert.ok(batchSizes.some(size=>size===8),'independent reads must fill bounded provider batches');
+ assert.ok(batchSizes.every(size=>size>0&&size<=8));
+ assert.ok(batchSizes.length<first/2,'sequential singleton reads must not dominate verification');
+ console.log('SUCCESSOR_READ_BATCHES',JSON.stringify({reads:first,requests:batchSizes.length,max:Math.max(...batchSizes)}));
  assert.deepEqual(await verifySuccessorPlan(f),expected);assert.equal(reads,first);
  f.blocks[f.block.number]=ZeroHash;
  await assert.rejects(verifySuccessorPlan(f),/checkpoint_changed/);

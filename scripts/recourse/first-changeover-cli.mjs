@@ -92,7 +92,8 @@ export async function runFirstChangeoverCli(path, flags = []) {
     ensure(execute || options.requireCompleted, 'execution_required');
     return runPublicationDelivery({ inputs: publication, db: db(), from: limits.gasSigner, store: authorityStore,
       vault: onePasswordAuthorityVault(input.authorityVault), loadSigner, ...fees,
-      requireCompleted: options.requireCompleted, approvedBudgetWei: limits.approvedBudgetsWei.publication });
+      requireCompleted: options.requireCompleted, approvedBudgetWei: limits.approvedBudgetsWei.publication,
+      onProgress: event => console.log(JSON.stringify({ phase: 'publication', ...event })) });
   };
   // Present authentication before the long chain checks, then reuse only these
   // address-verified signers. This performs no signing or broadcasting.

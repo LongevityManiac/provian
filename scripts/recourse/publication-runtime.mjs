@@ -19,12 +19,12 @@ const callOf = record => ({ to: record.transaction.to, data: record.transaction.
  * The caller owns the explicit execution decision and private-store DB wiring.
  * Reinvoke after waiting for chain progress; terminal restarts are read-only. */
 export async function runPublicationDelivery({ inputs, db, from, store, vault, loadSigner,
-  approvedBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, cancelGas = false, requireCompleted = false }) {
+  approvedBudgetWei, maxFeePerGas, maxPriorityFeePerGas, maxGas, workerId, cancelGas = false, requireCompleted = false, onProgress = () => {} }) {
   const { port, ...facts } = inputs; inputs = { ...structuredClone(facts), port };
   ensure(/^0x[0-9a-f]{40}$/.test(from) && typeof approvedBudgetWei === 'string' && /^[1-9][0-9]*$/.test(approvedBudgetWei)
     && [maxFeePerGas, maxPriorityFeePerGas, maxGas].every(value => typeof value === 'bigint' && value > 0n)
     && maxFeePerGas >= maxPriorityFeePerGas && typeof loadSigner === 'function' && typeof cancelGas === 'boolean'
-    && typeof requireCompleted === 'boolean', 'configuration');
+    && typeof requireCompleted === 'boolean' && typeof onProgress === 'function', 'configuration');
   const readers = port.rpcs;
   ensure(Array.isArray(readers) && readers.length === 2 && readers.every(reader => typeof reader.operatorId === 'string'
     && reader.operatorId && typeof reader.request === 'function') && readers[0].operatorId !== readers[1].operatorId, 'independent_operators');
@@ -54,21 +54,32 @@ export async function runPublicationDelivery({ inputs, db, from, store, vault, l
       return { status: 'confirmed', lifecycleDigest: journal.lifecycleDigest, attempts: state.attempts.length };
     }
     let exposure = null;
-    const assertLease = async () => {
+    let validations = 0;
+    const assertLease = () => journal.assertLease();
+    // Ownership renewal is cheap. Full authority checks belong immediately
+    // before executable proof exposure, signing and broadcast, including replay.
+    const assertAuthority = async boundary => {
       await journal.assertLease();
       if (exposure?.kind === 'call') {
+        const sequence = ++validations, started = Date.now();
+        onProgress({ event: 'source_validation_started', lifecycleDigest: journal.lifecycleDigest, sequence, boundary });
         const fresh = await readPublicationProgress(inputs, store);
         ensure(equal(fresh.outcome.goal, goal), 'goal_changed');
         const saved = fresh.records.flatMap(row => [row.record, ...(row.cancellation ? [row.cancellation] : [])]);
         ensure(saved.some(record => equal(callOf(record), exposure.call)), 'operation_changed');
         await journal.assertLease();
+        onProgress({ event: 'source_validation_verified', lifecycleDigest: journal.lifecycleDigest, sequence, boundary, elapsedMs: Date.now() - started });
       }
     };
-    const rpc = changeoverRpcPort({ rpcs: readers, maxFeePerGas, maxPriorityFeePerGas, maxGas, assertLease, assertBroadcast: assertLease,
+    const rpc = changeoverRpcPort({ rpcs: readers, maxFeePerGas, maxPriorityFeePerGas, maxGas, assertLease,
+      assertExposure: assertAuthority, assertBroadcast: () => assertAuthority('broadcast'),
       signer: { getAddress: async () => from, signTransaction: async transaction => {
         await assertLease();
         if (!signer) { signer = await loadSigner(from); ensure(String(await signer.getAddress()).toLowerCase() === from, 'signer_changed'); }
-        await assertLease(); return signer.signTransaction({ ...transaction });
+        await assertAuthority('sign');
+        const raw = await signer.signTransaction({ ...transaction });
+        onProgress({ event: 'transaction_signed', lifecycleDigest: journal.lifecycleDigest, from, nonce: transaction.nonce, hash: Transaction.from(raw).hash });
+        return raw;
       } },
       approveFee: async ({ transaction, blockHash }) => journal.reserveFee(cancelGas ? 'cancel' : 'call', transaction, blockHash),
     });

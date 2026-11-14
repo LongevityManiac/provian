@@ -21,10 +21,12 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   return iface.decodeFunctionResult(method,await port.call(a[name],iface.encodeFunctionData(method,args),block.hash));
  };
  const scalar=async(name,method,args=[])=>(await read(name,method,args))[0];
- for(const creation of plan.creations){
+ // Independent reads share the exact authenticated block. The historical port
+ // bounds each provider batch to eight and compares both providers unchanged.
+ await Promise.all(plan.creations.map(async creation=>{
   const name=creation.label.slice('deploy:'.length),runtime=await port.code(creation.address,block.hash);
   verifyInstitutionRuntime(artifacts[name],runtime);
- }
+ }));
  verifyInstitutionRuntime(artifacts.RecourseStandingConsent,await port.code(a.RecourseStandingConsent,block.hash));
  verifyInstitutionRuntime(artifacts.ProvianProtocolPointer,await port.code(plan.pointer,block.hash));
  const bindings={
@@ -42,9 +44,9 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   ProvianMemberSettlement:{kernel:a.ProvianRecourseKernel,pointer:plan.pointer,submitter:plan.submitter,pool:a.ProvianMemberRecoursePool},
   ProvianSuccessionImporter:{history:a.ProvianRecoveryHistory,authorization:a.ProvianRestorationAuthorization},
  };
- for(const[name,expected]of Object.entries(bindings))for(const[method,value]of Object.entries(expected))
-  ensure(lower(await scalar(name,method))===lower(value),`binding:${name}:${method}`);
- for(const[name,method,expected]of [
+ await Promise.all(Object.entries(bindings).flatMap(([name,expected])=>Object.entries(expected).map(async([method,value])=>
+  ensure(lower(await scalar(name,method))===lower(value),`binding:${name}:${method}`))));
+ await Promise.all([
   ['ProvianProtocolPointer','revision',0],
   ['ProvianRestorationAuthorization','pendingBreakAmount',0],
   ['ProvianRestorationAuthorization','hashAccountCodeHash',keccak256(artifacts.ProvianHashAccount.deployedBytecode.object)],
@@ -61,7 +63,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   ['ProvianRecourseKernel','genesisStartsAt',state.genesisStartsAt],['ProvianRecourseKernel','genesisEndsAt',state.genesisEndsAt],
   ['ProvianRecourseKernel','genesisAdmissionCutoff',state.genesisCutoff],
   ['ProvianRecourseKernel','lastOpenedEpoch',state.lastOpenedEpoch],['ProvianRecourseKernel','nextFinalizedCursor',state.nextCursor],
- ])ensure(String(await scalar(name,method))===String(expected),`state:${name}:${method}`);
+ ].map(async([name,method,expected])=>ensure(String(await scalar(name,method))===String(expected),`state:${name}:${method}`)));
  ensure(await scalar('ProvianRecoveryHistory','complete')===true&&await scalar('ProvianRestorationAuthorization','successionReady')===true,'imports_incomplete');
  ensure(await scalar('ProvianRecourseKernel','epochZeroArmed')===true&&await scalar('ProvianRecourseKernel','administrativeHold')===true,'activation_state');
  ensure(await scalar('ProvianRecourseKernel','genesisAdmissionClosed')===state.genesisClosed,'genesis_state');
@@ -75,12 +77,12 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   ensure(iface.encodeFunctionResult(method,actual)===iface.encodeFunctionResult(method,values),`state:${name}:${method}`);
  };
  await exact('ProvianRecoveryHistory','baseState',[],[plan.economicSeeds.state]);
- for(const row of plan.economicSeeds.rows) await exact('ProvianRecoveryHistory','economicEntry',[row.index],[row.data,row.index<state.epochs.length]);
+ await Promise.all(plan.economicSeeds.rows.map(row=>exact('ProvianRecoveryHistory','economicEntry',[row.index],[row.data,row.index<state.epochs.length])));
  await exact('ProvianRecoveryHistory','appliedEconomicEntries',[a.ProvianRecourseKernel],[plan.economicSeeds.rows.length]);
  await exact('ProvianRecoveryHistory','importedEconomicEntries',[],[plan.economicSeeds.rows.length]);
  // Earlier epochs retain their historical settlement hashes. The armed current
  // epoch changes only its verifier and kernel-domain hash, never economics.
- for(const epoch of state.epochs){
+ await Promise.all(state.epochs.map(async epoch=>{
   const current=String(epoch.policy.epoch)===String(state.lastOpenedEpoch);
   const got=(await read('ProvianRecourseKernel','getEpochPolicy',[epoch.policy.epoch]))[0];
   const expected={...epoch.policy};
@@ -89,7 +91,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   await exact('ProvianRecourseKernel','getEpochPolicy',[epoch.policy.epoch],[expected]);
   await exact('ProvianRecourseKernel','epochGenesisIssued',[epoch.policy.epoch],[epoch.genesisIssued]);
   await exact('ProvianRecourseKernel','epochTotalIssued',[epoch.policy.epoch],[epoch.totalIssued]);
- }
+ }));
  const current=(await read('ProvianRecourseKernel','getEpochPolicy',[state.lastOpenedEpoch]))[0];
  const expectedCurrent={opened:true,epoch:state.lastOpenedEpoch,
   startsAt:BigInt(state.epochZeroStartsAt)+BigInt(state.lastOpenedEpoch)*BigInt(await scalar('ProvianRecourseKernel','EPOCH_DURATION')),
@@ -112,7 +114,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
   ])if(schedule[flag])await exact('ProvianRecourseKernel',method,[schedule.epoch],values);
  }
 
- for(const row of plan.snapshot.balances)ensure(await scalar('ProvianRestorationAuthorization','migratedAddress',[row.previousOwner])===true,'missing_holder');
+ await Promise.all(plan.snapshot.balances.map(async row=>ensure(await scalar('ProvianRestorationAuthorization','migratedAddress',[row.previousOwner])===true,'missing_holder')));
  // Import count/root and the exact nonzero sum prove the entire population.
  // Do not demand balances stay frozen after import: ordinary transfers remain
  // permissionless even while the new settlement lane is administratively held.
@@ -147,7 +149,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
  ensure(seenSchedules.size===expectedSchedules.size,'missing_schedule_seed');
  const replacements=new Map([[lower(plan.predecessor),a.ProvianRecourseKernel],
   ...institutions.inventory.map(row=>[row.address,a[mapping[row.key]]])]);
- for(const row of institutions.inventory){
+ await Promise.all(institutions.inventory.map(async row=>{
   const name=mapping[row.key];
   for(const wiring of row.wiring)ensure(lower(await scalar(name,wiring.method))===lower(replacements.get(wiring.address)??wiring.address),`institution_wiring:${name}:${wiring.method}`);
   for(const policy of row.policy){
@@ -159,7 +161,7 @@ export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port
    const value=(await read(name,policy.method)).toArray().map(v=>typeof v==='bigint'?v.toString():v);
    ensure(JSON.stringify(value)===JSON.stringify(policy.values),`institution_policy:${name}:${policy.method}`);
   }
- }
+ }));
  for(const [name,seedPlan] of Object.entries(plan.custodySeeds)){
   ensure(await scalar(name,'custodySeedsReady')===true,'custody_seed_incomplete');
   for(const [method,value] of [['custodySeedDomain',seedPlan.domain],['custodySeedRoot',seedPlan.manifest.root],

@@ -262,22 +262,59 @@ test('historical workflow completion markers cannot start a missing publication 
   await expect(f.run()).rejects.toThrow(/not_completed/);
   expect(f.db.store.size).toBe(0); expect(f.state.loaded).toBe(0); expect(f.state.records).toHaveLength(0);
 });
-test.each(['latest-header', 'simulation'])('source drift during %s prevents the next executable proof RPC', async boundary => {
-  const f = fixture(); let calls = 0, estimates = 0;
+test.each(['latest-header', 'simulation', 'estimate'])('source drift during %s prevents the next executable proof RPC', async boundary => {
+  const f = fixture(); let calls = 0, estimates = 0, feeCalls = 0;
   for (const reader of f.input.inputs.port.rpcs) {
     const original = reader.request;
     reader.request = async (method, params) => {
       if (method === 'eth_call' && params[0].to !== BASE_GAS_PRICE_ORACLE) calls++;
       if (method === 'eth_estimateGas') estimates++;
+      if (method === 'eth_call' && params[0].to === BASE_GAS_PRICE_ORACLE) feeCalls++;
       const result = await original(method, params);
       if (boundary === 'latest-header' && method === 'eth_getBlockByNumber' && params[0] === 'latest'
-        || boundary === 'simulation' && method === 'eth_call' && params[0].to !== BASE_GAS_PRICE_ORACLE)
+        || boundary === 'simulation' && method === 'eth_call' && params[0].to !== BASE_GAS_PRICE_ORACLE
+        || boundary === 'estimate' && method === 'eth_estimateGas')
         checks.progress.mockRejectedValue(Error('source_reactivated'));
       return result;
     };
   }
   await expect(f.run()).rejects.toThrow(/source_reactivated/);
-  expect(calls).toBe(boundary === 'simulation' ? 2 : 0); expect(estimates).toBe(0); expect(f.state.signed).toBe(0);
+  expect(calls).toBe(boundary === 'latest-header' ? 0 : 2);
+  expect(estimates).toBe(boundary === 'estimate' ? 2 : 0);
+  expect(feeCalls).toBe(0); expect(f.state.signed).toBe(0);
+});
+
+test('full publication proofs run at exposure boundaries rather than every lease renewal', async () => {
+  const f = fixture(), events = []; f.input.onProgress = event => events.push(event);
+  expect((await f.run()).status).toBe('submitted');
+  expect(checks.progress).toHaveBeenCalledTimes(7); // two discovery reads, five exposure boundaries
+  expect(events.filter(event => event.event === 'source_validation_verified').map(event => event.boundary))
+    .toEqual(['simulation', 'estimate', 'fee', 'sign', 'broadcast']);
+  expect(events.filter(event => event.event === 'transaction_signed')).toHaveLength(1);
+  expect([f.state.signed, f.state.sent]).toEqual([1, 1]);
+});
+
+test('retained executable bytes revalidate after awaited broadcast reads without signing again', async () => {
+  const f = fixture(), transact = f.db.runTransaction.bind(f.db); let lost = false;
+  f.db.runTransaction = async action => {
+    const result = await transact(action);
+    if (!lost && [...f.db.store.keys()].some(key => key.includes(':variant:'))) {
+      lost = true; throw Error('append_reply_lost');
+    }
+    return result;
+  };
+  await expect(f.run()).rejects.toThrow('append_reply_lost');
+  const signed = f.state.signed;
+  for (const reader of f.input.inputs.port.rpcs) {
+    const original = reader.request;
+    reader.request = async (method, params) => {
+      const result = await original(method, params);
+      if (method === 'eth_chainId') checks.progress.mockRejectedValue(Error('source_reactivated'));
+      return result;
+    };
+  }
+  await expect(f.run()).rejects.toThrow('source_reactivated');
+  expect(f.state.signed).toBe(signed); expect(f.state.sent).toBe(0);
 });
 
 // Explicit opt-in integration proof: real production database adapter, isolated
