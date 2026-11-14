@@ -22,6 +22,25 @@ const exec = promisify(execFile);
 const ensure = (value, reason) => { if (!value) throw Error('first_changeover_cli_' + reason); };
 const phases = ['retirement', 'pointer', 'successor', 'publication', 'activation'];
 
+/** Authorize existing signing references once per process. Keys stay in memory;
+ * every actual signature still passes the runtime's fresh plan/lease checks. */
+export function changeoverSignerLoader(input, execute, readSecret = exec) {
+  const signers = new Map();
+  return async address => {
+    ensure(execute, 'execution_required');
+    const reference = input.signerReferences[address];
+    ensure(/^0x[0-9a-f]{40}$/.test(address) && typeof reference === 'string' && reference.startsWith('op://'), 'signer_reference');
+    if (signers.has(address)) return signers.get(address);
+    let result;
+    try { result = await readSecret('op', ['read', reference], { encoding: 'utf8', timeout: 180000, maxBuffer: 16384 }); }
+    catch { throw Error('first_changeover_cli_key_unavailable'); }
+    const key = result.stdout.trim(); ensure(/^(?:0x)?[0-9a-fA-F]{64}$/.test(key), 'key_invalid');
+    const signer = new Wallet(key.startsWith('0x') ? key : '0x' + key);
+    ensure(signer.address.toLowerCase() === address, 'key_address_changed');
+    signers.set(address, signer); return signer;
+  };
+}
+
 /** All spending limits are mandatory, even during preparation. They become
  * immutable configuration, so a restart cannot silently increase its budget. */
 export function deliveryLimits(input) {
@@ -61,17 +80,7 @@ export async function runFirstChangeoverCli(path, flags = []) {
   const authorityStore = { read: slot => store().read(slot), create: (slot, record) => {
     ensure(execute, 'execution_required'); return store().create(slot, record);
   } };
-  const loadSigner = async address => {
-    ensure(execute, 'execution_required');
-    const reference = input.signerReferences[address];
-    ensure(typeof reference === 'string' && reference.startsWith('op://'), 'signer_reference');
-    let result;
-    try { result = await exec('op', ['read', reference], { encoding: 'utf8', timeout: 30000, maxBuffer: 16384 }); }
-    catch { throw Error('first_changeover_cli_key_unavailable'); }
-    const key = result.stdout.trim(); ensure(/^(?:0x)?[0-9a-fA-F]{64}$/.test(key), 'key_invalid');
-    const signer = new Wallet(key.startsWith('0x') ? key : '0x' + key);
-    ensure(signer.address.toLowerCase() === address, 'key_address_changed'); return signer;
-  };
+  const loadSigner = changeoverSignerLoader(input, execute);
   const fees = { maxFeePerGas: BigInt(limits.maxFeePerGasWei), maxPriorityFeePerGas: BigInt(limits.maxPriorityFeePerGasWei), maxGas: BigInt(limits.maxGas) };
   const runtime = (stage, options) => {
     ensure(execute || options.requireCompleted, 'execution_required');
@@ -84,6 +93,9 @@ export async function runFirstChangeoverCli(path, flags = []) {
       vault: onePasswordAuthorityVault(input.authorityVault), loadSigner, ...fees,
       requireCompleted: options.requireCompleted, approvedBudgetWei: limits.approvedBudgetsWei.publication });
   };
+  // Present authentication before the long chain checks, then reuse only these
+  // address-verified signers. This performs no signing or broadcasting.
+  if (execute) for (const address of new Set([deployment.wiring.admin.toLowerCase(), input.deployer, input.gasSigner])) await loadSigner(address);
   do {
     const result = await advanceFirstChangeover({ inputs, state, execute, runtime, publish, authorityStore });
     console.log(JSON.stringify(result));
