@@ -49,7 +49,7 @@ function fixture(claimCount = 1) {
     epochGenesisIssued: 75n * unit, epochTotalIssued: 75n * unit, getBatchRecord: record,
     claimSettled: true, genesisAnchorKey: anchorKey, genesisAnchorUsed: true,
     genesisWalletGrossIssued: 75n * unit, hashGenesisClaims: claimsHash };
-  const tx = { hash: transactionHash, blockHash, to: kernel, input };
+  const tx = { hash: transactionHash, blockHash, blockNumber:'0x5', to: kernel, input };
   const port = {
     async call(to, data, pin) {
       assert.equal(pin, blockHash);

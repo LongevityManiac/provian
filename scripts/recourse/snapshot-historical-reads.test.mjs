@@ -4,7 +4,9 @@ const hash='0x'+'11'.repeat(32),otherHash='0x'+'22'.repeat(32),address='0x'+'33'
 const checkpoint={block:10,blockHash:hash};
 function setup(){
  const port={finalizedBlock:vi.fn(async()=>({number:20,hash:otherHash})),blockHash:vi.fn(async()=>hash),
-  call:vi.fn(async()=> '0xab'),code:vi.fn(async()=> '0xcd'),rpcs:[{request:vi.fn()},{request:vi.fn()}]};
+  call:vi.fn(async()=> '0xab'),code:vi.fn(async()=> '0xcd'),
+  transaction:vi.fn(async id=>({hash:id,blockHash:hash,blockNumber:'0x5',input:'0xab',to:address})),
+  rpcs:[{request:vi.fn()},{request:vi.fn()}]};
  const batch=vi.fn(async(_operator,rows)=>rows.map(row=>row.method==='eth_call'?'0x12':'0x34'));
  return {port,batch,scope:historicalSnapshotScope(port,['first','second'],batch)};
 }
@@ -80,4 +82,48 @@ test('batch responses bind IDs instead of order and reject ambiguous or malforme
   [{...valid[0],error:{code:429}},valid[1]],[{id:2,jsonrpc:'2.0'},valid[1]]])
    expect(()=>checkedHistoricalBatch(rows,bad)).toThrow('snapshot_historical_');
  expect(checkedHistoricalBatch(rows,[{id:2,jsonrpc:'2.0',error:{code:429}},valid[1]])[1].error.code).toBe(429);
+});
+test('finalized transactions reuse both-provider evidence only inside an authenticated cutoff and return copies',async()=>{
+ const s=setup(),read=p=>p.transaction(otherHash);
+ const first=await s.scope(checkpoint,read);first.input='0xff';
+ expect((await s.scope(checkpoint,read)).input).toBe('0xab');
+ expect(s.port.transaction).toHaveBeenCalledTimes(1);
+ expect(s.port.blockHash.mock.calls.map(([n])=>n)).toEqual([10,5,10,10,10]);
+ await s.port.transaction(otherHash);expect(s.port.transaction).toHaveBeenCalledTimes(2);
+ s.port.blockHash.mockResolvedValue(otherHash);
+ await expect(s.scope(checkpoint,read)).rejects.toThrow('checkpoint_changed');
+ expect(s.port.transaction).toHaveBeenCalledTimes(2);
+});
+test('null, pending and beyond-cutoff transactions remain fresh; another cutoff cannot reuse them',async()=>{
+ for(const value of [null,{hash:otherHash,blockHash:null,blockNumber:null},
+  {hash:otherHash,blockHash:hash,blockNumber:'0xb'}]){
+  const s=setup();s.port.transaction.mockResolvedValue(value);
+  await s.scope(checkpoint,async p=>{expect(await p.transaction(otherHash)).toEqual(value);await p.transaction(otherHash);});
+  expect(s.port.transaction).toHaveBeenCalledTimes(2);
+ }
+ const s=setup();await s.scope(checkpoint,p=>p.transaction(otherHash));
+ s.port.blockHash.mockImplementation(async n=>n===11?otherHash:hash);
+ await s.scope({block:11,blockHash:otherHash},p=>p.transaction(otherHash));
+ expect(s.port.transaction).toHaveBeenCalledTimes(2);
+});
+test('malformed, mismatched, noncanonical or failed transaction evidence never enters the cache',async()=>{
+ for(const change of [{hash:hash},{blockHash:'0x12'},{blockNumber:'not a number'},
+  {blockNumber:'0x20000000000000'},{blockHash:otherHash}]){
+  const s=setup(),good=await s.port.transaction(otherHash);s.port.transaction.mockClear();
+  s.port.transaction.mockResolvedValueOnce({...good,...change});
+  await expect(s.scope(checkpoint,p=>p.transaction(otherHash))).rejects.toThrow('snapshot_historical_');
+  await s.scope(checkpoint,p=>p.transaction(otherHash));expect(s.port.transaction).toHaveBeenCalledTimes(2);
+ }
+ const s=setup();s.port.transaction.mockRejectedValueOnce(Error('snapshot_rpc_disagreement'));
+ await expect(s.scope(checkpoint,p=>p.transaction(otherHash))).rejects.toThrow('snapshot_rpc_disagreement');
+ await s.scope(checkpoint,p=>p.transaction(otherHash));expect(s.port.transaction).toHaveBeenCalledTimes(2);
+});
+test('transaction reads cannot outlive their scope or populate a cache after closure',async()=>{
+ const s=setup();let saved,resolve,pending;
+ const value=await s.port.transaction(otherHash);s.port.transaction.mockClear();
+ s.port.transaction.mockImplementationOnce(()=>new Promise(r=>{resolve=r;}));
+ await s.scope(checkpoint,async p=>{saved=p;pending=p.transaction(otherHash);pending.catch(()=>{});});
+ resolve(value);await expect(pending).rejects.toThrow('scope_closed');
+ await expect(saved.transaction(otherHash)).rejects.toThrow('scope_closed');
+ await s.scope(checkpoint,p=>p.transaction(otherHash));expect(s.port.transaction).toHaveBeenCalledTimes(2);
 });

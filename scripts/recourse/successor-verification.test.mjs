@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Interface,ZeroAddress,ZeroHash} from 'ethers';
 import {verifySuccessorPlan} from './successor-verification.mjs';
+import {historicalSnapshotScope} from './snapshot-historical-reads.mjs';
 // Rehearsal-captured independent chain replies, never a fake zero population.
 // Run with RECOURSE_SUCCESSOR_FIXTURE pointing at verification-fixture.json.
 const fixturePath=process.env.RECOURSE_SUCCESSOR_FIXTURE;
@@ -30,6 +31,20 @@ function corrupt(f,name,method,change,args=[]){
 test('rehearsed successor reconciles a nonempty real snapshot before publication',{skip:!fixturePath},async()=>{
  const f=fixture(),r=await verifySuccessorPlan(f);
  assert.ok(r.holders>0&&r.historyEntries>0);assert.equal(r.institutionCount,5);assert.equal(r.components.length,10);
+});
+test('captured successor verification is identical through two-provider historical reads and reuse',{skip:!fixturePath},async()=>{
+ const f=fixture(),expected=await verifySuccessorPlan(f),base={...f.port,finalizedBlock:async()=>f.block};
+ let reads=0;
+ f.port.withHistoricalSnapshot=historicalSnapshotScope(base,['first','second'],async(_operator,rows)=>{
+  reads+=rows.length;
+  return Promise.all(rows.map(row=>row.method==='eth_call'
+   ?base.call(row.params[0].to,row.params[0].data,row.params[1].blockHash)
+   :base.code(row.params[0],row.params[1].blockHash)));
+ });
+ assert.deepEqual(await verifySuccessorPlan(f),expected);const first=reads;assert.ok(first>100);
+ assert.deepEqual(await verifySuccessorPlan(f),expected);assert.equal(reads,first);
+ f.blocks[f.block.number]=ZeroHash;
+ await assert.rejects(verifySuccessorPlan(f),/checkpoint_changed/);
 });
 const corruptions=[
  ['pointer controller',f=>corrupt(f,'ProvianProtocolPointer','authority',()=>[ZeroAddress]),/binding/],

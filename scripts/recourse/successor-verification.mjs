@@ -5,6 +5,8 @@ const lower=v=>String(v).toLowerCase();
 /** Pre-publication reconciliation at one independently verified finalized
  * block. It grants no signing authority and publishes no pointer revision. */
 export async function verifySuccessorPlan({plan,institutions,rule,artifacts,port,block}){
+ if(typeof port.withHistoricalSnapshot==='function')return port.withHistoricalSnapshot(
+  {block:block.number,blockHash:block.hash},scoped=>verifySuccessorPlan({plan,institutions,rule,artifacts,port:scoped,block}));
  const body={...plan};delete body.digest;
  ensure(sha256(toUtf8Bytes(JSON.stringify(body)))===plan.digest,'plan_changed');
  ensure(plan.creations.length===12&&plan.snapshot.balances.length>0&&Number(plan.snapshot.historyCount)>0,'empty_population');

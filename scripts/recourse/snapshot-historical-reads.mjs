@@ -32,7 +32,7 @@ export function historicalReadBatcher(requestBatch) {
  * Current signing, simulation, receipt and broadcast ports are never wrapped. */
 export function historicalSnapshotScope(port,operators,requestBatch) {
   ensure(Array.isArray(operators)&&operators.length===2&&operators[0]!==operators[1],'operators');
-  const request=historicalReadBatcher(requestBatch),caches=operators.map(()=>new Map());
+  const request=historicalReadBatcher(requestBatch),caches=operators.map(()=>new Map()),transactions=new Map();
   return async ({block,blockHash},read)=>{
     ensure(Number.isSafeInteger(block)&&block>0&&/^0x[0-9a-f]{64}$/.test(blockHash)
       &&typeof read==='function','checkpoint');
@@ -51,6 +51,26 @@ export function historicalSnapshotScope(port,operators,requestBatch) {
       return values[0];
     };
     const scoped={...port,withHistoricalSnapshot:undefined,
+      transaction:async hash=>{
+        ensure(active,'scope_closed');
+        ensure(/^0x[0-9a-f]{64}$/.test(hash),'transaction_hash');
+        const key=JSON.stringify([blockHash,hash]);
+        if(transactions.has(key))return structuredClone(transactions.get(key));
+        // The underlying port compares both providers. Only mined transactions
+        // inside this finalized prefix can be reused; pending reads stay fresh.
+        const value=await port.transaction(hash);
+        ensure(active,'scope_closed');
+        if(value===null||value.blockHash===null||value.blockNumber===null)return value;
+        ensure(value.hash===hash&&/^0x[0-9a-f]{64}$/.test(value.blockHash)
+          &&/^0x[0-9a-fA-F]+$/.test(value.blockNumber),'transaction_record');
+        const height=Number(BigInt(value.blockNumber));
+        ensure(Number.isSafeInteger(height)&&height>=0,'transaction_block');
+        if(height>block)return value;
+        ensure(await port.blockHash(height)===value.blockHash,'transaction_not_canonical');
+        ensure(active,'scope_closed');
+        transactions.set(key,structuredClone(value));
+        return structuredClone(value);
+      },
       call:(to,data,hash)=>{ensure(active,'scope_closed');return hash===blockHash
         ?cached('eth_call',[{to,data},{blockHash,requireCanonical:true}]):port.call(to,data,hash);},
       code:(to,hash)=>{ensure(active,'scope_closed');return hash===blockHash
