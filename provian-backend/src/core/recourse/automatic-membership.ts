@@ -26,7 +26,9 @@ export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity
   const month = utcCalendarMonth(Math.floor(Date.now() / 1000));
   if (account && account.checkpoint?.pool === pool && account.needsScan === false && account.pendingReservation === null
     && owner.get('membershipTransition') == null && owner.get('membershipScanRequired') !== true
-    && account.episode && (!account.episode.joined || account.episode.invoices[String(month)]) && account.episode.observedMonth === month && account.episode.lastAssessedMonth === month
+    && account.episode && account.episode.observedMonth <= month
+    && (account.episode.joined === false || (account.episode.joined === true && account.episode.invoices[String(month)]
+      && account.episode.observedMonth === month && account.episode.lastAssessedMonth === month))
     && Object.values(account.episode.invoices).every(invoice =>
       BigInt(invoice.burnPaidAtomic) >= BigInt(invoice.burnDueAtomic)
       && BigInt(invoice.reservePaidAtomic) >= BigInt(invoice.month < month && BigInt(invoice.earnings.grossAtomic) === 0n

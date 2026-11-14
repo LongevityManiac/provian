@@ -6,13 +6,14 @@ const pointer=a(1), runtime='0x60006000f3', runtimeHash=keccak256(runtime);
 const addresses=Array.from({length:10},(_,i)=>a(100+i)), hashes=addresses.map(()=>runtimeHash);
 const abi=new Interface(['function current() view returns(uint256,bytes32,address[10],bytes32[10])',
  'function poolSnapshot() view returns(address,uint256,bytes32,uint256,bool)',
+ 'function balanceOf(address) view returns(uint256)',
  'function availableReserve() view returns(uint256)', 'function allocatedRestorations() view returns(uint256)']);
 const manifestHash=keccak256(AbiCoder.defaultAbiCoder().encode(['uint256','address','uint256','address[10]','bytes32[10]'],[8453,pointer,1,addresses,hashes]));
 /** Real discovery readers and their real range chunking; only transports and
  * durable storage are doubles. Thirty-day-old pool, one quiet registered wallet,
  * no pending operations/membership obligations, 1,500 newly finalized blocks. */
 test('records requests per provider for the idle recourse discovery pass', async()=>{
- let head=100+30*86400*5;
+ let head=100+30*86400*5, payoutBlock:number|null=null;
  const calls:Record<string,number>[]=[{},{}];
  const providers=[0,1].map(i=>({operatorId:`provider-${i}`,provider:{send:async(method:string,params:readonly unknown[]):Promise<unknown>=>{
   calls[i][method]=(calls[i][method]??0)+1;
@@ -23,9 +24,18 @@ test('records requests per provider for the idle recourse discovery pass', async
    return {number:toQuantity(n),hash:h(n),timestamp:toQuantity(1794614400)};
   }
   if(method==='eth_getCode')return typeof params[1]==='string'&&BigInt(params[1])<100n?'0x':runtime;
-  if(method==='eth_getLogs')return [];
+  if(method==='eth_getLogs'){
+   const filter=params[0] as {address:string;topics:readonly unknown[];fromBlock:string;toBlock:string};
+   const transfer='0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+   if(payoutBlock!==null&&filter.address===addresses[0]&&filter.topics[0]===transfer
+     &&(!filter.topics[1])&&Number(BigInt(filter.fromBlock))<=payoutBlock&&Number(BigInt(filter.toBlock))>=payoutBlock)
+     return [{address:addresses[0],topics:[transfer,h(0),`0x${'0'.repeat(24)}${a(300).slice(2)}`],data:h(20),
+       blockNumber:toQuantity(payoutBlock),blockHash:h(payoutBlock),transactionHash:h(900),transactionIndex:'0x0',logIndex:'0x0',removed:false}];
+   return [];
+  }
   if(method==='eth_call'){
    const call=params[0] as {to:string;data:string};
+   if(call.data.startsWith(abi.getFunction('balanceOf')!.selector))return abi.encodeFunctionResult('balanceOf',[120]);
    if(call.data===abi.encodeFunctionData('current'))return abi.encodeFunctionResult('current',[1,manifestHash,addresses,hashes]);
    if(call.data===abi.encodeFunctionData('poolSnapshot'))return abi.encodeFunctionResult('poolSnapshot',[a(0),0,h(0),0,false]);
    for(const getter of ['availableReserve','allocatedRestorations'])if(call.data===abi.encodeFunctionData(getter))return abi.encodeFunctionResult(getter,[0]);
@@ -41,7 +51,8 @@ test('records requests per provider for the idle recourse discovery pass', async
  jest.doMock('../onchain/rpc-provider',()=>({getOperatorBoundRpcLegs:()=>providers}));
  jest.doMock('../protocol/pointer-pin.generated',()=>({PROTOCOL_POINTER_PIN:{address:pointer,runtimeHash}}));
  jest.doMock('../../firestore-db',()=>({relayDb:()=>db}));
- fake.store.set(`recourse_addresses_v1/${a(300)}`,{address:a(300),kernel:addresses[0],chainBindingStatus:'confirmed',boundBlock:100});
+ fake.store.set(`recourse_addresses_v1/${a(300)}`,{address:a(300),kernel:addresses[0],chainBindingStatus:'confirmed',boundBlock:100,boundBlockHash:h(100),
+   openingBalanceAtomic:'100',identity:h(600),bindingDigest:h(700),recoveryGeneration:0});
  fake.store.set(`recourse_ledger_cursors/${addresses[0]}`,{block:head,blockHash:h(head)});
  fake.store.set(`recourse_shared_ledger_cursors_v1/${addresses[0]}`,{fromBlock:100,block:head,blockHash:h(head)});
  for(const [address,kind]of[[addresses[8],'pool'],[a(200),'registry'],[a(201),'restoration']])
@@ -57,10 +68,27 @@ test('records requests per provider for the idle recourse discovery pass', async
  try {await run();}finally{clock.mockRestore();}
  const perProvider=calls.map(row=>Object.values(row).reduce((sum,n)=>sum+n,0));
  console.info('RECOURSE_IDLE_DISCOVERY_RPC_COUNTS',JSON.stringify({perProvider,methods:calls}));
+ const discoveryHead=head, discoveryLogCounts=calls.map(row=>row.eth_getLogs);
+ // The global watcher has covered the quiet interval. Only one new payout
+ // block needs intake, while the wallet's own checkpoint is still 30 days old.
+ fake.store.set(`recourse_ledger_cursors/${addresses[0]}`,{block:head,blockHash:h(head)});
+ fake.store.set(`recourse_shared_ledger_cursors_v1/${addresses[0]}`,{fromBlock:100,block:head,blockHash:h(head)});
+ payoutBlock=++head;
+ const wallet = fake.store.get(`recourse_addresses_v1/${a(300)}`)!;
+ wallet.boundBlock = head - 30*86400*5; wallet.boundBlockHash = h(Number(wallet.boundBlock));
+ calls[0]={};calls[1]={};
+ const payoutClock=jest.spyOn(Date,'now').mockReturnValue(Date.now()+300_000);
+ try{await runOwnershipLedgerWatcher(db);}finally{payoutClock.mockRestore();}
+ const payoutCounts=calls.map(row=>Object.values(row).reduce((sum,n)=>sum+n,0));
+ console.info('RECOURSE_PAYOUT_WATCHER_RPC_COUNTS',JSON.stringify({perProvider:payoutCounts,methods:calls}));
+ expect(fake.store.get(`recourse_addresses_v1/${a(300)}`)?.checkpoint)
+   .toMatchObject({balanceAtomic:'120',mintedAtomic:'20',receivedAtomic:'0',block:head});
  expect(perProvider[0]).toBe(perProvider[1]);
  expect(perProvider[0]).toBeLessThanOrEqual(100);
- expect(calls.map(row=>row.eth_getLogs)).toEqual([15,15]);
+ expect(discoveryLogCounts).toEqual([15,15]);
+ expect(payoutCounts[0]).toBeLessThanOrEqual(40);
+ expect(payoutCounts[0]).toBe(payoutCounts[1]);
  expect(fake.store.get(`recourse_shared_ledger_cursors_v1/${addresses[0]}`)?.block).toBe(head);
  for(const [address,kind]of[[addresses[8],'pool'],[a(200),'registry'],[a(201),'restoration']])
-   expect(fake.store.get(`recourse_lifecycle_cursors_v1/${kind}:${address}`)?.block).toBe(head);
+   expect(fake.store.get(`recourse_lifecycle_cursors_v1/${kind}:${address}`)?.block).toBe(discoveryHead);
 });

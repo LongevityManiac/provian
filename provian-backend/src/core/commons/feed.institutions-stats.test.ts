@@ -1,6 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-jest.mock('../agent-bank/pvt-principal-config', () => ({ getPvtAddressForChain: () => null }));
+jest.mock('../agent-bank/pvt-principal-config', () => ({
+  ...jest.requireActual<typeof import('../agent-bank/pvt-principal-config')>('../agent-bank/pvt-principal-config'),
+  getPvtAddressForChain: () => null,
+}));
 jest.mock('../onchain/tx-verifier', () => ({ readErc20TotalSupply: async () => null }));
 
 import { getInstitutionsStats, getCourtStats } from './feed';

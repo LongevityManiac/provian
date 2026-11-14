@@ -79,5 +79,10 @@ test('requests share verification, restart reuses durable proof, signing always 
  counts.fill(0); await current({fresh:true}); expect(counts).toEqual([8,8]);
  revisions[1]=3n;
  await expect(current({fresh:true})).rejects.toThrow('disagreement');
- await expect(current()).rejects.toThrow('disagreement');
+ counts.fill(0);
+ for(let i=0;i<100;i++) await expect(current()).rejects.toThrow('protocol_verification_unavailable');
+ expect(counts).toEqual([0,0]);
+ current=await load();
+ await expect(current()).rejects.toThrow('protocol_verification_unavailable');
+ expect(counts).toEqual([0,0]);
 });

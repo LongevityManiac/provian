@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
 import { AbiCoder, keccak256 } from 'ethers';
-import { relayDb } from '../../firestore-db';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { PROTOCOL_POINTER_PIN } from './pointer-pin.generated';
 import { confirmProtocolDeployment, resolveProtocolDeployment, PROTOCOL_COMPONENTS, type ProtocolDeployment } from './pointer';
@@ -9,6 +8,7 @@ const CHECK_INTERVAL_MS = 60_000;
 const LEASE_MS = 60_000;
 let cached: ProtocolDeployment | undefined, checkedAt = 0, minimumRevision = 0n;
 let scheduled: Promise<ProtocolDeployment> | undefined;
+let failureAt = 0, retryAfter = 0;
 type SavedDeployment = Omit<ProtocolDeployment, 'revision'> & { revision: string };
 function unpack(value: unknown): ProtocolDeployment {
   if (!value || typeof value !== 'object') throw Error('protocol_cache_invalid');
@@ -24,16 +24,20 @@ function unpack(value: unknown): ProtocolDeployment {
 function accept(deployment: ProtocolDeployment, timestamp: number): ProtocolDeployment {
   if (deployment.revision < minimumRevision) throw Error('protocol_pointer_rollback');
   minimumRevision = deployment.revision;
-  cached = deployment; checkedAt = timestamp;
+  cached = deployment; checkedAt = timestamp; failureAt = 0; retryAfter = 0;
   return deployment;
 }
 /** Metadata reads share a durable, fully verified revision. Signing and evidence
  * boundaries request fresh=true: both chain providers must confirm it now. */
 export async function currentProtocolDeployment(options: { readonly fresh?: boolean } = {}): Promise<ProtocolDeployment> {
   const fresh = options.fresh === true;
+  if (!fresh && Date.now() >= failureAt && Date.now() < retryAfter) throw Error('protocol_verification_unavailable');
   if (!fresh && cached && Date.now() >= checkedAt && Date.now() - checkedAt < CHECK_INTERVAL_MS) return cached;
   if (!fresh && scheduled) return scheduled;
-  const run = refresh(fresh);
+  const run = refresh(fresh).catch(error => {
+    cached = undefined; checkedAt = 0; failureAt = Date.now(); retryAfter = failureAt + CHECK_INTERVAL_MS;
+    throw error;
+  });
   if (fresh) return run;
   scheduled = run;
   try { return await run; } finally { scheduled = undefined; }
@@ -45,8 +49,10 @@ async function refresh(fresh: boolean): Promise<ProtocolDeployment> {
   if (legs[0].operatorId === legs[1].operatorId) throw Error('protocol_rpc_operators_not_independent');
   const rpcs = legs.map(leg => ({ request: (method: string, params: readonly unknown[]) => leg.provider.send(method, [...params]) })) as
     [import('./pointer').PointerRpc, import('./pointer').PointerRpc];
-  const db = relayDb(), ref = db.collection('protocol_verified_deployments_v1').doc(`${address.toLowerCase()}:${runtimeHash}`);
+  const db = (await import('../../firestore-db')).relayDb(), ref = db.collection('protocol_verified_deployments_v1').doc(`${address.toLowerCase()}:${runtimeHash}`);
   const initial = await ref.get();
+  if (!fresh && Number(initial.get('failedAt') ?? 0) <= Date.now()
+    && Number(initial.get('retryAfter') ?? 0) > Date.now()) throw Error('protocol_verification_unavailable');
   const verified = initial.exists && initial.get('verified') ? unpack(initial.get('verified')) : undefined;
   const timestamp: unknown = initial.get('checkedAt');
   if (!fresh && verified && typeof timestamp === 'number' && timestamp <= Date.now() && Date.now() - timestamp < CHECK_INTERVAL_MS)
@@ -80,7 +86,7 @@ async function refresh(fresh: boolean): Promise<ProtocolDeployment> {
       if (newer && newer.revision > result.revision) throw Error('protocol_pointer_changed');
       if (!confirmed && row.get('leaseOwner') !== owner) throw Error('protocol_verification_lease_lost');
       tx.set(ref, { verified: confirmed ? { ...verified!, revision: verified!.revision.toString() } : packed,
-        current: packed, checkedAt: completedAt,
+        current: packed, checkedAt: completedAt, failedAt: 0, retryAfter: 0,
         ...(row.get('leaseOwner') === owner ? { leaseOwner: null, leaseUntil: 0 } : {}) }, { merge: true });
     });
     return accept(result, completedAt);
@@ -88,8 +94,8 @@ async function refresh(fresh: boolean): Promise<ProtocolDeployment> {
     cached = undefined; checkedAt = 0;
     await db.runTransaction(async tx => {
       const row = await tx.get(ref);
-      if (row.get('leaseOwner') === owner) tx.set(ref, { leaseOwner: null, leaseUntil: 0, checkedAt: 0 }, { merge: true });
-      else if (Number(row.get('checkedAt') ?? 0) <= now) tx.set(ref, { checkedAt: 0 }, { merge: true });
+      if (row.get('leaseOwner') === owner) tx.set(ref, { leaseOwner: null, leaseUntil: 0, checkedAt: 0, failedAt: Date.now(), retryAfter: Date.now() + CHECK_INTERVAL_MS }, { merge: true });
+      else if (Number(row.get('checkedAt') ?? 0) <= now) tx.set(ref, { checkedAt: 0, failedAt: Date.now(), retryAfter: Date.now() + CHECK_INTERVAL_MS }, { merge: true });
     });
     throw error;
   }

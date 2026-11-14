@@ -94,3 +94,17 @@ test('a fully assessed settled member makes no chain reads until something is du
  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
  expect(reconcileCurrentPrivateMembership).toHaveBeenCalledTimes(1);
 });
+
+test('a departed member with no outstanding amount stays idle across later months', async () => {
+ const s=setup(),{utcCalendarMonth}=await import('./calendar-month'),month=utcCalendarMonth(Math.floor(Date.now()/1000));
+ const account={ownerIdentity:s.owner,checkpoint:{pool:a(6)},needsScan:false,pendingReservation:null,
+   episode:{joined:false,observedMonth:month-12,lastAssessedMonth:month-12,invoices:{[month-12]:{
+     month:month-12,burnDueAtomic:'100',burnPaidAtomic:'100',reserveDueAtomic:'100',reservePaidAtomic:'100',
+     noEarningsContributionAtomic:'100',earnings:{grossAtomic:'0'}}}}};
+ s.fake.store.set(`${C.owners}/${s.owner}`,account);
+ expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('settled');
+ expect(reconcileCurrentPrivateMembership).not.toHaveBeenCalled();expect(readRecoursePoolState).not.toHaveBeenCalled();
+ account.episode.invoices[month-12].reservePaidAtomic='0';
+ expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
+ expect(reconcileCurrentPrivateMembership).toHaveBeenCalledTimes(1);
+});
