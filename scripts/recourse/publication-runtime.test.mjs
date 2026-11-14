@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
-import { Interface, Transaction, Wallet } from 'ethers';
+import { Interface, Transaction, Wallet, sha256, toUtf8Bytes } from 'ethers';
 import { createFakeFirestore } from '../../provian-backend/src/core/pvt/__test-helpers__/fake-firestore.ts';
 import { BASE_GAS_PRICE_ORACLE } from '../../provian-backend/src/core/recourse/base-transaction-fees.ts';
 import { PUBLICATION_JOURNALS, PUBLICATION_ATTEMPTS } from '../../provian-backend/src/core/recourse/publication-journal.ts';
@@ -12,12 +12,13 @@ const a = n => `0x${n.toString(16).padStart(40, '0')}`, h = n => `0x${n.toString
 const oracle = new Interface(['function getL1Fee(bytes) view returns(uint256)', 'function getL1FeeUpperBound(uint256) view returns(uint256)',
   'function getOperatorFee(uint256) view returns(uint256)']);
 beforeEach(() => { for (const check of Object.values(checks)) check.mockReset(); });
-function fixture() {
-  const db = createFakeFirestore({ strictTransactionOrder: true }), wallet = new Wallet('0x' + '11'.repeat(32)), from = wallet.address.toLowerCase();
+function fixture(options = {}) {
+  const db = options.db ?? createFakeFirestore({ strictTransactionOrder: true }), wallet = options.wallet ?? new Wallet('0x' + '11'.repeat(32)), from = wallet.address.toLowerCase();
   const state = { gasNonce: 0, authorityNonce: 0, retired: false, published: false, final: 19,
     records: [], prepared: null, loaded: 0, signed: 0, sent: 0, loseBroadcast: false, sponsorDuringSimulation: false,
     outerRevert: false, durableFailure: false, simulateFailure: false, unknownPending: false };
-  const goal = { pointer: a(20), authority: a(21), revision: '1', componentsDigest: h(50) };
+  const goal = { pointer: a(20), authority: a(21), revision: '1', componentsDigest: options.componentsDigest ?? h(50) };
+  const lifecycleDigest = sha256(toUtf8Bytes(JSON.stringify(goal)));
   const components = Array.from({ length: 10 }, (_, i) => a(i + 30)), hashes = components.map(() => h(5));
   const baseline = { components, componentHashes: hashes }, transactions = new Map();
   const request = async (method, params) => {
@@ -44,7 +45,8 @@ function fixture() {
     if (method === 'eth_estimateGas') return '0x7530';
     if (method === 'eth_sendRawTransaction') {
       const tx = Transaction.from(params[0]);
-      const retained = [...db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_ATTEMPTS + '/') && key.includes(':variant:'));
+      const retained = db.store ? [...db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_ATTEMPTS + '/') && key.includes(':variant:'))
+        : [['proof', (await db.collection(PUBLICATION_ATTEMPTS).doc(`${lifecycleDigest}:${tx.nonce}:variant:0`).get()).data()]];
       expect(retained.some(([, row]) => row.variant.raw === params[0])).toBe(true);
       if (!transactions.has(tx.hash)) {
         expect(tx.nonce).toBe(state.gasNonce); state.gasNonce++; state.sent++;
@@ -88,11 +90,12 @@ function fixture() {
     db, from, store: {}, vault: {}, approvedBudgetWei: '1000000', maxFeePerGas: 2n, maxPriorityFeePerGas: 1n, maxGas: 100000n,
     loadSigner: async address => {
       expect(address).toBe(from); state.loaded++;
-      const heads = [...db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_JOURNALS + '/'));
+      const heads = db.store ? [...db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_JOURNALS + '/'))
+        : [['proof', (await db.collection(PUBLICATION_JOURNALS).doc(lifecycleDigest).get()).data()]];
       expect(heads).toHaveLength(1); expect(BigInt(heads[0][1].feeReservedWei)).toBeGreaterThan(0n);
       return { getAddress: async () => from, signTransaction: async tx => { state.signed++; return wallet.signTransaction(tx); } };
     } };
-  return { input, state, db, transactions, run: () => runPublicationDelivery(input) };
+  return { input, state, db, transactions, lifecycleDigest, run: () => runPublicationDelivery(input) };
 }
 test('actual journal and gas persistence deliver retirement and publication, surviving a lost broadcast reply', async () => {
   const f = fixture(); f.state.loseBroadcast = true;
@@ -238,4 +241,64 @@ test.each(['latest-header', 'simulation'])('source drift during %s prevents the 
   }
   await expect(f.run()).rejects.toThrow(/source_reactivated/);
   expect(calls).toBe(boundary === 'simulation' ? 2 : 0); expect(estimates).toBe(0); expect(f.state.signed).toBe(0);
+});
+
+// Explicit opt-in integration proof: real production database adapter, isolated
+// random signer/goal, synthetic RPC only. No admin/minter key or broadcast.
+test.runIf(process.env.RECOURSE_FIRESTORE_ORDER_PROOF === 'provian-ai/relay')('production Firestore ordering survives the full publication runtime', async () => {
+  expect(process.env.GOOGLE_CLOUD_PROJECT).toBe('provian-ai');
+  expect(process.env.FIRESTORE_DATABASE_ID).toBe('relay');
+  expect(process.env.FIRESTORE_EMULATOR_HOST).toBeUndefined();
+  const { scriptDb } = await import('../../provian-backend/scripts/lib/script-db.ts');
+  const { SETTLEMENT_SIGNER_LEASES_COLLECTION } = await import('../../provian-backend/src/core/pvt/wp4/durable-settlement-store.ts');
+  const db = scriptDb(), wallet = Wallet.createRandom();
+  const f = fixture({ db, wallet, componentsDigest: sha256(toUtf8Bytes(wallet.address)) });
+  const refs = [db.collection(PUBLICATION_JOURNALS).doc(f.lifecycleDigest),
+    db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(f.input.from)];
+  for (let index = 0; index < 2; index++) for (const suffix of ['', ':fee:0', ':variant:0'])
+    refs.push(db.collection(PUBLICATION_ATTEMPTS).doc(`${f.lifecycleDigest}:${index}${suffix}`));
+  for (const ref of refs) expect((await ref.get()).exists).toBe(false);
+  try {
+    expect((await f.run()).status).toBe('submitted');
+    const ref = db.collection(PUBLICATION_ATTEMPTS).doc(`${f.lifecycleDigest}:0`);
+    const stored = (await ref.get()).get('authorityTransaction');
+    const constructed = { to: stored.to, data: stored.data };
+    expect(JSON.stringify(stored)).not.toBe(JSON.stringify(constructed)); // old comparator RED on real readback
+    console.log('FIRESTORE_PUBLICATION_ORDER', JSON.stringify({ storedKeys: Object.keys(stored), constructedKeys: Object.keys(constructed) }));
+    expect((await f.run()).status).toBe('awaiting_finality');
+    const counts = [f.state.loaded, f.state.signed, f.state.sent];
+    for (const changed of [{ ...stored, to: a(99) }, { ...stored, data: '0xffff' },
+      { ...stored, extra: true }, { to: stored.to }]) {
+      await ref.update({ authorityTransaction: changed });
+      await expect(f.run()).rejects.toThrow(/unknown_retained_operation|attempt_invalid|call_changed/);
+      expect([f.state.loaded, f.state.signed, f.state.sent]).toEqual(counts);
+    }
+    await ref.update({ authorityTransaction: stored });
+    f.state.final = 30;
+    expect((await f.run()).status).toBe('advance');
+    expect((await f.run()).status).toBe('submitted');
+    expect((await f.run()).status).toBe('advance');
+    expect((await f.run()).status).toBe('confirmed');
+    const finalCounts = [f.state.loaded, f.state.signed, f.state.sent];
+    expect((await f.run()).status).toBe('confirmed');
+    expect([f.state.loaded, f.state.signed, f.state.sent]).toEqual(finalCounts);
+    expect(finalCounts).toEqual([2, 2, 2]);
+    console.log('FIRESTORE_PUBLICATION_PASS', JSON.stringify({ lifecycleDigest: f.lifecycleDigest, attempts: 2, mutationRefusals: 4, realBroadcasts: 0 }));
+  } finally {
+    for (const ref of refs) await ref.delete();
+    for (const ref of refs) expect((await ref.get()).exists).toBe(false);
+  }
+}, 180000);
+
+test('reordered publication call maps retain exact identity and reject value or field changes', async () => {
+  const f = fixture(); await f.run();
+  const key = `${PUBLICATION_ATTEMPTS}/${f.lifecycleDigest}:0`, row = f.db.store.get(key);
+  const call = row.authorityTransaction;
+  row.authorityTransaction = { data: call.data, to: call.to };
+  expect((await f.run()).status).toBe('awaiting_finality');
+  for (const changed of [{ ...call, data: '0xffff' }, { ...call, extra: true }]) {
+    row.authorityTransaction = changed;
+    await expect(f.run()).rejects.toThrow(/unknown_retained_operation|call_changed/);
+    expect(f.state.signed).toBe(1);
+  }
 });

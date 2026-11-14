@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { Transaction } from 'ethers';
 import { openPublicationJournal } from '../../provian-backend/src/core/recourse/publication-journal.ts';
 import { changeoverRpcPort } from './changeover-rpc.mjs';
@@ -7,7 +8,8 @@ import { preparePointerPublication } from './pointer-publication.mjs';
 import { prepareDurableHashAuthority } from './hash-authority-durable.mjs';
 
 const ensure = (value, reason) => { if (!value) throw Error('publication_runtime_' + reason); };
-const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Firestore maps are unordered; values, field sets and array order remain binding.
+const equal = isDeepStrictEqual;
 const callOf = record => ({ to: record.transaction.to, data: record.transaction.data });
 
 /** Advance one authorized first-publication lifecycle. The immutable journal
