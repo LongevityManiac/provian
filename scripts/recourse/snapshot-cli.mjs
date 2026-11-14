@@ -67,7 +67,11 @@ export function snapshotRpcPort(urls, options = {}) {
         if (result.error) {
           throw Error('snapshot_rpc_error');
         }
-        if (result.result === undefined || result.result === null) throw Error('snapshot_rpc_missing');
+        // A receipt/transaction lookup is allowed to prove absence before broadcast.
+        // State reads and missing JSON-RPC results must still fail closed.
+        const absentTransaction = result.result === null
+          && ['eth_getTransactionReceipt', 'eth_getTransactionByHash'].includes(method);
+        if (result.result === undefined || (result.result === null && !absentTransaction)) throw Error('snapshot_rpc_missing');
         return result.result;
       } catch (error) {
         if (error instanceof RangeError) throw error;

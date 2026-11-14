@@ -73,3 +73,24 @@ test('production dRPC endpoint is recognized without counting its aliases as ind
     expect(() => snapshotRpcPort(['https://mainnet.base.org', unknown])).toThrow('snapshot_rpc_operator_unknown');
   }
 });
+
+test('explicit transaction absence is returned immediately; missing state and RPC errors still refuse', async () => {
+  vi.useFakeTimers();
+  try {
+    for (const method of ['eth_getTransactionReceipt', 'eth_getTransactionByHash']) {
+      vi.mocked(guardedFetch).mockReset().mockResolvedValue({ status: 200, ok: true, json: async () => ({ result: null }) });
+      const pending = snapshotRpcPort(['https://mainnet.base.org', 'https://base.drpc.org']).rpcs[0].request(method, ['0x'+'11'.repeat(32)]);
+      await vi.runAllTimersAsync(); expect(await pending).toBeNull(); expect(guardedFetch).toHaveBeenCalledTimes(1);
+    }
+    for (const [method, reply] of [
+      ['eth_getTransactionReceipt', {}], ['eth_getTransactionByHash', {}],
+      ['eth_getTransactionReceipt', { result: null, error: { code: -32000, message: 'unavailable' } }],
+      ...['eth_call', 'eth_getBlockByNumber', 'eth_getTransactionCount', 'eth_getLogs'].map(method => [method, { result: null }]),
+    ]) {
+      vi.mocked(guardedFetch).mockReset().mockResolvedValue({ status: 200, ok: true, json: async () => reply });
+      const pending = snapshotRpcPort(['https://mainnet.base.org', 'https://base.drpc.org']).rpcs[0].request(method, []);
+      const refused = expect(pending).rejects.toThrow('snapshot_rpc_unavailable');
+      await vi.runAllTimersAsync(); await refused; expect(guardedFetch).toHaveBeenCalledTimes(8);
+    }
+  } finally { vi.useRealTimers(); vi.mocked(guardedFetch).mockReset(); }
+});
