@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { zeroPadValue, toBeHex } from 'ethers';
+import { zeroPadValue, toBeHex, keccak256 } from 'ethers';
 import template from './restoration-executor-runtime.generated.json';
 import { authenticateRestorationExecutor, decodeRestorationExecutorRuntime, type RestorationExecutorRuntimePort } from './restoration-executor-runtime';
 const a = (n: number) => `0x${n.toString(16).padStart(40, '0')}`, h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
@@ -20,8 +20,26 @@ function compiled(name: string): string {
   const artifact = JSON.parse(readFileSync(resolve(__dirname, `../../../../contracts/out/${name}.sol/${name}.json`), 'utf8')) as { deployedBytecode: { object: string } };
   return artifact.deployedBytecode.object;
 }
+function embeddedFactory(): string {
+  // Authenticate the factory this executor actually creates. Solidity's IR
+  // optimizer can emit different code for a standalone compilation artifact.
+  const creator = JSON.parse(readFileSync(resolve(__dirname,
+    '../../../../contracts/out/ProvianRestorationAuthorization.sol/ProvianRestorationAuthorization.json'), 'utf8')) as
+    { bytecode: { object: string } };
+  const standalone = compiled('ProvianHashAccountFactory').slice(2);
+  const init = creator.bytecode.object.slice(2), prefix = standalone.slice(0, 64), suffix = standalone.slice(-106);
+  const matches: string[] = [];
+  for (let start = init.indexOf(prefix); start >= 0; start = init.indexOf(prefix, start + 2)) {
+    for (let end = init.indexOf(suffix, start); end >= 0; end = init.indexOf(suffix, end + 2)) {
+      const candidate = `0x${init.slice(start, end + suffix.length)}`;
+      if (keccak256(candidate) === template.hashAccountFactoryHash) matches.push(candidate);
+    }
+  }
+  expect(matches).toHaveLength(1);
+  return matches[0];
+}
 function fixture() {
-  const codes = new Map([[a(2), runtime()], [a(3), compiled('ProvianOwnerProofVerifier')], [a(4), compiled('ProvianHashAccountFactory')]]);
+  const codes = new Map([[a(2), runtime()], [a(3), compiled('ProvianOwnerProofVerifier')], [a(4), embeddedFactory()]]);
   const port: RestorationExecutorRuntimePort = { code: jest.fn(async (account, pin) => {
     if (pin !== h(30)) throw Error('not pinned'); return codes.get(account) ?? '0x';
   }), kernelExecutor: jest.fn(async () => a(2)) };
