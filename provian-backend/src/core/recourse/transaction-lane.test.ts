@@ -3,7 +3,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
 import { LANE_MAX_FEE_CEILING_WEI, LANE_MAX_PENDING, LANE_REPLACE_AFTER_MS, RECOURSE_LANE_COLLECTION, laneQueueKey,
-  runRecourseLane, type LaneKind, type LaneRow } from './transaction-lane';
+  emptyLaneReport, runRecourseLane, type LaneKind, type LaneRow } from './transaction-lane';
 
 const wallet = laneTestWallet(), LANE = wallet.address.toLowerCase();
 const target = `0x${'ab'.repeat(20)}`, call = new Interface(['function record(bytes32)']);
@@ -144,4 +144,13 @@ test('a lost lease mid-run stops signing; the persisted nonce is never reused by
   expect(report).toMatchObject({ signed: 1, stopReason: 'recourse_lane_lease_lost' });
   expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)).toMatchObject({ next_nonce: 1 });
   expect(f.base.state.broadcasts).toHaveLength(1);
+});
+test('a run that throws after signing has already counted its work in the caller\'s report', async () => {
+  const f = setup(), kind = testKind('a', f.now);
+  for (let i = 1; i <= 12; i++) f.queue('a', i, f.now() + i);
+  let balanceReads = 0;
+  const chain = { ...f.base, balance: async (address: string) => { if (++balanceReads > 1) throw Error('recourse_lane_rpc_disagreement'); return f.base.balance(address); } };
+  const report = emptyLaneReport();
+  await expect(f.run([kind], 60_000, { chain, report })).rejects.toThrow('recourse_lane_rpc_disagreement');
+  expect(report.signed).toBe(8);
 });
