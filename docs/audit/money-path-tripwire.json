@@ -152,7 +152,7 @@
     "provian-agent-sdk/src/protocol-pointer-pin.generated.ts": "3e7811885d7504612f05a92efcd269bd597af2fd9af24afc1ad643aafc24b6ec",
     "provian-agent-sdk/src/protocol-pointer.test.ts": "02b71a5f39dc393aae3aae79af9922eb866478f1733c475f593eb4fe87852a1c",
     "provian-agent-sdk/src/protocol-pointer.ts": "cd8b7c0e3d9906436ea629a662aca22e989f7642ab1f3f9da64bf36258ef7c45",
-    "provian-agent-sdk/src/protocol-rpc.test.ts": "996fa47be5f1438cadf654605c2fd938050c0dfd183cb84c16ee1aee51d2e55c",
+    "provian-agent-sdk/src/protocol-rpc.test.ts": "60cd9f2bf5ec96359bbf2288c2341f2bab16df599170fa787c07f9756fc3104f",
     "provian-agent-sdk/src/protocol-rpc.ts": "8fbd3282a1168037547b7db2e8e489cb1a5409c7e328be81ba840d3b2456447b",
     "provian-agent-sdk/src/protocol-runtime.ts": "bc34a8fb77c2cfa29f6f7b5e61219876130665ce28eee24b6f1d270aef79bd44",
     "provian-agent-sdk/src/protocol-transaction.test.ts": "b8b9fed4a3a556c2a3233e9f5b60080f23a57f318c1d19e49a272a2260101b31",
