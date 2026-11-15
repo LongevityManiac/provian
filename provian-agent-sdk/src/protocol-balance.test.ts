@@ -3,6 +3,21 @@ import { readConfirmedProtocolBalance } from './protocol-balance';
 import type { ProtocolDeployment } from './protocol-pointer';
 const hint = { revision: 1n, manifestHash: 'manifest', pointer: 'pointer', addresses: { kernel: '0xToken' } } as ProtocolDeployment;
 describe('speculative balance acceptance', () => {
+  it('reserves balance confirmation before later history reads enter the serial queue', async () => {
+    const order: string[] = [];
+    let tail = Promise.resolve();
+    const enqueue = (label: string) => {
+      const work = tail.then(() => { order.push(label); return hint; });
+      tail = work.then(() => {});
+      return work;
+    };
+    const balance = readConfirmedProtocolBalance(() => enqueue('candidate'),
+      () => enqueue('balance confirmation'), async () => 'balance');
+    const history = [enqueue('Base history'), enqueue('Arbitrum history'), enqueue('Optimism history')];
+    expect(await balance).toBe('balance');
+    await Promise.all(history);
+    expect(order).toEqual(['candidate', 'balance confirmation', 'Base history', 'Arbitrum history', 'Optimism history']);
+  });
   it('starts the read during confirmation but holds its result until confirmation succeeds', async () => {
     let release!: (value: ProtocolDeployment) => void;
     const current = () => new Promise<ProtocolDeployment>(resolve => { release = resolve; });

@@ -1,3 +1,7 @@
+## 1.12.5
+
+- Reserve balance confirmation before concurrent history reads while keeping speculative balances gated on fresh deployment confirmation.
+
 ## 1.12.4
 
 - Ship a build-verified protocol proof so first use needs only fresh two-provider confirmation when the revision is unchanged. Keep full verification for newer revisions, canonical-block checks, retirement protection and rate-limit handling.
