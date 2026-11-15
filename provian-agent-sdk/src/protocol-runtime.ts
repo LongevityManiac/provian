@@ -1,3 +1,4 @@
+import { protocolRpc } from './protocol-rpc';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import { guardedFetch } from './guarded-fetch';
 import { PROTOCOL_POINTER_PIN } from './protocol-pointer-pin.generated';
@@ -13,14 +14,7 @@ export function verifiedProtocolSnapshot(): ProtocolDeployment {
   return lastVerifiedDeployment;
 }
 function transport(url: string): PointerRpc {
-  return { async request(method, params) {
-    const response = await guardedFetch(url, { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(20_000) });
-    if (!response.ok) throw new Error('protocol_rpc_unavailable');
-    const result: unknown = await response.json();
-    if (!result || typeof result !== 'object' || 'error' in result || !('result' in result)) throw new Error('protocol_rpc_invalid');
-    return result.result;
-  } };
+  return protocolRpc(url, guardedFetch);
 }
 /** Every signing operation obtains a fresh independent chain resolution. */
 export async function currentProtocolDeployment(): Promise<ProtocolDeployment> {

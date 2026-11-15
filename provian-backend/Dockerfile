@@ -47,7 +47,7 @@ COPY scheduler-jobs.json ./scheduler-jobs.json
 # here; the sync tripwire is src/routes/bootstrap.bundle-sync.test.ts.
 # Cache-bust: bump when the bundle changes so Cloud Build never reuses a cached
 # image with a stale bundle (a bundle-only change reused the prior image).
-ARG BUNDLE_REV=20261115-recourse-pointer
+ARG BUNDLE_REV=20261115-recourse-rpc
 COPY bootstrap-bundle ./bootstrap-bundle
 
 # Set environment variables

@@ -30,6 +30,8 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./protocol-transaction'", "'../protocol/transaction'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
+  ...['src/core/protocol/rpc.ts', 'provian-mcp/src/core/protocol-rpc.ts'].map(path =>
+    [path, readFileSync(resolve(root, 'provian-agent-sdk/src/protocol-rpc.ts'), 'utf8')]),
   ['src/core/recourse/restoration-ticket.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-restoration-ticket.ts'), 'utf8')
     .replaceAll("'./recourse-owner-chain'", "'./owner-chain'").replaceAll("'./recourse-owner-operation'", "'./owner-operation'")],
   ['src/core/recourse/membership-client.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-membership-client.ts'), 'utf8')
@@ -81,7 +83,8 @@ const outputs = new Map([
   ['src/core/protocol/pointer-pin.generated.ts', pin],
   ['provian-backend/src/core/protocol/pointer-pin.generated.ts', pin],
   ['src/core/protocol/pointer.ts', resolver],
-  ['provian-backend/src/core/protocol/pointer.ts', resolver],
+  // The backend resolver also implements scheduled confirmation of verified manifests.
+  // It is maintained with the backend runtime, not overwritten by the client mirror.
 ]);
 for (const [path, content] of outputs) {
   const target = resolve(root, path);

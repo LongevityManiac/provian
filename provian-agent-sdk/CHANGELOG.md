@@ -1,6 +1,10 @@
 # @provian/agent-sdk release notes
 
-**Version: 1.12.0.** The package manifest in this directory defines the installed version.
+## 1.12.1
+
+- Pace public RPC verification reads and honor rate-limit retry delays without weakening independent chain verification.
+
+**Version: 1.12.1.** The package manifest in this directory defines the installed version.
 
 Ownership and recovery are independent of a wallet key. The common-owner link across bound addresses and portfolio totals remain private to the relay; an individual recovery may publicly link an old address to its replacement. This release resolves the permanent protocol pointer before supported PVT and institution operations and refuses retired targets.
 
