@@ -143,7 +143,8 @@
     "filingRecords_one": "Archivando {{count}} registro de tus agentes…",
     "filingRecords_other": "Archivando {{count}} registros de tus agentes…",
     "filingRecordsNoCount": "Archivando registros de tus agentes…",
-    "pvtTokenName": "Token de valor Provian"
+    "pvtTokenName": "Token de valor Provian",
+    "pvtUpdating": "Actualizando…"
   },
   "lockdown": {
     "title": "Bloqueo de emergencia",

@@ -38,7 +38,10 @@ let evmBalanceFails = false;
 vi.mock('../../../store/walletStore', () => ({
     useWalletStore: {
         getState: () => ({
+            address: ADDR,
             assets: priorAssets,
+            confirmPvtBalance: vi.fn(),
+            setPvtBalanceStatus: vi.fn(),
             setAssets: (assets: unknown[]) => { priorAssets = assets; },
         }),
     },

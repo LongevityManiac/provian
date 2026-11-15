@@ -143,7 +143,8 @@
     "filingRecords_one": "Classement de {{count}} enregistrement de vos agents…",
     "filingRecords_other": "Classement de {{count}} enregistrements de vos agents…",
     "filingRecordsNoCount": "Classement des enregistrements de vos agents…",
-    "pvtTokenName": "Jeton de valeur Provian"
+    "pvtTokenName": "Jeton de valeur Provian",
+    "pvtUpdating": "Actualisation…"
   },
   "lockdown": {
     "title": "Verrouillage d'urgence",

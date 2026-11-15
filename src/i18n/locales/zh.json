@@ -144,7 +144,8 @@
     "filingRecords_one": "正在归档来自你的智能体的 {{count}} 条记录…",
     "filingRecords_other": "正在归档来自你的智能体的 {{count}} 条记录…",
     "filingRecordsNoCount": "正在归档来自你的智能体的记录…",
-    "pvtTokenName": "Provian价值代币"
+    "pvtTokenName": "Provian价值代币",
+    "pvtUpdating": "正在更新…"
   },
   "lockdown": {
     "title": "紧急锁定",

@@ -143,7 +143,8 @@
     "filingRecords_one": "Đang lưu {{count}} bản ghi từ các tác tử của bạn…",
     "filingRecords_other": "Đang lưu {{count}} bản ghi từ các tác tử của bạn…",
     "filingRecordsNoCount": "Đang lưu bản ghi từ các tác tử của bạn…",
-    "pvtTokenName": "Mã thông báo giá trị Provian"
+    "pvtTokenName": "Mã thông báo giá trị Provian",
+    "pvtUpdating": "Đang cập nhật…"
   },
   "lockdown": {
     "title": "Khóa khẩn cấp",

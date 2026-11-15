@@ -1,4 +1,5 @@
-import { currentProtocolDeployment } from '../core/protocol/runtime';
+import { currentProtocolDeployment, protocolDeploymentCandidate } from '../core/protocol/runtime';
+import { readConfirmedProtocolBalance } from '../core/protocol/balance';
 import type { MembershipRequestPath } from '../core/recourse/membership-client';
 import i18next from 'i18next';
 import { ActionWallet } from '../core/security/ActionWallet';
@@ -3898,7 +3899,7 @@ class RelayAPIService {
      */
     async getPVTBalance(walletAddress: string, biometricAction?: BiometricAction): Promise<{ balance: string; balance_raw: string; token_address: string } | null> {
         try {
-            const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
+            return await readConfirmedProtocolBalance(protocolDeploymentCandidate, currentProtocolDeployment, async (token) => {
             const { endpoint, options } = this.noCacheGet(
                 `/v1/pvt/balance/${encodeURIComponent(walletAddress)}?token=${encodeURIComponent(token)}`,
             );
@@ -3913,6 +3914,7 @@ class RelayAPIService {
                 return { balance: body.balance, balance_raw: body.balance_raw, token_address: token };
             }
             return null;
+            });
         } catch (error) {
             console.error('[RelayAPI] Error fetching PVT balance:', error);
             return null;

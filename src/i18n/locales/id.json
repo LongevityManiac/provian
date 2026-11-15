@@ -143,7 +143,8 @@
     "filingRecords_one": "Menyimpan {{count}} catatan dari agen Anda…",
     "filingRecords_other": "Menyimpan {{count}} catatan dari agen Anda…",
     "filingRecordsNoCount": "Menyimpan catatan dari agen Anda…",
-    "pvtTokenName": "Token Nilai Provian"
+    "pvtTokenName": "Token Nilai Provian",
+    "pvtUpdating": "Memperbarui…"
   },
   "lockdown": {
     "title": "Penguncian Darurat",

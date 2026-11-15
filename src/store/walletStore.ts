@@ -1,3 +1,4 @@
+import type { ConfirmedPvtBalance } from '../core/wallet/pvtBalanceDisplay';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -105,6 +106,10 @@ interface WalletState {
     isAuthenticated: boolean;
     lastActivityAt: number;  // SECURITY FIX: E-7 - Track last activity for session timeout
     assets: Asset[];
+    lastConfirmedPvt: ConfirmedPvtBalance | null;
+    pvtBalanceStatus: 'updating' | 'fresh' | 'outdated';
+    setPvtBalanceStatus: (status: 'updating' | 'fresh' | 'outdated') => void;
+    confirmPvtBalance: (wallet: string, asset: Asset) => void;
     isLockdownActive: boolean;
     isOffline: boolean;
     isDataSaver: boolean;
@@ -170,6 +175,15 @@ export const useWalletStore = create<WalletState>()(
             isAuthenticated: false,
             lastActivityAt: 0,  // SECURITY FIX: E-7 - Initialize last activity timestamp
             assets: INITIAL_ASSETS,
+            lastConfirmedPvt: null,
+            pvtBalanceStatus: 'updating',
+            setPvtBalanceStatus: (pvtBalanceStatus) => set({ pvtBalanceStatus }),
+            confirmPvtBalance: (wallet, asset) => set((state) => {
+                if (state.address.toLowerCase() !== wallet.toLowerCase() || !asset.isPVT
+                    || asset.chainId !== 8453 || !asset.tokenAddress) return {};
+                return { pvtBalanceStatus: 'fresh', lastConfirmedPvt: { walletAddress: wallet.toLowerCase(),
+                    tokenAddress: asset.tokenAddress, chainId: 8453, balance: asset.balance, confirmedAt: Date.now() } };
+            }),
             isLockdownActive: false,
             isOffline: false,
             isDataSaver: false,
@@ -211,6 +225,9 @@ export const useWalletStore = create<WalletState>()(
                 userName: '',
                 address: '',
                 solanaAddress: '',
+                assets: INITIAL_ASSETS,
+                lastConfirmedPvt: null,
+                pvtBalanceStatus: 'updating',
                 tosAcceptedAt: null,
                 termsAcceptedVersion: null,
                 privacyAcceptedVersion: null,
@@ -243,7 +260,8 @@ export const useWalletStore = create<WalletState>()(
                 ),
             })),
 
-            setAddress: (address) => set({ address }),
+            setAddress: (address) => set((state) => state.address.toLowerCase() === address.toLowerCase()
+                ? { address } : { address, assets: INITIAL_ASSETS, lastConfirmedPvt: null, pvtBalanceStatus: 'updating' }),
             setSolanaAddress: (solanaAddress) => set({ solanaAddress }),
 
             incrementBlockCount: () => set((state) => {
@@ -279,6 +297,7 @@ export const useWalletStore = create<WalletState>()(
                 walletOnboardingComplete: state.walletOnboardingComplete,
                 userName: state.userName,
                 address: state.address,
+                lastConfirmedPvt: state.lastConfirmedPvt,
                 solanaAddress: state.solanaAddress,
                 tosAcceptedAt: state.tosAcceptedAt,
                 termsAcceptedVersion: state.termsAcceptedVersion,

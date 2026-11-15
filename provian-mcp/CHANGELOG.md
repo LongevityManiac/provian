@@ -1,3 +1,8 @@
+## 1.3.4
+
+- Ship a build-verified protocol proof so first use needs only fresh two-provider confirmation when the revision is unchanged. Keep full verification for newer revisions, canonical-block checks, retirement protection and rate-limit handling.
+- Combine live head lookups without batching public RPC requests.
+
 ## 1.3.3
 
 - Use portable request deadlines on native runtimes while preserving paced RPC reads and rate-limit retry handling.

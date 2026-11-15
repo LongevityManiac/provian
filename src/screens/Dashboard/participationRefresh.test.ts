@@ -47,7 +47,16 @@ describe('Wallet participation recovery', () => {
             expect(matches).toHaveLength(1);
             const element = matches[0] as ts.JsxSelfClosingElement;
             const attr = element.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(screen) === prop) as ts.JsxAttribute | undefined;
-            expect(attr?.initializer?.getText(screen)).toBe('{loadParticipation}');
+            if (tag === 'ParticipationCard') expect(attr?.initializer?.getText(screen)).toBe('{loadParticipation}');
+            else {
+                const expression = (attr?.initializer as ts.JsxExpression)?.expression;
+                if (!expression) throw Error('Missing pull refresh handler');
+                const participation = vi.fn(), balances = vi.fn();
+                const handler = new Function('loadParticipation', 'refreshBalances', `return ${expression.getText(screen)}`)(participation, balances);
+                handler();
+                expect(participation).toHaveBeenCalledOnce();
+                expect(balances).toHaveBeenCalledOnce();
+            }
         }
     });
     it('the card retries on error while successful records still open the chain', () => {

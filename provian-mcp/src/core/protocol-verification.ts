@@ -14,13 +14,14 @@ export interface ProtocolVerificationOptions {
   readonly rpcs: readonly [PointerRpc, PointerRpc];
   readonly store: ProtocolVerificationStore;
   readonly minimumRevision?: () => Promise<bigint>;
+  readonly builtInProof?: string;
 }
 const schema = 'protocol-verified-v1';
 function freeze(value: ProtocolDeployment): ProtocolDeployment {
   return Object.freeze({ ...value, addresses: Object.freeze({ ...value.addresses }),
     runtimeHashes: Object.freeze([...value.runtimeHashes]) });
 }
-function unpack(text: string, options: ProtocolVerificationOptions): ProtocolDeployment {
+export function unpackProtocolProof(text: string, options: ProtocolVerificationOptions): ProtocolDeployment {
   const value: unknown = JSON.parse(text);
   if (!value || typeof value !== 'object') throw Error('protocol_cache_invalid');
   const saved = value as Record<string, unknown>;
@@ -49,38 +50,56 @@ function unpack(text: string, options: ProtocolVerificationOptions): ProtocolDep
     runtimeHashes: saved.runtimeHashes as string[] });
 }
 
+export function packProtocolProof(value: ProtocolDeployment, options: Pick<ProtocolVerificationOptions, 'runtimeHash' | 'operators'>): string {
+  return JSON.stringify({ ...value, revision: value.revision.toString(), schema,
+    runtimeHash: options.runtimeHash, operators: options.operators });
+}
+
 /** Only immutable verification is cached. Each operation confirms the pointer on
  * both providers now, with no age-based window permitting stale signing. The
  * original full-verification block remains the reorg anchor across restarts. */
 export function createProtocolVerification(options: ProtocolVerificationOptions): {
   current(): Promise<ProtocolDeployment>;
   snapshot(): ProtocolDeployment;
+  candidate(): Promise<ProtocolDeployment | undefined>;
 } {
-  let verified: ProtocolDeployment | undefined;
+  let verified: ProtocolDeployment | undefined = options.builtInProof
+    ? unpackProtocolProof(options.builtInProof, options) : undefined;
   let current: ProtocolDeployment | undefined;
-  let minimumRevision = 0n;
+  let minimumRevision = verified?.revision ?? 0n;
   let tail: Promise<void> = Promise.resolve();
-  async function refresh(): Promise<ProtocolDeployment> {
+  async function candidate(): Promise<ProtocolDeployment | undefined> {
     const floor = await options.minimumRevision?.() ?? 0n;
     if (floor > minimumRevision) minimumRevision = floor;
     const stored = await options.store.load();
     if (stored !== null) {
-      const saved = unpack(stored, options);
+      const saved = unpackProtocolProof(stored, options);
+      if (verified && saved.revision === verified.revision && saved.manifestHash !== verified.manifestHash)
+        throw Error('protocol_cache_invalid');
       if (!verified || saved.revision > verified.revision) verified = saved;
       if (saved.revision > minimumRevision) minimumRevision = saved.revision;
     }
     if (verified && verified.revision < minimumRevision) verified = undefined;
+    return verified;
+  }
+  async function refresh(): Promise<ProtocolDeployment> {
+    await candidate();
     const confirmed = verified ? await confirmProtocolDeployment(options.rpcs, verified, options.runtimeHash) : null;
     if (confirmed) { current = freeze(confirmed); return current; }
     const result = freeze(await resolveProtocolDeployment(options.rpcs, options.pointer, options.runtimeHash, minimumRevision));
     minimumRevision = result.revision;
-    await options.store.save(result.revision, JSON.stringify({ ...result, revision: result.revision.toString(),
-      schema, runtimeHash: options.runtimeHash, operators: options.operators }));
+    await options.store.save(result.revision, packProtocolProof(result, options));
     verified = result;
     current = result;
     return result;
   }
   return {
+    // Speculative read hint only; never a signing or display verification.
+    candidate() {
+      const work = tail.then(candidate);
+      tail = work.then(() => {}, () => { current = undefined; });
+      return work;
+    },
     current() {
       // Serialize callers: one full verification per revision, but a caller at
       // a later signing boundary still gets its own fresh chain confirmation.

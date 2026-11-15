@@ -144,7 +144,8 @@
     "filingRecords_one": "에이전트의 기록 {{count}}건을 보관하는 중…",
     "filingRecords_other": "에이전트의 기록 {{count}}건을 보관하는 중…",
     "filingRecordsNoCount": "에이전트의 기록을 보관하는 중…",
-    "pvtTokenName": "Provian 가치 토큰"
+    "pvtTokenName": "Provian 가치 토큰",
+    "pvtUpdating": "업데이트 중…"
   },
   "lockdown": {
     "title": "긴급 잠금",

@@ -130,9 +130,20 @@ async function resolveDeployment(rpcs: readonly [PointerRpc, PointerRpc], pointe
 export async function confirmProtocolDeployment(rpcs: readonly [PointerRpc, PointerRpc],
   verified: ProtocolDeployment, pointerRuntimeHash: string): Promise<ProtocolDeployment | null> {
   if (quantity(await agreement(rpcs, 'eth_chainId', [])) !== 8453n) throw Error('protocol_pointer_wrong_chain');
-  const heights = await Promise.all(rpcs.map(async rpc => quantity(await rpc.request('eth_blockNumber', []))));
-  const height = heights[0] < heights[1] ? heights[0] : heights[1];
-  const block = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
+  const heads = await Promise.all(rpcs.map(async rpc => {
+    const header = await rpc.request('eth_getBlockByNumber', ['latest', false]);
+    if (!header || typeof header !== 'object' || !('number' in header) || !('hash' in header)
+      || hex(header.hash).length !== 66) throw Error('protocol_pointer_invalid_block');
+    return { height: quantity(header.number), hash: hex(header.hash), header };
+  }));
+  const height = heads[0].height < heads[1].height ? heads[0].height : heads[1].height;
+  if (heads[0].height === heads[1].height
+    && JSON.stringify(normalized(heads[0].header)) !== JSON.stringify(normalized(heads[1].header)))
+    throw Error('protocol_pointer_rpc_disagreement');
+  // Lagging providers reconcile at the lower common height; equal heads need
+  // no second lookup. Every state read and the final reorg check remain pinned.
+  const block = heads[0].height === heads[1].height ? heads[0].header
+    : await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
   if (!block || typeof block !== 'object' || !('hash' in block) || !('number' in block)
     || quantity(block.number) !== height) throw Error('protocol_pointer_invalid_block');
   const blockHash = hex(block.hash);

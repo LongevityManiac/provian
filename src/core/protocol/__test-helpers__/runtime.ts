@@ -19,6 +19,7 @@ const deployment: ProtocolDeployment = { pointer: `0x${'99'.repeat(20)}`, revisi
   blockHash: `0x${'aa'.repeat(32)}`, manifestHash: `0x${'bb'.repeat(32)}`, addresses, runtimeHashes: [] };
 const rpc = { request: async () => `0x${'0'.repeat(64)}` };
 export const protocolRuntimeFixture = {
+  protocolDeploymentCandidate: vi.fn(async () => deployment),
   currentProtocolDeployment: vi.fn(async () => deployment),
   verifiedProtocolSnapshot: vi.fn(() => deployment),
   ownerChainNetwork: () => ({ deployment: async () => deployment, rpcs: [rpc, rpc] }),

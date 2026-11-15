@@ -43,6 +43,8 @@ if [[ "${1:-}" == "--play" ]]; then
   shift
 fi
 
+node "$REPO_ROOT/scripts/generate-protocol-proof.mjs"
+
 # What `expo prebuild` writes (app.json: googleServicesFile in config/firebase/, android.versionCode)
 # must equal what this build ships from the committed android/ tree, or the two would differ.
 "$REPO_ROOT/scripts/check-prebuild-sources-sync.sh" "$REPO_ROOT"

@@ -101,12 +101,12 @@ describe('durable revision verification', () => {
     expect(initial.componentReads).toBe(20);
     const evidence = f.saved();
     const current = await verifier.current();
-    expect(f.counts()).toEqual({ calls: initial.calls + 16, componentReads: 20 });
+    expect(f.counts()).toEqual({ calls: initial.calls + 14, componentReads: 20 });
     expect(Object.isFrozen(current)).toBe(true);
     expect(Object.isFrozen(current.addresses)).toBe(true);
     expect(Object.isFrozen(current.runtimeHashes)).toBe(true);
     await createProtocolVerification(f.options).current();
-    expect(f.counts()).toEqual({ calls: initial.calls + 32, componentReads: 20 });
+    expect(f.counts()).toEqual({ calls: initial.calls + 28, componentReads: 20 });
     expect(f.saved()).toBe(evidence);
   });
   it('keeps the original full-verification anchor across advancing blocks and restart', async () => {
@@ -154,4 +154,102 @@ describe('durable revision verification', () => {
       await expect(createProtocolVerification(f.options).current()).rejects.toThrow();
       expect(f.counts().componentReads).toBe(20);
     });
+});
+
+describe('bundled full proof and combined live heads', () => {
+  const operators = ['provider-one', 'provider-two'] as const;
+  async function builtIn(revision = 1n) {
+    const proof = await resolveProtocolDeployment([rpc({ revision }), rpc({ revision })], pointer, runtimeHash);
+    const { packProtocolProof } = await import('./protocol-verification.js');
+    return packProtocolProof(proof, { operators, runtimeHash });
+  }
+  const empty = { load: async () => null, save: async () => {} };
+  it('first launch makes seven reads per provider and exposes nothing verified beforehand', async () => {
+    let calls = 0, components = 0;
+    const leg = (): PointerRpc => ({ request(method, params) {
+      calls++; if (method === 'eth_getCode' && params[0] !== pointer) components++;
+      return rpc().request(method, params);
+    } });
+    const v = createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [leg(), leg()], store: empty, builtInProof: await builtIn() });
+    expect((await v.candidate())?.revision).toBe(1n);
+    expect(() => v.snapshot()).toThrow('resolution_required');
+    const pending = v.current();
+    expect(() => v.snapshot()).toThrow('resolution_required');
+    expect((await pending).revision).toBe(1n);
+    expect(calls).toBe(14); expect(components).toBe(0);
+  });
+  it('a newer revision requires full verification even when the kernel address stays the same', async () => {
+    let components = 0, saved = '';
+    const leg = (): PointerRpc => ({ request(method, params) {
+      if (method === 'eth_getCode' && params[0] !== pointer) components++;
+      return rpc({ revision: 2n }).request(method, params);
+    } });
+    const v = createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [leg(), leg()],
+      store: { load: async () => null, save: async (_, value) => { saved = value; } }, builtInProof: await builtIn() });
+    expect((await v.current()).revision).toBe(2n);
+    expect(components).toBe(20); expect(JSON.parse(saved).revision).toBe('2');
+  });
+  it('durable and bundled evidence preserve the highest revision floor', async () => {
+    const one = await builtIn(), two = await builtIn(2n);
+    const v = createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [rpc({ revision: 2n }), rpc({ revision: 2n })],
+      store: { ...empty, load: async () => two }, builtInProof: one });
+    expect((await v.candidate())?.revision).toBe(2n);
+    expect((await v.current()).revision).toBe(2n);
+    const rollback = createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [rpc(), rpc()],
+      store: { ...empty, load: async () => one }, builtInProof: two });
+    expect((await rollback.candidate())?.revision).toBe(2n);
+    await expect(rollback.current()).rejects.toThrow('rollback');
+  });
+  it.each(['schema','operators','pointer','runtimeHash','manifestHash','addresses','blockHash','runtimeHashes'])(
+    'refuses a malformed bundled %s', async field => {
+      const value = JSON.parse(await builtIn()); value[field] = 'invalid';
+      expect(() => createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [rpc(), rpc()],
+        store: empty, builtInProof: JSON.stringify(value) })).toThrow();
+    });
+  it('refuses an orphaned bundled anchor and never authorizes a snapshot', async () => {
+    const v = createProtocolVerification({ pointer, runtimeHash, operators,
+      rpcs: [rpc({ anchorLost: true }), rpc({ anchorLost: true })], store: empty, builtInProof: await builtIn() });
+    await expect(v.current()).rejects.toThrow('noncanonical');
+    expect(() => v.snapshot()).toThrow('resolution_required');
+  });
+  it('reconciles unequal heads and rejects equal-height forks or malformed headers', async () => {
+    const proof = await builtIn();
+    const leg = (height: number): PointerRpc => ({ request(method, params) {
+      if (method === 'eth_getBlockByNumber') return Promise.resolve({ number: params[0] === 'latest' ? `0x${height.toString(16)}` : params[0], hash: blockHash });
+      return rpc().request(method, params);
+    } });
+    const v = createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [leg(100), leg(101)], store: empty, builtInProof: proof });
+    expect((await v.current()).revision).toBe(1n);
+    for (const bad of [null, { number: 'invalid', hash: blockHash }, { number: '0x64', hash: '0x12' }, { number: '0x64', hash: blockHash, parentHash: blockHash }, { number: '0x64', hash: `0x${'cd'.repeat(32)}` }]) {
+      const corrupt: PointerRpc = { request: (method, params) => method === 'eth_getBlockByNumber' ? Promise.resolve(bad) : rpc().request(method, params) };
+      await expect(createProtocolVerification({ pointer, runtimeHash, operators, rpcs: [leg(100), corrupt], store: empty, builtInProof: proof }).current()).rejects.toThrow();
+    }
+  });
+  it('build generation fully verifies finalized evidence and rejects a newer live revision', async () => {
+    const { buildProtocolProof } = await import('./protocol-proof-build.js');
+    const value = await buildProtocolProof([rpc(), rpc()], pointer, runtimeHash, operators);
+    expect(JSON.parse(value).blockHash).toBe(blockHash);
+    expect(await buildProtocolProof([rpc(), rpc()], pointer, runtimeHash, operators, value)).toBe(value);
+    await expect(buildProtocolProof([rpc({ newer: true }), rpc({ newer: true })], pointer, runtimeHash, operators)).rejects.toThrow();
+    await expect(buildProtocolProof([rpc({ wrongBinding: true }), rpc({ wrongBinding: true })], pointer, runtimeHash, operators)).rejects.toThrow('binding_mismatch');
+  });
+  it('anchors build evidence at finalized height rather than the later live head', async () => {
+    const { buildProtocolProof } = await import('./protocol-proof-build.js');
+    const laterHash = `0x${'cd'.repeat(32)}`;
+    function leg(disagree = false): PointerRpc {
+      return { request(method, params) {
+        if (method === 'eth_getBlockByNumber') {
+          const height = params[0] === 'finalized' ? 100 : params[0] === 'latest' ? 102 : Number(BigInt(String(params[0])));
+          const hash = height === 100 ? (disagree ? laterHash : blockHash) : laterHash;
+          return Promise.resolve({ number: `0x${height.toString(16)}`, hash });
+        }
+        return rpc().request(method, params);
+      } };
+    }
+    const proof = JSON.parse(await buildProtocolProof([leg(), leg()], pointer, runtimeHash, operators));
+    expect(proof.blockHash).toBe(blockHash);
+    expect(proof.blockHash).not.toBe(laterHash);
+    await expect(buildProtocolProof([leg(), leg(true)], pointer, runtimeHash, operators)).rejects.toThrow('finalized_disagreement');
+  });
+
 });

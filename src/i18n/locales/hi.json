@@ -143,7 +143,8 @@
     "filingRecords_one": "आपके एजेंटों का {{count}} रिकॉर्ड सहेजा जा रहा है…",
     "filingRecords_other": "आपके एजेंटों के {{count}} रिकॉर्ड सहेजे जा रहे हैं…",
     "filingRecordsNoCount": "आपके एजेंटों के रिकॉर्ड सहेजे जा रहे हैं…",
-    "pvtTokenName": "Provian वैल्यू टोकन"
+    "pvtTokenName": "Provian वैल्यू टोकन",
+    "pvtUpdating": "अपडेट हो रहा है…"
   },
   "lockdown": {
     "title": "आपातकालीन लॉकडाउन",

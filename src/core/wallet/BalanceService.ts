@@ -296,15 +296,22 @@ class BalanceService {
         // as soon as its relay read finishes, without waiting for every EVM
         // chain, Solana, and the price overlay. The final merged snapshot still
         // lands once all reads have settled.
+        if (useWalletStore.getState().address?.toLowerCase() === address.toLowerCase()) {
+            useWalletStore.getState().setPvtBalanceStatus('updating');
+        }
         const pvtRead = this.fetchPvtAsset(address, biometricAction).then((result) => {
             if (result.asset) {
                 const state = useWalletStore.getState();
-                if (!state.address || state.address.toLowerCase() === address.toLowerCase()) {
+                if (state.address?.toLowerCase() === address.toLowerCase()) {
                     state.setAssets([
                         ...state.assets.filter((asset) => asset.isPVT !== true),
                         result.asset,
                     ]);
+                    state.confirmPvtBalance(address, result.asset);
                 }
+            }
+            if (result.failed && useWalletStore.getState().address?.toLowerCase() === address.toLowerCase()) {
+                useWalletStore.getState().setPvtBalanceStatus('outdated');
             }
             return result;
         });
@@ -376,7 +383,7 @@ class BalanceService {
 
         await this.applyLivePrices(merged);
         const state = useWalletStore.getState();
-        if (!state.address || state.address.toLowerCase() === address.toLowerCase()) {
+        if (state.address?.toLowerCase() === address.toLowerCase()) {
             state.setAssets(merged);
         }
 

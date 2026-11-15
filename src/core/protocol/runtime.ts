@@ -1,3 +1,4 @@
+import { BUILT_IN_PROTOCOL_PROOF } from './proof.generated';
 import { protocolRpc } from './rpc';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
@@ -14,7 +15,7 @@ function transport(url: typeof urls[number]): PointerRpc { return protocolRpc(ur
 function verifier(): ReturnType<typeof createProtocolVerification> {
   const { address, runtimeHash } = PROTOCOL_POINTER_PIN;
   if (!address || !runtimeHash) throw new Error('protocol_pointer_not_deployed');
-  return verification ??= createProtocolVerification({ pointer: address, runtimeHash, operators: urls,
+  return verification ??= createProtocolVerification({ pointer: address, runtimeHash, operators: urls, builtInProof: BUILT_IN_PROTOCOL_PROOF,
     rpcs: [transport(urls[0]), transport(urls[1])],
     minimumRevision: async () => {
       const stored = await AsyncStorage.getItem(revisionKey);
@@ -33,6 +34,8 @@ function verifier(): ReturnType<typeof createProtocolVerification> {
   });
 }
 export function verifiedProtocolSnapshot(): ProtocolDeployment { return verifier().snapshot(); }
+/** Unconfirmed hint for speculative reads only. */
+export async function protocolDeploymentCandidate(): Promise<ProtocolDeployment | undefined> { return verifier().candidate(); }
 export async function currentProtocolDeployment(): Promise<ProtocolDeployment> { return verifier().current(); }
 export function ownerChainNetwork(): OwnerChainNetwork {
   return { rpcs: [transport(urls[0]), transport(urls[1])], deployment: currentProtocolDeployment };

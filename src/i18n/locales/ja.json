@@ -144,7 +144,8 @@
     "filingRecords_one": "エージェントの記録を{{count}}件保存しています…",
     "filingRecords_other": "エージェントの記録を{{count}}件保存しています…",
     "filingRecordsNoCount": "エージェントの記録を保存しています…",
-    "pvtTokenName": "Provianバリュー・トークン"
+    "pvtTokenName": "Provianバリュー・トークン",
+    "pvtUpdating": "更新中…"
   },
   "lockdown": {
     "title": "緊急ロックダウン",

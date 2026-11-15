@@ -5,6 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARCHIVE_PATH="${1:?usage: build-ios-release.sh /absolute/path.xcarchive [xcodebuild arguments]}"
 shift
 cd "$REPO_ROOT"
+node "$REPO_ROOT/scripts/generate-protocol-proof.mjs"
+
 export EXPO_PUBLIC_DISTRIBUTION=ios
 EXPO_PUBLIC_BUILD_PROVENANCE="$(node scripts/bundle-provenance.mjs stamp ios)"
 export EXPO_PUBLIC_BUILD_PROVENANCE

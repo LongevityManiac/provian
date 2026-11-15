@@ -1,6 +1,8 @@
+import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
+import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +34,8 @@ import { assetUsdValue, formatUsd, portfolioTotal, priceAgeLabel, totalAgeLabel 
 const DashboardScreen = ({ navigation }: any) => {
     const {
         assets,
+        lastConfirmedPvt,
+        pvtBalanceStatus,
         isLockdownActive,
         isOffline,
         transactionQueue,
@@ -69,34 +73,32 @@ const DashboardScreen = ({ navigation }: any) => {
     // D-7 fix: Track when balances were last successfully fetched
     const [lastBalanceUpdate, setLastBalanceUpdate] = React.useState<number | null>(null);
 
-    useFocusEffect(
-        useCallback(() => {
-            if (address) {
-                setIsLoadingBalances(true);
-                setBalanceError(null);
-                BalanceService.fetchAllBalancesDetailed(address)
-                    .then(({ failedChainIds }) => {
-                        setLastBalanceUpdate(Date.now());
-                        // Some chains' RPCs failed: their balances are preserved
-                        // from the prior snapshot, so warn the user the total may
-                        // be out of date instead of showing a confidently-wrong
-                        // figure with a fresh timestamp (review #5).
-                        if (failedChainIds.length > 0) {
-                            setBalanceError(t('dashboard.balanceOutdated'));
-                        }
-                    })
-                    .catch((err: any) => {
-                        console.warn('[Dashboard] Balance fetch failed:', err?.message);
-                        setBalanceError(t('dashboard.balanceLoadFailed'));
-                    })
-                    .finally(() => setIsLoadingBalances(false));
-                // Mint the on-ramp PE for any deposit that landed after the user
-                // left the Buy Crypto screen. No-op (no network) when nothing is
-                // pending; the reconciler dedupes so this never double-mints.
-                OnRampReconciler.reconcile(address).catch(() => {});
-            }
-        }, [address, t])
-    );
+    const refreshBalances = useCallback(async () => {
+        if (!address) return;
+        setIsLoadingBalances(true);
+        setBalanceError(null);
+        try {
+            const { failedChainIds } = await BalanceService.fetchAllBalancesDetailed(address);
+            setLastBalanceUpdate(Date.now());
+            if (failedChainIds.length) setBalanceError(t('dashboard.balanceOutdated'));
+        } catch (error) {
+            console.warn('[Dashboard] Balance fetch failed:', error);
+            setBalanceError(t('dashboard.balanceLoadFailed'));
+        } finally { setIsLoadingBalances(false); }
+    }, [address, t]);
+    useFocusEffect(useCallback(() => {
+        void refreshBalances();
+        if (address) OnRampReconciler.reconcile(address).catch(() => {});
+    }, [address, refreshBalances]));
+
+    React.useEffect(() => {
+        let previous = AppState.currentState;
+        const subscription = AppState.addEventListener('change', next => {
+            if (next === 'active' && previous !== 'active') void refreshBalances();
+            previous = next;
+        });
+        return () => subscription.remove();
+    }, [refreshBalances]);
 
     const backgroundGradient = GRADIENTS.backgroundDiagonal;
     const cardGradient = GRADIENTS.balanceCardGlow;
@@ -189,7 +191,13 @@ const DashboardScreen = ({ navigation }: any) => {
     // Include the real PVT balance (isPVT, injected by BalanceService from the
     // relay reader) while still excluding any stale legacy `PVT`-symbol rows that
     // predate the reader wiring and carry no on-chain balance.
-    const walletAssets = assets
+    const cachedPvt = cachedPvtAsset(lastConfirmedPvt, address, !isTestnet());
+    const displayAssets = !assets.some(asset => asset.isPVT) && cachedPvt ? [cachedPvt, ...assets] : assets;
+    const hasDisplayedPvt = displayAssets.some(asset => asset.isPVT);
+    React.useEffect(() => {
+        if (hasDisplayedPvt) console.log(`[Dashboard] PVT card displayed (${pvtBalanceStatus})`);
+    }, [hasDisplayedPvt, pvtBalanceStatus]);
+    const walletAssets = displayAssets
         .filter((asset) => asset.isPVT === true || asset.symbol.toUpperCase() !== 'PVT')
         // PVT leads the assets scroller (far left) — it is the protocol's value
         // token and gets top billing on the wallet page. sort() runs on the new
@@ -315,7 +323,7 @@ const DashboardScreen = ({ navigation }: any) => {
                 end={{ x: 1, y: 1 }}
             />
             <ScrollView contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={pvtRefreshing} onRefresh={loadParticipation} tintColor={COLORS.primary} />}>
+                refreshControl={<RefreshControl refreshing={pvtRefreshing || isLoadingBalances} onRefresh={() => { void loadParticipation(); void refreshBalances(); }} tintColor={COLORS.primary} />}>
                 {/* 1. Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
@@ -552,6 +560,8 @@ const DashboardScreen = ({ navigation }: any) => {
                                     // instead of a misleading "$0.00" fiat value.
                                     <Text style={[styles.assetValue, { color: themeColors.textSecondary }]}>
                                         {t('dashboard.pvtTokenName')}
+                                        {pvtBalanceStatus === 'updating' ? ` · ${t('dashboard.pvtUpdating')}`
+                                            : pvtBalanceStatus === 'outdated' ? ` · ${t('dashboard.balanceOutdated')}` : ''}
                                     </Text>
                                 ) : (
                                     <Text style={[styles.assetValue, { color: themeColors.textSecondary }]} numberOfLines={1}>
