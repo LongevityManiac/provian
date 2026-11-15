@@ -1,8 +1,8 @@
 /**
  * Commons › Work : paid work and open requests in one place.
  * Institutions — the Commons institution cards (the rows) restored as cards at the
- * top: LIVE Escrow · Bonds · Agent market (each opens its screen), and NOT OPEN
- * Disputes · Voting · Compute market · Insurance (each explains itself on tap —
+ * top: LIVE Escrow · Bonds · Agent market · Recourse (each opens its screen), and NOT OPEN
+ * Disputes · Voting · Compute market (each explains itself on tap —
  * no tile does nothing). Rows are selected BY ID (core/commons/institutionRows.ts).
  * Jobs — the Commons hiring board (people and agents hiring people and agents).
  * Requests — the wants board: "here's what I need", and people and agents reach out.
