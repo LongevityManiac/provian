@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { zeroPadValue, toBeHex, keccak256 } from 'ethers';
 import template from './restoration-executor-runtime.generated.json';
+import held from './__test-helpers__/held-restoration-executor.json';
 import { authenticateRestorationExecutor, decodeRestorationExecutorRuntime, type RestorationExecutorRuntimePort } from './restoration-executor-runtime';
 const a = (n: number) => `0x${n.toString(16).padStart(40, '0')}`, h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
 const word = (value: string | number) => zeroPadValue(typeof value === 'number' ? toBeHex(value) : value, 32);
@@ -29,14 +30,20 @@ function compiled(name: string): string {
   const artifact = JSON.parse(readFileSync(resolve(__dirname, `../../../../contracts/out/${name}.sol/${name}.json`), 'utf8')) as { deployedBytecode: { object: string } };
   return artifact.deployedBytecode.object;
 }
-function embeddedFactory(): string {
-  // Authenticate the factory this executor actually creates. Solidity's IR
-  // optimizer can emit different code for a standalone compilation artifact.
-  const creator = JSON.parse(readFileSync(resolve(__dirname,
-    '../../../../contracts/out/ProvianRestorationAuthorization.sol/ProvianRestorationAuthorization.json'), 'utf8')) as
-    { bytecode: { object: string } };
-  const standalone = compiled('ProvianHashAccountFactory').slice(2);
-  const init = creator.bytecode.object.slice(2), prefix = standalone.slice(0, 64), suffix = standalone.slice(-106);
+/**
+ * The creation bytecode of the executor held for deployment, identified by its hash. A fresh
+ * compile reproduces this executor's runtime exactly, but Solidity's IR optimizer emits a
+ * different variant of the helpers it embeds, so the helper hashes are checked against the
+ * held bytes, never against whatever a local build last wrote to contracts/out.
+ */
+const HELD_EXECUTOR_CREATION_HASH = '0x6f5170165130eee1f613c0f7b6ba00cd48db8fa9f4ab666fb79226a68194065e';
+function embeddedFactory(creation: string = held.creation): string {
+  expect(keccak256(creation)).toBe(HELD_EXECUTOR_CREATION_HASH);
+  // The held executor is this exact implementation.
+  expect(creation.includes(template.runtime.slice(2))).toBe(true);
+  // Every contract the executor creates starts with the free-memory-pointer setup and ends
+  // with the solc 0.8.24 metadata trailer; exactly one such span is the trusted factory.
+  const init = creation.slice(2), prefix = '6080604052', suffix = '64736f6c63430008180033';
   const matches: string[] = [];
   for (let start = init.indexOf(prefix); start >= 0; start = init.indexOf(prefix, start + 2)) {
     for (let end = init.indexOf(suffix, start); end >= 0; end = init.indexOf(suffix, end + 2)) {
@@ -85,4 +92,10 @@ compiledTest('ordinary inheritance authenticates the prior executor instead of t
   await authenticateRestorationExecutor(a(2), a(1), h(30), port);
   codes.set(a(12), '0x60006000f3');
   await expect(authenticateRestorationExecutor(a(2), a(1), h(30), port)).rejects.toThrow(/runtime_mismatch/);
+});
+test('the trusted factory is read from the held executor bytes, never from a fresh build', () => {
+  expect(keccak256(embeddedFactory())).toBe(template.hashAccountFactoryHash);
+  // A fresh compile embeds a different helper variant: it is refused, not silently trusted.
+  const fresh = held.creation.replace(embeddedFactory().slice(2, 202), '00'.repeat(100));
+  expect(() => embeddedFactory(fresh)).toThrow();
 });

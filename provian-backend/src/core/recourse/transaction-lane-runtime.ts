@@ -10,6 +10,7 @@ import { breakDeploymentChain } from './break-deployment-queue';
 import { assertLaneKeyPinned, recourseLaneWallet } from './transaction-lane-key';
 import { recourseLaneKinds } from './transaction-lane-kinds';
 import { drainLegacyRecourse } from './transaction-lane-legacy';
+import { recordLaneHealth } from './transaction-lane-health';
 import { anyQueued, runRecourseLane, type LaneChain, type LaneReport } from './transaction-lane';
 import type { OwnerOperationChain } from './owner-operation-queue';
 
@@ -105,15 +106,25 @@ export async function runRecourseLaneFor(db: Firestore, options: LaneRunOptions)
   // Requests the relay held before this lane existed: release the minter and queue them here.
   try { await drainLegacyRecourse(db, kinds, () => (chain ??= createLaneChain())); }
   catch (error) { console.warn('[recourse-lane] legacy drain deferred:', error instanceof Error ? error.message : 'error'); }
-  while (Date.now() < deadline) {
-    chain ??= createLaneChain();
-    const report = await runRecourseLane({ db, signer: wallet, chain, kinds, workerId: `recourse-lane-${randomUUID()}`,
-      fence: async () => { if (!fenced) { await assertLaneKeyHasNoRole(address); fenced = true; } } }, deadline);
-    reports.push(report);
-    // Run again only after progress, so a request that keeps failing transiently cannot spin the budget.
-    const progressed = report.signed + report.closedUnsigned > 0;
-    if (report.skipped || report.stopReason !== null || !progressed || !(await anyQueued(db, kinds))) break;
+  let failure: unknown = null;
+  try {
+    while (Date.now() < deadline) {
+      chain ??= createLaneChain();
+      const report = await runRecourseLane({ db, signer: wallet, chain, kinds, workerId: `recourse-lane-${randomUUID()}`,
+        fence: async () => { if (!fenced) { await assertLaneKeyHasNoRole(address); fenced = true; } } }, deadline);
+      reports.push(report);
+      // Run again only after progress, so a request that keeps failing transiently cannot spin the budget.
+      const progressed = report.signed + report.closedUnsigned > 0;
+      if (report.skipped || report.stopReason !== null || !progressed || !(await anyQueued(db, kinds))) break;
+    }
+  } catch (error) {
+    // A run that threw sent nothing; it is recorded as a stall with its reason.
+    failure = error;
+    reports.push({ signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, lapsed: 0, open: 0, nextNonce: null,
+      stopReason: error instanceof Error && /^[a-z0-9_:]+$/.test(error.message) ? error.message : 'recourse_lane_error', errors: [] });
   }
+  await recordLaneHealth(db, reports);
+  if (failure !== null) throw failure;
   return reports;
 }
 /** A request handler's inline attempt. Never throws; the scheduler resumes it. */

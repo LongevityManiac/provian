@@ -53,7 +53,7 @@ test('the oldest live request goes first across kinds, and expired requests clos
   const f = setup(), a = testKind('a', f.now), b = testKind('b', f.now);
   const order = [f.queue('b', 3, 1000), f.queue('a', 1, 2000, { expiresAtMs: f.now() - 1 }), f.queue('a', 2, 3000), f.queue('b', 4, 4000)];
   const report = await f.run([a, b]);
-  expect(report).toMatchObject({ signed: 3, failed: 1, closedUnsigned: 1 });
+  expect(report).toMatchObject({ signed: 3, failed: 1, closedUnsigned: 1, lapsed: 1 });
   const nonceOf = (key: string) => f.fake.store.get(key)?.laneNonce;
   expect([nonceOf(`b/${order[0]}`), nonceOf(`a/${order[2]}`), nonceOf(`b/${order[3]}`)]).toEqual([0, 1, 2]);
   expect(f.fake.store.get(`a/${order[1]}`)).toMatchObject({ status: 'failed', terminalReason: 'binding_expired' });

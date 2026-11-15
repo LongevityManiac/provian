@@ -7,10 +7,12 @@ jest.mock('../onchain/rpc-provider', () => ({ getOperatorBoundRpcLegs: () => [
 jest.mock('./identity-attestor', () => ({ configuredIdentityAttestor: () => ({ address: `0x${'aa'.repeat(20)}` }) }));
 jest.mock('./transaction-lane-legacy', () => ({ drainLegacyRecourse: jest.fn(async () => ({ adopted: 0, settled: 0, released: 0, rebroadcast: 0, waiting: 0 })) }));
 jest.mock('./transaction-lane', () => ({ ...jest.requireActual('./transaction-lane'),
-  runRecourseLane: jest.fn(async () => ({ skipped: 'lane_idle', signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, open: 0, nextNonce: 0, stopReason: null, errors: [] })) }));
+  runRecourseLane: jest.fn(async () => ({ skipped: 'lane_idle', signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, lapsed: 0, open: 0, nextNonce: 0, stopReason: null, errors: [] })) }));
 
 import { drainLegacyRecourse } from './transaction-lane-legacy';
 import { runRecourseLane } from './transaction-lane';
+import { RECOURSE_LANE_COLLECTION } from './transaction-lane';
+import { LANE_HEALTH_DOC } from './transaction-lane-health';
 import { runRecourseLaneFor } from './transaction-lane-runtime';
 
 const env = { RECOURSE_GAS_KEY: LANE_TEST_KEY, RECOURSE_GAS_ADDRESS: laneTestWallet().address } as NodeJS.ProcessEnv;
@@ -32,4 +34,14 @@ test('RED control: an unpinned lane key is refused before anything runs', async 
   await expect(runRecourseLaneFor(createFakeFirestore() as unknown as Firestore, { budgetMs: 1_000, env: { RECOURSE_GAS_KEY: LANE_TEST_KEY } as NodeJS.ProcessEnv }))
     .rejects.toThrow('recourse_lane_key_unpinned');
   expect(drainLegacyRecourse).toHaveBeenCalledTimes(2);
+});
+test('every run records the lane health; a run that throws is recorded as a stall with its reason', async () => {
+  const db = createFakeFirestore() as unknown as Firestore;
+  await runRecourseLaneFor(db, { budgetMs: 1_000, env });
+  const health = db.collection(RECOURSE_LANE_COLLECTION).doc(LANE_HEALTH_DOC);
+  expect((await health.get()).data()).toMatchObject({ stalled_since_ms: null });
+  (runRecourseLane as jest.Mock).mockRejectedValueOnce(Error('recourse_lane_rpc_disagreement'));
+  await expect(runRecourseLaneFor(db, { budgetMs: 1_000, env })).rejects.toThrow('recourse_lane_rpc_disagreement');
+  expect((await health.get()).data()).toMatchObject({ stop_reason: 'recourse_lane_rpc_disagreement' });
+  expect(typeof (await health.get()).get('stalled_since_ms')).toBe('number');
 });

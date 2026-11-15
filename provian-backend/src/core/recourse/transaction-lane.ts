@@ -97,8 +97,12 @@ export interface LaneDeps {
 export interface LaneReport {
   skipped?: 'lane_busy' | 'lane_idle';
   signed: number; replaced: number; confirmed: number; failed: number; closedUnsigned: number; waiting: number;
+  /** Requests whose signature or authorization ran out before the lane sent them. */
+  lapsed: number;
   open: number; nextNonce: number | null; stopReason: string | null; errors: string[];
 }
+/** A request closed unsent because its owner's signature or authorization ran out. */
+export function laneLapse(reason: string): boolean { return reason === 'binding_expired' || /_stale$/.test(reason); }
 interface OpenEntry { readonly collection: string; readonly id: string; }
 interface LaneState { nextNonce: number; open: Record<string, OpenEntry>; }
 
@@ -147,7 +151,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
   const db = deps.db, signer = deps.signer.address.toLowerCase(), kinds = new Map(deps.kinds.map(kind => [kind.collection, kind]));
   const maxPending = deps.maxPending ?? LANE_MAX_PENDING, concurrency = deps.concurrency ?? LANE_PREPARE_CONCURRENCY;
   if (!ADDRESS.test(signer) || kinds.size !== deps.kinds.length) throw Error('recourse_lane_configuration_invalid');
-  const report: LaneReport = { signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0,
+  const report: LaneReport = { signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, lapsed: 0,
     open: 0, nextNonce: null, stopReason: null, errors: [] };
   const laneRef = db.collection(RECOURSE_LANE_COLLECTION).doc(signer);
 
@@ -225,6 +229,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
     });
     if (nonce !== null) delete state.open[String(nonce)];
     if (nonce === null) report.closedUnsigned++;
+    if (nonce === null && terminal.status === 'failed' && laneLapse(terminal.reason)) report.lapsed++;
     if (terminal.status === 'confirmed') report.confirmed++; else report.failed++;
   };
 
