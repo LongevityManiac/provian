@@ -30,9 +30,27 @@ export async function drainLegacyRecourse(db: Firestore, kinds: readonly LaneKin
   const quietSince = typeof stored === 'number' && Number.isSafeInteger(stored) ? stored : null;
   if (quietSince !== null && now() - quietSince >= QUIET_FOR_MS) { report.skipped = true; return report; }
 
-  // Minter reservations first, before any adopted request can be signed by the lane.
+  // Every request still queued without a key gets one, so the lane sends it in order.
+  for (const kind of kinds) {
+    const queued = await db.collection(kind.collection).where('status', '==', 'queued').get();
+    for (const doc of queued.docs) {
+      if (doc.get('laneQueueKey') !== undefined || doc.get('signedTransaction') !== undefined) continue;
+      const created = Number(doc.get('createdAtMs') ?? doc.get('queuedAtMs') ?? now());
+      const adopted = await db.runTransaction(async tx => {
+        const row = await tx.get(doc.ref);
+        if (row.get('status') !== 'queued' || row.get('laneQueueKey') !== undefined || row.get('signedTransaction') !== undefined) return false;
+        tx.update(doc.ref, laneQueuedFields(Number.isSafeInteger(created) ? created : now(), doc.id));
+        return true;
+      });
+      if (adopted) report.adopted++;
+    }
+  }
+
+  // Then the minter reservations. One reservation that cannot be handled never holds up the others.
+  const failures: unknown[] = [];
   const leases = await db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).get();
   for (const lease of leases.docs) {
+    try {
     const pending: unknown = lease.get('pending_operation'), signer = lease.id.toLowerCase();
     if (typeof pending !== 'string') continue;
     // A worker of the old relay may still be mid-operation while both revisions serve; it
@@ -90,26 +108,11 @@ export async function drainLegacyRecourse(db: Firestore, kinds: readonly LaneKin
       continue;
     }
     if (await release(await kind.settle(row, receipt))) report.settled++;
+    } catch (error) { failures.push(error); }
   }
-
-  // Then give every request still queued without a key one, so the lane sends it in order.
-  for (const kind of kinds) {
-    const queued = await db.collection(kind.collection).where('status', '==', 'queued').get();
-    for (const doc of queued.docs) {
-      if (doc.get('laneQueueKey') !== undefined || doc.get('signedTransaction') !== undefined) continue;
-      const created = Number(doc.get('createdAtMs') ?? doc.get('queuedAtMs') ?? now());
-      const adopted = await db.runTransaction(async tx => {
-        const row = await tx.get(doc.ref);
-        if (row.get('status') !== 'queued' || row.get('laneQueueKey') !== undefined || row.get('signedTransaction') !== undefined) return false;
-        tx.update(doc.ref, laneQueuedFields(Number.isSafeInteger(created) ? created : now(), doc.id));
-        return true;
-      });
-      if (adopted) report.adopted++;
-    }
-  }
-
-  const found = report.adopted + report.settled + report.released + report.waiting > 0;
+  const found = failures.length > 0 || report.adopted + report.settled + report.released + report.waiting > 0;
   if (found) await marker.set({ quietSinceMs: null, lastFoundAtMs: now() }, { merge: true });
   else if (quietSince === null) await marker.set({ quietSinceMs: now() }, { merge: true });
+  if (failures.length > 0) throw failures[0];
   return report;
 }

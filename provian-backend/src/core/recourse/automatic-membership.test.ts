@@ -152,4 +152,19 @@ test('a run that loses the sweep lease stops without moving the cursor the new h
  expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)).toMatchObject({chunk:0,offset:0});
  expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/lease`)?.owner).toBe('other');
 });
+test('a snapshot longer than the sweep lease keeps the lease, so no other run takes over mid-scan',async()=>{
+ const s=setup();let clock=Date.UTC(2026,11,1,6);
+ for(let i=0;i<2_400;i++){const o=h(10_000+i);s.fake.store.set(`${C.owners}/${o}`,{ownerIdentity:o});}
+ // Each page of the account scan takes 100 s; the lease alone lasts 120 s.
+ const real=s.fake.collection.bind(s.fake),seen:number[]=[];
+ const slow=(q:any):any=>new Proxy(q,{get(t,prop){
+  if(prop==='get')return async()=>{clock+=100_000;const lease=s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/lease`);seen.push(Number(lease?.expires_at_ms)-clock);return t.get();};
+  const v=Reflect.get(t,prop,t);return typeof v==='function'?(...args:unknown[])=>slow(v.apply(t,args)):v;}});
+ jest.spyOn(s.fake,'collection').mockImplementation(((name:string)=>name===C.owners?slow(real(name)):real(name)) as typeof s.fake.collection);
+ const result=await runAutomaticMembershipSweep(s.db,{deadlineMs:clock+3_600_000,now:()=>clock,concurrency:8,collect:async()=>'settled'});
+ expect(seen.length).toBeGreaterThan(3);
+ // The lease never lapses while the scan runs, and the pass completes.
+ expect(seen.every(remaining=>remaining>0)).toBe(true);
+ expect(result.passes).toBe(1);
+});
 

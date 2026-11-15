@@ -79,9 +79,11 @@ test('a request queued before the lane existed is given a queue key and sent by 
 });
 test('a reservation another operator tool holds for its own record is never touched', async () => {
   const f = setup();
-  f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'break-authority', expires_at_ms: f.now() + 60_000, pending_operation: h(9) });
-  expect(await f.drain()).toMatchObject({ released: 0, settled: 0 });
+  // Its lease has lapsed between calls, as an operator tool's does while its transaction finalizes.
+  f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'break-authority', expires_at_ms: 0, pending_operation: h(9) });
+  expect(await f.drain()).toMatchObject({ released: 0, settled: 0, waiting: 0 });
   expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBe(h(9));
+  expect(await f.settlement()).toBe('refused');
 });
 test('a reservation an old relay worker still holds live is left to that worker until its lease lapses', async () => {
   const f = setup(), id = h(7);
@@ -132,6 +134,16 @@ test('bytes that do not match the request are never broadcast and never release 
   await expect(f.drain()).rejects.toThrow('recourse_legacy_record_invalid');
   expect(f.base.state.broadcasts).toHaveLength(0);
   expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBe(id);
+});
+test('one reservation that cannot be handled never stops pre-lane requests from being queued', async () => {
+  const f = setup(), id = h(20), queued = h(21);
+  await f.signLegacy(id);
+  // Bytes that do not match their request: refused, and reported.
+  const other = await minter.signTransaction({ type: 2, chainId: 8453, nonce: 0, to: target, data: calldata(h(22)), value: 0, gasLimit: 100_000, maxFeePerGas: 10n ** 9n, maxPriorityFeePerGas: 1n });
+  f.fake.store.set(`${COLLECTION}/${id}`, { ...f.fake.store.get(`${COLLECTION}/${id}`), signedTransaction: other, transactionHash: keccak256(other) });
+  f.fake.store.set(`${COLLECTION}/${queued}`, { status: 'queued', createdAtMs: 3 });
+  await expect(f.drain()).rejects.toThrow('recourse_legacy_record_invalid');
+  expect(f.fake.store.get(`${COLLECTION}/${queued}`)?.laneQueueKey).toBeDefined();
 });
 test('once nothing is found for an hour the check stops reading', async () => {
   const f = setup();

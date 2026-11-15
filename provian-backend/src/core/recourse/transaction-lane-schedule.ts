@@ -18,7 +18,10 @@ export async function runRecourseMinute<R>(deps: RecourseMinuteDeps<R>): Promise
   try {
     automaticMembership = await deps.sweep({ deadlineMs: started + RECOURSE_MINUTE.sweepUntilMs,
       backlog: deps.debitBacklog, maxBacklog: RECOURSE_MINUTE.maxDebitBacklog, now: deps.now });
-  } catch (error) { automaticMembership = { error: error instanceof Error ? error.message : 'error' }; }
+  } catch (error) {
+    automaticMembership = { error: error instanceof Error ? error.message : 'error' };
+    console.error('[recourse-lane] membership sweep failed; retrying next minute:', automaticMembership.error);
+  }
   const drain = await deps.lane(Math.max(0, started + RECOURSE_MINUTE.drainUntilMs - deps.now()));
   return { lane, automatic_membership: automaticMembership, drain };
 }

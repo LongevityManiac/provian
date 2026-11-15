@@ -71,17 +71,21 @@ function readSweepCursor(data: Record<string, unknown> | undefined): SweepCursor
   return { pass, chunks, chunk, offset, restUntilMs: 0 };
 }
 /** One read of every membership account, kept as ordered chunks of owner identities. */
-async function snapshotMembers(db: Firestore, nowMs: number, renew: () => Promise<boolean>): Promise<{ id: string; chunks: number }> {
-  const owners: string[] = [];
+async function snapshotMembers(db: Firestore, now: () => number, renew: () => Promise<boolean>): Promise<{ id: string; chunks: number }> {
+  const owners: string[] = [], started = now();
+  let renewedAt = started;
   await scanQueryUnordered(db.collection(C.owners), 500, async row => {
-    // A long scan keeps the sweep's lease; a lost lease abandons it to the new holder.
-    if (owners.length % 1_000 === 999 && !(await renew())) throw Error('recourse_automatic_sweep_lease_lost');
+    // A long scan keeps the sweep's lease well inside its lifetime; a lost lease abandons it to the new holder.
+    if (now() - renewedAt >= SWEEP_LEASE_TTL_MS / 3) {
+      if (!(await renew())) throw Error('recourse_automatic_sweep_lease_lost');
+      renewedAt = now();
+    }
     const owner: unknown = row.get('ownerIdentity');
     if (typeof owner !== 'string' || !OWNER.test(owner) || row.id !== owner) throw Error('recourse_automatic_owner');
     owners.push(owner);
   });
   owners.sort();
-  const id = `${nowMs}-${randomUUID()}`, chunks = Math.ceil(owners.length / SWEEP_CHUNK_SIZE);
+  const id = `${started}-${randomUUID()}`, chunks = Math.ceil(owners.length / SWEEP_CHUNK_SIZE);
   for (let i = 0; i < chunks; i++) {
     await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(id, i)).set({ pass: id, owners: owners.slice(i * SWEEP_CHUNK_SIZE, (i + 1) * SWEEP_CHUNK_SIZE) });
   }
@@ -178,7 +182,7 @@ Promise<AutomaticMembershipSweepResult> {
       const cursor = readSweepCursor((await cursorRef.get()).data());
       if (cursor.pass === null) {
         if (cursor.restUntilMs > now()) break;
-        const pass = await snapshotMembers(db, now(), renew);
+        const pass = await snapshotMembers(db, now, renew);
         if (!(await advance({ pass: pass.id, chunks: pass.chunks, chunk: 0, offset: 0, restUntilMs: 0 }))) { lost = true; break; }
         continue;
       }
