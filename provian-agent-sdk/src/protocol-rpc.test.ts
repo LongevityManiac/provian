@@ -108,12 +108,12 @@ it('retains the same deadline through response body consumption and clears it on
   let aborted = false;
   const fetcher = vi.fn(async (_url: string, init: RequestInit): Promise<Response> => {
     const response = new Response('{}');
-    response.json = async () => {
+    vi.spyOn(response, 'json').mockImplementation(async () => {
       readBody = true;
       return new Promise((_resolve, reject) => {
         init.signal?.addEventListener('abort', () => { aborted = true; reject(Error('body aborted')); });
       });
-    };
+    });
     return response;
   });
   const rpc = protocolRpc('https://body-timeout.example', fetcher);
