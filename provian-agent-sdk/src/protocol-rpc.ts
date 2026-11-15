@@ -31,26 +31,30 @@ export function protocolRpc(url: string, fetcher: RpcFetch): {
           await sleep(endpoint.nextAt - Date.now());
         }
         endpoint.nextAt = Date.now() + spacingMs;
-        const response = await fetcher(url, { method: 'POST', redirect: 'error',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
-          signal: AbortSignal.timeout(20_000) });
-        if (response.status === 429) {
-          // Consume the response before another request uses the connection.
-          await response.text();
-          // Even an invalid or too-long delay must not let queued reads bypass
-          // the cooldown after this individual request refuses to wait.
-          endpoint.nextAt = Date.now() + maxRetryDelayMs;
-          endpoint.nextAt = Date.now() + retryDelay(response.headers.get('retry-after'), attempt);
-          if (endpoint.nextAt - Date.now() > maxRetryDelayMs) throw new Error('protocol_rpc_unavailable');
-          if (attempt < 2) continue;
-        }
-        if (!response.ok) throw new Error('protocol_rpc_unavailable');
-        const reply: unknown = await response.json();
-        if (!reply || typeof reply !== 'object' || 'error' in reply || !('result' in reply)) {
-          throw new Error('protocol_rpc_invalid');
-        }
-        return reply.result;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20_000);
+        try {
+          const response = await fetcher(url, { method: 'POST', redirect: 'error',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+            signal: controller.signal });
+          if (response.status === 429) {
+            // Consume the response before another request uses the connection.
+            await response.text();
+            // Even an invalid or too-long delay must not let queued reads bypass
+            // the cooldown after this individual request refuses to wait.
+            endpoint.nextAt = Date.now() + maxRetryDelayMs;
+            endpoint.nextAt = Date.now() + retryDelay(response.headers.get('retry-after'), attempt);
+            if (endpoint.nextAt - Date.now() > maxRetryDelayMs) throw new Error('protocol_rpc_unavailable');
+            if (attempt < 2) continue;
+          }
+          if (!response.ok) throw new Error('protocol_rpc_unavailable');
+          const reply: unknown = await response.json();
+          if (!reply || typeof reply !== 'object' || 'error' in reply || !('result' in reply)) {
+            throw new Error('protocol_rpc_invalid');
+          }
+          return reply.result;
+        } finally { clearTimeout(timeout); }
       }
       throw new Error('protocol_rpc_unavailable');
     });

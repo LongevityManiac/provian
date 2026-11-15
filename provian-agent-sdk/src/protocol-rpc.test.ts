@@ -2,8 +2,32 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { protocolRpc } from './protocol-rpc';
 
 beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(100_000); });
-afterEach(() => { vi.useRealTimers(); });
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 const ok = (): Response => new Response(JSON.stringify({ result: '0x1' }));
+
+it('works without AbortSignal.timeout and clears the deadline after a successful native read', async () => {
+  vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => { throw Error('unsupported native API'); });
+  let signal: AbortSignal | null | undefined;
+  const fetcher = vi.fn(async (_url: string, init: RequestInit) => { signal = init.signal; return ok(); });
+  expect(await protocolRpc('https://native-timeout.example', fetcher).request('eth_chainId', [])).toBe('0x1');
+  await vi.advanceTimersByTimeAsync(20_000);
+  expect(signal?.aborted).toBe(false);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it('aborts a stalled native request at the deadline and leaves the lane usable', async () => {
+  const fetcher = vi.fn((_url: string, init: RequestInit): Promise<Response> => new Promise((_resolve, reject) => {
+    init.signal?.addEventListener('abort', () => reject(Error('aborted')));
+  }));
+  const rpc = protocolRpc('https://native-stalled.example', fetcher);
+  const result = expect(rpc.request('eth_chainId', [])).rejects.toThrow('aborted');
+  await vi.advanceTimersByTimeAsync(19_999);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1); await result;
+  expect(vi.getTimerCount()).toBe(0);
+  fetcher.mockImplementation(async () => ok());
+  expect(await rpc.request('eth_chainId', [])).toBe('0x1');
+});
 
 it('paces concurrent reads across factories while keeping independent providers independent', async () => {
   const starts: number[] = [];
@@ -77,4 +101,31 @@ it('a long Retry-After also blocks already queued reads without issuing another 
   fetcher.mockImplementation(async () => ok());
   await vi.advanceTimersByTimeAsync(60_000);
   expect(await rpc.request('eth_call', [])).toBe('0x1');
+});
+
+it('retains the same deadline through response body consumption and clears it on rejection', async () => {
+  let readBody = false;
+  let aborted = false;
+  const fetcher = vi.fn(async (_url: string, init: RequestInit): Promise<Response> => {
+    const response = new Response('{}');
+    response.json = async () => {
+      readBody = true;
+      return new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => { aborted = true; reject(Error('body aborted')); });
+      });
+    };
+    return response;
+  });
+  const rpc = protocolRpc('https://body-timeout.example', fetcher);
+  const request = rpc.request('eth_chainId', []);
+  const refusal = expect(request).rejects.toThrow('body aborted');
+  await vi.advanceTimersByTimeAsync(19_999);
+  expect(readBody).toBe(true);
+  expect(aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(aborted).toBe(true);
+  await refusal;
+  expect(vi.getTimerCount()).toBe(0);
+  fetcher.mockImplementation(async () => new Response(JSON.stringify({ result: '0x1' })));
+  expect(await rpc.request('eth_chainId', [])).toBe('0x1');
 });
