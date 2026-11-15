@@ -406,6 +406,13 @@
       "artifact": "app-release.aab",
       "sha256": "3fb9649cff39a61e6deb99112685851e1c20b9cde5825a707ae6db1ad865dfcf",
       "built_at": "2026-11-15T13:43:32.426Z"
+    },
+    {
+      "versionCode": 113,
+      "channel": "website",
+      "artifact": "app-release.apk",
+      "sha256": "26f42bb3a4a875ffc34f4c8ebb0488ad98f348bfa314429a8a8a6e1ad430bd49",
+      "built_at": "2026-11-15T13:47:12.797Z"
     }
   ]
 }
