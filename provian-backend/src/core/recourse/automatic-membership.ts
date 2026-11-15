@@ -58,20 +58,24 @@ export const AUTOMATIC_MEMBERSHIP_FOLLOWUPS = 'recourse_private_membership_follo
 const OWNER = /^0x[0-9a-f]{64}$/;
 /** Members per snapshot chunk document. */
 export const SWEEP_CHUNK_SIZE = 2_000;
-const sweepChunkId = (index: number) => `pass-chunk-${index}`;
+/** Chunk documents are named by their pass, so two snapshots can never mix. */
+const sweepChunkId = (pass: string, index: number) => `pass-${pass}-chunk-${index}`;
 interface SweepCursor { readonly pass: string | null; readonly chunks: number; readonly chunk: number; readonly offset: number; readonly restUntilMs: number; }
 function readSweepCursor(data: Record<string, unknown> | undefined): SweepCursor {
   const value = data ?? {}, pass = value.pass, rest = Number(value.restUntilMs ?? 0);
   // A cursor written before snapshots (an `after` owner) restarts as a fresh pass.
   if (typeof pass !== 'string') return { pass: null, chunks: 0, chunk: 0, offset: 0, restUntilMs: Number.isSafeInteger(rest) ? rest : 0 };
   const [chunks, chunk, offset] = [value.chunks, value.chunk, value.offset].map(Number);
-  if (![chunks, chunk, offset].every(n => Number.isSafeInteger(n) && n >= 0) || chunk > chunks) throw Error('recourse_automatic_cursor');
+  // A cursor that cannot be read restarts the pass rather than stopping the sweep.
+  if (![chunks, chunk, offset].every(n => Number.isSafeInteger(n) && n >= 0) || chunk > chunks) return { pass: null, chunks: 0, chunk: 0, offset: 0, restUntilMs: 0 };
   return { pass, chunks, chunk, offset, restUntilMs: 0 };
 }
 /** One read of every membership account, kept as ordered chunks of owner identities. */
-async function snapshotMembers(db: Firestore, nowMs: number): Promise<{ id: string; chunks: number }> {
+async function snapshotMembers(db: Firestore, nowMs: number, renew: () => Promise<boolean>): Promise<{ id: string; chunks: number }> {
   const owners: string[] = [];
   await scanQueryUnordered(db.collection(C.owners), 500, async row => {
+    // A long scan keeps the sweep's lease; a lost lease abandons it to the new holder.
+    if (owners.length % 1_000 === 999 && !(await renew())) throw Error('recourse_automatic_sweep_lease_lost');
     const owner: unknown = row.get('ownerIdentity');
     if (typeof owner !== 'string' || !OWNER.test(owner) || row.id !== owner) throw Error('recourse_automatic_owner');
     owners.push(owner);
@@ -79,7 +83,7 @@ async function snapshotMembers(db: Firestore, nowMs: number): Promise<{ id: stri
   owners.sort();
   const id = `${nowMs}-${randomUUID()}`, chunks = Math.ceil(owners.length / SWEEP_CHUNK_SIZE);
   for (let i = 0; i < chunks; i++) {
-    await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(i)).set({ pass: id, owners: owners.slice(i * SWEEP_CHUNK_SIZE, (i + 1) * SWEEP_CHUNK_SIZE) });
+    await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(id, i)).set({ pass: id, owners: owners.slice(i * SWEEP_CHUNK_SIZE, (i + 1) * SWEEP_CHUNK_SIZE) });
   }
   return { id, chunks };
 }
@@ -155,34 +159,52 @@ Promise<AutomaticMembershipSweepResult> {
     // read every account for every page.
     const cursorRef = db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('cursor');
     const chunks = new Map<number, readonly string[]>();
+    let lost = false;
+    /** Renew the lease only while this run still holds it. */
+    const renew = () => db.runTransaction(async tx => {
+      if ((await tx.get(leaseRef)).get('owner') !== worker) return false;
+      tx.set(leaseRef, { owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+      return true;
+    });
+    /** Move the cursor and renew the lease together, only while this run holds it. */
+    const advance = (next: Record<string, unknown>) => db.runTransaction(async tx => {
+      if ((await tx.get(leaseRef)).get('owner') !== worker) return false;
+      tx.set(cursorRef, { ...next, updatedAtMs: now() });
+      tx.set(leaseRef, { owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+      return true;
+    });
     while (now() < options.deadlineMs) {
       if (options.backlog && await options.backlog() >= (options.maxBacklog ?? 40)) { result.backpressure = true; break; }
       const cursor = readSweepCursor((await cursorRef.get()).data());
       if (cursor.pass === null) {
         if (cursor.restUntilMs > now()) break;
-        const pass = await snapshotMembers(db, now());
-        await cursorRef.set({ pass: pass.id, chunks: pass.chunks, chunk: 0, offset: 0, restUntilMs: 0, updatedAtMs: now() });
-        await leaseRef.set({ owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+        const pass = await snapshotMembers(db, now(), renew);
+        if (!(await advance({ pass: pass.id, chunks: pass.chunks, chunk: 0, offset: 0, restUntilMs: 0 }))) { lost = true; break; }
         continue;
       }
       if (cursor.chunk >= cursor.chunks) {
-        await cursorRef.set({ pass: null, restUntilMs: nextUtcDayMs(now()), updatedAtMs: now() });
+        if (!(await advance({ pass: null, restUntilMs: nextUtcDayMs(now()) }))) { lost = true; break; }
+        for (let i = 0; i < cursor.chunks; i++) await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(cursor.pass, i)).delete();
         ++result.passes; break;
       }
       let ids = chunks.get(cursor.chunk);
       if (!ids) {
-        const row = await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(cursor.chunk)).get();
+        const row = await db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(sweepChunkId(cursor.pass, cursor.chunk)).get();
         const owners: unknown = row.get('owners');
-        if (row.get('pass') !== cursor.pass || !Array.isArray(owners) || !owners.every(owner => typeof owner === 'string' && OWNER.test(owner)))
-          throw Error('recourse_automatic_cursor');
+        if (row.get('pass') !== cursor.pass || !Array.isArray(owners) || !owners.every(owner => typeof owner === 'string' && OWNER.test(owner))) {
+          // A missing or foreign chunk restarts the pass; members already visited are only visited again.
+          if (!(await advance({ pass: null, restUntilMs: 0 }))) { lost = true; break; }
+          continue;
+        }
         ids = owners as string[]; chunks.set(cursor.chunk, ids);
       }
       const page = ids.slice(cursor.offset, cursor.offset + concurrency * 2);
       await inBatches(page.map(owner => ({ owner, attempts: 0 })));
       const offset = cursor.offset + page.length, ended = offset >= ids.length;
-      await cursorRef.set({ ...cursor, chunk: ended ? cursor.chunk + 1 : cursor.chunk, offset: ended ? 0 : offset, updatedAtMs: now() });
-      await leaseRef.set({ owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+      if (!(await advance({ ...cursor, chunk: ended ? cursor.chunk + 1 : cursor.chunk, offset: ended ? 0 : offset }))) { lost = true; break; }
     }
+    // Another run holds the sweep now; it continues from the cursor.
+    if (lost) return result;
     // A first join may never have opened a membership account. Its retained
     // departure still needs unattended reconciliation after the app closes.
     const departureCursor=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('departures'), saved=await departureCursor.get();

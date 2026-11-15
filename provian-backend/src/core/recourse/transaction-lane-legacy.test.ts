@@ -5,6 +5,7 @@ import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type Settlemen
 import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
 import { runRecourseLane, type LaneKind, type LaneRow } from './transaction-lane';
 import { drainLegacyRecourse } from './transaction-lane-legacy';
+import { BINDING_OPERATIONS } from './binding-operation';
 
 /** A request signed by the settlement minter before Recourse had its own lane. */
 const minter = new Wallet(`0x${'6b'.repeat(32)}`), MINTER = minter.address.toLowerCase();
@@ -81,6 +82,47 @@ test('a reservation another operator tool holds for its own record is never touc
   f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'break-authority', expires_at_ms: f.now() + 60_000, pending_operation: h(9) });
   expect(await f.drain()).toMatchObject({ released: 0, settled: 0 });
   expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBe(h(9));
+});
+test('a reservation an old relay worker still holds live is left to that worker until its lease lapses', async () => {
+  const f = setup(), id = h(7);
+  f.fake.store.set(`${COLLECTION}/${id}`, { status: 'queued', createdAtMs: 5 });
+  f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'old-relay-worker', expires_at_ms: f.now() + 60_000, pending_operation: id });
+  expect(await f.drain()).toMatchObject({ released: 0, waiting: 1 });
+  expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBe(id);
+  f.tick(60_001);
+  expect(await f.drain()).toMatchObject({ released: 1 });
+  expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBeNull();
+});
+test('the old binding worker reserved `binding:<id>`: that reservation is settled and released the same way', async () => {
+  const f = setup(), id = h(11);
+  const binding: LaneKind = { ...f.kind, name: 'binding', collection: BINDING_OPERATIONS };
+  const raw = await minter.signTransaction({ type: 2, chainId: 8453, nonce: 0, to: target, data: calldata(id), value: 0, gasLimit: 100_000, maxFeePerGas: 10n ** 9n, maxPriorityFeePerGas: 1n });
+  f.fake.store.set(`${BINDING_OPERATIONS}/${id}`, { status: 'submitted', signedTransaction: raw, transactionHash: keccak256(raw), executor: target, gasSigner: MINTER });
+  f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'old', expires_at_ms: 0, pending_operation: `binding:${id}` });
+  const drain = () => drainLegacyRecourse(f.db, [f.kind, binding], () => f.base, f.now);
+  expect(await drain()).toMatchObject({ waiting: 1, rebroadcast: 1 });
+  f.base.mine(); f.base.advance(11);
+  expect(await drain()).toMatchObject({ settled: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)).toMatchObject({ status: 'confirmed' });
+  expect(await f.settlement()).toBe('acquired');
+});
+test('a reservation left on a request the lane later signed with its own key is released', async () => {
+  const f = setup(), id = h(12);
+  f.fake.store.set(`${COLLECTION}/${id}`, { status: 'submitted', signedTransaction: '0x02', transactionHash: keccak256('0x02'), laneSigner: '0xlane', laneNonce: 0 });
+  f.fake.store.set(f.leaseRef, { signer: MINTER, owner: 'old', expires_at_ms: 0, pending_operation: id });
+  expect(await f.settlement()).toBe('refused');
+  expect(await f.drain()).toMatchObject({ released: 1 });
+  expect(await f.settlement()).toBe('acquired');
+  // The lane's own row is untouched.
+  expect(f.fake.store.get(`${COLLECTION}/${id}`)).toMatchObject({ status: 'submitted', laneSigner: '0xlane' });
+});
+test('every unkeyed queued request is adopted, however many keyed ones are queued beside it', async () => {
+  const f = setup();
+  for (let i = 0; i < 250; i++) f.fake.store.set(`${COLLECTION}/${h(1000 + i)}`, { status: 'queued', createdAtMs: i, laneQueueKey: `k${i}` });
+  // Its id sorts after every keyed one, so a read capped below the queue's size would miss it.
+  f.fake.store.set(`${COLLECTION}/${h(5000)}`, { status: 'queued', createdAtMs: 1 });
+  expect(await f.drain()).toMatchObject({ adopted: 1 });
+  expect(f.fake.store.get(`${COLLECTION}/${h(5000)}`)?.laneQueueKey).toBeDefined();
 });
 test('bytes that do not match the request are never broadcast and never release the minter', async () => {
   const f = setup(), id = h(5);

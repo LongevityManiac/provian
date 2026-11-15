@@ -95,6 +95,7 @@ test('a pass reads the member accounts once, resumes across runs from its snapsh
  const before=visited.length;await run();expect(visited.length).toBe(before);expect(snapshot).toHaveBeenCalledTimes(1);
  clock=Date.UTC(2026,11,2,0,0,1);for(let i=0;i<20&&!visited.includes(late);i++)await run();
  expect(snapshot).toHaveBeenCalledTimes(2);expect(visited).toContain(late);
+ snapshot.mockRestore();collection.mockRestore();
 });
 
 test('a never-admitted first join still reconciles departure after the app closes',async()=>{
@@ -135,3 +136,20 @@ test('a departed member with no outstanding amount stays idle across later month
  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
  expect(reconcileCurrentPrivateMembership).toHaveBeenCalledTimes(1);
 });
+test('a cursor naming a chunk that is missing or from another pass restarts the pass instead of stopping the sweep',async()=>{
+ const s=setup(),visited:string[]=[];
+ s.fake.store.set(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`,{pass:'gone',chunks:3,chunk:1,offset:0});
+ const result=await runAutomaticMembershipSweep(s.db,{deadlineMs:Date.now()+60_000,collect:async(_db,o)=>{visited.push(o);return 'settled';}});
+ expect(result.passes).toBe(1);expect(visited).toEqual([s.owner]);
+});
+test('a run that loses the sweep lease stops without moving the cursor the new holder owns',async()=>{
+ const s=setup(),others=[...Array(6).keys()].map(i=>h(70+i));
+ for(const o of others)s.fake.store.set(`${C.owners}/${o}`,{ownerIdentity:o});
+ let visits=0;
+ const result=await runAutomaticMembershipSweep(s.db,{deadlineMs:Date.now()+60_000,concurrency:1,collect:async()=>{
+  if(++visits===1)s.fake.store.set(`${AUTOMATIC_MEMBERSHIP_SWEEP}/lease`,{owner:'other',expires_at_ms:Date.now()+60_000});return 'settled';}});
+ expect(visits).toBe(2);expect(result.passes).toBe(0);
+ expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)).toMatchObject({chunk:0,offset:0});
+ expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/lease`)?.owner).toBe('other');
+});
+
