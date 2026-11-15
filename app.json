@@ -44,7 +44,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.provian.wallet",
-      "versionCode": 108,
+      "versionCode": 109,
       "googleServicesFile": "./config/firebase/google-services.json",
       "permissions": [
         "INTERNET",
