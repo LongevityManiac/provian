@@ -6,8 +6,11 @@ import { RECOURSE_LANE_COLLECTION, type LaneReport } from './transaction-lane';
  *
  * Every lane run that had the lane to itself updates it. A run that sent or settled a
  * transaction clears any stall. A run that had work and sent nothing starts a stall, or
- * extends one. An idle run ends a stall only when no request ran out unsent during it: a
- * queue that emptied because its signatures expired is a stopped lane, not a caught-up one.
+ * extends one. A request that runs out unsent counts against the lane only when a stall from
+ * an earlier run was already under way: a binding admitted with seconds left, or a request
+ * superseded elsewhere, closes on a healthy lane too. An idle run ends a stall only when no
+ * request ran out unsent during it: a queue that emptied because its signatures expired while
+ * the lane could not send is a stopped lane, not a caught-up one.
  * The record is stale when the scheduled run itself stops.
  */
 export const LANE_HEALTH_DOC = 'health';
@@ -41,7 +44,7 @@ export function nextLaneHealth(previous: Record<string, unknown> | undefined, re
   if (sent > 0) return { checked_at_ms: now, last_progress_at_ms: now, stalled_since_ms: null, lapsed_while_stalled: 0, stop_reason: stopReason };
   if (busy.length > 0) {
     return { checked_at_ms: now, last_progress_at_ms: prior.last_progress_at_ms, stalled_since_ms: prior.stalled_since_ms ?? now,
-      lapsed_while_stalled: prior.lapsed_while_stalled + lapsed, stop_reason: stopReason ?? prior.stop_reason };
+      lapsed_while_stalled: prior.lapsed_while_stalled + (prior.stalled_since_ms !== null ? lapsed : 0), stop_reason: stopReason ?? prior.stop_reason };
   }
   if (prior.stalled_since_ms !== null && prior.lapsed_while_stalled > 0) return { ...prior, checked_at_ms: now };
   return { checked_at_ms: now, last_progress_at_ms: prior.last_progress_at_ms, stalled_since_ms: null, lapsed_while_stalled: 0, stop_reason: null };

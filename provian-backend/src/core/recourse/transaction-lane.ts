@@ -83,6 +83,8 @@ export interface LaneChain {
 export interface LaneSigner { readonly address: string; signTransaction(tx: TransactionRequest): Promise<string>; }
 export interface LaneDeps {
   readonly db: Firestore;
+  /** Filled in place, so a caller still holds what a run did when the run throws. */
+  readonly report?: LaneReport;
   readonly signer: LaneSigner;
   readonly chain: LaneChain;
   readonly kinds: readonly LaneKind[];
@@ -100,6 +102,10 @@ export interface LaneReport {
   /** Requests whose signature or authorization ran out before the lane sent them. */
   lapsed: number;
   open: number; nextNonce: number | null; stopReason: string | null; errors: string[];
+}
+export function emptyLaneReport(): LaneReport {
+  return { signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, lapsed: 0,
+    open: 0, nextNonce: null, stopReason: null, errors: [] };
 }
 /** A request closed unsent because its owner's signature or authorization ran out. */
 export function laneLapse(reason: string): boolean { return reason === 'binding_expired' || /_stale$/.test(reason); }
@@ -151,8 +157,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
   const db = deps.db, signer = deps.signer.address.toLowerCase(), kinds = new Map(deps.kinds.map(kind => [kind.collection, kind]));
   const maxPending = deps.maxPending ?? LANE_MAX_PENDING, concurrency = deps.concurrency ?? LANE_PREPARE_CONCURRENCY;
   if (!ADDRESS.test(signer) || kinds.size !== deps.kinds.length) throw Error('recourse_lane_configuration_invalid');
-  const report: LaneReport = { signed: 0, replaced: 0, confirmed: 0, failed: 0, closedUnsigned: 0, waiting: 0, lapsed: 0,
-    open: 0, nextNonce: null, stopReason: null, errors: [] };
+  const report: LaneReport = deps.report ?? emptyLaneReport();
   const laneRef = db.collection(RECOURSE_LANE_COLLECTION).doc(signer);
 
   // An idle lane makes no RPC call: nothing open and nothing queued.

@@ -18,10 +18,18 @@ test('work with nothing sent starts a stall and keeps its start; lapsed requests
   const first = nextLaneHealth(undefined, [run({ stopReason: 'recourse_lane_gas_unavailable', waiting: 3 })], 1_000)!;
   expect(first).toMatchObject({ stalled_since_ms: 1_000, lapsed_while_stalled: 0, stop_reason: 'recourse_lane_gas_unavailable' });
   const second = nextLaneHealth({ ...first }, [run({ closedUnsigned: 2, failed: 2, lapsed: 2 })], 61_000)!;
+  // Only lapses during a stall from an earlier run count against the lane.
+  expect(first.lapsed_while_stalled).toBe(0);
   expect(second).toMatchObject({ stalled_since_ms: 1_000, lapsed_while_stalled: 2, checked_at_ms: 61_000 });
 });
 test('closing requests unsent is not progress', () => {
-  expect(nextLaneHealth(undefined, [run({ closedUnsigned: 3, confirmed: 1, failed: 2, lapsed: 2 })], 5)).toMatchObject({ stalled_since_ms: 5, lapsed_while_stalled: 2 });
+  expect(nextLaneHealth(undefined, [run({ closedUnsigned: 3, confirmed: 1, failed: 2 })], 5)).toMatchObject({ stalled_since_ms: 5 });
+});
+test('a request that runs out on a healthy lane is not a lapse against it, and the next idle run clears', () => {
+  // A binding admitted with seconds left closes unsent on the first run that sees it.
+  const closed = nextLaneHealth({ stalled_since_ms: null, last_progress_at_ms: 1 }, [run({ closedUnsigned: 1, failed: 1, lapsed: 1 })], 1_000)!;
+  expect(closed).toMatchObject({ stalled_since_ms: 1_000, lapsed_while_stalled: 0 });
+  expect(nextLaneHealth({ ...closed }, [idle], 61_000)).toMatchObject({ stalled_since_ms: null });
 });
 test('an idle lane ends a stall only when nothing ran out unsent during it', () => {
   expect(nextLaneHealth({ stalled_since_ms: 100, lapsed_while_stalled: 0 }, [idle], 1_000)).toMatchObject({ stalled_since_ms: null, checked_at_ms: 1_000 });

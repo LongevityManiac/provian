@@ -45,3 +45,11 @@ test('every run records the lane health; a run that throws is recorded as a stal
   expect((await health.get()).data()).toMatchObject({ stop_reason: 'recourse_lane_rpc_disagreement' });
   expect(typeof (await health.get()).get('stalled_since_ms')).toBe('number');
 });
+test('a run that throws after sending keeps what it sent: no stall is recorded', async () => {
+  const db = createFakeFirestore() as unknown as Firestore;
+  (runRecourseLane as jest.Mock).mockImplementationOnce(async (deps: { report: { signed: number } }) => { deps.report.signed = 2; throw Error('recourse_lane_lease_lost'); });
+  await expect(runRecourseLaneFor(db, { budgetMs: 1_000, env })).rejects.toThrow('recourse_lane_lease_lost');
+  const health = (await db.collection(RECOURSE_LANE_COLLECTION).doc(LANE_HEALTH_DOC).get()).data();
+  expect(health).toMatchObject({ stalled_since_ms: null, stop_reason: 'recourse_lane_lease_lost' });
+  expect(typeof health?.last_progress_at_ms).toBe('number');
+});
