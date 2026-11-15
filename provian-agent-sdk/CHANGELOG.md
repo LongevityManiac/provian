@@ -1,3 +1,8 @@
+## 1.12.6
+
+- An agent install no longer waits for or fails on its Recourse ownership binding. The relay sends it in the background, and the daemon checks every minute and signs again on its own if a signature expires before it lands.
+- If the daemon cannot unlock the wallet key to sign again, it says so and checks every 15 minutes.
+
 ## 1.12.5
 
 - Reserve balance confirmation before concurrent history reads while keeping speculative balances gated on fresh deployment confirmation.

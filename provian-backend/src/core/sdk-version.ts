@@ -27,7 +27,7 @@
  */
 
 /** The version agents should be on — mirrors provian-agent-sdk/package.json. */
-export const SDK_LATEST = '1.12.5';
+export const SDK_LATEST = '1.12.6';
 
 /**
  * Advisory minimum. Deliberately permissive (1.0.0): no released SDK below the
@@ -48,7 +48,7 @@ export const SDK_UPGRADE_COMMAND = 'npm i @provian/agent-sdk@latest';
 
 /** Free-text release note pointer for the `/v1/sdk/version` payload. */
 export const SDK_RELEASE_NOTES =
-  'v1.12.5 ships a build-verified protocol proof for faster first use while preserving fresh deployment confirmation and rate-limit handling.';
+  'v1.12.6 installs without waiting for the Recourse binding and re-signs it automatically if a signature expires.';
 
 export interface SdkVersionInfo {
   latest: string;
