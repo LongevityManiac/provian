@@ -1,3 +1,7 @@
+## 1.12.2
+
+- Reuse verified protocol revisions across reads and restarts while freshly checking both chain providers before each operation. Preserve retirement, reorg and rate-limit checks.
+
 # @provian/agent-sdk release notes
 
 ## 1.12.1

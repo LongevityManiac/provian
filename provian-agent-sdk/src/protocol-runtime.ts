@@ -2,31 +2,23 @@ import { protocolRpc } from './protocol-rpc';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import { guardedFetch } from './guarded-fetch';
 import { PROTOCOL_POINTER_PIN } from './protocol-pointer-pin.generated';
-import { resolveProtocolDeployment, type PointerRpc, type ProtocolDeployment } from './protocol-pointer';
+import type { PointerRpc, ProtocolDeployment } from './protocol-pointer';
+import { createProtocolVerification } from './protocol-verification';
+import { protocolVerificationStore } from './protocol-verification-store';
 
 const urls = ['https://mainnet.base.org', 'https://base.drpc.org'] as const;
-let minimumRevision = 0n;
-let lastVerifiedDeployment: ProtocolDeployment | undefined;
-/** Synchronous display/encoding compatibility. Transaction entry points must
- * resolve afresh, and the signing boundary checks retirement independently. */
-export function verifiedProtocolSnapshot(): ProtocolDeployment {
-  if (!lastVerifiedDeployment) throw new Error('protocol_pointer_resolution_required');
-  return lastVerifiedDeployment;
-}
-function transport(url: string): PointerRpc {
-  return protocolRpc(url, guardedFetch);
-}
-/** Every signing operation obtains a fresh independent chain resolution. */
-export async function currentProtocolDeployment(): Promise<ProtocolDeployment> {
+let verification: ReturnType<typeof createProtocolVerification> | undefined;
+function transport(url: string): PointerRpc { return protocolRpc(url, guardedFetch); }
+function verifier(): ReturnType<typeof createProtocolVerification> {
   const { address, runtimeHash } = PROTOCOL_POINTER_PIN;
   if (!address || !runtimeHash) throw new Error('protocol_pointer_not_deployed');
-  const deployment = await resolveProtocolDeployment([transport(urls[0]), transport(urls[1])], address, runtimeHash, minimumRevision);
-  if (deployment.revision > minimumRevision) minimumRevision = deployment.revision;
-  lastVerifiedDeployment = Object.freeze({ ...deployment, addresses: Object.freeze({ ...deployment.addresses }),
-    runtimeHashes: Object.freeze([...deployment.runtimeHashes]) });
-  return deployment;
+  return verification ??= createProtocolVerification({ pointer: address, runtimeHash, operators: urls,
+    rpcs: [transport(urls[0]), transport(urls[1])],
+    store: protocolVerificationStore(JSON.stringify([address, runtimeHash, urls, 'v1'])) });
 }
-
+/** Display/encoding only. Every signing boundary freshly confirms on chain. */
+export function verifiedProtocolSnapshot(): ProtocolDeployment { return verifier().snapshot(); }
+export async function currentProtocolDeployment(): Promise<ProtocolDeployment> { return verifier().current(); }
 export function ownerChainNetwork(): OwnerChainNetwork {
   return { rpcs: [transport(urls[0]), transport(urls[1])], deployment: currentProtocolDeployment };
 }

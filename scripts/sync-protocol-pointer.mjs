@@ -30,6 +30,8 @@ const appRecoveryModules = recoveryModules.map(name => [`src/core/recourse/${nam
     .replaceAll("'./protocol-transaction'", "'../protocol/transaction'")]);
 const addressBinding = readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-address-binding.ts'), 'utf8');
 const outputs = new Map([
+  ['src/core/protocol/verification.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/protocol-verification.ts'), 'utf8').replaceAll("'./protocol-pointer'", "'./pointer'")],
+  ...['protocol-verification', 'protocol-verification-store'].map(name => [`provian-mcp/src/core/${name}.ts`, readFileSync(resolve(root, `provian-agent-sdk/src/${name}.ts`), 'utf8')]),
   ...['src/core/protocol/rpc.ts', 'provian-mcp/src/core/protocol-rpc.ts'].map(path =>
     [path, readFileSync(resolve(root, 'provian-agent-sdk/src/protocol-rpc.ts'), 'utf8')]),
   ['src/core/recourse/restoration-ticket.ts', readFileSync(resolve(root, 'provian-agent-sdk/src/recourse-restoration-ticket.ts'), 'utf8')

@@ -100,7 +100,7 @@ describe('token-bound PVT balance response', () => {
     const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
     const body = { token_address: token, chain_id: 8453, balance: '9', balance_raw: '9000000000000000000' };
     const fetch = vi.spyOn(svc, 'makeAuthenticatedRequest').mockResolvedValue({ ok: true, json: async () => body } as Response);
-    await expect(RelayAPIService.getPVTBalance('0xabc')).resolves.toEqual({ balance: body.balance, balance_raw: body.balance_raw });
+    await expect(RelayAPIService.getPVTBalance('0xabc')).resolves.toEqual({ balance: body.balance, balance_raw: body.balance_raw, token_address: token });
     const url = new URL(fetch.mock.calls.at(-1)![0], 'https://api.provian.ai');
     expect(url.pathname).toBe('/v1/pvt/balance/0xabc');
     expect(url.searchParams.get('token')).toBe(token);

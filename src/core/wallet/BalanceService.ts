@@ -1,4 +1,3 @@
-import { currentProtocolDeployment } from '../protocol/runtime';
 import type { BiometricAction } from '../security/biometricAction';
 /**
  * BalanceService - Balance Queries (EVM + Solana)
@@ -408,15 +407,16 @@ class BalanceService {
         if (isTestnet()) {
             return { asset: null, failed: false };
         }
+        const startedAt = Date.now();
         try {
             // Lazy import: keeps the RelayAPIService graph off BalanceService's
             // static import path and out of the hot loop.
             const { default: relayService } = await import('../../services/RelayAPIService');
-            await currentProtocolDeployment();
             const pvt = await relayService.getPVTBalance(address, biometricAction);
             if (!pvt || typeof pvt.balance_raw !== 'string' || !/^\d+$/.test(pvt.balance_raw)) {
                 return { asset: null, failed: true };
             }
+            console.log(`[BalanceService] Fresh PVT balance ready in ${Date.now() - startedAt} ms`);
             return { asset: {
                 symbol: PVT9_TOKEN.symbol,
                 name: PVT9_TOKEN.name,
@@ -427,7 +427,7 @@ class BalanceService {
                 price: 0,
                 chain: 'Base',
                 chainId: PVT9_TOKEN.chainId,
-                tokenAddress: PVT9_TOKEN.address,
+                tokenAddress: pvt.token_address,
                 decimals: PVT9_TOKEN.decimals,
                 isPVT: true,
             }, failed: false };

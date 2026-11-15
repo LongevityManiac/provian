@@ -1,3 +1,7 @@
+## 1.3.2
+
+- Reuse verified protocol revisions across reads and restarts while freshly checking both chain providers before each operation. Preserve retirement, reorg and rate-limit checks.
+
 # @provian/mcp release notes
 
 ## 1.3.1

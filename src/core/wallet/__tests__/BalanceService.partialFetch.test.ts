@@ -83,12 +83,24 @@ beforeEach(() => {
     priorAssets = [];
     evmBalanceGate = null;
     evmBalanceFails = false;
-    vi.mocked(relayService.getPVTBalance).mockResolvedValue(null);
+    vi.mocked(relayService.getPVTBalance).mockReset().mockResolvedValue(null);
     // Clear coalescing/provider caches on the singleton between tests.
     BalanceService.clearProviders();
 });
 
 describe('BalanceService partial token-fetch fallback (#42)', () => {
+    it('uses the balance request deployment without resolving a second time', async () => {
+        const { currentProtocolDeployment } = await import('../../protocol/runtime');
+        vi.mocked(currentProtocolDeployment).mockClear();
+        const token = '0x2222222222222222222222222222222222222222';
+        vi.mocked(relayService.getPVTBalance).mockResolvedValue({
+            balance: '7', balance_raw: '7000000000000000000', token_address: token,
+        });
+        const { assets } = await BalanceService.fetchAllBalancesDetailed(ADDR);
+        expect(assets.find(asset => asset.isPVT)?.tokenAddress).toBe(token);
+        expect(relayService.getPVTBalance).toHaveBeenCalledTimes(1);
+        expect(currentProtocolDeployment).not.toHaveBeenCalled();
+    });
     it('restores a failed token from the prior snapshot instead of dropping it', async () => {
         // The user held 42 PVT last refresh.
         priorAssets = [
@@ -124,7 +136,7 @@ describe('BalanceService partial token-fetch fallback (#42)', () => {
         let releaseEvm!: () => void;
         evmBalanceGate = new Promise<void>((resolve) => { releaseEvm = resolve; });
         vi.mocked(relayService.getPVTBalance).mockResolvedValue({
-            balance: '7', balance_raw: '7000000000000000000',
+            balance: '7', balance_raw: '7000000000000000000', token_address: PVT_ADDR,
         });
 
         const pending = BalanceService.fetchAllBalancesDetailed(ADDR);
@@ -143,7 +155,7 @@ describe('BalanceService partial token-fetch fallback (#42)', () => {
             { symbol: 'PVT', balance: '42.0000', chain: 'Base', chainId: BASE, isPVT: true },
         ];
         vi.mocked(relayService.getPVTBalance).mockResolvedValue({
-            balance: '7', balance_raw: '7000000000000000000',
+            balance: '7', balance_raw: '7000000000000000000', token_address: PVT_ADDR,
         });
 
         const { assets, failedChainIds } = await BalanceService.fetchAllBalancesDetailed(ADDR);

@@ -3896,7 +3896,7 @@ class RelayAPIService {
     /**
      * Get on-chain PVT balance for a wallet address - public.
      */
-    async getPVTBalance(walletAddress: string, biometricAction?: BiometricAction): Promise<{ balance: string; balance_raw: string } | null> {
+    async getPVTBalance(walletAddress: string, biometricAction?: BiometricAction): Promise<{ balance: string; balance_raw: string; token_address: string } | null> {
         try {
             const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
             const { endpoint, options } = this.noCacheGet(
@@ -3910,7 +3910,7 @@ class RelayAPIService {
                     || !('chain_id' in body) || body.chain_id !== 8453
                     || !('balance' in body) || typeof body.balance !== 'string'
                     || !('balance_raw' in body) || typeof body.balance_raw !== 'string' || !/^\d+$/.test(body.balance_raw)) return null;
-                return { balance: body.balance, balance_raw: body.balance_raw };
+                return { balance: body.balance, balance_raw: body.balance_raw, token_address: token };
             }
             return null;
         } catch (error) {
