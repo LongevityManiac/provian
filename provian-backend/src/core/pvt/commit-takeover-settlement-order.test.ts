@@ -60,7 +60,7 @@
  * store), `evaluateCommitWitness` (the takeover pre-check). It does NOT drive
  * `createFirestoreInletSource` itself; that the inlet actually CALLS the gate is
  * pinned separately by the "the commit cross-witness deferral" block in
- * `wp4/claim-inlet-source.test.ts`. The two together cover the path; neither
+ * `settlement/claim-inlet-source.test.ts`. The two together cover the path; neither
  * alone does, and saying so is cheaper than implying this one covers both.
  */
 
@@ -82,7 +82,7 @@ import {
   registerClaim,
   type NewClaimInput,
   type SettlementDb,
-} from './wp4/durable-settlement-store';
+} from './settlement/durable-settlement-store';
 
 const COMMIT_SHA = 'abcdef01'.repeat(5); // 40 hex
 const USER = 'user-1';

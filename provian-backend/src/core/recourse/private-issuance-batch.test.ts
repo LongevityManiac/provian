@@ -4,8 +4,8 @@ import { seedMembershipJournal } from './__test-helpers__/membership-journal-fix
 import { Interface } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { KERNEL_SETTLEMENT_ABI } from '../pvt/wp4/settlement-cycle-runner';
-import { SETTLEMENT_BATCHES_COLLECTION, SETTLEMENT_BATCH_SCHEMA, type SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
+import { KERNEL_SETTLEMENT_ABI } from '../pvt/settlement/settlement-cycle-runner';
+import { SETTLEMENT_BATCHES_COLLECTION, SETTLEMENT_BATCH_SCHEMA, type SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
 import { fixture, a, h, old, pointer } from './__test-helpers__/membership-receipt-fixture';
 import { planSettlementIssuance } from './settlement-issuance';
 import { privateIssuanceBatchId, reservePrivateIssuanceBatch, retainPrivateIssuanceSignature,

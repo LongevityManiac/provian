@@ -13,6 +13,11 @@
  * from package-lock.json, the installed packages, ios/Podfile.lock and scripts/oss-notices/. A hand
  * edit, a stale module or a missing install scans the module in full. The license files under
  * scripts/oss-notices/licenses/ are scanned like any other tracked file.
+ *
+ * Tracked paths are product names too. A file or directory name may not carry an internal
+ * record key or program code name, nor name one-off exercise, rehearsal or run-bookkeeping
+ * material: that belongs in the private operator record. The few names that must keep such a
+ * token are pinned below by exact path, each with the reason it cannot move.
  */
 import { readFileSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -164,6 +169,35 @@ export const FOUNDING_NARRATIVES = new Set([
   "reference/Provian_Founding_Statement_v16.md"
 ]);
 
+// A path segment that is an internal record key or program code name: a decision number, a work
+// package, a numbered wave/pass/phase/round/milestone or work-stream tag.
+export const CODE_NAME_SEGMENT = /(?:^|[\/._\-])(?:d-?\d{3}[a-z]?|wp(?:-?\d+[a-z]*\d*|-[a-z]+)|wave\d+|pass\d+|ws\d+|m\d{1,2}|phase\d+|round\d+)(?=[\/._\-]|$)/i;
+// A path segment naming one-off exercise or rehearsal tooling, or run and release bookkeeping.
+export const WORKING_MATERIAL_SEGMENT = /(?:^|[\/._\-])(?:exercises?|rehears(?:al|als|e)|drills?|dry[-_]?runs?|canar(?:y|ies)|scratch|handoffs?|run[-_]?logs?|run[-_]?reports?|postmortems?)(?=[\/._\-]|$)/i;
+// Exact paths that keep such a token, and why each cannot be renamed. Nothing else inherits it.
+export const PINNED_PATH_NAMES = Object.freeze({
+  'config/integrity/wp-merge-binding.json': 'byte-pinned frozen integrity record',
+  'docs/audit/pvt-wp0-wp1/pvt-action-policy-matrix.generated.json': 'action-policy matrix pinned by path and declared content hash',
+  'docs/audit/pvt-wp0-wp1/pvt-launch-capacity-model.generated.json': 'byte-pinned frozen approval evidence',
+  'docs/audit/pvt-wp0-wp1/pvt-policy-approval-manifest.generated.json': 'byte-pinned frozen approval manifest',
+  'provian-backend/src/core/agent-wallet/proof-of-possession.wave4.test.ts': 'byte-pinned frozen suite',
+  'scripts/wp2/generate-pvt9-base-config.mjs': 'its path is written into the published SDK and app generated config',
+});
+
+/** Tracked paths whose names carry an internal code name or one-off working material. */
+export function findInternalPathNames(files) {
+  if (files.length === 0) throw new Error('internal-path check refuses an empty population');
+  const hits = [];
+  for (const f of files) {
+    if (Object.hasOwn(PINNED_PATH_NAMES, f)) continue;
+    const code = f.match(CODE_NAME_SEGMENT);
+    const work = f.match(WORKING_MATERIAL_SEGMENT);
+    if (code) hits.push(`${f}: internal code name in path (${code[0].replace(/^[/._-]/, '')})`);
+    if (work) hits.push(`${f}: one-off working material in path (${work[0].replace(/^[/._-]/, '')})`);
+  }
+  return hits;
+}
+
 const LICENSE_TEXTS_LINE = 'export const OSS_LICENSE_TEXTS: readonly string[] = ';
 
 /** The open source notices module with its license-text line blanked, only when `expected` matches it byte for byte. */
@@ -243,6 +277,8 @@ export function checkTree(rev) {
   if (all.length === 0) throw new Error('internal-record check refuses an empty tracked tree');
   const text = new Map();
   const hits = Object.keys(FROZEN_ARTIFACTS).filter((f) => !all.includes(f)).map((f) => `${f}: frozen artifact missing from tracked tree`);
+  hits.push(...Object.keys(PINNED_PATH_NAMES).filter((f) => !all.includes(f)).map((f) => `${f}: pinned path name no longer tracked; remove its pin`));
+  hits.push(...findInternalPathNames(all));
   let frozen = 0;
   let narrative = 0;
   let binary = 0;
@@ -332,12 +368,35 @@ function selfTest() {
     || findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, `// ${key}\n${licenseLine}\n`, `// ${key}\n${licenseLine}\n`)).length !== 1) {
     throw new Error('self-test: third-party license texts were set aside without verification, or a planted key beside them escaped');
   }
+  const plantedPaths = [
+    `provian-backend/src/core/pvt/${['w', 'p4'].join('')}/settlement-cycle-runner.ts`,
+    `provian-backend/scripts/${['d', '291'].join('')}-rail-probe.mjs`,
+    `provian-backend/src/core/commons/human-jobs.${['d', '463'].join('')}.test.ts`,
+    `provian-backend/src/core/pvt/${['wp', '-ev'].join('')}/eligibility.ts`,
+    `provian-backend/src/routes/${['wa', 've3'].join('')}.test.ts`,
+    `scripts/recourse/${['exer', 'cise'].join('')}-workbench.mjs`,
+    `provian-backend/scripts/supersede-${['rehear', 'sal'].join('')}.ts`,
+    `provian-agent-sdk/scripts/restart-${['dr', 'ill'].join('')}.sh`,
+    `provian-backend/scripts/cutover-${['dry', '-run'].join('')}.ts`,
+    `provian-backend/scripts/key-rotation-${['can', 'ary'].join('')}.ts`,
+    `docs/${['RUN', '_LOG'].join('')}.md`,
+    `scripts/${['w', 'p2'].join('')}/other.mjs`,
+  ];
+  const pathHits = findInternalPathNames(plantedPaths);
+  const caught = new Set(pathHits.map((h) => h.slice(0, h.indexOf(': '))));
+  if (plantedPaths.some((p) => !caught.has(p))) throw new Error(`self-test: planted internal path escaped: ${plantedPaths.filter((p) => !caught.has(p))}`);
+  if (findInternalPathNames(['src/core/pvt/settlement/settlement-cycle-runner.ts', 'src/core/agents/agentBalanceSweep.ts',
+    'src/core/pvt/held-act-sweep.ts', 'provian-agent-sdk/src/observer/doctor-probe.ts', 'assets/images/mp4-poster.png',
+    ...Object.keys(PINNED_PATH_NAMES)]).length !== 0) throw new Error('self-test: a clean or pinned path was refused');
+  let emptyPathsRefused = false;
+  try { findInternalPathNames([]); } catch { emptyPathsRefused = true; }
+  if (!emptyPathsRefused) throw new Error('self-test: empty path population passed');
   const files = readerFacingFiles();
   for (const must of ['package.json', 'src/core/provenance/types.ts', 'provian-backend/src/server.ts',
     'provian-agent-sdk/src/observer/self-update.ts', '.githooks/pre-push', 'scripts/check-reader-facing-ids.mjs']) {
     if (!files.includes(must)) throw new Error(`self-test: tracked-tree population misses ${must}`);
   }
-  console.log(`reader-facing-ids self-test: ok; planted decision key, work-package key and attribution caught; empty population refused; license texts set aside only when verified; ${files.length} tracked paths in scope`);
+  console.log(`reader-facing-ids self-test: ok; planted decision key, work-package key and attribution caught; ${plantedPaths.length} planted internal path names caught; empty population refused; license texts set aside only when verified; ${files.length} tracked paths in scope`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

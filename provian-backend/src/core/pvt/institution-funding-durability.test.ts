@@ -88,7 +88,7 @@ import { generatePE } from '../agent-bank/pe-utils';
 import type { AgentBankDeps } from '../agent-bank/types';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 import {
   INSTITUTION_EMISSION_LOCK_COLLECTION,
   INSTITUTION_CONFIRMATION_FLOOR,

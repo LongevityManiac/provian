@@ -12,7 +12,7 @@ import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { buildPendingClaim, meterActClaimId, meterActClaimKey } from './meter-claims';
 import { isCarriedOverLegacyClaim, runMeterClaimInlet, verifyMeterClaimMembers } from './meter-settlement';
 import { METER_ACT_KEYS_COLLECTION, METER_PENDING_CLAIMS_COLLECTION, type MeterPendingClaim } from './meter-store';
-import type { SealedEnvelopeIdentity } from '../pvt/wp-ev/claim-id';
+import type { SealedEnvelopeIdentity } from '../pvt/mint-claims/claim-id';
 
 const PE = 'pe_relay_act_1';
 const identity: SealedEnvelopeIdentity = {

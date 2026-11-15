@@ -3,7 +3,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { createRecourseGasSigner } from './gas-signer';
 import { OWNER_OPERATIONS, assertCheckedOwnerOperation } from './owner-operation-queue';
 import { executeOwnerOperation } from './owner-operation-worker';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 /** Gas sponsorship can rotate only independently authorized owner credentials
  * or register a bounded intent. It cannot reverse funds or allocate the pool. */
 export async function runOwnerOperationWorker(db:Firestore,env:NodeJS.ProcessEnv=process.env):Promise<{id:string;status:string}|null> {

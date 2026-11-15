@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import type {Firestore} from 'firebase-admin/firestore';
-import previousSignature from './fixtures/d554-predecessor-monetary-signature.json';
+import previousSignature from './fixtures/predecessor-monetary-signature.json';
 import {APPROVED_MONETARY_ACTIVATION,monetaryApprovalSigningBytes,APPROVED_MONETARY_ACTIVATION_SIGNATURE} from './approved-monetary-activation-approval';
 import {PROPOSED_PVT9_APPROVAL_MANIFEST_SHA256} from './pvt9-approval-manifest.generated';
 import {PROPOSED_MONETARY_POLICY_TEMPLATE} from './proposed-monetary-policy';

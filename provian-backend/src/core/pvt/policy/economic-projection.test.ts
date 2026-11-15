@@ -18,7 +18,7 @@ import {
   resolveContributorIdentities,
   type CurrentSettlementProjectionContext,
 } from './economic-projection';
-import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../wp-ev/eligibility';
+import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../mint-claims/eligibility';
 import { readEconomicAccrualProjection } from './economic-aggregate-read';
 import { seedMeteredRows } from '../../meter/__test-helpers__/seed-act-keys';
 import { materializeProposedMonetaryPolicy } from './runtime-monetary-policy';

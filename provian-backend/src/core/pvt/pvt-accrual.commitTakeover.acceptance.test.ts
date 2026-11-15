@@ -23,7 +23,7 @@ import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake
 import type { BeneficiaryCacheEntry } from './beneficiary';
 import { commitWitnessedVerifiedFields } from './device-witnessed-earning';
 import { commitClaimDocId } from './commit-mint-claim';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 let mockDb: FakeFirestore;
 jest.mock('firebase-admin', () => {
@@ -69,7 +69,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 // eslint-disable-next-line import/first
 import {
   CLAIM_LEDGER_COLLECTION,
@@ -77,7 +77,7 @@ import {
   registerClaim,
   type NewClaimInput,
   type SettlementDb,
-} from './wp4/durable-settlement-store';
+} from './settlement/durable-settlement-store';
 // eslint-disable-next-line import/first
 import { corroborationLiftedRecordPointsAtomic } from './policy/economic-projection';
 // eslint-disable-next-line import/first

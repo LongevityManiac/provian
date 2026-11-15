@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { SETTLEMENT_CYCLE_MAX_RUN_MS } from '../pvt/wp4/operator-runtime';
+import { SETTLEMENT_CYCLE_MAX_RUN_MS } from '../pvt/settlement/operator-runtime';
 import {
   NO_CYCLE_GRACE_MS,
   SETTLEMENT_WAIT_MARGIN_MS,

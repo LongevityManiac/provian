@@ -18,7 +18,7 @@
  *
  * The claim/authorize/prepare/reconcile/anchor mint flow, the recovery cursor,
  * the integrity quarantine, and every `pe_history` write were deleted with the
- * engine. The PVT9 settlement runtime (`core/pvt/wp4/`) is the live mint path.
+ * engine. The PVT9 settlement runtime (`core/pvt/settlement/`) is the live mint path.
  */
 
 import { FieldPath, type Firestore } from 'firebase-admin/firestore';

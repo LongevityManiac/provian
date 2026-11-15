@@ -1,6 +1,6 @@
 import { Wallet } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 import { createRecourseGasSigner } from './gas-signer';
 import { MEMBERSHIP_CONSENT_OPERATIONS, assertCheckedMembershipConsent, executeMembershipConsent } from './membership-consent-operation';
 import { MEMBERSHIP_DEBIT_OPERATIONS, assertCheckedMembershipDebit, executeMembershipDebit } from './membership-debit-operation';

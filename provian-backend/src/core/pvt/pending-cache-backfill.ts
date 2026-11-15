@@ -65,7 +65,7 @@ import {
 } from './mint-once-claim';
 import { x402MintClaimKey } from './x402-tx-mint-claim';
 import { financialSettlementMintClaimKey } from './financial-settlement-mint-claim';
-import { ORDINARY_ACCRUAL_INTAKE_COLLECTION } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_INTAKE_COLLECTION } from './cutover/ordinary-accrual-intake';
 import { DURABLE_ACCRUAL_EFFECTS_COLLECTION } from './durable-accrual-effects';
 import { HELD_ACT_SWEEP_CURSOR_COLLECTION, walkHeldActs } from './held-act-sweep';
 

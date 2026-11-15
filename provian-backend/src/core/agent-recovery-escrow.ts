@@ -134,7 +134,7 @@ export async function readRecoveryEscrow(
 /**
  * True iff a recoverable escrow exists for this wallet. Never opens the blob. No settlement or
  * payout path reads this: escrow never holds earnings (; the mint gate is
- * retired, pinned by `pvt/wp4/escrow-never-holds-earnings.test.ts`).
+ * retired, pinned by `pvt/settlement/escrow-never-holds-earnings.test.ts`).
  */
 export async function hasRecoveryEscrow(db: Firestore, walletId: string): Promise<boolean> {
   const snap = await db.collection(AGENT_RECOVERY_ESCROW_COLLECTION).doc(walletId).get();

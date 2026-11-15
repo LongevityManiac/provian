@@ -6,7 +6,7 @@ import {
   type ApprovalRequestSealVerdict,
   type VerifiedApprovalRequest,
 } from './human-approval-earning';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 // After the seal-stamp line, so a satisfied request without a stamp is a live, unsealed one.
 const NOW = HUMAN_APPROVAL_SEAL_STAMP_SINCE_MS + 86_400_000;

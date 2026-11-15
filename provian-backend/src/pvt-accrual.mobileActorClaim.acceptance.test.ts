@@ -69,7 +69,7 @@ import { advanceChainTipAtomic } from './pe-chain-validator';
 import {
   buildOrdinaryAccrualIntake,
   createOrdinaryAccrualIntakeInTransaction,
-} from './core/pvt/wp11/ordinary-accrual-intake';
+} from './core/pvt/cutover/ordinary-accrual-intake';
 import {
   classAdmittedWitnessedFields,
   isClassAdmittedAtRecordTime,

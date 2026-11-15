@@ -1,7 +1,7 @@
 import { Wallet,keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION,acquireSignerLease,type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION,acquireSignerLease,type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { executeRecourseCall,resumeRecourseCall,recourseExecutionId,RECOURSE_EXECUTIONS,type RecourseExecutionCall } from './execution-transaction';
 import type { finalizedOwnerTransaction } from './transaction-finality';
 const hash=(n:string)=>`0x${n.repeat(32)}`;

@@ -1466,7 +1466,7 @@ contract ProvianPVT9EligibilityVerifierTest is Test {
 
     /**
      * The off-chain settler recomputes these same preimages in TypeScript
-     * (`provian-backend/src/core/pvt/wp-ev/settlement-batch.ts`) so it can prove, before
+     * (`provian-backend/src/core/pvt/mint-claims/settlement-batch.ts`) so it can prove, before
      * spending a transaction, that the batch it is about to submit is the batch it had
      * approved. That mirror is only worth anything if it is pinned, so both languages
      * assert the SAME constants for the SAME fixed vector — see

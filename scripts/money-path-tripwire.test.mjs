@@ -75,7 +75,7 @@ describe('money-path tripwire — scope is real', () => {
   it('covers the only module that constructs a mint signer', () => {
     // Named explicitly: if operator-runtime.ts ever falls out of scope, the
     // tripwire would stop watching the single file that can move real PVT.
-    expect(files).toContain('provian-backend/src/core/pvt/wp4/operator-runtime.ts');
+    expect(files).toContain('provian-backend/src/core/pvt/settlement/operator-runtime.ts');
   });
 
   it('covers the accrual entry point and the runtime address/ABI seam', () => {

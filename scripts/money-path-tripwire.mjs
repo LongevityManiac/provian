@@ -100,7 +100,7 @@ export const MONEY_PATH_ROOTS = Object.freeze([
   // what a reviewer reads, and a pricing-neutral cache edit is a one-line accept.
   'provian-backend/src/cache.ts',
   // settlement, eligibility, genesis, policy, watchers, operator runtime —
-  // includes wp4/operator-runtime.ts, the one module that builds a mint signer
+  // includes settlement/operator-runtime.ts, the one module that builds a mint signer
   'provian-backend/src/core/pvt/',
   'provian-backend/src/core/jurisdiction/',
   // PE METER : the meter seals every act, holds its mint-once keys, builds the

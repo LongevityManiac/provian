@@ -114,9 +114,9 @@ function runTest(testFile, testName, timeoutMs) {
 const DEFAULT_MANIFEST = {
   controls: [
     {
-      file: 'provian-backend/src/core/pvt/wp4/durable-settlement-store.ts',
+      file: 'provian-backend/src/core/pvt/settlement/durable-settlement-store.ts',
       fn: 'assertNoLegacyLedgerRows',
-      testFile: 'src/core/pvt/wp4/settlement-cycle-runner.test.ts',
+      testFile: 'src/core/pvt/settlement/settlement-cycle-runner.test.ts',
       // The two genuinely broken prior implementations of this guard. Round 3 (2b9256da) and
       // round 4 (eb7ccedd) share a byte-identical guard — round 4 changed only tests — so round 3
       // is not a distinct implementation and is not listed.

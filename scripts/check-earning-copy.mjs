@@ -145,7 +145,7 @@ const allowedCollocations = [
   /\bpermanently\s+ineligible\b/i,
   // Named verifier / disclaimer / module symbols
   /\beligibility\s+verifier\b/i, /\beligibilityverifier\b/i, /\beligibility_disclaimer\b/i,
-  /\bwp-ev\/eligibility\b/i, /\beligibility\.ts\b/i, /\bsettlement\s+eligibility\s+module\b/i,
+  /\bmint-claims\/eligibility\b/i, /\beligibility\.ts\b/i, /\bsettlement\s+eligibility\s+module\b/i,
   // Jurisdiction blocking / deferment / sanctions / local law
   /\bjurisdiction\s+eligibility\b/i, /\bjurisdiction-aware\s+eligibility\b/i,
   /\beligibility\s+checks?\b/i, /\beligibility\s+registry\b/i,
@@ -394,7 +394,7 @@ const positiveControls = [
   "Your {{share}}% share of this agent's eligible work, projected at the current settlement rate.",
   'PE-type proposals are documentation signals; they grant no mint eligibility.',
   'The mint_status reaches `eligible` after graduated release from deferred.',
-  'Tier affects weight, never eligibility (wp-ev/eligibility.ts).',
+  'Tier affects weight, never eligibility (mint-claims/eligibility.ts).',
   'human_approval is eligible at its verified witness-class base.',
   'The eligibility verifier 0x3a27957a is armed since 2026-07-31.',
 ];

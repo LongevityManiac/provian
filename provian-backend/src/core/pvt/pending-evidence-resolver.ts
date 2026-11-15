@@ -38,7 +38,7 @@ import { privateRetentionCollection } from '../provenance/private-retention';
  * 's established the bar a promotion must clear, and the
  * reason the chain-receipt arm does NOT clear it: `mint_status: 'eligible'` IS
  * mint authority on the live rail (the exact selection predicate of the PVT9
- * standard-lane claim inlet, `wp4/claim-inlet-source.ts`), so a promotion needs
+ * standard-lane claim inlet, `settlement/claim-inlet-source.ts`), so a promotion needs
  * a verifier that binds the evidence to the canonical event the PE claims
  * under its supported evidence-resolution mode.
  *

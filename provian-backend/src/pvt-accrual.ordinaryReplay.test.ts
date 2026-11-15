@@ -5,8 +5,8 @@
  * and doing so must NOT reclassify the caller as durable or perturb the sealed
  * economic snapshot, and must never mint.
  *
- * This is the jest-suite counterpart to scripts/wp12-ordinary-intake-canary.ts
- * (which proves the same property end-to-end against the Firestore emulator).
+ * This is the jest-suite counterpart to the ordinary-intake crash/replay canary
+ * (which proved the same property end-to-end against the Firestore emulator).
  * Here the crash is injected deterministically at the `after_pe_history`
  * boundary via `durableTestCrashAt`, and replay is the exact production shape:
  * recordPEAccrual with NO throwOnError.

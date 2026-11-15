@@ -4,10 +4,10 @@
  * ROTATION IS LIVE (activation flip). This module is mounted behind the backend
  * `POST /:wallet_id/rotate-key` route (agent wallet auth + ownership + dual
  * ECDSA-SHA256 proof-of-possession + 1/24h rate limit) and the SDK
- * `rotateKey()`; the two were flipped together. Crash/replay safety is proven by
- * `scripts/wp12-key-rotation-canary.ts`. REVERSIBLE: to re-disable, restore the
- * route's fail-closed 503 AND the SDK throw together — never one side alone.
- * See docs/launch/KEY_ROTATION_REENABLEMENT_LAUNCH_STOP.md.
+ * `rotateKey()`; the two were flipped together. Crash/replay safety was proven
+ * by an emulator crash/replay canary before the flip. REVERSIBLE: to re-disable,
+ * restore the route's fail-closed 503 AND the SDK throw together — never one
+ * side alone.
  *
  * The transition moves an agent wallet's economic identity from one Base
  * address to another in a SINGLE Firestore transaction. Because every write

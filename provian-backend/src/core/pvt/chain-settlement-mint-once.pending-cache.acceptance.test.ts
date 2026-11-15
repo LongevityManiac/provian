@@ -71,7 +71,7 @@ import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   ORDINARY_ACCRUAL_REPLAY_SOURCE,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 // eslint-disable-next-line import/first
 import { mintOnceClaimCollectionFor, type MintOnceClaimEvidence } from './mint-once-claim';
 // eslint-disable-next-line import/first

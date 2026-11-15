@@ -1,7 +1,7 @@
 import { Wallet } from 'ethers';
 import { createRecourseGasSigner } from './gas-signer';
 import type { Firestore } from 'firebase-admin/firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 import { BINDING_OPERATIONS, configuredIdentityAttestor, assertCheckedBindingOperation } from './binding-operation';
 import { executeBindingOperation } from './binding-worker';
 

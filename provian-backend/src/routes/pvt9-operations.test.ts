@@ -16,8 +16,8 @@ import express from 'express';
 import request from 'supertest';
 
 const runSettlementMock = jest.fn();
-jest.mock('../core/pvt/wp4/operator-runtime', () => {
-  const actual = jest.requireActual('../core/pvt/wp4/operator-runtime');
+jest.mock('../core/pvt/settlement/operator-runtime', () => {
+  const actual = jest.requireActual('../core/pvt/settlement/operator-runtime');
   return {
     ...actual,
     runSettlement: (...args: unknown[]) => runSettlementMock(...args),
@@ -27,7 +27,7 @@ jest.mock('../core/pvt/wp4/operator-runtime', () => {
 });
 
 import { createPvt9OperationsRouter, SETTLEMENT_RUN_PATH } from './pvt9-operations';
-import { ARMING_TOKEN } from '../core/pvt/wp4/operator-runtime';
+import { ARMING_TOKEN } from '../core/pvt/settlement/operator-runtime';
 
 const ADMIN_KEY = 'test-admin-key';
 

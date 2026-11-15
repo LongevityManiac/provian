@@ -49,7 +49,7 @@ treasury destinations are set on-chain by the kernel's
 | Variable | Purpose |
 |----------|---------|
 | `PVT9_SETTLEMENT_ARMED` | Standing gate on the settlement runtime (`routes/pvt9-operations.ts`); settlement refuses unless it carries the exact arming value |
-| `PVT9_SETTLEMENT_MINTER_KEY` | Operational minter signer (Secret Manager mount). Only `core/pvt/wp4/operator-runtime.ts` constructs a signer from it |
+| `PVT9_SETTLEMENT_MINTER_KEY` | Operational minter signer (Secret Manager mount). Only `core/pvt/settlement/operator-runtime.ts` constructs a signer from it |
 | `PVT9_SETTLEMENT_APPROVER_KEY` | Eligibility-verifier batch approver signer (Secret Manager mount) |
 | `GENESIS_CAMPAIGN_FORCE_OFF` | Genesis kill switch (`false` = not pulled). Never an enable; Genesis state lives in Firestore `pvt_policy_activations/genesis` |
 | `PVT_MINTER_KEY` | Legacy name, still mounted: the same Secret Manager secret (`pvt-minter-key`) as `PVT9_SETTLEMENT_MINTER_KEY` (`deploy-env.sh`). Signs the PE-anchor transactions, daily and operator-run segments (`core/pvt/pe-anchor-runtime.ts`) and is read by the live-value-recipient guards so no keeper can pay the minter's address. Not boot-required |

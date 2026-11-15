@@ -30,8 +30,8 @@ import { LEGACY_PRE_METER_BATCH } from './meter-store';
 
 import { createHash } from 'crypto';
 import stableStringify from 'json-stable-stringify';
-import { deriveLegClaimId, deriveTopupClaimId, type SealedEnvelopeIdentity } from '../pvt/wp-ev/claim-id';
-import { PAYOUT_LEG_ROLES, type PayoutLegRole } from '../pvt/wp-ev/payout-legs';
+import { deriveLegClaimId, deriveTopupClaimId, type SealedEnvelopeIdentity } from '../pvt/mint-claims/claim-id';
+import { PAYOUT_LEG_ROLES, type PayoutLegRole } from '../pvt/mint-claims/payout-legs';
 import {
   METER_PENDING_CLAIMS_COLLECTION,
   type MeterPayoutMember,

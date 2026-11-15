@@ -26,7 +26,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import { ACCRUAL_ENDED_REASON, accrualEndedAt } from '../pvt/accrual-end-line';
 import { commitMeterBatch, MeterPreconditionChangedError, MeterTipConflictError, type MeterTxnHook } from './meter-commit';
 import type { MeterActOutcome } from './meter-seal';
-import type { SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import type { SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { stageSealedCopies } from './pe-mailbox';
 import { newBatchOriginEdges } from '../pvt/origin-pricing-inputs';
 import {

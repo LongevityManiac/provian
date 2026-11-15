@@ -398,7 +398,7 @@ suite('novelty ordinals are independent of batch partition (native Firestore)', 
     const mappings = await Promise.all(pes.slice(1).map(pe => lane.mapAct(wire.actRecordOf(pe),pe.pe_id)));
     if (!mappings[0].ok || !mappings[1].ok) throw new Error('mixed fixture mapping refused');
     const intake = buildRelayActIntake({pe:pes[1],actorId:d.agentId,accrual:mappings[0].params,sealed:[],nowMs:NOW});
-    const {buildOrdinaryAccrualIntake,ORDINARY_ACCRUAL_INTAKE_COLLECTION} = await import('../pvt/wp11/ordinary-accrual-intake');
+    const {buildOrdinaryAccrualIntake,ORDINARY_ACCRUAL_INTAKE_COLLECTION} = await import('../pvt/cutover/ordinary-accrual-intake');
     const ordinaryParams = {...mappings[1].params,throwOnError:false};
     await db.collection(ORDINARY_ACCRUAL_INTAKE_COLLECTION).doc(pes[2].pe_id).set(buildOrdinaryAccrualIntake({prevHash:pes[2].prev_hash,peHash:wire.peHashOf(pes[2]),accrualParams:ordinaryParams}));
     let arrived=0;let release!:()=>void;

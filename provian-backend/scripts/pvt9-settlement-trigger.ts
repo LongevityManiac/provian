@@ -22,12 +22,12 @@
 import { execFileSync } from 'child_process';
 import * as https from 'https';
 import * as admin from 'firebase-admin';
-import { ARMING_TOKEN, SETTLEMENT_CYCLE_MAX_RUN_MS } from '../src/core/pvt/wp4/operator-runtime';
+import { ARMING_TOKEN, SETTLEMENT_CYCLE_MAX_RUN_MS } from '../src/core/pvt/settlement/operator-runtime';
 import {
   CLAIM_LEDGER_COLLECTION,
   SETTLEMENT_BATCHES_COLLECTION,
   SETTLEMENT_CYCLES_COLLECTION,
-} from '../src/core/pvt/wp4/durable-settlement-store';
+} from '../src/core/pvt/settlement/durable-settlement-store';
 import {
   initialNarratorState,
   judgeFollow,

@@ -290,7 +290,7 @@ export interface ClientCorroborationResult {
  * assertion — even cross-party and hash-verified — is collusion/sybil-prone (the
  * target hash is shareable), so it must NOT move mint weight. Concretely: this
  * function NEVER writes `corroboration_status` (the field the PVT9 claim inlet,
- * `wp4/claim-inlet-source.ts`, and the dashboard projection read);
+ * `settlement/claim-inlet-source.ts`, and the dashboard projection read);
  * it writes only mint-neutral `client_corroboration_*` markers. (If a future
  * decision grants client corroboration mint weight, the anti-collusion controls
  * in OPEN_ITEMS WS-FixtureFidelity-3 must land first.)
@@ -406,7 +406,7 @@ function mapSignalTypeToStatus(
       // Distinct from peer_verified so the mint pipeline (and audit
       // tooling) can tell Witness 3 cross-witness corroboration apart
       // from peer attestations. Recognized at corroborated tier by the PVT9
-      // claim inlet (core/pvt/wp4/claim-inlet-source.ts).
+      // claim inlet (core/pvt/settlement/claim-inlet-source.ts).
       return 'service_grant_attested';
     default:
       return 'peer_verified';

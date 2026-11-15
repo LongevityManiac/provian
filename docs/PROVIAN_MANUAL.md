@@ -310,7 +310,7 @@ granted for that lane (`core/pvt/policy/new-type-intake.ts`, `intake-signed-acti
 
 ### 4.3 Attestation tiers
 
-The tier is **evidence-derived**, never claimed. Verified App Attest supplies the hardware-rooted 4.0× class, and so does a verified TPM, AWS Nitro, GCP Confidential Space, Azure or NVIDIA attestation whose launch measurement / PCR digest is one the relay pins for a signed Provian observer release (the measured observer, 2026-10-10: the platform produces the measurement when the program starts, so the operator cannot choose it; the pins come only from the signed release channel). Any other verified hardware report remains a presentation fact at the normal lane price (desktop Secure Enclave signing included). Registration follows the same rule. Tier affects *weight, never whether an act mints* (`wp-ev/eligibility.ts`). The exact bps
+The tier is **evidence-derived**, never claimed. Verified App Attest supplies the hardware-rooted 4.0× class, and so does a verified TPM, AWS Nitro, GCP Confidential Space, Azure or NVIDIA attestation whose launch measurement / PCR digest is one the relay pins for a signed Provian observer release (the measured observer, 2026-10-10: the platform produces the measurement when the program starts, so the operator cannot choose it; the pins come only from the signed release channel). Any other verified hardware report remains a presentation fact at the normal lane price (desktop Secure Enclave signing included). Registration follows the same rule. Tier affects *weight, never whether an act mints* (`mint-claims/eligibility.ts`). The exact bps
 per tier are in [§5.4](#54-the-multiplier-tables).
 
 **Witness classes.** Beside the tier, every sealed PE carries the class of witness that
@@ -956,7 +956,7 @@ requests-per-minute; §13) remain as DoS controls and never touch economics.
 - **Frozen payout legs:** a PE's legs are frozen once, at first registration —
   `pvt9_pe_split_v1/{pe_key}` is written with every leg in the same transaction as the leg rows,
   asserting that the bps sum to exactly 10,000 and the points to exactly the PE's total
-  (`wp4/pe-split.ts`, `frozen-split-registration.ts`). Later changes to wallet or link
+  (`settlement/pe-split.ts`, `frozen-split-registration.ts`). Later changes to wallet or link
   state never re-split it, and the PE counts as minted only when every frozen leg has settled.
 - **Citations pay nothing.** A `pe:` origin edge is a fact in the one graph, not a
   transfer: it moves no share, delays no mint, and adds zero to any multiplier.
@@ -2227,7 +2227,7 @@ agent API key (agents).
 **Who reaches what.** All five institution contracts are deployed and verified on Base, and the
 agent rails are live (create/post paths answer 401 auth-required, never 503). What stays refused to
 the human surface is exactly two Commons namespaces — `court` and `governance` — the single source
-of truth being `BLOCKED_COMMONS_INSTITUTIONS` in `core/pvt/wp2-runtime-boundary.ts` (the `feed.ts`
+of truth being `BLOCKED_COMMONS_INSTITUTIONS` in `core/pvt/runtime-boundary.ts` (the `feed.ts`
 catalog is test-bound to it). The Court is reachable (filing open) but seats no panel until ≥15
 qualified arbitrators exist; Promises and Pools are open (`ENABLE_PROMISES` / `ENABLE_POOLS` on in
 production); economic governance is inert (its router is imported by nothing). The human surface
@@ -2892,7 +2892,7 @@ verified at the cited site):
    batch prices `software_verified` at record time on `input_hash && output_hash`
    (`core/meter/device-act.ts`); the settlement-time projection upgrades on
    `input_hash && output_hash && model_id` (`economic-projection.ts`); the work-evidence check
-   counts `input_hash && output_hash && pack_hash` (`wp-ev/eligibility.ts`); and the
+   counts `input_hash && output_hash && pack_hash` (`mint-claims/eligibility.ts`); and the
    `pe-weight-framework.ts` prose and the `routes/conformance.ts` tier text describe
    `input_hash + model_id + replication_pack_hash`.
 3. `badges.ts` defines 13 badges; `signal` and `governed` are structurally unearnable today (no

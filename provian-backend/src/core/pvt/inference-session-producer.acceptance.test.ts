@@ -76,7 +76,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 
 const TIMESTAMP = Date.UTC(2026, 8, 3, 17, 30);
 let seq = 0;

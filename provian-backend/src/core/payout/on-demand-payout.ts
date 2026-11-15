@@ -34,8 +34,8 @@ import { METER_PENDING_CLAIMS_COLLECTION, type MeterPendingClaim } from '../mete
 import { isDemotionHeld } from '../meter/meter-demotion-hold';
 import { isCarriedOverLegacyClaim } from '../meter/meter-settlement';
 import { MAX_PAYOUT_MEMBERS, readyWindowActs } from '../meter/meter-claims';
-import { CLAIM_LEDGER_COLLECTION } from '../pvt/wp4/durable-settlement-store';
-import { SETTLEMENT_GAS_MODEL } from '../pvt/wp4/operator-runtime';
+import { CLAIM_LEDGER_COLLECTION } from '../pvt/settlement/durable-settlement-store';
+import { SETTLEMENT_GAS_MODEL } from '../pvt/settlement/operator-runtime';
 import {
   checkPayoutPayment,
   PAYOUT_FEE_USDC_ATOMIC,

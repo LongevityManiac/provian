@@ -4,7 +4,7 @@ import { a,h,tx,old,pointer } from './__test-helpers__/membership-receipt-fixtur
 import { readSettlementIssuance,finalizeSettlementIssuance,reconcileSettlementIssuance,prepareSettlementIssuanceCancellation } from './settlement-issuance-lifecycle';
 import { reservePrivateIssuanceBatch } from './private-issuance-batch';
 import { PRIVATE_ISSUANCE_BATCHES as B, PRIVATE_ISSUANCE_ADDRESSES as A } from './issuance-lock';
-import { SETTLEMENT_BATCHES_COLLECTION as P } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_BATCHES_COLLECTION as P } from '../pvt/settlement/durable-settlement-store';
 import { MEMBERSHIP_BATCH_ABI,MEMBERSHIP_RECEIPT_ABI } from './membership-receipt';
 import { RECOURSE_POOL_ABI } from './pool-abi';
 import { MEMBER_SETTLEMENT_ABI } from './issuance-ticket';

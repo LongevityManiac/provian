@@ -6,7 +6,7 @@ import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import { accountDeploymentDigest, parseAccountDeploymentRequest, type AccountDeploymentRequest } from './break-deployment-data';
 import { finalizedOwnerTransaction } from './transaction-finality';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 
 const abi = new Interface([
   'function ownerAuthorization() view returns(address)', 'function kernel() view returns(address)',

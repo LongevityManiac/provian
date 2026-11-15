@@ -25,7 +25,7 @@ import path from 'path';
 import { configureProgram, describedEvents, ProgramWitnessRegistry, recordPlacementProblem, type SessionDescription } from './program-witness';
 import { TranscriptPlugin } from './plugins/transcript/TranscriptPlugin';
 import type { ProvianObserver } from './ProvianObserver';
-import fresh2Description from './fixtures/d600-fresh2-session.json';
+import fresh2Description from './fixtures/fresh-session.json';
 
 const stamp = 1792800000000;
 const homes: string[] = [];

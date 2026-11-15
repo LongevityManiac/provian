@@ -36,7 +36,7 @@
 
 import * as crypto from 'crypto';
 import type { RecordPEAccrualParams } from '../../pvt-accrual';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 /** 64 lowercase hex — the exact shape the metadata validator enforces. */
 const SESSION_FINGERPRINT = /^[0-9a-f]{64}$/;

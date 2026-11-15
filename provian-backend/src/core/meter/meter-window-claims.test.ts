@@ -27,7 +27,7 @@ import { actKeyDocFor, seedMeteredRows } from './__test-helpers__/seed-act-keys'
 import { computeRecordSnapshot, CROSS_WITNESS_TAKEOVER_WINDOW_MS, hashRecordEconomicSnapshot } from '../pvt/policy/monetary-accounting';
 import { materializeProposedMonetaryPolicy } from '../pvt/policy/runtime-monetary-policy';
 import { mutatePeHistoryRowWithAggregate } from '../pvt/policy/economic-aggregate';
-import type { SealedEnvelopeIdentity } from '../pvt/wp-ev/claim-id';
+import type { SealedEnvelopeIdentity } from '../pvt/mint-claims/claim-id';
 import {
   aggregateWindowClaims,
   aggregateBatchClaims,

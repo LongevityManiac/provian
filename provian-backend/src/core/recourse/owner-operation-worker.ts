@@ -2,7 +2,7 @@ import { findExecutedOwnerOperation } from './owner-operation-executed';
 import { RESTORATION_REQUESTS } from './restoration-request';
 import { randomUUID } from 'crypto';
 import { acquireSignerLease, releaseSignerLease, listAllUnresolvedBatches, SETTLEMENT_CYCLES_COLLECTION,
-  SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+  SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import type { Firestore } from 'firebase-admin/firestore';
 import { keccak256, Transaction } from 'ethers';
 import { OWNER_OPERATIONS, checkOwnerOperation, assertCheckedOwnerOperation,

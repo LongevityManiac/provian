@@ -20,7 +20,7 @@
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { judgeDeployStampReady } from '../src/core/pvt/wp4/deploy-gate-ordering';
+import { judgeDeployStampReady } from '../src/core/pvt/settlement/deploy-gate-ordering';
 
 const BACKEND_ROOT = path.join(__dirname, '..');
 const STAMP_PATH = path.join(BACKEND_ROOT, 'src', 'core', 'pvt', 'tree-stamp.generated.ts');

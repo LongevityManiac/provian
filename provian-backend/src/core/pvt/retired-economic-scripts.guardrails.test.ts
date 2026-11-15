@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { C6_CLEANUP_SCRIPT } from './wp11/c6-downgrade-evidence';
+import { C6_CLEANUP_SCRIPT } from './cutover/c6-downgrade-evidence';
 
 describe('retired economic execution stays absent', () => {
   it('the retired PVTv8 Genesis stranger-run is REMOVED from the tree (C6 proof (a),)', () => {

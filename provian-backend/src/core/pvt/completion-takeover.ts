@@ -68,8 +68,8 @@ import {
   CLAIM_LEDGER_COLLECTION,
   PE_HISTORY_COLLECTION,
   claimKeyOf,
-} from './wp4/durable-settlement-store';
-import { PAYOUT_LEG_ROLES } from './wp-ev/payout-legs';
+} from './settlement/durable-settlement-store';
+import { PAYOUT_LEG_ROLES } from './mint-claims/payout-legs';
 import { meterActUnregistered } from '../meter/act-claims';
 // The 72h cross-witness TAKEOVER window — bound in the kernel module, never copied.
 // decoupled it from the 30-day corroboration horizon (see commit-takeover.ts).

@@ -24,7 +24,7 @@ import {
   registerClaim,
   type NewClaimInput,
   type SettlementDb,
-} from './wp4/durable-settlement-store';
+} from './settlement/durable-settlement-store';
 import {
   applyCommitTakeoverDecision,
   evaluateCommitWitness,

@@ -10,7 +10,7 @@ import { breakDeploymentChain } from '../src/core/recourse/break-deployment-queu
 import { BREAK_RESTORATIONS, checkBreakRestoration, reconcileBreakRestoration } from '../src/core/recourse/break-restoration-queue';
 import { BREAK_AUTHORITY_EXECUTIONS, assertCheckedBreakAuthority, executeBreakAuthority, queueBreakAuthority, parseBreakAuthorityRequest } from '../src/core/recourse/break-authority-execution';
 import { createRecourseGasSigner } from '../src/core/recourse/gas-signer';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../src/core/pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../src/core/pvt/settlement/durable-settlement-store';
 
 function option(name: string): string {
   const index = process.argv.indexOf(name), value = index < 0 ? undefined : process.argv[index + 1];

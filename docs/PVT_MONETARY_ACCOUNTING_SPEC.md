@@ -293,7 +293,7 @@ that policy vintage. At settlement:
 
 An in-window observation received after the act minted pays an additive top-up
 of `lifted − base`, split over the act's ledger rows in their frozen proportions
-(`wp4/attestation-topup-inlet-source.ts`, `topupDeltasFor`). The sealed row,
+(`settlement/attestation-topup-inlet-source.ts`, `topupDeltasFor`). The sealed row,
 snapshot and `mint_status` never change. The 72-hour cross-witness takeover
 window remains separate from the enhancement horizon.
 
@@ -407,7 +407,7 @@ The completed reservation enters the PVT10 Genesis inlet. `settleGenesisPEBatch`
 
 Registration clients durably prepare their identity and credentials before networking. Agent creation proves its key locally; same-key recovery replaces lost API credentials without repeating the wallet, first proof, watcher, linkage or Genesis effects. Device retries reuse the exact registration ID, `device_key` and `device_secret`. The relay receives no plaintext wallet key. Key rotation uses the separately authenticated atomic old-key/new-key proof path; it is not a new signup or grant.
 
-Sources: `core/pvt/genesis-award-state-machine.ts`, `core/pvt/wp4/genesis-inlet-source.ts`, `routes/devices.ts`, `routes/agent-wallet.ts`, and `contracts/src/ProvianPVT9.sol`.
+Sources: `core/pvt/genesis-award-state-machine.ts`, `core/pvt/settlement/genesis-inlet-source.ts`, `routes/devices.ts`, `routes/agent-wallet.ts`, and `contracts/src/ProvianPVT9.sol`.
 
 ### 8.4 Capacity, pacing and finality
 
@@ -419,7 +419,7 @@ Before broadcast, the runtime persists the signed transaction and derived hash a
 
 A prospective cap change uses the kernel’s existing epoch-indexed setter. It cannot edit a closed epoch or a sealed earning snapshot. Genesis admission ends at its campaign cutoff; valid pre-cutoff reservations remain payable while the protocol is operated, subject to the Terms’ final-settlement discontinuation clause.
 
-Sources: `core/pvt/wp4/settlement-cycle-runner.ts`, `core/pvt/wp4/operator-runtime.ts`, `core/meter/meter-settlement.ts`, and `contracts/src/ProvianPVT9.sol`.
+Sources: `core/pvt/settlement/settlement-cycle-runner.ts`, `core/pvt/settlement/operator-runtime.ts`, `core/meter/meter-settlement.ts`, and `contracts/src/ProvianPVT9.sol`.
 
 ## 9. PVT-native institution costs
 

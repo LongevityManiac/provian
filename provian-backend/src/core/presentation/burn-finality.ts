@@ -69,7 +69,7 @@ import {
   BURN_FINALITY_STATUS_DOCUMENT,
   burnFinalityOf,
 } from './burn-finality-state';
-import { ORDINARY_ACCRUAL_INTAKE_COLLECTION } from '../pvt/wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_INTAKE_COLLECTION } from '../pvt/cutover/ordinary-accrual-intake';
 import {
   readSpeechWindowAct,
   SPEECH_WINDOW_ACTS_COLLECTION,

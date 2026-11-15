@@ -32,7 +32,7 @@
  * `tokenomics` needs `tokenomicSnapshot`, a twelfth name, also absent. Pointed
  * at the legacy address instead, they would publish retired PVTv8 economics as
  * if current. `mint-history` is dark for the same
- * class of reason: it reads `pvt_mint_batches`, which `wp11/cutover-inventory.ts`
+ * class of reason: it reads `pvt_mint_batches`, which `cutover/cutover-inventory.ts`
  * declares LEGACY_MINT_BATCHES_COLLECTION and which the PVT9 settlement runtime
  * never writes — it writes `pvt9_settlement_batches_v1`. A PVT9-shaped successor
  * to any of the three is a new endpoint, not a re-mount.

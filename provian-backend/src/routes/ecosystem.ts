@@ -1,7 +1,7 @@
 /** Current, machine-readable ecosystem status. */
 import { accrualEndedAt } from '../core/pvt/accrual-end-line';
 import { isPeAnchorRuntimeConfigured } from '../core/pvt/pe-anchor-runtime';
-import { ARMED_ENV, ARMING_TOKEN } from '../core/pvt/wp4/operator-runtime';
+import { ARMED_ENV, ARMING_TOKEN } from '../core/pvt/settlement/operator-runtime';
 import { Router, type Request, type Response } from 'express';
 import type { Firestore } from 'firebase-admin/firestore';
 import { PVT9_BASE_CONFIG } from '../core/pvt/pvt9-base-config.generated';

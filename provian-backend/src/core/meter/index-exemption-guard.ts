@@ -42,7 +42,7 @@ export const KNOWN_OTHER_COLLECTION: Readonly<Record<string, string>> = {
   'src/core/meter/compact-relay-held.ts#batch_hash': 'pe_mailbox_v1',
   'src/core/meter/meter-relay-authored.ts#created_at_ms': 'meter_relay_acts_v1',
   'src/core/meter/held-acts.ts#held_reason': 'meter_held_acts_v1',
-  'src/core/pvt/wp4/genesis-inlet-source.ts#pe_id': 'genesis_qualification_outbox_v2',
+  'src/core/pvt/settlement/genesis-inlet-source.ts#pe_id': 'genesis_qualification_outbox_v2',
   'scripts/reclassify-test-genesis-pes.ts#pe_id': 'genesis_qualification_outbox_v2 / genesis_reservations_v2',
 };
 

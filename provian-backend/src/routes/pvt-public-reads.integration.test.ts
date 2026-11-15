@@ -29,7 +29,7 @@ import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals
 import express, { type Express, type RequestHandler } from 'express';
 import request from 'supertest';
 import type { RedisCache } from '../cache';
-import { createPvt9RuntimeBoundary } from '../core/pvt/wp2-runtime-boundary';
+import { createPvt9RuntimeBoundary } from '../core/pvt/runtime-boundary';
 import {
   PVT_PUBLIC_READ_MOUNT_PATH,
   mountPvtPublicReads,

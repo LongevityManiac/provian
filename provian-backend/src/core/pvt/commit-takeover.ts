@@ -69,8 +69,8 @@ import {
   CLAIM_LEDGER_COLLECTION,
   PE_HISTORY_COLLECTION,
   claimKeyOf,
-} from './wp4/durable-settlement-store';
-import { PAYOUT_LEG_ROLES } from './wp-ev/payout-legs';
+} from './settlement/durable-settlement-store';
+import { PAYOUT_LEG_ROLES } from './mint-claims/payout-legs';
 // the 72h TAKEOVER window is now its own constant (bound to the legacy window,
 // never a third literal) and DECOUPLED from the corroboration horizon: the horizon is
 // 30 days for post-cut-line PEs and the value it admits after registration is carried
@@ -134,7 +134,7 @@ const COMMIT_MINT_CLAIMS_COLLECTION = 'commit_mint_claims';
  * cross-witness of an `eligible` OR `minted` incumbent — returns
  * `'corroborate_incumbent'` the corroboration is stamped on the incumbent, the
  * inline lift takes it if the incumbent is still unregistered, and the additive
- * attestation top-up (`wp4/attestation-topup-inlet-source.ts`) carries the delta
+ * attestation top-up (`settlement/attestation-topup-inlet-source.ts`) carries the delta
  * once it has registered or minted. The sealed row is never re-derived either way.
  */
 export type CommitWitnessAction = 'takeover' | 'corroborate_incumbent' | 'none';

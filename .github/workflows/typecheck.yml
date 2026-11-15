@@ -131,7 +131,7 @@ jobs:
             # deploy wrapper, settlement runner and probe. A real type error in
             # `scripts/genesis-live-admission-probe.ts` was visible locally and invisible
             # to CI (open since 2026-08-04), and  lost its natural home to the same
-            # blind spot when `scripts/wp4-load-harness.ts` sat broken through two rounds
+            # blind spot when `scripts/settlement-load-harness.ts` sat broken through two rounds
             # of "verification".
             #
             # `tsconfig.typecheck.json` is the emit-free project that widens `rootDir` so

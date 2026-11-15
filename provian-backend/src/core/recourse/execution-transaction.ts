@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { Transaction,keccak256,sha256,toUtf8Bytes } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { acquireSignerLease,releaseSignerLease,listAllUnresolvedBatches,SETTLEMENT_SIGNER_LEASES_COLLECTION,
-  SETTLEMENT_CYCLES_COLLECTION,type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+  SETTLEMENT_CYCLES_COLLECTION,type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { finalizedOwnerTransaction,type FinalizedOwnerTransaction } from './transaction-finality';
 export interface RecourseExecutionCall {
   readonly kind:'attest'|'reverse'|'eligibility'|'allocate'|'decline'|'record'|'deliver';

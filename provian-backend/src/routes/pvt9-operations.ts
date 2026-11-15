@@ -26,7 +26,7 @@
  *
  * ── WHAT THESE ROUTES DO NOT DO ──────────────────────────────────────────────
  * Neither builds a signer, reads a key, or contains a gate. Every decision lives in
- * `core/pvt/wp4/operator-runtime.ts`, which the two scripts also call, so a hand run and a
+ * `core/pvt/settlement/operator-runtime.ts`, which the two scripts also call, so a hand run and a
  * route run cannot diverge. A route with its own copy of the gates is a second, weaker set of
  * gates, and the weaker one is the one that mints.
  */
@@ -34,8 +34,8 @@
 import { Router, type Request, type Response } from 'express';
 import type { Firestore } from 'firebase-admin/firestore';
 import { safeSecretCompare } from './middleware/admin-secret';
-import { seedPayeeSettlementClocks } from '../core/pvt/wp4/seed-payee-settlement-clocks';
-import { legacySettlementTimeReader } from '../core/pvt/wp4/operator-runtime';
+import { seedPayeeSettlementClocks } from '../core/pvt/settlement/seed-payee-settlement-clocks';
+import { legacySettlementTimeReader } from '../core/pvt/settlement/operator-runtime';
 import { carryOccurrenceDigests } from '../core/meter/carry-occurrence-digests';
 import {
   ARMING_TOKEN,
@@ -44,8 +44,8 @@ import {
   runSettlement,
   summarizeSettlementRun,
   settlementRunNeedsAlarm,
-} from '../core/pvt/wp4/operator-runtime';
-import type { SettlementDb } from '../core/pvt/wp4/durable-settlement-store';
+} from '../core/pvt/settlement/operator-runtime';
+import type { SettlementDb } from '../core/pvt/settlement/durable-settlement-store';
 
 export const EPOCH_KEEPER_PATH = '/v1/internal/scheduler/pvt9-epoch-keeper';
 export const SETTLEMENT_RUN_PATH = '/v1/internal/settlement/pvt9-run';

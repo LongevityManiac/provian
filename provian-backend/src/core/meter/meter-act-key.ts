@@ -13,7 +13,7 @@
  */
 
 import type { PEHistoryDocument } from '../../pe-history';
-import type { SealedEnvelopeIdentity } from '../pvt/wp-ev/claim-id';
+import type { SealedEnvelopeIdentity } from '../pvt/mint-claims/claim-id';
 import { financialFactOf, type FinancialFact } from './actor-meter-totals';
 import type { MeterActLeg } from './meter-claims';
 import type { MeterActSideInputs } from './meter-seal';

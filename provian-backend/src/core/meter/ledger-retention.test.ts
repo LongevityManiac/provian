@@ -16,7 +16,7 @@ import {
 } from './ledger-retention';
 import { DAY_MS, METER_KEY_LIFETIME_MS } from './meter-store';
 import { meterBatchClaimKey } from './meter-claims';
-import { CLAIM_LEDGER_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { CLAIM_LEDGER_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 
 describe('settled meter ledger rows — retention inequality', () => {
   it('the lifetime outlasts every re-registration / re-plan window plus the TTL deletion lag', () => {

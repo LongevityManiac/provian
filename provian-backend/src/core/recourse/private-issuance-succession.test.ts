@@ -1,4 +1,4 @@
-import { SETTLEMENT_BATCHES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_BATCHES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 import { issuanceBatchFixture } from './__test-helpers__/issuance-batch-fixture';
 import { issuanceSuccessionFixture } from './__test-helpers__/issuance-succession-fixture';
 import { a,h,old,pointer,tx as receiptTx } from './__test-helpers__/membership-receipt-fixture';

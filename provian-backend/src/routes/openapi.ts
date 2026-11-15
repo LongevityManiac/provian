@@ -19,7 +19,7 @@ import { isMcpAccessPermitted, type McpAccessEnv } from './mcp-access';
 // describes. ARMED_ENV/ARMING_TOKEN are the settlement rail's own constants
 // (importing them constructs nothing); isPeAnchorRuntimeConfigured is the pure
 // env check from the sanctioned anchor-runtime module.
-import { ARMED_ENV, ARMING_TOKEN } from '../core/pvt/wp4/operator-runtime';
+import { ARMED_ENV, ARMING_TOKEN } from '../core/pvt/settlement/operator-runtime';
 import { isPeAnchorRuntimeConfigured } from '../core/pvt/pe-anchor-runtime';
 import { ARCHIVE_OPENAPI_PATHS } from './archive-openapi';
 
@@ -1787,7 +1787,7 @@ export function buildOpenAPISpec(): Record<string, unknown> {
   for (const path of Object.keys(paths)) {
     if (path.startsWith('/v1/governance/')) { delete paths[path]; continue; }
     // Legacy PVTv8-era read surfaces are deliberately ABSENT from the runtime
-    // boundary's safe-read allowlist (wp2-runtime-boundary.ts) and 503 in every
+    // boundary's safe-read allowlist (runtime-boundary.ts) and 503 in every
     // posture — so they stay undocumented in every posture too.
     if (path === '/v1/pvt/stats' || path === '/v1/pvt/mint-history') { delete paths[path]; continue; }
     if (!launched

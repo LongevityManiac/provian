@@ -1,6 +1,6 @@
 import { Interface } from 'ethers';
-import { KERNEL_SETTLEMENT_ABI } from '../pvt/wp4/settlement-cycle-runner';
-import { SETTLEMENT_BATCH_SCHEMA, type SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
+import { KERNEL_SETTLEMENT_ABI } from '../pvt/settlement/settlement-cycle-runner';
+import { SETTLEMENT_BATCH_SCHEMA, type SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
 import { planSettlementIssuance, type SettlementIssuancePolicy } from './settlement-issuance';
 const a = (n: number) => `0x${n.toString(16).padStart(40, '0')}`;
 const h = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;

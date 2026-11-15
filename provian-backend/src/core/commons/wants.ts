@@ -39,7 +39,7 @@ export const COMMONS_WANTS_COLLECTION = 'commons_wants';
 /**
  * Size + page limits grouped into one `as const` object so a generic value (e.g. 100)
  * is never a bare module-scope literal — the T3 self-referential-control guard
- * (`wp11/cutover-hard-stops.ts findRedeclaredLiterals`) flags a TEST const that
+ * (`cutover/cutover-hard-stops.ts findRedeclaredLiterals`) flags a TEST const that
  * coincidentally shares a bare MODULE literal. Object-property RHS is not extracted by
  * that single-line parser, so grouping removes the false collision. Mirrors the O3
  * `EARNING_PROPOSAL_LIMITS` pattern.

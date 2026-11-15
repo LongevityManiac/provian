@@ -212,7 +212,7 @@ import {
   assertNoExposedKeyAsLiveValueRecipient,
   LIVE_VALUE_RECIPIENT_VARS,
 } from './core/config/live-value-recipients';
-import { createPvt9RuntimeBoundary } from './core/pvt/wp2-runtime-boundary';
+import { createPvt9RuntimeBoundary } from './core/pvt/runtime-boundary';
 import { preLaunchSurfaceGate } from './routes/middleware/pre-launch-surface-gate';
 import {
   consoleRequestCounterMiddleware,
@@ -2272,7 +2272,7 @@ app.get('/v1/relay/agent/:agentId/pe-activity', authenticate, async (req: Reques
 // - one corroboration mechanism, not two. The Witness 3 cross-witness
 // path uses the new `'github_webhook_attestation'` signal type, which
 // maps to corroboration_status `'service_grant_attested'` (recognized at
-// corroborated tier by the PVT9 claim inlet, `core/pvt/wp4/claim-inlet-source.ts`). The commit-hash
+// corroborated tier by the PVT9 claim inlet, `core/pvt/settlement/claim-inlet-source.ts`). The commit-hash
 // lookup helper used by the webhook handler is in
 // `core/witnesses/pe-lookup.ts`.
 
@@ -4832,7 +4832,7 @@ app.use('/v1/genesis/status', genesisStatusRouter);
 // --- PVT9 operations: the epoch keeper and the settlement run (both scheduled,) ---
 // Mounted here, alongside the other internal scheduler endpoints, and NOT under `/v1/pvt`
 // (which the runtime boundary boundary blocks wholesale). Neither route builds a signer or reads a key;
-// both delegate to `core/pvt/wp4/operator-runtime.ts`, the one module that does. The
+// both delegate to `core/pvt/settlement/operator-runtime.ts`, the one module that does. The
 // settlement run fires daily with a per-payee interval via Cloud Scheduler `provian-pvt9-settlement` (`0 12 * * *`,
 // epoch-aligned, ; the Genesis lane also settles daily via
 // `provian-pvt9-genesis-settlement`) and remains operator-invokable by hand.

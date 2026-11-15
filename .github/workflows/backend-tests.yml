@@ -68,9 +68,9 @@ jobs:
         working-directory: provian-backend
         run: >
           npx jest --silent
-          src/core/pvt/wp-ev/eligibility.legacyMintedBlock.test.ts
+          src/core/pvt/mint-claims/eligibility.legacyMintedBlock.test.ts
           src/core/decisions/forbidden-constructs.test.ts
-          src/core/pvt/wp4/standard-lane-recon-gate.test.ts
+          src/core/pvt/settlement/standard-lane-recon-gate.test.ts
 
   #  item 8: the installed-base compatibility guard. Runs on every PR (the
   # pre-push gate) AND nightly. It pins the cross-layer contracts the CURRENTLY

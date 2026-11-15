@@ -1176,7 +1176,7 @@ suite('PE meter ingest (Firestore emulator)', () => {
   it('item 10: a pre-meter eligible act migrates to act claims with its legacy claim ids, verifiable with no PE row left', async () => {
     const { generatePE } = await import('../agent-bank/pe-utils');
     const { retireLegacyPe } = await import('./legacy-migration');
-    const { deriveLegClaimId } = await import('../pvt/wp-ev/claim-id');
+    const { deriveLegClaimId } = await import('../pvt/mint-claims/claim-id');
     const { verifyMeterClaimMembers } = await import('./meter-settlement');
     // A real priced act, then the pre-meter state it would have had: its priced row in
     // pe_history, its sealed identity in an envelope, and no meter records.

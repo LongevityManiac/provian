@@ -14,7 +14,7 @@
  * fresh join emits exactly one PE; the idempotent re-run emits ZERO. If the
  * no-op guard were removed, the re-run would fall through to registerForCommons,
  * which throws "Already registered on the Commons" (the human-path behaviour,
- * asserted directly in profiles.wave4.test.ts).
+ * asserted directly in profiles.rejoin.test.ts).
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';

@@ -41,10 +41,10 @@ import {scanQueryUnordered,compareQueryDocuments} from '../provenance/query-page
 import stableStringify from 'json-stable-stringify';
 import type { DocumentReference, DocumentSnapshot, Firestore } from 'firebase-admin/firestore';
 import type { PEHistoryDocument } from '../../pe-history';
-import type { PayoutLegRole } from '../pvt/wp-ev/payout-legs';
+import type { PayoutLegRole } from '../pvt/mint-claims/payout-legs';
 import { EconomicAggregateWriter } from '../pvt/policy/economic-aggregate';
-import { registerClaim } from '../pvt/wp4/durable-settlement-store';
-import type { SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { registerClaim } from '../pvt/settlement/durable-settlement-store';
+import type { SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { actKeyIdentity, type MeterActKeyDoc } from './meter-act-key';
 import { actKeyOfPageAct, readBatchActPages } from './meter-act-pages';
 import { resolveActBaseClaims, resolveActTopupClaims } from './act-claims';

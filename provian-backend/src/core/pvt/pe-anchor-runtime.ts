@@ -5,7 +5,7 @@ import { CanonicalWallet } from '../onchain/canonical-wallet';
  * THE ONE module that constructs the PE-ANCHOR signer. Declared in
  * `mint-capability-guard.ts::SANCTIONED_MINT_SIGNER_FILES` a POSITIVE,
  * deliberate on-chain-write capability at a named location, exactly like the
- * settlement runtime's `wp4/operator-runtime.ts`. What this signer can and
+ * settlement runtime's `settlement/operator-runtime.ts`. What this signer can and
  * cannot do, stated precisely:
  *
  * - It signs `ProvianPEAnchor.anchorPEBatch` transactions on the

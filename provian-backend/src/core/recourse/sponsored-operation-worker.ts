@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { Transaction, keccak256 } from 'ethers';
 import type { Firestore, Transaction as FirestoreTransaction } from 'firebase-admin/firestore';
 import { acquireSignerLease, releaseSignerLease, listAllUnresolvedBatches, SETTLEMENT_CYCLES_COLLECTION,
-  SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+  SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { finalizedOwnerTransaction } from './transaction-finality';
 
 export interface SponsoredOperationPlan {

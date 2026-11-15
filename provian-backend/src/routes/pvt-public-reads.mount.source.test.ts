@@ -19,7 +19,7 @@
  * hand them a source that actually violates each one — rather than asserting a
  * property of its own string surgery. Source-text pinning is the established
  * convention here for exactly this situation: see
- * `wp11/ordinary-intake-wiring.source.test.ts` and
+ * `cutover/ordinary-intake-wiring.source.test.ts` and
  * `routes/pe-submit-mobile-attestation.source.test.ts`.
  */
 

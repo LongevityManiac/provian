@@ -1060,7 +1060,7 @@ function auditFrozenEvidenceAndScope(overlay) {
 }
 
 function auditRuntimeAndDiscovery(overlay) {
-  const boundary = readText('provian-backend/src/core/pvt/wp2-runtime-boundary.ts', overlay);
+  const boundary = readText('provian-backend/src/core/pvt/runtime-boundary.ts', overlay);
   auditInvariant(boundary.includes("isPathInNamespace(path, '/v1/pvt')"), 'runtime boundary does not fail closed over the PVT namespace');
   auditInvariant(!boundary.includes("path.startsWith('/v1/commons/forum')"), 'runtime boundary became a full Forum block');
   // the forum→Court escalation route is RETIRED (challenges resolve by burn-to-present
@@ -1177,7 +1177,7 @@ function auditRuntimeAndDiscovery(overlay) {
     auditInvariant(!boundary.includes(openedFragment), `-opened institution runtime is still blocked: ${openedFragment}`);
   }
 
-  const boundaryTest = readText('provian-backend/src/core/pvt/wp2-runtime-boundary.test.ts', overlay);
+  const boundaryTest = readText('provian-backend/src/core/pvt/runtime-boundary.test.ts', overlay);
   for (const proof of [
     "'/v1/pvt/accrual'",
     "'/v1/pvt/future-record-only-read'",
@@ -1360,7 +1360,7 @@ function auditRuntimeAndDiscovery(overlay) {
   // (the human post → accept → fund → complete path), so pinning jobs as
   // unavailable pinned a FALSEHOOD and forced the app to report a working
   // surface as broken. The five institutions still blocked by
-  // wp2-runtime-boundary.ts remain pinned here — keep this list in step with
+  // runtime-boundary.ts remain pinned here — keep this list in step with
   // that block list, never wider.
   // the Market is lit; the four still-blocked institutions stay pinned here.
   auditInvariant(feed.includes("unavailable_institutions: ['escrow', 'court', 'bonds', 'governance']"), 'Commons stats omit unavailable institution truth');
@@ -1939,13 +1939,13 @@ function runAdversarialSelfTests() {
   );
   addMutation(
     'allow unknown PVT paths',
-    'provian-backend/src/core/pvt/wp2-runtime-boundary.ts',
+    'provian-backend/src/core/pvt/runtime-boundary.ts',
     (source) => source.replace("return blocked('pvt_runtime');", 'return PASS;'),
     'block everything else',
   );
   addMutation(
     'block the full Forum',
-    'provian-backend/src/core/pvt/wp2-runtime-boundary.ts',
+    'provian-backend/src/core/pvt/runtime-boundary.ts',
     (source) => `${source}\nvoid "path.startsWith('/v1/commons/forum')";\n`,
     'full Forum block',
   );

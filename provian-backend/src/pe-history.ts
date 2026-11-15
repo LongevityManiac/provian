@@ -232,7 +232,7 @@ export interface PEHistoryDocument {
    * it and `classifySubmissionProvenance` derives the same answer from `attestation_verified`
    * plus the envelope's `integration_source`. A writer that states it must never state
    * `earner_signed` for an act the relay authored — that combination is reported as
-   * `contradictory` and refused. See `core/pvt/wp-ev/submission-provenance.ts`.
+   * `contradictory` and refused. See `core/pvt/mint-claims/submission-provenance.ts`.
    */
   submission_provenance?: 'earner_signed' | 'server_authored';
   beneficiary_wallet_id: string | null;   // Human wallet receiving surplus PVT

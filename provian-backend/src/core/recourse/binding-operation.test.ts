@@ -12,7 +12,7 @@ import { RECOURSE_COLLECTIONS, ownershipBindingMessage, type OwnershipBinding } 
 import { BINDING_OPERATIONS, REGISTRY_ABI, checkBindingOperation, queueBindingOperation,
   assertCheckedBindingOperation, readConfirmedBinding } from './binding-operation';
 import { executeBindingOperation, type BindingGasSigner, type BindingWorkerPorts } from './binding-worker';
-import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import type { ProtocolDeployment } from '../protocol/pointer';
 

@@ -34,8 +34,8 @@ import type { PEHistoryDocument } from '../../pe-history';
 import { EconomicAggregateWriter } from '../pvt/policy/economic-aggregate';
 import { CROSS_WITNESS_TAKEOVER_WINDOW_MS } from '../pvt/policy/monetary-accounting';
 import { adjustConsoleDispositionRollupInTransaction } from '../pvt/disposition-rollup';
-import { resolvePayee } from '../pvt/wp4/claim-inlet-source';
-import type { PayoutLegRole } from '../pvt/wp-ev/payout-legs';
+import { resolvePayee } from '../pvt/settlement/claim-inlet-source';
+import type { PayoutLegRole } from '../pvt/mint-claims/payout-legs';
 import {
   ACTOR_METER_TOTALS_COLLECTION,
   applyReleasedFinancialFact,

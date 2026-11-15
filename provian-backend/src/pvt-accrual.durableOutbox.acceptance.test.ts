@@ -100,7 +100,7 @@ import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   ORDINARY_ACCRUAL_REPLAY_SOURCE,
   buildOrdinaryAccrualIntake,
-} from './core/pvt/wp11/ordinary-accrual-intake';
+} from './core/pvt/cutover/ordinary-accrual-intake';
 import { ACTION_TYPE_MINT_RULES } from './core/pvt/activity-mint-limits';
 import { PROPOSED_ACTION_POLICY_ENTRIES } from './core/pvt/policy/proposed-action-policy';
 import { computeSubmitTimeEstimate } from './core/pvt/estimate';

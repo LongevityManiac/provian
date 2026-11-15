@@ -9,7 +9,7 @@ import { queueOwnerOperation, checkOwnerOperation, assertCheckedOwnerOperation, 
 import { RECOURSE_COLLECTIONS } from './ownership';
 import { executeOwnerOperation, type OwnerOperationSigner, type OwnerOperationWorkerPorts } from './owner-operation-worker';
 import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, SETTLEMENT_BATCHES_COLLECTION,
-  SETTLEMENT_BATCH_SCHEMA, SETTLEMENT_CYCLES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+  SETTLEMENT_BATCH_SCHEMA, SETTLEMENT_CYCLES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 const address = (byte: string) => `0x${byte.repeat(20)}`;
 const hash = (byte: string) => `0x${byte.repeat(32)}`;
 function operation(): RecoveryOwnerOperation {

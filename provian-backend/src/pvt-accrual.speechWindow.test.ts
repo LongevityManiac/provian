@@ -87,7 +87,7 @@ jest.mock('./core/pvt/policy/runtime-monetary-policy', () => {
 });
 
 import { recordPEAccrual } from './pvt-accrual';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './core/pvt/wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './core/pvt/cutover/ordinary-accrual-intake';
 import { SPEECH_WINDOW_BUDGETS_COLLECTION, SPEECH_WINDOW_RESERVATIONS_COLLECTION } from './core/pvt/speech-window-budget';
 
 const USER = 'wallet_aw_speech';

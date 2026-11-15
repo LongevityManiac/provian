@@ -63,7 +63,7 @@ const STATS_REPORT_INTERVAL_MS = 60_000; // Log stats every minute
  * · the longest counter this claim protects lives 90,000s (25h) — past that the
  * claim guards nothing at all and is pure residue;
  * · the durable-outbox replay horizon is TEN MINUTES
- * (`ORDINARY_ACCRUAL_REPLAY_GRACE_MS`, wp11/ordinary-accrual-replay.ts:103).
+ * (`ORDINARY_ACCRUAL_REPLAY_GRACE_MS`, cutover/ordinary-accrual-replay.ts:103).
  * Seven days is ~6.7x the first and ~1,000x the second. (Not imported from wp11:
  * the cache layer should not take a dependency on the replay driver to express a
  * safety margin.)

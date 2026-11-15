@@ -14,7 +14,7 @@
  * grant, an owner with no key yet) is reported and retried on the next run.
  */
 import admin from 'firebase-admin';
-import { CLAIM_LEDGER_COLLECTION } from '../src/core/pvt/wp4/durable-settlement-store';
+import { CLAIM_LEDGER_COLLECTION } from '../src/core/pvt/settlement/durable-settlement-store';
 import stableStringify from 'json-stable-stringify';
 import {
   PE_HISTORY,

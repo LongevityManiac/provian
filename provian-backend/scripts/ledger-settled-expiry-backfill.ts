@@ -14,7 +14,7 @@ import { singleScanQuery } from '../src/core/provenance/private-store';
  */
 import admin from 'firebase-admin';
 import { FieldPath } from 'firebase-admin/firestore';
-import { CLAIM_LEDGER_COLLECTION } from '../src/core/pvt/wp4/durable-settlement-store';
+import { CLAIM_LEDGER_COLLECTION } from '../src/core/pvt/settlement/durable-settlement-store';
 import { settledLedgerRowExpiry } from '../src/core/meter/ledger-retention';
 import { scriptDb } from './lib/script-db';
 

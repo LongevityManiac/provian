@@ -3,7 +3,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { createRecourseGasSigner } from './gas-signer';
 import { BREAK_DEPLOYMENTS, assertCheckedBreakDeployment } from './break-deployment-queue';
 import { executeBreakDeployment } from './break-deployment-worker';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 
 export async function runBreakDeploymentWorker(db: Firestore, env: NodeJS.ProcessEnv = process.env): Promise<{ id: string; status: string } | null> {
   if (!env.PVT9_SETTLEMENT_MINTER_KEY) throw Error('break_deployment_gas_signer_unavailable');

@@ -4,7 +4,7 @@ import { openChangeoverJournal, CHANGEOVER_STAGES, CHANGEOVER_ATTEMPTS } from '.
 import { openChangeoverFeeBudget } from '../../provian-backend/src/core/recourse/changeover-fees.ts';
 import { openHashAuthorityOperationStore, HASH_AUTHORITY_OPERATIONS } from '../../provian-backend/src/core/recourse/hash-authority-operation-store.ts';
 import { hashAccountCall, hashAccountIntentDigest } from '../../provian-backend/src/core/recourse/hash-account-data.ts';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/wp4/durable-settlement-store.ts';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/settlement/durable-settlement-store.ts';
 
 // Opt-in only. Existing production database, random test identities, actual
 // persistence adapters. Chain evidence is synthetic; no provider or real signer.

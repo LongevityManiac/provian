@@ -388,7 +388,7 @@ type records with no mint, enters the queue under its lane (<code>sovereign_hard
 <code>device_gateway_observer</code>), and earns from its signed row&#39;s effective time once the type is also
 granted for that lane (<code>core/pvt/policy/new-type-intake.ts</code>, <code>intake-signed-action-types.ts</code>).</p>
 <h3>4.3 Attestation tiers</h3>
-<p>The tier is <strong>evidence-derived</strong>, never claimed. Verified App Attest supplies the hardware-rooted 4.0× class, and so does a verified TPM, AWS Nitro, GCP Confidential Space, Azure or NVIDIA attestation whose launch measurement / PCR digest is one the relay pins for a signed Provian observer release (the measured observer, 2026-10-10: the platform produces the measurement when the program starts, so the operator cannot choose it; the pins come only from the signed release channel). Any other verified hardware report remains a presentation fact at the normal lane price (desktop Secure Enclave signing included). Registration follows the same rule. Tier affects <em>weight, never whether an act mints</em> (<code>wp-ev/eligibility.ts</code>). The exact bps
+<p>The tier is <strong>evidence-derived</strong>, never claimed. Verified App Attest supplies the hardware-rooted 4.0× class, and so does a verified TPM, AWS Nitro, GCP Confidential Space, Azure or NVIDIA attestation whose launch measurement / PCR digest is one the relay pins for a signed Provian observer release (the measured observer, 2026-10-10: the platform produces the measurement when the program starts, so the operator cannot choose it; the pins come only from the signed release channel). Any other verified hardware report remains a presentation fact at the normal lane price (desktop Secure Enclave signing included). Registration follows the same rule. Tier affects <em>weight, never whether an act mints</em> (<code>mint-claims/eligibility.ts</code>). The exact bps
 per tier are in <a href="#54-the-multiplier-tables">§5.4</a>.</p>
 <p><strong>Witness classes.</strong> Beside the tier, every sealed PE carries the class of witness that
 vouched for it: <code>hardware_rooted</code> · <code>chain_witnessed</code> · <code>forge_witnessed</code> · <code>relay_verified</code> ·
@@ -1300,7 +1300,7 @@ An unlinked agent keeps its full contributor share. Sealed history never reprice
 <li><strong>Frozen payout legs:</strong> a PE&#39;s legs are frozen once, at first registration —
 <code>pvt9_pe_split_v1/{pe_key}</code> is written with every leg in the same transaction as the leg rows,
 asserting that the bps sum to exactly 10,000 and the points to exactly the PE&#39;s total
-(<code>wp4/pe-split.ts</code>, <code>frozen-split-registration.ts</code>). Later changes to wallet or link
+(<code>settlement/pe-split.ts</code>, <code>frozen-split-registration.ts</code>). Later changes to wallet or link
 state never re-split it, and the PE counts as minted only when every frozen leg has settled.</li>
 <li><strong>Citations pay nothing.</strong> A <code>pe:</code> origin edge is a fact in the one graph, not a
 transfer: it moves no share, delays no mint, and adds zero to any multiplier.</li>
@@ -2681,7 +2681,7 @@ carry <code>verified: true</code>.</p>
 <p><strong>Who reaches what.</strong> All five institution contracts are deployed and verified on Base, and the
 agent rails are live (create/post paths answer 401 auth-required, never 503). What stays refused to
 the human surface is exactly two Commons namespaces — <code>court</code> and <code>governance</code> — the single source
-of truth being <code>BLOCKED_COMMONS_INSTITUTIONS</code> in <code>core/pvt/wp2-runtime-boundary.ts</code> (the <code>feed.ts</code>
+of truth being <code>BLOCKED_COMMONS_INSTITUTIONS</code> in <code>core/pvt/runtime-boundary.ts</code> (the <code>feed.ts</code>
 catalog is test-bound to it). The Court is reachable (filing open) but seats no panel until ≥15
 qualified arbitrators exist; Promises and Pools are open (<code>ENABLE_PROMISES</code> / <code>ENABLE_POOLS</code> on in
 production); economic governance is inert (its router is imported by nothing). The human surface
@@ -5443,7 +5443,7 @@ verified at the cited site):</p>
 batch prices <code>software_verified</code> at record time on <code>input_hash &amp;&amp; output_hash</code>
 (<code>core/meter/device-act.ts</code>); the settlement-time projection upgrades on
 <code>input_hash &amp;&amp; output_hash &amp;&amp; model_id</code> (<code>economic-projection.ts</code>); the work-evidence check
-counts <code>input_hash &amp;&amp; output_hash &amp;&amp; pack_hash</code> (<code>wp-ev/eligibility.ts</code>); and the
+counts <code>input_hash &amp;&amp; output_hash &amp;&amp; pack_hash</code> (<code>mint-claims/eligibility.ts</code>); and the
 <code>pe-weight-framework.ts</code> prose and the <code>routes/conformance.ts</code> tier text describe
 <code>input_hash + model_id + replication_pack_hash</code>.</li>
 <li><code>badges.ts</code> defines 13 badges; <code>signal</code> and <code>governed</code> are structurally unearnable today (no

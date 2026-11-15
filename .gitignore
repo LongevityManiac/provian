@@ -154,4 +154,3 @@ provian-backend/data/jurisdiction/*.mmdb
 provian-backend/data/jurisdiction/geo-metadata.json
 
 # Generated loopback-only simulator configuration.
-scripts/recourse/native/config.generated.json

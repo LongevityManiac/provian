@@ -89,7 +89,7 @@ export const CLOSED_PRE_LAUNCH_PREFIXES: readonly string[] = [
  *
  * /v1/commons — the human-jobs pay/hire path (post → accept → fund → complete),
  * plus the app's forum/profile Commons reads. NOTE: the runtime
- * boundary (wp2-runtime-boundary.ts) independently 503s the Commons
+ * boundary (runtime-boundary.ts) independently 503s the Commons
  * ECONOMIC institutions — only `/v1/commons/jobs` is opened there
  *; market/bank/court/bonds/governance stay 503 even here.
  * /v1/contract-registry — CryptoTransactionClassifier's known-contract supplement.

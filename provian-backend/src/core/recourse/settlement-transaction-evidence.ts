@@ -1,4 +1,4 @@
-import type { BatchAttempt } from '../pvt/wp4/durable-settlement-store';
+import type { BatchAttempt } from '../pvt/settlement/durable-settlement-store';
 import { breakDeploymentChain } from './break-deployment-queue';
 import { readMembershipReceipt, type VerifiedMembershipReceipt } from './membership-receipt';
 import { membershipJournalHash } from './private-membership-journal';

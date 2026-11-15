@@ -1,6 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { Interface } from 'ethers';
-import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getAgreedBaseLogs } from '../onchain/economic-discovery';
 import { PRIVATE_ISSUANCE_BATCHES } from './issuance-lock';

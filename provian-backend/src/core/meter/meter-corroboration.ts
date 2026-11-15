@@ -17,8 +17,8 @@ import type { Firestore } from 'firebase-admin/firestore';
 import type { PEHistoryDocument } from '../../pe-history';
 import { corroborationLiftedRecordPointsAtomic } from '../pvt/policy/economic-projection';
 import { attestationEnhancementWindowMsFor } from '../pvt/policy/monetary-accounting';
-import { topupDeltasFor } from '../pvt/wp4/attestation-topup-inlet-source';
-import type { PayoutLegRole } from '../pvt/wp-ev/payout-legs';
+import { topupDeltasFor } from '../pvt/settlement/attestation-topup-inlet-source';
+import type { PayoutLegRole } from '../pvt/mint-claims/payout-legs';
 import {
   ACTOR_METER_DAY_LIFETIME_MS,
   ACTOR_METER_TOTALS_COLLECTION,

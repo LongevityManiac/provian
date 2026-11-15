@@ -7,7 +7,7 @@
  * - a burn cannot be consumed twice across the provisional → final / revoked transition;
  * - a FINAL burn can never be revoked;
  * - an RPC error is waited out, never read as failure — at ANY age (past the deadline the
- * burn is stalled and alarmed, never revoked; see also burn-finality.d487a.test.ts).
+ * burn is stalled and alarmed, never revoked; see also burn-finality.successor.test.ts).
  */
 import { createFakeFirestore, type FakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import type { Firestore } from 'firebase-admin/firestore';

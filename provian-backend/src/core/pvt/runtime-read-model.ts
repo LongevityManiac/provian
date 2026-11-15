@@ -8,9 +8,9 @@ import { hashProposedMonetaryPolicyTemplate } from './policy/proposed-monetary-p
 import { WITNESS_CLASSES, classAdmissionProfile, PROPOSED_EVIDENCE_CLASS_BASES_BPS } from './policy/evidence-class';
 import { genesisArmedWindow } from './genesis-award-state-machine';
 import { readPvt9SettlementFactors } from './pvt9-settlement-factors';
-import { evaluateCapClock } from './wp4/cap-clock';
-import { readCapClockObservation } from './wp4/settlement-chain-adapter';
-import { resolvePvt9Target } from './wp4/operator-runtime';
+import { evaluateCapClock } from './settlement/cap-clock';
+import { readCapClockObservation } from './settlement/settlement-chain-adapter';
+import { resolvePvt9Target } from './settlement/operator-runtime';
 import { projectEarningTypes } from './policy/earning-type-projection';
 import { cache } from '../../cache';
 import { readConsoleCounters } from '../observability/request-counters';

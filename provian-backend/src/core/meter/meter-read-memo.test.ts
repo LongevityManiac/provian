@@ -5,7 +5,7 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { BATCH_INVARIANT_READ_COLLECTIONS, batchPricingReadDb, memoizedReadDb } from './meter-ingest';
 import { METER_ACT_KEYS_COLLECTION, METER_HELD_ACTS_COLLECTION, METER_PENDING_CLAIMS_COLLECTION, METER_DEVICE_TIPS_COLLECTION } from './meter-store';
-import { CLAIM_LEDGER_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { CLAIM_LEDGER_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 import { COUNTERPARTY_PAIRS_COLLECTION } from './counterparty-pairs';
 
 /** A store that counts every point read and query it serves. */

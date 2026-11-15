@@ -104,7 +104,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from './pvt-accrual';
 import { deviceActToAccrualParams, type DeviceBatchLane } from './core/meter/device-act';
 import type { ActRecord } from './core/meter/meter-wire';
 import type { DeviceDocument } from './routes/middleware/device-auth';
-import { buildOrdinaryAccrualIntake, createOrdinaryAccrualIntakeInTransaction } from './core/pvt/wp11/ordinary-accrual-intake';
+import { buildOrdinaryAccrualIntake, createOrdinaryAccrualIntakeInTransaction } from './core/pvt/cutover/ordinary-accrual-intake';
 import { DEVICE_GATEWAY_OBSERVER_SOURCE, OBSERVER_PLUGIN_SOURCE, isNeverSeenActionType, newTypeIntakeCache } from './core/pvt/policy/new-type-intake';
 import { PENDING_POLICY_COLLECTION, actionPolicyDocumentId } from './core/pvt/policy/pending-policy-queue';
 

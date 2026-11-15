@@ -46,7 +46,7 @@
 
 import * as crypto from 'crypto';
 import type { RecordPEAccrualParams } from '../../pvt-accrual';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 import { HUMAN_APPROVAL_ACTION_TYPE, APPROVAL_REQUEST_ID_RE, type HumanApprovalDecision } from '../pe/human-approval';
 
 declare const verifiedApprovalRequestBrand: unique symbol;

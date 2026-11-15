@@ -991,7 +991,7 @@ export interface AgentBankDeps {
      * against the committed intake row (`verifyOrdinaryAccrualIntakeReplaySource`)
      * and refuses on any mismatch, so passing it cannot manufacture durability.
      */
-    durableReplaySource?: import('../pvt/wp11/ordinary-accrual-intake').OrdinaryAccrualReplaySource;
+    durableReplaySource?: import('../pvt/cutover/ordinary-accrual-intake').OrdinaryAccrualReplaySource;
     economicSnapshot?: import('../pvt/policy/monetary-accounting').RecordEconomicSnapshot | null;
     ownerType?: 'human' | 'agent';
     walletAddress?: string | null;

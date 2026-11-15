@@ -7,8 +7,8 @@ import crypto from 'crypto';
 import { describe, it, expect } from '@jest/globals';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { CLAIM_LEDGER_COLLECTION, claimKeyOf } from '../pvt/wp4/durable-settlement-store';
-import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../pvt/wp-ev/eligibility';
+import { CLAIM_LEDGER_COLLECTION, claimKeyOf } from '../pvt/settlement/durable-settlement-store';
+import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../pvt/mint-claims/eligibility';
 import { COUNTERPARTY_PAIRS_COLLECTION, counterpartyPairDocId } from './counterparty-pairs';
 import {
   classifyLegacyPe,

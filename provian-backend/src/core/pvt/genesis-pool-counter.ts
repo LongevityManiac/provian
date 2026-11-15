@@ -28,7 +28,7 @@
  * authority, reads no key, sends no transaction, and has no configuration. To
  * undo it, revert the commit.
  *
- * SCANNER CONTRACT: `wp11/c6-downgrade-evidence.ts` re-derives, on every test
+ * SCANNER CONTRACT: `cutover/c6-downgrade-evidence.ts` re-derives, on every test
  * run, that no writer of the counter decrements. Every remaining write site is
  * textually an addition for that reason. Do not route a write through a helper
  * that hides the direction from that scan — the scan is the thing that keeps

@@ -4,7 +4,7 @@ import type { Firestore, DocumentSnapshot } from 'firebase-admin/firestore';
 import {
   acquireSignerLease, releaseSignerLease, listAllUnresolvedBatches,
   SETTLEMENT_SIGNER_LEASES_COLLECTION, SETTLEMENT_CYCLES_COLLECTION, type SettlementDb,
-} from '../pvt/wp4/durable-settlement-store';
+} from '../pvt/settlement/durable-settlement-store';
 
 export const CHANGEOVER_STAGES = 'recourse_changeover_stages_v1';
 export const CHANGEOVER_ATTEMPTS = 'recourse_changeover_attempts_v1';

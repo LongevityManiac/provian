@@ -14,7 +14,7 @@
  * screen from doing the same. This is the mechanical detector.
  *
  * Shape deliberately mirrors `findRedeclaredLiterals` in the backend's
- * `wp11/cutover-hard-stops.ts` a PURE function over `(path, source)` pairs, so
+ * `cutover/cutover-hard-stops.ts` a PURE function over `(path, source)` pairs, so
  * the caller — including a negative control planting a deliberate violation —
  * controls the corpus entirely. No filesystem access lives in this module,
  * which also keeps `node:fs` out of anything the RN bundle can reach.

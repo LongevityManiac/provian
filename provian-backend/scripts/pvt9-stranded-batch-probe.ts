@@ -27,8 +27,8 @@
 import { writeFileSync } from 'node:fs';
 import admin from 'firebase-admin';
 import { Contract, JsonRpcProvider } from 'ethers';
-import { resolvePvt9Target } from '../src/core/pvt/wp4/operator-runtime';
-import { KERNEL_CLAIM_SETTLED_ABI, KERNEL_OBSERVATION_ABI } from '../src/core/pvt/wp4/settlement-chain-adapter';
+import { resolvePvt9Target } from '../src/core/pvt/settlement/operator-runtime';
+import { KERNEL_CLAIM_SETTLED_ABI, KERNEL_OBSERVATION_ABI } from '../src/core/pvt/settlement/settlement-chain-adapter';
 import {
   readAgreedBaseBlockHash,
   readAgreedBaseHead,
@@ -43,7 +43,7 @@ import {
   HELD_CLAIM_RECHECK_PER_RUN,
   type MinedReceipt,
   type SettlementFinalityReader,
-} from '../src/core/pvt/wp4/settlement-cycle-runner';
+} from '../src/core/pvt/settlement/settlement-cycle-runner';
 import {
   CLAIM_LEDGER_COLLECTION,
   SETTLEMENT_BATCHES_COLLECTION,
@@ -52,7 +52,7 @@ import {
   UNRESOLVED_BATCH_STATUSES,
   type SettlementBatchDoc,
   type SettlementCycleDoc,
-} from '../src/core/pvt/wp4/durable-settlement-store';
+} from '../src/core/pvt/settlement/durable-settlement-store';
 import { scriptDb } from './lib/script-db';
 
 function arg(name: string): string | null {

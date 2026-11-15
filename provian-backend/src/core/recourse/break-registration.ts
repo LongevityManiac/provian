@@ -7,7 +7,7 @@ import type { OwnerOperationChain } from './owner-operation-queue';
 import { executeSponsoredOperation, type SponsoredOperationSigner } from './sponsored-operation-worker';
 import { finalizedOwnerTransaction } from './transaction-finality';
 import { createRecourseGasSigner } from './gas-signer';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 
 export const BREAK_REGISTRATIONS = 'recourse_break_registrations_v1';
 const abi = new Interface(['function ownerAuthorization() view returns(address)',

@@ -48,12 +48,12 @@ import { COUNTERPARTY_PAIRS_COLLECTION, counterpartyPairDocId, outboundCounterpa
 import { IDENTITY_ACT_TYPES } from './identity-acts';
 import { actKeyIdentity, type MeterActKeyDoc, type MeterActFacts } from './meter-act-key';
 import { buildPendingClaim, meterActClaimId, meterActClaimKey, type MeterActLeg } from './meter-claims';
-import { CLAIM_LEDGER_COLLECTION, claimKeyOf } from '../pvt/wp4/durable-settlement-store';
-import { resolvePayee, sealedIdentityOf } from '../pvt/wp4/claim-inlet-source';
+import { CLAIM_LEDGER_COLLECTION, claimKeyOf } from '../pvt/settlement/durable-settlement-store';
+import { resolvePayee, sealedIdentityOf } from '../pvt/settlement/claim-inlet-source';
 import { memoizedSettlementDb } from './meter-ingest';
 import { CROSS_WITNESS_TAKEOVER_WINDOW_MS } from '../pvt/policy/monetary-accounting';
-import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../pvt/wp-ev/eligibility';
-import { PAYOUT_LEG_ROLES, type PayoutLegRole } from '../pvt/wp-ev/payout-legs';
+import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../pvt/mint-claims/eligibility';
+import { PAYOUT_LEG_ROLES, type PayoutLegRole } from '../pvt/mint-claims/payout-legs';
 import { COMMONS_COLLECTIONS } from '../commons/types';
 import {
   ACTOR_METER_TOTALS_COLLECTION,

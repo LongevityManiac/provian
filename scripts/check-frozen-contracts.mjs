@@ -2,7 +2,7 @@
 /**
  * Refuse to COMMIT a frozen contract whose bytes are not the pinned bytes.
  *
- * WHY THIS EXISTS. `scripts/wp-mutation-harness.mjs` mutates contract sources IN
+ * WHY THIS EXISTS. `scripts/mutation-harness.mjs` mutates contract sources IN
  * PLACE and restores them afterwards. During that window the worktree genuinely
  * contains a mutated PVT9 kernel, and a concurrent `git add -A` captures it. That
  * happened once this project — it was caught by hand, restored, and amended. "Be

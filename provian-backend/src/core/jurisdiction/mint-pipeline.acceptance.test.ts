@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createFakeFirestore, type FakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import type { BeneficiaryCacheEntry } from '../pvt/beneficiary';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from '../pvt/wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from '../pvt/cutover/ordinary-accrual-intake';
 
 let mockDb: FakeFirestore;
 jest.mock('firebase-admin', () => {
@@ -50,7 +50,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { observeWalletSession } from './mint-compliance';
 import { INITIAL_JURISDICTION_POLICIES } from './jurisdiction-policy';
 import { meterActRow } from '../pvt/__test-helpers__/meter-acts';
-import { buildOrdinaryAccrualIntake, ORDINARY_ACCRUAL_INTAKE_COLLECTION } from '../pvt/wp11/ordinary-accrual-intake';
+import { buildOrdinaryAccrualIntake, ORDINARY_ACCRUAL_INTAKE_COLLECTION } from '../pvt/cutover/ordinary-accrual-intake';
 const ADDRESS = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const CP = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 beforeEach(() => {

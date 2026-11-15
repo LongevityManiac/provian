@@ -465,11 +465,11 @@ async function scanStorage(db: FirebaseFirestore.Firestore, model: IndexModel, d
 }
 
 // ─── fake chain + verifier (the shape of settlement-cycle-runner.test.ts's mini-kernel) ──
-type CycleRunner = typeof import('../pvt/wp4/settlement-cycle-runner');
-type ChainAdapter = import('../pvt/wp4/settlement-cycle-runner').SettlementChainAdapter;
-type Observation = import('../pvt/wp4/settlement-cycle-runner').CycleChainObservation;
-type Receipt = import('../pvt/wp4/settlement-cycle-runner').MinedReceipt;
-type SignableTx = import('../pvt/wp4/settlement-cycle-runner').SignableTransaction;
+type CycleRunner = typeof import('../pvt/settlement/settlement-cycle-runner');
+type ChainAdapter = import('../pvt/settlement/settlement-cycle-runner').SettlementChainAdapter;
+type Observation = import('../pvt/settlement/settlement-cycle-runner').CycleChainObservation;
+type Receipt = import('../pvt/settlement/settlement-cycle-runner').MinedReceipt;
+type SignableTx = import('../pvt/settlement/settlement-cycle-runner').SignableTransaction;
 
 const H32 = (n: number): string => `0x${n.toString(16).padStart(64, '0')}`;
 const ADDR = (n: number): string => `0x${n.toString(16).padStart(40, '0')}`;
@@ -711,7 +711,7 @@ suite('PE meter — measured Firestore cost of an Atlas-sized agent (emulator)',
     model = loadIndexModel();
     wire = await import('./meter-wire');
     sealed = await import('./sealed-box');
-    runner = await import('../pvt/wp4/settlement-cycle-runner');
+    runner = await import('../pvt/settlement/settlement-cycle-runner');
     const { Interface } = await import('ethers');
     kernel = new FakeKernel(new Interface(runner.KERNEL_SETTLEMENT_ABI as unknown as string[]), () => simNow, Math.floor(START / 1000) - 3_600);
 
@@ -979,23 +979,23 @@ suite('PE meter — measured Firestore cost of an Atlas-sized agent (emulator)',
   async function settle(): Promise<Record<string, unknown>> {
     const { runMeterClaimInlet, createMeterClaimVerifier } = await import('./meter-settlement');
     const { isMeterClaimKey } = await import('./meter-claims');
-    const store = await import('../pvt/wp4/durable-settlement-store');
-    const { cycleConfig } = await import('../pvt/wp4/operator-runtime');
-    const { resolveEffectiveCycleId } = await import('../pvt/wp4/cycle-supersede');
-    const { createFirestoreCandidateSource } = await import('../pvt/wp4/claim-inlet-source');
-    const { createGenesisAnchorResolver } = await import('../pvt/wp4/genesis-inlet-source');
-    const { testOnlyAdmittedStandardLaneVerdict } = await import('../pvt/wp4/standard-lane-recon-gate');
-    const { computeSettlementDigest, hashStandardClaims, hashGenesisClaims, SettlementLane } = await import('../pvt/wp-ev/settlement-batch');
-    type SDb = import('../pvt/wp4/durable-settlement-store').SettlementDb;
+    const store = await import('../pvt/settlement/durable-settlement-store');
+    const { cycleConfig } = await import('../pvt/settlement/operator-runtime');
+    const { resolveEffectiveCycleId } = await import('../pvt/settlement/cycle-supersede');
+    const { createFirestoreCandidateSource } = await import('../pvt/settlement/claim-inlet-source');
+    const { createGenesisAnchorResolver } = await import('../pvt/settlement/genesis-inlet-source');
+    const { testOnlyAdmittedStandardLaneVerdict } = await import('../pvt/settlement/standard-lane-recon-gate');
+    const { computeSettlementDigest, hashStandardClaims, hashGenesisClaims, SettlementLane } = await import('../pvt/mint-claims/settlement-batch');
+    type SDb = import('../pvt/settlement/durable-settlement-store').SettlementDb;
     const sdb = db as unknown as SDb;
 
     setPhase('settle_inlet');
-    const { payeeSettlementDue } = await import('../pvt/wp4/payee-settlement-interval');
+    const { payeeSettlementDue } = await import('../pvt/settlement/payee-settlement-interval');
     const due = payeeSettlementDue(db, SETTLE_EVERY_DAYS, simNow);
     const inlet = await runMeterClaimInlet(db, { nowMs: simNow, payeeDue: due });
     setPhase('settle_cycle');
     const affirmedDigests = new Set<string>();
-    const approver: import('../pvt/wp4/batch-approval').BatchApproverAdapter = {
+    const approver: import('../pvt/settlement/batch-approval').BatchApproverAdapter = {
       kernelAddress: KERNEL,
       chainId: 8453n,
       isAffirmed: async (digest, lane) => affirmedDigests.has(`${lane}:${digest.toLowerCase()}`),
@@ -1013,7 +1013,7 @@ suite('PE meter — measured Firestore cost of an Atlas-sized agent (emulator)',
         return d;
       },
     };
-    const deps: import('../pvt/wp4/settlement-cycle-runner').CycleRunnerDeps = {
+    const deps: import('../pvt/settlement/settlement-cycle-runner').CycleRunnerDeps = {
       db: sdb,
       chain: kernel,
       now: () => simNow,

@@ -15,8 +15,8 @@ import { configuredIdentityAttestor,assertIdentityAttestation } from './identity
 import { PRIVATE_ISSUANCE_ADDRESSES as A,PRIVATE_ISSUANCE_BATCHES as B } from './issuance-lock';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
-import { SETTLEMENT_BATCHES_COLLECTION as P } from '../pvt/wp4/durable-settlement-store';
-import { KERNEL_OBSERVATION_ABI } from '../pvt/wp4/settlement-chain-adapter';
+import { SETTLEMENT_BATCHES_COLLECTION as P } from '../pvt/settlement/durable-settlement-store';
+import { KERNEL_OBSERVATION_ABI } from '../pvt/settlement/settlement-chain-adapter';
 import { RECOURSE_POOL_ABI } from './pool-abi';
 import { joinPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';

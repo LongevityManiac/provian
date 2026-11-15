@@ -21,7 +21,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake-firestore';
 import type { BeneficiaryCacheEntry } from './beneficiary';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 let mockDb: FakeFirestore;
 jest.mock('firebase-admin', () => {
@@ -67,9 +67,9 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 // eslint-disable-next-line import/first
-import { PVT9_ELIGIBILITY_CUT_LINE_MS } from './wp-ev/eligibility';
+import { PVT9_ELIGIBILITY_CUT_LINE_MS } from './mint-claims/eligibility';
 
 /** Post cut-line, so the row is not fenced out as legacy. */
 const T0 = PVT9_ELIGIBILITY_CUT_LINE_MS + 10 * 24 * 60 * 60 * 1000;

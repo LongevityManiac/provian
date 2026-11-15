@@ -128,7 +128,7 @@ describe('PVT9 arming inputs — loadPvt9ArmingInputs reads every value from the
   // . Every existing guard on "epochZeroStartsAt is DERIVED, not a
   // second copy" is INDIRECT: the equality tests above pass identically if the
   // module holds a hardcoded literal that happens to equal the current window, and
-  // `scanForEpochZeroDefinitions()` (cutover-wp12r2.test.ts) is a filesystem regex
+  // `scanForEpochZeroDefinitions()` (cutover-reader-throws.test.ts) is a filesystem regex
   // over date-shaped literals — a proxy, not the behaviour. This test proves the
   // behaviour directly: MOVE the window underneath the module, re-import it, and
   // require the derivation to follow. A hardcoded literal keeps the old date and

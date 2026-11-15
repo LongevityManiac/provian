@@ -26,7 +26,7 @@ import type { PEHistoryDocument } from '../../pe-history';
 import { hashRecordEconomicSnapshot } from './policy/monetary-accounting';
 import { assertBeneficiaryRoutingEvidence } from './beneficiary-routing';
 import { resolveCommittedBeneficiaryAddress } from './mint-recipient-resolver';
-import type { PayeeRefusalReason } from './wp4/claim-inlet-source';
+import type { PayeeRefusalReason } from './settlement/claim-inlet-source';
 import type { HeldActOutcome } from '../meter/held-acts';
 import { HELD_ACT_SWEEP_CURSOR_COLLECTION, walkHeldActs } from './held-act-sweep';
 

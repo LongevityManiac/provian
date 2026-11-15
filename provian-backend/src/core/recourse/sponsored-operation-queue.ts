@@ -1,6 +1,6 @@
 import { Transaction, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 import type { SponsoredOperationAdapter, SponsoredOperationPlan } from './sponsored-operation-worker';
 
 export interface SponsoredOperationStatus { readonly id: string; readonly status: 'queued' | 'submitted' | 'confirmed' | 'failed'; readonly transactionHash: string | null; }

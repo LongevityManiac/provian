@@ -42,7 +42,7 @@
  * GCP_PROJECT_ID=provian-ai npx tsx scripts/reclassify-test-genesis-pes.ts --apply # LIVE
  */
 
-import { claimKeyOf } from '../src/core/pvt/wp4/durable-settlement-store';
+import { claimKeyOf } from '../src/core/pvt/settlement/durable-settlement-store';
 import { canTransitionMintDisposition } from '../src/core/pvt/policy/monetary-accounting';
 
 // =============================================================================

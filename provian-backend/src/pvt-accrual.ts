@@ -78,7 +78,7 @@ import { pendingPolicyObservationSource, shouldObservePendingPolicy } from './co
 import {
   verifyOrdinaryAccrualIntakeReplaySource,
   type OrdinaryAccrualReplaySource,
-} from './core/pvt/wp11/ordinary-accrual-intake';
+} from './core/pvt/cutover/ordinary-accrual-intake';
 import {
   detectSameOwnerTransfer,
   isResolvableCounterpartyAddress,

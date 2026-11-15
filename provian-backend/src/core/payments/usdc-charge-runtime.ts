@@ -4,7 +4,7 @@
  * price read, and the clock.
  */
 import type { Firestore } from 'firebase-admin/firestore';
-import { RPC_ENV } from '../pvt/wp4/operator-runtime';
+import { RPC_ENV } from '../pvt/settlement/operator-runtime';
 import { createUsdcChargeChain, USDC_CHARGE_GAS_KEY_ENV } from './usdc-charge-chain';
 import type { UsdcChargeChain } from './usdc-charge';
 

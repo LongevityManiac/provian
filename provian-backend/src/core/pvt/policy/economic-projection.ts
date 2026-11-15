@@ -28,7 +28,7 @@ import { FieldPath } from 'firebase-admin/firestore';
 import type { Firestore, Query, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import type { PEHistoryDocument } from '../../../pe-history';
 import { getWeekStart } from '../week-start';
-import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../wp-ev/eligibility';
+import { PVT9_ELIGIBILITY_CUT_LINE_MS } from '../mint-claims/eligibility';
 import {
   computeSettlement,
   disclosedRationalFactor,
@@ -127,7 +127,7 @@ export function atomicToSafeDisplayNumber(atomic: string): number {
  * `pe_history` is the MUTABLE enrichment record, so the snapshot is trusted only when it
  * re-hashes to the `economic_snapshot_hash` sealed beside it AND is bound to this very PE
  * (peId / actionType / recordedAtMs). Exported as THE one verified-read of the seal — the
- * settlement projection (`wp4/claim-inlet-source.ts`) reads the record-time evidence verdict
+ * settlement projection (`settlement/claim-inlet-source.ts`) reads the record-time evidence verdict
  * through this same function, so a tampered or transplanted snapshot is no snapshot anywhere.
  */
 /**

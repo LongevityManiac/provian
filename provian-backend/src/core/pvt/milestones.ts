@@ -6,7 +6,7 @@
  */
 
 import type { AgentBankDeps, PVTMilestonesDocument } from '../agent-bank/types';
-import { ARMED_ENV, ARMING_TOKEN } from './wp4/operator-runtime';
+import { ARMED_ENV, ARMING_TOKEN } from './settlement/operator-runtime';
 
 /**
  * `minting_active` RECONCILED TO THE ARMED TRUTH (B10/ sweep).

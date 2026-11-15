@@ -16,7 +16,7 @@ import {readGenesisActivation} from './genesis-activation-store';
  * Scheduled by the `provian-genesis-retention-backfill` cron (F-A1-2,
  * `/v1/internal/scheduler/genesis-retention-backfill`) so a row retained after a
  * transient activation-read failure is promoted and minted without a human run;
- * the operator script (scripts/wp12-genesis-retention-backfill.ts) remains for
+ * the operator script (scripts/genesis-retention-backfill.ts) remains for
  * manual invocation.
  */
 import type { DocumentReference, Firestore, Transaction } from 'firebase-admin/firestore';

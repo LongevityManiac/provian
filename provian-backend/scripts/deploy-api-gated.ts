@@ -13,7 +13,7 @@
  * a commit the runtime is not running, which flips an ADMITTING gate to refusing.
  * "The report looks stale, let me refresh it" is the dangerous instinct.
  *
- * The ordering rules live in `src/core/pvt/wp4/deploy-gate-ordering.ts` and are
+ * The ordering rules live in `src/core/pvt/settlement/deploy-gate-ordering.ts` and are
  * imported here, so the rules this script EXECUTES are the ones the jest suite
  * and the mutation battery ASSERT.
  *
@@ -39,12 +39,12 @@ import {
   DEPLOY_SEQUENCE,
   judgeDeployStep,
   judgeFinalState,
-} from '../src/core/pvt/wp4/deploy-gate-ordering';
-import type { DeployGateState, DeployStep } from '../src/core/pvt/wp4/deploy-gate-ordering';
+} from '../src/core/pvt/settlement/deploy-gate-ordering';
+import type { DeployGateState, DeployStep } from '../src/core/pvt/settlement/deploy-gate-ordering';
 import {
   RECONCILIATION_CURRENT_DOC,
   RECONCILIATION_REPORTS_COLLECTION,
-} from '../src/core/pvt/wp4/standard-lane-recon-gate';
+} from '../src/core/pvt/settlement/standard-lane-recon-gate';
 import { scriptDb } from './lib/script-db';
 import crypto from 'crypto';
 import { judgeReleaseFreshness, type ReleaseFreshnessFacts } from '../src/core/deployment/release-freshness';
@@ -299,7 +299,7 @@ async function main(): Promise<void> {
           // C6 downgrade). C12 has also been permanently failing since.
           // So the artifact's validity is the test, not the exit status — the
           // publisher re-derives its digest and refuses a bad one anyway.
-          shell('npx', ['ts-node', 'scripts/wp11-cutover-dry-run.ts',
+          shell('npx', ['ts-node', 'scripts/cutover-reconciliation-run.ts',
             '--cut-line', CUT_LINE, '--rpc', RPC], { tolerateExit: true });
           if (EXECUTE && artifactBoundHead() === null) {
             console.error('\nREFUSED: the dry run produced no readable artifact.');
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
             process.exitCode = 1;
             return;
           }
-          shell('npx', ['ts-node', 'scripts/wp11-publish-reconciliation-report.ts',
+          shell('npx', ['ts-node', 'scripts/publish-reconciliation-report.ts',
             p ?? '<artifact>']);
           break;
         }
@@ -361,7 +361,7 @@ async function main(): Promise<void> {
   }
   console.log('\n=== deploy complete, gate pair intact, release fresh ===');
   console.log(`  published report and deployed image both name ${head.slice(0, 12)}…`);
-  console.log(' verify: npx ts-node scripts/wp4-standard-lane-gate-probe.ts');
+  console.log(' verify: npx ts-node scripts/standard-lane-gate-check.ts');
   console.log('  NOTE: probe BEFORE the stamp is reset, or it reads the local null stamp');
   console.log('        and falsely refuses runtime_tree_unstamped.');
 }

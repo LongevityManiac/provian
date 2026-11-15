@@ -11,8 +11,8 @@
  */
 
 import * as admin from 'firebase-admin';
-import { OperatorRefusal, runEpochKeeperRuntime } from '../src/core/pvt/wp4/operator-runtime';
-import type { SettlementDb } from '../src/core/pvt/wp4/durable-settlement-store';
+import { OperatorRefusal, runEpochKeeperRuntime } from '../src/core/pvt/settlement/operator-runtime';
+import type { SettlementDb } from '../src/core/pvt/settlement/durable-settlement-store';
 import { scriptDb } from './lib/script-db';
 
 async function main(): Promise<void> {

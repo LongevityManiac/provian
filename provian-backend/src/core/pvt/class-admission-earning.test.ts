@@ -6,7 +6,7 @@ import {
   isUnnamedActionTypeAtRecordTime,
   mobileLaneWitnessClass,
 } from './class-admission-earning';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 import { WITNESSED_CLASSES } from './policy/evidence-class';
 import { materializeProposedMonetaryPolicy } from './policy/runtime-monetary-policy';
 

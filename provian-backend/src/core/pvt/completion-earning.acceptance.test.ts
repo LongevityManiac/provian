@@ -53,7 +53,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake-firestore';
 import type { BeneficiaryCacheEntry } from './beneficiary';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 let mockDb: FakeFirestore;
 jest.mock('firebase-admin', () => {
@@ -118,7 +118,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 // eslint-disable-next-line import/first
 import {
   CLAIM_LEDGER_COLLECTION,
@@ -126,7 +126,7 @@ import {
   registerClaim,
   type NewClaimInput,
   type SettlementDb,
-} from './wp4/durable-settlement-store';
+} from './settlement/durable-settlement-store';
 // eslint-disable-next-line import/first
 import { corroborationLiftedRecordPointsAtomic } from './policy/economic-projection';
 // eslint-disable-next-line import/first
@@ -144,9 +144,9 @@ import {
 // eslint-disable-next-line import/first
 import { completionCanonicalIdForEscrow, completionClaimDocId } from './completion-claim';
 // eslint-disable-next-line import/first
-import { createFirestoreInletSource } from './wp4/claim-inlet-source';
+import { createFirestoreInletSource } from './settlement/claim-inlet-source';
 // eslint-disable-next-line import/first
-import { evaluateEligibility, PVT9_ELIGIBILITY_CUT_LINE_MS } from './wp-ev/eligibility';
+import { evaluateEligibility, PVT9_ELIGIBILITY_CUT_LINE_MS } from './mint-claims/eligibility';
 // eslint-disable-next-line import/first
 import { ATTESTATION_ENHANCEMENT_WINDOW_MS } from './policy/monetary-accounting';
 // eslint-disable-next-line import/first

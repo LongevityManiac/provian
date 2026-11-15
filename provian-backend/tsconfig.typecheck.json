@@ -4,7 +4,7 @@
 // `scripts/` can never belong to it: adding it there is a TS6059 error, not an option. So the
 // operational harnesses under `scripts/` were typechecked by NOTHING.
 //
-// That is not a hygiene point. `scripts/wp4-load-harness.ts` is the only executable evidence in
+// That is not a hygiene point. `scripts/settlement-load-harness.ts` is the only executable evidence in
 // the tree at 50,000-row scale, and it had been broken since M9 round 2 — its seeds set no `leg`,
 // so the `validateNewClaim` check added that round made it throw at seed time. It sat outside
 // `include`, so `npm run typecheck` never saw it, and two full rounds of "verification" ran with

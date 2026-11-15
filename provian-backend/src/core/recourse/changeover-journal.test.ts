@@ -1,7 +1,7 @@
 import { Transaction, Wallet, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { openChangeoverJournal, CHANGEOVER_STAGES, CHANGEOVER_ATTEMPTS, type ChangeoverStep, type ChangeoverAttempt } from './changeover-journal';
 
 function fixture(count = 1) {

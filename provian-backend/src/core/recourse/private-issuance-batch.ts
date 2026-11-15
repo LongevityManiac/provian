@@ -8,7 +8,7 @@ import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, preparePrivateMembershipReservatio
   type PrivateIssuanceReservation } from './private-membership-reservation';
 import type { PrivateCalendarRules } from './private-membership-calendar';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
-import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
+import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
 import { planSettlementIssuance, type SettlementIssuancePolicy } from './settlement-issuance';
 import { assertMembershipReceipt, MEMBERSHIP_RECEIPT_ABI, type VerifiedMembershipReceipt } from './membership-receipt';
 import { utcCalendarMonth } from './calendar-month';

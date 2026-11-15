@@ -3,8 +3,8 @@
  * the gas-key nonce lease, and the dependency bundle the routes use. Kept out of `server.ts`.
  */
 import type { Firestore } from 'firebase-admin/firestore';
-import { OperatorRefusal, runSettlement } from '../pvt/wp4/operator-runtime';
-import type { SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { OperatorRefusal, runSettlement } from '../pvt/settlement/operator-runtime';
+import type { SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { createUsdcChargeRuntime, USDC_CHARGE_PRICE_MAX_AGE_MS } from '../payments/usdc-charge-runtime';
 import type { PayoutDeps, PayoutSettleOutcome } from './on-demand-payout';
 

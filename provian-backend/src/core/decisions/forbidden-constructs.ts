@@ -1030,9 +1030,9 @@ export const MONEY_PATH_CI_WORKFLOW = '.github/workflows/backend-tests.yml';
 
 export const MONEY_PATH_CI_REQUIRED_TOKENS: readonly string[] = Object.freeze([
   // The three money-path guard suites, by path — a rename or unwiring fires.
-  'src/core/pvt/wp-ev/eligibility.legacyMintedBlock.test.ts',
+  'src/core/pvt/mint-claims/eligibility.legacyMintedBlock.test.ts',
   'src/core/decisions/forbidden-constructs.test.ts',
-  'src/core/pvt/wp4/standard-lane-recon-gate.test.ts',
+  'src/core/pvt/settlement/standard-lane-recon-gate.test.ts',
   // The full-suite invocation and its standing cadence.
   'npm test',
   'schedule:',

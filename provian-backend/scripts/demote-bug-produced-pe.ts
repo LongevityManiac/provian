@@ -12,11 +12,11 @@ import admin from 'firebase-admin';
 import {
   demoteBugProducedPe,
   PRODUCTION_BUG_DETECTORS,
-} from '../src/core/pvt/wp4/bug-demotion';
+} from '../src/core/pvt/settlement/bug-demotion';
 import {
   demoteBugProducedMeterActs,
   PRODUCTION_METER_ACT_BUG_DETECTORS,
-} from '../src/core/pvt/wp4/meter-act-bug-demotion';
+} from '../src/core/pvt/settlement/meter-act-bug-demotion';
 import { scriptDb } from './lib/script-db';
 
 interface MeterManifestEntry {

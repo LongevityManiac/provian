@@ -43,7 +43,7 @@
     "build:run:android": "eas build:run --platform android",
     "build:android-apk": "node scripts/generate-protocol-proof.mjs && eas build --profile android-apk --platform android",
     "build:android-preview": "eas build --profile preview-android --platform android",
-    "check:mutation-registry": "node scripts/wp-mutation-harness.mjs --verify-registry",
+    "check:mutation-registry": "node scripts/mutation-harness.mjs --verify-registry",
     "money-path": "node scripts/money-path-tripwire.mjs",
     "money-path:accept": "node scripts/money-path-tripwire.mjs --write",
     "regen:images": "node scripts/regen-vision-images.mjs",

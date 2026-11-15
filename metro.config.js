@@ -99,5 +99,4 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = process.env.PROVIAN_ISOLATED_RECOURSE === '1'
-  ? require('./scripts/recourse/native/metro-hook.cjs')(config, __dirname) : config;
+module.exports = config;

@@ -107,7 +107,7 @@ export const MINTER_KEY_NEGATIVE_USE_FILES: readonly string[] = [
  * capability OPEN, deliberately, at a named location. `judgeMintCapability` reports exactly
  * that, and `capability_closed` is false whenever this list is non-empty.
  *
- * Settlement construction lives in `src/core/pvt/wp4/operator-runtime.ts`;
+ * Settlement construction lives in `src/core/pvt/settlement/operator-runtime.ts`;
  * its CLI and HTTP entry points delegate to that module. Settlement still
  * requires the explicit arming token, both configured keys and authenticated
  * scheduler/operator access.
@@ -118,7 +118,7 @@ export const MINTER_KEY_NEGATIVE_USE_FILES: readonly string[] = [
  * capability; any additional construction remains a finding.
  */
 export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
-  'src/core/pvt/wp4/operator-runtime.ts',
+  'src/core/pvt/settlement/operator-runtime.ts',
   // B10 (, the design requires ARM): the PE-ANCHOR runtime. Constructs a signer
   // from PVT_MINTER_KEY to send `anchorPEBatch` transactions on the deployed
   // PEAnchor `0x889A59A8…` — an on-chain WRITE capability, declared here for
@@ -152,7 +152,7 @@ export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
 
 /**
  * Roots swept. `scripts/` is included because that is exactly where a
- * gas-spending signer gets written (`wp12-deploy-pvt9.ts`, `wp4-load-harness.ts`),
+ * gas-spending signer gets written (`wp12-deploy-pvt9.ts`, `settlement-load-harness.ts`),
  * and an earlier version that swept only `src/` would not have seen one there.
  */
 export const MINT_CAPABILITY_SWEEP_ROOTS: readonly string[] = ['src', 'scripts'];

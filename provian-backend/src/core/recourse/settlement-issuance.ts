@@ -1,8 +1,8 @@
 import { AbiCoder, sha256 } from 'ethers';
-import { decodeSettlementCalldata } from '../pvt/wp4/batch-approval';
-import type { SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
+import { decodeSettlementCalldata } from '../pvt/settlement/batch-approval';
+import type { SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
 import { BeneficiaryClass, computeSettlementDigest, hashGenesisClaims, hashStandardClaims,
-  MAX_RECIPIENTS_PER_BATCH } from '../pvt/wp-ev/settlement-batch';
+  MAX_RECIPIENTS_PER_BATCH } from '../pvt/mint-claims/settlement-batch';
 import type { PrivateIssuanceRecipient } from './private-monthly-earnings';
 
 export interface SettlementIssuancePlan {

@@ -3,7 +3,7 @@
  *
  * inlet (qualifying acts -> durable claims) -> runSettlementCycle (claims -> PVT)
  *
- * Every decision, gate, and key read lives in `core/pvt/wp4/operator-runtime.ts`. This file is
+ * Every decision, gate, and key read lives in `core/pvt/settlement/operator-runtime.ts`. This file is
  * argv, logging, and an exit code, and it must stay that way: the relay route
  * (`POST /v1/internal/settlement/pvt9-run`) calls the SAME `runSettlement`, and a second
  * implementation here would be a second set of gates that can disagree with the first. When
@@ -24,8 +24,8 @@ import {
   OperatorRefusal,
   runSettlement,
   summarizeSettlementRun,
-} from '../src/core/pvt/wp4/operator-runtime';
-import type { SettlementDb } from '../src/core/pvt/wp4/durable-settlement-store';
+} from '../src/core/pvt/settlement/operator-runtime';
+import type { SettlementDb } from '../src/core/pvt/settlement/durable-settlement-store';
 import { scriptDb } from './lib/script-db';
 
 async function main(): Promise<void> {

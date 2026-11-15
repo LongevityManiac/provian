@@ -20,7 +20,7 @@ import {
   MINTER_KEY_ENV,
   MINTER_KEY_TOKENS,
 } from './mint-capability-guard';
-import { classifyPvt9RuntimeRequest } from './wp2-runtime-boundary';
+import { classifyPvt9RuntimeRequest } from './runtime-boundary';
 
 const BACKEND_ROOT = path.resolve(__dirname, '../../..');
 
@@ -268,7 +268,7 @@ describe('judgeMintCapability', () => {
         // B10 : the PE-anchor runtime — a declared on-chain WRITE
         // (anchoring-only; cannot mint) at a named location.
         'src/core/pvt/pe-anchor-runtime.ts',
-        'src/core/pvt/wp4/operator-runtime.ts',
+        'src/core/pvt/settlement/operator-runtime.ts',
         'src/core/recourse/binding-runtime.ts',
         'src/core/recourse/break-deployment-runtime.ts',
         'src/core/recourse/break-registration.ts',
@@ -290,7 +290,7 @@ describe('judgeMintCapability', () => {
     expect(files.has('scripts/pvt9-epoch-keeper.ts')).toBe(false);
     // RED CONTROL: the module that DOES build one is found, so the absence above is a fact
     // about those files and not about the sweep failing to look at `scripts/`.
-    expect(files.has('src/core/pvt/wp4/operator-runtime.ts')).toBe(true);
+    expect(files.has('src/core/pvt/settlement/operator-runtime.ts')).toBe(true);
   });
 
   it('the settlement key env names are in the token list, so a rename cannot hide a signer', () => {

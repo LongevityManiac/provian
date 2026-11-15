@@ -32,7 +32,7 @@ const mobileSource = fs.readFileSync(
  * ===========================================================================
  * The mechanism was a readdir→readFile TOCTOU in `discoverStaticEmitters` it
  * walks the live source tree (`provian-backend/src` among the roots), and a
- * CONCURRENT jest worker running `cutover-wp12r2.test.ts` plants and unlinks
+ * CONCURRENT jest worker running `cutover-reader-throws.test.ts` plants and unlinks
  * `__scan_probe_*.ts` there. A file listed by readdir then unlinked before the
  * read threw ENOENT and reddened the whole generator; on rerun the planting was
  * gone, so it passed. The scan now skips a file that vanished mid-scan
@@ -203,7 +203,7 @@ describe('PVT policy matrix completeness generator', () => {
   // flake, DIAGNOSED AND FIXED (close-out, item 7). The suite went RED
   // in a concurrent full jest pass and green on rerun because `discoverStaticEmitters`
   // walks the live source tree (`readdirSync` then `readFileSync`), and
-  // `cutover-wp12r2.test.ts` plants+unlinks `__scan_probe_*.ts` under
+  // `cutover-reader-throws.test.ts` plants+unlinks `__scan_probe_*.ts` under
   // `provian-backend/src` — one of those roots. A file listed by readdir then
   // unlinked before the read threw ENOENT, and the whole generator with it. The
   // scan now treats a vanished file as "not a stable emitter" and skips it. These

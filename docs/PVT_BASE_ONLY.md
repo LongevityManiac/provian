@@ -50,7 +50,7 @@ operationally dead on Arb/Op - no admin can ever rotate it there. The
 ## Backend posture
 
 - Settlement: PVT10 mints through `POST /v1/internal/settlement/pvt9-run`
-  (`routes/pvt9-operations.ts` → `core/pvt/wp4/operator-runtime.ts`, the
+  (`routes/pvt9-operations.ts` → `core/pvt/settlement/operator-runtime.ts`, the
   one module that builds a settlement signer), through the daily Cloud
   Scheduler job `provian-pvt9-settlement`. Each payee is due on its own last
   standard settlement UTC date plus the operator-set interval
@@ -69,7 +69,7 @@ payout sends it immediately.
 `grep` for the Arb/Op PVTv4 address `0x9193BD19...` against the
 backend source returns:
 
-- `provian-backend/src/core/pvt/wp11/legacy-mint-contract-registry.ts` -
+- `provian-backend/src/core/pvt/cutover/legacy-mint-contract-registry.ts` -
   a frozen, read-only legacy mint-contract table.
 - `provian-backend/scripts/smoke-verify-evm-contract-call.ts` - a manual
   per-chain tx-verifier smoke.

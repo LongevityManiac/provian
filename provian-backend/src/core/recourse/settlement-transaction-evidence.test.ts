@@ -1,4 +1,4 @@
-import { acquireCycleLease,applyConfirmedBatch,readCycle,recordObservedMemberTransaction, type SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import { acquireCycleLease,applyConfirmedBatch,readCycle,recordObservedMemberTransaction, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { issuanceBatchFixture } from './__test-helpers__/issuance-batch-fixture';
 import { a,h,tx } from './__test-helpers__/membership-receipt-fixture';
 import { reservePrivateIssuanceBatch,retainPrivateIssuanceSignature,commitPrivateIssuanceBatch,type PrivateIssuanceBatchRecord } from './private-issuance-batch';

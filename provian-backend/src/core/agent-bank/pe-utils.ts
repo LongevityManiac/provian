@@ -34,7 +34,7 @@ import type { WitnessClass } from '../pvt/policy/evidence-class';
 import { deriveEmitterWitnessClass, deriveOutputDigestsFromMetadata } from '../pvt/policy/emitter-witness';
 import { readComputeTokens } from '../pvt/origin-pricing-inputs';
 import { relayWitnessedOriginsFor, type RelayObservation } from '../pvt/relay-observation-witness';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from '../pvt/wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from '../pvt/cutover/ordinary-accrual-intake';
 import type { RecordEconomicSnapshot } from '../pvt/policy/monetary-accounting';
 import {
   buildRelayActIntake,

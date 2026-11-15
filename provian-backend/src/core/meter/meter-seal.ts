@@ -33,14 +33,14 @@ import {
   upsertPendingPolicyObservationInTransaction,
   type PendingPolicyObservationResult,
 } from '../pvt/policy/pending-policy-queue';
-import { resolvePayee } from '../pvt/wp4/claim-inlet-source';
+import { resolvePayee } from '../pvt/settlement/claim-inlet-source';
 import type { DurableAccrualPayload } from '../pvt/durable-accrual-effects';
 import type { InputOrigin } from '../provenance/input-origins';
 import type { OriginEdge } from '../pvt/origin-reference-graph';
 import type { BatchOriginEdges } from '../pvt/origin-pricing-inputs';
 import type { BatchPricingCounters } from './batch-pricing-counters';
 import type { BatchOccurrences } from './batch-occurrences';
-import type { SettlementDb } from '../pvt/wp4/durable-settlement-store';
+import type { SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { MintOnceClaimRaceError } from '../pvt/mint-once-claim';
 import { actClaimsUncommitted, actTopupsUncommitted, resolveActBaseClaims, resolveActTopupClaims } from './act-claims';
 import { withoutAct, type MeterActLeg } from './meter-claims';

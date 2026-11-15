@@ -22,7 +22,7 @@ import {
   deviceWitnessedCanonicalEvent,
   deviceWitnessedVerifiedFields,
 } from './device-witnessed-earning';
-import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './wp11/ordinary-accrual-intake';
+import { ORDINARY_ACCRUAL_REPLAY_SOURCE } from './cutover/ordinary-accrual-intake';
 
 // ---------------------------------------------------------------------------
 // (A) The pure overlay — no I/O, no mocks.
@@ -284,7 +284,7 @@ import { recordPEAccrual, type RecordPEAccrualParams } from '../../pvt-accrual';
 import {
   ORDINARY_ACCRUAL_INTAKE_COLLECTION,
   buildOrdinaryAccrualIntake,
-} from './wp11/ordinary-accrual-intake';
+} from './cutover/ordinary-accrual-intake';
 
 const TIMESTAMP = Date.UTC(2026, 7, 15, 12, 0);
 let seq = 0;

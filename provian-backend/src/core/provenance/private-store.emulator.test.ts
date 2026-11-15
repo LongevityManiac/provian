@@ -3,7 +3,7 @@ import {randomUUID,createHash} from 'crypto';
 import {privateFirestore,privateStorageId,encodePrivateRecord,decodePrivateRecord} from './private-store';
 import {PRIVATE_RETENTION_STATE_COLLECTION,PRIVATE_RETENTION_STATE_DOC} from './private-retention';
 import {buildActPages,meterActPageId} from '../meter/meter-act-pages';
-import {takeCutoverInventory} from '../pvt/wp11/cutover-inventory';
+import {takeCutoverInventory} from '../pvt/cutover/cutover-inventory';
 import {forEachPrivateMigrationPage} from '../../../scripts/lib/private-migration-page';
 const local=process.env.FIRESTORE_EMULATOR_HOST;
 const suite=local&&/^(127\.0\.0\.1|localhost):\d+$/.test(local)?describe:describe.skip;

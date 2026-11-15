@@ -104,7 +104,7 @@ function walkEmitterSources(dir: string): string[] {
  * Read a source file for the emitter scan, tolerating the ONE benign race this
  * scanner hits: a file listed by `readdirSync` but unlinked before we
  * `readFileSync` it. That happens when a concurrent test mutates a tree we walk
- * `cutover-wp12r2.test.ts` plants and unlinks `__scan_probe_*.ts` under
+ * `cutover-reader-throws.test.ts` plants and unlinks `__scan_probe_*.ts` under
  * `provian-backend/src`, one of our roots. A file that vanished mid-scan is not a
  * stable emitter, so we skip it (return null). Any other error is real and is
  * re-thrown. THIS is the "policy-matrix-generator" flake: a readdir→readFile

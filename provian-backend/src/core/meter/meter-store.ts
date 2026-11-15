@@ -22,7 +22,7 @@
  * Every TTL field is a Firestore Timestamp (`expire_at`) — a number never expires.
  */
 
-import type { SealedEnvelopeIdentity } from '../pvt/wp-ev/claim-id';
+import type { SealedEnvelopeIdentity } from '../pvt/mint-claims/claim-id';
 import { Timestamp } from 'firebase-admin/firestore';
 
 export const METER_DEVICE_TIPS_COLLECTION = 'meter_device_tips_v1';

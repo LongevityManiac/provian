@@ -1,7 +1,7 @@
 import { getBytes, Interface } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
-import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/wp4/durable-settlement-store';
-import { KERNEL_OBSERVATION_ABI } from '../pvt/wp4/settlement-chain-adapter';
+import { SETTLEMENT_BATCHES_COLLECTION, type SettlementBatchDoc } from '../pvt/settlement/durable-settlement-store';
+import { KERNEL_OBSERVATION_ABI } from '../pvt/settlement/settlement-chain-adapter';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { resolveHistoricalProtocolDeployment, type ProtocolDeployment, type PointerRpc } from '../protocol/pointer';
 import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';

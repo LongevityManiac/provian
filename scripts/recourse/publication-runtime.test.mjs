@@ -3,7 +3,7 @@ import { Interface, Transaction, Wallet, sha256, toUtf8Bytes } from 'ethers';
 import { createFakeFirestore } from '../../provian-backend/src/core/pvt/__test-helpers__/fake-firestore.ts';
 import { BASE_GAS_PRICE_ORACLE } from '../../provian-backend/src/core/recourse/base-transaction-fees.ts';
 import { PUBLICATION_JOURNALS, PUBLICATION_ATTEMPTS, openPublicationJournal } from '../../provian-backend/src/core/recourse/publication-journal.ts';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/wp4/durable-settlement-store.ts';
+import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/settlement/durable-settlement-store.ts';
 import { runPublicationDelivery } from './publication-runtime.mjs';
 const checks = vi.hoisted(() => ({ progress: vi.fn(), history: vi.fn(), plan: vi.fn(), durable: vi.fn() }));
 vi.mock('./publication-recovery.mjs', () => ({ readPublicationProgress: checks.progress, readPublicationHistory: checks.history }));
@@ -324,7 +324,7 @@ test.runIf(process.env.RECOURSE_FIRESTORE_ORDER_PROOF === 'provian-ai/relay')('p
   expect(process.env.FIRESTORE_DATABASE_ID).toBe('relay');
   expect(process.env.FIRESTORE_EMULATOR_HOST).toBeUndefined();
   const { scriptDb } = await import('../../provian-backend/scripts/lib/script-db.ts');
-  const { SETTLEMENT_SIGNER_LEASES_COLLECTION } = await import('../../provian-backend/src/core/pvt/wp4/durable-settlement-store.ts');
+  const { SETTLEMENT_SIGNER_LEASES_COLLECTION } = await import('../../provian-backend/src/core/pvt/settlement/durable-settlement-store.ts');
   const db = scriptDb(), wallet = Wallet.createRandom();
   const f = fixture({ db, wallet, componentsDigest: sha256(toUtf8Bytes(wallet.address)) });
   const refs = [db.collection(PUBLICATION_JOURNALS).doc(f.lifecycleDigest),
