@@ -3,8 +3,8 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
-import { runRecourseLane, type LaneKind, type LaneRow } from './transaction-lane';
-import { drainLegacyRecourse } from './transaction-lane-legacy';
+import { RECOURSE_LANE_COLLECTION, runRecourseLane, type LaneKind, type LaneRow } from './transaction-lane';
+import { drainLegacyRecourse, LEGACY_DRAIN_DOC } from './transaction-lane-legacy';
 import { BINDING_OPERATIONS } from './binding-operation';
 
 /** A request signed by the settlement minter before Recourse had its own lane. */
@@ -144,6 +144,32 @@ test('one reservation that cannot be handled never stops pre-lane requests from 
   f.fake.store.set(`${COLLECTION}/${queued}`, { status: 'queued', createdAtMs: 3 });
   await expect(f.drain()).rejects.toThrow('recourse_legacy_record_invalid');
   expect(f.fake.store.get(`${COLLECTION}/${queued}`)?.laneQueueKey).toBeDefined();
+});
+test('a reservation that keeps failing keeps the check running and reporting, however long it lasts', async () => {
+  const f = setup(), id = h(30);
+  await f.signLegacy(id);
+  const other = await minter.signTransaction({ type: 2, chainId: 8453, nonce: 0, to: target, data: calldata(h(31)), value: 0, gasLimit: 100_000, maxFeePerGas: 10n ** 9n, maxPriorityFeePerGas: 1n });
+  f.fake.store.set(`${COLLECTION}/${id}`, { ...f.fake.store.get(`${COLLECTION}/${id}`), signedTransaction: other, transactionHash: keccak256(other) });
+  for (let hour = 0; hour < 3; hour++) {
+    await expect(f.drain()).rejects.toThrow('recourse_legacy_record_invalid');
+    f.tick(60 * 60_000);
+  }
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LEGACY_DRAIN_DOC}`)?.quietSinceMs).toBeNull();
+  expect(f.base.state.broadcasts).toHaveLength(0);
+  expect(f.fake.store.get(f.leaseRef)?.pending_operation).toBe(id);
+});
+test('one reservation that cannot be handled never holds up another signer\'s', async () => {
+  const f = setup(), bad = h(32), good = h(33);
+  // A lease that sorts first, on a record whose bytes do not match it.
+  const other = await minter.signTransaction({ type: 2, chainId: 8453, nonce: 0, to: target, data: calldata(h(34)), value: 0, gasLimit: 100_000, maxFeePerGas: 10n ** 9n, maxPriorityFeePerGas: 1n });
+  f.fake.store.set(`${COLLECTION}/${bad}`, { status: 'submitted', signedTransaction: other, transactionHash: keccak256(other) });
+  f.fake.store.set(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/0x${'00'.repeat(20)}`, { owner: 'old', expires_at_ms: 0, pending_operation: bad });
+  // A later lease whose reservation has no signed bytes behind it.
+  f.fake.store.set(`${COLLECTION}/${good}`, { status: 'failed' });
+  const goodLease = `${SETTLEMENT_SIGNER_LEASES_COLLECTION}/0x${'ff'.repeat(20)}`;
+  f.fake.store.set(goodLease, { owner: 'old', expires_at_ms: 0, pending_operation: good });
+  await expect(f.drain()).rejects.toThrow('recourse_legacy_record_invalid');
+  expect(f.fake.store.get(goodLease)?.pending_operation).toBeNull();
 });
 test('once nothing is found for an hour the check stops reading', async () => {
   const f = setup();
