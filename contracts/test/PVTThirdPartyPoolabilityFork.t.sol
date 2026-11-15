@@ -3,7 +3,8 @@ pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
-import {ProvianPVT9} from "../src/ProvianPVT9.sol";
+import {ProvianRecourseKernel} from "../src/ProvianRecourseKernel.sol";
+import {LiveProtocol} from "./helpers/LiveProtocol.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 /**
@@ -15,12 +16,13 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
  * (e.g. if a future institution contract is granted a transfer-adjacent hook, or a
  * successor token is introduced and quietly assumed to behave the same way).
  *
- * This fork reads the live kernel address from config/pvt9-base.json. The local
- * kernel suite separately exercises the unchanged source. The circulation proof
- * below uses deployed bytecode and ordinary secondary transfers only.
+ * This fork reads the live kernel through the permanent protocol pointer, with each runtime
+ * hash checked, so it always proves the token that currently settles. The local kernel suite
+ * separately exercises the source. The circulation proof below uses deployed bytecode and
+ * ordinary secondary transfers only.
  *
  * WHAT THE SOURCE AUDIT FOUND (all ABSENT, so all four venues below must work):
- *   - no transfer hook / `_update` / `_before`|`_afterTokenTransfer` — `_transfer` is six
+ *   - no transfer hook / `_update` / `_before`|`_afterTokenTransfer` — `_transfer` is five
  *     lines and reads NO policy state, and the contract inherits nothing, so there is no
  *     base hook to override either;
  *   - no allowlist, blocklist or denylist; no max-transfer or max-balance;
@@ -31,7 +33,7 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
  * Everything is done by THIRD_PARTY, asserted unprivileged in setUp. Its PVT arrives via
  * an ordinary secondary transfer from a real holder, never a mint.
  *
- *   forge test --root contracts --match-contract PVT9ThirdPartyPoolabilityFork -vv
+ *   forge test --root contracts --match-contract PVTThirdPartyPoolabilityFork -vv
  *
  * chainId-8453 fork suite: needs a Base RPC (BASE_RPC_URL), like its sibling fork tests.
  */
@@ -156,8 +158,8 @@ interface IAerodromeRouter {
         returns (uint256, uint256);
 }
 
-contract PVT9ThirdPartyPoolabilityForkTest is Test {
-    address internal PVT9;
+contract PVTThirdPartyPoolabilityForkTest is Test {
+    address internal PVT;
     address internal constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
     /// A current holder read from the live epoch policy; fork-only secondary transfer.
@@ -180,27 +182,32 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
     int24 internal constant FULL_RANGE_LOWER = -887220;
     int24 internal constant FULL_RANGE_UPPER = 887220;
 
-    /// USDC sorts BELOW PVT9, so token0 = USDC (6dp) and token1 = PVT (18dp).
-    /// price(token1/token0) = 1e18/1e6 = 1e12 → sqrt = 1e6 → sqrtPriceX96 = 1e6 * 2**96.
-    uint160 internal constant SQRT_PRICE_1_PVT_PER_USDC = 79228162514264337593543950336000000;
+    /// One PVT (18dp) per USDC (6dp). With USDC as token0, price(token1/token0) = 1e18/1e6 = 1e12,
+    /// sqrt = 1e6, sqrtPriceX96 = 1e6 * 2**96. With PVT as token0, price = 1e-12, sqrt = 1e-6,
+    /// sqrtPriceX96 = 2**96 / 1e6. Uniswap orders a pool's tokens by address.
+    uint160 internal constant SQRT_PRICE_USDC_TOKEN0 = 79228162514264337593543950336000000;
+    uint160 internal constant SQRT_PRICE_PVT_TOKEN0 = 79228162514264337593543;
 
     uint256 internal constant PVT_SEED = 20e18;
     uint256 internal constant USDC_SEED = 20e6;
     uint256 internal constant PVT_FUNDING = 60e18;
     uint256 internal constant USDC_FUNDING = 200e6;
 
-    ProvianPVT9 internal kernel;
+    ProvianRecourseKernel internal kernel;
+    bool internal pvtIsToken0;
+    uint160 internal sqrtPrice1PvtPerUsdc;
 
     function setUp() public {
         vm.createSelectFork(vm.envOr("BASE_RPC_URL", string("https://mainnet.base.org")));
         require(block.chainid == 8453, "Fork tests require Base mainnet (chainId 8453)");
-        PVT9 = vm.parseJsonAddress(vm.readFile("../config/pvt9-base.json"), ".assets.pvt9.address");
-        kernel = ProvianPVT9(PVT9);
+        PVT = LiveProtocol.component(LiveProtocol.KERNEL);
+        kernel = ProvianRecourseKernel(PVT);
         PVT_HOLDER = kernel.getEpochPolicy(kernel.lastOpenedEpoch()).provianTreasury;
         assertGe(kernel.balanceOf(PVT_HOLDER), PVT_FUNDING, "live holder cannot fund the fork proof");
 
-        // The token ordering every sqrtPrice below depends on.
-        require(USDC < PVT9, "expected USDC to sort as token0");
+        // The token ordering every sqrtPrice and position amount below depends on.
+        pvtIsToken0 = PVT < USDC;
+        sqrtPrice1PvtPerUsdc = pvtIsToken0 ? SQRT_PRICE_PVT_TOKEN0 : SQRT_PRICE_USDC_TOKEN0;
 
         // Prove the actor is unprivileged BEFORE using it, so a green run can never be an
         // artifact of having accidentally rehearsed as the admin or the minter.
@@ -232,13 +239,13 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         vm.startPrank(THIRD_PARTY);
         kernel.approve(V3_POSITION_MANAGER, type(uint256).max);
         IERC20(USDC).approve(V3_POSITION_MANAGER, type(uint256).max);
-        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT9, USDC, V3_FEE);
-        IUniV3Pool(pool).initialize(SQRT_PRICE_1_PVT_PER_USDC);
+        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT, USDC, V3_FEE);
+        IUniV3Pool(pool).initialize(sqrtPrice1PvtPerUsdc);
         vm.stopPrank();
 
         // Exactly the restriction the source audit looked for and did not find.
-        vm.mockCallRevert(PVT9, abi.encodeWithSelector(ProvianPVT9.transfer.selector), abi.encode("Restricted"));
-        vm.mockCallRevert(PVT9, abi.encodeWithSelector(ProvianPVT9.transferFrom.selector), abi.encode("Restricted"));
+        vm.mockCallRevert(PVT, abi.encodeWithSelector(ProvianRecourseKernel.transfer.selector), abi.encode("Restricted"));
+        vm.mockCallRevert(PVT, abi.encodeWithSelector(ProvianRecourseKernel.transferFrom.selector), abi.encode("Restricted"));
 
         vm.prank(THIRD_PARTY);
         vm.expectRevert();
@@ -260,14 +267,15 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         IERC20(USDC).approve(V3_ROUTER, type(uint256).max);
 
         // 1. CREATE — initialize() succeeding is also proof the pool did not already exist.
-        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT9, USDC, V3_FEE);
+        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT, USDC, V3_FEE);
         assertTrue(pool != address(0), "V3 createPool returned zero");
-        IUniV3Pool(pool).initialize(SQRT_PRICE_1_PVT_PER_USDC);
+        IUniV3Pool(pool).initialize(sqrtPrice1PvtPerUsdc);
         console2.log("V3 CREATE  : ok, pool =", pool);
 
         // 2. ADD two-sided liquidity.
-        (uint256 tokenId, uint128 liquidity, uint256 usdcIn, uint256 pvtIn) =
+        (uint256 tokenId, uint128 liquidity, uint256 in0, uint256 in1) =
             INonfungiblePositionManager(V3_POSITION_MANAGER).mint(_fullRangeMintParams());
+        (uint256 pvtIn, uint256 usdcIn) = pvtIsToken0 ? (in0, in1) : (in1, in0);
         assertGt(liquidity, 0, "V3 mint produced no liquidity");
         assertGt(usdcIn, 0, "V3 mint consumed no USDC");
         assertGt(pvtIn, 0, "V3 mint consumed no PVT");
@@ -278,7 +286,7 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         uint256 pvtOut = ISwapRouter02(V3_ROUTER).exactInputSingle(
             ISwapRouter02.ExactInputSingleParams({
                 tokenIn: USDC,
-                tokenOut: PVT9,
+                tokenOut: PVT,
                 fee: V3_FEE,
                 recipient: THIRD_PARTY,
                 amountIn: 5e6,
@@ -294,7 +302,7 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         uint256 usdcBefore = IERC20(USDC).balanceOf(THIRD_PARTY);
         uint256 usdcOut = ISwapRouter02(V3_ROUTER).exactInputSingle(
             ISwapRouter02.ExactInputSingleParams({
-                tokenIn: PVT9,
+                tokenIn: PVT,
                 tokenOut: USDC,
                 fee: V3_FEE,
                 recipient: THIRD_PARTY,
@@ -317,7 +325,7 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
                 deadline: block.timestamp + 1
             })
         );
-        (uint256 usdcBack, uint256 pvtBack) = INonfungiblePositionManager(V3_POSITION_MANAGER).collect(
+        (uint256 back0, uint256 back1) = INonfungiblePositionManager(V3_POSITION_MANAGER).collect(
             INonfungiblePositionManager.CollectParams({
                 tokenId: tokenId,
                 recipient: THIRD_PARTY,
@@ -325,6 +333,7 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
                 amount1Max: type(uint128).max
             })
         );
+        (uint256 pvtBack, uint256 usdcBack) = pvtIsToken0 ? (back0, back1) : (back1, back0);
         assertGt(usdcBack, 0, "V3 collect returned no USDC");
         assertGt(pvtBack, 0, "V3 collect returned no PVT");
         console2.log("V3 REMOVE  : ok, USDC out / PVT out", usdcBack, pvtBack);
@@ -341,31 +350,31 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         kernel.approve(V2_ROUTER, type(uint256).max);
         IERC20(USDC).approve(V2_ROUTER, type(uint256).max);
 
-        address pair = IUniV2Factory(V2_FACTORY).getPair(PVT9, USDC);
-        if (pair == address(0)) pair = IUniV2Factory(V2_FACTORY).createPair(PVT9, USDC);
+        address pair = IUniV2Factory(V2_FACTORY).getPair(PVT, USDC);
+        if (pair == address(0)) pair = IUniV2Factory(V2_FACTORY).createPair(PVT, USDC);
         assertTrue(pair != address(0), "V2 createPair returned zero");
         console2.log("V2 CREATE  : ok, pair =", pair);
 
         (uint256 pvtIn, uint256 usdcIn, uint256 lp) = IUniV2Router(V2_ROUTER).addLiquidity(
-            PVT9, USDC, PVT_SEED, USDC_SEED, 0, 0, THIRD_PARTY, block.timestamp + 1
+            PVT, USDC, PVT_SEED, USDC_SEED, 0, 0, THIRD_PARTY, block.timestamp + 1
         );
         assertGt(lp, 0, "V2 addLiquidity minted no LP");
         console2.log("V2 ADD     : ok, PVT in / USDC in", pvtIn, usdcIn);
 
         uint256[] memory inLeg =
-            IUniV2Router(V2_ROUTER).swapExactTokensForTokens(5e6, 0, _path(USDC, PVT9), THIRD_PARTY, block.timestamp + 1);
+            IUniV2Router(V2_ROUTER).swapExactTokensForTokens(5e6, 0, _path(USDC, PVT), THIRD_PARTY, block.timestamp + 1);
         assertGt(inLeg[1], 0, "V2 USDC->PVT returned nothing");
         console2.log("V2 SWAP in : ok, 5 USDC -> PVT wei", inLeg[1]);
 
         uint256[] memory outLeg = IUniV2Router(V2_ROUTER).swapExactTokensForTokens(
-            5e18, 0, _path(PVT9, USDC), THIRD_PARTY, block.timestamp + 1
+            5e18, 0, _path(PVT, USDC), THIRD_PARTY, block.timestamp + 1
         );
         assertGt(outLeg[1], 0, "V2 PVT->USDC returned nothing");
         console2.log("V2 SWAP out: ok, 5 PVT -> USDC units", outLeg[1]);
 
         IERC20(pair).approve(V2_ROUTER, type(uint256).max);
         (uint256 pvtBack, uint256 usdcBack) =
-            IUniV2Router(V2_ROUTER).removeLiquidity(PVT9, USDC, lp, 0, 0, THIRD_PARTY, block.timestamp + 1);
+            IUniV2Router(V2_ROUTER).removeLiquidity(PVT, USDC, lp, 0, 0, THIRD_PARTY, block.timestamp + 1);
         assertGt(pvtBack, 0, "V2 removeLiquidity returned no PVT");
         assertGt(usdcBack, 0, "V2 removeLiquidity returned no USDC");
         console2.log("V2 REMOVE  : ok, PVT out / USDC out", pvtBack, usdcBack);
@@ -382,32 +391,32 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         kernel.approve(AERO_ROUTER, type(uint256).max);
         IERC20(USDC).approve(AERO_ROUTER, type(uint256).max);
 
-        address pool = IAerodromeFactory(AERO_FACTORY).getPool(PVT9, USDC, false);
-        if (pool == address(0)) pool = IAerodromeFactory(AERO_FACTORY).createPool(PVT9, USDC, false);
+        address pool = IAerodromeFactory(AERO_FACTORY).getPool(PVT, USDC, false);
+        if (pool == address(0)) pool = IAerodromeFactory(AERO_FACTORY).createPool(PVT, USDC, false);
         assertTrue(pool != address(0), "Aerodrome createPool returned zero");
         console2.log("AERO CREATE: ok, pool =", pool);
 
         (uint256 pvtIn, uint256 usdcIn, uint256 lp) = IAerodromeRouter(AERO_ROUTER).addLiquidity(
-            PVT9, USDC, false, PVT_SEED, USDC_SEED, 0, 0, THIRD_PARTY, block.timestamp + 1
+            PVT, USDC, false, PVT_SEED, USDC_SEED, 0, 0, THIRD_PARTY, block.timestamp + 1
         );
         assertGt(lp, 0, "Aerodrome addLiquidity minted no LP");
         console2.log("AERO ADD   : ok, PVT in / USDC in", pvtIn, usdcIn);
 
         uint256[] memory inLeg = IAerodromeRouter(AERO_ROUTER).swapExactTokensForTokens(
-            5e6, 0, _route(USDC, PVT9), THIRD_PARTY, block.timestamp + 1
+            5e6, 0, _route(USDC, PVT), THIRD_PARTY, block.timestamp + 1
         );
         assertGt(inLeg[1], 0, "Aerodrome USDC->PVT returned nothing");
         console2.log("AERO SWAP i: ok, 5 USDC -> PVT wei", inLeg[1]);
 
         uint256[] memory outLeg = IAerodromeRouter(AERO_ROUTER).swapExactTokensForTokens(
-            5e18, 0, _route(PVT9, USDC), THIRD_PARTY, block.timestamp + 1
+            5e18, 0, _route(PVT, USDC), THIRD_PARTY, block.timestamp + 1
         );
         assertGt(outLeg[1], 0, "Aerodrome PVT->USDC returned nothing");
         console2.log("AERO SWAP o: ok, 5 PVT -> USDC units", outLeg[1]);
 
         IERC20(pool).approve(AERO_ROUTER, type(uint256).max);
         (uint256 pvtBack, uint256 usdcBack) = IAerodromeRouter(AERO_ROUTER).removeLiquidity(
-            PVT9, USDC, false, lp, 0, 0, THIRD_PARTY, block.timestamp + 1
+            PVT, USDC, false, lp, 0, 0, THIRD_PARTY, block.timestamp + 1
         );
         assertGt(pvtBack, 0, "Aerodrome removeLiquidity returned no PVT");
         assertGt(usdcBack, 0, "Aerodrome removeLiquidity returned no USDC");
@@ -457,8 +466,8 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         kernel.approve(V3_POSITION_MANAGER, type(uint256).max);
         IERC20(USDC).approve(V3_POSITION_MANAGER, type(uint256).max);
         IERC20(USDC).approve(V3_ROUTER, type(uint256).max);
-        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT9, USDC, V3_FEE);
-        IUniV3Pool(pool).initialize(SQRT_PRICE_1_PVT_PER_USDC);
+        address pool = IUniV3Factory(V3_FACTORY).createPool(PVT, USDC, V3_FEE);
+        IUniV3Pool(pool).initialize(sqrtPrice1PvtPerUsdc);
         INonfungiblePositionManager(V3_POSITION_MANAGER).mint(_fullRangeMintParams());
         vm.stopPrank();
 
@@ -476,7 +485,7 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
         uint256 pvtOut = ISwapRouter02(V3_ROUTER).exactInputSingle(
             ISwapRouter02.ExactInputSingleParams({
                 tokenIn: USDC,
-                tokenOut: PVT9,
+                tokenOut: PVT,
                 fee: V3_FEE,
                 recipient: THIRD_PARTY,
                 amountIn: 1e6,
@@ -494,13 +503,13 @@ contract PVT9ThirdPartyPoolabilityForkTest is Test {
 
     function _fullRangeMintParams() internal view returns (INonfungiblePositionManager.MintParams memory) {
         return INonfungiblePositionManager.MintParams({
-            token0: USDC,
-            token1: PVT9,
+            token0: pvtIsToken0 ? PVT : USDC,
+            token1: pvtIsToken0 ? USDC : PVT,
             fee: V3_FEE,
             tickLower: FULL_RANGE_LOWER,
             tickUpper: FULL_RANGE_UPPER,
-            amount0Desired: USDC_SEED,
-            amount1Desired: PVT_SEED,
+            amount0Desired: pvtIsToken0 ? PVT_SEED : USDC_SEED,
+            amount1Desired: pvtIsToken0 ? USDC_SEED : PVT_SEED,
             amount0Min: 0,
             amount1Min: 0,
             recipient: THIRD_PARTY,

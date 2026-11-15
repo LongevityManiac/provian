@@ -2649,7 +2649,7 @@ const NOT_A_RUNNABLE_SUITE = Object.freeze({
   // These two are NOT in the known-failing set: they pass when the RPC serves them. They
   // are excluded because they reach a LIVE endpoint through `vm.createSelectFork`, which
   // would make any mutation verdict depend on network weather.
-  'PVT9ThirdPartyPoolabilityFork.t.sol': 'live-RPC fork suite (vm.createSelectFork) — RPC-dependent, excluded to keep mutation verdicts deterministic',
+  'PVTThirdPartyPoolabilityFork.t.sol': 'live-RPC fork suite (vm.createSelectFork) — RPC-dependent, excluded to keep mutation verdicts deterministic',
   // 's RED/GREEN institution controls against the DEPLOYED set on a Base fork. The
   // in-process twins of every GREEN case live in InstitutionSafety (in scope above).
   'SuccessorMigrationFork.t.sol': 'live-RPC fork suite (vm.createSelectFork) — RPC-dependent, excluded to keep mutation verdicts deterministic',
