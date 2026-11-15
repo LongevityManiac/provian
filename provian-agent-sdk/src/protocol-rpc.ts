@@ -13,7 +13,7 @@ function retryDelay(value: string | null, attempt: number): number {
   const delay = /^\d+(?:\.\d+)?$/.test(value.trim())
     ? Number(value) * 1_000 : Date.parse(value) - Date.now();
   // Never retry earlier than the provider requests, or wait without a bound.
-  if (!Number.isFinite(delay) || delay > maxRetryDelayMs) throw new Error('protocol_rpc_unavailable');
+  if (!Number.isFinite(delay)) throw new Error('protocol_rpc_unavailable');
   return Math.max(spacingMs, delay);
 }
 
@@ -26,7 +26,10 @@ export function protocolRpc(url: string, fetcher: RpcFetch): {
   return { request(method, params) {
     const work = endpoint.tail.then(async () => {
       for (let attempt = 0; attempt < 3; attempt++) {
-        while (endpoint.nextAt > Date.now()) await sleep(endpoint.nextAt - Date.now());
+        while (endpoint.nextAt > Date.now()) {
+          if (endpoint.nextAt - Date.now() > maxRetryDelayMs) throw new Error('protocol_rpc_unavailable');
+          await sleep(endpoint.nextAt - Date.now());
+        }
         endpoint.nextAt = Date.now() + spacingMs;
         const response = await fetcher(url, { method: 'POST', redirect: 'error',
           headers: { 'content-type': 'application/json' },
@@ -35,7 +38,11 @@ export function protocolRpc(url: string, fetcher: RpcFetch): {
         if (response.status === 429) {
           // Consume the response before another request uses the connection.
           await response.text();
+          // Even an invalid or too-long delay must not let queued reads bypass
+          // the cooldown after this individual request refuses to wait.
+          endpoint.nextAt = Date.now() + maxRetryDelayMs;
           endpoint.nextAt = Date.now() + retryDelay(response.headers.get('retry-after'), attempt);
+          if (endpoint.nextAt - Date.now() > maxRetryDelayMs) throw new Error('protocol_rpc_unavailable');
           if (attempt < 2) continue;
         }
         if (!response.ok) throw new Error('protocol_rpc_unavailable');

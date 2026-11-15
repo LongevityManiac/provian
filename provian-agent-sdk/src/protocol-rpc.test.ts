@@ -66,3 +66,15 @@ it('does not retry failures or interpret RPC errors as verified results', async 
   await expect(protocolRpc('https://ssrf.example', refused).request('eth_call', [])).rejects.toThrow('egress_refused');
   expect(refused).toHaveBeenCalledTimes(1);
 });
+
+it('a long Retry-After also blocks already queued reads without issuing another fetch', async () => {
+  const fetcher = vi.fn(async () => new Response('limited', { status: 429, headers: { 'retry-after': '60' } }));
+  const rpc = protocolRpc('https://queued-cooldown.example', fetcher);
+  const requests = Promise.allSettled([rpc.request('eth_call', []), rpc.request('eth_call', [])]);
+  await vi.runAllTimersAsync();
+  expect((await requests).map(r => r.status)).toEqual(['rejected', 'rejected']);
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  fetcher.mockImplementation(async () => ok());
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(await rpc.request('eth_call', [])).toBe('0x1');
+});
