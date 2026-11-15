@@ -119,6 +119,14 @@ test('metadata reads answer at once while one confirmation runs behind them; sig
   await settle(); expect(counts).toEqual([8,8]);
   // Signing boundaries never take the shortcut.
   counts.fill(0); now+=90_000; await current({fresh:true}); expect(counts).toEqual([8,8]);
+  // Another instance holding the shared lease is not a failure: reads keep answering from the
+  // confirmed revision and the next read simply tries again.
+  counts.fill(0); now+=90_000;
+  await fake.collection('protocol_verified_deployments_v1').doc(`${pointer.toLowerCase()}:${runtimeHash}`).set({leaseOwner:'other',leaseUntil:now+60_000},{merge:true});
+  await current(); await settle();
+  expect((await current()).revision).toBe(1n); expect(counts).toEqual([0,0]);
+  await fake.collection('protocol_verified_deployments_v1').doc(`${pointer.toLowerCase()}:${runtimeHash}`).set({leaseOwner:null,leaseUntil:0},{merge:true});
+  await current(); await settle(); expect(counts).toEqual([8,8]);
   // RED: a confirmation that fails behind a read clears the cache; later reads refuse.
   counts.fill(0); now+=90_000; fail[0]=true;
   await current(); await settle();
