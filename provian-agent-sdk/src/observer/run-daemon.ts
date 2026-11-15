@@ -921,6 +921,8 @@ export const RECOURSE_BINDING_HEAL_INTERVAL_MS = 60 * 1000;
  * reports it bound, re-signing whenever the last signature has expired unsent.
  * Logs only when the outcome changes.
  */
+/** While the key cannot be unlocked, how often the daemon checks again. */
+export const RECOURSE_BINDING_LOCKED_INTERVAL_MS = 15 * 60 * 1000;
 export function startRecourseBindingHeal(
   input: RecourseConfig,
   deps: { heal?: (i: RecourseConfig) => Promise<BindingHealOutcome>; intervalMs?: number; log?: (line: string) => void } = {},
@@ -938,9 +940,12 @@ export function startRecourseBindingHeal(
       if (outcome === 'bound') log('[observer] Recourse binding confirmed on Base');
       else if (outcome === 'signed') log('[observer] Recourse binding signed; the relay is sending it');
       else if (outcome === 'failed') log('[observer] Recourse binding check failed; retrying');
+      else if (outcome === 'no_passphrase') log('[observer] Recourse binding is not on chain and the wallet key cannot be unlocked to sign it again: '
+        + 'set PROVIAN_KEYSTORE_PASSPHRASE for this daemon (checking again every 15 minutes)');
     }
     if (stopped || outcome === 'bound' || outcome === 'no_keystore') { resolveDone(); return; }
-    timer = setTimeout(() => { void run(); }, deps.intervalMs ?? RECOURSE_BINDING_HEAL_INTERVAL_MS);
+    const interval = deps.intervalMs ?? RECOURSE_BINDING_HEAL_INTERVAL_MS;
+    timer = setTimeout(() => { void run(); }, outcome === 'no_passphrase' ? Math.max(interval, RECOURSE_BINDING_LOCKED_INTERVAL_MS) : interval);
     if (typeof timer.unref === 'function') timer.unref();
   };
   void run();

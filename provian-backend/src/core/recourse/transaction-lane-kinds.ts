@@ -1,6 +1,6 @@
 import { Interface, concat, hashMessage, sha256 } from 'ethers';
 import type { Firestore, Transaction as FirestoreTransaction } from 'firebase-admin/firestore';
-import { BINDING_OPERATIONS, assertCheckedBindingOperation, bindingOperationCalldata, checkBindingOperation, confirmBindingRegistration,
+import { BINDING_OPERATIONS, readAddressBinding, assertCheckedBindingOperation, bindingOperationCalldata, checkBindingOperation, confirmBindingRegistration,
   readConfirmedBinding, type CheckedBindingOperation, type IdentityAttestor } from './binding-operation';
 import { ownershipBindingMessage, type OwnershipBinding } from './ownership';
 import { OWNER_OPERATIONS, assertCheckedOwnerOperation, checkOwnerOperation } from './owner-operation-queue';
@@ -24,6 +24,7 @@ const code = (error: unknown) => error instanceof Error ? error.message : '';
 export interface BindingLanePorts {
   check: typeof checkBindingOperation;
   registration: typeof readConfirmedBinding;
+  addressBinding?: typeof readAddressBinding;
   now?: () => number;
 }
 /** Ownership binding. An expired owner signature closes as `binding_expired`
@@ -31,6 +32,7 @@ export interface BindingLanePorts {
 export function bindingLaneKind(db: Firestore, attestor: IdentityAttestor,
   ports: BindingLanePorts = { check: checkBindingOperation, registration: readConfirmedBinding }): LaneKind {
   const now = ports.now ?? Date.now;
+  const addressBinding = ports.addressBinding ?? readAddressBinding;
   const binding = (row: LaneRow): OwnershipBinding => {
     const value = row.data.binding as OwnershipBinding;
     if (hashMessage(ownershipBindingMessage(value)) !== row.id) throw Error('recourse_binding_record_invalid');
@@ -51,6 +53,10 @@ export function bindingLaneKind(db: Firestore, attestor: IdentityAttestor,
         return { kind: 'finish', status: 'confirmed', reason: 'binding_executed_by_other_submitter' };
       }
       if (value.expiresAtMs <= now() + BINDING_SEND_MARGIN_MS) return { kind: 'finish', status: 'failed', reason: 'binding_expired' };
+      // An address already bound to this owner (an earlier signature that landed while this one
+      // was being re-signed) is never bound twice: the earlier binding's own request confirms it.
+      const state = await addressBinding(value, 'latest');
+      if (state.firstBlock > 0n && state.owner === value.identity) return { kind: 'finish', status: 'failed', reason: 'binding_already_bound' };
       let plan: CheckedBindingOperation;
       try { plan = await ports.check(db, value, String(row.data.ownerSignature), attestor, undefined, member(row)); }
       catch (error) {
@@ -73,11 +79,20 @@ export function bindingLaneKind(db: Firestore, attestor: IdentityAttestor,
       try { registration = await ports.registration(binding(row)); }
       catch (error) {
         if (code(error) === 'recourse_binding_operation_retired') return { status: 'failed', reason: code(error) };
-        throw error;
+        if (code(error) !== 'recourse_binding_event_invalid') throw error;
+        registration = null;
       }
       if (registration) {
         await confirmBindingRegistration(db, registration, member(row));
         return { status: 'confirmed', reason: 'binding_finalized' };
+      }
+      if (receipt.status === 1) {
+        // Landed after another binding of the same address to the same owner: that first
+        // binding is the one the address record confirms, so this one closes as a duplicate.
+        const state = await addressBinding(binding(row), 'confirmed');
+        if (state.digestBlock > 0n && state.firstBlock > 0n && state.firstBlock < state.digestBlock && state.owner === binding(row).identity) {
+          return { status: 'confirmed', reason: 'binding_duplicate_of_prior' };
+        }
       }
       if (receipt.status === 1) throw Error('recourse_binding_event_unconfirmed');
       return { status: 'failed', reason: 'transaction_reverted' };

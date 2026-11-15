@@ -4630,12 +4630,13 @@ app.post('/v1/internal/scheduler/recourse-lane', async (req, res) => {
     const { runRecourseLaneFor } = await import('./core/recourse/transaction-lane-runtime');
     const { runAutomaticMembershipSweep } = await import('./core/recourse/automatic-membership');
     const { runRecourseMinute } = await import('./core/recourse/transaction-lane-schedule');
+    const { laneQueue } = await import('./core/recourse/transaction-lane');
     const { MEMBERSHIP_DEBIT_OPERATIONS } = await import('./core/recourse/membership-operation-identifiers');
     const db = agentBankDeps.db;
     res.json(await runRecourseMinute({ now: Date.now,
       lane: budgetMs => runRecourseLaneFor(db, { budgetMs }),
       sweep: options => runAutomaticMembershipSweep(db, options),
-      debitBacklog: async () => (await db.collection(MEMBERSHIP_DEBIT_OPERATIONS).orderBy('laneQueueKey').limit(41).get()).size }));
+      debitBacklog: async () => (await laneQueue(db, MEMBERSHIP_DEBIT_OPERATIONS).limit(41).get()).size }));
   } catch (error) {
     console.error('[Scheduler] Recourse lane error:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: 'Internal server error' });

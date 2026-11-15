@@ -10,7 +10,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { RECOURSE_COLLECTIONS, ownershipBindingMessage, type OwnershipBinding } from './ownership';
 import { BINDING_OPERATIONS, REGISTRY_ABI, checkBindingOperation, queueBindingOperation,
-  assertCheckedBindingOperation, readConfirmedBinding } from './binding-operation';
+  assertCheckedBindingOperation, readConfirmedBinding, readAddressBinding } from './binding-operation';
 import { bindingLaneKind, type BindingLanePorts } from './transaction-lane-kinds';
 import { runRecourseLane, RECOURSE_LANE_COLLECTION } from './transaction-lane';
 import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
@@ -20,7 +20,8 @@ import type { ProtocolDeployment } from '../protocol/pointer';
 const address = (b: string) => `0x${b.repeat(20)}`, hash = (b: string) => `0x${b.repeat(32)}`;
 const owner = new Wallet(hash('11')), attestorWallet = new Wallet(hash('22')), gasWallet = new Wallet(hash('33')); // Public test keys.
 async function fixture(change = '', member = false) {
-  const state = { registered: false };
+  // `priorBound`: the address was first bound by an earlier signature of the same owner, in block 50.
+  const state = { registered: false, priorBound: false };
   const timestamp = Math.floor(Date.now() / 1000);
   const rules: PrivateCalendarRules = () => ({ ruleHash: hash('a1'), rule: { schema: 'provian-recourse-membership/v1', chainId: 8453,
     pointer: address('aa'), firstMonth: 0, participationBurnAtomic: '100', noEarningsContributionAtomic: '100', earningsBps: 100 } });
@@ -51,7 +52,8 @@ async function fixture(change = '', member = false) {
       return [{ ...log, address: address('dd'), blockNumber: '0x64', blockHash: hash('bb'), transactionHash: hash('ef'), logIndex: '0x2', removed: false }];
     }
     const call = args[0] as { to: string; data: string };
-    expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
+    // The already-bound check before signing reads the latest block; every other read is pinned.
+    if (args[1] !== 'latest') expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
     const parsed = abi.parseTransaction(call)!;
     if (parsed.name === 'bind' || parsed.name === 'bindWithConsent') {
       expect(call.to).toBe(address('dd'));
@@ -70,13 +72,13 @@ async function fixture(change = '', member = false) {
     const values: Record<string, unknown> = { registryOperator: change === 'pool' && call.to === address('99') ? address('ee') : address('dd'),
       restorationAuthority: change === 'collapsed' ? attestor.address : address('ee'),
       identityAttestor: change === 'signer' ? owner.address : attestor.address, pointer: change === 'pointer' ? address('ee') : deployment.pointer,
-      bindingBlock: state.registered ? 100n : 0n, boundBlock: 100n, ownerOf: binding.identity, balanceOf: 123n };
+      bindingBlock: state.registered ? 100n : 0n, boundBlock: state.priorBound ? 50n : state.registered ? 100n : 0n, ownerOf: binding.identity, balanceOf: 123n };
     return abi.encodeFunctionResult(parsed.name, [values[parsed.name]]);
   } };
   const signature = await owner.signMessage(ownershipBindingMessage(binding));
   const gas = laneTestWallet(), base = simulatedBase(gas.address);
   const ports: BindingLanePorts = { check: (store, b, sig, who, _chain, memberConsent) => checkBindingOperation(store, b, sig, who, chain, memberConsent),
-    registration: b => readConfirmedBinding(b, chain) };
+    registration: b => readConfirmedBinding(b, chain), addressBinding: (b, tag) => readAddressBinding(b, tag, chain) };
   const kind = bindingLaneKind(db, attestor, ports);
   const signer = { address: gas.address.toLowerCase(), signTransaction: jest.fn((tx: Parameters<typeof gas.signTransaction>[0]) => gas.signTransaction(tx)) };
   const run = () => runRecourseLane({ db, signer, chain: base, kinds: [kind], workerId: `w-${Math.random()}`, now: base.now }, base.now() + 5_000);
@@ -123,6 +125,28 @@ test.each([0, 1])('binding crash retry rebroadcasts the exact persisted bytes an
   expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)?.status).toBe(status ? 'confirmed' : 'failed');
   expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${f.signer.address}`)?.open).toEqual({});
   expect(f.fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${f.binding.address}`)?.chainBindingStatus).toBe(status ? 'confirmed' : undefined);
+});
+test('an address already bound to the same owner is never bound a second time', async () => {
+  const f = await fixture();
+  const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain);
+  f.state.priorBound = true;
+  expect(await f.run()).toMatchObject({ signed: 0, failed: 1, closedUnsigned: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)).toMatchObject({ status: 'failed', terminalReason: 'binding_already_bound' });
+  expect(f.signer.signTransaction).not.toHaveBeenCalled();
+  expect(f.base.state.broadcasts).toHaveLength(0);
+});
+test('a re-signed binding that lands after the earlier one closes as a duplicate instead of holding a lane slot forever', async () => {
+  const f = await fixture();
+  const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain);
+  expect(await f.run()).toMatchObject({ signed: 1 });
+  // The earlier signature landed first (block 50); this one lands after it.
+  f.base.mine(); f.state.priorBound = true; f.state.registered = true;
+  f.base.advance(11);
+  expect(await f.run()).toMatchObject({ confirmed: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)).toMatchObject({ status: 'confirmed', terminalReason: 'binding_duplicate_of_prior' });
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${f.signer.address}`)?.open).toEqual({});
+  // The address record is confirmed by the earlier binding's own request, never by the duplicate.
+  expect(f.fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${f.binding.address}`)?.chainBindingStatus).toBeUndefined();
 });
 test('exact consent executed by another submitter is reconciled without signing or a second broadcast', async () => {
   const f = await fixture();

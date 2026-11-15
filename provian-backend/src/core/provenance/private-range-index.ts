@@ -6,6 +6,7 @@ export const PRIVATE_RANGE_FIELDS: Readonly<Record<string, readonly string[]>> =
   wallet_jurisdiction_sessions_v1: ['retention_until_ms'],
   pvt9_claim_ledger_v1: ['created_at'],
   pvt9_settlement_batches_v1: ['updated_at', 'cursor_end_n'],
+  recourse_private_membership_followups_v1: ['dueAtMs'],
 };
 export function privateRecordRange(collection: string, data: DocumentData): Record<string, number> {
   const out: Record<string, number> = {};

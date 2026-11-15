@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ensureRecourseBinding, recordBindingAttempt, relayReportsBound, BINDING_REPORT_GRACE_MS, RECOURSE_BINDING_STATE_FILE } from './recourse-binding-heal';
-import { startRecourseBindingHeal } from './observer/run-daemon';
+import { startRecourseBindingHeal, RECOURSE_BINDING_LOCKED_INTERVAL_MS } from './observer/run-daemon';
 import type { AgentKeystore } from './keystore';
 
 const address = `0x${'ab'.repeat(20)}`;
@@ -56,6 +56,26 @@ describe('the agent re-signs its Recourse binding on its own', () => {
     expect(await ensureRecourseBinding(config, { keystorePath, loadKeystore: () => keystore, readOwnership: async () => { throw new Error('down'); }, bind: bind as never })).toBe('failed');
     expect(bind).not.toHaveBeenCalled();
     expect(await ensureRecourseBinding(config, { keystorePath, loadKeystore: () => keystore, readSecret: () => 'secret', readOwnership: async () => unbound, bind: bind as never })).toBe('failed');
+  });
+  it('a key that cannot be unlocked is reported, never treated as having no wallet', async () => {
+    const bind = vi.fn();
+    expect(await ensureRecourseBinding(config, { keystorePath, statePath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'heal-')), 'b.json'),
+      loadKeystore: () => keystore, readSecret: () => null, readOwnership: async () => unbound, bind: bind as never })).toBe('no_passphrase');
+    expect(bind).not.toHaveBeenCalled();
+  });
+  it('the daemon loop says so when the key cannot be unlocked and keeps checking', async () => {
+    const outcomes = ['no_passphrase', 'no_passphrase', 'bound'] as const;
+    const heal = vi.fn(async () => outcomes[heal.mock.calls.length - 1]);
+    const log = vi.fn();
+    vi.useFakeTimers();
+    try {
+      const loop = startRecourseBindingHeal(config, { heal, intervalMs: 1, log });
+      await vi.advanceTimersByTimeAsync(RECOURSE_BINDING_LOCKED_INTERVAL_MS * 2 + 10);
+      await loop.done;
+    } finally { vi.useRealTimers(); }
+    expect(heal).toHaveBeenCalledTimes(3);
+    expect(log.mock.calls[0][0]).toMatch(/cannot be unlocked.*PROVIAN_KEYSTORE_PASSPHRASE/);
+    expect(log).toHaveBeenCalledTimes(2);
   });
   it('the daemon loop keeps checking until bound, then stops', async () => {
     const outcomes = ['failed', 'signed', 'pending', 'bound', 'signed'] as const;

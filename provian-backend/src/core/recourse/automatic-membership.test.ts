@@ -2,7 +2,8 @@ jest.mock('../protocol/runtime', () => ({ currentProtocolDeployment: async () =>
 import { advanceMembershipDeparture } from './membership-departure';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { collectAutomaticMembershipOwner,runAutomaticMembershipSweep,AUTOMATIC_MEMBERSHIP_SWEEP } from './automatic-membership';
+import * as queryPagesModule from '../provenance/query-pages';
+import { collectAutomaticMembershipOwner,runAutomaticMembershipSweep,AUTOMATIC_MEMBERSHIP_SWEEP,nextUtcDayMs } from './automatic-membership';
 import { prepareMembershipDebit } from './membership-debit-preparation';
 import { queueMembershipDebit } from './membership-debit-operation';
 import { reconcileCurrentPrivateMembership,prepareMembershipTransition } from './membership-preparation';
@@ -66,8 +67,34 @@ test('a completed departure or already settled month causes no debit',async()=>{
 test('a failing owner cannot starve the next owner and the sweep cursor resets after a full pass',async()=>{
  const s=setup(),other=h(21);s.fake.store.set(`${C.owners}/${other}`,{ownerIdentity:other});s.fake.store.set(`${R.owners}/${other}`,{ownerIdentity:other,membershipFixedDebitBinding:h(22)});
  (reconcileCurrentPrivateMembership as jest.Mock).mockRejectedValueOnce(Error('temporarily_unavailable'));
- expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({visited:2,retry:1,queued:1});
- expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)?.after).toBeNull();
+ expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({visited:2,retry:1,queued:1,passes:1});
+ expect(s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)).toMatchObject({pass:null,restUntilMs:nextUtcDayMs(Date.now())});
+});
+test('a pass reads the member accounts once, resumes across runs from its snapshot, then rests until the next UTC day',async()=>{
+ const s=setup(),owners=[...Array(7).keys()].map(i=>h(40+i));
+ for(const o of owners)s.fake.store.set(`${C.owners}/${o}`,{ownerIdentity:o});
+ // Snapshots taken, and every read of the account collection (a query plus one ref per row it returns).
+ const snapshot=jest.spyOn(queryPagesModule,'scanQueryUnordered'),collection=jest.spyOn(s.fake,'collection');
+ const accountReads=()=>collection.mock.calls.filter(([name])=>name===C.owners).length;
+ const visited:string[]=[];let clock=Date.UTC(2026,11,1,6);
+ // Each run takes two steps (the backlog hook reports full after that), so the pass spans several runs.
+ const run=()=>{let steps=0;return runAutomaticMembershipSweep(s.db,{deadlineMs:clock+3_600_000,now:()=>clock,concurrency:1,
+  backlog:async()=>steps++<2?0:99,collect:async(_db,o)=>{visited.push(o);return 'settled';}});};
+ await run();
+ expect(snapshot).toHaveBeenCalledTimes(1);
+ const reads=accountReads();
+ // A member added after the snapshot waits for the next pass; the pass in progress never re-reads accounts.
+ const late=h(60);s.fake.store.set(`${C.owners}/${late}`,{ownerIdentity:late});
+ let runs=1;
+ for(;runs<20&&s.fake.store.get(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`)?.pass!==null;runs++)await run();
+ expect(runs).toBeGreaterThanOrEqual(3);
+ expect(snapshot).toHaveBeenCalledTimes(1);expect(accountReads()).toBe(reads);
+ expect([...new Set(visited)].sort()).toEqual([s.owner,...owners].sort());
+ expect(visited).not.toContain(late);
+ // RED control for the rest: the same day runs nothing; the next UTC day takes a fresh snapshot that includes the late member.
+ const before=visited.length;await run();expect(visited.length).toBe(before);expect(snapshot).toHaveBeenCalledTimes(1);
+ clock=Date.UTC(2026,11,2,0,0,1);for(let i=0;i<20&&!visited.includes(late);i++)await run();
+ expect(snapshot).toHaveBeenCalledTimes(2);expect(visited).toContain(late);
 });
 
 test('a never-admitted first join still reconciles departure after the app closes',async()=>{

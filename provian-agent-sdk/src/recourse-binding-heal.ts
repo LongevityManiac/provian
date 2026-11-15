@@ -15,7 +15,8 @@ import { bindRecourseOwnership, readRecourseOwnership, type RecourseConfig } fro
 import { loadKeystore, getDefaultKeystorePath, type AgentKeystore } from './keystore';
 import { readLocalKeystoreSecret, LOCAL_KEYSTORE_SECRET_PATH } from './local-keystore-secret';
 
-export type BindingHealOutcome = 'bound' | 'pending' | 'signed' | 'no_keystore' | 'failed';
+/** `no_keystore`: this device holds no key for this wallet. `no_passphrase`: it does, but cannot unlock it to re-sign. */
+export type BindingHealOutcome = 'bound' | 'pending' | 'signed' | 'no_keystore' | 'no_passphrase' | 'failed';
 /** After a signature's expiry, how long the relay may still take to report it bound. */
 export const BINDING_REPORT_GRACE_MS = 3 * 60_000;
 export const RECOURSE_BINDING_STATE_FILE = 'recourse-binding.json';
@@ -72,7 +73,7 @@ export async function ensureRecourseBinding(config: RecourseConfig, deps: Bindin
   if (last && last.address === address && now() < last.expiresAtMs + BINDING_REPORT_GRACE_MS) return 'pending';
   // The installer's local secret, or the passphrase an npm-created wallet runs its observer with.
   const passphrase = (deps.readSecret ?? (() => readLocalKeystoreSecret(LOCAL_KEYSTORE_SECRET_PATH) ?? process.env.PROVIAN_KEYSTORE_PASSPHRASE ?? null))();
-  if (!passphrase) return 'no_keystore';
+  if (!passphrase) return 'no_passphrase';
   try {
     await (deps.bind ?? bindRecourseOwnership)(config, { keystore, passphrase, keystorePath }, { wait: false,
       onSigned: binding => writeAttempt(statePath, { address, expiresAtMs: binding.expiresAtMs, signedAtMs: now() }) });

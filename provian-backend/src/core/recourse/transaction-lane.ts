@@ -41,6 +41,12 @@ export function laneQueueKey(nowMs: number, id: string): string {
   return `${String(nowMs).padStart(16, '0')}:${id}`;
 }
 /** Fields every queue writes when a row (re)enters the queued state. */
+/** The live queue of one collection, oldest first. Every lane collection is held in the
+ * private store, where only an equality on an indexed field narrows the physical read:
+ * filtering on `status` keeps each read proportional to the backlog, never the history. */
+export function laneQueue(db: Firestore, collection: string) {
+  return db.collection(collection).where('status', '==', 'queued').orderBy('laneQueueKey');
+}
 export function laneQueuedFields(nowMs: number, id: string): { readonly laneQueueKey: string } {
   return { laneQueueKey: laneQueueKey(nowMs, id) };
 }
@@ -320,7 +326,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
     while (batch.length < limit) {
       for (const [collection, cursor] of cursors) {
         if (cursor.buffer.length > 0) continue;
-        let query = db.collection(collection).orderBy('laneQueueKey').limit(25);
+        let query = laneQueue(db, collection).limit(25);
         if (cursor.after) query = query.startAfter(cursor.after);
         const page = await query.get();
         cursor.buffer = page.docs.map(doc => ({ collection, id: doc.id, data: doc.data() }));
@@ -448,7 +454,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
 }
 
 export async function anyQueued(db: Firestore, kinds: readonly LaneKind[]): Promise<boolean> {
-  const pages = await Promise.all(kinds.map(kind => db.collection(kind.collection).orderBy('laneQueueKey').limit(1).get()));
+  const pages = await Promise.all(kinds.map(kind => laneQueue(db, kind.collection).limit(1).get()));
   return pages.some(page => !page.empty);
 }
 /** True while `id` still holds an unreconciled lane nonce. Retry paths must not requeue it. */

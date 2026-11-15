@@ -23,7 +23,7 @@ export const PRIVATE_STORE_COLLECTIONS=new Set([
  'recourse_shared_transfers_v1', 'recourse_shared_ledger_cursors_v1', 'recourse_contract_births_v1',
  'recourse_private_issuance_addresses_v1', 'recourse_private_issuance_batches_v1',
  'recourse_private_membership_journal_v1', 'recourse_private_membership_transitions_v1', 'recourse_private_memberships_v1', 'recourse_private_membership_reservations_v1', 'recourse_private_membership_receipts_v1', 'recourse_private_membership_effects_v1',
- 'recourse_private_membership_sweep_v1',
+ 'recourse_private_membership_sweep_v1', 'recourse_private_membership_followups_v1', 'recourse_transaction_lane_v1',
  'recourse_membership_consent_operations_v2', 'recourse_membership_consent_operations_v2_attempts',
  'recourse_membership_debit_operations_v2', 'recourse_membership_debit_operations_v2_attempts',
  'recourse_membership_consent_operations_v1', 'recourse_membership_consent_operations_v1_attempts',

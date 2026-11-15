@@ -106,6 +106,31 @@ export async function readConfirmedBinding(binding: OwnershipBinding, chain = ch
   confirmed.add(proof);
   return proof;
 }
+/** The address's on-chain binding at the latest block and at twelve confirmations:
+ * its owner, the block it was first bound in, and the block this binding's digest landed in. */
+export interface AddressBindingState { readonly owner: string; readonly firstBlock: bigint; readonly digestBlock: bigint; }
+export async function readAddressBinding(binding: OwnershipBinding, tag: 'latest' | 'confirmed', chain = chainPort()): Promise<AddressBindingState> {
+  const digest = hashMessage(ownershipBindingMessage(binding)), deployment = await chain.deployment();
+  if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('recourse_binding_operation_retired');
+  let at: unknown = 'latest';
+  if (tag === 'confirmed') {
+    const head: unknown = await chain.agree('eth_blockNumber', []);
+    if (typeof head !== 'string' || !/^0x[0-9a-f]+$/i.test(head)) throw new Error('recourse_binding_reply_invalid');
+    const depth = BigInt(head) - BigInt(RECOURSE_CONFIRMATIONS - 1);
+    const block: unknown = await chain.agree('eth_getBlockByNumber', [`0x${(depth < 0n ? 0n : depth).toString(16)}`, false]);
+    if (!block || typeof block !== 'object' || !('hash' in block) || typeof block.hash !== 'string') throw new Error('recourse_binding_reply_invalid');
+    at = { blockHash: block.hash, requireCanonical: true };
+  }
+  const call = async (target: string, abi: Interface, method: string, args: readonly unknown[]) => {
+    const raw = await chain.agree('eth_call', [{ to: target, data: abi.encodeFunctionData(method, args) }, at]);
+    if (typeof raw !== 'string') throw new Error('recourse_binding_reply_invalid');
+    return abi.decodeFunctionResult(method, raw);
+  };
+  const registry = String((await call(binding.kernel, KERNEL, 'registryOperator', []))[0]).toLowerCase();
+  const [owner, first, block] = await Promise.all([call(registry, REGISTRY_ABI, 'ownerOf', [binding.address]),
+    call(registry, REGISTRY_ABI, 'boundBlock', [binding.address]), call(registry, REGISTRY_ABI, 'bindingBlock', [digest])]);
+  return { owner: String(owner[0]).toLowerCase(), firstBlock: BigInt(first[0]), digestBlock: BigInt(block[0]) };
+}
 export async function confirmBindingRegistration(db: Firestore, proof: ConfirmedBinding, member?: MemberBindingConsent): Promise<void> {
   if (!confirmed.has(proof)) throw new Error('recourse_binding_confirmation_unverified');
   let effect: { pool: string; logIndex: number; receipt: Awaited<ReturnType<typeof readMembershipReceipt>> } | null = null;

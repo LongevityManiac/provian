@@ -9,6 +9,7 @@ import { configuredIdentityAttestor } from './identity-attestor';
 import { breakDeploymentChain } from './break-deployment-queue';
 import { assertLaneKeyPinned, recourseLaneWallet } from './transaction-lane-key';
 import { recourseLaneKinds } from './transaction-lane-kinds';
+import { drainLegacyRecourse } from './transaction-lane-legacy';
 import { anyQueued, runRecourseLane, type LaneChain, type LaneReport } from './transaction-lane';
 import type { OwnerOperationChain } from './owner-operation-queue';
 
@@ -101,6 +102,9 @@ export async function runRecourseLaneFor(db: Firestore, options: LaneRunOptions)
   const kinds = recourseLaneKinds(db, configuredIdentityAttestor(env));
   let chain: LaneChain | null = null, fenced = false;
   const reports: LaneReport[] = [];
+  // Requests the relay held before this lane existed: release the minter and queue them here.
+  try { await drainLegacyRecourse(db, kinds, () => (chain ??= createLaneChain())); }
+  catch (error) { console.warn('[recourse-lane] legacy drain deferred:', error instanceof Error ? error.message : 'error'); }
   while (Date.now() < deadline) {
     chain ??= createLaneChain();
     const report = await runRecourseLane({ db, signer: wallet, chain, kinds, workerId: `recourse-lane-${randomUUID()}`,

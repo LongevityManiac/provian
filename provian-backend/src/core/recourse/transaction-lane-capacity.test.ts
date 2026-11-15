@@ -189,9 +189,11 @@ test('monthly debits for 50,000 members are all collected inside their window', 
     return { docs, size: docs.length, empty: docs.length === 0 };
   };
   const ownersQuery = (after: string | null = null, limit = 0): unknown => ({ orderBy: () => ownersQuery(after, limit),
-    limit: (n: number) => ownersQuery(after, n), startAfter: (value: string) => ownersQuery(value, limit), get: async () => ownerPage(after, limit) });
+    limit: (n: number) => ownersQuery(after, n), startAfter: (value: string | { id: string }) => ownersQuery(typeof value === 'string' ? value : value.id, limit),
+    get: async () => { ownerReads += limit; return ownerPage(after, limit); } });
   const fakeCollection = sim.fake.collection.bind(sim.fake);
   (sim.fake as unknown as { collection: (name: string) => unknown }).collection = (name: string) => name === C.owners ? ownersQuery() : fakeCollection(name);
+  let ownerReads = 0;
   const inflight = new Map<string, string>();
   let n = 0;
   /** A member with no paid debit and none in flight gets one prepared and queued. */
@@ -226,7 +228,10 @@ test('monthly debits for 50,000 members are all collected inside their window', 
   expect(lastPaid).toBeLessThan(windowEnd);
   // Collected well inside the window, not just before its edge.
   expect(lastPaid - START).toBeLessThan(3 * DAY);
+  // Member accounts are read once per daily pass, never once per page.
+  const passes = Math.ceil((lastPaid - START) / DAY) + 1;
+  expect(ownerReads).toBeLessThanOrEqual(passes * (50_000 + 500));
   // One transaction per debit sent; an authorization that expired unsent cost nothing and was prepared again.
   expect(sim.base.state.mined.size).toBe(sim.rows(DEBITS).filter(v => v.laneNonce !== undefined).length);
-  process.stdout.write(`debit capacity: 50000 collected by ${new Date(lastPaid).toISOString()} (${((lastPaid - START) / 3_600_000).toFixed(1)} h), ${stale} expired before sending\n`);
+  process.stdout.write(`debit capacity: 50000 collected by ${new Date(lastPaid).toISOString()} (${((lastPaid - START) / 3_600_000).toFixed(1)} h), ${stale} expired before sending, ${ownerReads} account reads\n`);
 }, 1_800_000);
