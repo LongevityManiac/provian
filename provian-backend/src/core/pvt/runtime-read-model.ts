@@ -29,7 +29,7 @@ export function publicRuntimeGasWallets(env: Readonly<Record<string, string | un
   const roles: Readonly<Record<string, string>> = {
     settlement_minter: 'PVT9_SETTLEMENT_MINTER_KEY', settlement_approver: 'PVT9_SETTLEMENT_APPROVER_KEY',
     escrow_keeper: 'ESCROW_RELEASE_KEY', pool_keeper: 'POOL_KEEPER_KEY',
-    bond_keeper: 'BOND_KEEPER_KEY', payout_gas: 'PAYOUT_BASE_GAS_KEY',
+    bond_keeper: 'BOND_KEEPER_KEY', payout_gas: 'PAYOUT_BASE_GAS_KEY', recourse_gas: 'RECOURSE_GAS_KEY',
   };
   for (const [role, name] of Object.entries(roles)) {
     const key = env[name]?.trim();

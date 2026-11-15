@@ -1,7 +1,9 @@
 import { Interface, Wallet, getBytes, getCreateAddress, keccak256, verifyMessage } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
+import { runRecourseLane, RECOURSE_LANE_COLLECTION } from './transaction-lane';
+import { sponsoredLaneKind } from './transaction-lane-kinds';
+import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, planPrivateDebit, reservePrivateMembership, type PrivateMembershipAccount } from './private-membership-reservation';
 import { joinPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
@@ -9,12 +11,10 @@ import { readPrivateCalendarRules } from './private-calendar-rules';
 import { STANDING_MEMBERSHIP_ABI, standingMembershipDebitSigningHash } from './membership-authorization';
 import { queueMembershipDebit, checkMembershipDebit, membershipDebitAdapter, assertCheckedMembershipDebit,
   MEMBERSHIP_DEBIT_OPERATIONS as Q, type CheckedMembershipDebit } from './membership-debit-operation';
-import { executeSponsoredOperation } from './sponsored-operation-worker';
 import { utcCalendarMonth } from './calendar-month';
 import type { MembershipConsentPorts } from './membership-consent-operation';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import type { RecoursePoolState } from './pool-state';
-import type { FinalizedOwnerTransaction } from './transaction-finality';
 import { fixture as receiptFixture, old, pointer, tx as receiptHash } from './__test-helpers__/membership-receipt-fixture';
 import { seedMembershipJournal } from './__test-helpers__/membership-journal-fixture';
 import { MEMBERSHIP_RECEIPT_ABI } from './membership-receipt';
@@ -25,6 +25,7 @@ jest.mock('../protocol/pointer-pin.generated', () => ({ PROTOCOL_POINTER_PIN: {
 jest.mock('./private-calendar-rules', () => ({ readPrivateCalendarRules: jest.fn() }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 const ownerWallet = new Wallet(h('11')), attestorWallet = new Wallet(h('22')), gasWallet = new Wallet(h('33'));
+const laneWallet = laneTestWallet(), LANE = laneWallet.address.toLowerCase();
 const now = 1700000000, month = utcCalendarMonth(now);
 async function fixture() {
   const fake = createFakeFirestore({ strictTransactionOrder: true }), db = fake as unknown as Firestore;
@@ -50,7 +51,7 @@ async function fixture() {
   const wire = new Interface(['function standingMembership() view returns(address)', 'function registryOperator() view returns(address)', 'function identityAttestor() view returns(address)',
     'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)', 'function operationalMinter() view returns(address)',
     'function kernel() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)', ...STANDING_MEMBERSHIP_ABI.fragments]);
-  const p: MembershipConsentPorts = { state: async () => state, chain: { deployment: async () => deployment, agree: async (method, args) => {
+  const p: MembershipConsentPorts = { gasPayer: LANE, state: async () => state, chain: { deployment: async () => deployment, agree: async (method, args) => {
     expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
     if (method === 'eth_getCode') return '0x';
     const call = args[0] as { to: string; data: string }, parsed = wire.parseTransaction(call)!;
@@ -91,17 +92,20 @@ test.each(['burn', 'reserve', 'reservation', 'payer', 'month', 'generation', 'tr
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.pendingReservation).toBe(f.reservation.id);
 });
-test('a finalized gas revert releases only the sponsor nonce and retains the exact private payment reservation', async () => {
+function lane(db: Firestore, adapter: ReturnType<typeof membershipDebitAdapter>) {
+  const base = simulatedBase(laneWallet.address);
+  const signer = { address: LANE, signTransaction: jest.fn((tx: Parameters<typeof laneWallet.signTransaction>[0]) => laneWallet.signTransaction(tx)) };
+  const run = () => runRecourseLane({ db, signer, chain: base, kinds: [sponsoredLaneKind('membership_debit', adapter)], workerId: `w-${Math.random()}`, now: base.now }, base.now() + 5_000);
+  return { base, signer, run };
+}
+test('a confirmed gas revert releases only the sponsor nonce and retains the exact private payment reservation', async () => {
   const f = await fixture(), { id } = await queueMembershipDebit(f.db, f.owner, f.input, f.attestor, f.p);
-  const finalized = jest.fn(async (): Promise<FinalizedOwnerTransaction | null> => null);
-  const adapter = { ...membershipDebitAdapter(f.db, f.p), finalized };
-  const signer = { address: gasWallet.address.toLowerCase(), sign: jest.fn((plan: CheckedMembershipDebit) => gasWallet.signTransaction({
-    chainId: 8453, type: 2, to: plan.executor, data: plan.calldata, nonce: 3, value: 0, gasLimit: 500000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
-    broadcast: jest.fn(async (raw: string) => keccak256(raw)) };
-  expect(await executeSponsoredOperation(f.db, id, signer, adapter)).toBe('submitted');
-  finalized.mockResolvedValue({ status: 0, transactionHash: String(f.fake.store.get(`${Q}/${id}`)!.transactionHash), block: 12, blockHash: h('55') });
-  expect(await executeSponsoredOperation(f.db, id, signer, adapter)).toBe('failed');
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBeNull();
+  const l = lane(f.db, membershipDebitAdapter(f.db, f.p));
+  expect(await l.run()).toMatchObject({ signed: 1 });
+  l.base.state.status = () => 0; l.base.mine(); l.base.advance(11);
+  expect(await l.run()).toMatchObject({ failed: 1 });
+  expect(f.fake.store.get(`${Q}/${id}`)).toMatchObject({ status: 'failed', terminalReason: 'transaction_reverted' });
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)?.open).toEqual({});
   expect(f.fake.store.get(`${C.reservations}/${f.reservation.id}`)!.status).toBe('pending');
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)).toMatchObject({ pendingReservation: f.reservation.id, episode: f.account.episode });
 });
@@ -112,15 +116,15 @@ test('expired prior-month authorization cannot be refreshed into a later payable
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.pendingReservation).toBe(f.reservation.id);
 });
-test('recovery after an unsigned sponsor crash releases gas lease but never the private money lock', async () => {
+test('a signer interruption reserves no nonce and never the private money lock', async () => {
   const f = await fixture(), { id } = await queueMembershipDebit(f.db, f.owner, f.input, f.attestor, f.p);
-  const signer = { address: gasWallet.address.toLowerCase(), sign: jest.fn(async (): Promise<string> => { throw Error('signer_interrupted'); }),
-    broadcast: jest.fn(async (raw: string) => keccak256(raw)) };
-  const adapter = membershipDebitAdapter(f.db, f.p);
-  await expect(executeSponsoredOperation(f.db, id, signer, adapter)).rejects.toThrow('signer_interrupted');
+  const l = lane(f.db, membershipDebitAdapter(f.db, f.p));
+  l.signer.signTransaction.mockRejectedValueOnce(Error('signer_interrupted'));
+  expect(await l.run()).toMatchObject({ signed: 0, stopReason: 'recourse_lane_sign_failed' });
   f.fake.store.get(`${R.identities}/${f.binding}`)!.recoveryGeneration = 1;
-  expect(await executeSponsoredOperation(f.db, id, signer, adapter)).toBe('failed');
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBeNull();
+  expect(await l.run()).toMatchObject({ failed: 1, closedUnsigned: 1 });
+  expect(f.fake.store.get(`${Q}/${id}`)?.status).toBe('failed');
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)).toMatchObject({ next_nonce: 0, open: {} });
   expect(f.fake.store.get(`${C.owners}/${f.owner}`)!.pendingReservation).toBe(f.reservation.id);
   expect(f.fake.store.get(`${C.reservations}/${f.reservation.id}`)!.status).toBe('pending');
 });

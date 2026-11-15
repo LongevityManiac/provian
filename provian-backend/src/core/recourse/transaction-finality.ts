@@ -1,6 +1,15 @@
 import { Transaction, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import type { EconomicStateRpcLeg } from '../onchain/economic-state';
+import { BASE_ECONOMIC_FINALITY_CONFIRMATIONS } from '../onchain/economic-constants';
+
+/** A Recourse transaction is done at the same depth as all other Base economic
+ * evidence the relay accepts: twelve confirmations, the inclusion block counted. */
+export const RECOURSE_CONFIRMATIONS = BASE_ECONOMIC_FINALITY_CONFIRMATIONS;
+/** True when `block` has at least twelve confirmations at `head`. */
+export function hasRecourseConfirmations(block: bigint, head: bigint): boolean {
+  return block >= 0n && head >= block && head - block + 1n >= BigInt(RECOURSE_CONFIRMATIONS);
+}
 
 export interface FinalizedOwnerTransaction {
   readonly transactionHash: string; readonly blockHash: string; readonly block: number;
@@ -15,8 +24,9 @@ function quantity(value: unknown): bigint {
   return BigInt(value);
 }
 /** Nonce reconciliation deliberately does not require today's identity state.
- * A canonical finalized revert consumes a nonce just as a success does. This
- * result never authorizes credential installation or restoration of funds. */
+ * A canonical confirmed revert consumes a nonce just as a success does. Each
+ * independent RPC must see twelve confirmations on its own head. This result
+ * never authorizes credential installation or restoration of funds. */
 export async function finalizedOwnerTransaction(raw: string,
   testLegs?: readonly [EconomicStateRpcLeg, EconomicStateRpcLeg]): Promise<FinalizedOwnerTransaction | null> {
   const tx = Transaction.from(raw), hash = keccak256(raw);
@@ -34,8 +44,7 @@ export async function finalizedOwnerTransaction(raw: string,
       || typeof receipt.blockHash !== 'string' || !/^0x[0-9a-f]{64}$/.test(receipt.blockHash)
       || block > BigInt(Number.MAX_SAFE_INTEGER) || receipt.from?.toString().toLowerCase() !== tx.from!.toLowerCase()
       || receipt.to?.toString().toLowerCase() !== tx.to?.toLowerCase()) throw new Error('recourse_transaction_receipt_invalid');
-    const finalized = object(await leg.send('eth_getBlockByNumber', ['finalized', false]));
-    if (block > quantity(finalized.number)) throw new Error('recourse_transaction_not_finalized');
+    if (!hasRecourseConfirmations(block, quantity(await leg.send('eth_blockNumber', [])))) throw new Error('recourse_transaction_not_finalized');
     const tag = `0x${block.toString(16)}`;
     const canonical = object(await leg.send('eth_getBlockByNumber', [tag, false]));
     if (canonical.hash !== receipt.blockHash || !Array.isArray(canonical.transactions)

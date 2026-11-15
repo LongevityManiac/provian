@@ -21,7 +21,7 @@ export function recoveryAuthorizationFixture(input: RecoveryAuthorizationInput, 
   const leg = (index: number): EconomicStateRpcLeg => ({ operatorId: `operator-${index}`, send: async (method, params) => {
     let result: unknown;
     if (method === 'eth_chainId') result = '0x2105';
-    else if (method === 'eth_blockNumber') result = '0x65';
+    else if (method === 'eth_blockNumber') result = '0x6f';
     else if (method === 'eth_getBlockByNumber') result = params[0] === '0x64' ? { number: '0x64', hash: receiptHash } : { number: '0x65', hash: headHash };
     else if (method === 'eth_getTransactionReceipt') result = { transactionHash: input.transactionHash, status: '0x1',
       blockNumber: '0x64', blockHash: receiptHash, logs };

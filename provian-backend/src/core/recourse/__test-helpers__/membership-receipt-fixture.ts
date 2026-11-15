@@ -30,8 +30,9 @@ export function fixture() {
     if (method === 'eth_getTransactionReceipt') return { transactionHash: state.receiptTx, blockNumber: '0x64', blockHash, status: state.status,
       logs: state.effects.map(effect => ({ ...meta, address: state.pool, ...effect })) };
     if (method === 'eth_getLogs') return state.publications;
+    // `final` is the deepest block with twelve confirmations; the head is eleven past it.
+    if (method === 'eth_blockNumber') return `0x${(Number(BigInt(state.final)) + 11).toString(16)}`;
     if (method === 'eth_getBlockByNumber') {
-      if (params[0] === 'finalized') return { number: state.final };
       const prior = params[0] === '0x63';
       return { number: prior ? '0x63' : '0x64', hash: prior ? h(99) : state.reorg && state.reads++ >= 2 ? h(101) : blockHash,
         timestamp: '0x6553f100', parentHash: prior ? h(98) : h(99), transactions: [tx] };

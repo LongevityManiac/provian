@@ -1,3 +1,4 @@
+import { hasRecourseConfirmations } from './transaction-finality';
 import { AbiCoder, Interface, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import type { EconomicStateRpcLeg } from '../onchain/economic-state';
@@ -88,7 +89,7 @@ export async function readMembershipReceipt(transactionHash: string, poolAddress
   if (header.hash !== blockHash || quantity(header.number) !== block || !Array.isArray(header.transactions)
     || !header.transactions.includes(transactionHash)) return invalid('reorg');
   const timestamp = quantity(header.timestamp);
-  for (const leg of legs) if (quantity(object(await leg.send('eth_getBlockByNumber', ['finalized', false])).number) < block) return invalid('pending');
+  for (const leg of legs) if (!hasRecourseConfirmations(BigInt(block), BigInt(quantity(await leg.send('eth_blockNumber', []))))) return invalid('pending');
   const pointerCode = await agreed('eth_getCode', [pointer, pin]);
   if (typeof pointerCode !== 'string' || keccak256(pointerCode) !== runtimeHash) return invalid('pointer_runtime');
   const logs = raw.logs.map(l => logAt(l, block, blockHash));

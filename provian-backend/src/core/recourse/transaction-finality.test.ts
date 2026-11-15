@@ -22,8 +22,8 @@ function leg(operatorId: string, change: string, status = 1): EconomicStateRpcLe
         to: `0x${(change === 'target' ? '56' : '34').repeat(20)}`,
         providerSpecificField: operatorId };
     }
+    if (method === 'eth_blockNumber') return change === 'pending' ? '0x6e' : change === 'deep' ? '0x1000' : '0x6f';
     if (method === 'eth_getBlockByNumber') {
-      if (params[0] === 'finalized') return { number: change === 'pending' ? '0x63' : '0x64' };
       return { hash: change === 'reorg' ? hash : blockHash, transactions: change === 'omitted' ? [] : [hash] };
     }
     if (method === 'eth_getTransactionCount') {
@@ -33,9 +33,15 @@ function leg(operatorId: string, change: string, status = 1): EconomicStateRpcLe
     throw new Error(`unexpected:${method}`);
   } };
 }
-test.each([0, 1])('canonical finalized status %s proves nonce consumption without granting recovery authority', async status => {
+test.each([0, 1])('canonical twelve-confirmation status %s proves nonce consumption without granting recovery authority', async status => {
   expect(await finalizedOwnerTransaction(raw, [leg('a', '', status), leg('b', '', status)]))
     .toEqual({ transactionHash: hash, blockHash, block: 100, status });
+});
+test('a receipt with eleven confirmations is not yet done; twelve or more is', async () => {
+  // Block 0x64 = 100. Head 0x6e = 110 gives 11 confirmations; 0x6f = 111 gives 12.
+  await expect(finalizedOwnerTransaction(raw, [leg('a', 'pending'), leg('b', 'pending')])).rejects.toThrow('not_finalized');
+  await expect(finalizedOwnerTransaction(raw, [leg('a', ''), leg('b', 'pending')])).rejects.toThrow('not_finalized');
+  expect((await finalizedOwnerTransaction(raw, [leg('a', 'deep'), leg('b', '')]))?.status).toBe(1);
 });
 test.each(['chain', 'hash', 'sender', 'target', 'reorg', 'omitted', 'nonce', 'pending'])('refuses %s', async change => {
   await expect(finalizedOwnerTransaction(raw, [leg('a', change), leg('b', change)])).rejects.toThrow();

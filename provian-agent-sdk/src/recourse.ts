@@ -68,11 +68,18 @@ export async function leaveAgentMembership(config:RecourseConfig,input:{director
     exitSecret:(challenge,salt,expectedCommitment)=>retainedMembershipExitSecret({...input,walletId:config.walletId,
       domain:challenge.domain,binding:challenge.consent.binding,salt,expectedCommitment})});
 }
+export interface BindRecourseOptions {
+  /** Wait for the binding to appear on chain. Install paths pass false: the relay
+   * sends it in the background and the daemon re-signs if the signature expires. */
+  readonly wait?: boolean;
+  /** Called with the signed binding before it is submitted. */
+  readonly onSigned?: (binding: RecourseBinding) => void;
+}
 /** Durably encrypt an independent secret before registering only its hash. */
 export async function bindRecourseOwnership(config: RecourseConfig, input: {
   readonly keystore: AgentKeystore; readonly passphrase: string; readonly keystorePath: string;
   readonly external?: { readonly address: string; readonly sign: (message: string) => Promise<string>; readonly signBytes?: (message: Uint8Array) => Promise<string> };
-}): Promise<unknown> {
+}, options: BindRecourseOptions = {}): Promise<unknown> {
   if (input.keystore.wallet_id !== config.walletId) throw new Error('recourse_wallet_mismatch');
   const keystore = initializeRecoveryKeystore(input.keystore, input.passphrase, input.keystorePath);
   const address = (input.external?.address ?? keystore.address).toLowerCase();
@@ -113,8 +120,10 @@ export async function bindRecourseOwnership(config: RecourseConfig, input: {
       : await withDecryptedKey(keystore, input.passphrase, key => new Wallet(key.privateKey).signMessage(bytes));
     memberConsent = { authorization, ownerSignature };
   }
+  options.onSigned?.(binding);
   const result = await request(config, 'bind', { binding, signature, ...(memberConsent ? { memberConsent } : {}) });
-  await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal, acceptedBindingDigest(result, binding));
+  const digest = acceptedBindingDigest(result, binding);
+  if (options.wait !== false) await waitForRecourseBinding(binding, ownerChainNetwork(), config.signal, digest);
   return result;
 }
 

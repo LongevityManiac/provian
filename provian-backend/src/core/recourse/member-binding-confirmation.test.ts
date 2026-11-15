@@ -23,6 +23,7 @@ async function setup() {
   const abi = new Interface([...REGISTRY_ABI.fragments, 'function registryOperator() view returns(address)', 'function balanceOf(address) view returns(uint256)']);
   const chain: OwnerOperationChain = { deployment: async () => ({ addresses: { kernel: old[0] }, pointer } as ProtocolDeployment),
     agree: async (method, args) => {
+      if (method === 'eth_blockNumber') return '0x6f';
       if (method === 'eth_getBlockByNumber') return { number: '0x64', hash: h(100) };
       if (method === 'eth_getCode') return '0x6000';
       if (method === 'eth_getLogs') return [{ address: a(999), blockNumber: '0x64', blockHash: h(100), logIndex: '0x4', transactionHash: txHash, removed: false,

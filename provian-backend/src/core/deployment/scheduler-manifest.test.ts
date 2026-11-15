@@ -68,6 +68,8 @@ const SEED_LIVE_JOBS: readonly LiveJob[] = Object.freeze([
   { name: 'provian-chain-record-watcher', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record', nonHttpTarget: null },
   { name: 'provian-chain-record-auxiliary', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record-auxiliary', nonHttpTarget: null },
   { name: 'provian-chain-record-discovery', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record-discovery', nonHttpTarget: null },
+  // the Recourse transaction lane, created live before the deploy.
+  { name: 'provian-recourse-lane', state: 'ENABLED', schedule: '* * * * *', endpoint: '/v1/internal/scheduler/recourse-lane', nonHttpTarget: null },
   { name: 'provian-pending-cache-backfill', state: 'ENABLED', schedule: '0 * * * *', endpoint: '/v1/internal/scheduler/pending-cache-backfill', nonHttpTarget: null },
   // the five dead PAUSED jobs (advance-epoch, genesis-first-tx,
   // genesis-sustained, pe-aggregate-drift, pvt-mint) were DELETED; their endpoints stay

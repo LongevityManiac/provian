@@ -269,12 +269,7 @@ describe('judgeMintCapability', () => {
         // (anchoring-only; cannot mint) at a named location.
         'src/core/pvt/pe-anchor-runtime.ts',
         'src/core/pvt/settlement/operator-runtime.ts',
-        'src/core/recourse/binding-runtime.ts',
-        'src/core/recourse/break-deployment-runtime.ts',
-        'src/core/recourse/break-registration.ts',
         'src/core/recourse/identity-attestor.ts',
-        'src/core/recourse/membership-runtime.ts',
-        'src/core/recourse/owner-operation-runtime.ts',
       ],
     });
   });

@@ -2,10 +2,14 @@ import { execFileSync } from 'node:child_process';
 import { AbiCoder, Interface, concat, sha256, Wallet, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
-import { executeBreakDeployment, type BreakDeploymentSigner, type BreakDeploymentWorkerPorts } from './break-deployment-worker';
 import { BREAK_REGISTRATIONS, checkBreakRegistration, assertCheckedBreakRegistration, queueBreakRegistration,
-  executeBreakRegistration } from './break-registration';
+  breakRegistrationAdapter } from './break-registration';
+import { breakDeploymentAdapter, sponsoredLaneKind } from './transaction-lane-kinds';
+import { runRecourseLane, RECOURSE_LANE_COLLECTION, type LaneKind } from './transaction-lane';
+import { simulatedBase, laneTestWallet, LANE_TEST_KEY } from './__test-helpers__/lane-chain-fixture';
+import { RECOURSE_GAS_KEY_ENV } from './transaction-lane-key';
+process.env[RECOURSE_GAS_KEY_ENV] = LANE_TEST_KEY;
+const LANE = laneTestWallet().address.toLowerCase();
 import { BREAK_DEPLOYMENTS, BREAK_DEPLOYMENT_ATTEMPTS, queueBreakDeployment, checkBreakDeployment, assertCheckedBreakDeployment } from './break-deployment-queue';
 import { breakDeploymentDigest, replacementDeploymentDigest, type ReplacementDeploymentRequest, type BreakDeploymentRequest } from './break-deployment-data';
 import type { OwnerOperationChain } from './owner-operation-queue';
@@ -67,7 +71,9 @@ function port(mode = 'valid', gasPayer = a(13)): OwnerOperationChain {
 }
 test('only a real independent-owner signature and exact snapshot/factory produce a gas-spend capability', async () => {
   const plan = await checkBreakDeployment(request, port());
-  expect(plan).toMatchObject({ executor: a(4), gasPayer: a(13), alreadyDeployed: false, id: breakDeploymentDigest(request) });
+  // The settlement submitter (a(13)) is verified but never pays; the Recourse lane does.
+  expect(plan).toMatchObject({ executor: a(4), gasPayer: LANE, alreadyDeployed: false, id: breakDeploymentDigest(request) });
+  await expect(checkBreakDeployment(request, port(), a(13))).rejects.toThrow('sponsor_invalid');
   expect(() => assertCheckedBreakDeployment(plan)).not.toThrow();
   expect(() => assertCheckedBreakDeployment({ ...plan })).toThrow('unverified');
   expect(abi.parseTransaction({ data: plan.calldata })!.args[0]).toBe(request.initialRoot);
@@ -87,96 +93,110 @@ test('free registration uses only the current executor and snapshot-backed commi
   await expect(checkBreakRegistration({ ...value, kernel: a(99) }, port('registration'))).rejects.toThrow('retired');
   await expect(checkBreakRegistration({ ...value, target: a(99) }, port('registration'))).rejects.toThrow('invalid');
 });
-test('registration worker persists the exact proof call before broadcast and never signs twice on retry', async () => {
-  const wallet = new Wallet(`0x${'12'.repeat(32)}`), address = wallet.address.toLowerCase();
+function laneFor(db: Firestore, kind: LaneKind) {
+  const wallet = laneTestWallet(), base = simulatedBase(wallet.address);
+  const signer = { address: LANE, signTransaction: jest.fn((tx: Parameters<typeof wallet.signTransaction>[0]) => wallet.signTransaction(tx)) };
+  const run = () => runRecourseLane({ db, signer, chain: base, kinds: [kind], workerId: `w-${Math.random()}`, now: base.now }, base.now() + 5_000);
+  return { base, signer, run, wallet, confirm: () => { base.mine(); base.advance(11); } };
+}
+test('registration persists the exact proof call before broadcast and never signs twice on retry', async () => {
   const fake = createFakeFirestore({ strictTransactionOrder: true }), db = fake as unknown as Firestore;
-  const chain = port('registration', address), value = { deployment: request, kernel: a(1) };
+  const chain = port('registration'), value = { deployment: request, kernel: a(1) };
   const queued = await queueBreakRegistration(db, value, chain);
-  const signer = { address,
-    sign: jest.fn((plan: Awaited<ReturnType<typeof checkBreakRegistration>>) => wallet.signTransaction({ chainId: 8453,
-      type: 2, nonce: 5, to: plan.executor, data: plan.calldata, value: 0, gasLimit: 3_000_000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
-    broadcast: jest.fn(async (raw: string) => {
-      expect(fake.store.get(`${BREAK_REGISTRATIONS}/${queued.id}`)?.signedTransaction).toBe(raw); return keccak256(raw);
-    }) };
-  const ports = { check: (input: unknown) => checkBreakRegistration(input, chain), finalized: jest.fn(async () => null) };
-  expect(await executeBreakRegistration(db, queued.id, signer, ports)).toBe('submitted');
-  expect(await executeBreakRegistration(db, queued.id, signer, ports)).toBe('submitted');
-  expect(signer.sign).toHaveBeenCalledTimes(1);
+  const l = laneFor(db, sponsoredLaneKind('break_registration', breakRegistrationAdapter(input => checkBreakRegistration(input, chain))));
+  l.base.state.failBroadcasts = 1;
+  expect(await l.run()).toMatchObject({ signed: 1 });
+  const raw = fake.store.get(`${BREAK_REGISTRATIONS}/${queued.id}`)?.signedTransaction;
+  expect(await l.run()).toMatchObject({ signed: 0 });
+  expect(l.signer.signTransaction).toHaveBeenCalledTimes(1);
+  expect(l.base.state.broadcasts).toEqual([raw]);
 });
 
 async function workerFixture(replacement = false) {
-  const wallet = new Wallet(`0x${'12'.repeat(32)}`), address = wallet.address.toLowerCase();
   const fake = createFakeFirestore({ strictTransactionOrder: true }), db = fake as unknown as Firestore;
-  const chain = port(replacement ? 'replacement' : 'valid', address), queued = await queueBreakDeployment(db, replacement ? replacementRequest() : request, chain);
-  const signer: BreakDeploymentSigner = { address,
-    sign: jest.fn(plan => wallet.signTransaction({ chainId: 8453, type: 2, nonce: 3, to: plan.executor, data: plan.calldata,
-      value: 0, gasLimit: 3_000_000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
-    broadcast: jest.fn(async raw => {
-      expect(fake.store.get(`${BREAK_DEPLOYMENTS}/${queued.id}`)?.signedTransaction).toBe(raw);
-      expect(fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${address}`)?.pending_operation).toBe(queued.id);
-      return keccak256(raw);
-    }) };
-  const ports: BreakDeploymentWorkerPorts = { check: value => checkBreakDeployment(value, chain), finalized: jest.fn(async () => null) };
-  return { db, fake, signer, ports, id: queued.id, wallet };
+  const chain = port(replacement ? 'replacement' : 'valid'), queued = await queueBreakDeployment(db, replacement ? replacementRequest() : request, chain);
+  const ports = { check: jest.fn((value: unknown) => checkBreakDeployment(value, chain)) };
+  const l = laneFor(db, sponsoredLaneKind('break_deployment', breakDeploymentAdapter(value => ports.check(value))));
+  const lane = () => fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`);
+  return { db, fake, ports, id: queued.id, ...l, lane };
 }
-test('deployment retries retain one signed nonce and finish only after independent finality', async () => {
-  const { db, fake, signer, ports, id } = await workerFixture();
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('submitted');
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('submitted');
-  expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).toHaveBeenCalledTimes(2);
-  const row = fake.store.get(`${BREAK_DEPLOYMENTS}/${id}`)!;
-  (ports.finalized as jest.Mock).mockResolvedValue({ transactionHash: row.transactionHash, blockHash: h(40), block: 100, status: 1 });
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('confirmed');
-  expect(fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)?.pending_operation).toBe(null);
-  expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).toHaveBeenCalledTimes(2);
+test('deployment retries retain one signed nonce and finish only at twelve confirmations', async () => {
+  const f = await workerFixture();
+  expect(await f.run()).toMatchObject({ signed: 1 });
+  // Seconds later nothing is resent; twelve blocks later the still-unincluded bytes are.
+  expect(await f.run()).toMatchObject({ signed: 0, open: 1 });
+  expect(f.base.state.broadcasts).toHaveLength(1);
+  f.base.state.inclusionFloor = 10n ** 30n; f.base.advance(12);
+  expect(await f.run()).toMatchObject({ signed: 0, open: 1 });
+  expect(f.signer.signTransaction).toHaveBeenCalledTimes(1); expect(f.base.state.broadcasts).toHaveLength(2);
+  f.base.state.inclusionFloor = 0n;
+  f.base.mine(); f.base.advance(10);
+  expect(await f.run()).toMatchObject({ confirmed: 0, open: 1 });
+  f.base.advance(1);
+  expect(await f.run()).toMatchObject({ confirmed: 1, open: 0 });
+  expect(f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)?.status).toBe('confirmed');
+  expect(f.signer.signTransaction).toHaveBeenCalledTimes(1); expect(f.base.state.broadcasts).toHaveLength(2);
 });
-test('a lost broadcast response resumes identical persisted bytes, and a final revert consumes the reservation', async () => {
-  const { db, fake, signer, ports, id } = await workerFixture();
-  (signer.broadcast as jest.Mock).mockRejectedValueOnce(Error('response_lost'));
-  await expect(executeBreakDeployment(db, id, signer, ports)).rejects.toThrow('response_lost');
-  const raw = fake.store.get(`${BREAK_DEPLOYMENTS}/${id}`)!.signedTransaction;
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('submitted');
-  expect(signer.broadcast).toHaveBeenLastCalledWith(raw); expect(signer.sign).toHaveBeenCalledTimes(1);
-  (ports.finalized as jest.Mock).mockResolvedValue({ transactionHash: keccak256(String(raw)), blockHash: h(40), block: 100, status: 0 });
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('failed');
-  expect(fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)?.pending_operation).toBe(null);
-  await expect(queueBreakDeployment(db, request, port('valid', signer.address), async () => null)).rejects.toThrow('retry_unreconciled');
-  expect(await queueBreakDeployment(db, request, port('valid', signer.address), ports.finalized)).toMatchObject({ status: 'queued', transactionHash: null });
-  expect(fake.store.get(`${BREAK_DEPLOYMENT_ATTEMPTS}/${id}_${keccak256(String(raw))}`)).toMatchObject({
+test('a lost broadcast resumes identical persisted bytes, and a confirmed revert consumes the reservation', async () => {
+  const f = await workerFixture();
+  f.base.state.failBroadcasts = 1;
+  expect(await f.run()).toMatchObject({ signed: 1, stopReason: 'recourse_lane_broadcast_failed' });
+  const raw = f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)!.signedTransaction;
+  await f.run();
+  expect(f.base.state.broadcasts).toEqual([raw]); expect(f.signer.signTransaction).toHaveBeenCalledTimes(1);
+  f.base.state.status = () => 0; f.confirm();
+  expect(await f.run()).toMatchObject({ failed: 1 });
+  expect(f.lane()?.open).toEqual({});
+  await expect(queueBreakDeployment(f.db, request, port('valid'), async () => null)).rejects.toThrow('retry_unreconciled');
+  expect(await queueBreakDeployment(f.db, request, port('valid'), value => f.base.confirmed(value))).toMatchObject({ status: 'queued', transactionHash: null });
+  expect(f.fake.store.get(`${BREAK_DEPLOYMENT_ATTEMPTS}/${f.id}_${keccak256(String(raw))}`)).toMatchObject({
     signedTransaction: raw, transactionHash: keccak256(String(raw)), status: 'finalized_revert' });
-  expect(fake.store.get(`${BREAK_DEPLOYMENTS}/${id}`)?.signedTransaction).toBeUndefined();
+  expect(f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)?.signedTransaction).toBeUndefined();
 });
-test('an unfinalized receipt retains the reservation and never signs another transaction', async () => {
-  const { db, fake, signer, ports, id } = await workerFixture();
-  await executeBreakDeployment(db, id, signer, ports);
-  (ports.finalized as jest.Mock).mockRejectedValue(Error('recourse_transaction_not_finalized'));
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('submitted');
-  expect(fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)?.pending_operation).toBe(id);
-  expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).toHaveBeenCalledTimes(1);
+test('a requeue is refused while the lane still holds the signed nonce', async () => {
+  const f = await workerFixture();
+  await f.run();
+  const row = f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)!;
+  // Even a row marked failed cannot be requeued while its nonce is open in the lane.
+  f.fake.store.set(`${BREAK_DEPLOYMENTS}/${f.id}`, { ...row, status: 'failed' });
+  f.base.state.status = () => 0; f.confirm();
+  await expect(queueBreakDeployment(f.db, request, port('valid'), value => f.base.confirmed(value))).rejects.toThrow('retry_unreconciled');
 });
-test('another reserved operation cannot share the gas nonce', async () => {
-  const { db, fake, signer, ports, id } = await workerFixture();
-  fake.store.set(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`, { pending_operation: h(99), expires_at_ms: 0 });
-  await expect(executeBreakDeployment(db, id, signer, ports)).rejects.toThrow('signer_busy');
-  expect(signer.sign).not.toHaveBeenCalled(); expect(signer.broadcast).not.toHaveBeenCalled();
+test('a receipt short of twelve confirmations retains the reservation and never signs another transaction', async () => {
+  const f = await workerFixture();
+  await f.run(); f.base.mine(); f.base.advance(5);
+  expect(await f.run()).toMatchObject({ signed: 0, confirmed: 0, open: 1 });
+  expect(f.lane()?.open).toEqual({ 0: { collection: BREAK_DEPLOYMENTS, id: f.id } });
+  expect(f.signer.signTransaction).toHaveBeenCalledTimes(1); expect(f.base.state.broadcasts).toHaveLength(1);
 });
-test('a crash after reservation can retire an unsigned obsolete plan without blocking settlement', async () => {
-  const { db, fake, signer, ports, id } = await workerFixture();
-  (signer.sign as jest.Mock).mockRejectedValueOnce(Error('signer_crashed'));
-  await expect(executeBreakDeployment(db, id, signer, ports)).rejects.toThrow('signer_crashed');
-  expect(fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)?.pending_operation).toBe(id);
-  expect(fake.store.get(`${BREAK_DEPLOYMENTS}/${id}`)?.signedTransaction).toBeUndefined();
-  ports.check = jest.fn(async () => { throw Error('break_deployment_retired'); });
-  expect(await executeBreakDeployment(db, id, signer, ports)).toBe('failed');
-  expect(await acquireSignerLease(db as unknown as SettlementDb, { signer: signer.address, workerId: 'settlement', nowMs: Date.now(), leaseTtlMs: 120_000 })).toMatchObject({ kind: 'acquired' });
-  expect(signer.broadcast).not.toHaveBeenCalled();
+test('another writer on the lane key stops all signing', async () => {
+  const f = await workerFixture();
+  // The lane has already allocated through nonce 0; a transaction it never signed then consumes it.
+  f.fake.store.set(`${RECOURSE_LANE_COLLECTION}/${LANE}`, { signer: LANE, next_nonce: 0, open: {}, owner: null, expires_at_ms: 0 });
+  f.base.foreign();
+  expect(await f.run()).toMatchObject({ signed: 0, stopReason: 'recourse_lane_nonce_foreign' });
+  expect(f.signer.signTransaction).not.toHaveBeenCalled(); expect(f.base.state.broadcasts).toHaveLength(0);
+  // A brand-new lane refuses to start over another writer's pending transaction.
+  const fresh = await workerFixture();
+  fresh.base.state.mempool.set(0, 'foreign');
+  await expect(fresh.run()).rejects.toThrow('recourse_lane_nonce_foreign');
+});
+test('a signer crash reserves nothing and an obsolete unsigned plan then closes without blocking anything', async () => {
+  const f = await workerFixture();
+  f.signer.signTransaction.mockRejectedValueOnce(Error('signer_crashed'));
+  expect(await f.run()).toMatchObject({ stopReason: 'recourse_lane_sign_failed' });
+  expect(f.lane()).toMatchObject({ next_nonce: 0, open: {} });
+  expect(f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)?.signedTransaction).toBeUndefined();
+  f.ports.check.mockImplementation(async () => { throw Error('break_deployment_retired'); });
+  expect(await f.run()).toMatchObject({ failed: 1, closedUnsigned: 1 });
+  expect(f.base.state.broadcasts).toHaveLength(0);
 });
 test('one break entitlement cannot sponsor multiple destinations, but an obsolete unsigned choice is replaceable', async () => {
-  const { db, fake, signer, id } = await workerFixture();
+  const { db, fake, id } = await workerFixture();
   const alternative = { ...request, initialRoot: h(99), account: a(6) };
   alternative.signature = execFileSync(process.execPath, ['--input-type=module', '-e',
     "import {slh_dsa_sha2_128s as s} from '@noble/post-quantum/slh-dsa.js'; const k=s.keygen(new Uint8Array(48).fill(1)); console.log('0x'+Buffer.from(s.sign(Buffer.from(process.argv[1].slice(2),'hex'),k.secretKey,{extraEntropy:false})).toString('hex'));", breakDeploymentDigest(alternative)], { encoding: 'utf8' }).trim();
-  const chain = port('valid', signer.address);
+  const chain = port('valid');
   await expect(queueBreakDeployment(db, alternative, chain)).rejects.toThrow('destination_selected');
   const old = fake.store.get(`${BREAK_DEPLOYMENTS}/${id}`)!;
   fake.store.set(`${BREAK_DEPLOYMENTS}/${id}`, { ...old, status: 'failed', signedTransaction: '0x12' });
@@ -185,12 +205,14 @@ test('one break entitlement cannot sponsor multiple destinations, but an obsolet
   expect(await queueBreakDeployment(db, alternative, chain)).toMatchObject({ id: breakDeploymentDigest(alternative), status: 'queued' });
 });
 test.each(['target', 'value', 'data', 'chain'])('a signer cannot substitute %s in a sponsored deployment', async field => {
-  const { db, signer, ports, id, wallet } = await workerFixture();
-  (signer.sign as jest.Mock).mockImplementation(plan => wallet.signTransaction({ chainId: field === 'chain' ? 1 : 8453,
-    type: 2, nonce: 3, to: field === 'target' ? a(99) : plan.executor, data: field === 'data' ? '0x' : plan.calldata,
-    value: field === 'value' ? 1 : 0, gasLimit: 3_000_000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 }));
-  await expect(executeBreakDeployment(db, id, signer, ports)).rejects.toThrow('signed_mismatch');
-  expect(signer.broadcast).not.toHaveBeenCalled();
+  const f = await workerFixture();
+  f.signer.signTransaction.mockImplementation(tx => f.wallet.signTransaction({ ...tx, chainId: field === 'chain' ? 1 : 8453,
+    to: field === 'target' ? a(99) : tx.to, data: field === 'data' ? '0x' : tx.data, value: field === 'value' ? 1 : 0 }));
+  const report = await f.run();
+  expect(report).toMatchObject({ signed: 0, stopReason: 'recourse_lane_sign_failed' });
+  expect(report.errors.some(e => e.startsWith('recourse_lane_signed_mismatch'))).toBe(true);
+  expect(f.base.state.broadcasts).toHaveLength(0);
+  expect(f.fake.store.get(`${BREAK_DEPLOYMENTS}/${f.id}`)?.signedTransaction).toBeUndefined();
 });
 test.each(['factory', 'proof', 'simulation'])('refuses %s substitution with a valid owner signature', async mode => {
   await expect(checkBreakDeployment(request, port(mode))).rejects.toThrow();
@@ -211,7 +233,7 @@ function replacementRequest(overrides: Partial<ReplacementDeploymentRequest> = {
 }
 test('replacement deployment requires current independent owner authority and refuses retired, replayed or same-account requests', async () => {
   const replacement = replacementRequest();
-  expect(await checkBreakDeployment(replacement, port('replacement'))).toMatchObject({executor:a(4),gasPayer:a(13),alreadyDeployed:false});
+  expect(await checkBreakDeployment(replacement, port('replacement'))).toMatchObject({executor:a(4),gasPayer:LANE,alreadyDeployed:false});
   await expect(checkBreakDeployment(replacement, port('replacement-nonce'))).rejects.toThrow('owner_changed');
   await expect(checkBreakDeployment(replacement, port('replacement-destination'))).rejects.toThrow('destination_invalid');
   await expect(checkBreakDeployment(replacementRequest({revision:'3'}),port('replacement'))).rejects.toThrow('retired');
@@ -227,20 +249,20 @@ test('one sponsored replacement destination is retained per authorization nonce 
   expect(await queueBreakDeployment(db,later,port('replacement-nonce'))).toMatchObject({status:'queued'});
 });
 
-test('replacement worker keeps a signed attempt across owner advance but releases an obsolete unsigned reservation', async () => {
+test('replacement keeps a signed attempt across owner advance but closes an obsolete unsigned one', async () => {
  const signed=await workerFixture(true);
- (signed.signer.broadcast as jest.Mock).mockRejectedValueOnce(Error('response_lost'));
- await expect(executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).rejects.toThrow('response_lost');
+ signed.base.state.failBroadcasts=1;
+ await signed.run();
  const raw=String(signed.fake.store.get(`${BREAK_DEPLOYMENTS}/${signed.id}`)!.signedTransaction);
- signed.ports.check=jest.fn(async()=>{throw Error('break_deployment_owner_changed');});
- expect(await executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).toBe('submitted');
- expect(signed.signer.sign).toHaveBeenCalledTimes(1);expect(signed.signer.broadcast).toHaveBeenLastCalledWith(raw);expect(signed.ports.check).not.toHaveBeenCalled();
- (signed.ports.finalized as jest.Mock).mockResolvedValue({transactionHash:keccak256(raw),blockHash:h(40),block:100,status:1});
- expect(await executeBreakDeployment(signed.db,signed.id,signed.signer,signed.ports)).toBe('confirmed');
+ signed.ports.check.mockClear();signed.ports.check.mockImplementation(async()=>{throw Error('break_deployment_owner_changed');});
+ expect(await signed.run()).toMatchObject({signed:0,open:1});
+ expect(signed.signer.signTransaction).toHaveBeenCalledTimes(1);expect(signed.base.state.broadcasts).toEqual([raw]);expect(signed.ports.check).not.toHaveBeenCalled();
+ signed.confirm();
+ expect(await signed.run()).toMatchObject({confirmed:1});
  const unsigned=await workerFixture(true);
- (unsigned.signer.sign as jest.Mock).mockRejectedValueOnce(Error('signer_crashed'));
- await expect(executeBreakDeployment(unsigned.db,unsigned.id,unsigned.signer,unsigned.ports)).rejects.toThrow('signer_crashed');
- unsigned.ports.check=value=>checkBreakDeployment(value,port('replacement-nonce',unsigned.signer.address));
- expect(await executeBreakDeployment(unsigned.db,unsigned.id,unsigned.signer,unsigned.ports)).toBe('failed');
- expect(unsigned.signer.broadcast).not.toHaveBeenCalled();expect(unsigned.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${unsigned.signer.address}`)?.pending_operation).toBeNull();
+ unsigned.signer.signTransaction.mockRejectedValueOnce(Error('signer_crashed'));
+ await unsigned.run();
+ unsigned.ports.check.mockImplementation(value=>checkBreakDeployment(value,port('replacement-nonce')));
+ expect(await unsigned.run()).toMatchObject({failed:1,closedUnsigned:1});
+ expect(unsigned.base.state.broadcasts).toHaveLength(0);expect(unsigned.lane()).toMatchObject({next_nonce:0,open:{}});
 });

@@ -4602,20 +4602,8 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
         inboundScan = { error: scanError instanceof Error ? scanError.message : String(scanError) };
       }
       progress('scan_complete');
+      // Recourse transactions are sent by their own lane (/v1/internal/scheduler/recourse-lane).
       const { runOwnershipLedgerWatcher } = await import('./core/recourse/ledger-watcher');
-      const { runBindingWorker } = await import('./core/recourse/binding-runtime');
-      const { runOwnerOperationWorker } = await import('./core/recourse/owner-operation-runtime');
-      const { runBreakDeploymentWorker } = await import('./core/recourse/break-deployment-runtime');
-      const breakDeployment = await runBreakDeploymentWorker(agentBankDeps.db);
-      const { runBreakRegistrationWorker } = await import('./core/recourse/break-registration');
-      const breakRegistration = await runBreakRegistrationWorker(agentBankDeps.db);
-      const ownerOperation = await runOwnerOperationWorker(agentBankDeps.db);
-      const bindingOperation = await runBindingWorker(agentBankDeps.db);
-      const { runMembershipConsentWorker, runMembershipDebitWorker } = await import('./core/recourse/membership-runtime');
-      const membershipConsent = await runMembershipConsentWorker(agentBankDeps.db);
-      const { runAutomaticMembershipSweep } = await import('./core/recourse/automatic-membership');
-      const automaticMembership = await runAutomaticMembershipSweep(agentBankDeps.db);
-      const membershipDebit = await runMembershipDebitWorker(agentBankDeps.db);
       const ownershipLedger = await runOwnershipLedgerWatcher(agentBankDeps.db);
       const { runRecourseLifecycleWatcher } = await import('./core/recourse/lifecycle-records');
       const recourseRecords = await runRecourseLifecycleWatcher(agentBankDeps.db);
@@ -4623,11 +4611,33 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
         const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
         await refreshRecoursePoolRatio(agentBankDeps.db);
       }
-      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, binding_operation: bindingOperation, membership_consent: membershipConsent, membership_debit: membershipDebit, automatic_membership: automaticMembership, owner_operation: ownerOperation, break_deployment: breakDeployment, break_registration: breakRegistration, recourse_records: recourseRecords };
+      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, recourse_records: recourseRecords };
     }, () => releaseChainRecordRunLease(db, { workerId, nowMs: Date.now(), workload: 'discovery' }));
     res.json(report);
   } catch (error) {
     console.error('[Scheduler] Chain-record discovery error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// The Recourse transaction lane: its own gas wallet, separate from the settlement
+// minter, so minting and Recourse traffic never wait on each other. Each minute it
+// reconciles and sends queued Recourse transactions back to back, runs the
+// membership collection sweep, then sends the debits that sweep queued.
+app.post('/v1/internal/scheduler/recourse-lane', async (req, res) => {
+  if (!await authenticateScheduler(req)) { res.status(403).json({ error: 'Unauthorized' }); return; }
+  try {
+    const { runRecourseLaneFor } = await import('./core/recourse/transaction-lane-runtime');
+    const { runAutomaticMembershipSweep } = await import('./core/recourse/automatic-membership');
+    const { runRecourseMinute } = await import('./core/recourse/transaction-lane-schedule');
+    const { MEMBERSHIP_DEBIT_OPERATIONS } = await import('./core/recourse/membership-operation-identifiers');
+    const db = agentBankDeps.db;
+    res.json(await runRecourseMinute({ now: Date.now,
+      lane: budgetMs => runRecourseLaneFor(db, { budgetMs }),
+      sweep: options => runAutomaticMembershipSweep(db, options),
+      debitBacklog: async () => (await db.collection(MEMBERSHIP_DEBIT_OPERATIONS).orderBy('laneQueueKey').limit(41).get()).size }));
+  } catch (error) {
+    console.error('[Scheduler] Recourse lane error:', error instanceof Error ? error.message : error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,3 +1,4 @@
+import { recordBindingAttempt } from './recourse-binding-heal';
 import { guardedFetch as fetch, guardedFetcher } from './guarded-fetch';
 /**
  * bootstrap-flow — the unattended one-command agent onboarding.
@@ -909,9 +910,16 @@ export function defaultBootstrapDeps(
       persistAgentCredentialsFile({
         api_key: result.apiKey, api_secret: result.apiSecret, wallet_id: result.walletId, address: result.address,
       });
-      await withTransientRetry(() => bindRecourseOwnership({ relayUrl: input.relayUrl,
-        walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret, fetch: fetchImpl },
-      { keystore: persisted.keystore, passphrase, keystorePath: persisted.path }));
+      // The install never waits for or fails on the Recourse binding: the relay sends it in
+      // the background, and the daemon re-signs on its own if the signature expires unsent.
+      try {
+        await withTransientRetry(() => bindRecourseOwnership({ relayUrl: input.relayUrl,
+          walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret, fetch: fetchImpl },
+        { keystore: persisted.keystore, passphrase, keystorePath: persisted.path },
+        { wait: false, onSigned: recordBindingAttempt(persisted.path, result.address) }));
+      } catch (error) {
+        console.error(`  Recourse binding deferred (${(error as Error).message}); the agent will sign it again shortly.`);
+      }
       return {
         ...(result.recoveryAnchorPubkey ? { recoveryAnchorPubkey: result.recoveryAnchorPubkey } : {}),
         ...(result.recoveryEscrowed === true ? { recoveryEscrowed: true } : {}),

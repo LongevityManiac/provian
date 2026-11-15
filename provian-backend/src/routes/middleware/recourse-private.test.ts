@@ -10,7 +10,7 @@ import { OWNER_EXECUTOR_ABI } from '../../core/recourse/owner-operation';
 import { OWNER_OPERATIONS } from '../../core/recourse/owner-operation-queue';
 import { BREAK_DEPLOYMENTS } from '../../core/recourse/break-deployment-queue';
 import * as deploymentQueue from '../../core/recourse/break-deployment-queue';
-import * as deploymentRuntime from '../../core/recourse/break-deployment-runtime';
+import * as laneRuntime from '../../core/recourse/transaction-lane-runtime';
 import { BREAK_REGISTRATIONS } from '../../core/recourse/break-registration';
 import { BREAK_RESTORATIONS } from '../../core/recourse/break-restoration-queue';
 import { BREAK_RESTORATION_TUPLE } from '../../core/recourse/break-restoration-data';
@@ -157,7 +157,7 @@ test('mounted replacement submission and status retain private owner authenticat
   const status={id,status:'queued' as const,transactionHash:null};
   f.fake.store.set(`${BREAK_DEPLOYMENTS}/${id}`,{request:replacement,...status});
   const queued=jest.spyOn(deploymentQueue,'queueBreakDeployment').mockResolvedValue(status);
-  const worker=jest.spyOn(deploymentRuntime,'runBreakDeploymentWorker').mockResolvedValue(null);
+  const worker=jest.spyOn(laneRuntime,'kickRecourseLane').mockResolvedValue();
   app.use(express.json({limit:'256kb'}));
   app.use('/v1/recourse',createRecourseRouter({db:f.fake as unknown as Firestore} as AgentBankDeps,
     (_req,res)=>{res.status(401).json({error:'owner_auth_required'});}));

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { utcCalendarMonth } from './calendar-month';
 import type { PrivateMembershipAccount } from './private-membership-reservation';
@@ -52,44 +53,116 @@ export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity
   const {reservationId,domain,debit}=prepared.challenge;
   await queueMembershipDebit(db,ownerIdentity,{reservationId,domain,debit});return 'queued';
 }
-/** A transport-sized page, under the existing scheduler's distributed lease.
- * Cursor progress is durable; failed or underfunded owners cannot starve later
- * members and will be revisited on the next complete pass. */
-export async function runAutomaticMembershipSweep(db:Firestore):Promise<{visited:number;queued:number;pending:number;approvalRequired:number;retry:number}>{
-  const cursorRef=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('cursor'),cursor=await cursorRef.get();
-  const after:unknown=cursor.get('after');
-  if(after!==undefined&&after!==null&&(typeof after!=='string'||!/^0x[0-9a-f]{64}$/.test(after)))throw Error('recourse_automatic_cursor');
-  let query=db.collection(C.owners).orderBy('ownerIdentity').limit(10);
-  if(typeof after==='string')query=query.startAfter(after);
-  const page=await query.get();
-  const result={visited:0,queued:0,pending:0,approvalRequired:0,retry:0};
-  for(const row of page.docs){
-    const owner:unknown=row.get('ownerIdentity');
-    if(typeof owner!=='string'||!/^0x[0-9a-f]{64}$/.test(owner))throw Error('recourse_automatic_owner');
+export const AUTOMATIC_MEMBERSHIP_FOLLOWUPS = 'recourse_private_membership_followups_v1';
+export interface AutomaticMembershipSweepOptions {
+  readonly deadlineMs: number;
+  readonly concurrency?: number;
+  readonly now?: () => number;
+  readonly collect?: (db: Firestore, ownerIdentity: string) => Promise<AutomaticMembershipResult>;
+  /** Unsent debits already waiting for the lane. Above `maxBacklog` the sweep queues no more this run,
+   * so a debit authorization (valid five minutes) is never queued faster than the lane sends it. */
+  readonly backlog?: () => Promise<number>;
+  readonly maxBacklog?: number;
+}
+export interface AutomaticMembershipSweepResult {
+  skipped?: 'sweep_busy';
+  backpressure?: true;
+  visited: number; queued: number; pending: number; approvalRequired: number; retry: number; passes: number; followups: number;
+}
+const SWEEP_LEASE_TTL_MS = 120_000;
+const FOLLOWUP_FIRST_MS = 2 * 60_000, FOLLOWUP_MAX_MS = 60 * 60_000;
+/** Next UTC midnight. A completed full pass rests until then. */
+export function nextUtcDayMs(nowMs: number): number { return (Math.floor(nowMs / 86_400_000) + 1) * 86_400_000; }
+/** One full pass over every member each UTC day, several members at a time,
+ * under the sweep's own lease, deadline-bounded with durable cursor progress.
+ * A member whose collection was queued, is pending or failed goes on a small
+ * follow-up list that is revisited with backoff until it settles, so one
+ * member in flight never makes the sweep re-read everyone. */
+export async function runAutomaticMembershipSweep(db: Firestore, options: AutomaticMembershipSweepOptions = { deadlineMs: Date.now() + 30_000 }):
+Promise<AutomaticMembershipSweepResult> {
+  const now = options.now ?? Date.now, collect = options.collect ?? collectAutomaticMembershipOwner;
+  const concurrency = Math.max(1, options.concurrency ?? 8), worker = `sweep-${randomUUID()}`;
+  const result: AutomaticMembershipSweepResult = { visited: 0, queued: 0, pending: 0, approvalRequired: 0, retry: 0, passes: 0, followups: 0 };
+  const leaseRef = db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('lease');
+  const held = await db.runTransaction(async tx => {
+    const lease = await tx.get(leaseRef);
+    if (typeof lease.get('owner') === 'string' && Number(lease.get('expires_at_ms')) > now()) return false;
+    tx.set(leaseRef, { owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+    return true;
+  });
+  if (!held) { result.skipped = 'sweep_busy'; return result; }
+  const followRef = (owner: string) => db.collection(AUTOMATIC_MEMBERSHIP_FOLLOWUPS).doc(owner);
+  /** Visit one member; keep it on the follow-up list until a visit finds nothing left to do. */
+  const visit = async (owner: string, attempts: number) => {
     ++result.visited;
-    try{
-      const state=await collectAutomaticMembershipOwner(db,owner);
-      if(state==='queued')++result.queued;
-      if(state==='pending')++result.pending;
-      if(state==='approval_required')++result.approvalRequired;
-    }catch{++result.retry;}
-    await cursorRef.set({after:owner,updatedAtMs:Date.now()});
+    let state: AutomaticMembershipResult | 'retry';
+    try { state = await collect(db, owner); } catch { state = 'retry'; }
+    if (state === 'queued') ++result.queued;
+    if (state === 'pending') ++result.pending;
+    if (state === 'approval_required') ++result.approvalRequired;
+    if (state === 'retry') ++result.retry;
+    if (state === 'queued' || state === 'pending' || state === 'retry') {
+      const delay = Math.min(FOLLOWUP_MAX_MS, FOLLOWUP_FIRST_MS * 2 ** Math.min(attempts, 10));
+      await followRef(owner).set({ ownerIdentity: owner, attempts: attempts + 1, dueAtMs: now() + delay });
+    } else if (attempts > 0) await followRef(owner).delete();
+  };
+  const inBatches = async (owners: readonly { owner: string; attempts: number }[]) => {
+    for (let i = 0; i < owners.length; i += concurrency) {
+      await Promise.all(owners.slice(i, i + concurrency).map(row => visit(row.owner, row.attempts)));
+    }
+  };
+  try {
+    // Follow-ups first: they are members with a collection in flight.
+    const due = await db.collection(AUTOMATIC_MEMBERSHIP_FOLLOWUPS).where('dueAtMs', '<=', now()).orderBy('dueAtMs').limit(concurrency * 8).get();
+    const followups = due.docs.map(row => {
+      const owner: unknown = row.get('ownerIdentity'), attempts = Number(row.get('attempts') ?? 1);
+      if (typeof owner !== 'string' || !/^0x[0-9a-f]{64}$/.test(owner) || row.id !== owner) throw Error('recourse_automatic_owner');
+      return { owner, attempts: Number.isSafeInteger(attempts) && attempts > 0 ? attempts : 1 };
+    });
+    result.followups = followups.length;
+    await inBatches(followups);
+    const cursorRef = db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('cursor');
+    while (now() < options.deadlineMs) {
+      if (options.backlog && await options.backlog() >= (options.maxBacklog ?? 40)) { result.backpressure = true; break; }
+      const cursor = await cursorRef.get();
+      const after: unknown = cursor.get('after'), restUntil = Number(cursor.get('restUntilMs') ?? 0);
+      if (after !== undefined && after !== null && (typeof after !== 'string' || !/^0x[0-9a-f]{64}$/.test(after))) throw Error('recourse_automatic_cursor');
+      if ((after === undefined || after === null) && restUntil > now()) break;
+      let query = db.collection(C.owners).orderBy('ownerIdentity').limit(concurrency * 2);
+      if (typeof after === 'string') query = query.startAfter(after);
+      const page = await query.get();
+      const owners = page.docs.map(row => {
+        const owner: unknown = row.get('ownerIdentity');
+        if (typeof owner !== 'string' || !/^0x[0-9a-f]{64}$/.test(owner)) throw Error('recourse_automatic_owner');
+        return { owner, attempts: 0 };
+      });
+      await inBatches(owners);
+      const ended = page.size < concurrency * 2;
+      await cursorRef.set(ended ? { after: null, restUntilMs: nextUtcDayMs(now()), updatedAtMs: now() }
+        : { after: owners[owners.length - 1].owner, updatedAtMs: now() }, { merge: true });
+      await leaseRef.set({ owner: worker, expires_at_ms: now() + SWEEP_LEASE_TTL_MS });
+      if (ended) { ++result.passes; break; }
+    }
+    // A first join may never have opened a membership account. Its retained
+    // departure still needs unattended reconciliation after the app closes.
+    const departureCursor=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('departures'), saved=await departureCursor.get();
+    const departureAfter:unknown=saved.get('after');
+    if(departureAfter!=null&&(typeof departureAfter!=='string'||!/^0x[0-9a-f]{64}$/.test(departureAfter)))throw Error('recourse_automatic_cursor');
+    let departures=db.collection(T).where('departureRequested','==',true).where('status','in',['preparing','consenting']).orderBy('id').limit(10);
+    if(typeof departureAfter==='string')departures=departures.startAfter(departureAfter);
+    const rows=await departures.get();
+    for(const row of rows.docs){
+      const id:unknown=row.get('id'),ownerIdentity:unknown=row.get('ownerIdentity');
+      if(typeof id!=='string'||typeof ownerIdentity!=='string'||!/^0x[0-9a-f]{64}$/.test(id)||!/^0x[0-9a-f]{64}$/.test(ownerIdentity))throw Error('recourse_automatic_owner');
+      try{await advanceMembershipDeparture(db,ownerIdentity,id);}catch{++result.retry;}
+      await departureCursor.set({after:id,updatedAtMs:Date.now()});
+    }
+    if(rows.size<10)await departureCursor.set({after:null,updatedAtMs:Date.now()});
+  } finally {
+    await db.runTransaction(async tx => {
+      const lease = await tx.get(leaseRef);
+      if (lease.get('owner') === worker) tx.set(leaseRef, { owner: null, expires_at_ms: 0 });
+    });
   }
-  if(page.size<10)await cursorRef.set({after:null,updatedAtMs:Date.now()});
-  // A first join may never have opened a membership account. Its retained
-  // departure still needs unattended reconciliation after the app closes.
-  const departureCursor=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc('departures'), saved=await departureCursor.get();
-  const departureAfter:unknown=saved.get('after');
-  if(departureAfter!=null&&(typeof departureAfter!=='string'||!/^0x[0-9a-f]{64}$/.test(departureAfter)))throw Error('recourse_automatic_cursor');
-  let departures=db.collection(T).where('departureRequested','==',true).where('status','in',['preparing','consenting']).orderBy('id').limit(10);
-  if(typeof departureAfter==='string')departures=departures.startAfter(departureAfter);
-  const rows=await departures.get();
-  for(const row of rows.docs){
-    const id:unknown=row.get('id'),ownerIdentity:unknown=row.get('ownerIdentity');
-    if(typeof id!=='string'||typeof ownerIdentity!=='string'||!/^0x[0-9a-f]{64}$/.test(id)||!/^0x[0-9a-f]{64}$/.test(ownerIdentity))throw Error('recourse_automatic_owner');
-    try{await advanceMembershipDeparture(db,ownerIdentity,id);}catch{++result.retry;}
-    await departureCursor.set({after:id,updatedAtMs:Date.now()});
-  }
-  if(rows.size<10)await departureCursor.set({after:null,updatedAtMs:Date.now()});
   return result;
 }

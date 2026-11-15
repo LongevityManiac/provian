@@ -95,6 +95,11 @@ MANAGED_SECRET_KEYS=(
     # issuer IDs are plain config in .env.deploy (APP_STORE_CONNECT_KEY_ID / _ISSUER_ID).
     APP_STORE_CONNECT_PRIVATE_KEY
     GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+    # The Recourse transaction lane's own Base gas key. It pays gas for relay-driven Recourse
+    # transactions (bindings, owner operations, membership consents and debits, break recovery)
+    # and holds no protocol role; the lane refuses to sign if it ever does. Its own EOA so it
+    # never shares a nonce with the settlement minter. Generated straight into Secret Manager.
+    RECOURSE_GAS_KEY
 )
 
 managed_secret_name() {
@@ -131,6 +136,7 @@ managed_secret_name() {
         FACILITATOR_RELAY_SECRET) echo "facilitator-relay-secret" ;;
         APP_STORE_CONNECT_PRIVATE_KEY) echo "app-store-connect-private-key" ;;
         GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) echo "google-play-service-account-json" ;;
+        RECOURSE_GAS_KEY) echo "recourse-gas-key" ;;
         *) return 1 ;;
     esac
 }

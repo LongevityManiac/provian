@@ -1,12 +1,12 @@
-import { Interface, Transaction, Wallet, ZeroHash, keccak256 } from 'ethers';
+import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
+import { Interface, Transaction, ZeroHash, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { breakDeploymentChain, checkBreakDeployment } from './break-deployment-queue';
 import { parseBreakRegistration, breakRegistrationId, type BreakRegistrationRequest } from './break-registration-data';
 export { parseBreakRegistration, breakRegistrationId, type BreakRegistrationRequest } from './break-registration-data';
 import type { OwnerOperationChain } from './owner-operation-queue';
-import { executeSponsoredOperation, type SponsoredOperationSigner } from './sponsored-operation-worker';
+import type { SponsoredOperationAdapter } from './sponsored-operation-worker';
 import { finalizedOwnerTransaction } from './transaction-finality';
-import { createRecourseGasSigner } from './gas-signer';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
 
 export const BREAK_REGISTRATIONS = 'recourse_break_registrations_v1';
@@ -32,11 +32,12 @@ export function assertCheckedBreakRegistration(plan: CheckedBreakRegistration): 
 }
 /** Registration installs only the recovery commitment already authenticated by
  * the last-good snapshot. It cannot move PVT or select a restoration outcome. */
-export async function checkBreakRegistration(value: unknown, port: OwnerOperationChain = breakDeploymentChain()): Promise<CheckedBreakRegistration> {
+export async function checkBreakRegistration(value: unknown, port: OwnerOperationChain = breakDeploymentChain(),
+  sponsor?: string): Promise<CheckedBreakRegistration> {
   const request = parseBreakRegistration(value);
   const deployment = await port.deployment();
   if (deployment.addresses.kernel.toLowerCase() !== request.kernel) throw Error('break_registration_retired');
-  const account = await checkBreakDeployment(request.deployment, port);
+  const account = await checkBreakDeployment(request.deployment, port, sponsor);
   if (!account.alreadyDeployed || account.manifestHash !== deployment.manifestHash) throw Error('break_registration_account_unavailable');
   const tag = { blockHash: deployment.blockHash, requireCanonical: true };
   const call = async (to: string, name: string, args: readonly unknown[] = []) => {
@@ -95,35 +96,21 @@ export async function queueBreakRegistration(db: Firestore, value: unknown, port
     if (current.get('signedTransaction') !== oldRaw) throw Error('break_registration_record_changed');
     const archiveRef = oldRaw === undefined ? null : db.collection('recourse_break_registration_attempts_v1').doc(`${id}_${keccak256(String(oldRaw))}`);
     const archive = archiveRef ? await tx.get(archiveRef) : null;
-    if (oldSigner !== null && (await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id) throw Error('break_registration_retry_unreconciled');
+    if (oldSigner !== null && ((await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id
+      || await laneHoldsOperation(tx, db, oldSigner, BREAK_REGISTRATIONS, id))) throw Error('break_registration_retry_unreconciled');
     if (archiveRef && !archive?.exists) tx.create(archiveRef, { operation: id, signedTransaction: oldRaw,
       transactionHash: keccak256(String(oldRaw)), status: 'finalized_revert', archivedAtMs: Date.now() });
     tx.set(ref, { request, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash,
-      status: plan.alreadyRegistered ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now() });
+      status: plan.alreadyRegistered ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now(),
+      ...(plan.alreadyRegistered ? {} : laneQueuedFields(Date.now(), id)) });
   });
   return readBreakRegistration(db, id);
 }
-export async function executeBreakRegistration(db: Firestore, id: string, signer: SponsoredOperationSigner<CheckedBreakRegistration>,
-  ports = { check: checkBreakRegistration, finalized: finalizedOwnerTransaction }): Promise<'submitted' | 'confirmed' | 'failed'> {
-  return executeSponsoredOperation<BreakRegistrationRequest, CheckedBreakRegistration>(db, id, signer, {
-    collection: BREAK_REGISTRATIONS, parse: parseBreakRegistration, id: breakRegistrationId, target, calldata,
-    check: ports.check, assert: assertCheckedBreakRegistration, satisfied: plan => plan.alreadyRegistered,
+/** Rows are sent by the Recourse transaction lane. */
+export function breakRegistrationAdapter(check: (value: BreakRegistrationRequest) => Promise<CheckedBreakRegistration> = value => checkBreakRegistration(value)):
+SponsoredOperationAdapter<BreakRegistrationRequest, CheckedBreakRegistration> {
+  return { lane: true, collection: BREAK_REGISTRATIONS, parse: parseBreakRegistration, id: breakRegistrationId, target, calldata,
+    check, assert: assertCheckedBreakRegistration, satisfied: plan => plan.alreadyRegistered,
     obsolete: error => error instanceof Error && ['break_registration_retired', 'break_deployment_retired', 'break_registration_owner_changed'].includes(error.message),
-    finalized: ports.finalized,
-  });
-}
-export async function runBreakRegistrationWorker(db: Firestore, env: NodeJS.ProcessEnv = process.env): Promise<{ id: string; status: string } | null> {
-  if (!env.PVT9_SETTLEMENT_MINTER_KEY) throw Error('break_registration_gas_signer_unavailable');
-  const signer = createRecourseGasSigner(new Wallet(env.PVT9_SETTLEMENT_MINTER_KEY), assertCheckedBreakRegistration);
-  const pending: unknown = (await db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(signer.address).get()).get('pending_operation');
-  let id: string;
-  if (typeof pending === 'string') {
-    if (!/^0x[0-9a-f]{64}$/.test(pending) || !(await db.collection(BREAK_REGISTRATIONS).doc(pending).get()).exists) return null;
-    id = pending;
-  } else {
-    const submitted = await db.collection(BREAK_REGISTRATIONS).where('status','==','submitted').limit(1).get();
-    const rows = submitted.empty ? await db.collection(BREAK_REGISTRATIONS).where('status','==','queued').limit(1).get() : submitted;
-    if (rows.empty) return null; id = rows.docs[0].id;
-  }
-  return { id, status: await executeBreakRegistration(db, id, signer) };
+    finalized: finalizedOwnerTransaction };
 }

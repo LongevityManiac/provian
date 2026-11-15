@@ -57,7 +57,7 @@ test.each(['failed', 'missing', 'wrong-emitter', 'duplicate', 'removed', 'unfina
         if (mode === 'removed') return { ...receipt, logs: [{ ...receipt.logs[0], removed: true }] };
         if (mode === 'disagreement' && leg === 1) return { ...receipt, status: '0x0' };
       }
-      if (method === 'eth_getBlockByNumber' && mode === 'unfinalized') return { number: '0x63', hash: headHash };
+      if (method === 'eth_blockNumber' && mode === 'unfinalized') return '0x6e';
       if (method === 'eth_getBlockByNumber' && mode === 'reorg') return { number: '0x65', hash: h('ff') };
       return result;
     });
@@ -90,7 +90,7 @@ test('ordinary successor ancestry preserves finalized recovery while its ledger 
   const makeLegs=(parent: string): readonly [EconomicStateRpcLeg,EconomicStateRpcLeg] => {
     const legs=original.map(leg=>({operatorId:leg.operatorId,send:async(method:string,params:readonly unknown[]):Promise<unknown>=>{
       if(method==='eth_getBlockByNumber'&&params[0]!=='finalized'){
-        const n=Number(BigInt(String(params[0])));return {number:params[0],hash:n===100?receiptHash:n===101?headHash:`0x${n.toString(16).padStart(64,'0')}`};
+        const n=Number(BigInt(String(params[0])));return {number:params[0],hash:n===100?receiptHash:n===111?headHash:`0x${n.toString(16).padStart(64,'0')}`};
       }
       if(method==='eth_getCode')return (params[1] as {blockHash:string}).blockHash===headHash?'0x6000':'0x';
       if(method==='eth_call'){
@@ -103,7 +103,7 @@ test('ordinary successor ancestry preserves finalized recovery while its ledger 
     return [legs[0],legs[1]];
   };
   await expect(verifyRecoveryAuthorization({...input,currentKernel},makeLegs(authorization))).resolves.toMatchObject({
-    authorization,generation:1,accountingBlock:101,accountingBlockHash:headHash});
+    authorization,generation:1,accountingBlock:111,accountingBlockHash:headHash});
   for(const parent of [address('00'),currentAuthorization])await expect(verifyRecoveryAuthorization({...input,currentKernel},makeLegs(parent)))
     .rejects.toThrow('recourse_authorization_unrelated_successor');
 });

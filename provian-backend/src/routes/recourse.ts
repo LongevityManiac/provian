@@ -2,12 +2,11 @@ import { DETERMINATION_WORKFLOWS } from '../core/recourse/determination-workflow
 import { prepareDepartureCredentials, retainDepartureCredentials, advanceMembershipDeparture } from '../core/recourse/membership-departure';
 import { discoverOwnerRecovery } from '../core/recourse/owner-recovery-discovery';
 import { discoverRestorationHistory } from '../core/recourse/restoration-history';
-import { runOwnerOperationWorker } from '../core/recourse/owner-operation-runtime';
+import { kickRecourseLane } from '../core/recourse/transaction-lane-runtime';
 import { readBreakEntitlement } from '../core/recourse/break-entitlement-store';
 import { discoverBreakRecovery } from '../core/recourse/break-recovery-discovery';
-import { runBreakDeploymentWorker } from '../core/recourse/break-deployment-runtime';
 import { queueBreakDeployment, readBreakDeployment } from '../core/recourse/break-deployment-queue';
-import { queueBreakRegistration, readBreakRegistration, runBreakRegistrationWorker } from '../core/recourse/break-registration';
+import { queueBreakRegistration, readBreakRegistration } from '../core/recourse/break-registration';
 import { queueBreakRestoration, readBreakRestoration, reconcileBreakRestoration, confirmBreakRestoration } from '../core/recourse/break-restoration-queue';
 import { queueOwnerOperation, readOwnerOperation } from '../core/recourse/owner-operation-queue';
 import { randomBytes } from 'crypto';
@@ -30,14 +29,12 @@ import { parseHumanRecoveryRequest, recoverHumanOwnership } from '../core/recour
 import { parseAuxiliaryRecoveryRequest, recoverAuxiliaryOwnership } from '../core/recourse/auxiliary-recovery';
 import { prepareRestorationRequest, submitRestorationRequest, RESTORATION_REQUESTS } from '../core/recourse/restoration-request';
 import { queueBindingOperation } from '../core/recourse/binding-operation';
-import { runBindingWorker } from '../core/recourse/binding-runtime';
 import { readPublishedRecourseRule } from '../core/recourse/membership-rule';
 import { authenticatePrivateRecourse } from './middleware/recourse-private';
 import { addressRecoveryBinding } from '../core/recourse/address-binding';
 import { prepareMembershipTransition, ownedMembershipTransition } from '../core/recourse/membership-preparation';
 import { queueMembershipConsent, MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
 import { readSponsoredOperation } from '../core/recourse/sponsored-operation-queue';
-import { runMembershipConsentWorker, runMembershipDebitWorker } from '../core/recourse/membership-runtime';
 import { prepareMembershipDebit, parseMembershipPaymentSelection } from '../core/recourse/membership-debit-preparation';
 import { queueMembershipDebit, ownedMembershipDebit, parseMembershipDebitRequest, MEMBERSHIP_DEBIT_OPERATIONS } from '../core/recourse/membership-debit-operation';
 
@@ -119,7 +116,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     res.setHeader('Cache-Control', 'no-store');
     try {
       const queued=await queueOwnerOperation(deps.db,req.body);
-      try { await runOwnerOperationWorker(deps.db); } catch { /* durable operation is resumed by the authenticated scheduler */ }
+      await kickRecourseLane(deps.db);
       res.json(await readOwnerOperation(deps.db,queued.id));
     }
     catch { res.status(400).json({ error: 'recourse_owner_operation_refused' }); }
@@ -134,7 +131,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     res.setHeader('Cache-Control', 'no-store');
     try {
       const queued = await queueBreakDeployment(deps.db, req.body);
-      try { await runBreakDeploymentWorker(deps.db); } catch { /* The durable scheduler resumes the exact transaction. */ }
+      await kickRecourseLane(deps.db);
       res.json(await readBreakDeployment(deps.db, queued.id));
     } catch { res.status(400).json({ error: 'recourse_break_deployment_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
@@ -148,7 +145,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     res.setHeader('Cache-Control', 'no-store');
     try {
       const queued = await queueBreakRegistration(deps.db, req.body);
-      try { await runBreakRegistrationWorker(deps.db); } catch { /* The durable scheduler resumes the exact transaction. */ }
+      await kickRecourseLane(deps.db);
       res.json(await readBreakRegistration(deps.db, queued.id));
     } catch { res.status(400).json({ error: 'recourse_break_registration_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
@@ -239,7 +236,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const input = parseMembershipConsentRequest({ ...body, attestorSignature: 'standing' in body && body.standing ? '0x00' : null });
       const { attestorSignature: _unused, ...request } = input;
       const result = await queueMembershipConsent(deps.db, identityHash(owner.type, owner.id), request);
-      try { await runMembershipConsentWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
+      await kickRecourseLane(deps.db);
       res.status(202).json(result);
     } catch { res.status(400).json({ error: 'recourse_membership_consent_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
@@ -270,7 +267,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         || Object.keys(body).sort().join(',') !== 'debit,domain,reservationId') throw Error('recourse_membership_input');
       const { attestorSignature: _unused, ...input } = parseMembershipDebitRequest({ ...body, attestorSignature: '0x00' });
       const result = await queueMembershipDebit(deps.db, identityHash(owner.type, owner.id), input);
-      try { await runMembershipDebitWorker(deps.db); } catch { /* Exact durable bytes remain queued for the scheduler. */ }
+      await kickRecourseLane(deps.db);
       res.status(202).json(result);
     } catch { res.status(400).json({ error: 'recourse_membership_debit_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
@@ -402,9 +399,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         res.json({ binding: record, operationId: record.bindingDigest }); return;
       }
       const operationId = await queueBindingOperation(deps.db, body.binding, body.signature, undefined, undefined, body.memberConsent);
-      // Queue persistence precedes gas execution. A busy settlement signer is
-      // resumed by the authenticated scheduler; no detached Cloud Run task.
-      try { await runBindingWorker(deps.db); } catch { /* durable queued work remains */ }
+      // Queue persistence precedes gas execution. The Recourse lane sends it now
+      // if it is free; otherwise its current holder or the minute scheduler does.
+      // The caller never waits for confirmation.
+      await kickRecourseLane(deps.db, 5_000);
       res.status(202).json({ binding: record, operationId });
     } catch (error: unknown) {
       const code = error instanceof Error && /^recourse_[a-z_]+$/.test(error.message) ? error.message : 'recourse_unavailable';

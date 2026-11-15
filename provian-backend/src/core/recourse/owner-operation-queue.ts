@@ -1,3 +1,5 @@
+import { recourseLaneAddress } from './transaction-lane-key';
+import { laneQueuedFields } from './transaction-lane';
 import { RESTORATION_REQUESTS } from './restoration-request';
 import type { Firestore } from 'firebase-admin/firestore';
 import { Interface, concat, sha256 } from 'ethers';
@@ -35,7 +37,7 @@ export function assertCheckedOwnerOperation(value: CheckedOwnerOperation): void 
 }
 /** Repeat immediately before sponsor signing. Simulation executes the actual
  * hash verifier and nonce/commitment transition at one independently agreed block. */
-export async function checkOwnerOperation(value: unknown, port = chainPort()): Promise<CheckedOwnerOperation> {
+export async function checkOwnerOperation(value: unknown, port = chainPort(), sponsor: string = recourseLaneAddress()): Promise<CheckedOwnerOperation> {
   const operation = parseRecoveryOwnerOperation(value);
   const deployment = await port.deployment();
   if (operation.kernel !== deployment.addresses.kernel.toLowerCase() || operation.revision !== deployment.revision.toString()) throw new Error('recourse_owner_operation_retired');
@@ -54,7 +56,9 @@ export async function checkOwnerOperation(value: unknown, port = chainPort()): P
     call(settlement,OWNER_SPONSOR_ABI,'submitter'),call(settlement,OWNER_SPONSOR_ABI,'kernel'),call(settlement,OWNER_SPONSOR_ABI,'pool'),
   ]);
   if(String(sponsorKernel[0]).toLowerCase()!==operation.kernel || String(sponsorPool[0]).toLowerCase()!==deployment.addresses.recoursePool.toLowerCase()) throw new Error('recourse_owner_sponsor_binding_invalid');
-  const executor = String(executorResult[0]).toLowerCase(), gasPayer = String(submitter[0]).toLowerCase();
+  // The settlement wiring is still verified; gas comes from the Recourse lane, never the settlement submitter.
+  const executor = String(executorResult[0]).toLowerCase(), gasPayer = sponsor.toLowerCase();
+  if (gasPayer === String(submitter[0]).toLowerCase()) throw new Error('recourse_owner_operation_gas_payer_invalid');
   if ([executor, gasPayer].some(address => !/^0x[0-9a-f]{40}$/.test(address) || /^0x0{40}$/.test(address))) throw new Error('recourse_owner_operation_gas_payer_invalid');
   const [nonce, commitment, root, digest] = await Promise.all([
     call(executor, OWNER_EXECUTOR_ABI, 'ownerAuthorizationNonce', [operation.identity]),
@@ -167,7 +171,7 @@ export async function queueOwnerOperation(db: Firestore, value: unknown, port?: 
     // recovery preimage and exact-intent signature, not a signing key or seed.
     // Private-store encryption additionally protects it while awaiting execution.
     tx.create(ref, { identity: operation.identity, operation, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash, queuedAtBlockHash:plan.blockHash,
-      status: 'queued', transactionHash: null, createdAtMs: Date.now() });
+      status: 'queued', transactionHash: null, createdAtMs: Date.now(), ...laneQueuedFields(Date.now(), id) });
     return { id, status: 'queued', transactionHash: null };
   });
 }

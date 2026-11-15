@@ -1,3 +1,5 @@
+import { ensureRecourseBinding, type BindingHealOutcome } from '../recourse-binding-heal';
+import type { RecourseConfig } from '../recourse';
 import {startCommonsEvents,signalCommonsMailWaiting} from '../commons-events';
 import {commonsRuntime} from '../commons-runtime';
 /**
@@ -330,6 +332,10 @@ export async function runObserverDaemon(argv: string[] = process.argv.slice(2)):
         // Item 11: an agent with no escrow (a fleet install before its human published a
         // recovery anchor) escrows itself as soon as the anchor is there.
         startRecoveryEscrowHeal({
+          relayUrl: creds.relayUrl, walletId: agentCreds.wallet_id, apiKey: agentCreds.api_key, apiSecret: agentCreds.api_secret,
+        });
+        // The install never waits for its Recourse binding; this re-signs it if the signature expires.
+        startRecourseBindingHeal({
           relayUrl: creds.relayUrl, walletId: agentCreds.wallet_id, apiKey: agentCreds.api_key, apiSecret: agentCreds.api_secret,
         });
         startCommonsMessaging({
@@ -905,6 +911,40 @@ let lastSelfUpdate: { outcome: string | null; atMs: number | null; version: numb
 };
 export function getLastSelfUpdate(): { outcome: string | null; atMs: number | null; version: number | null } {
   return lastSelfUpdate;
+}
+
+/** Until bound, how often the daemon checks its Recourse binding (a signature is valid five minutes). */
+export const RECOURSE_BINDING_HEAL_INTERVAL_MS = 60 * 1000;
+
+/**
+ * Check this agent's Recourse ownership binding now and every minute until the relay
+ * reports it bound, re-signing whenever the last signature has expired unsent.
+ * Logs only when the outcome changes.
+ */
+export function startRecourseBindingHeal(
+  input: RecourseConfig,
+  deps: { heal?: (i: RecourseConfig) => Promise<BindingHealOutcome>; intervalMs?: number; log?: (line: string) => void } = {},
+): { stop: () => void; done: Promise<void> } {
+  const heal = deps.heal ?? ((i: RecourseConfig) => ensureRecourseBinding(i));
+  const log = deps.log ?? ((line: string) => console.log(line));
+  let timer: NodeJS.Timeout | null = null, stopped = false, last: BindingHealOutcome | null = null;
+  let resolveDone: () => void = () => undefined;
+  const done = new Promise<void>((r) => { resolveDone = r; });
+  const run = async (): Promise<void> => {
+    let outcome: BindingHealOutcome;
+    try { outcome = await heal(input); } catch { outcome = 'failed'; }
+    if (outcome !== last) {
+      last = outcome;
+      if (outcome === 'bound') log('[observer] Recourse binding confirmed on Base');
+      else if (outcome === 'signed') log('[observer] Recourse binding signed; the relay is sending it');
+      else if (outcome === 'failed') log('[observer] Recourse binding check failed; retrying');
+    }
+    if (stopped || outcome === 'bound' || outcome === 'no_keystore') { resolveDone(); return; }
+    timer = setTimeout(() => { void run(); }, deps.intervalMs ?? RECOURSE_BINDING_HEAL_INTERVAL_MS);
+    if (typeof timer.unref === 'function') timer.unref();
+  };
+  void run();
+  return { stop: () => { stopped = true; if (timer) clearTimeout(timer); resolveDone(); }, done };
 }
 
 /** While un-escrowed, how often the daemon asks whether its human's anchor has appeared. */

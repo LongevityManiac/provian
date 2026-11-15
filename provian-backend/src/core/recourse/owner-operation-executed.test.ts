@@ -25,7 +25,8 @@ beforeEach(()=>{
     const binding=new Interface(['function kernel() view returns(address)']);
     if((params[0] as {data:string}).data===binding.encodeFunctionData('kernel'))return binding.encodeFunctionResult('kernel',[operation.kernel]);
   }
-  if(notFinal&&method==='eth_getBlockByNumber'&&params[0]==='finalized')return {number:'0x63'};
+  // Eleven confirmations on the authorization receipt: not yet done.
+  if(notFinal&&method==='eth_blockNumber')return '0x6e';
   if(superseded&&method==='eth_call'){
     const request=params[0] as {to:string;data:string};
     if(request.to===executor && request.data.startsWith(RECOVERY_AUTH_ABI.getFunction('ownerAuthorizationNonce')!.selector))return RECOVERY_AUTH_ABI.encodeFunctionResult('ownerAuthorizationNonce',[2]);

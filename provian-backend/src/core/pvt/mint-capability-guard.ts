@@ -126,24 +126,13 @@ export const SANCTIONED_MINT_SIGNER_FILES: readonly string[] = [
   // stores Merkle roots, holds no funds, and has zero kernel coupling (,
   // verified live: admin = the Foundation Safe, minter = this gas-only EOA).
   'src/core/pvt/pe-anchor-runtime.ts',
-  // Ownership binding uses the existing approver only to attest an independently
-  // verified identity/address consent. The gas worker uses the existing minter
-  // signer with the shared durable nonce lease, and accepts only branded registry
-  // binding plans. These are positive signing capabilities, not negative uses.
-  'src/core/recourse/binding-runtime.ts',
-  // Identity attestations use the configured approver; monthly consent and
-  // debit workers use the existing gas sponsor and shared durable nonce lease.
+  // Identity attestations use the configured approver. Relay-driven Recourse
+  // transactions (binding, owner operations, membership consent and debit, break
+  // deployment and registration) are paid by the Recourse lane's own gas key,
+  // which never reads either settlement key and refuses to sign if it holds a role.
   'src/core/recourse/identity-attestor.ts',
-  'src/core/recourse/membership-runtime.ts',
-  // The same gas key sponsors only exact owner-proven rotation/intent calldata.
-  // No reversal, reserve allocation or arbitrary transaction enters this worker.
-  'src/core/recourse/owner-operation-runtime.ts',
-  // Free break recovery shares the same durable gas nonce lease. These workers
-  // accept branded snapshot/owner-verified deployment and registration calls.
-  // The operator command sponsors only the checked hash-authority restoration;
-  // the gas key is neither the restoration authority nor the owner's proof.
-  'src/core/recourse/break-deployment-runtime.ts',
-  'src/core/recourse/break-registration.ts',
+  // Operator-run restoration commands still sponsor gas from the settlement
+  // signer. The gas key is neither the restoration authority nor the owner's proof.
   'scripts/recourse-break-authority.ts',
   // Explicit operator-only authority/attestor/gas signer. The public relay
   // never loads this entry point; it signs only checked restoration plans.

@@ -28,6 +28,13 @@
       "note": "Independent Base discovery and registry repair; queues records without waiting for the verification drain."
     },
     {
+      "path": "/v1/internal/scheduler/recourse-lane",
+      "required": true,
+      "job": "provian-recourse-lane",
+      "schedule": "* * * * *",
+      "note": "Recourse transaction lane: its own gas wallet, separate from the settlement minter. Each minute it confirms sent Recourse transactions at twelve confirmations, sends queued ones back to back (oldest live first), runs the membership collection sweep with backpressure, then sends the debits it queued. An idle minute makes no chain call."
+    },
+    {
       "path": "/v1/internal/scheduler/chain-record",
       "required": true,
       "job": "provian-chain-record-watcher",

@@ -8,7 +8,7 @@ import { RECOURSE_POOL_ABI } from './pool-abi';
 import { DETERMINATION_WORKFLOWS } from './determination-workflow';
 import { RESTORATION_REQUESTS } from './restoration-request';
 import { RECOURSE_EXECUTIONS, recourseExecutionId, type RecourseExecutionCall } from './execution-transaction';
-import { finalizedOwnerTransaction } from './transaction-finality';
+import { finalizedOwnerTransaction, RECOURSE_CONFIRMATIONS } from './transaction-finality';
 
 const history = new Interface(['function poolSnapshot() view returns(address predecessor,uint256 blockNumber,bytes32 root,uint256 entries,bool afterBreak)']);
 const ZERO = `0x${'0'.repeat(40)}`;
@@ -59,8 +59,8 @@ export async function findPoolWithdrawal(db: Firestore, request: string): Promis
   const balance = await call(pool, RECOURSE_POOL_ABI, 'restorationAllocations', [request]);
   if (balance.identity !== identity) throw Error('recourse_withdrawal_identity_invalid');
   if (!balance.withdrawn) return null;
-  const finalized = await Promise.all(legs.map(async leg => height(object(await leg.provider.send('eth_getBlockByNumber',['finalized',false])).number)));
-  let through = Math.min(...finalized), address = pool;
+  const heads = await Promise.all(legs.map(async leg => height(await leg.provider.send('eth_blockNumber',[]))));
+  let through = Math.min(...heads) - (RECOURSE_CONFIRMATIONS - 1), address = pool;
   const seen = new Set<string>(), matches: CanonicalEconomicLog[] = [];
   let previousCutoff=Number.MAX_SAFE_INTEGER;
   let reachedAllocationPool = false;

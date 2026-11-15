@@ -60,6 +60,14 @@ export const PROVIAN_SERVICE_FEE_REASON_CODE = 'provian_service_fee' as const;
 export const PAYOUT_BASE_GAS_ADDRESS = '0x35f96e1aba3e500425135379b775e02e84ad4351';
 
 /**
+ * The Recourse lane's Base gas EOA (key `RECOURSE_GAS_KEY`, Secret Manager `recourse-gas-key`).
+ * It pays gas for every Recourse binding, join approval, monthly debit and owner operation, and
+ * holds no protocol role. Never derived from the secret here. `RECOURSE_GAS_ADDRESS` (env) adds a
+ * rotated successor without a code change; the lane refuses to sign from an address not in this set.
+ */
+export const RECOURSE_GAS_ADDRESS = '0x95bffced791366544746cd95416d7b76547ceb15';
+
+/**
  * The pinned EVM service wallets, by why each is Provian's. Lowercased. Every one is pinned so a
  * misconfigured or unset env can never drop a wallet from the fence; env values only ADD.
  */
@@ -67,6 +75,7 @@ export const PROVIAN_SERVICE_WALLETS_EVM: ReadonlyMap<string, string> = new Map(
   [PROVIAN_TREASURY, 'Provian treasury / revenue wallet (Base): kernel + institution fee wallet, EVM swap-fee recipient, payout-fee recipient'],
   [FACILITATOR_BASE_GAS_ADDRESS_DEFAULT, 'x402 facilitator Base gas EOA: receives the seller\'s fee leg inside every settler transaction'],
   [PAYOUT_BASE_GAS_ADDRESS, 'on-demand payout Base gas EOA (pays gas for the $1 charge and the payee\'s settlement)'],
+  [RECOURSE_GAS_ADDRESS, 'Recourse lane Base gas EOA (pays gas for bindings, join approvals, monthly debits and owner operations)'],
 ]);
 
 /** The pinned Solana service wallets (base58, exact), by why each is Provian's. */
@@ -103,7 +112,7 @@ export function provianServiceWallets(env: Env = process.env): {
 } {
   const evm = new Set<string>(PROVIAN_SERVICE_WALLETS_EVM.keys());
   const solana = new Set<string>(PROVIAN_SERVICE_WALLETS_SOLANA.keys());
-  for (const value of [facilitatorBaseGasAddress(env), evmOf(env.PAYOUT_BASE_GAS_ADDRESS)]) {
+  for (const value of [facilitatorBaseGasAddress(env), evmOf(env.PAYOUT_BASE_GAS_ADDRESS), evmOf(env.RECOURSE_GAS_ADDRESS)]) {
     if (value !== null) evm.add(value);
   }
   for (const value of [facilitatorSolanaFeeWallet(env), facilitatorSolanaGasAddress(env)]) {

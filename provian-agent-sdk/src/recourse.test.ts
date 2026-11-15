@@ -61,6 +61,13 @@ beforeEach(() => {
     return { ok: true, json: async () => ({ binding:{...binding,chainBindingStatus:'confirmed',bindingDigest:`0x${'cc'.repeat(32)}`},operationId:`0x${'cc'.repeat(32)}` }) };
   });
 });
+it('an install submits without waiting for the chain and records the signed binding', async () => {
+  const signed: RecourseBinding[] = [];
+  expect(await bindRecourseOwnership(config, input, { wait: false, onSigned: b => signed.push(b) })).toHaveProperty('operationId', `0x${'cc'.repeat(32)}`);
+  expect(h.confirm).not.toHaveBeenCalled();
+  expect(signed).toHaveLength(1);
+  expect(signed[0].address).toBe(address);
+});
 it('persists independent recovery material before transmitting only its hash and exact binding signature', async () => {
   expect(await bindRecourseOwnership(config, input)).toHaveProperty('operationId',`0x${'cc'.repeat(32)}`);
   expect(h.confirm.mock.calls[0][3]).toBe(`0x${'cc'.repeat(32)}`);

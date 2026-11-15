@@ -11,8 +11,9 @@ import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { RECOURSE_COLLECTIONS, ownershipBindingMessage, type OwnershipBinding } from './ownership';
 import { BINDING_OPERATIONS, REGISTRY_ABI, checkBindingOperation, queueBindingOperation,
   assertCheckedBindingOperation, readConfirmedBinding } from './binding-operation';
-import { executeBindingOperation, type BindingGasSigner, type BindingWorkerPorts } from './binding-worker';
-import { acquireSignerLease, SETTLEMENT_SIGNER_LEASES_COLLECTION, type SettlementDb } from '../pvt/settlement/durable-settlement-store';
+import { bindingLaneKind, type BindingLanePorts } from './transaction-lane-kinds';
+import { runRecourseLane, RECOURSE_LANE_COLLECTION } from './transaction-lane';
+import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
 import type { OwnerOperationChain } from './owner-operation-queue';
 import type { ProtocolDeployment } from '../protocol/pointer';
 
@@ -39,6 +40,8 @@ async function fixture(change = '', member = false) {
     ...REGISTRY_ABI.fragments]);
   const attestor = { address: attestorWallet.address.toLowerCase(), signMessage: jest.fn((message: string) => attestorWallet.signMessage(message)), signBytes: jest.fn((bytes: Uint8Array) => attestorWallet.signMessage(bytes)) };
   const chain: OwnerOperationChain = { deployment: async () => deployment, agree: async (_method, args) => {
+    // Head 0x6f: block 0x64 has exactly twelve confirmations.
+    if (_method === 'eth_blockNumber') return '0x6f';
     if (_method === 'eth_getBlockByHash') return { hash: hash('bb'), number: '0x64', timestamp: `0x${timestamp.toString(16)}` };
     if (_method === 'eth_getCode') return state.registered ? '0x1234' : '0x';
     if (_method === 'eth_getBlockByNumber') return { hash: hash('bb'), number: '0x64' };
@@ -71,13 +74,13 @@ async function fixture(change = '', member = false) {
     return abi.encodeFunctionResult(parsed.name, [values[parsed.name]]);
   } };
   const signature = await owner.signMessage(ownershipBindingMessage(binding));
-  const signer: BindingGasSigner = { address: gasWallet.address.toLowerCase(),
-    sign: jest.fn(plan => gasWallet.signTransaction({ type: 2, chainId: 8453, nonce: 3, to: plan.executor, data: plan.calldata,
-      value: 0, gasLimit: 300000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
-    broadcast: jest.fn(async raw => keccak256(raw)) };
-  const ports: BindingWorkerPorts = { check: (store, b, sig, who, _chain, memberConsent) => checkBindingOperation(store, b, sig, who, chain, memberConsent),
-    finalized: jest.fn(async () => null), registration: b => readConfirmedBinding(b, chain) };
-  return { fake, db, binding, signature, chain, attestor, signer, ports, state, timestamp };
+  const gas = laneTestWallet(), base = simulatedBase(gas.address);
+  const ports: BindingLanePorts = { check: (store, b, sig, who, _chain, memberConsent) => checkBindingOperation(store, b, sig, who, chain, memberConsent),
+    registration: b => readConfirmedBinding(b, chain) };
+  const kind = bindingLaneKind(db, attestor, ports);
+  const signer = { address: gas.address.toLowerCase(), signTransaction: jest.fn((tx: Parameters<typeof gas.signTransaction>[0]) => gas.signTransaction(tx)) };
+  const run = () => runRecourseLane({ db, signer, chain: base, kinds: [kind], workerId: `w-${Math.random()}`, now: base.now }, base.now() + 5_000);
+  return { fake, db, binding, signature, chain, attestor, signer, base, run, state, timestamp };
 }
 test('binding queue requires admitted owner roots, independent attestation and exact on-chain simulation', async () => {
   const f = await fixture();
@@ -99,32 +102,50 @@ test('recovery-root replacement or cross-owner binding cannot acquire an identit
   }
   expect(f.attestor.signMessage).not.toHaveBeenCalled();
 });
-test.each([0, 1])('binding crash retry preserves exact bytes and finalized status %s releases its nonce', async status => {
+test.each([0, 1])('binding crash retry rebroadcasts the exact persisted bytes and twelve-confirmation status %s releases its nonce', async status => {
   const f = await fixture();
   const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain);
-  (f.signer.broadcast as jest.Mock).mockRejectedValueOnce(new Error('connection_lost'));
-  await expect(executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).rejects.toThrow('connection_lost');
+  f.base.state.failBroadcasts = 1;
+  expect(await f.run()).toMatchObject({ signed: 1, stopReason: 'recourse_lane_broadcast_failed' });
   const stored = f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)!;
-  expect(await acquireSignerLease(f.fake as unknown as SettlementDb, { signer: f.signer.address, workerId: 'settlement',
-    nowMs: Date.now() + 1_000_000, leaseTtlMs: 120000 })).toMatchObject({ kind: 'refused', reason: 'operation_reserved' });
-  expect(await executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).toBe('submitted');
-  expect(f.signer.sign).toHaveBeenCalledTimes(1);
-  expect(f.signer.broadcast).toHaveBeenNthCalledWith(2, stored.signedTransaction);
-  (f.ports.finalized as jest.Mock).mockResolvedValue({ status });
-  f.state.registered = status === 1;
-  expect(await executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).toBe(status ? 'confirmed' : 'failed');
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${f.signer.address}`)?.pending_operation).toBeNull();
+  expect(stored).toMatchObject({ status: 'submitted', laneNonce: 0, gasPayer: f.signer.address, gasSigner: f.signer.address });
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${f.signer.address}`)).toMatchObject({ next_nonce: 1, open: { 0: { collection: BINDING_OPERATIONS, id } } });
+  expect(await f.run()).toMatchObject({ signed: 0 });
+  expect(f.signer.signTransaction).toHaveBeenCalledTimes(1);
+  expect(f.base.state.broadcasts).toEqual([stored.signedTransaction]);
+  f.base.state.status = () => status as 0 | 1;
+  f.base.mine(); f.state.registered = status === 1;
+  // Eleven confirmations: still open.
+  f.base.advance(10);
+  expect(await f.run()).toMatchObject({ confirmed: 0, failed: 0, open: 1 });
+  f.base.advance(1);
+  expect(await f.run()).toMatchObject(status ? { confirmed: 1 } : { failed: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)?.status).toBe(status ? 'confirmed' : 'failed');
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${f.signer.address}`)?.open).toEqual({});
   expect(f.fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${f.binding.address}`)?.chainBindingStatus).toBe(status ? 'confirmed' : undefined);
 });
 test('exact consent executed by another submitter is reconciled without signing or a second broadcast', async () => {
   const f = await fixture();
   const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain);
   f.state.registered = true;
-  expect(await executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).toBe('confirmed');
-  expect(f.signer.sign).not.toHaveBeenCalled();
-  expect(f.signer.broadcast).not.toHaveBeenCalled();
+  expect(await f.run()).toMatchObject({ confirmed: 1, signed: 0, closedUnsigned: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)).toMatchObject({ status: 'confirmed', terminalReason: 'binding_executed_by_other_submitter' });
+  expect(f.signer.signTransaction).not.toHaveBeenCalled();
+  expect(f.base.state.broadcasts).toHaveLength(0);
   expect(f.fake.store.get(`${RECOURSE_COLLECTIONS.addresses}/${f.binding.address}`)).toMatchObject({
     chainBindingStatus: 'confirmed', boundBlock: 100, boundBlockHash: hash('bb'), openingBalanceAtomic: '123' });
+});
+test('an expired owner signature closes without gas and never holds up the live binding behind it', async () => {
+  const f = await fixture();
+  const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain);
+  // Age the request past its on-chain window (less the send margin).
+  const row = f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)!;
+  f.fake.store.set(`${BINDING_OPERATIONS}/${id}`, { ...row, binding: { ...f.binding } });
+  const expired = bindingLaneKind(f.db, f.attestor, { check: jest.fn(), registration: async () => null, now: () => f.binding.expiresAtMs - 1_000 });
+  const report = await runRecourseLane({ db: f.db, signer: f.signer, chain: f.base, kinds: [expired], workerId: 'w' }, Date.now() + 5_000);
+  expect(report).toMatchObject({ signed: 0, failed: 1, closedUnsigned: 1 });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)).toMatchObject({ status: 'failed', terminalReason: 'binding_expired' });
+  expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)?.laneQueueKey).toBeUndefined();
 });
 
 test('an active member must sign atomic consent; queue and crash retry preserve both mandates', async () => {
@@ -137,12 +158,12 @@ test('an active member must sign atomic consent; queue and crash retry preserve 
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   const id = await queueBindingOperation(f.db, f.binding, f.signature, f.attestor, f.chain, member);
   expect(f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)?.memberConsent).toMatchObject(member);
-  (f.signer.broadcast as jest.Mock).mockRejectedValueOnce(Error('connection_lost'));
-  await expect(executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).rejects.toThrow('connection_lost');
+  f.base.state.failBroadcasts = 1;
+  expect(await f.run()).toMatchObject({ signed: 1, stopReason: 'recourse_lane_broadcast_failed' });
   const stored = f.fake.store.get(`${BINDING_OPERATIONS}/${id}`)!;
-  expect(await executeBindingOperation(f.db, id, f.signer, f.attestor, f.ports)).toBe('submitted');
-  expect(f.signer.sign).toHaveBeenCalledTimes(1);
-  expect(f.signer.broadcast).toHaveBeenNthCalledWith(2, stored.signedTransaction);
+  expect(await f.run()).toMatchObject({ signed: 0 });
+  expect(f.signer.signTransaction).toHaveBeenCalledTimes(1);
+  expect(f.base.state.broadcasts).toEqual([stored.signedTransaction]);
   expect(REGISTRY_ABI.parseTransaction({ data: stored.calldata as string })?.name).toBe('bindWithConsent');
 });
 test.each(['membershipTransition', 'membershipScanRequired'])('private owner freeze refuses new binding signatures: %s', async key => {

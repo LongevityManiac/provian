@@ -11,9 +11,9 @@ import { readPrivateCalendarRules } from './private-calendar-rules';
 import { utcCalendarMonth } from './calendar-month';
 import { breakDeploymentChain } from './break-deployment-queue';
 import { readRecoursePoolState } from './pool-state';
-import type { MembershipConsentPorts } from './membership-consent-operation';
+import { laneSponsor, type MembershipConsentPorts } from './membership-consent-operation';
 import { queueSponsoredOperation } from './sponsored-operation-queue';
-import { executeSponsoredOperation, type SponsoredOperationAdapter, type SponsoredOperationSigner } from './sponsored-operation-worker';
+import type { SponsoredOperationAdapter } from './sponsored-operation-worker';
 import { finalizedOwnerTransaction } from './transaction-finality';
 import { readMembershipReceipt } from './membership-receipt';
 import { reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
@@ -67,7 +67,7 @@ async function debitContext(db: Firestore, request: MembershipDebitRequest, p: M
   const planned = planPrivateDebit({ ...account, pendingReservation: null }, domain, debit, month, rules);
   if (planned.id !== request.reservationId || !isDeepStrictEqual(planned, r)) return fail('reservation');
   return { deployment, ownerIdentity: r.ownerIdentity, transitionPending: owner.get('membershipTransition') != null,
-    ...await readMembershipWiring(p.chain, deployment) };
+    ...await laneSponsor(p, readMembershipWiring(p.chain, deployment)) };
 }
 export interface CheckedMembershipDebit {
   readonly id: string; readonly executor: string; readonly calldata: string; readonly gasPayer: string; readonly manifestHash: string;
@@ -87,7 +87,7 @@ export async function checkMembershipDebit(db: Firestore, value: unknown, p = po
   checked.add(plan); return plan;
 }
 export function membershipDebitAdapter(db: Firestore, p = ports()): SponsoredOperationAdapter<MembershipDebitRequest, CheckedMembershipDebit> {
-  return { collection: MEMBERSHIP_DEBIT_OPERATIONS, parse: parseMembershipDebitRequest, id: membershipDebitOperationId,
+  return { lane: true, collection: MEMBERSHIP_DEBIT_OPERATIONS, parse: parseMembershipDebitRequest, id: membershipDebitOperationId,
     target: r => getCreateAddress({from: r.domain.pool, nonce: 1}).toLowerCase(), calldata: membershipDebitCalldata, check: r => checkMembershipDebit(db, r, p), assert: assertCheckedMembershipDebit,
     beforeQueue: async (tx, request) => {
       const row = await tx.get(db.collection(C.reservations).doc(request.reservationId));
@@ -112,7 +112,4 @@ export async function queueMembershipDebit(db: Firestore, ownerIdentity: string,
   if (context.ownerIdentity !== ownerIdentity || context.transitionPending || attestor.address.toLowerCase() !== context.identityAttestor || !attestor.signBytes) return fail('attestor');
   const bytes = getBytes(standingMembershipDebitSigningHash(request.domain, request.debit));
   return queueSponsoredOperation(db, { ...request, attestorSignature: await attestor.signBytes(bytes) }, membershipDebitAdapter(db, p));
-}
-export async function executeMembershipDebit(db: Firestore, id: string, signer: SponsoredOperationSigner<CheckedMembershipDebit>, p = ports()) {
-  return executeSponsoredOperation(db, id, signer, membershipDebitAdapter(db, p));
 }

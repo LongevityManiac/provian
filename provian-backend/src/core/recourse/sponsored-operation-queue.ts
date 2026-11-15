@@ -1,3 +1,4 @@
+import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
 import { Transaction, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
@@ -39,12 +40,14 @@ export async function queueSponsoredOperation<R, P extends SponsoredOperationPla
     if (current.get('signedTransaction') !== oldRaw) throw Error('recourse_sponsor_record_changed');
     const archiveRef = oldRaw === undefined ? null : db.collection(`${adapter.collection}_attempts`).doc(`${id}_${keccak256(String(oldRaw))}`);
     const archive = archiveRef ? await tx.get(archiveRef) : null;
-    if (oldSigner !== null && (await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id) throw Error('recourse_sponsor_retry_unreconciled');
+    if (oldSigner !== null && ((await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id
+      || await laneHoldsOperation(tx, db, oldSigner, adapter.collection, id))) throw Error('recourse_sponsor_retry_unreconciled');
     if (adapter.beforeQueue) await adapter.beforeQueue(tx, request);
     if (archiveRef && !archive?.exists) tx.create(archiveRef, { operation: id, signedTransaction: oldRaw,
       transactionHash: keccak256(String(oldRaw)), status: 'finalized_revert', archivedAtMs: Date.now() });
     tx.set(ref, { request, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash,
-      status: adapter.satisfied(plan) ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now() });
+      status: adapter.satisfied(plan) ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now(),
+      ...(adapter.lane && !adapter.satisfied(plan) ? laneQueuedFields(Date.now(), id) : {}) });
   });
   return readSponsoredOperation(db, adapter.collection, id);
 }

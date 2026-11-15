@@ -1,3 +1,4 @@
+import { hasRecourseConfirmations } from './transaction-finality';
 import { recoveryOperationHash, parseRestorationScope } from './owner-operation';
 import { AbiCoder, Interface, sha256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
@@ -86,8 +87,8 @@ export async function verifyRecoveryAuthorization(input: RecoveryAuthorizationIn
   if (receipt.transactionHash !== input.transactionHash || number(receipt.status) !== 1
     || typeof receipt.blockHash !== 'string' || !HASH.test(receipt.blockHash) || !Array.isArray(receipt.logs)) throw new Error('recourse_authorization_receipt_invalid');
   const block = number(receipt.blockNumber);
-  const finalized = await Promise.all(legs.map(async leg => number(object(await leg.send('eth_getBlockByNumber', ['finalized', false])).number)));
-  if (block > Math.min(...finalized)) throw new Error('recourse_authorization_not_finalized');
+  const confirmationHeads = await Promise.all(legs.map(async leg => number(await leg.send('eth_blockNumber', []))));
+  if (!confirmationHeads.every(head => hasRecourseConfirmations(BigInt(block), BigInt(head)))) throw new Error('recourse_authorization_not_finalized');
   const blockTag = `0x${block.toString(16)}`;
   if (object(await agree('eth_getBlockByNumber', [blockTag, false])).hash !== receipt.blockHash) throw new Error('recourse_authorization_reorg');
   const call = async (address: string, abi: Interface, method: string, args: readonly unknown[], tag: unknown) => {

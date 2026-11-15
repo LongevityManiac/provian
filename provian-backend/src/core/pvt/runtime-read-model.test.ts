@@ -4,7 +4,8 @@ describe('public runtime identities', () => {
   it('publishes the public address without retaining any runtime key', () => {
     const key = '0x' + '11'.repeat(32);
     const states = publicRuntimeGasWallets({ PVT9_SETTLEMENT_MINTER_KEY: key });
-    expect(Object.keys(states)).toHaveLength(6);
+    expect(Object.keys(states)).toHaveLength(7);
+    expect(states.recourse_gas).toEqual({ configured: false, address: null, error: null });
     expect(states.settlement_minter).toEqual({ configured: true,
       address: '0x19e7e376e7c213b7e7e7e46cc70a5dd086daff2a', error: null });
     expect(JSON.stringify(states)).not.toContain(key);

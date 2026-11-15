@@ -25,6 +25,7 @@
  * PROVIAN_KEYSTORE_PASSPHRASE=... npx @provian/agent-sdk create-agent-wallet --accept-constitution
  */
 
+import { recordBindingAttempt } from '../recourse-binding-heal';
 import { hostname } from 'os';
 import { bindRecourseOwnership } from '../recourse';
 import * as fs from 'fs';
@@ -303,8 +304,14 @@ async function main(): Promise<void> {
     });
     const durableKeystore = loadKeystore(written);
     if (!durableKeystore) throw new Error('durable keystore unavailable for ownership binding');
-    await bindRecourseOwnership({ relayUrl, walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret },
-      { keystore: durableKeystore, passphrase, keystorePath: written });
+    // The wallet never waits for or fails on its Recourse binding; the daemon re-signs if it expires.
+    try {
+      await bindRecourseOwnership({ relayUrl, walletId: result.walletId, apiKey: result.apiKey, apiSecret: result.apiSecret },
+        { keystore: durableKeystore, passphrase, keystorePath: written },
+        { wait: false, onSigned: recordBindingAttempt(written, result.address) });
+    } catch (error) {
+      console.error(`  Recourse binding deferred (${(error as Error).message}); it is signed again automatically.`);
+    }
   } catch (error) {
     console.error(`  Wallet committed, but durable local finalization failed: ${(error as Error).message}`);
     console.error('  The encrypted pending identity was retained. Re-run the same command to recover safely.\n');

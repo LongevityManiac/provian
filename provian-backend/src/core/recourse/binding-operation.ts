@@ -5,6 +5,9 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
+import { readCommonCanonicalHead } from '../onchain/common-canonical-head';
+import { RECOURSE_CONFIRMATIONS } from './transaction-finality';
+import { laneQueuedFields } from './transaction-lane';
 import { ownershipBindingMessage, RECOURSE_COLLECTIONS, type OwnershipBinding } from './ownership';
 import type { OwnerOperationChain } from './owner-operation-queue';
 
@@ -32,6 +35,10 @@ function chainPort(): OwnerOperationChain {
   const legs = getOperatorBoundRpcLegs('base');
   if (legs[0].operatorId === legs[1].operatorId) throw new Error('recourse_rpc_operators_not_independent');
   return { deployment: () => currentProtocolDeployment({ fresh: true }), async agree(method, params) {
+    // Two providers' tips routinely differ by a block; their common canonical head is the agreed one.
+    if (method === 'eth_blockNumber') return `0x${(await readCommonCanonicalHead([
+      { operatorId: legs[0].operatorId, send: (m, p) => legs[0].provider.send(m, [...p]) },
+      { operatorId: legs[1].operatorId, send: (m, p) => legs[1].provider.send(m, [...p]) }], 'recourse_binding_rpc_disagreement')).toString(16)}`;
     const values = await Promise.all(legs.map(leg => leg.provider.send(method, [...params])));
     if (!rpcChainFactsEqual(values[0], values[1])) throw new Error('recourse_binding_rpc_disagreement');
     return values[0];
@@ -47,9 +54,14 @@ const confirmed = new WeakSet<ConfirmedBinding>();
 export async function readConfirmedBinding(binding: OwnershipBinding, chain = chainPort()): Promise<ConfirmedBinding | null> {
   const digest = hashMessage(ownershipBindingMessage(binding)), deployment = await chain.deployment();
   if (binding.kernel !== deployment.addresses.kernel.toLowerCase()) throw new Error('recourse_binding_operation_retired');
-  const finalized: unknown = await chain.agree('eth_getBlockByNumber', ['finalized', false]);
+  // A binding counts once it has twelve confirmations, the relay's Base rule.
+  const head: unknown = await chain.agree('eth_blockNumber', []);
+  if (typeof head !== 'string' || !/^0x[0-9a-f]+$/i.test(head)) throw new Error('recourse_binding_reply_invalid');
+  const depth = BigInt(head) - BigInt(RECOURSE_CONFIRMATIONS - 1);
+  if (depth < 0n) return null;
+  const finalized: unknown = await chain.agree('eth_getBlockByNumber', [`0x${depth.toString(16)}`, false]);
   if (!finalized || typeof finalized !== 'object' || !('hash' in finalized) || !('number' in finalized)
-    || typeof finalized.hash !== 'string' || typeof finalized.number !== 'string') throw new Error('recourse_binding_reply_invalid');
+    || typeof finalized.hash !== 'string' || typeof finalized.number !== 'string' || BigInt(finalized.number) !== depth) throw new Error('recourse_binding_reply_invalid');
   const pin = { blockHash: finalized.hash, requireCanonical: true };
   const call = async (target: string, abi: Interface, method: string, args: readonly unknown[], tag: unknown = pin) => {
     const raw = await chain.agree('eth_call', [{ to: target, data: abi.encodeFunctionData(method, args) }, tag]);
@@ -239,7 +251,7 @@ export async function queueBindingOperation(db: Firestore, binding: OwnershipBin
     if (owner.get('recoveryCommitment') !== binding.recoveryCommitment || owner.get('signingRoot') !== binding.signingRoot) {
       throw new Error('recourse_binding_operation_owner_mismatch');
     }
-    tx.create(ref, { ...plan, status: 'queued', transactionHash: null, createdAtMs: Date.now() });
+    tx.create(ref, { ...plan, status: 'queued', transactionHash: null, createdAtMs: Date.now(), ...laneQueuedFields(Date.now(), id) });
   });
   return id;
 }

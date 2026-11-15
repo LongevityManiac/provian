@@ -1,18 +1,20 @@
 import { Interface, Wallet, getBytes, getCreateAddress, keccak256, verifyMessage } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
-import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
+import { runRecourseLane, RECOURSE_LANE_COLLECTION } from './transaction-lane';
+import { sponsoredLaneKind } from './transaction-lane-kinds';
+import { simulatedBase, laneTestWallet } from './__test-helpers__/lane-chain-fixture';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, type PrivateMembershipTransition } from './private-membership-transition';
 import { standingMembershipSigningHash, STANDING_MEMBERSHIP_ABI, type AddressMembershipConsent } from './membership-authorization';
 import { queueMembershipConsent, membershipConsentAdapter, checkMembershipConsent, assertCheckedMembershipConsent,
   MEMBERSHIP_CONSENT_OPERATIONS as Q, type MembershipConsentPorts, type CheckedMembershipConsent } from './membership-consent-operation';
-import type { FinalizedOwnerTransaction } from './transaction-finality';
-import { executeSponsoredOperation } from './sponsored-operation-worker';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import type { RecoursePoolState } from './pool-state';
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 const ownerWallet = new Wallet(h('11')), attestorWallet = new Wallet(h('22')), gasWallet = new Wallet(h('33'));
+// The settlement submitter (gasWallet) never pays; the Recourse lane wallet does.
+const laneWallet = laneTestWallet(), LANE = laneWallet.address.toLowerCase();
 async function fixture() {
   const fake = createFakeFirestore({ strictTransactionOrder: true }), db = fake as unknown as Firestore;
   const owner = h('ab'), id = h('ac'), binding = h('ad');
@@ -35,7 +37,7 @@ async function fixture() {
     'function restorationAuthority() view returns(address)', 'function pointer() view returns(address)',
     'function operationalMinter() view returns(address)', 'function kernel() view returns(address)', 'function pool() view returns(address)', 'function submitter() view returns(address)',
     ...STANDING_MEMBERSHIP_ABI.fragments]);
-  const p: MembershipConsentPorts = { state: async () => state, chain: { deployment: async () => deployment,
+  const p: MembershipConsentPorts = { gasPayer: LANE, state: async () => state, chain: { deployment: async () => deployment,
     agree: async (method, args) => {
       expect(args[1]).toEqual({ blockHash: deployment.blockHash, requireCanonical: true });
       if (method === 'eth_getCode') return '0x';
@@ -79,37 +81,44 @@ test.each(['payer', 'nonce', 'joined', 'rule', 'expiry', 'generation', 'status',
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect([...f.fake.store.keys()].filter(k => k.startsWith(Q))).toHaveLength(0);
 });
-test('sponsored receipt failure retains exact bytes and nonce until durable reconciliation succeeds', async () => {
+function lane(db: Firestore, adapter: ReturnType<typeof membershipConsentAdapter>) {
+  const base = simulatedBase(laneWallet.address);
+  const signer = { address: LANE, signTransaction: jest.fn((tx: Parameters<typeof laneWallet.signTransaction>[0]) => laneWallet.signTransaction(tx)) };
+  const run = () => runRecourseLane({ db, signer, chain: base, kinds: [sponsoredLaneKind('membership_consent', adapter)], workerId: `w-${Math.random()}`, now: base.now }, base.now() + 5_000);
+  return { base, signer, run };
+}
+test('receipt reconciliation failure retains exact bytes and nonce until durable reconciliation succeeds', async () => {
   const f = await fixture(), { id } = await queueMembershipConsent(f.db, f.owner, f.input, f.attestor, f.p);
-  const adapter = membershipConsentAdapter(f.db, f.p), finalized = jest.fn(async (): Promise<FinalizedOwnerTransaction | null> => null);
   const reconcile = jest.fn(async (): Promise<void> => { throw Error('receipt_temporarily_unavailable'); });
-  const signer = { address: gasWallet.address.toLowerCase(), sign: jest.fn((plan: CheckedMembershipConsent) => gasWallet.signTransaction({ chainId: 8453, type: 2,
-    to: plan.executor, data: plan.calldata, value: 0, nonce: 3, gasLimit: 400000, maxFeePerGas: 2, maxPriorityFeePerGas: 1 })),
-    broadcast: jest.fn(async (raw: string) => keccak256(raw)) };
-  const worker = { ...adapter, finalized, reconcileConfirmed: reconcile };
-  expect(await executeSponsoredOperation(f.db, id, signer, worker)).toBe('submitted');
+  const l = lane(f.db, { ...membershipConsentAdapter(f.db, f.p), reconcileConfirmed: reconcile });
+  expect(await l.run()).toMatchObject({ signed: 1 });
   const raw = f.fake.store.get(`${Q}/${id}`)!.signedTransaction;
-  finalized.mockResolvedValue({ status: 1, transactionHash: keccak256(String(raw)), blockHash: h('55'), block: 12 });
-  await expect(executeSponsoredOperation(f.db, id, signer, worker)).rejects.toThrow('temporarily_unavailable');
+  expect(f.fake.store.get(`${Q}/${id}`)).toMatchObject({ status: 'submitted', gasPayer: LANE, laneSigner: LANE });
+  l.base.mine(); l.base.advance(11);
+  expect((await l.run()).errors).toContain('receipt_temporarily_unavailable:0');
   expect(f.fake.store.get(`${Q}/${id}`)).toMatchObject({ status: 'submitted', signedTransaction: raw });
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBe(id);
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)?.open).toEqual({ 0: { collection: Q, id } });
   reconcile.mockImplementation(async () => undefined);
-  expect(await executeSponsoredOperation(f.db, id, signer, worker)).toBe('confirmed');
-  expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).toHaveBeenCalledTimes(1);
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBeNull();
+  expect(await l.run()).toMatchObject({ confirmed: 1 });
+  expect(reconcile).toHaveBeenLastCalledWith(expect.anything(), keccak256(String(raw)));
+  expect(l.signer.signTransaction).toHaveBeenCalledTimes(1); expect(l.base.state.broadcasts).toHaveLength(1);
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)?.open).toEqual({});
 });
-test('recovery releases an interrupted unsigned gas reservation without erasing signed work', async () => {
+test('a signer interruption leaves no reservation, and an obsolete unsigned request then closes without gas', async () => {
   const f = await fixture(), { id } = await queueMembershipConsent(f.db, f.owner, f.input, f.attestor, f.p);
-  const signer = { address: gasWallet.address.toLowerCase(), sign: jest.fn(async (): Promise<string> => { throw Error('signer_interrupted'); }),
-    broadcast: jest.fn(async (raw: string) => keccak256(raw)) };
-  const adapter = membershipConsentAdapter(f.db, f.p);
-  await expect(executeSponsoredOperation(f.db, id, signer, adapter)).rejects.toThrow('signer_interrupted');
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBe(id);
+  const l = lane(f.db, membershipConsentAdapter(f.db, f.p));
+  l.signer.signTransaction.mockRejectedValueOnce(Error('signer_interrupted'));
+  expect(await l.run()).toMatchObject({ signed: 0, stopReason: 'recourse_lane_sign_failed' });
   expect(f.fake.store.get(`${Q}/${id}`)!.signedTransaction).toBeUndefined();
+  expect(f.fake.store.get(`${RECOURSE_LANE_COLLECTION}/${LANE}`)).toMatchObject({ next_nonce: 0, open: {} });
   f.fake.store.get(`${R.identities}/${f.binding}`)!.recoveryGeneration = 1;
-  expect(await executeSponsoredOperation(f.db, id, signer, adapter)).toBe('failed');
-  expect(signer.sign).toHaveBeenCalledTimes(1); expect(signer.broadcast).not.toHaveBeenCalled();
-  expect(f.fake.store.get(`${SETTLEMENT_SIGNER_LEASES_COLLECTION}/${signer.address}`)!.pending_operation).toBeNull();
+  expect(await l.run()).toMatchObject({ failed: 1, closedUnsigned: 1, signed: 0 });
+  expect(f.fake.store.get(`${Q}/${id}`)?.status).toBe('failed');
+  expect(l.base.state.broadcasts).toHaveLength(0);
+});
+test('the settlement submitter is never the membership gas payer', async () => {
+  const f = await fixture();
+  await expect(queueMembershipConsent(f.db, f.owner, f.input, f.attestor, { ...f.p, gasPayer: gasWallet.address.toLowerCase() })).rejects.toThrow('sponsor_invalid');
 });
 
 test('leave intent accepted during simulation refuses admission at queue commit', async () => {

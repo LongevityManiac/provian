@@ -1,3 +1,5 @@
+import { recourseLaneAddress } from './transaction-lane-key';
+import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
 import { AbiCoder, Interface, ZeroAddress, Transaction, concat, getBytes, keccak256, sha256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
@@ -41,7 +43,8 @@ export function breakDeploymentChain(): OwnerOperationChain {
 }
 /** Signature, snapshot membership and factory binding precede any gas spend.
  * The gas key has no restoration-authority role. */
-export async function checkBreakDeployment(value: unknown, port: OwnerOperationChain = breakDeploymentChain()): Promise<CheckedBreakDeployment> {
+export async function checkBreakDeployment(value: unknown, port: OwnerOperationChain = breakDeploymentChain(),
+  sponsor: string = recourseLaneAddress()): Promise<CheckedBreakDeployment> {
   const request = parseAccountDeploymentRequest(value), id = accountDeploymentDigest(request);
   if (sha256(request.publicKey) !== request.signingRoot
     || sha256(concat([request.recoverySecret, request.signingRoot])) !== request.commitment) throw Error('break_deployment_owner_proof_invalid');
@@ -82,8 +85,9 @@ export async function checkBreakDeployment(value: unknown, port: OwnerOperationC
   if (String(await call(kernel, 'operationalMinter')).toLowerCase() !== settlement
     || String(await call(settlement, 'kernel')).toLowerCase() !== kernel
     || String(await call(settlement, 'pool')).toLowerCase() !== deployment.addresses.recoursePool.toLowerCase()) throw Error('break_deployment_sponsor_invalid');
-  const gasPayer = String(await call(settlement, 'submitter')).toLowerCase();
-  if (gasPayer === ZeroAddress) throw Error('break_deployment_sponsor_invalid');
+  // Gas comes from the Recourse lane, never the settlement submitter.
+  const submitter = String(await call(settlement, 'submitter')).toLowerCase(), gasPayer = sponsor.toLowerCase();
+  if (submitter === ZeroAddress || gasPayer === submitter || !/^0x[0-9a-f]{40}$/.test(gasPayer)) throw Error('break_deployment_sponsor_invalid');
   const calldata = abi.encodeFunctionData('deploy', [request.initialRoot]);
   const simulated = await port.agree('eth_call', [{ to: request.factory, from: gasPayer, data: calldata }, tag]);
   if (typeof simulated !== 'string' || String(abi.decodeFunctionResult('deploy', simulated)[0]).toLowerCase() !== request.account) throw Error('break_deployment_simulation_invalid');
@@ -133,7 +137,7 @@ export async function queueBreakDeployment(db: Firestore, value: unknown, port?:
     const archive = archiveRef ? await tx.get(archiveRef) : null;
     if (oldSigner !== null) {
       const lease = await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner));
-      if (lease.get('pending_operation') === id) throw Error('break_deployment_retry_unreconciled');
+      if (lease.get('pending_operation') === id || await laneHoldsOperation(tx, db, oldSigner, BREAK_DEPLOYMENTS, id)) throw Error('break_deployment_retry_unreconciled');
     }
     const selected: unknown = slot.get('operation');
     if (slot.exists && selected !== id) {
@@ -146,7 +150,8 @@ export async function queueBreakDeployment(db: Firestore, value: unknown, port?:
     if (archiveRef && !archive?.exists) tx.create(archiveRef, { operation: id, signedTransaction: oldRaw,
       transactionHash: keccak256(String(oldRaw)), status: 'finalized_revert', archivedAtMs: Date.now() });
     tx.set(ref, { request, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash,
-      queuedAtBlockHash: plan.blockHash, status: plan.alreadyDeployed ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now() });
+      queuedAtBlockHash: plan.blockHash, status: plan.alreadyDeployed ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now(),
+      ...(plan.alreadyDeployed ? {} : laneQueuedFields(Date.now(), id)) });
     tx.set(slotRef, { operation: id, breakOrigin: request.breakOrigin, identity: request.identity, account: request.account });
   });
   return readBreakDeployment(db, id);

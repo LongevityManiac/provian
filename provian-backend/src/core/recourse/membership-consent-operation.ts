@@ -1,3 +1,4 @@
+import { recourseLaneAddress } from './transaction-lane-key';
 import { privateRejoinPayments } from './private-membership-calendar';
 import { readPrivateCalendarRules } from './private-calendar-rules';
 import { utcCalendarMonth } from './calendar-month';
@@ -18,7 +19,7 @@ import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { readRecoursePoolState, type RecoursePoolState } from './pool-state';
 import { queueSponsoredOperation } from './sponsored-operation-queue';
-import { executeSponsoredOperation, type SponsoredOperationAdapter, type SponsoredOperationSigner } from './sponsored-operation-worker';
+import type { SponsoredOperationAdapter } from './sponsored-operation-worker';
 import { finalizedOwnerTransaction } from './transaction-finality';
 import { readMembershipReceipt } from './membership-receipt';
 import { reconcilePrivateMembershipReceipt } from './private-membership-reconcile';
@@ -30,9 +31,20 @@ export interface MembershipConsentRequest {
   readonly standing: StandingMembershipAuthorization | null; readonly exitSecret: string | null;
   readonly ownerSignature: string | null; readonly attestorSignature: string | null;
 }
-export interface MembershipConsentPorts { readonly chain: OwnerOperationChain; state(binding: string, checkpoint: ProtocolDeployment): Promise<RecoursePoolState> }
+export interface MembershipConsentPorts {
+  readonly chain: OwnerOperationChain; state(binding: string, checkpoint: ProtocolDeployment): Promise<RecoursePoolState>;
+  /** The Recourse lane address; defaults to the configured lane key. */
+  readonly gasPayer?: string;
+}
 const ports = (): MembershipConsentPorts => ({ chain: breakDeploymentChain(), state: readRecoursePoolState });
 const fail = (reason: string): never => { throw Error(`recourse_membership_consent_${reason}`); };
+/** Membership transactions are paid by the Recourse lane, never the settlement submitter. */
+export async function laneSponsor<T extends { readonly gasPayer: string }>(p: { readonly gasPayer?: string },
+  wiring: Promise<T>): Promise<T> {
+  const value = await wiring, gasPayer = (p.gasPayer ?? recourseLaneAddress()).toLowerCase();
+  if (gasPayer === value.gasPayer || !/^0x[0-9a-f]{40}$/.test(gasPayer)) throw Error('recourse_membership_sponsor_invalid');
+  return { ...value, gasPayer };
+}
 export function parseMembershipConsentRequest(value: unknown): MembershipConsentRequest {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail('input');
   const row = value as Record<string, unknown>;
@@ -100,7 +112,7 @@ async function consentContext(db: Firestore, request: MembershipConsentRequest,
       if (JSON.stringify(privateRejoinPayments(account.get('episode'), utcCalendarMonth(state.timestamp), rules)) !== JSON.stringify(expectedPayments)) return fail('rejoin_amount');
     }
   }
-  return { deployment, ownerIdentity, ...await readMembershipWiring(p.chain, deployment) };
+  return { deployment, ownerIdentity, ...await laneSponsor(p, readMembershipWiring(p.chain, deployment)) };
 }
 export interface CheckedMembershipConsent {
   readonly id: string; readonly executor: string; readonly calldata: string; readonly gasPayer: string; readonly manifestHash: string;
@@ -128,7 +140,7 @@ export async function checkMembershipConsent(db: Firestore, value: unknown, p = 
   checked.add(plan); return plan;
 }
 export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredOperationAdapter<MembershipConsentRequest, CheckedMembershipConsent> {
-  return { collection: MEMBERSHIP_CONSENT_OPERATIONS, parse: parseMembershipConsentRequest, id: membershipConsentOperationId,
+  return { lane: true, collection: MEMBERSHIP_CONSENT_OPERATIONS, parse: parseMembershipConsentRequest, id: membershipConsentOperationId,
     beforeQueue: async (tx, request) => {
       const transition = await tx.get(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(request.transitionId));
       if (!transition.exists || (transition.get('departureRequested') && request.consent.joined) || transition.get('status') === 'superseded'
@@ -162,7 +174,4 @@ export async function queueMembershipConsent(db: Firestore, ownerIdentity: strin
   const bytes=getBytes(standingMembershipSigningHash(request.domain,request.standing));
   await assertIdentityAttestation(p.chain,request.consent.account,context.deployment.blockHash,bytes,request.ownerSignature);
   return queueSponsoredOperation(db,{...request,attestorSignature:await attestor.signBytes(bytes)},membershipConsentAdapter(db,p));
-}
-export async function executeMembershipConsent(db: Firestore, id: string, signer: SponsoredOperationSigner<CheckedMembershipConsent>, p = ports()) {
-  return executeSponsoredOperation(db, id, signer, membershipConsentAdapter(db, p));
 }

@@ -35,7 +35,7 @@ async function fixture(oldWithdrawal=false){
     input.to===current?[old,20,hash('22'),0,false]:[address('00'),0,hash('00'),0,false]);
    return RECOURSE_POOL_ABI.encodeFunctionResult('restorationAllocations',[identity,amount,true]);
   }
-  if(method==='eth_getBlockByNumber')return {number:`0x${finalizedHeight.toString(16)}`};
+  if(method==='eth_blockNumber')return `0x${(finalizedHeight+11).toString(16)}`;
   if(method==='eth_getTransactionReceipt')return {transactionHash,blockHash,blockNumber:`0x${height.toString(16)}`,status:'0x1',logs:[{...log,logIndex:'0x1'}]};
   throw Error(method);
  });

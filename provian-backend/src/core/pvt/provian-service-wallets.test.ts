@@ -14,6 +14,7 @@ import {
 } from './x402-facilitator-settlement';
 import {
   PAYOUT_BASE_GAS_ADDRESS,
+  RECOURSE_GAS_ADDRESS,
   PROVIAN_SERVICE_FEE_EXEMPT_ACTION_TYPES,
   PROVIAN_SERVICE_FEE_REASON_CODE,
   PROVIAN_SERVICE_WALLETS_EVM,
@@ -29,15 +30,15 @@ const STRANGER_EVM = '0x5000000000000000000000000000000000000005';
 const STRANGER_SOLANA = '9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin';
 
 describe('the service-wallet set', () => {
-  it('the population is real: three EVM and three Solana wallets are pinned', () => {
-    expect(PROVIAN_SERVICE_WALLETS_EVM.size).toBe(3);
+  it('the population is real: four EVM and three Solana wallets are pinned', () => {
+    expect(PROVIAN_SERVICE_WALLETS_EVM.size).toBe(4);
     expect(PROVIAN_SERVICE_WALLETS_SOLANA.size).toBe(3);
   });
 
-  it('pins the treasury (the payout fee recipient and EVM swap-fee recipient), the facilitator Base gas EOA and the payout gas EOA', () => {
+  it('pins the treasury (the payout fee recipient and EVM swap-fee recipient), the facilitator and payout Base gas EOAs and the Recourse lane gas EOA', () => {
     const evm = [...PROVIAN_SERVICE_WALLETS_EVM.keys()];
     expect(evm).toEqual(expect.arrayContaining([
-      PROVIAN_TREASURY, PAYOUT_FEE_RECIPIENT, FACILITATOR_BASE_GAS_ADDRESS_DEFAULT, PAYOUT_BASE_GAS_ADDRESS,
+      PROVIAN_TREASURY, PAYOUT_FEE_RECIPIENT, FACILITATOR_BASE_GAS_ADDRESS_DEFAULT, PAYOUT_BASE_GAS_ADDRESS, RECOURSE_GAS_ADDRESS,
     ]));
     for (const address of evm) expect(address).toBe(address.toLowerCase());
   });
@@ -50,6 +51,12 @@ describe('the service-wallet set', () => {
     expect([...PROVIAN_SERVICE_WALLETS_SOLANA.keys()]).toEqual(expect.arrayContaining([
       FACILITATOR_SOLANA_GAS_ADDRESS_DEFAULT, PROVIAN_SOLANA_TREASURY, PROVIAN_SOLANA_USDC_FEE_ACCOUNT,
     ]));
+  });
+
+  it('the Recourse lane gas EOA is the full address created for it (0x95bFfCEd…Ceb15), and a funding transfer to it never mints', () => {
+    expect(RECOURSE_GAS_ADDRESS).toMatch(/^0x95bffced[0-9a-f]{27}ceb15$/);
+    expect(isProvianServiceWallet(RECOURSE_GAS_ADDRESS.toUpperCase().replace('0X', '0x'), NO_ENV)).toBe(true);
+    expect(provianServiceFeeApplies('send', RECOURSE_GAS_ADDRESS, NO_ENV)).toBe(true);
   });
 
   it('env adds a wallet (a moved fee recipient is followed) and never removes a pinned one', () => {

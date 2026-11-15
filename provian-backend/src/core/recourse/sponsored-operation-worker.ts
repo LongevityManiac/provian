@@ -27,6 +27,8 @@ export interface SponsoredOperationAdapter<R, P extends SponsoredOperationPlan> 
   /** Optional durable consumer receipt application. Complete this before the
    * operation leaves the retry queue or releases its reserved nonce. */
   reconcileConfirmed?(request: R, transactionHash: string): Promise<void>;
+  /** Rows this adapter queues are sent by the Recourse transaction lane. */
+  readonly lane?: true;
   /** Fence queue admission against a concurrently persisted owner intent. */
   beforeQueue?(tx: FirestoreTransaction, request: R): Promise<void>;
 }
