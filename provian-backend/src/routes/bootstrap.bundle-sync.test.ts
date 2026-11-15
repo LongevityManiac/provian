@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { CONNECTION_TOKEN_ALPHABET } from '../core/connection-token-format';
+import { PROTOCOL_POINTER_PIN } from '../core/protocol/pointer-pin.generated';
 
 const STAGED = path.join(__dirname, '..', '..', 'bootstrap-bundle', 'agent.js');
 const CANONICAL = path.join(
@@ -31,6 +32,14 @@ const sha256 = (p: string): string =>
 const RETIRED_CONNECTION_TOKEN_GUARD = /\[A-Za-z0-9_-\]\{16,\s*256\}/;
 
 describe('bootstrap bundle staging sync', () => {
+  it('the hosted bundle embeds the current permanent pointer address and runtime hash', () => {
+    const text = fs.readFileSync(STAGED, 'utf8');
+    const pins = [...text.matchAll(/Object\.freeze\(\{chainId:8453,address:(null|"0x[0-9a-fA-F]{40}"),runtimeHash:(null|"0x[0-9a-f]{64}")\}\)/g)];
+    expect(pins).toHaveLength(1);
+    expect(JSON.parse(pins[0][1])).toBe(PROTOCOL_POINTER_PIN.address);
+    expect(JSON.parse(pins[0][2])).toBe(PROTOCOL_POINTER_PIN.runtimeHash);
+  });
+
   it('the staged image copy is byte-identical to the canonical SDK build artifact', () => {
     expect(fs.existsSync(STAGED)).toBe(true);
     expect(fs.existsSync(CANONICAL)).toBe(true);
