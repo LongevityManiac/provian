@@ -13,6 +13,7 @@
     "provian-website",
     "provian-ops",
     "provian-facilitator",
-    "contracts"
+    "contracts",
+    "scripts/recourse"
   ]
 }

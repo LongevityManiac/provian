@@ -5,6 +5,10 @@ import { PROTOCOL_POINTER_PIN } from './pointer-pin.generated';
 import { confirmProtocolDeployment, resolveProtocolDeployment, PROTOCOL_COMPONENTS, type ProtocolDeployment } from './pointer';
 
 const CHECK_INTERVAL_MS = 60_000;
+/** A metadata read may answer from a confirmed revision this old while one
+ * confirmation runs behind it, so public reads never wait on the providers.
+ * Signing and evidence boundaries never use it: they always request fresh. */
+const SERVE_WHILE_CONFIRMING_MS = 10 * 60_000;
 const LEASE_MS = 60_000;
 let cached: ProtocolDeployment | undefined, checkedAt = 0, minimumRevision = 0n;
 let scheduled: Promise<ProtocolDeployment> | undefined;
@@ -33,16 +37,36 @@ export async function currentProtocolDeployment(options: { readonly fresh?: bool
   const fresh = options.fresh === true;
   if (!fresh && Date.now() >= failureAt && Date.now() < retryAfter) throw Error('protocol_verification_unavailable');
   if (!fresh && cached && Date.now() >= checkedAt && Date.now() - checkedAt < CHECK_INTERVAL_MS) return cached;
+  if (!fresh && cached && Date.now() >= checkedAt && Date.now() - checkedAt < SERVE_WHILE_CONFIRMING_MS) {
+    confirmBehind();
+    return cached;
+  }
   if (!fresh && scheduled) return scheduled;
-  const run = refresh(fresh).catch(error => {
+  // A new instance may start from the shared durable record on the same terms.
+  const run = refresh(fresh, fresh ? CHECK_INTERVAL_MS : SERVE_WHILE_CONFIRMING_MS).catch(error => {
     cached = undefined; checkedAt = 0; failureAt = Date.now(); retryAfter = failureAt + CHECK_INTERVAL_MS;
     throw error;
   });
   if (fresh) return run;
   scheduled = run;
-  try { return await run; } finally { scheduled = undefined; }
+  let result: ProtocolDeployment;
+  try { result = await run; } finally { scheduled = undefined; }
+  if (Date.now() - checkedAt >= CHECK_INTERVAL_MS) confirmBehind();
+  return result;
 }
-async function refresh(fresh: boolean): Promise<ProtocolDeployment> {
+/** One confirmation per instance runs behind metadata reads. A failure clears
+ * the cache exactly as a waited confirmation would; another instance holding
+ * the shared lease is not a failure, so the next read simply tries again. */
+function confirmBehind(): void {
+  if (scheduled) return;
+  const run = refresh(false, CHECK_INTERVAL_MS);
+  scheduled = run;
+  run.catch(error => {
+    if (error instanceof Error && error.message === 'protocol_verification_busy') return;
+    cached = undefined; checkedAt = 0; failureAt = Date.now(); retryAfter = failureAt + CHECK_INTERVAL_MS;
+  }).finally(() => { if (scheduled === run) scheduled = undefined; });
+}
+async function refresh(fresh: boolean, maxRecordAgeMs: number): Promise<ProtocolDeployment> {
   const { address, runtimeHash } = PROTOCOL_POINTER_PIN;
   if (!address || !runtimeHash) throw Error('protocol_pointer_not_deployed');
   const legs = getOperatorBoundRpcLegs('base');
@@ -55,7 +79,7 @@ async function refresh(fresh: boolean): Promise<ProtocolDeployment> {
     && Number(initial.get('retryAfter') ?? 0) > Date.now()) throw Error('protocol_verification_unavailable');
   const verified = initial.exists && initial.get('verified') ? unpack(initial.get('verified')) : undefined;
   const timestamp: unknown = initial.get('checkedAt');
-  if (!fresh && verified && typeof timestamp === 'number' && timestamp <= Date.now() && Date.now() - timestamp < CHECK_INTERVAL_MS)
+  if (!fresh && verified && typeof timestamp === 'number' && timestamp <= Date.now() && Date.now() - timestamp < maxRecordAgeMs)
     {
       const current = unpack(initial.get('current'));
       if (current.manifestHash !== verified.manifestHash) throw Error('protocol_cache_invalid');

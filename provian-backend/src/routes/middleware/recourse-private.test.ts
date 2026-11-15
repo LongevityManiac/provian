@@ -17,6 +17,10 @@ import { BREAK_RESTORATION_TUPLE } from '../../core/recourse/break-restoration-d
 import { authenticatePrivateRecourse } from './recourse-private';
 import { createRecourseRouter } from '../recourse';
 import type { AgentBankDeps } from '../../core/agent-bank/types';
+// Each case signs real SLH-DSA envelopes in child processes. A two-core CI runner
+// running suites in parallel takes several times the local duration.
+const SIGNING_TEST_TIMEOUT_MS = 300_000;
+jest.setTimeout(SIGNING_TEST_TIMEOUT_MS);
 
 // Bridge CommonJS Jest to the production cryptography, never a true stub.
 jest.mock('@noble/post-quantum/slh-dsa.js', () => ({ slh_dsa_sha2_128s: {
@@ -115,7 +119,7 @@ test('every operation ID and receipt is bound to the stored owner, not the crede
       expect((await http(stranger.app).post(`/${path}`).send(signed)).status).toBe(404);
     }
   }
-}, 60000);
+}, SIGNING_TEST_TIMEOUT_MS);
 test('submission bodies must name the authenticated owner before queue or worker execution', async () => {
   for (const [path, field] of [['owner-operations/recovery', 'operation'], ['break-deployments', 'deployment'],
     ['break-registrations', 'registration'], ['break-restorations', 'restoration']] as const) {
@@ -125,7 +129,7 @@ test('submission bodies must name the authenticated owner before queue or worker
     expect((await http(f.app).post(`/${path}`).send(envelope(path, inputs(other)[field]))).status).toBe(404);
     expect(f.downstream).not.toHaveBeenCalled();
   }
-}, 60000);
+}, SIGNING_TEST_TIMEOUT_MS);
 test('published rules and aggregate resources remain outside private recovery authorization', async () => {
   const f = fixture();
   for (const path of ['resources', `membership-rules/${h(1)}`]) expect((await http(f.app).get(`/${path}`)).status).toBe(200);

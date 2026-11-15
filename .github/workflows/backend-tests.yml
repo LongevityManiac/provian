@@ -145,6 +145,20 @@ jobs:
         working-directory: provian-backend
         run: node scripts/bundle-jurisdiction-data.mjs
 
+      # Some recourse suites load root-level operator scripts (scripts/recourse/*.mjs). Node resolves
+      # their packages from the repository root, which this job does not install; point it at the
+      # backend's own dependencies instead of installing the mobile app's.
+      - name: Resolve root scripts against backend dependencies
+        run: ln -s provian-backend/node_modules node_modules
+
+      # This runner does not compile the contracts. The restoration executor cases that authenticate
+      # against contracts/out skip here and run in the local gate.
+      - name: Note compiled-contract cases skipped
+        run: |
+          if [ ! -d contracts/out ]; then
+            echo "::notice title=Skipped in CI::restoration-executor-runtime compiled-contract cases skipped (contracts/out absent); they run in the local gate after forge build --root contracts."
+          fi
+
       - name: Full jest suite
         working-directory: provian-backend
         run: npm test -- --silent

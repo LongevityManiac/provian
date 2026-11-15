@@ -86,3 +86,46 @@ test('requests share verification, restart reuses durable proof, signing always 
  await expect(current()).rejects.toThrow('protocol_verification_unavailable');
  expect(counts).toEqual([0,0]);
 });
+
+test('metadata reads answer at once while one confirmation runs behind them; signing still waits', async () => {
+ const fake=createFakeFirestore({strictTransactionOrder:true});
+ const counts=[0,0], revisions=[1n,1n], fail=[false];
+ const providers=[0,1].map(i=>({operatorId:`provider-${i}`,provider:{send:async (method:string,params:readonly unknown[])=>{
+   if(fail[0]) throw new Error('provider_down');
+   return rpc({revision:revisions[i],count:()=>++counts[i]}).request(method,params);}}}));
+ let now=1_800_000_000_000;
+ const clock=jest.spyOn(Date,'now').mockImplementation(()=>now);
+ const load=async()=>{
+   jest.resetModules();
+   jest.doMock('../../firestore-db',()=>({relayDb:()=>fake as unknown as Firestore}));
+   jest.doMock('../onchain/rpc-provider',()=>({getOperatorBoundRpcLegs:()=>providers}));
+   jest.doMock('./pointer-pin.generated',()=>({PROTOCOL_POINTER_PIN:{address:pointer,runtimeHash}}));
+   return (await import('./runtime')).currentProtocolDeployment;
+ };
+ const settle=async()=>{ for(let i=0;i<50;i++) await new Promise(r=>setImmediate(r)); };
+ try {
+  let current=await load();
+  await current(); expect(counts).toEqual([45,45]); counts.fill(0);
+  // Past the confirmation interval: the read answers before any provider call.
+  now+=90_000;
+  const answered=await current(); expect(answered.revision).toBe(1n); expect(counts).toEqual([0,0]);
+  await settle(); expect(counts).toEqual([8,8]);
+  // Concurrent reads share that single confirmation.
+  counts.fill(0); now+=90_000;
+  await Promise.all(Array.from({length:20},()=>current())); await settle(); expect(counts).toEqual([8,8]);
+  // A new instance starts from a durable record minutes old, then confirms behind.
+  counts.fill(0); now+=5*60_000;
+  current=await load(); await current(); expect(counts).toEqual([0,0]);
+  await settle(); expect(counts).toEqual([8,8]);
+  // Signing boundaries never take the shortcut.
+  counts.fill(0); now+=90_000; await current({fresh:true}); expect(counts).toEqual([8,8]);
+  // RED: a confirmation that fails behind a read clears the cache; later reads refuse.
+  counts.fill(0); now+=90_000; fail[0]=true;
+  await current(); await settle();
+  await expect(current()).rejects.toThrow('protocol_verification_unavailable');
+  // RED: beyond the serving window a read waits for confirmation and fails with it.
+  fail[0]=false; current=await load(); counts.fill(0); now+=11*60_000; fail[0]=true;
+  await expect(current()).rejects.toThrow('provider_down');
+  expect(counts).toEqual([0,0]);
+ } finally { clock.mockRestore(); }
+});

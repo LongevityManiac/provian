@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { zeroPadValue, toBeHex, keccak256 } from 'ethers';
 import template from './restoration-executor-runtime.generated.json';
@@ -16,6 +16,15 @@ function runtime(overrides: Partial<Record<Name, string>> = {}): string {
   }
   return output;
 }
+// These cases authenticate against the compiled contracts in contracts/out, which a
+// local `forge build --root contracts` produces and the local gate requires. The nightly
+// CI runner does not compile the contracts, so there, and only there, they are skipped.
+const COMPILED = ['ProvianRestorationAuthorization', 'ProvianHashAccountFactory', 'ProvianOwnerProofVerifier'];
+const compiledPresent = COMPILED.every(name => existsSync(resolve(__dirname, `../../../../contracts/out/${name}.sol/${name}.json`)));
+const skipCompiled = !compiledPresent && process.env.CI === 'true';
+if (skipCompiled) console.warn('SKIPPED in CI: restoration executor cases need compiled contracts (contracts/out absent). '
+  + 'They run in the local gate after `forge build --root contracts`.');
+const compiledTest = skipCompiled ? test.skip : test;
 function compiled(name: string): string {
   const artifact = JSON.parse(readFileSync(resolve(__dirname, `../../../../contracts/out/${name}.sol/${name}.json`), 'utf8')) as { deployedBytecode: { object: string } };
   return artifact.deployedBytecode.object;
@@ -45,7 +54,7 @@ function fixture() {
   }), kernelExecutor: jest.fn(async () => a(2)) };
   return { codes, port };
 }
-test('compiled runtime and actual proof/factory helpers authenticate with repeated immutable sites', async () => {
+compiledTest('compiled runtime and actual proof/factory helpers authenticate with repeated immutable sites', async () => {
   expect(template.runtime).toBe(compiled('ProvianRestorationAuthorization'));
   const { port } = fixture(); await authenticateRestorationExecutor(a(2), a(1), h(30), port);
   expect(port.code).toHaveBeenCalledWith(a(3), h(30)); expect(port.code).toHaveBeenCalledWith(a(4), h(30));
@@ -57,7 +66,7 @@ test.each(['opcode', 'short', 'inconsistent-immutable'])('%s implementation fail
   if (mode === 'inconsistent-immutable') { const offset = 2 + template.immutables.kernel[0].start * 2; code = code.slice(0, offset) + word(a(99)).slice(2) + code.slice(offset + 64); }
   expect(() => decodeRestorationExecutorRuntime(code)).toThrow();
 });
-test.each(['private-verifier', 'factory', 'wrong-kernel', 'wrong-account-code', 'fake-break-mode', 'break-inherits', 'ordinary-factory'])('%s substitution refuses', async mode => {
+compiledTest.each(['private-verifier', 'factory', 'wrong-kernel', 'wrong-account-code', 'fake-break-mode', 'break-inherits', 'ordinary-factory'])('%s substitution refuses', async mode => {
   const { codes, port } = fixture();
   if (mode === 'private-verifier') codes.set(a(3), '0x60006000f3');
   if (mode === 'factory') codes.set(a(4), '0x60006000f3');
@@ -68,7 +77,7 @@ test.each(['private-verifier', 'factory', 'wrong-kernel', 'wrong-account-code', 
   if (mode === 'ordinary-factory') codes.set(a(2), runtime({ cryptographicBreak: word(0) }));
   await expect(authenticateRestorationExecutor(a(2), a(1), h(30), port)).rejects.toThrow();
 });
-test('ordinary inheritance authenticates the prior executor instead of trusting getter-shaped state', async () => {
+compiledTest('ordinary inheritance authenticates the prior executor instead of trusting getter-shaped state', async () => {
   const { codes, port } = fixture();
   codes.set(a(2), runtime({ cryptographicBreak: word(0), hashAccountFactory: word(a(0)), previousAuthorization: word(a(12)) }));
   codes.set(a(12), runtime({ kernel: word(a(10)), predecessor: word(a(20)) }));
