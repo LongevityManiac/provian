@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { randomUUID } from 'crypto';
 import { Transaction,keccak256,sha256,toUtf8Bytes } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -43,7 +44,7 @@ export function recourseExecutionId(plan:RecourseExecutionCall):string {
 }
 function verifyRaw(raw:string,plan:RecourseExecutionCall):void {
   const tx=Transaction.from(raw);
-  if(!tx.signature||tx.from?.toLowerCase()!==plan.signer||tx.to?.toLowerCase()!==plan.executor||tx.data!==plan.calldata
+  if(!tx.signature||tx.from?.toLowerCase()!==plan.signer||tx.to?.toLowerCase()!==plan.executor||!matchesPlannedCall(tx.data,plan.calldata)
     ||tx.chainId!==8453n||tx.type!==2||tx.value!==0n||tx.gasLimit<=0n||tx.maxFeePerGas===null||tx.maxPriorityFeePerGas===null
     ||tx.maxFeePerGas<tx.maxPriorityFeePerGas)throw Error('recourse_execution_signed_mismatch');
 }

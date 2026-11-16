@@ -1,3 +1,4 @@
+import { builderCodeGas, withBuilderCode } from './builder-code';
 import { vi } from 'vitest';
 vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/protocol-runtime.js')).protocolRuntimeFixture);
 /**
@@ -66,6 +67,8 @@ interface MockCall {
 let canonicalNonce = 0;
 beforeEach(() => { canonicalNonce = 0; });
 
+/** Addresses the mock chain reports as contracts. */
+const contractCode = new Map<string, string>();
 function makeMockTransport(chainId: number) {
   const calls: MockCall[] = [];
   let lastRawTx: Hex | undefined;
@@ -86,6 +89,8 @@ function makeMockTransport(chainId: number) {
           return '0x3b9aca00';
         case 'eth_blockNumber':
           return '0x1';
+        case 'eth_getCode':
+          return contractCode.get(String((params as string[])[0]).toLowerCase()) ?? '0x';
         case 'eth_sendRawTransaction':
           lastRawTx = (params as Hex[])[0];
           canonicalNonce = Number(parseTransaction(lastRawTx).nonce ?? 0) + 1;
@@ -183,7 +188,7 @@ describe('transferToken — ERC-20 transfer to the pinned token contract', () =>
     expect(parsed.chainId).toBe(8453);
     expect(parsed.to?.toLowerCase()).toBe(usdc.toLowerCase());
     expect(parsed.value ?? 0n).toBe(0n);
-    expect(parsed.data).toBe(encodeErc20Transfer(RECIPIENT, 1_000_000n));
+    expect(parsed.data).toBe(withBuilderCode(encodeErc20Transfer(RECIPIENT, 1_000_000n)));
     const signer = await recoverTransactionAddress({ serializedTransaction: raw as `0x02${string}` });
     expect(getAddress(signer)).toBe(getAddress(TEST_ADDRESS));
 
@@ -264,7 +269,7 @@ describe('transferNative — bare ETH value send to any address', () => {
     const parsed = parseTransaction(getRawTx()!);
     expect(parsed.to?.toLowerCase()).toBe(RANDOM_TARGET.toLowerCase());
     expect(parsed.value).toBe(10_000_000_000_000_000n);
-    expect(parsed.data ?? '0x').toBe('0x');
+    expect(parsed.data ?? '0x').toBe(withBuilderCode('0x')); // a plain Base transfer carries only the Builder Code
     const signer = await recoverTransactionAddress({ serializedTransaction: getRawTx()! as `0x02${string}` });
     expect(getAddress(signer)).toBe(getAddress(TEST_ADDRESS));
   });
@@ -341,7 +346,35 @@ describe('sendTransaction — allowlist guardrail', () => {
       ...FEES,
     });
     expect(res.hash).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(parseTransaction(getRawTx()!).data).toBe(withBuilderCode('0xdeadbeef'));
+  });
+
+  it('sends a raw-calldata target (the CREATE2 deployer) exactly as planned, without the Builder Code', async () => {
+    const { transport, getRawTx } = makeMockTransport(8453);
+    await sendTransaction(WALLET, {
+      to: '0x4e59b44847b379578588920cA78FbF26c0B4956C', data: '0xdeadbeef', value: '0', chain: 'base',
+      allowUnlistedTarget: true, transport, ...FEES,
+    });
     expect(parseTransaction(getRawTx()!).data).toBe('0xdeadbeef');
+  });
+
+  it('sends a plain value transfer to a contract without the suffix, so receive() still runs', async () => {
+    const { transport, getRawTx } = makeMockTransport(8453);
+    contractCode.set(RANDOM_TARGET.toLowerCase(), '0x6080');
+    try {
+      await transferNative(WALLET, { to: RANDOM_TARGET, amount: 10n ** 16n, chain: 'base', transport, ...FEES });
+      expect(parseTransaction(getRawTx()!).data ?? '0x').toBe('0x');
+    } finally { contractCode.delete(RANDOM_TARGET.toLowerCase()); }
+  });
+
+  it('adds the suffix gas to a caller-fixed Base gas limit (RED control: the bare limit is not reused)', async () => {
+    const { transport, getRawTx } = makeMockTransport(8453);
+    await sendTransaction(WALLET, {
+      to: RANDOM_TARGET, data: '0xdeadbeef', value: '0', chain: 'base', allowUnlistedTarget: true, transport, ...FEES, gas: 50_000n,
+    });
+    const parsed = parseTransaction(getRawTx()!);
+    expect(parsed.gas).toBe(50_000n + builderCodeGas('0xdeadbeef'));
+    expect(builderCodeGas('0xdeadbeef')).toBeGreaterThan(0n);
   });
 
   it('allows an allowlisted contract target (BondPool) without the opt-out', async () => {
@@ -634,7 +667,7 @@ describe('waitForReceipt opt-in — broadcast vs confirmed', () => {
           case 'eth_chainId': return '0x2105'; // 8453
           case 'eth_getTransactionCount': return `0x${canonicalNonce.toString(16)}`;
           case 'eth_estimateGas': return '0x186a0';
-          case 'eth_blockNumber': return '0x1';
+          case 'eth_blockNumber': return '0x1'; case 'eth_getCode': return '0x';
           case 'eth_sendRawTransaction': canonicalNonce = Number(parseTransaction((params as Hex[])[0]).nonce ?? 0) + 1; return keccak256((params as Hex[])[0]);
           case 'eth_getTransactionReceipt':
             return {
@@ -674,7 +707,7 @@ describe('waitForReceipt opt-in — broadcast vs confirmed', () => {
           case 'eth_chainId': return '0x2105'; // 8453
           case 'eth_getTransactionCount': return `0x${canonicalNonce.toString(16)}`;
           case 'eth_estimateGas': return '0x186a0';
-          case 'eth_blockNumber': return '0x1';
+          case 'eth_blockNumber': return '0x1'; case 'eth_getCode': return '0x';
           case 'eth_sendRawTransaction': canonicalNonce = Number(parseTransaction((params as Hex[])[0]).nonce ?? 0) + 1; return keccak256((params as Hex[])[0]);
           case 'eth_getTransactionReceipt':
             return {

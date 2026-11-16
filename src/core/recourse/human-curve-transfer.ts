@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../protocol/builder-code';
 import * as SecureStore from 'expo-secure-store';
 import { hexlify, Transaction } from 'ethers';
 import { assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -75,7 +76,7 @@ async function inspect(intent: HumanHashTransferIntent, txHash: string, network:
   for (const rpc of network.rpcs) {
     if (quantity(object(await rpc.request('eth_getBlockByNumber', ['finalized', false])).number) < BigInt(receipt.block)) return pending;
     const tx = object(await rpc.request('eth_getTransactionByHash', [txHash]));
-    if (tx.hash !== txHash || tx.from !== intent.account || tx.to !== intent.target || tx.input !== intent.data
+    if (tx.hash !== txHash || tx.from !== intent.account || tx.to !== intent.target || !matchesPlannedCall(typeof tx.input === 'string' ? tx.input : undefined, intent.data)
       || quantity(tx.value) !== BigInt(intent.value) || quantity(tx.chainId) !== 8453n || tx.blockHash !== receipt.blockHash
       || quantity(tx.blockNumber) !== BigInt(receipt.block)) throw Error('recourse_transfer_receipt_invalid');
   }
@@ -95,7 +96,7 @@ async function retainedHash(intent: HumanHashTransferIntent): Promise<string | n
   if (!attempt) return null;
   const tx = Transaction.from(attempt.raw);
   if (tx.hash !== attempt.hash || tx.from?.toLowerCase() !== intent.account || tx.chainId !== 8453n
-    || tx.to?.toLowerCase() !== intent.target || tx.value !== BigInt(intent.value) || tx.data !== intent.data) throw Error('recourse_transfer_nonce_invalid');
+    || tx.to?.toLowerCase() !== intent.target || tx.value !== BigInt(intent.value) || !matchesPlannedCall(tx.data, intent.data)) throw Error('recourse_transfer_nonce_invalid');
   return attempt.hash;
 }
 /** The encrypted nonce coordinator owns the exact signed bytes. A lost send

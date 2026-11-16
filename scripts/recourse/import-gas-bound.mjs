@@ -1,3 +1,4 @@
+import { withBuilderCode } from '../../provian-backend/src/core/onchain/builder-code.ts';
 import { Interface } from 'ethers';
 import { boundedGasEstimate, BASE_TRANSACTION_GAS_LIMIT } from './transaction-gas-limit.mjs';
 const ensure=(value,reason)=>{if(!value)throw Error('import_gas_'+reason);};
@@ -24,7 +25,7 @@ export function importGasUpper(leaves,calldata){
  ensure(leaves.length>0&&/^0x(?:[0-9a-f]{2})+$/.test(calldata),'empty_or_invalid');
  const words=(1024n+leaves.reduce((n,leaf)=>n+leaf.memoryBytes,0n)+31n)/32n;
  return leaves.reduce((n,leaf)=>n+leaf.execution,0n)+3n*words+words*words/512n
-  +21000n+16n*BigInt((calldata.length-2)/2);
+  +21000n+16n*BigInt((withBuilderCode(calldata).length-2)/2); // sent with Provian's Builder Code
 }
 export function importGroupFits(upper,maximum=BASE_TRANSACTION_GAS_LIMIT){
  try{boundedGasEstimate(upper,maximum);return true;}catch{return false;}

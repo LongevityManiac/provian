@@ -1,3 +1,4 @@
+import { matchesPlannedCall, withoutBuilderCode } from '../onchain/builder-code';
 import type { BatchAttempt } from '../pvt/settlement/durable-settlement-store';
 import { breakDeploymentChain } from './break-deployment-queue';
 import { readMembershipReceipt, type VerifiedMembershipReceipt } from './membership-receipt';
@@ -52,13 +53,13 @@ export async function readSettlementTransaction(record:PrivateIssuanceBatchRecor
     ||address(tx.from)!==address(gasPayer)||address(tx.to)!==record.batch.target||quantity(tx.value)!==0n)return fail('binding');
   if(typeof tx.input!=='string'||!/^0x(?:[0-9a-f]{2})*$/.test(tx.input))return fail('calldata');
   if(record.status==='committed'){
-    if(!record.calldata||tx.input!==record.calldata)return fail('calldata');
+    if(!record.calldata||!matchesPlannedCall(tx.input,record.calldata))return fail('calldata');
   }else{
     let args;
     try{args=MEMBER_SETTLEMENT_ABI.decodeFunctionData('cancelMemberBatch',tx.input);}catch{return fail('calldata');}
     const event=receipt.events.find(e=>e.name==='IssuanceBatchCancelled');
     if(!event||args[0]!==record.batch.context.batchId||String(args[1])!==event.revision
-      ||MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[args[0],args[1]])!==tx.input)return fail('calldata');
+      ||!matchesPlannedCall(tx.input,MEMBER_SETTLEMENT_ABI.encodeFunctionData('cancelMemberBatch',[args[0],args[1]])))return fail('calldata');
   }
   const gas=quantity(tx.gas),used=quantity(mined.gasUsed),effective=quantity(mined.effectiveGasPrice);
   const maxFee=quantity(tx.maxFeePerGas??tx.gasPrice),priority=quantity(tx.maxPriorityFeePerGas??tx.gasPrice);
@@ -66,7 +67,7 @@ export async function readSettlementTransaction(record:PrivateIssuanceBatchRecor
   // Metadata reads cannot carry evidence across a reorg between RPC rounds.
   const again=await readMembershipReceipt(hash,record.batch.domain.pool);
   if(membershipJournalHash(again)!==membershipJournalHash(receipt))return fail('reorg');
-  const attempt=Object.freeze({nonce:safeNumber(tx.nonce),tx_hash:hash,target:record.batch.target,calldata:tx.input,
+  const attempt=Object.freeze({nonce:safeNumber(tx.nonce),tx_hash:hash,target:record.batch.target,calldata:withoutBuilderCode(tx.input),
     kind:record.status==='committed'?'original' as const:'cancel' as const,observed:true as const,
     max_fee_per_gas_wei:maxFee.toString(),max_priority_fee_per_gas_wei:priority.toString(),gas_limit:gas.toString(),
     submitted_at_ms:receipt.timestamp*1000,mined:Object.freeze({status:'success' as const,block_number:receipt.block,

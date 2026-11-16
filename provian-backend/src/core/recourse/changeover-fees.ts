@@ -1,3 +1,4 @@
+import { withoutBuilderCode } from '../onchain/builder-code';
 import { Transaction, keccak256, type TransactionLike } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { CHANGEOVER_ATTEMPTS, CHANGEOVER_STAGES, type ChangeoverAttempt } from './changeover-journal';
@@ -65,8 +66,9 @@ export async function openChangeoverFeeBudget(db: Firestore, input: {
         requireValue(index < Number(head.get('attemptCount')) && attemptRow.get('stageDigest') === stageDigest
           && attemptRow.get('index') === index, 'attempt_missing');
         const attempt: ChangeoverAttempt = attemptRow.get('attempt');
+        // The identity binds the planned call; the signed bytes also carry Provian's Builder Code.
         const expectedIdentity = keccak256(Transaction.from({ type: 2, chainId: 8453, nonce: 0, to: prepared.to,
-          value: 0, data: prepared.data, gasLimit: 0, maxFeePerGas: 0, maxPriorityFeePerGas: 0 }).unsignedSerialized);
+          value: 0, data: withoutBuilderCode(prepared.data), gasLimit: 0, maxFeePerGas: 0, maxPriorityFeePerGas: 0 }).unsignedSerialized);
         requireValue(attempt && attempt.from === from && attempt.nonce === prepared.nonce
           && attempt.identity === expectedIdentity && attempt.raw === null && attempt.hash === null, 'attempt_changed');
         if (fee.exists) requireValue(fee.get('stageDigest') === stageDigest && fee.get('index') === index

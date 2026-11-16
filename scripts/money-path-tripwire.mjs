@@ -164,6 +164,14 @@ export const MONEY_PATH_ROOTS = Object.freeze([
   // while the live kernel was not allowlisted at all. Nothing was watching.
   'provian-agent-sdk/src/evm-allowlist',
   'provian-agent-sdk/src/evm-signer',
+  // the Base Builder Code (ERC-8021) attribution every Base transaction carries, and the two
+  // shared signers that apply it. A defect here rewrites the bytes of every mint, payout, Recourse
+  // and agent transaction, or lets a reader misclassify an attributed transfer.
+  'provian-backend/src/core/onchain/builder-code',
+  'provian-backend/src/core/onchain/canonical-wallet',
+  'provian-agent-sdk/src/builder-code',
+  'provian-facilitator/src/base/builder-code',
+  'src/core/security/ActionWallet',
   // the voluntary-rotation balance sweep — signs a real transfer of the retired
   // address's earned balance with the old key. Same "ungoverned, nothing
   // downstream to catch it" property as evm-signer; a defect here strands or

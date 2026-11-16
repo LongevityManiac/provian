@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../../provian-backend/src/core/onchain/builder-code.ts';
 import {Transaction,keccak256,getCreateAddress} from 'ethers';
 const ensure=(condition,code)=>{if(!condition)throw Error('changeover_transaction_'+code);};
 /** One zero-value reviewed CREATE/call. The runner owns an exclusive signer
@@ -53,7 +54,7 @@ export async function advanceChangeoverTransaction({step,port,prior,persist}){
 export function validateChangeoverAttempt(attempt,step){
  const tx=Transaction.from(attempt.raw);
  ensure(tx.signature&&tx.hash===attempt.hash&&tx.from?.toLowerCase()===step.from&&tx.type===2&&tx.chainId===8453n
-   &&tx.nonce===attempt.nonce&&(tx.to===null?null:tx.to.toLowerCase())===(step.to??null)&&tx.data===step.data&&tx.value===0n
+   &&tx.nonce===attempt.nonce&&(tx.to===null?null:tx.to.toLowerCase())===(step.to??null)&&matchesPlannedCall(tx.data,step.data)&&tx.value===0n
    &&tx.gasLimit>0n&&tx.maxFeePerGas!==null&&tx.maxPriorityFeePerGas!==null&&tx.maxFeePerGas>=tx.maxPriorityFeePerGas
    &&(step.nonce===undefined||step.nonce===attempt.nonce),'signed_binding');
 }

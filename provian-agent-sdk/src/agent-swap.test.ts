@@ -7,6 +7,7 @@ vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/prot
  * RED controls: every guard refusal fires BEFORE anything is signed (no eth_sendRawTransaction),
  * and a counterfeit Settler / unreadable registry refuses.
  */
+import { withBuilderCode } from './builder-code';
 import { describe, it, expect, vi } from 'vitest';
 import { custom, encodeAbiParameters, encodeFunctionData, keccak256, parseAbi, parseTransaction, decodeFunctionData, type Hex } from 'viem';
 import {
@@ -193,7 +194,7 @@ describe('executeAgentSwap', () => {
     expect(a.args).toEqual([ZEROX_ALLOWANCE_HOLDER, 1_000_000n]);
     const swap = parseTransaction(raws[1]);
     expect(swap.to?.toLowerCase()).toBe(ZEROX_ALLOWANCE_HOLDER.toLowerCase());
-    expect(swap.data).toBe(zeroXTx({ min: FAIR_MIN }).data);
+    expect(swap.data).toBe(withBuilderCode(zeroXTx({ min: FAIR_MIN }).data));
     expect(recorded).toEqual([{ tx_hash: keccak256(raws[1]), from_token: 'USDC', to_token: 'WETH', from_amount: '1000000', to_amount: FAIR_BUY.toString(), fee_amount: '1250000000000' }]);
     expect(out).toMatchObject({ approveTxHash: keccak256(raws[0]), swapTxHash: keccak256(raws[1]), peId: 'pe_swap', minBuyAmountAtomic: FAIR_MIN.toString() });
   });

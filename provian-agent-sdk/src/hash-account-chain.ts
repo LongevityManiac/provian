@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from './builder-code';
 import { keccak256 } from 'ethers';
 import type { OwnerChainNetwork } from './recourse-owner-chain';
 import { BREAK_RECOVERY_ABI } from './break-recovery';
@@ -45,7 +46,7 @@ export async function verifyHashAccountReceipt(operation: SignedHashAccountOpera
     if (!raw || typeof raw !== 'object') throw Error('hash_wallet_transaction_invalid');
     const tx = raw as Record<string, unknown>;
     if (tx.hash !== transactionHash || tx.blockHash !== receipt.blockHash || typeof tx.to !== 'string'
-      || tx.to.toLowerCase() !== operation.account || tx.input !== calldata || tx.value !== '0x0') throw Error('hash_wallet_transaction_invalid');
+      || tx.to.toLowerCase() !== operation.account || !matchesPlannedCall(typeof tx.input === 'string' ? tx.input : undefined, calldata) || tx.value !== '0x0') throw Error('hash_wallet_transaction_invalid');
   }
   const result = hashAccountOutcome(operation, receipt.logs);
   const state = await readHashAccountState(operation.account, network);

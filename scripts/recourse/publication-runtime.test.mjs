@@ -5,6 +5,7 @@ import { BASE_GAS_PRICE_ORACLE } from '../../provian-backend/src/core/recourse/b
 import { PUBLICATION_JOURNALS, PUBLICATION_ATTEMPTS, openPublicationJournal } from '../../provian-backend/src/core/recourse/publication-journal.ts';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../../provian-backend/src/core/pvt/settlement/durable-settlement-store.ts';
 import { runPublicationDelivery } from './publication-runtime.mjs';
+import { carriesBuilderCode, matchesPlannedCall, withBuilderCode } from '../../provian-backend/src/core/onchain/builder-code.ts';
 const checks = vi.hoisted(() => ({ progress: vi.fn(), history: vi.fn(), plan: vi.fn(), durable: vi.fn() }));
 vi.mock('./publication-recovery.mjs', () => ({ readPublicationProgress: checks.progress, readPublicationHistory: checks.history }));
 vi.mock('./pointer-publication.mjs', () => ({ preparePointerPublication: checks.plan }));
@@ -35,8 +36,8 @@ function fixture(options = {}) {
         const call = oracle.parseTransaction({ data: params[0].data }); return oracle.encodeFunctionResult(call.name, [100]);
       }
       if (state.simulateFailure) throw Error('simulation_refused');
-      if (params[0].data !== '0x') {
-        expect(state.records.some(row => row.record.transaction.data === params[0].data)).toBe(true);
+      if (!matchesPlannedCall(params[0].data, '0x')) {
+        expect(state.records.some(row => matchesPlannedCall(params[0].data, row.record.transaction.data))).toBe(true);
         if (state.sponsorDuringSimulation) {
           state.sponsorDuringSimulation = false; state.retired = true; state.authorityNonce++; state.outerRevert = true;
         }
@@ -46,12 +47,13 @@ function fixture(options = {}) {
     if (method === 'eth_estimateGas') return '0x7530';
     if (method === 'eth_sendRawTransaction') {
       const tx = Transaction.from(params[0]);
+      expect(carriesBuilderCode(tx.data)).toBe(true); // every operator transaction carries Provian's Builder Code
       const retained = db.store ? [...db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_ATTEMPTS + '/') && key.includes(':variant:'))
         : [['proof', (await db.collection(PUBLICATION_ATTEMPTS).doc(`${lifecycleDigest}:${tx.nonce}:variant:0`).get()).data()]];
       expect(retained.some(([, row]) => row.variant.raw === params[0])).toBe(true);
       if (!transactions.has(tx.hash)) {
         expect(tx.nonce).toBe(state.gasNonce); state.gasNonce++; state.sent++;
-        const operation = state.records.find(row => row.record.transaction.data === tx.data);
+        const operation = state.records.find(row => matchesPlannedCall(tx.data, row.record.transaction.data));
         const success = !state.outerRevert;
         if (operation && success) {
           if (operation.plan.stage === 'retire') state.retired = true; else state.published = true;
@@ -211,7 +213,7 @@ test('gas cancellation preserves original bytes and reserves its fee before sign
       if (method === 'eth_getTransactionReceipt') return null;
       if (method === 'eth_sendRawTransaction') {
         const tx = Transaction.from(params[0]); expect(tx.to.toLowerCase()).toBe(f.input.from);
-        expect(tx.data).toBe('0x'); expect(tx.value).toBe(0n); expect(tx.nonce).toBe(0);
+        expect(tx.data).toBe(withBuilderCode('0x')); expect(tx.value).toBe(0n); expect(tx.nonce).toBe(0); // a self-cancel carries only the Builder Code
         const variants = [...f.db.store.entries()].filter(([key]) => key.startsWith(PUBLICATION_ATTEMPTS + '/') && key.includes(':variant:'));
         expect(variants).toHaveLength(2); expect(variants[0][1].variant.kind).toBe('call'); expect(variants[1][1].variant.kind).toBe('cancel');
         return tx.hash;

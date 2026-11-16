@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { recourseLaneAddress } from './transaction-lane-key';
 import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
 import { AbiCoder, Interface, ZeroAddress, Transaction, concat, getBytes, keccak256, sha256 } from 'ethers';
@@ -119,7 +120,7 @@ export async function queueBreakDeployment(db: Firestore, value: unknown, port?:
     if (typeof oldRaw !== 'string' || keccak256(oldRaw) !== prior.get('transactionHash')) throw Error('break_deployment_record_mismatch');
     const transaction = Transaction.from(oldRaw);
     if (!transaction.from || transaction.chainId !== 8453n || transaction.to?.toLowerCase() !== request.factory
-      || transaction.data !== abi.encodeFunctionData('deploy', [request.initialRoot]) || transaction.value !== 0n) throw Error('break_deployment_record_mismatch');
+      || !matchesPlannedCall(transaction.data, abi.encodeFunctionData('deploy', [request.initialRoot])) || transaction.value !== 0n) throw Error('break_deployment_record_mismatch');
     const outcome = await finalized(oldRaw);
     if (outcome === null || outcome.status !== 0) throw Error('break_deployment_retry_unreconciled');
     oldSigner = transaction.from.toLowerCase();

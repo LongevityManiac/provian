@@ -12,6 +12,7 @@ vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/prot
  * correctness claim was observed FAILING under a stated one-line mutation before
  * this suite was committed.
  */
+import { withBuilderCode } from './builder-code';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   custom,
@@ -139,7 +140,7 @@ describe('sweepErc20ToNewKey', () => {
     const parsed = parseTransaction(raw as Hex);
     expect(getAddress(parsed.to as string)).toBe(getAddress(PVT_ON_BASE));
     expect((parsed.data as string).toLowerCase()).toBe(
-      encodeErc20Transfer(getAddress(NEW_ADDRESS), balance).toLowerCase(),
+      withBuilderCode(encodeErc20Transfer(getAddress(NEW_ADDRESS), balance)).toLowerCase(),
     );
     // It waited for the receipt (so a revert would be caught), then broadcast once.
     expect(calls.filter((c) => c.method === 'eth_sendRawTransaction')).toHaveLength(1);

@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { randomUUID } from 'crypto';
 import { Transaction, keccak256 } from 'ethers';
 import type { Firestore, Transaction as FirestoreTransaction } from 'firebase-admin/firestore';
@@ -35,7 +36,7 @@ export interface SponsoredOperationAdapter<R, P extends SponsoredOperationPlan> 
 function validateTransaction(raw: string, signer: string, target: string, data: string): void {
   const tx = Transaction.from(raw);
   if (!tx.signature || tx.from?.toLowerCase() !== signer || tx.chainId !== 8453n || tx.type !== 2
-    || tx.to?.toLowerCase() !== target || tx.data !== data || tx.value !== 0n || tx.gasLimit <= 0n
+    || tx.to?.toLowerCase() !== target || !matchesPlannedCall(tx.data, data) || tx.value !== 0n || tx.gasLimit <= 0n
     || tx.maxFeePerGas === null || tx.maxPriorityFeePerGas === null || tx.maxFeePerGas < tx.maxPriorityFeePerGas) {
     throw Error('recourse_sponsor_signed_mismatch');
   }

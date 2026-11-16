@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../protocol/builder-code';
 import { sha256, toUtf8Bytes } from 'ethers';
 import { hashAccountCall, type SignedHashAccountOperation } from './hash-account-data';
 import type { OwnerChainNetwork } from './owner-chain';
@@ -58,7 +59,7 @@ async function receiptStatus(operation: SignedHashAccountOperation, sender: stri
     if (transaction.hash !== transactionHash || transaction.blockHash !== receipt.blockHash
       || typeof transaction.from !== 'string' || transaction.from.toLowerCase() !== sender
       || typeof transaction.to !== 'string' || transaction.to.toLowerCase() !== operation.account
-      || typeof transaction.input !== 'string' || transaction.input.toLowerCase() !== hashAccountCall(operation)
+      || typeof transaction.input !== 'string' || !matchesPlannedCall(transaction.input, hashAccountCall(operation))
       || quantity(transaction.value) !== 0n) return fail();
     const head = object(await rpc.request('eth_getBlockByNumber', ['finalized', false]));
     return quantity(head.number) >= BigInt(receipt.block);

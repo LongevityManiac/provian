@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from './builder-code';
 import * as path from 'node:path';
 import { Transaction } from 'ethers';
 import { readHashDeliveryJournal, writeHashDeliveryJournal } from './hash-delivery-journal';
@@ -77,7 +78,7 @@ async function run(input: ActiveHashDeliveryInput, inspectOnly: boolean): Promis
           if (!attempt) return null;
           const tx = Transaction.from(attempt.raw);
           if (tx.hash !== attempt.hash || tx.from?.toLowerCase() !== sender || tx.chainId !== 8453n || tx.value !== 0n
-            || tx.to?.toLowerCase() !== operation.account || tx.data !== hashAccountCall(operation)) throw Error('hash_wallet_delivery_nonce_invalid');
+            || tx.to?.toLowerCase() !== operation.account || !matchesPlannedCall(tx.data, hashAccountCall(operation))) throw Error('hash_wallet_delivery_nonce_invalid');
           return attempt.hash;
         },
         async send(id, transaction) {

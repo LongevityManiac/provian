@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { Interface, Transaction, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { currentProtocolDeployment } from '../protocol/runtime';
@@ -39,7 +40,7 @@ export async function findPoolWithdrawal(db: Firestore, request: string): Promis
   if (!plan || plan.kind !== 'allocate' || row.id !== recourseExecutionId(plan) || typeof raw !== 'string'
     || keccak256(raw) !== transactions.allocate || row.get('status') !== 'confirmed') throw Error('recourse_withdrawal_allocation_invalid');
   const tx = Transaction.from(raw);
-  if (tx.data !== plan.calldata || tx.to?.toLowerCase() !== plan.executor || tx.from?.toLowerCase() !== plan.signer) throw Error('recourse_withdrawal_allocation_invalid');
+  if (!matchesPlannedCall(tx.data, plan.calldata) || tx.to?.toLowerCase() !== plan.executor || tx.from?.toLowerCase() !== plan.signer) throw Error('recourse_withdrawal_allocation_invalid');
   const allocation = await finalizedOwnerTransaction(raw);
   if (!allocation || allocation.status !== 1) throw Error('recourse_withdrawal_allocation_not_finalized');
   const deployment = await currentProtocolDeployment(), legs = getOperatorBoundRpcLegs('base');

@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../../provian-backend/src/core/onchain/builder-code.ts';
 import { Transaction, toQuantity } from 'ethers';
 const ensure = (value, reason) => { if (!value) throw Error('publication_gas_closure_' + reason); };
 const address = /^0x[0-9a-f]{40}$/;
@@ -21,8 +22,8 @@ export function validatePublicationGasVariants({ from, nonce, authorityTransacti
     ensure(tx.signature && tx.from?.toLowerCase() === from && tx.chainId === 8453n && tx.type === 2
       && tx.nonce === nonce && tx.value === 0n && tx.gasLimit > 0n && tx.maxFeePerGas !== null
       && tx.maxPriorityFeePerGas !== null && tx.maxFeePerGas >= tx.maxPriorityFeePerGas, 'signed_binding');
-    ensure(variant.kind === 'call' ? tx.to?.toLowerCase() === authorityTransaction.to && tx.data === authorityTransaction.data
-      : tx.to?.toLowerCase() === from && tx.data === '0x', 'call_changed');
+    ensure(variant.kind === 'call' ? tx.to?.toLowerCase() === authorityTransaction.to && matchesPlannedCall(tx.data, authorityTransaction.data)
+      : tx.to?.toLowerCase() === from && matchesPlannedCall(tx.data, '0x'), 'call_changed');
     ensure(tx.hash === variant.hash && !seen.has(tx.hash), 'hash_changed');
     seen.add(tx.hash); hashes.push(tx.hash);
   }

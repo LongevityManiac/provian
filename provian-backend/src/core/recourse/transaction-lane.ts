@@ -1,3 +1,4 @@
+import { matchesPlannedCall, withBuilderCode } from '../onchain/builder-code';
 import { Transaction, keccak256, type TransactionRequest } from 'ethers';
 import { FieldValue, type Firestore, type Transaction as FirestoreTransaction } from 'firebase-admin/firestore';
 import type { FinalizedOwnerTransaction } from './transaction-finality';
@@ -135,7 +136,7 @@ function readState(data: Record<string, unknown> | undefined): LaneState | null 
 export function assertLaneTransaction(raw: string, signer: string, nonce: number, expected: { executor: string; calldata: string }): Transaction {
   const tx = Transaction.from(raw);
   if (!tx.signature || tx.from?.toLowerCase() !== signer || tx.chainId !== 8453n || tx.type !== 2 || tx.nonce !== nonce
-    || tx.to?.toLowerCase() !== expected.executor.toLowerCase() || tx.data !== expected.calldata || tx.value !== 0n || tx.gasLimit <= 0n
+    || tx.to?.toLowerCase() !== expected.executor.toLowerCase() || !matchesPlannedCall(tx.data, expected.calldata) || tx.value !== 0n || tx.gasLimit <= 0n
     || tx.maxFeePerGas === null || tx.maxPriorityFeePerGas === null || tx.maxFeePerGas < tx.maxPriorityFeePerGas) {
     throw Error('recourse_lane_signed_mismatch');
   }
@@ -377,7 +378,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
         try {
           const decision = await kind.prepare(row, signer);
           if (decision.kind !== 'sign') return { row, decision, gas: 0n };
-          const gas = await deps.chain.estimateGas(signer, decision.plan.executor, decision.plan.calldata);
+          const gas = await deps.chain.estimateGas(signer, decision.plan.executor, withBuilderCode(decision.plan.calldata));
           return { row, decision, gas: (gas * 120n + 99n) / 100n };
         } catch (error) {
           return { row, decision: { kind: 'wait', reason: errorCode(error) } as LanePrepared, gas: 0n };
@@ -391,7 +392,7 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
         // Every unmined transaction already signed, plus this batch, must be fundable.
         const costs = await Promise.all(signable.map(item => {
           const plan = (item.decision as { plan: LanePlan }).plan;
-          return deps.chain.cost({ type: 2, chainId: 8453, nonce: state.nextNonce, to: plan.executor, data: plan.calldata, value: 0,
+          return deps.chain.cost({ type: 2, chainId: 8453, nonce: state.nextNonce, to: plan.executor, data: withBuilderCode(plan.calldata), value: 0,
             gasLimit: item.gas, maxFeePerGas: maxFee, maxPriorityFeePerGas: LANE_PRIORITY_FEE_WEI });
         }));
         const each = costs.reduce((a, b) => a > b ? a : b, 0n);
@@ -411,7 +412,8 @@ export async function runRecourseLane(deps: LaneDeps, deadlineMs: number): Promi
         if (affordable <= 0) continue;
         affordable--;
         const plan = decision.plan, nonce = state.nextNonce;
-        const unsigned: TransactionRequest = { type: 2, chainId: 8453, nonce, to: plan.executor, data: plan.calldata, value: 0,
+        // Signed with Provian's Base Builder Code (ERC-8021); the record keeps the planned call.
+        const unsigned: TransactionRequest = { type: 2, chainId: 8453, nonce, to: plan.executor, data: withBuilderCode(plan.calldata), value: 0,
           gasLimit: item.gas, maxFeePerGas: maxFee, maxPriorityFeePerGas: LANE_PRIORITY_FEE_WEI };
         let raw: string;
         try {

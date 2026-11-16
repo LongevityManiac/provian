@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { isPlainTransferInput } from './builder-code';
 import { assertCompleteTraceTrees, type TraceTreeNode } from './trace-tree';
 import { ethers } from 'ethers';
 import { mapBounded, allSettledOrThrow } from '../net/map-bounded';
@@ -82,7 +83,7 @@ function value(raw: unknown): string {
 /** Retain a byte commitment, not every watched transaction's calldata. */
 function inputFacts(raw: unknown): Pick<Root, 'inputHash' | 'inputEmpty'> {
   if (typeof raw !== 'string' || raw.length % 2 !== 0 || !/^0x[0-9a-f]*$/i.test(raw)) throw new Error('compact_discovery_input_invalid');
-  return { inputHash: createHash('sha256').update(raw.toLowerCase()).digest('hex'), inputEmpty: raw.length === 2 };
+  return { inputHash: createHash('sha256').update(raw.toLowerCase()).digest('hex'), inputEmpty: isPlainTransferInput(raw) };
 }
 function sameRoots(left: readonly Root[], right: readonly Root[]): boolean {
   if (left.length !== right.length) return false;

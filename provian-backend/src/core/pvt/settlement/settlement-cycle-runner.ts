@@ -1,4 +1,5 @@
 import { Transaction } from 'ethers';
+import { ATTRIBUTED_CANCELLATION_GAS } from '../../onchain/builder-code';
 import { parseNonceJournal } from '../../onchain/canonical-nonce';
 import { withPrivateReadSession } from '../../provenance/private-store';
 /**
@@ -1646,7 +1647,7 @@ async function resolveBatch(
       const fees=await chain.feeData();
       const bump=(previous:string|undefined,floor:bigint):bigint=>{const n=previous?BigInt(previous)*BigInt(10_000+config.feeBumpBps)/10_000n:0n;return n>floor?n:floor;};
       const sent=await record('cancel',nonce,bump(latest?.max_fee_per_gas_wei,fees.maxFeePerGasWei),
-        bump(latest?.max_priority_fee_per_gas_wei,fees.maxPriorityFeePerGasWei),21_000n,call.target,call.data);
+        bump(latest?.max_priority_fee_per_gas_wei,fees.maxPriorityFeePerGasWei),ATTRIBUTED_CANCELLATION_GAS,call.target,call.data);
       if(!sent.ok)return {kind:'stopped',reason:sent.stopReason??'resumption_abort',detail:sent.refused};
       replacementsThisRun+=1;
       await sleep(config.receiptPollIntervalMs);
@@ -1992,7 +1993,7 @@ async function resolveBatch(
         || (decision.kind === 'abort'
           && (decision.reason === 'cursor_partially_consumed' || decision.reason === 'cursor_gap'));
       const cancel = async (): ReturnType<typeof record> => {
-        if (!memberExecution) return record('cancel', latest.nonce, maxFee, maxPriority, 21_000n, config.signerAddress, '0x');
+        if (!memberExecution) return record('cancel', latest.nonce, maxFee, maxPriority, ATTRIBUTED_CANCELLATION_GAS, config.signerAddress, '0x');
         if (!deps.memberExecution) throw Error('member execution unavailable');
         const call = await deps.memberExecution.cancellation(batch);
         const gas = await chain.estimateGas({from: config.signerAddress, to: call.target, data: call.data});

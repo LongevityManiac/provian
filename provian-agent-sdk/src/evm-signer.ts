@@ -52,6 +52,7 @@ import { randomUUID } from 'node:crypto';
 import { fileNonceStore } from './nonce-file-store';
 import { type NonceJournalStore, type SignedNonceAttempt } from './canonical-nonce';
 import { Transaction } from 'ethers';
+import { attributableTarget, attributableTransfer, builderCodeGas, withBuilderCode } from './builder-code';
 import { currentProtocolDeployment, ownerChainNetwork } from './protocol-runtime';
 import { assertCurrentProtocolTransaction } from './protocol-transaction';
 import { sendChainOperation, readChainOperation, resolveCanonicalNonceConsumption, ChainNonceError } from './chain-nonce';
@@ -395,14 +396,23 @@ async function broadcast(
   // `eth_fillTransaction` attempt that public Base RPC refuses. Anything the caller set is used as
   // given; a reverting call still fails at the gas estimate, before anything is broadcast.
   const to_ = getAddress(to);
-  const callData = data && data !== '0x' ? (data as Hex) : undefined;
+  // Every Base transaction carries Provian's Base Builder Code (ERC-8021), a plain transfer to an EOA included;
+  // gas is estimated on the attributed bytes. Other chains are sent exactly as given.
+  const planned = data && data !== '0x' ? data : '0x';
   const reads = createPublicClient({ chain: VIEM_CHAINS[chain], transport });
+  // A plain value transfer is attributed only to an address with no code: on a contract a suffix
+  // would run fallback() instead of receive().
+  const attributed = chain === 'base' && attributableTarget(to_)
+    && attributableTransfer(planned, planned === '0x' ? ((await reads.getCode({ address: to_ })) ?? '0x') : null);
+  const callData = attributed ? (withBuilderCode(planned) as Hex) : planned === '0x' ? undefined : (planned as Hex);
   const operationId = opts.operationId ?? randomUUID();
   if (opts.operationId) {
-    let saved;
+    let saved: Awaited<ReturnType<typeof readChainOperation>> | undefined;
     try { saved = await readChainOperation(opts.nonceJournalStore ?? fileNonceStore(), `${CHAIN_IDS[chain]}_${account.address.toLowerCase()}`, operationId); }
     catch (error) { if (!(error instanceof Error) || error.message !== 'chain_operation_not_found') throw error; }
-    if (saved && saved.operation?.call !== `${to_.toLowerCase()}:${value}:${callData ?? '0x'}`) throw new ChainNonceError('OPERATION_MISMATCH', operationId);
+    // An operation recorded before attribution resumes with its recorded (unattributed) bytes.
+    const sameCall = (data: string | undefined) => saved?.operation?.call === `${to_.toLowerCase()}:${value}:${data ?? '0x'}`;
+    if (saved && !sameCall(callData) && !(attributed && sameCall(planned === '0x' ? undefined : planned))) throw new ChainNonceError('OPERATION_MISMATCH', operationId);
     if (saved?.attempts.length) return recoverEvmTransaction(wallet, chain, operationId, opts);
   }
   const [fees, gas] = await Promise.all([
@@ -410,7 +420,7 @@ async function broadcast(
       ? Promise.resolve({ maxFeePerGas: opts.maxFeePerGas, maxPriorityFeePerGas: opts.maxPriorityFeePerGas })
       : reads.estimateFeesPerGas(),
     opts.gas !== undefined
-      ? Promise.resolve(opts.gas)
+      ? Promise.resolve(attributed ? opts.gas + builderCodeGas(planned) : opts.gas) // a fixed limit covers the suffix
       : reads.estimateGas({ account, prepare: false, to: to_, value, ...(callData ? { data: callData } : {}) }),
   ]);
 

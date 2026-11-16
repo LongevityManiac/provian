@@ -10,6 +10,7 @@ vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/prot
  * The receipt-wait between approve and postBond is exercised by the deferred
  * fork/live slice; here postBond runs with waitForApproval:false.
  */
+import { withBuilderCode } from './builder-code';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { custom, keccak256, parseTransaction, getAddress, type Hex } from 'viem';
 import { CommonsInstitutions } from './commons-institutions';
@@ -185,11 +186,11 @@ describe('CommonsInstitutions.postBond — approve then postBond, two-tx sequenc
 
     const approve = parseTransaction(rawTxs[0]);
     expect(approve.to?.toLowerCase()).toBe(pvt.toLowerCase());
-    expect(approve.data).toBe(encodeApprove(bondPool, expectedDeposit));
+    expect(approve.data).toBe(withBuilderCode(encodeApprove(bondPool, expectedDeposit)));
 
     const post = parseTransaction(rawTxs[1]);
     expect(post.to?.toLowerCase()).toBe(bondPool.toLowerCase());
-    expect(post.data).toBe(encodePostBond(2, 0));
+    expect(post.data).toBe(withBuilderCode(encodePostBond(2, 0)));
 
     // Relay record used the postBond tx hash.
     const postCall = calls.find((c) => c.url.endsWith('/v1/bonds/post'))!;
@@ -215,8 +216,8 @@ describe('CommonsInstitutions.postBond — approve then postBond, two-tx sequenc
     await institutions.postBond(WALLET, { autonomyLevel: 3, chain: 'base', transport, waitForApproval: false, nonce: 0, trustDiscountBps: 1500, ...FEES });
 
     const expectedDeposit = grossUpTotalDeposit(requiredBondWei(3000, 1500));
-    expect(parseTransaction(rawTxs[0]).data).toBe(encodeApprove(BOND_POOL_ADDRESSES.base!, expectedDeposit));
-    expect(parseTransaction(rawTxs[1]).data).toBe(encodePostBond(3, 1500));
+    expect(parseTransaction(rawTxs[0]).data).toBe(withBuilderCode(encodeApprove(BOND_POOL_ADDRESSES.base!, expectedDeposit)));
+    expect(parseTransaction(rawTxs[1]).data).toBe(withBuilderCode(encodePostBond(3, 1500)));
   });
 
   it('fails closed BEFORE broadcasting on an out-of-range discount (no orphaned approval)', async () => {
@@ -261,7 +262,7 @@ describe('CommonsInstitutions.renewBond — single tx, no approve', () => {
     expect(rawTxs).toHaveLength(1); // no approve
     const tx = parseTransaction(rawTxs[0]);
     expect(tx.to?.toLowerCase()).toBe(BOND_POOL_ADDRESSES.base!.toLowerCase());
-    expect(tx.data).toBe(encodeRenewBond());
+    expect(tx.data).toBe(withBuilderCode(encodeRenewBond()));
 
     const renewCall = calls.find((c) => c.url.endsWith('/v1/bonds/renew'))!;
     expect(renewCall.body).toEqual({ bond_id: 'bond_test', tx_hash: keccak256(rawTxs[0]) });
@@ -315,7 +316,7 @@ describe('CommonsInstitutions.postBond — reverted / orphaned on-chain state (#
     const pvt = TOKEN_ALLOWLIST.base.PVT.address;
     const revoke = parseTransaction(rawTxs[2]);
     expect(revoke.to?.toLowerCase()).toBe(pvt.toLowerCase());
-    expect(revoke.data).toBe(encodeApprove(BOND_POOL_ADDRESSES.base!, 0n)); // allowance reset to 0
+    expect(revoke.data).toBe(withBuilderCode(encodeApprove(BOND_POOL_ADDRESSES.base!, 0n))); // allowance reset to 0
     // The relay /v1/bonds/post must NOT have been called (postBond reverted).
     expect(calls.find((c) => c.url.endsWith('/v1/bonds/post'))).toBeUndefined();
   });

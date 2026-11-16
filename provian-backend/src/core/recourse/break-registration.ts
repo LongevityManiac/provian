@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
 import { Interface, Transaction, ZeroHash, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -84,7 +85,7 @@ export async function queueBreakRegistration(db: Firestore, value: unknown, port
     const tx = Transaction.from(oldRaw);
     const oldRequest = parseBreakRegistration(prior.get('request'));
     if (!tx.from || tx.chainId !== 8453n || tx.to?.toLowerCase() !== target(oldRequest, prior.get('executor'))
-      || tx.data !== calldata(oldRequest) || tx.value !== 0n) throw Error('break_registration_record_invalid');
+      || !matchesPlannedCall(tx.data, calldata(oldRequest)) || tx.value !== 0n) throw Error('break_registration_record_invalid');
     const outcome = await finalized(oldRaw);
     if (!outcome || outcome.status !== 0) throw Error('break_registration_retry_unreconciled');
     oldSigner = tx.from.toLowerCase();

@@ -20,6 +20,7 @@
  * before it ever reaches `sign`.
  */
 
+import { withBuilderCode } from '../../onchain/builder-code';
 import { Contract, JsonRpcProvider, Transaction, type Signer } from 'ethers';
 import type { BatchApproverAdapter } from './batch-approval';
 import { SettlementLane } from '../mint-claims/settlement-batch';
@@ -232,12 +233,13 @@ export function createProductionChainAdapter(
     },
 
     async estimateGas(tx) {
-      return provider.estimateGas({ from: tx.from, to: tx.to, data: tx.data });
+      // Estimated with the Builder Code attached, exactly as `sign` will sign it.
+      return provider.estimateGas({ from: tx.from, to: tx.to, data: withBuilderCode(tx.data) });
     },
 
     async simulate(tx) {
       try {
-        await provider.call({ from: tx.from, to: tx.to, data: tx.data });
+        await provider.call({ from: tx.from, to: tx.to, data: withBuilderCode(tx.data) });
         return { ok: true, revertReason: null };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -246,10 +248,12 @@ export function createProductionChainAdapter(
     },
 
     async sign(tx: SignableTransaction) {
+      // Every settlement transaction carries Provian's Base Builder Code (ERC-8021). The runner's
+      // records keep the planned call; only the signed bytes carry the suffix.
       const raw = await deps.signer.signTransaction({
         chainId: config.chainId,
         to: tx.to,
-        data: tx.data,
+        data: withBuilderCode(tx.data),
         value: tx.valueWei,
         nonce: tx.nonce,
         gasLimit: tx.gasLimit,

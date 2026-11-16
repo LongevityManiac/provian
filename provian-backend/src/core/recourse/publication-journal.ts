@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { randomUUID } from 'crypto';
 import { Transaction, keccak256, sha256, toUtf8Bytes, type TransactionLike } from 'ethers';
 import type { Firestore, DocumentSnapshot, Transaction as DbTransaction } from 'firebase-admin/firestore';
@@ -48,8 +49,8 @@ function validateTransaction(tx: Transaction, attempt: PublicationAttempt, kind:
   check(tx.type === 2 && tx.chainId === 8453n && tx.nonce === attempt.nonce && tx.value === 0n
     && tx.gasLimit > 0n && tx.maxFeePerGas !== null && tx.maxPriorityFeePerGas !== null
     && tx.maxFeePerGas >= tx.maxPriorityFeePerGas, 'transaction_invalid');
-  check(kind === 'call' ? tx.to?.toLowerCase() === attempt.authorityTransaction.to && tx.data === attempt.authorityTransaction.data
-    : kind === 'cancel' && tx.to?.toLowerCase() === from && tx.data === '0x', 'call_changed');
+  check(kind === 'call' ? tx.to?.toLowerCase() === attempt.authorityTransaction.to && matchesPlannedCall(tx.data, attempt.authorityTransaction.data)
+    : kind === 'cancel' && tx.to?.toLowerCase() === from && matchesPlannedCall(tx.data, '0x'), 'call_changed');
 }
 function validateClosure(proof: PublicationClosure, attempt: PublicationAttempt, from: string): void {
   check(proof?.status === 'consumed' && proof.from === from && proof.nonce === attempt.nonce

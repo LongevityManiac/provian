@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../protocol/builder-code';
 import * as SecureStore from 'expo-secure-store';
 import { HDKey } from '@scure/bip32';
 import { bytesToHex } from '@noble/hashes/utils';
@@ -85,7 +86,7 @@ function runHumanHashDelivery(account: string, action: BiometricAction, expected
           if (!attempt) return null;
           const decoded = Transaction.from(attempt.raw);
           if (decoded.hash !== attempt.hash || decoded.from?.toLowerCase() !== sender || decoded.chainId !== 8453n
-            || decoded.to?.toLowerCase() !== account || decoded.value !== 0n || decoded.data !== hashAccountCall(operation)) throw Error('recourse_hash_delivery_nonce_invalid');
+            || decoded.to?.toLowerCase() !== account || decoded.value !== 0n || !matchesPlannedCall(decoded.data, hashAccountCall(operation))) throw Error('recourse_hash_delivery_nonce_invalid');
           return attempt.hash;
         },
         async send(id, transaction) {

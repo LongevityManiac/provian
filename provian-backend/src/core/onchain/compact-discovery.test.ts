@@ -1,4 +1,5 @@
 import { readCompactDiscoveryWindow, readAdaptiveDiscoveryWindow, readAdaptivePrimaryDiscoveryWindow, probeTraceFilterUnion, selectDiscoveryRpcLegs, cheaperDiscoveryMode, estimateDiscoveryCu, estimatePrimaryDiscoveryCu } from './compact-discovery';
+import { withBuilderCode } from './builder-code';
 import type { EconomicStateRpcLeg } from './economic-state';
 const hex = (n: number) => `0x${n.toString(16)}`;
 const hash = (n: number) => `0x${n.toString(16).padStart(64, '0')}`;
@@ -285,6 +286,19 @@ describe('cost selection preserves coverage on both sides of the cadence switch'
     expect((await f.read('block-traces')).transfers.natives).toContainEqual({ transactionHash: hash(4),
       blockNumber: height, fromAddress: address(103), toAddress: address(100), valueWei: '1' });
     body.input = '0x00'; action.input = '0X00';
+    expect((await f.read('block-traces')).transfers.natives).toHaveLength(0);
+  });
+  it('reads a plain transfer that carries only a Builder Code (ERC-8021) as a native transfer', async () => {
+    const f = fixture(), height = Math.floor(3 * 20 / 8) + 1;
+    const body = f.transactions[height - 1].find(tx => tx.hash === hash(4))!;
+    const trace = f.traces[height - 1].find(tx => tx.transactionHash === hash(4))!;
+    const action = trace.action as Record<string, unknown>;
+    Object.assign(body, { to: address(100), value: '0x1', input: withBuilderCode('0x') });
+    Object.assign(action, { to: address(100), value: '0x1', input: withBuilderCode('0x') });
+    expect((await f.read('block-traces')).transfers.natives).toContainEqual({ transactionHash: hash(4),
+      blockNumber: height, fromAddress: address(103), toAddress: address(100), valueWei: '1' });
+    // RED control: a call that also carries the code is not a plain transfer.
+    body.input = withBuilderCode('0x00'); action.input = withBuilderCode('0x00');
     expect((await f.read('block-traces')).transfers.natives).toHaveLength(0);
   });
   it('the lowest-cost tested 100-block trace pieces retain the same coverage as 20-block pieces', async () => {

@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { Transaction, keccak256 } from 'ethers';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { SETTLEMENT_SIGNER_LEASES_COLLECTION } from '../pvt/settlement/durable-settlement-store';
@@ -95,7 +96,7 @@ export async function drainLegacyRecourse(db: Firestore, kinds: readonly LaneKin
     }
     if (typeof raw !== 'string' || row.data.transactionHash !== keccak256(raw)) throw Error('recourse_legacy_record_invalid');
     const tx = Transaction.from(raw), expected = kind.expected(row);
-    if (tx.from?.toLowerCase() !== signer || tx.to?.toLowerCase() !== expected.executor.toLowerCase() || tx.data !== expected.calldata) throw Error('recourse_legacy_record_invalid');
+    if (tx.from?.toLowerCase() !== signer || tx.to?.toLowerCase() !== expected.executor.toLowerCase() || !matchesPlannedCall(tx.data, expected.calldata)) throw Error('recourse_legacy_record_invalid');
     let receipt: Awaited<ReturnType<LaneChain['confirmed']>>;
     try { receipt = await chain().confirmed(raw); }
     catch (error) {

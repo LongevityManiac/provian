@@ -35,6 +35,7 @@ class RecordingProvider extends JsonRpcProvider {
           difficulty: '0x0', gasLimit: '0x1c9c380', gasUsed: '0x0', timestamp: '0x64', extraData: '0x', miner: TO,
           transactions: [], baseFeePerGas: '0x1' }; break;
         case 'eth_getTransactionReceipt': result = null; break;
+        case 'eth_getCode': result = '0x'; break; // TO is an EOA: a plain transfer carries the Builder Code
         case 'eth_sendRawTransaction': this.onWire(String(params[0])); result = keccak256(String(params[0])); break;
         default: throw new Error(`unexpected RPC ${p.method}`);
       }

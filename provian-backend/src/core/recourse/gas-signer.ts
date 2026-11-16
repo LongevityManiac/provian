@@ -1,3 +1,4 @@
+import { withBuilderCode } from '../onchain/builder-code';
 import { Wallet, Transaction, keccak256 } from 'ethers';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
 import { readAgreedBaseHead, readAgreedBaseBlockHash } from '../onchain/economic-discovery';
@@ -38,12 +39,12 @@ export function createRecourseGasSigner<T extends GasPlan>(wallet: Pick<Wallet,'
       throw new Error('recourse_binding_rpc_disagreement');
     }
     const estimates = await Promise.all(legs.map(async leg => quantity(await leg.provider.send('eth_estimateGas', [
-      { from: wallet.address, to: plan.executor, data: plan.calldata, value: '0x0' }, `0x${height.toString(16)}`]))));
+      { from: wallet.address, to: plan.executor, data: withBuilderCode(plan.calldata), value: '0x0' }, `0x${height.toString(16)}`]))));
     const gasLimit = ((estimates[0] > estimates[1] ? estimates[0] : estimates[1]) * 120n + 99n) / 100n;
     if (gasLimit <= 0n || gasLimit > blockGas) throw new Error('recourse_binding_gas_invalid');
     const maxPriorityFeePerGas = 1_000_000n, maxFeePerGas = baseFee * 2n + maxPriorityFeePerGas;
     const prepared = { chainId: 8453, type: 2, nonce: transactionNonce, to: plan.executor,
-      data: plan.calldata, value: 0, gasLimit, maxFeePerGas, maxPriorityFeePerGas };
+      data: withBuilderCode(plan.calldata), value: 0, gasLimit, maxFeePerGas, maxPriorityFeePerGas };
     const fees = await estimateBaseTransactionFees(legs.map(leg => ({ operatorId: leg.operatorId,
       request: (method, params) => leg.provider.send(method, [...params]) })), prepared, hash);
     if (await number('eth_getBalance', [wallet.address, { blockHash: hash, requireCanonical: true }]) < fees.totalEstimateWei) {

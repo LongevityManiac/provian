@@ -15,8 +15,11 @@ import {
   VERIFIER_ABI,
   assertApproveMined,
   assertEndpointChainId,
+  createProductionChainAdapter,
   readEndpointChainId,
 } from './settlement-chain-adapter';
+import { Transaction, Wallet } from 'ethers';
+import { carriesBuilderCode, withBuilderCode } from '../../onchain/builder-code';
 
 /** A transport that answers `eth_chainId` with whatever the test says, and nothing else. */
 function endpoint(chainId: unknown): { send(method: string, params: unknown[]): Promise<unknown> } {
@@ -120,5 +123,25 @@ describe('assertApproveMined — a reverted approve must not read as a recorded 
   // approval, including the ones that succeeded, and could not distinguish revert from success.
   it('CONTROL — passes on a mined receipt (status 1)', () => {
     expect(() => assertApproveMined({ status: 1 }, 'approveGenesisBatch', '0x1')).not.toThrow();
+  });
+});
+
+describe('settlement transactions carry the Base Builder Code', () => {
+  it('signs the planned call with the Builder Code appended, and only that', async () => {
+    const minter = new Wallet('0x' + '42'.repeat(32));
+    const signed: string[] = [];
+    const adapter = createProductionChainAdapter(
+      { rpcUrl: 'http://127.0.0.1:9', kernelAddress: '0x' + '11'.repeat(20), chainId: 8453n, priorityFeeWei: 1n },
+      { signer: { address: minter.address, signTransaction: async (tx) => { signed.push(tx.data); return minter.signTransaction({ ...tx, type: 2 }); } },
+        finality: {} as never },
+    );
+    const planned = '0x12345678' + 'ab'.repeat(32);
+    const { raw } = await adapter.sign({ to: '0x' + '11'.repeat(20), data: planned, valueWei: 0n, nonce: 3, gasLimit: 100_000n,
+      maxFeePerGasWei: 2n, maxPriorityFeePerGasWei: 1n });
+    expect(signed).toEqual([withBuilderCode(planned)]);
+    expect(Transaction.from(raw).data).toBe(withBuilderCode(planned));
+    expect(carriesBuilderCode(Transaction.from(raw).data)).toBe(true);
+    // RED control: the planned call alone does not carry the code.
+    expect(carriesBuilderCode(planned)).toBe(false);
   });
 });

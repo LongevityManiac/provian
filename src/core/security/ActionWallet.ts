@@ -6,6 +6,7 @@ import type { SignedNonceAttempt } from './canonicalNonce';
 import { assertBiometricAction, type BiometricAction } from './biometricAction';
 import { ownerChainNetwork } from '../protocol/runtime';
 import { assertCurrentProtocolTransaction, assertCurrentProtocolAddresses, typedDataProtocolAddresses } from '../protocol/transaction';
+import { attributableTarget, attributableTransfer, builderCodeGas, isBaseChainId, isPlainTransferInput, withBuilderCode } from '../protocol/builder-code';
 
 /** An EVM signer whose approval cannot survive an asynchronous preparation or a later action. */
 export class ActionWallet extends Wallet {
@@ -59,19 +60,47 @@ export class ActionWallet extends Wallet {
         const attempt = doc.attempts[0] ?? index.attempts.find(a => a.intent === id);
         if (!attempt) throw new Error('nonce_operation_has_no_signed_transaction');
         const decoded = Transaction.from(attempt.raw);
-        return this.coordinate({ to: decoded.to, data: decoded.data, value: decoded.value }, id, true);
+        // Recovery replays the recorded call exactly as it was signed.
+        return this.coordinate({ to: decoded.to, data: decoded.data, value: decoded.value }, id, true, false);
     }
     override async sendTransaction(tx: TransactionRequest): Promise<TransactionResponse> {
-        return this.coordinate(tx, this.operationId ?? Crypto.randomUUID(), this.operationId !== undefined);
+        return this.coordinate(tx, this.operationId ?? Crypto.randomUUID(), this.operationId !== undefined, true);
     }
-    private async coordinate(tx: TransactionRequest, id: string, resume: boolean): Promise<TransactionResponse> {
+    private async coordinate(tx: TransactionRequest, id: string, resume: boolean, attribute: boolean): Promise<TransactionResponse> {
         assertBiometricAction(this.action);
         const provider = this.provider;
         if (!provider) throw new Error('Cannot send a transaction without a provider');
         const chainId = (await provider.getNetwork()).chainId;
         assertBiometricAction(this.action);
-        const call = await this.populateCall(tx);
-        const intent = `${String(call.to).toLowerCase()}:${BigInt(call.value ?? 0)}:${String(call.data ?? '0x').toLowerCase()}`;
+        const intentOf = async (request: TransactionRequest): Promise<string> => {
+            const c = await this.populateCall(request);
+            return `${String(c.to).toLowerCase()}:${BigInt(c.value ?? 0)}:${String(c.data ?? '0x').toLowerCase()}`;
+        };
+        // Every Base transaction carries Provian's Base Builder Code (ERC-8021). ethers estimates gas on
+        // the attributed bytes. An operation recorded before attribution resumes with its recorded call.
+        // A contract creation or a raw-calldata target (the CREATE2 deployer) is sent exactly as given.
+        const target = (await this.populateCall(tx)).to;
+        // A plain value transfer is attributed only to an address with no code: on a contract a
+        // suffix would run fallback() instead of receive().
+        const transferable = async (): Promise<boolean> => attributableTransfer(tx.data,
+            typeof target === 'string' && isPlainTransferInput(tx.data ?? '0x') ? await provider.getCode(target) : null);
+        if (attribute && isBaseChainId(chainId) && attributableTarget(target) && await transferable()) {
+            // A caller-fixed gas limit (a dApp's own estimate) gains exactly the suffix's calldata gas.
+            const attributed = { ...tx, data: withBuilderCode(tx.data),
+                ...(tx.gasLimit !== undefined && tx.gasLimit !== null ? { gasLimit: BigInt(tx.gasLimit) + builderCodeGas(tx.data) } : {}) };
+            let legacy = false;
+            if (resume) {
+                try {
+                    const saved = await readChainOperation(secureNonceStore(), `${chainId}_${this.address.toLowerCase()}`, id);
+                    legacy = saved.operation?.call === await intentOf(tx) && saved.operation?.call !== await intentOf(attributed);
+                } catch (error) {
+                    if (!(error instanceof Error) || error.message !== 'chain_operation_not_found') throw error;
+                }
+                assertBiometricAction(this.action);
+            }
+            if (!legacy) tx = attributed;
+        }
+        const intent = await intentOf(tx);
         let response: TransactionResponse | null = null;
         const attempt = await sendChainOperation({
             store: secureNonceStore(), now: Date.now, uuid: Crypto.randomUUID,

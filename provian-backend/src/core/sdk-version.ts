@@ -27,7 +27,7 @@
  */
 
 /** The version agents should be on — mirrors provian-agent-sdk/package.json. */
-export const SDK_LATEST = '1.12.6';
+export const SDK_LATEST = '1.12.7';
 
 /**
  * Advisory minimum. Deliberately permissive (1.0.0): no released SDK below the
@@ -48,7 +48,7 @@ export const SDK_UPGRADE_COMMAND = 'npm i @provian/agent-sdk@latest';
 
 /** Free-text release note pointer for the `/v1/sdk/version` payload. */
 export const SDK_RELEASE_NOTES =
-  'v1.12.6 installs without waiting for the Recourse binding and re-signs it automatically if a signature expires.';
+  'v1.12.7 carries Provian\'s Base Builder Code (ERC-8021) on every Base transaction the agent signs.';
 
 export interface SdkVersionInfo {
   latest: string;

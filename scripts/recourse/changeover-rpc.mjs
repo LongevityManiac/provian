@@ -1,3 +1,4 @@
+import { withBuilderCodeFor } from '../../provian-backend/src/core/onchain/builder-code.ts';
 import { assertBaseTransactionGasLimit, boundedGasEstimate } from './transaction-gas-limit.mjs';
 import {Transaction,keccak256,toQuantity} from 'ethers';
 const ensure=(v,c)=>{if(!v)throw Error('changeover_rpc_'+c);};
@@ -53,7 +54,8 @@ export function changeoverRpcPort({rpcs,signer,assertLease,assertBroadcast,asser
   },
   finalized:raw=>included(raw,true),
   prepare:async(step)=>{
-   step={...step};
+   // Every operator transaction carries Provian's Base Builder Code (ERC-8021), estimated and signed.
+   step={...step,data:withBuilderCodeFor(step.to,step.data)};
    await assertLease();await chain();ensure(lower(await signer.getAddress())===step.from,'signer');
    const call={from:step.from,...(step.to?{to:step.to}:{}),data:step.data,value:'0x0',nonce:toQuantity(step.nonce)};
    // Compare the simulation at the same canonical head; taking the lesser head

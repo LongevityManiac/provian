@@ -9,6 +9,7 @@ vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/prot
  * broadcasts go through an injected viem transport (raw txs captured + decoded).
  * Mirrors agent-institutions.evmFlows.test.ts and evm-bond.test.ts.
  */
+import { withBuilderCode } from './builder-code';
 import { describe, it, expect, vi } from 'vitest';
 import { ethers } from 'ethers';
 import { custom, keccak256, parseTransaction, type Hex } from 'viem';
@@ -196,7 +197,7 @@ describe('CommonsInstitutions.releaseEscrow — happy path', () => {
     expect(rawTxs).toHaveLength(1);
     const tx = parseTransaction(rawTxs[0]);
     expect(tx.to?.toLowerCase()).toBe(ESCROW_USDC_ADDRESSES.base!.toLowerCase());
-    expect(tx.data).toBe(encodeReleaseEscrow(ONCHAIN_ESCROW_ID));
+    expect(tx.data).toBe(withBuilderCode(encodeReleaseEscrow(ONCHAIN_ESCROW_ID)));
 
     // (b) a POST to /v1/escrow/:id/complete (empty body).
     const completeCall = calls.find((c) => c.url.endsWith('/v1/escrow/esc_1/complete'))!;

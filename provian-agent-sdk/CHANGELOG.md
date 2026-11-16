@@ -1,3 +1,8 @@
+## 1.12.7
+
+- Every Base transaction the agent signs carries Provian's Base Builder Code (ERC-8021), so Base credits the activity to Provian. The suffix sits after the call and changes nothing a contract reads; gas is estimated with it.
+- A transaction to the deterministic CREATE2 deployer is sent exactly as given, because that contract reads every byte after the salt as code.
+
 ## 1.12.6
 
 - An agent install no longer waits for or fails on its Recourse ownership binding. The relay sends it in the background, and the daemon checks every minute and signs again on its own if a signature expires before it lands.

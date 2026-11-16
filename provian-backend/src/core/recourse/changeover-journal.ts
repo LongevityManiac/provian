@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { randomUUID } from 'crypto';
 import { Transaction, keccak256, sha256, toUtf8Bytes } from 'ethers';
 import type { Firestore, DocumentSnapshot } from 'firebase-admin/firestore';
@@ -56,7 +57,7 @@ function validateAttempt(attempt: ChangeoverAttempt, step: ChangeoverStep): void
     const tx = Transaction.from(attempt.raw);
     requireValue(tx.signature && tx.hash === attempt.hash && tx.from?.toLowerCase() === step.from
       && tx.nonce === attempt.nonce && tx.chainId === 8453n && tx.type === 2 && tx.value === 0n
-      && tx.data === step.data && (tx.to?.toLowerCase() ?? null) === (step.to ?? null)
+      && matchesPlannedCall(tx.data, step.data) && (tx.to?.toLowerCase() ?? null) === (step.to ?? null)
       && tx.gasLimit > 0n && tx.maxFeePerGas !== null && tx.maxPriorityFeePerGas !== null
       && tx.maxFeePerGas >= tx.maxPriorityFeePerGas, 'signed_binding');
   }

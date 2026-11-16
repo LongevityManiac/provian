@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { isPlainTransferInput, stripAttribution } from './builder-code';
 import { readCommonCanonicalHead } from './common-canonical-head';
 import { assertCompleteTraceTrees, traceChildCount, type TraceTreeNode } from './trace-tree';
 import { ethers } from 'ethers';
@@ -1029,9 +1030,11 @@ async function verifyTransactionOnLegs(
     fromAddress: transaction.from.toLowerCase(),
     toAddress: typeof transaction.to === 'string' ? transaction.to.toLowerCase() : null,
     valueWei: valueWei.toString(),
-    inputEmpty: transaction.input === '0x',
-    transactionSelector: transaction.input.length >= 10
-      ? transaction.input.slice(0, 10).toLowerCase()
+    // An input carrying only an ERC-8021 attribution suffix (a Builder Code) is still a plain
+    // transfer, and an attributed call's selector is the call's own first four bytes.
+    inputEmpty: isPlainTransferInput(transaction.input),
+    transactionSelector: stripAttribution(transaction.input).length >= 10
+      ? stripAttribution(transaction.input).slice(0, 10).toLowerCase()
       : null,
     logs: Object.freeze(logs),
   };
@@ -1226,7 +1229,7 @@ export async function readAgreedBaseBlockTransfers(
       if (typeof t.to !== 'string') continue; // contract creation
       const to = t.to.toLowerCase();
       if (!args.toAddresses.has(to)) continue;
-      if (typeof t.input !== 'string' || t.input !== '0x') continue; // a plain transfer carries no calldata
+      if (typeof t.input !== 'string' || !isPlainTransferInput(t.input)) continue; // a plain transfer carries no calldata (an attribution suffix is not calldata)
       const value = quantity(t.value, 'tx.value');
       if (value <= 0n) continue;
       if (typeof t.hash !== 'string' || !HASH.test(t.hash)

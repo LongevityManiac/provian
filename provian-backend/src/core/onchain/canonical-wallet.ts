@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
-import { Wallet, Transaction, keccak256, type Provider, type TransactionRequest, type TransactionResponse } from 'ethers';
+import { Wallet, Transaction, keccak256, resolveAddress, type Provider, type TransactionRequest, type TransactionResponse } from 'ethers';
 import { assertServerWriterCutover } from './server-writer-cutover';
 import { relayDb } from '../../firestore-db';
 import { parseNonceJournal, sendWithCanonicalNonce, type SignedNonceAttempt, type NonceJournalStore } from './canonical-nonce';
+import { attributableTransfer, isBaseChainId, isPlainTransferInput, withBuilderCodeFor } from './builder-code';
 
 export const NONCE_JOURNALS_COLLECTION = 'evm_signer_nonce_journals_v1';
 const SETTLEMENT_LEASES = 'pvt9_settlement_signer_leases_v1';
@@ -62,7 +63,20 @@ export class CanonicalWallet extends Wallet {
   }
   override async populateTransaction(tx: TransactionRequest): ReturnType<Wallet['populateTransaction']> {
     if (tx.nonce === undefined || tx.nonce === null) throw new Error('nonce_preparation_requires_reservation');
-    return super.populateTransaction(tx);
+    // Attribute before ethers estimates gas, so the limit covers the suffix's calldata.
+    return super.populateTransaction(await this.attributed(tx));
+  }
+  /** Every Base transaction this signer signs carries Provian's Builder Code (ERC-8021). */
+  override async signTransaction(tx: TransactionRequest): Promise<string> {
+    return super.signTransaction(await this.attributed(tx));
+  }
+  private async attributed(tx: TransactionRequest): Promise<TransactionRequest> {
+    const chainId = tx.chainId ?? (this.provider ? (await this.provider.getNetwork()).chainId : null);
+    if (!isBaseChainId(chainId) || tx.to === null || tx.to === undefined) return tx;
+    const to = await resolveAddress(tx.to, this.provider);
+    // A plain value transfer is attributed only to an address with no code (see attributableTransfer).
+    const code = isPlainTransferInput(tx.data ?? '0x') && this.provider ? await this.provider.getCode(to) : null;
+    return attributableTransfer(tx.data, code) ? { ...tx, to, data: withBuilderCodeFor(to, tx.data) } : { ...tx, to };
   }
   async prepareCanonicalTransaction(tx: TransactionRequest, operationId: string): Promise<SignedNonceAttempt> {
     return (await this.coordinate(tx, true, undefined, operationId)).attempt;
@@ -92,6 +106,8 @@ export class CanonicalWallet extends Wallet {
     if (!provider) throw new Error('nonce_provider_missing');
     const chainId = (await provider.getNetwork()).chainId;
     const key = `${chainId}_${this.address.toLowerCase()}`;
+    // A fresh call carries the Builder Code in its intent; recorded bytes are recovered exactly as signed.
+    if (!preparedRaw) tx = await this.attributed({ ...tx, chainId });
     const request = await this.populateCall(tx);
     const callFingerprint = keccak256(Transaction.from({ to: request.to, data: request.data, value: request.value,
       chainId, type: 2, nonce: 0, gasLimit: 0, maxFeePerGas: 0, maxPriorityFeePerGas: 0 }).unsignedSerialized);

@@ -2,6 +2,7 @@
  * The Base chain surface the facilitator needs, behind an interface so every refusal path is
  * unit-testable without a node, and the real one (viem) is exercised end-to-end on an anvil fork.
  */
+import { withBuilderCode, withBuilderCodeFor } from './builder-code.js';
 import {
   createPublicClient,
   encodeFunctionData,
@@ -130,6 +131,11 @@ export function encodeSettleCall(call: SettleCall): Hex {
     : encodeFunctionData({ abi: settlerAbi, functionName: a.functionName, args: a.args });
 }
 
+/** The settle call carrying Provian's Base Builder Code. */
+export function attributedSettleCall(call: SettleCall): Hex {
+  return withBuilderCode(encodeSettleCall(call)) as Hex;
+}
+
 /** Recovery records must bind the exact wire bytes to their signer and business call. */
 export async function assertOperatorAttempt(attempt: SignedNonceAttempt, operator: string, chainId: number): Promise<void> {
   const raw = attempt.raw as TransactionSerialized;
@@ -234,12 +240,14 @@ export function createViemBaseChain(opts: {
     operator,
     settler: opts.settler,
     verifySigner,
-    encodeSettle: encodeSettleCall,
+    // Every settlement carries Provian's Base Builder Code (ERC-8021): estimated, priced and signed
+    // on the attributed bytes.
+    encodeSettle: attributedSettleCall,
     async estimateSettleGas(call) {
-      return pub.estimateGas({ account: operator, to: opts.settler, data: encodeSettleCall(call) });
+      return pub.estimateGas({ account: operator, to: opts.settler, data: attributedSettleCall(call) });
     },
     async simulateSettle(call) {
-      await pub.call({ account: operator, to: opts.settler, data: encodeSettleCall(call) });
+      await pub.call({ account: operator, to: opts.settler, data: attributedSettleCall(call) });
     },
     async latestBaseFee() {
       const block = await pub.getBlock({ blockTag: 'latest' });
@@ -281,7 +289,7 @@ export function createViemBaseChain(opts: {
         // Sign locally so the hash exists BEFORE the network sees the transaction: the facilitator
         // writes `submitted` + hash first, and a store or instance failure can no longer strand a
         // broadcast payment behind a record that knows no hash (2026-10-17).
-        const data = encodeSettleCall(call);
+        const data = attributedSettleCall(call);
         return send(`${opts.settler}:${data}`, (nonce) => opts.account.signTransaction({
           type: 'eip1559', chainId: chain.id, to: opts.settler, data,
           value: 0n, gas, maxFeePerGas, maxPriorityFeePerGas, nonce,
@@ -312,7 +320,8 @@ export function createViemBaseChain(opts: {
       ]);
       return { usdc, operator: operatorOnChain, feeRecipient, permit2Proxy, pvt, maxFee };
     },
-    async sendRaw(to, data, value) {
+    async sendRaw(to, rawData, value) {
+      const data = withBuilderCodeFor(to, rawData) as Hex;
       return sendLock.run(async () => {
         const [gas, fees] = await Promise.all([
           pub.estimateGas({ account: opts.account, prepare: false, to, data, value }), pub.estimateFeesPerGas(),

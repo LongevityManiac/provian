@@ -21,6 +21,7 @@ import {
 } from './constants.js';
 import { ceilDiv, usdcAtomicFromLamports, usdcAtomicFromWei, withMargin } from './fee-math.js';
 import { settlerAbi } from './base/abi.js';
+import { withBuilderCode } from './base/builder-code.js';
 import type { BaseChain } from './base/chain.js';
 import { MAX_PRIORITY_FEE_WEI } from './base/facilitator.js';
 import type { SolanaChain } from './solana/chain.js';
@@ -56,7 +57,8 @@ export async function quoteBase(chain: BaseChain, kind: 'eip3009' | 'permit2', p
   const [baseFee, tipRaw, price] = await Promise.all([chain.latestBaseFee(), chain.priorityFee(), chain.ethUsd()]);
   const tip = tipRaw > MAX_PRIORITY_FEE_WEI ? MAX_PRIORITY_FEE_WEI : tipRaw < 1n ? 1n : tipRaw;
   const maxFeePerGas = ceilDiv(baseFee * 125n, 100n) + tip;
-  const l1 = await chain.l1Fee(representativeCalldata(kind), gasLimit, maxFeePerGas, tip);
+  // Priced on the bytes a real settlement sends: the call plus Provian's Builder Code suffix.
+  const l1 = await chain.l1Fee(withBuilderCode(representativeCalldata(kind)) as Hex, gasLimit, maxFeePerGas, tip);
   const nowSec = Math.floor(nowMs / 1000);
   if (price.answer <= 0n || nowSec - price.updatedAt > priceMaxAgeSeconds) throw new Error('ETH/USD price is stale');
   const gasUsdc = usdcAtomicFromWei(gasLimit * maxFeePerGas + l1, price.answer, price.decimals);

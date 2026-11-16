@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { laneQueuedFields, laneHoldsOperation } from './transaction-lane';
 import { Transaction, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
@@ -27,7 +28,7 @@ export async function queueSponsoredOperation<R, P extends SponsoredOperationPla
     if (typeof oldRaw !== 'string' || keccak256(oldRaw) !== prior.get('transactionHash')) throw Error('recourse_sponsor_record_invalid');
     const old = adapter.parse(prior.get('request')), tx = Transaction.from(oldRaw);
     if (adapter.id(old) !== id || !tx.from || tx.from.toLowerCase() !== prior.get('gasPayer') || tx.chainId !== 8453n
-      || tx.to?.toLowerCase() !== adapter.target(old, prior.get('executor')) || tx.data !== adapter.calldata(old) || tx.value !== 0n) throw Error('recourse_sponsor_record_invalid');
+      || tx.to?.toLowerCase() !== adapter.target(old, prior.get('executor')) || !matchesPlannedCall(tx.data, adapter.calldata(old)) || tx.value !== 0n) throw Error('recourse_sponsor_record_invalid');
     const result = await adapter.finalized(oldRaw);
     if (!result || result.status !== 0) throw Error('recourse_sponsor_retry_unreconciled');
     oldSigner = tx.from.toLowerCase();

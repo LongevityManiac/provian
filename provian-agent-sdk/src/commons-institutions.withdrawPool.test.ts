@@ -9,6 +9,7 @@ vi.mock('./protocol-runtime', async () => (await import('./__test-helpers__/prot
  * broadcasts go through an injected viem transport (raw txs captured + decoded).
  * Mirrors agent-institutions.escrow.release.test.ts.
  */
+import { withBuilderCode } from './builder-code';
 import { describe, it, expect, vi } from 'vitest';
 import { custom, keccak256, parseTransaction, type Hex } from 'viem';
 import { CommonsInstitutions } from './commons-institutions';
@@ -132,7 +133,7 @@ describe('CommonsInstitutions.withdrawFromPool — happy path', () => {
     expect(rawTxs).toHaveLength(1);
     const tx = parseTransaction(rawTxs[0]);
     expect(tx.to?.toLowerCase()).toBe(POOL_ADDRESSES.base!.toLowerCase());
-    expect(tx.data).toBe(encodeWithdrawContribution(ONCHAIN_POOL_ID));
+    expect(tx.data).toBe(withBuilderCode(encodeWithdrawContribution(ONCHAIN_POOL_ID)));
 
     // (b) a POST to /v1/pools/:id/withdraw carrying the mined tx_hash.
     const withdrawCall = calls.find((c) => c.url.endsWith('/v1/pools/pool_1/withdraw'))!;

@@ -1,3 +1,4 @@
+import { matchesPlannedCall } from '../onchain/builder-code';
 import { Interface, Transaction, keccak256 } from 'ethers';
 import type { Firestore } from 'firebase-admin/firestore';
 import { getAgreedBaseLogs, type CanonicalEconomicLog } from '../onchain/economic-discovery';
@@ -47,7 +48,7 @@ export async function readDeterminationOutcome(db: Firestore, request: string,
     if (typeof raw !== 'string' || !plan || plan.kind !== kind || row.id !== recourseExecutionId(plan)
       || row.get('status') !== 'confirmed' || keccak256(raw) !== transactionHash) throw Error('recourse_outcome_transaction_invalid');
     const tx = Transaction.from(raw);
-    if (tx.to?.toLowerCase() !== plan.executor || tx.from?.toLowerCase() !== plan.signer || tx.data !== plan.calldata
+    if (tx.to?.toLowerCase() !== plan.executor || tx.from?.toLowerCase() !== plan.signer || !matchesPlannedCall(tx.data, plan.calldata)
       || tx.value !== 0n || tx.chainId !== 8453n) throw Error('recourse_outcome_transaction_invalid');
     const receipt = await port.finalized(raw);
     if (!receipt || receipt.status !== 1 || receipt.transactionHash !== transactionHash) throw Error('recourse_outcome_not_finalized');

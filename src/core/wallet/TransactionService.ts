@@ -1,4 +1,5 @@
 import { currentProtocolDeployment } from '../protocol/runtime';
+import { builderCodeGas, isBaseChainId } from '../protocol/builder-code';
 import { listWalletRecoveryTransactions, type RecoverableWalletTransaction } from '../security/ActionWallet';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -317,6 +318,8 @@ class TransactionService {
                 gas = 65_000n; // conservative ERC-20 fallback (not native 21k)
             }
         }
+        // Base transactions carry the Builder Code suffix, whose calldata gas the estimate includes.
+        if (isBaseChainId(chainId)) gas += builderCodeGas(tx?.data);
         const estimated = maxFee * gas;
         return `~${ethers.formatEther(estimated)} ETH`;
     }
