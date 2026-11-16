@@ -155,11 +155,12 @@ describe('encrypted pending agent-wallet registration', () => {
     });
   });
 
-  // Every earlier default: the pre-relabel literal and the 2026-09-24 label the
-  // text revision superseded. A pending registration sealed under either replays it.
+  // Every earlier default: the pre-relabel literal and the dated labels later
+  // text revisions superseded. A pending registration sealed under any replays it.
   it.each([
     'human-agentic-constitution-v0.1',
     'network-constitution-2026-09-24',
+    'network-constitution-2026-09-27',
   ])('replays a pending registration sealed under the earlier default version %s unchanged', async (LEGACY) => {
     // Write the pending file with an SDK whose default was the earlier literal
     // (the version an earlier release sealed when the caller named none).

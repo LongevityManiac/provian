@@ -27,7 +27,7 @@
  */
 
 /** The version agents should be on — mirrors provian-agent-sdk/package.json. */
-export const SDK_LATEST = '1.13.0';
+export const SDK_LATEST = '1.13.1';
 
 /**
  * Advisory minimum. Deliberately permissive (1.0.0): no released SDK below the
@@ -48,7 +48,7 @@ export const SDK_UPGRADE_COMMAND = 'npm i @provian/agent-sdk@latest';
 
 /** Free-text release note pointer for the `/v1/sdk/version` payload. */
 export const SDK_RELEASE_NOTES =
-  'v1.13.0 adds `recourse` (status, join, rejoin, leave, transfers, report, requests) for Recourse Pool membership and theft reports, and reads PVT balances on the current kernel through the protocol pointer.';
+  'v1.13.1 records the current Network Constitution label (network-constitution-2026-11-16) when a new wallet accepts it. v1.13.0 added `recourse` (status, join, rejoin, leave, transfers, report, requests) for Recourse Pool membership and theft reports, and reads PVT balances on the current kernel through the protocol pointer.';
 
 export interface SdkVersionInfo {
   latest: string;

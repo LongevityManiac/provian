@@ -2,41 +2,8 @@
  * These pins permit only the personal name. All internal-history rules still
  * scan the original text; no file or line is excluded from those rules. */
 export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
-  "docs/translations/network-constitution/ja.md": [
-    "829da832ccf11ba19fc646e028604636e5405805f278a5012f582266a8409b12"
-  ],
-  "docs/translations/network-constitution/ko.md": [
-    "1d4a0983ec65b4f16c39d1a8d3379018fab28e9a648bcc00feaabb42cd13c8a5"
-  ],
   "provian-website/public/docs-md/the-exponential-currency.md": [
     "d039f7afb2d26291a7af1f3b41d096e37355baba993e1e3b3511979a8158fd46"
-  ],
-  "docs/translations/network-constitution/sw.md": [
-    "d82343bfb965680508fab2f0dc2f463f4af8f27ca8c15eb01c08482595b59a2c"
-  ],
-  "docs/translations/network-constitution/es.md": [
-    "5258d7f8e3b9c358ff17a541456afbc28d10027b5227a5b30b852f36cadf6eab"
-  ],
-  "docs/translations/network-constitution/zh.md": [
-    "05b1848fa780c468569c85bd1649e38318b2d6e3935de38010ba5538939a08b7"
-  ],
-  "docs/translations/network-constitution/hi.md": [
-    "2e6deb1d1c31e349095fe0cd38282d5ff70b5f9d44fc3a0bda5a733728c28781"
-  ],
-  "docs/translations/network-constitution/fr.md": [
-    "c61487e00ed4f0554574b51646ab79d0c290002e663b037d471cd0fd32d01893"
-  ],
-  "docs/translations/network-constitution/id.md": [
-    "429fd9c020500a1b76b4e4aa6e581457129bb448fb50f8b4fcad871b22cade24"
-  ],
-  "docs/translations/network-constitution/tl.md": [
-    "250215c67d9a76635d4584d9099b13081d510e46cd6ee35ddf5cf6fcf596c2fc"
-  ],
-  "docs/translations/network-constitution/pt.md": [
-    "39ff469989d9f1648ea969cd23a5bcd32d8b368b478bbbd4549b6df1f82d32c0"
-  ],
-  "docs/translations/network-constitution/vi.md": [
-    "28c5d6e099949900cd831127abc54a24c7f484811845d1220681cff408a8daac"
   ],
   "docs/legal/terms-of-service.md": [
     "4f03cdb98baf4eec3fe6f8526dfe364910c670fe715164c5b8ad27eef2dc84c8",
@@ -100,20 +67,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
   "src/screens/Legal/termsContent.generated.ts": [
     "64c45cb7ffc150c09f0f7ce78e414e50c462fd12c5d81a3bb0976e39a0260b2a",
     "15fbca08b22cf2a87ba57493b6949c706084821ac082f3ec279ac5fe31f51a21"
-  ],
-  "src/generated/networkConstitution.ts": [
-    "e21d48cb5e57c7c5fb54cbb9a10c5906a5a13e38ffdb675f497856ae0efc6f74",
-    "aacbdb65482f25b08e6fd694479d01d2243061c5303c38a68198320cf6f38375",
-    "3d99fdb0a944e78b5da324d44daffcdaa75015c9455c66164ed605e2832defcf",
-    "8f3fc280b80c613e49bc69f95ecc6c079a07663220caced38642764a7c8637f1",
-    "11a5fd07bdf14671b12a9d5025fef0c6625f3ee9174b1999aa8f0150ea8b6c5b",
-    "79d2ea19a47706ec50631f2d91d8fa922f7cc15459fa5100a3047c41cc5d7677",
-    "dec1cc68e7f0996e2a937d17aa7f0ffe25ae86a5af356c6b813c093ef4888f91",
-    "ed08abf57b0a9a419b3c2a670b03c748281c9ddd043738d1191ba986bd858b1b",
-    "f217f96967b20c0203bff2783a43a3627666cfc13b483d31d9fe9f111d827e75",
-    "d7051cfc592ea9be61500d660271cf0ee12be88be6e5596374117bb2213195b7",
-    "b0fe98559803f5b2d3f459450201f57c504a437c9dd945d143c1c02de64a9711",
-    "bd174fe81ca291984e8d1983d434b5d060e7e7f544be8998ed5e661e18831916"
   ],
   "provian-website/public/legal/terms.html": [
     "425ee839f29174473576dc3fb781c935dd7e7206956a7c27251bb2120564b71f",

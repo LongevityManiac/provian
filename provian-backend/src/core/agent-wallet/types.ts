@@ -13,7 +13,7 @@ import type { GenesisActivationApprovalVerifier } from '../pvt/policy/genesis-po
 import type { AgentBeneficiaryShareBps } from './beneficiary-relationship';
 
 /** Version recorded with a new wallet's optional Network Constitution acceptance. */
-export const NETWORK_CONSTITUTION_VERSION = 'network-constitution-2026-09-27';
+export const NETWORK_CONSTITUTION_VERSION = 'network-constitution-2026-11-16';
 export const APPROVED_NETWORK_CONSTITUTION_VERSIONS = [
   NETWORK_CONSTITUTION_VERSION,
 ] as const;

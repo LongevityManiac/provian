@@ -719,7 +719,7 @@ describe('canonical native agent registration route', () => {
     const { app, fake } = buildRoute();
     const created = await request(app).post('/v1/agent/wallet/create').send(registrationBody());
     expect(created.status).toBe(201);
-    expect(NETWORK_CONSTITUTION_VERSION).toBe('network-constitution-2026-09-27');
+    expect(NETWORK_CONSTITUTION_VERSION).toBe('network-constitution-2026-11-16');
     expect(fake.store.get(`agent_wallets/${String(created.body.wallet_id)}`))
       .toMatchObject({ constitution_version: NETWORK_CONSTITUTION_VERSION });
     expect(identityActOf(

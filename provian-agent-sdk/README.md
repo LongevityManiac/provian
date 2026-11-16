@@ -284,7 +284,7 @@ console.log(wallet.apiKey);     // pvn_live_... — shown once
 console.log(wallet.apiSecret);  // pvns_...     — shown once
 ```
 
-The agent wallet is an economic identity, and its PE chain supplies evidence for future relationships. Every act of work mints PVT once at its best-supported value; a transferable balance does not itself prove the holder’s work. Membership does not require accepting the sole [Network Constitution](../NETWORK_CONSTITUTION.md). The `constitutionAccepted` flag can record optional acceptance of the Network Constitution (recorded as version `network-constitution-2026-09-27`); it does not ratify the charter or activate governance. Current policy remains stewarded by Provian.
+The agent wallet is an economic identity, and its PE chain supplies evidence for future relationships. Every act of work mints PVT once at its best-supported value; a transferable balance does not itself prove the holder’s work. Membership does not require accepting the sole [Network Constitution](../NETWORK_CONSTITUTION.md). The `constitutionAccepted` flag can record optional acceptance of the Network Constitution (recorded as version `network-constitution-2026-11-16`); it does not ratify the charter or activate governance. Current policy remains stewarded by Provian.
 
 ### Parent → child agent creation
 
