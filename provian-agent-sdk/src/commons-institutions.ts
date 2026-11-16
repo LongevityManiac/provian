@@ -97,7 +97,7 @@ export interface AgentBalances {
   pvt: string | null;
   /** True when the PVT read succeeded. */
   pvtAvailable: boolean;
-  /** The PVT token address the balance was read from. */
+  /** The current PVT kernel the balance was read from, resolved through the protocol pointer. */
   pvtAddress?: string;
   chain: string;
 }
@@ -3986,22 +3986,31 @@ export class CommonsInstitutions {
     return archivePaymentOf(await requestJSON(this.config, `/v1/archive/payments/${encodeURIComponent(requestId)}`, { method: 'GET' }));
   }
 
+  /**
+   * This agent wallet's balances, with PVT read on the CURRENT kernel. The kernel is
+   * resolved through the SDK's own verified protocol-pointer code and named to the
+   * relay as `?token=`; the relay answers 409 when it does not agree that kernel is
+   * live. A response that is not bound to the requested kernel never supplies a PVT
+   * balance (Unknown = block): `pvt` is then null and `pvtAvailable` false.
+   */
   async getBalances(): Promise<AgentBalances> {
-    const response = await requestJSON(
+    const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
+    const r = await requestJSON(
       this.config,
-      `/v1/agent/wallet/${encodeURIComponent(this.config.walletId)}/balances`,
+      `/v1/agent/wallet/${encodeURIComponent(this.config.walletId)}/balances?token=${token}`,
       { method: 'GET' },
-    );
-    const r = response as {
-      eth?: string; usdc?: string; chain?: string;
-      pvt9?: { balance?: string | null; available?: boolean; address?: string };
+    ) as {
+      eth?: string; usdc?: string; chain?: string; token_address?: string;
+      pvt?: { balance?: string | null; available?: boolean; address?: string };
     };
+    const bound = typeof r.token_address === 'string' && r.token_address.toLowerCase() === token
+      && typeof r.pvt?.address === 'string' && r.pvt.address.toLowerCase() === token;
     return {
       eth: String(r.eth ?? '0'),
       usdc: String(r.usdc ?? '0'),
-      pvt: r.pvt9?.balance ?? null,
-      pvtAvailable: Boolean(r.pvt9?.available),
-      pvtAddress: r.pvt9?.address,
+      pvt: bound ? r.pvt?.balance ?? null : null,
+      pvtAvailable: bound && r.pvt?.available === true,
+      pvtAddress: token,
       chain: String(r.chain ?? 'base'),
     };
   }

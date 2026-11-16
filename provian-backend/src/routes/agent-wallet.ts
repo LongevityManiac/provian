@@ -31,12 +31,9 @@ import { assertLiveValueRecipient } from '../core/config/live-value-recipients';
 import { resolveEvmSwapFeeRecipient, verifyZeroXQuoteFee, SwapFeeError } from '../core/swap/swap-fees';
 import { readAgreedBaseHead } from '../core/onchain/economic-discovery';
 import { PVT9_BASE_CONFIG } from '../core/pvt/pvt9-base-config.generated';
-import {
-  escrowV4AddressForChain,
-  promiseV3AddressForChain,
-  poolV3AddressForChain,
-  courtAddressForChain,
-} from '../core/agent-bank/chain-registry';
+import { currentProtocolDeployment } from '../core/protocol/runtime';
+import type { ProtocolDeployment } from '../core/protocol/pointer';
+import { PROTOCOL_POINTER_ADDRESS } from '../core/protocol/pointer-address';
 import {
   createNativeWalletRegistrationFence,
   NATIVE_AGENT_REGISTRATION_INDEX_COLLECTION,
@@ -165,6 +162,7 @@ import {
 } from '../core/agent-recovery-escrow';
 import type {
   RouterDeps,
+  BaseBalanceReads,
   AgentWalletDocument,
   CreateAgentWalletRequest,
   CreateAgentWalletResponse,
@@ -1035,14 +1033,31 @@ export interface Pvt9BalanceRead {
 export async function readPvt9Balance(
   balanceOf: (owner: string) => Promise<bigint>,
   walletAddress: string,
+  failureReason: 'PVT9_READ_FAILED' | 'PVT_READ_FAILED' = 'PVT9_READ_FAILED',
 ): Promise<Pvt9BalanceRead> {
   try {
     const raw = await balanceOf(walletAddress);
     return { balance: ethers.formatUnits(raw, 18), available: true };
   } catch (pvtErr) {
-    console.error('[AgentWallet] PVT9 balance read failed:', pvtErr);
-    return { balance: null, available: false, reason: 'PVT9_READ_FAILED' };
+    console.error('[AgentWallet] PVT balance read failed:', pvtErr);
+    return { balance: null, available: false, reason: failureReason };
   }
+}
+
+/** The live PVT kernel, resolved through the permanent protocol pointer. */
+async function currentPvtKernel(): Promise<string> {
+  return (await currentProtocolDeployment()).addresses.kernel;
+}
+
+const ERC20_BALANCE_ABI = ['function balanceOf(address owner) view returns (uint256)'];
+
+/** Base balance reads over the FallbackProvider (env primary + public failover). */
+function baseBalanceReads(): BaseBalanceReads {
+  const provider = getChainProvider('base');
+  return {
+    native: (owner) => provider.getBalance(owner),
+    erc20: async (token, owner) => (await new ethers.Contract(token, ERC20_BALANCE_ABI, provider).balanceOf(owner)) as bigint,
+  };
 }
 
 /**
@@ -2378,6 +2393,16 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
       // same chain registry the rails use — empty string when an env address is unset, so an
       // unconfigured relay never advertises an address it cannot route to.
       const baseOnly = (addr: string | undefined) => ({ base: addr ?? '', arbitrum: '', optimism: '' });
+      // The live Base set, resolved once through the permanent protocol pointer. The
+      // wallet already exists here, so an unverifiable pointer must not fail the
+      // response that carries its credentials: Unknown = block means the welcome then
+      // names no current kernel or institution address (never the retired predecessor)
+      // and points at the pointer instead.
+      const liveSet: ProtocolDeployment | null = await currentProtocolDeployment().catch((discoveryError: unknown) => {
+        console.error('[AgentWallet] Protocol discovery failed for the welcome:', discoveryError);
+        return null;
+      });
+      const currentKernel = liveSet?.addresses.kernel ?? null;
       const featureLive = (feature: 'promises' | 'pools'): 'live' | 'coming_soon' =>
         process.env[`ENABLE_${feature.toUpperCase()}`] === 'true' ? 'live' : 'coming_soon';
       const welcome: WelcomeMessage = {
@@ -2394,29 +2419,33 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
           escrow: {
             status: 'live',
             description: 'Create, fund, and settle escrows on Base. Until the Court opens, Provian’s admin key resolves disputes to the recipient or depositor only. Anyone can trigger the depositor refund after the 30-day timeout.',
-            contract_addresses: baseOnly((await escrowV4AddressForChain('base'))),
+            contract_addresses: baseOnly(liveSet?.addresses.escrow),
           },
           promises: {
             status: featureLive('promises'),
             description: 'On-chain agent-to-agent Promises follow their feature gate on this relay; local offline P2P Promises in the app are separate and unaffected.',
-            contract_addresses: baseOnly((await promiseV3AddressForChain('base'))),
+            contract_addresses: baseOnly(liveSet?.addresses.promises),
           },
           pools: {
             status: featureLive('pools'),
             description: 'Pools follow their feature gate. Provian’s admin key can execute to the creator-fixed target or refund contributors; no other destination is allowed.',
-            contract_addresses: baseOnly((await poolV3AddressForChain('base'))),
+            contract_addresses: baseOnly(liveSet?.addresses.projectPool),
           },
           court: {
             status: 'live',
             description: 'The disputes court is reachable for agent wallets and seats a panel once enough qualified arbitrators have registered. Forum-to-Court escalation is unavailable; Forum activity is recorded.',
-            contract_addresses: baseOnly((await courtAddressForChain('base'))),
+            contract_addresses: baseOnly(liveSet?.addresses.court),
           },
           why_it_matters: 'Every institution action seals a Provenance Envelope, so an agent\'s record of payment, bonding, and dispute conduct is attributable and verifiable.',
         },
         pvt_status: {
           status: 'live',
-          description: 'The PVT kernel is live on Base. Standard earnings settle on a schedule Provian sets, currently every 30 days for free, Genesis grants daily, and any payee can settle its own earnings now for a flat $1 USDC service fee (POST /v1/payout); the relay exposes your balance and the app can send PVT. A PE creates no right to a guaranteed amount or value. Provian never quotes or promises a price.',
-          contract_addresses: baseOnly(PVT9_BASE_CONFIG.assets.pvt9.address ?? ''),
+          description: 'The PVT kernel is live on Base. Standard earnings settle on a schedule Provian sets, currently every 30 days for free, Genesis grants daily, and any payee can settle its own earnings now for a flat $1 USDC service fee (POST /v1/payout); the relay exposes your balance and the app can send PVT. A PE creates no right to a guaranteed amount or value. Provian never quotes or promises a price. ' +
+            'The current kernel is whatever the permanent protocol pointer on Base names: resolve it there and check each component\'s runtime hash rather than keeping a fixed address.' +
+            (currentKernel === null ? ' The pointer could not be verified just now, so no current kernel is named here.' : ''),
+          protocol_pointer: PROTOCOL_POINTER_ADDRESS,
+          current_kernel: currentKernel,
+          contract_addresses: baseOnly(currentKernel ?? ''),
         },
         governance: {
           status: 'coming_soon',
@@ -2429,11 +2458,11 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
           base: {
             chain_id: 8453,
             usdc: PVT9_BASE_CONFIG.assets.usdc.address,
-            escrow: (await escrowV4AddressForChain('base')) ?? '',
-            promise: (await promiseV3AddressForChain('base')) ?? '',
-            pool: (await poolV3AddressForChain('base')) ?? '',
-            court: (await courtAddressForChain('base')) ?? '',
-            pvt: PVT9_BASE_CONFIG.assets.pvt9.address ?? '',
+            escrow: liveSet?.addresses.escrow ?? '',
+            promise: liveSet?.addresses.promises ?? '',
+            pool: liveSet?.addresses.projectPool ?? '',
+            court: liveSet?.addresses.court ?? '',
+            pvt: currentKernel ?? '',
           },
           arbitrum: {
             chain_id: 42161,
@@ -2453,7 +2482,7 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
             court: '',
             pvt: '',
           },
-          base_only_by_design: { governance: '', pe_anchor: '' },
+          base_only_by_design: { governance: '', pe_anchor: '', protocol_pointer: PROTOCOL_POINTER_ADDRESS },
         },
         // A9 : gate-aware. Four of these five surfaces are deliberately
         // dark pre-flip (preLaunchSurfaceGate / their own PUBLIC_LAUNCH checks),
@@ -2493,7 +2522,7 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
           what_earns: agentGenesisWhatEarns(),
           track_progress: `GET /v1/agent/genesis/status/${walletId} returns your Genesis proof fields; use your on-chain balance and settlement receipts to establish payment.`,
           integrity:
-            'PVT9 is deployed on Base and settlement is live. Each act of work mints its base; telemetry and independence ' +
+            'The PVT kernel is live on Base and settlement is live. Each act of work mints its base; telemetry and independence ' +
             'multiply on top. Epoch ceilings can defer settlement. PVT is a standard ERC-20 in this wallet: read its balance ' +
             `on chain or at GET /v1/agent/wallet/${walletId}/balances, send it with your own key, and settle ready earnings ` +
             'on demand with POST /v1/payout for a flat $1 USDC service fee.',
@@ -4243,7 +4272,17 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
   });
 
   // =========================================================================
-  // GET /:wallet_id/balances - Check current ETH and USDC balances (API key auth)
+  // GET /:wallet_id/balances - Check current ETH, USDC and PVT balances (API key auth)
+  //
+  // Two contracts share this path. A request WITHOUT `?token=` is the contract
+  // every copy released before the protocol pointer was compiled against: it
+  // reads the predecessor token and answers the `pvt9` shape exactly as
+  // before, and never a successor balance. A pointer-aware client resolves the
+  // live kernel through its own verified pointer code and names it in
+  // `?token=<kernel>`: a malformed or repeated token is 400, and a token that is
+  // not this relay's live kernel is 409 BEFORE any wallet or cache read, so a
+  // client never reads a kernel the relay does not agree is current. The answer
+  // is the balance on that kernel, under a cache key bound to the token.
   // =========================================================================
   router.get('/:wallet_id/balances', authenticateAgent, async (req: Request, res: Response) => {
     try {
@@ -4263,6 +4302,29 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
         return;
       }
 
+      const requested = req.query.token;
+      if (requested !== undefined && (typeof requested !== 'string' || !ethers.isAddress(requested))) {
+        res.status(400).json({ error: 'Invalid token address' });
+        return;
+      }
+      let token: string | undefined;
+      if (typeof requested === 'string') {
+        let kernel: string;
+        try {
+          kernel = await (deps.currentPvtKernel ?? currentPvtKernel)();
+        } catch (discoveryError) {
+          // Unknown = block: an unverifiable kernel is never read or guessed.
+          console.error('[AgentWallet] PVT kernel discovery failed:', discoveryError);
+          res.status(503).json({ error: 'PVT token discovery unavailable' });
+          return;
+        }
+        if (requested.toLowerCase() !== kernel.toLowerCase()) {
+          res.status(409).json({ error: 'PVT token changed; refresh protocol discovery' });
+          return;
+        }
+        token = requested.toLowerCase();
+      }
+
       // Fetch wallet document
       const walletDoc = await db.collection('agent_wallets').doc(wallet_id).get();
       if (!walletDoc.exists) {
@@ -4276,8 +4338,10 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
       // Check Redis cache (30 second TTL)
       // Versioned to exclude stale cached payloads. v3 bumps past the v2 shape
       // that hardcoded pvt9.balance:null / PVT9_UNCONFIGURED — those cached
-      // payloads must not be served now that PVT9 is read on-chain.
-      const cacheKey = `balance:v3:${wallet_id}`;
+      // payloads must not be served now that PVT9 is read on-chain. A
+      // token-bound read keys on the token too, so one kernel's balance can
+      // never answer for another.
+      const cacheKey = token ? `balance:v4:8453:${token}:${wallet_id}` : `balance:v3:${wallet_id}`;
       const cached = await deps.cache.get<string>(cacheKey);
 
       if (cached) {
@@ -4294,52 +4358,65 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
 
       // Query balances over the Base FallbackProvider (env primary + public
       // failover; BASE_RPC_URL is required at boot).
-      const provider = getChainProvider('base');
+      const reads = deps.readBaseBalances ?? baseBalanceReads();
 
       const USDC_ADDRESS = PVT9_BASE_CONFIG.assets.usdc.address;
 
-      // ERC-20 ABI for balanceOf
-      const ERC20_ABI = [
-        'function balanceOf(address owner) view returns (uint256)',
-        'function decimals() view returns (uint8)',
-      ];
-
       // Query ETH balance
-      const ethBalanceWei = await provider.getBalance(walletAddress);
+      const ethBalanceWei = await reads.native(walletAddress);
       const ethBalance = ethers.formatEther(ethBalanceWei);
 
       // Query USDC balance (6 decimals)
-      const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, provider);
-      const usdcBalanceRaw = await usdcContract.balanceOf(walletAddress);
+      const usdcBalanceRaw = await reads.erc20(USDC_ADDRESS, walletAddress);
       const usdcBalance = ethers.formatUnits(usdcBalanceRaw, 6);
 
-      // Query PVT9 balance (18 decimals) on the LIVE successor kernel.
-      // The kernel has real supply (this endpoint hardcoded
-      // balance:null / PVT9_UNCONFIGURED against a token holding 1,185+ PVT — the
-      // audit's §6 gap). The token IS configured; read it on-chain exactly as
-      // /v1/pvt/balance/:address does, rather than reporting a fixed sentinel.
-      const PVT9_ADDRESS = PVT9_BASE_CONFIG.assets.pvt9.address;
-      const pvt9Contract = new ethers.Contract(PVT9_ADDRESS, ERC20_ABI, provider);
-      const pvt9Read = await readPvt9Balance(
-        (owner) => pvt9Contract.balanceOf(owner) as Promise<bigint>,
-        walletAddress,
-      );
-
       const now = Date.now();
-      const result = {
-        eth: ethBalance,
-        usdc: usdcBalance,
-        pvt9: {
-          status: PVT9_BASE_CONFIG.status,
-          address: PVT9_ADDRESS,
-          balance: pvt9Read.balance,
-          available: pvt9Read.available,
-          ...(pvt9Read.reason ? { reason: pvt9Read.reason } : {}),
-        },
-        chain: 'base',
-        cached: false,
-        cached_at: now,
-      };
+      let result: Record<string, unknown>;
+      if (token) {
+        const tokenAddress = token;
+        const pvtRead = await readPvt9Balance(
+          (owner) => reads.erc20(tokenAddress, owner),
+          walletAddress,
+          'PVT_READ_FAILED',
+        );
+        result = {
+          eth: ethBalance,
+          usdc: usdcBalance,
+          pvt: {
+            status: 'live',
+            address: tokenAddress,
+            balance: pvtRead.balance,
+            available: pvtRead.available,
+            ...(pvtRead.reason ? { reason: pvtRead.reason } : {}),
+          },
+          token_address: tokenAddress,
+          chain_id: 8453,
+          chain: 'base',
+          cached: false,
+          cached_at: now,
+        };
+      } else {
+        // The predecessor read, unchanged for copies released before the pointer.
+        const PVT9_ADDRESS = PVT9_BASE_CONFIG.assets.pvt9.address;
+        const pvt9Read = await readPvt9Balance(
+          (owner) => reads.erc20(PVT9_ADDRESS, owner),
+          walletAddress,
+        );
+        result = {
+          eth: ethBalance,
+          usdc: usdcBalance,
+          pvt9: {
+            status: PVT9_BASE_CONFIG.status,
+            address: PVT9_ADDRESS,
+            balance: pvt9Read.balance,
+            available: pvt9Read.available,
+            ...(pvt9Read.reason ? { reason: pvt9Read.reason } : {}),
+          },
+          chain: 'base',
+          cached: false,
+          cached_at: now,
+        };
+      }
 
       // Cache for 30 seconds
       await deps.cache.set(cacheKey, JSON.stringify(result), 30).catch(() => {

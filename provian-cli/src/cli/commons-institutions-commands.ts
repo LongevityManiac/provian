@@ -614,8 +614,8 @@ is listed first.`);
 
 /**
  * `provian balance` — this agent wallet's on-chain balances (PVT first, then ETH
- * + USDC), read via the relay (self-scoped; no RPC needed). Closes the audit §6
- * gap: the CLI now has a balance verb.
+ * + USDC), read via the relay (self-scoped). PVT is read on the current kernel,
+ * which the SDK resolves through the protocol pointer before asking the relay.
  */
 export async function cmdBalance(flags: Record<string, string | boolean>): Promise<CommandResult> {
   if (flags.help) {
@@ -759,8 +759,10 @@ export function printBalanceHelp(): void {
 Usage:
   provian balance
 
-Reads ETH, USDC, and the LIVE PVT balance via the relay (self-scoped to your
-credentials; no RPC needed). Output lists PVT first.`);
+Resolves the current PVT kernel through the permanent protocol pointer on Base,
+then reads ETH, USDC, and your PVT balance on that kernel via the relay
+(self-scoped to your credentials). Output lists PVT first; pvt_address is the
+kernel the balance was read from.`);
 }
 
 export function printBurnHelp(): void {

@@ -103,7 +103,7 @@ function harness(opts: { respond?: (c: Call) => { status?: number; body: unknown
 function defaultRespond(c: Call): { status?: number; body: unknown } {
   if (c.path.endsWith('/transfer/record')) return { body: { pe_id: 'pe_transfer', verified: true } };
   if (c.path.endsWith('/burn/record')) return { body: { burn_id: 'burn_1', verified: true, finality: 'provisional' } };
-  if (c.path.endsWith('/balances')) return { body: { eth: '0.001', usdc: '0', chain: 'base', pvt9: { balance: '99', available: true, address: ADDRESS } } };
+  if (c.path.endsWith('/balances')) { const token = new URL(c.url).searchParams.get('token'); return { body: { eth: '0.001', usdc: '0', chain: 'base', token_address: token, pvt: { status: 'live', balance: '99', available: true, address: token } } }; }
   if (c.path.endsWith('/inbox')) return { body: { events: [], next_cursor: null } };
   if (c.path.endsWith('/rail-handshake')) return { body: { state: 'none' } };
   if (c.path.endsWith('/vouches')) return { body: { vouches: [] } };
@@ -574,10 +574,11 @@ describe('Commons verbs drive the relay write that performs the act', () => {
 });
 
 describe('On-chain verbs', () => {
-  it('balance reads the relay (no RPC, no key)', async () => {
+  it('balance reads the relay on the pointer-resolved kernel (no key)', async () => {
     const h = harness();
     const r = await h.run('balance');
     expect(r.json).toMatchObject({ address: ADDRESS, pvt: '99', eth: '0.001', usdc: '0' });
+    expect(h.calls.find((c) => c.path.endsWith('/balances'))?.url).toMatch(/\/balances\?token=0x[0-9a-f]{40}$/);
     expect(h.keyUses()).toBe(0);
   });
 

@@ -265,15 +265,15 @@ const CHECKS = {
       }
       // Semantic, not just 200+JSON: the genesis posture must be the LIVE armed truth
       // (campaign manifest), not the runtime boundary config's fail-closed false/null.
-      const g = r.json?.pvt9;
+      const g = r.json?.pvt;
       if (g?.genesis_armed !== true) {
-        return fail(`ecosystem pvt9.genesis_armed=${JSON.stringify(g?.genesis_armed)}, expected true (armed manifest, not runtime boundary config)`);
+        return fail(`ecosystem pvt.genesis_armed=${JSON.stringify(g?.genesis_armed)}, expected true (armed manifest, not runtime boundary config)`);
       }
       if (!g?.genesis_window
         || typeof g.genesis_window.start_ms !== 'number'
         || typeof g.genesis_window.end_ms !== 'number'
         || g.genesis_window.end_ms <= g.genesis_window.start_ms) {
-        return fail(`ecosystem pvt9.genesis_window missing/invalid: ${JSON.stringify(g?.genesis_window)}`);
+        return fail(`ecosystem pvt.genesis_window missing/invalid: ${JSON.stringify(g?.genesis_window)}`);
       }
       return pass(`200, "${r.json.name}", genesis_armed=true window ${g.genesis_window.start_ms}..${g.genesis_window.end_ms}`);
     }

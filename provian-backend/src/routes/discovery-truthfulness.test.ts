@@ -18,6 +18,7 @@ import express, { type Express } from 'express';
 import request from 'supertest';
 import { mountOpenAPIRoutes } from './openapi';
 import { createEcosystemRouter } from './ecosystem';
+import { protocolDeploymentFixture } from '../__test-helpers__/protocol-fixture';
 import { createAgentPromisesRouter } from './agent-promises';
 import { createAgentPoolsRouter } from './agent-pools';
 import { PROVIAN_TOOLS } from '../mcp/core/tools';
@@ -31,7 +32,7 @@ interface McpTool {
 function buildApp(): Express {
   const app = express();
   mountOpenAPIRoutes(app);
-  app.use('/v1/ecosystem', createEcosystemRouter());
+  app.use('/v1/ecosystem', createEcosystemRouter(undefined, { currentDeployment: async () => protocolDeploymentFixture }));
   return app;
 }
 
@@ -247,7 +248,7 @@ describe('discovery doc truthfulness (audit #23 / #13)', () => {
           status: 'available',
           endpoints: ['POST /v1/pe/verify', 'GET /v1/meter/proofs'],
         });
-        expect(eco.body.pvt9).toMatchObject({ mint_active: true, settlement_active: true });
+        expect(eco.body.pvt).toMatchObject({ mint_active: true, settlement_active: true });
       } finally {
         delete process.env.PVT9_SETTLEMENT_ARMED;
         delete process.env.PVT_MINTER_KEY;

@@ -328,6 +328,15 @@ export interface RouterDeps {
   processGenesisQualification?: (qualificationId: string) => Promise<unknown>;
   /** Explicit test seam. Production always uses structured SSHSIG verification. */
   genesisActivationApprovalVerifier?: GenesisActivationApprovalVerifier;
+  /** Test seam: the live PVT kernel. Production resolves the permanent protocol pointer. */
+  currentPvtKernel?: () => Promise<string>;
+  /** Test seam: Base balance reads. Production reads through the Base provider. */
+  readBaseBalances?: BaseBalanceReads;
+}
+
+export interface BaseBalanceReads {
+  native(owner: string): Promise<bigint>;
+  erc20(token: string, owner: string): Promise<bigint>;
 }
 
 // ---------------------------------------------------------------------------
@@ -425,6 +434,10 @@ export interface WelcomeMessage {
   pvt_status: {
     status: 'live' | 'coming_soon';
     description: string;
+    /** The permanent protocol pointer on Base: the only source of the current kernel. */
+    protocol_pointer: string;
+    /** The current PVT kernel, resolved through the pointer; null when it could not be verified. */
+    current_kernel: string | null;
     contract_addresses: CommonsInstitutionsPerChainAddresses;
   };
   governance: {
@@ -444,7 +457,7 @@ export interface WelcomeMessage {
     base: { chain_id: number; usdc: string; escrow: string; promise: string; pool: string; court: string; pvt: string };
     arbitrum: { chain_id: number; usdc: string; escrow: string; promise: string; pool: string; court: string; pvt: string };
     optimism: { chain_id: number; usdc: string; escrow: string; promise: string; pool: string; court: string; pvt: string };
-    base_only_by_design: { governance: string; pe_anchor: string };
+    base_only_by_design: { governance: string; pe_anchor: string; protocol_pointer: string };
   };
   /**
    * A9 : gate-aware. Pre-flip, a deliberately-dark surface is served as

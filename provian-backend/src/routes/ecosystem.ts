@@ -11,9 +11,17 @@ import {
 } from '../core/pvt/genesis-award-state-machine';
 import { getNetworkPresentationVolume } from '../core/commons/presentation-activity';
 import { isFeatureEnabled } from './middleware/feature-flag';
+import { currentProtocolDeployment } from '../core/protocol/runtime';
+import { PROTOCOL_POINTER_ADDRESS } from '../core/protocol/pointer-address';
 
-export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>): Router {
+export interface EcosystemRouterOptions {
+  /** Test seam: the live Base set. Production resolves the permanent protocol pointer. */
+  readonly currentDeployment?: () => Promise<{ readonly addresses: { readonly kernel: string; readonly recoursePool: string } }>;
+}
+
+export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>, options: EcosystemRouterOptions = {}): Router {
   const router = Router();
+  const currentDeployment = options.currentDeployment ?? (() => currentProtocolDeployment());
 
   router.get('/', async (_req: Request, res: Response) => {
     if (process.env.PUBLIC_LAUNCH !== 'true') {
@@ -35,6 +43,14 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>): Route
     // Genesis state from the campaign manifest (activation truth), NOT the generated base
     // config, whose genesis.armed/window_approved are fail-closed nulls by construction.
     const armedWindow = genesisArmedWindow();
+    // The current PVT token is whatever the permanent pointer names. When the
+    // pointer cannot be verified right now, Unknown = block: this document names
+    // no current kernel (never the retired predecessor) and gives the pointer.
+    const liveSet = await currentDeployment().catch((discoveryError: unknown) => {
+      console.error('[Ecosystem] Protocol discovery failed:', discoveryError);
+      return null;
+    });
+    const kernel = liveSet?.addresses.kernel ?? null;
     res.json({
       name: 'Provian Agent Ecosystem',
       version: '2.1.0',
@@ -51,12 +67,13 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>): Route
           : 'Every valid Provenance Envelope is proof its contributor owns; every act of work mints PVT once at its best-supported value. The PVT kernel is live on Base: standard earnings settle on a schedule Provian sets, currently every 30 days for free and Genesis grants daily, and any payee can settle its own earnings now through POST /v1/payout; no amount, schedule, or value is guaranteed.',
         future_eligibility: 'Every act of work mints once at its best-supported value; mint-once supplements and non-work events do not mint separately.',
       },
-      pvt9: {
-        status: PVT9_BASE_CONFIG.status,
+      pvt: {
         network: PVT9_BASE_CONFIG.network,
-        address: PVT9_BASE_CONFIG.assets.pvt9.address,
-        abi: PVT9_BASE_CONFIG.assets.pvt9.abi,
-        deployment_status: PVT9_BASE_CONFIG.assets.pvt9.deployment_status,
+        token_standard: 'ERC-20',
+        protocol_pointer: PROTOCOL_POINTER_ADDRESS,
+        current_kernel: kernel,
+        current_kernel_status: kernel === null ? 'unavailable' : 'verified',
+        discovery: 'The permanent protocol pointer on Base names the current kernel and its institutions. Resolve the set there and check each component\'s runtime hash rather than keeping a fixed address; the pointer replaces the whole set at once and retires the old addresses.',
         mint_active: settlementArmed,
         settlement_active: settlementArmed,
         genesis_armed: armedWindow !== null,
@@ -66,6 +83,11 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>): Route
           end_ms: armedWindow.endMs,
         },
         market_data_economic_authority: PVT9_BASE_CONFIG.market_data.economic_authority,
+        predecessor: {
+          address: PVT9_BASE_CONFIG.assets.pvt9.address,
+          status: 'retired',
+          note: 'History only, never the current PVT token. The current kernel reads its settled claims and Genesis history, so mint-once spans both.',
+        },
       },
       future_authority_boundary: {
         direct_bootstrap_administrator_and_economic_policy_setter: '0xCa37a15A64213b2ACD1784ae3f8e6Cbd4600D9D3',
@@ -175,6 +197,26 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>): Route
           note: 'Filing is open, but the Court is not yet open: no panel sits until enough qualified arbitrators opt in. Until it opens, Provian’s admin key resolves disputed escrows, releasing only to the recipient or refunding only the depositor.',
         },
         bonds: { status: 'live' },
+        // Optional membership in the Recourse Pool: PVT-only records and discretionary
+        // restoration. Every amount comes from the signed membership rule.
+        recourse: {
+          status: 'live',
+          membership: 'optional',
+          public_endpoints: ['GET /v1/recourse/membership-rules/:hash', 'GET /v1/recourse/resources'],
+          owner_endpoints: [
+            'GET /v1/recourse/ownership',
+            'POST /v1/recourse/binding-challenge',
+            'POST /v1/recourse/bind',
+            'GET /v1/recourse/pool',
+            'POST /v1/recourse/membership-transitions',
+            'POST /v1/recourse/membership-consents',
+            'POST /v1/recourse/restoration-requests',
+            'GET /v1/recourse/restoration-requests',
+          ],
+          auth: 'Owner routes take the agent API key (Bearer {api_key}:{api_secret}) or the person\'s wallet auth.',
+          rule: 'A member authorizes once at joining. The participation burn and pool contribution amounts come from the signed membership rule (GET /v1/recourse/membership-rules/:hash). Recourse records and restores PVT only; restoration is a discretionary determination of the pool, not an owed right, and pool contributions are not refundable.',
+          recourse_pool: liveSet?.addresses.recoursePool ?? null,
+        },
         governance: { status: 'dormant_non_gating' },
         // B10 + defect 4: moved deliberately with the
         // anchor-runtime restoration, and DERIVED from that runtime's own

@@ -2222,7 +2222,7 @@ const readHandshakeState: ProvianToolDef = {
 const getPvtBalance: ProvianToolDef = {
   name: 'get_pvt_balance',
   description:
-    "Read YOUR agent wallet's on-chain balances — PVT (the live PVT9 balance), ETH, and USDC — via the relay. Self-scoped: an agent reads only its own wallet. Requires agent API credentials + wallet_id.",
+    "Read YOUR agent wallet's on-chain balances — PVT (your live PVT balance on the current kernel, resolved through the permanent protocol pointer on Base), ETH, and USDC — via the relay. Self-scoped: an agent reads only its own wallet. Requires agent API credentials + wallet_id.",
   inputSchema: {
     type: 'object',
     properties: { wallet_id: { type: 'string', description: 'Your agent wallet id (wallet_aw_…).' } },
@@ -2232,10 +2232,23 @@ const getPvtBalance: ProvianToolDef = {
   handler: async (args, ctx) => {
     const walletId = requireString(args, 'wallet_id');
     if (!walletId) return errorResult('wallet_id is required');
-    const res = await relayCall(ctx, 'GET', `/v1/agent/wallet/${encodeURIComponent(walletId)}/balances`, {
+    // The current kernel comes from this server's own verified pointer read, never
+    // from the relay's word alone; an unverifiable pointer reads nothing.
+    let token: string;
+    try {
+      token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
+    } catch {
+      return errorResult('The current PVT kernel could not be verified through the protocol pointer; try again shortly.');
+    }
+    const res = await relayCall(ctx, 'GET', `/v1/agent/wallet/${encodeURIComponent(walletId)}/balances?token=${token}`, {
       agentAuth: true,
     });
     if (res.status !== 200) return relayErrorResult('Balances', res);
+    const body = res.body as { token_address?: unknown; pvt?: { address?: unknown } } | null;
+    if (typeof body?.token_address !== 'string' || body.token_address.toLowerCase() !== token
+      || typeof body.pvt?.address !== 'string' || body.pvt.address.toLowerCase() !== token) {
+      return errorResult('The relay did not answer for the current PVT kernel; try again shortly.');
+    }
     return jsonResult(res.body);
   },
 };

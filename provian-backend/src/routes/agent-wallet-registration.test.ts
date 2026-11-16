@@ -2016,3 +2016,50 @@ describe('committed registration historical context', () => {
     expect(recovered.body.credential_recovery_generation).toBe(1);
   });
 });
+
+describe('the welcome names the protocol pointer and the current kernel, never the predecessor as current', () => {
+  const runtime = jest.requireMock('../core/protocol/runtime') as { currentProtocolDeployment: jest.Mock<() => Promise<unknown>> };
+  const fixture = (jest.requireActual('../__test-helpers__/protocol-fixture') as typeof import('../__test-helpers__/protocol-fixture')).protocolDeploymentFixture;
+  const KERNEL = '0x2Af3A065dc3c0c51b054Cb8C6BAEE7Df76189e0e';
+  const POINTER = '0x619eAe740CE56C5a8edbB2B047E58369281ddAD7';
+  const PREDECESSOR = '0x8811441914381143b9408c5C32247367F86F173A';
+  beforeEach(() => {
+    verifyPop.mockClear();
+    verifyPop.mockImplementation(async (challengeId, expected) => ({
+      ok: true,
+      registration_context: { ...expected, credential_recovery_generation: challengeId === 'challenge-1' ? null : 0 },
+    }));
+  });
+  afterEach(() => { runtime.currentProtocolDeployment.mockImplementation(async () => fixture); });
+
+  test('a verified pointer: pvt_status and contracts.base name the live kernel and the pointer', async () => {
+    runtime.currentProtocolDeployment.mockImplementation(async () => ({ ...fixture, addresses: { ...fixture.addresses, kernel: KERNEL } }));
+    const { app } = buildRoute();
+    const response = await request(app).post('/v1/agent/wallet/create').send(registrationBody({}));
+    expect(response.status).toBe(201);
+    const welcome = response.body.welcome;
+    expect(welcome.pvt_status).toMatchObject({ protocol_pointer: POINTER, current_kernel: KERNEL, contract_addresses: { base: KERNEL } });
+    expect(welcome.contracts.base.pvt).toBe(KERNEL);
+    expect(welcome.contracts.base_only_by_design.protocol_pointer).toBe(POINTER);
+    expect(JSON.stringify(welcome)).not.toContain(PREDECESSOR);
+    expect(JSON.stringify(welcome)).not.toMatch(/PVT9/);
+  });
+
+  test('an unverifiable pointer: the wallet is still answered, naming no current kernel and only the pointer', async () => {
+    runtime.currentProtocolDeployment.mockImplementation(async () => { throw new Error('protocol_verification_unavailable'); });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const { app } = buildRoute();
+      const response = await request(app).post('/v1/agent/wallet/create').send(registrationBody({}));
+      expect(response.status).toBe(201);
+      expect(typeof response.body.api_key).toBe('string');
+      const welcome = response.body.welcome;
+      expect(welcome.pvt_status).toMatchObject({ protocol_pointer: POINTER, current_kernel: null, contract_addresses: { base: '' } });
+      expect(welcome.pvt_status.description).toContain('no current kernel is named');
+      expect(welcome.contracts.base.pvt).toBe('');
+      expect(JSON.stringify(welcome)).not.toContain(PREDECESSOR);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});

@@ -5,13 +5,14 @@ import express, { type Express } from 'express';
 import request from 'supertest';
 import { mountOpenAPIRoutes } from './openapi';
 import { createEcosystemRouter } from './ecosystem';
+import { protocolDeploymentFixture } from '../__test-helpers__/protocol-fixture';
 
 const MINT_ONCE_TRUTH = 'every act of work mints pvt once at its best-supported value';
 
 function buildApp(): Express {
   const app = express();
   mountOpenAPIRoutes(app);
-  app.use('/v1/ecosystem', createEcosystemRouter());
+  app.use('/v1/ecosystem', createEcosystemRouter(undefined, { currentDeployment: async () => protocolDeploymentFixture }));
   return app;
 }
 
