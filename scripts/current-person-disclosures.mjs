@@ -8,11 +8,8 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
   "docs/translations/network-constitution/ko.md": [
     "1d4a0983ec65b4f16c39d1a8d3379018fab28e9a648bcc00feaabb42cd13c8a5"
   ],
-  "provian-website/public/docs-md/network-constitution.md": [
-    "19cdfd923995a0244593f917f33355a38963e21bacf5707d2140b4b29a88acde"
-  ],
   "provian-website/public/docs-md/the-exponential-currency.md": [
-    "88eb960d66025584e7a9dd3506aea5effa1cf98a239ca80fd1beaa5ad2f3fa66"
+    "d039f7afb2d26291a7af1f3b41d096e37355baba993e1e3b3511979a8158fd46"
   ],
   "docs/translations/network-constitution/sw.md": [
     "d82343bfb965680508fab2f0dc2f463f4af8f27ca8c15eb01c08482595b59a2c"
@@ -50,7 +47,7 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
     "6d75d877136d26ecc129f2d01049b8a83ffdb5b7ca8918df7032f6c612a17e88"
   ],
   "reference/The_Exponential_Currency.md": [
-    "88eb960d66025584e7a9dd3506aea5effa1cf98a239ca80fd1beaa5ad2f3fa66"
+    "d039f7afb2d26291a7af1f3b41d096e37355baba993e1e3b3511979a8158fd46"
   ],
   "src/i18n/legal/en.generated.json": [
     "7037a8d1a606bdf476b9892e687f3c45729beb67823b0248546efc5f856ffeb0",

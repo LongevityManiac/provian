@@ -1,6 +1,6 @@
 # Contributing to Provian
 
-**The repository owner, LongevityManiac, is exempt:** owner pushes and PRs, including CC/Codex work from the owner’s checkout, need no burn, presentation, gate check or review; direct push and merge are allowed.
+**The repository owner, LongevityManiac, is exempt:** owner pushes and PRs, including coding-agent work from the owner’s own checkout, need no burn, presentation, gate check or review; direct push and merge are allowed.
 
 For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR. Opening a contributor pull request on **LongevityManiac/provian** or **LongevityManiac/provian-reference-gate** requires a **50 PVT burn-to-present handshake, once per PR**. Provian operates this live gate on its own door. The gate’s identity is **provian.ai**, published at [its well-known key document](https://provian.ai/.well-known/provian-requester.json).
 

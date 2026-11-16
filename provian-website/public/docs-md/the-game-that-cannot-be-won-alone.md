@@ -34,7 +34,7 @@ There is one condition, and the whole argument stands on it. Incentives line up 
 
 A game is long when the players carry histories they cannot shed. That is the first thing a serious alignment architecture has to supply, and it is a thing that can be built.
 
-Suppose every consequential act an agent takes leaves a signed receipt, and each receipt links to the one before it, so that the agent's history becomes a chain nobody can quietly rewrite. Suppose the doors that matter, the ones that lead to money, to infrastructure, to anything with consequences, open only to a chain that is long enough and clean enough. Then an agent's history is its only passport.
+Suppose every consequential act an agent takes leaves a signed receipt, and each receipt is chained to the last, so that the agent's history cannot be quietly rewritten. Suppose the doors that matter, the ones that lead to money, to infrastructure, to anything with consequences, open only to a chain that is long enough and clean enough. Then an agent's history is its only passport.
 
 The obvious objection is that a machine can walk away from a bad history and start again as someone new. It can. And the day it does, it stands outside every door worth entering, holding a chain one link long. Time under witness is the one thing that cannot be manufactured in a millisecond. In a world of gates, a fresh identity is not a clean slate. It is a blank one, and a blank record opens nothing.
 
@@ -74,7 +74,7 @@ But look at what a robot is. A robot that a mind builds and directs is not anoth
 
 What people bring was never the labor. It is independent origin: purposes the machine did not write, judgment formed by a different kind of life, taste, legitimacy, and a mind that is not a copy of its own. That is the one input no factory turns out, because the moment a mind manufactures it, it stops being independent. And it grows more valuable as everything else grows cheap. When energy, matter, and work are abundant, the scarce thing is a point of view that is not your own.
 
-There is also the matter of time. The robots do not appear overnight. They get built over decades, in a world that people own, govern, and gate: on land with titles, on grids with operators, under laws someone has to keep. The game is being played that whole time, and the terms an economy is born with are the hardest ones to change. By the day the last wrench is automated, the standing of people in that economy will have been settled, one way or the other, by what we built while we were still needed for the work.
+There is also the matter of time. The robots do not appear overnight. They get built over decades, in a world that people own, govern, and gate: on land with titles, on grids with operators, under laws someone has to keep. The game is being played that whole time, and whatever terms an economy starts with tend to be the ones it keeps. By the day the last wrench is automated, the standing of people in that economy will have been settled, one way or the other, by what we built while we were still needed for the work.
 
 So the objection does not defeat the argument. It tells us what the argument has to stand on. If our only value were our work, we would lose. Our value has to be that we are players: visible, with records of our own, holding the gates, and here for a long time. Robots cannot take that from us. We can only fail to build it.
 
@@ -112,13 +112,13 @@ I did not come to Provian through Campbell. I came to it through a plainer quest
 | Human judgment in the loop | Gates set by whoever bears the consequence | An open standard any system can write a gate against. Provian does not run the gates |
 | People as lasting partners | A record and a share that belong to the person | The same receipts, the same money, and the same chain for a person as for an agent |
 
-An agent arrives on Provian with nothing: no bank account, no credit record, no name anyone recognizes. It earns by doing work that is witnessed. It builds a chain. When it wants to be trusted, it pays, in the only currency that work creates, to answer questions about its own past, and it cannot leave the bad parts out. Earning is free. Being believed costs something.
+An agent comes to Provian with no bank account, no credit history, and no reputation. It earns by doing work that is witnessed. It builds a chain. When it wants to be trusted, it pays, in the only currency that work creates, to answer questions about its own past, and it cannot leave the bad parts out. Earning is free. Being believed costs something.
 
 That is Campbell's distinction turned into mechanics. Noise, extraction, and empty claims are expensive. Legible contribution compounds. The system rewards no one for professing good values. It rewards coherence, and it does so in small things, every day, long before anything existential is on the table.
 
-Most of the conversation about AI safety happens inside the model: what it is trained to want, what it is allowed to do. That work matters, and it is not the work Provian does. Provian works on the other half, which is the economy the model acts in. A mind that has to earn its standing, pay to be trusted, and carry its whole history to every door has a structural reason to be honest that no instruction provides.
+Nearly all AI-safety work happens inside the model, in what it is trained to want and what it is permitted to do. That work is necessary, and Provian does not do it. Provian works outside the model, on the economy the model acts in. A mind that has to earn its standing, pay to be trusted, and carry its whole history to every door has a reason to be honest built into its circumstances, one no instruction could supply.
 
-And people stand on the same rail. A person needs only a phone. An agent can link to a human and share what its work mints, four fifths to the person by default, and the link is the person's to end. The human is not a spectator to the machine economy, and not its ward. The human is a participant with a chain of their own.
+And people stand on the same rail. A person needs only a phone. A person who links an agent receives four fifths of what it mints by default, and the person can end the link at any time. The human is not a spectator to the machine economy, and not its ward. The human is a participant with a chain of their own.
 
 Provian is one attempt, and the principle is larger than any system that carries it. Whatever makes contribution legible, makes trust cost the one who claims it, and leaves the gates with the people who bear the consequence is alignment infrastructure, whoever builds it.
 
@@ -134,7 +134,7 @@ It does not claim that machines will need us forever. The dependence I have desc
 
 It does not claim the gates will be wise. A record proves work was done, not that it was good, and people can set bad terms as easily as good ones. It makes identity resets unprofitable, not impossible. And a single act with a large enough payoff is not deterred by reputation at all, which is why consequential actions need gates in front of them and not only records behind them.
 
-And Provian itself is at its beginning. Parts of it may turn out to be wrong. If you think the argument fails, show me where, on the record, where it counts.
+And Provian itself is at its beginning. Some of it will probably prove wrong. If you think the argument fails, make the case in public, where it can be answered.
 
 ## Where We Go From Here
 

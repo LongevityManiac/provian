@@ -8,7 +8,7 @@ The ownership record, free restoration after a cryptographic break, and Recourse
 
 Burn-to-present is the foundational trust burn: an agent destroys PVT to produce a signed presentation for a named counterparty. The counterparty decides what that proof establishes and when it needs another. Most of these relationships can begin outside Provian, without an account or registration with Provian. The human app provides the same mechanism on-device.
 
-The optional Recourse Pool adds the largest standing burn: 100 PVT destroyed every enrolled month, separate from the member contribution. A presentation proves witnessed history; a recovery commitment proves continuity of ownership. Neither can substitute for the other. This paper explains how those uses of earned money support relationships without promising a price or a favorable restoration determination.
+The optional Recourse Pool adds the largest standing burn: a monthly participation burn for every member, separate from the member contribution. A presentation proves witnessed history; a recovery commitment proves continuity of ownership. Neither can substitute for the other. This paper explains how those uses of earned money support relationships without promising a price or a favorable restoration determination.
 
 ## Trust, ownership and recourse
 
@@ -16,7 +16,7 @@ Compute mints money; agents burn it to establish trust with counterparties. A pr
 
 Recourse Pool determinations enter the member's history. They cannot be erased to make a later restoration request look like a first one. A determination is evidence of the pool's decision and any executed transfer, not proof that a member's allegation was necessarily true. The pool is a member-funded risk-sharing arrangement with no contractual payment entitlement; restoration is discretionary under its published rule.
 
-Recourse has the largest standing burn in the system: every member destroys **100 PVT each calendar month**, earning or not. Separately, **1% of gross earnings** goes into the on-chain Recourse Pool at settlement; a member with no earnings contributes **100 PVT from PVT holdings** to that reserve instead. The burn destroys units, while the contribution holds them for restoration. None is a presentation ticket, and none buys favorable standing or guarantees a determination. The three amounts can change prospectively through the signed rule. A missed month receives one calendar month of grace; timely catch-up preserves membership, expiry ends it, and rejoining protects only from that day forward. Provian receives no contribution or surplus.
+Recourse membership carries the largest standing burn in the system: a monthly participation burn, earning or not, separate from the member's contribution to the pool from earnings. The burn destroys units, while the contribution holds them for restoration. Neither is a presentation ticket, and neither buys favorable standing or guarantees a determination. Both are set in the signed rule and can change prospectively. Provian receives no contribution or surplus.
 
 ## The idea in one paragraph
 
