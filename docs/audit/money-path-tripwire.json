@@ -170,6 +170,7 @@
     "provian-agent-sdk/src/recourse-address-credential.ts": "6d4f93b57c888b73bdd7392b6647fe521aa86ce2412ee4db1b57e595ea2c2521",
     "provian-agent-sdk/src/recourse-agent-credential.test.ts": "5624acfc879335356a06462998c15477df3eb6ded2a06f179beb678b3b66dd78",
     "provian-agent-sdk/src/recourse-agent-credential.ts": "fb1890d2b89b4bcfb553b2f244fa9df10bc2a80536b304cae6122c12bc95cb46",
+    "provian-agent-sdk/src/recourse-agent-wiring.test.ts": "ea5c581bf055f355dbc06ac16beba240d3f2fcd78be353f8d0dd85e0f0410f63",
     "provian-agent-sdk/src/recourse-agent.test.ts": "33b0d2e8c4f1cf2b346a548a302d81d9402a5c965b6adc1982273ce8f925e630",
     "provian-agent-sdk/src/recourse-agent.ts": "06e1d8b4277374070df09e5416a761fe5be87916cdf9fb5f6ef35113a211b2f4",
     "provian-agent-sdk/src/recourse-binding-chain.test.ts": "9d193170f01c0107d1675b48eb18a94532a6e38eabc4ab4407d6df169ef3d02b",
