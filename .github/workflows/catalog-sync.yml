@@ -28,7 +28,7 @@ on:
       - 'provian-agent-sdk/src/observer/config/ai-providers.json'
       - 'src/core/capture/ai-providers.json'
   schedule:
-    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly catalog-drift check vs master
+    - cron: '23 9 * * *'  # 09:23 UTC = 03:23 CST / 04:23 CDT, off the top of the hour — nightly catalog-drift check vs master
   workflow_dispatch:
 
 # F44: least-privilege default token for every job; a job that needs more declares its own.

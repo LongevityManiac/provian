@@ -20,7 +20,7 @@ on:
   pull_request:
     branches: [master]
   schedule:
-    - cron: '0 9 * * *'  # 09:00 UTC = 03:00 CST / 04:00 CDT — nightly registry run vs master
+    - cron: '23 9 * * *'  # 09:23 UTC = 03:23 CST / 04:23 CDT, off the top of the hour — nightly registry run vs master
   workflow_dispatch:
 
 concurrency:
