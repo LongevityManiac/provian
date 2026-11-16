@@ -5248,13 +5248,13 @@
       "older": "Mostrar transferencias anteriores",
       "review": "Reportar esta transferencia",
       "confirm": "No autoricé esta transferencia de {{amount}} PVT.",
-      "recovery": "Tu billetera tendrá una nueva dirección. Los PVT robados que aún tenga quien los sustrajo se devuelven mediante reversión. El Fondo de Recurso restituye el resto con lo que tiene, nunca más. El resultado es una determinación conforme a la regla publicada. Provian Technologies no es parte."
+      "recovery": "Tu cartera tendrá una nueva dirección. Provian revisará el robo, intentará devolver los PVT robados y decidirá qué puede restaurar el fondo."
     },
     "lapsed": "Protección caducada",
     "graceSummary": "Un mes de gracia; para volver, completa las quemas y aportaciones pendientes solo de los meses protegidos.",
     "reportTheft": "Informar de un robo",
     "closeReport": "Cerrar",
-    "afterReport": "Tu denuncia se ha enviado. Tu billetera tiene una dirección de reemplazo. El resultado es una determinación conforme a la regla publicada. Provian Technologies no es parte. Consulta Tus solicitudes para ver el progreso.",
+    "afterReport": "Tu informe se ha enviado. Tu cartera tiene una dirección de reemplazo. Provian revisará el robo, intentará devolver los PVT robados y decidirá qué puede restaurar el fondo. Sigue el progreso en Tus solicitudes.",
     "emptyRequests": "No tienes informes de robo.",
     "emptyWallets": "Aún no has añadido carteras.",
     "finePrint": "Letra pequeña",

@@ -5248,13 +5248,13 @@
       "older": "Afficher les transferts antérieurs",
       "review": "Signaler ce transfert",
       "confirm": "Je n’ai pas autorisé ce transfert de {{amount}} PVT.",
-      "recovery": "Votre portefeuille recevra une nouvelle adresse. Les PVT volés encore détenus par la personne qui les a pris sont rendus par annulation du transfert. Le Fonds de recours restitue le reste avec ce qu’il détient, jamais davantage. Le résultat est une décision prise selon la règle publiée. Provian Technologies n’est pas partie à cet arrangement."
+      "recovery": "Votre portefeuille aura une nouvelle adresse. Provian examinera le vol, tentera de rendre les PVT volés et décidera de ce que le fonds peut restituer."
     },
     "lapsed": "Protection expirée",
     "graceSummary": "Un mois de grâce ; pour revenir, complétez les destructions et contributions dues pour les seuls mois protégés.",
     "reportTheft": "Signaler un vol",
     "closeReport": "Fermer",
-    "afterReport": "Votre signalement est envoyé. Votre portefeuille dispose d’une adresse de remplacement. Le résultat est une décision prise selon la règle publiée. Provian Technologies n’est pas partie à cet arrangement. Consultez Vos demandes pour suivre l’avancement.",
+    "afterReport": "Votre signalement a été envoyé. Votre portefeuille a une adresse de remplacement. Provian examinera le vol, tentera de rendre les PVT volés et décidera de ce que le fonds peut restituer. Suivez Vos demandes.",
     "emptyRequests": "Vous n’avez aucun signalement de vol.",
     "emptyWallets": "Aucun portefeuille ajouté pour le moment.",
     "finePrint": "Conditions détaillées",

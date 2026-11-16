@@ -5248,13 +5248,13 @@
       "older": "Show older transfers",
       "review": "Report this transfer",
       "confirm": "I did not authorize this transfer of {{amount}} PVT.",
-      "recovery": "Your wallet will get a new address. Stolen PVT still held by whoever took it is returned by reversal. The Recourse Pool restores the rest from what it holds, never more. The outcome is a determination under the published rule. Provian Technologies is not a party."
+      "recovery": "Your wallet will get a new address. Provian will review the theft, try to return the stolen PVT, and decide what the pool can restore."
     },
     "lapsed": "Lapsed",
     "graceSummary": "One month of grace; rejoin by completing outstanding burns and contributions for protected months only.",
     "reportTheft": "Report a theft",
     "closeReport": "Close",
-    "afterReport": "Your report is sent. Your wallet has a replacement address. The outcome is a determination under the published rule. Provian Technologies is not a party. Check Your requests for progress.",
+    "afterReport": "Your report is sent. Your wallet has a replacement address. Provian will review the theft, try to return the stolen PVT, and decide what the pool can restore. Check Your requests for progress.",
     "emptyRequests": "You have no theft reports.",
     "emptyWallets": "No wallets have been added yet.",
     "finePrint": "Fine print",

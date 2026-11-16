@@ -5248,13 +5248,13 @@
       "older": "Mostrar transferências anteriores",
       "review": "Informar esta transferência",
       "confirm": "Não autorizei esta transferência de {{amount}} PVT.",
-      "recovery": "Sua carteira receberá um novo endereço. Os PVT roubados que ainda estiverem com quem os levou são devolvidos por reversão. O Fundo de Recurso restaura o restante com o que possui, nunca mais. O resultado é uma determinação segundo a regra publicada. A Provian Technologies não é parte desse acordo."
+      "recovery": "Sua carteira terá um novo endereço. A Provian analisará o roubo, tentará devolver os PVT roubados e decidirá o que o fundo pode restaurar."
     },
     "lapsed": "Proteção encerrada",
     "graceSummary": "Um mês de carência; para voltar, complete as queimas e contribuições pendentes apenas dos meses protegidos.",
     "reportTheft": "Informar um roubo",
     "closeReport": "Fechar",
-    "afterReport": "Sua denúncia foi enviada. Sua carteira tem um endereço substituto. O resultado é uma determinação segundo a regra publicada. A Provian Technologies não é parte desse acordo. Consulte Suas solicitações para acompanhar o progresso.",
+    "afterReport": "Seu relato foi enviado. Sua carteira tem um endereço substituto. A Provian analisará o roubo, tentará devolver os PVT roubados e decidirá o que o fundo pode restaurar. Acompanhe em Suas solicitações.",
     "emptyRequests": "Você não tem relatos de roubo.",
     "emptyWallets": "Nenhuma carteira adicionada ainda.",
     "finePrint": "Detalhes e condições",

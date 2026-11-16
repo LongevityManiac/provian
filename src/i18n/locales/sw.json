@@ -5248,13 +5248,13 @@
       "older": "Onyesha uhamisho wa zamani",
       "review": "Ripoti uhamisho huu",
       "confirm": "Sikuidhinisha uhamisho huu wa {{amount}} PVT.",
-      "recovery": "Pochi yako itapata anwani mpya. PVT zilizoibiwa ambazo bado zinashikiliwa na aliyeziiba hurudishwa kwa kutengua uhamisho. Recourse Pool hurejesha zilizobaki kutoka kwa PVT ilizonazo, kamwe si zaidi. Matokeo ni uamuzi chini ya kanuni iliyochapishwa. Provian Technologies si mhusika katika mpango huu."
+      "recovery": "Pochi yako itapata anwani mpya. Provian itachunguza wizi, kujaribu kurudisha PVT zilizoibiwa, na kuamua mfuko unaweza kurejesha kiasi gani."
     },
     "lapsed": "Ulinzi umeisha",
     "graceSummary": "Mwezi mmoja wa neema; kujiunga tena kunahitaji kukamilisha uchomaji na michango iliyobaki ya miezi iliyolindwa tu.",
     "reportTheft": "Ripoti wizi",
     "closeReport": "Funga",
-    "afterReport": "Ripoti yako imetumwa. Pochi yako ina anwani mbadala. Matokeo ni uamuzi chini ya kanuni iliyochapishwa. Provian Technologies si mhusika katika mpango huu. Angalia Maombi yako ili kuona maendeleo.",
+    "afterReport": "Ripoti yako imetumwa. Pochi yako ina anwani mbadala. Provian itachunguza wizi, kujaribu kurudisha PVT zilizoibiwa, na kuamua mfuko unaweza kurejesha kiasi gani. Fuatilia katika Maombi yako.",
     "emptyRequests": "Huna ripoti za wizi.",
     "emptyWallets": "Bado hakuna pochi zilizoongezwa.",
     "finePrint": "Masharti ya kina",

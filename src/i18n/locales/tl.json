@@ -5248,13 +5248,13 @@
       "older": "Ipakita ang mas lumang transfer",
       "review": "Iulat ang transfer na ito",
       "confirm": "Hindi ko pinahintulutan ang transfer na ito ng {{amount}} PVT.",
-      "recovery": "Magkakaroon ng bagong address ang iyong wallet. Ang ninakaw na PVT na hawak pa ng kumuha nito ay ibinabalik sa pamamagitan ng pagbawi sa transfer. Ibinabalik ng Recourse Pool ang natitira mula lamang sa PVT na hawak nito, hindi kailanman higit doon. Ang resulta ay isang pagpapasya ayon sa inilathalang tuntunin. Hindi partido rito ang Provian Technologies."
+      "recovery": "Magkakaroon ng bagong address ang wallet mo. Susuriin ng Provian ang pagnanakaw, susubukang ibalik ang ninakaw na PVT, at magpapasya kung ano ang maibabalik ng pool."
     },
     "lapsed": "Natapos na ang proteksiyon",
     "graceSummary": "Isang buwang palugit; para muling sumali, kumpletuhin lang ang natitirang pagsunog at ambag para sa mga buwang protektado.",
     "reportTheft": "Mag-ulat ng pagnanakaw",
     "closeReport": "Isara",
-    "afterReport": "Naipadala na ang iyong ulat. May kapalit nang address ang iyong wallet. Ang resulta ay isang pagpapasya ayon sa inilathalang tuntunin. Hindi partido rito ang Provian Technologies. Tingnan ang Iyong mga kahilingan para sa progreso.",
+    "afterReport": "Naipadala na ang ulat mo. May kapalit na address ang wallet mo. Susuriin ng Provian ang pagnanakaw, susubukang ibalik ang ninakaw na PVT, at magpapasya kung ano ang maibabalik ng pool. Tingnan ang Mga kahilingan mo para sa progreso.",
     "emptyRequests": "Wala kang ulat ng pagnanakaw.",
     "emptyWallets": "Wala pang naidagdag na wallet.",
     "finePrint": "Mga detalyadong tuntunin",

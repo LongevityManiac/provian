@@ -5248,13 +5248,13 @@
       "older": "Hiện giao dịch cũ hơn",
       "review": "Báo cáo giao dịch này",
       "confirm": "Tôi không cho phép giao dịch chuyển {{amount}} PVT này.",
-      "recovery": "Ví của bạn sẽ có địa chỉ mới. PVT bị đánh cắp mà người lấy vẫn còn giữ sẽ được trả lại bằng cách đảo ngược giao dịch chuyển. Quỹ Recourse khôi phục phần còn lại từ PVT quỹ đang có, không bao giờ vượt quá số đó. Kết quả là một quyết định theo quy tắc đã công bố. Provian Technologies không phải là một bên của thỏa thuận này."
+      "recovery": "Ví của bạn sẽ có địa chỉ mới. Provian sẽ xem xét vụ mất cắp, cố gắng trả lại PVT bị đánh cắp và quyết định phần quỹ có thể khôi phục."
     },
     "lapsed": "Đã hết bảo vệ",
     "graceSummary": "Gia hạn một tháng; để tham gia lại, chỉ cần hoàn tất phần đốt và đóng góp còn thiếu của các tháng được bảo vệ.",
     "reportTheft": "Báo cáo mất cắp",
     "closeReport": "Đóng",
-    "afterReport": "Báo cáo của bạn đã được gửi. Ví của bạn đã có địa chỉ thay thế. Kết quả là một quyết định theo quy tắc đã công bố. Provian Technologies không phải là một bên của thỏa thuận này. Xem Yêu cầu của bạn để theo dõi tiến độ.",
+    "afterReport": "Báo cáo đã được gửi. Ví của bạn có địa chỉ thay thế. Provian sẽ xem xét vụ mất cắp, cố gắng trả lại PVT bị đánh cắp và quyết định phần quỹ có thể khôi phục. Theo dõi trong Yêu cầu của bạn.",
     "emptyRequests": "Bạn chưa có báo cáo mất cắp.",
     "emptyWallets": "Chưa có ví nào được thêm.",
     "finePrint": "Điều khoản chi tiết",

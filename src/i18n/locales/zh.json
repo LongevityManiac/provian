@@ -5249,13 +5249,13 @@
       "older": "显示更早的转账",
       "review": "报告这笔转账",
       "confirm": "我未授权这笔{{amount}} PVT转账。",
-      "recovery": "你的钱包将获得一个新地址。 被盗 PVT 中仍由盗取者持有的部分，会通过撤销转账返还。Recourse Pool 用其持有的 PVT 恢复剩余部分，绝不超过其持有量。 结果是依据已公布规则作出的裁定。Provian Technologies 不是该安排的一方。"
+      "recovery": "你的钱包将获得新地址。Provian 会审查盗窃情况，尝试返还被盗 PVT，并决定资金池可恢复的部分。"
     },
     "lapsed": "保障已失效",
     "graceSummary": "宽限期为一个月；重新加入前，只需补齐受保障月份未完成的销毁和贡献。",
     "reportTheft": "报告盗窃",
     "closeReport": "关闭",
-    "afterReport": "你的报告已发送。你的钱包已有替代地址。 结果是依据已公布规则作出的裁定。Provian Technologies 不是该安排的一方。 请在“你的请求”中查看进展。",
+    "afterReport": "报告已发送。你的钱包已有替换地址。Provian 将审查盗窃情况，尝试返还被盗 PVT，并决定资金池可恢复的部分。请在“你的申请”中查看进展。",
     "emptyRequests": "你尚无盗窃报告。",
     "emptyWallets": "尚未添加钱包。",
     "finePrint": "详细条款",

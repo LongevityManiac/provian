@@ -5248,13 +5248,13 @@
       "older": "Tampilkan transfer lebih lama",
       "review": "Laporkan transfer ini",
       "confirm": "Saya tidak mengizinkan transfer {{amount}} PVT ini.",
-      "recovery": "Dompet Anda akan mendapatkan alamat baru. PVT curian yang masih dipegang oleh pelakunya dikembalikan melalui pembalikan transfer. Recourse Pool memulihkan sisanya dari PVT yang dimilikinya, tidak pernah lebih. Hasilnya merupakan penetapan berdasarkan aturan yang dipublikasikan. Provian Technologies bukan pihak dalam pengaturan ini."
+      "recovery": "Dompet Anda akan mendapat alamat baru. Provian akan meninjau pencurian, mencoba mengembalikan PVT yang dicuri, dan menentukan apa yang dapat dipulihkan dana."
     },
     "lapsed": "Perlindungan berakhir",
     "graceSummary": "Masa tenggang satu bulan; untuk bergabung kembali, selesaikan pembakaran dan kontribusi tertunda hanya untuk bulan yang dilindungi.",
     "reportTheft": "Laporkan pencurian",
     "closeReport": "Tutup",
-    "afterReport": "Laporan Anda telah dikirim. Dompet Anda memiliki alamat pengganti. Hasilnya merupakan penetapan berdasarkan aturan yang dipublikasikan. Provian Technologies bukan pihak dalam pengaturan ini. Lihat Permintaan Anda untuk memantau perkembangannya.",
+    "afterReport": "Laporan Anda terkirim. Dompet Anda memiliki alamat pengganti. Provian akan meninjau pencurian, mencoba mengembalikan PVT yang dicuri, dan menentukan apa yang dapat dipulihkan dana. Pantau di Permintaan Anda.",
     "emptyRequests": "Anda belum memiliki laporan pencurian.",
     "emptyWallets": "Belum ada dompet yang ditambahkan.",
     "finePrint": "Ketentuan terperinci",
