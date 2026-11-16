@@ -1,6 +1,6 @@
 /**
  * §3 item 5 — the curl line is canonical and its quirks are bugs. On
- * the hosted path no string names an npx or npm command (npm is unpublished; `npx @provian/agent-sdk
+ * the hosted path no string names an npx or npm command (npm is unpublished; `npx @provian/agent-sdk@latest
  * …` E404s there), and every command the hosted path names is one its own dispatcher runs.
  *
  * Reads the COMMITTED bundle (dist-bundle/agent.js, staged byte-identical at
@@ -72,10 +72,10 @@ describe('the hosted bundle names no npx / npm command', () => {
   it('RED control: the scan lists the exact strings the pre- bundle carried', () => {
     // Verbatim shapes from the master bundle before this change (33 hits there).
     const legacyDaemonBundle = [
-      'hint:"A harness is installed here but the watcher found nothing it can read. If the harness changed where it keeps sessions, point the watcher at it with `npx @provian/agent-sdk configure --watch-transcripts <dir>`."',
-      'x4="npx @provian/agent-sdk help"',
+      'hint:"A harness is installed here but the watcher found nothing it can read. If the harness changed where it keeps sessions, point the watcher at it with `npx @provian/agent-sdk@latest configure --watch-transcripts <dir>`."',
+      'x4="npx @provian/agent-sdk@latest help"',
       '$G="npm i @provian/agent-sdk@latest"',
-      'console.log("    npx @provian/agent-sdk doctor")',
+      'console.log("    npx @provian/agent-sdk@latest doctor")',
     ].join(';');
     expect(npmCommandHits(legacyDaemonBundle)).toHaveLength(4);
   });
@@ -100,7 +100,7 @@ describe('the hosted bundle names no npx / npm command', () => {
 describe('cli-command renders for the runtime it is in', () => {
   it('the npm package (tests run unbundled) renders npx; the hosted rendering is the wrapper', () => {
     expect(HOSTED_BUNDLE).toBe(false);
-    expect(cliCommand('doctor')).toBe('npx @provian/agent-sdk doctor');
+    expect(cliCommand('doctor')).toBe('npx @provian/agent-sdk@latest doctor');
     expect(cliCommand('doctor', true)).toBe('"$HOME/.provian/bin/provian" doctor');
     expect(cliPrefix(true)).toBe(HOSTED_CLI_PREFIX);
     expect(sdkUpgradeHint(true)).not.toMatch(NPM_COMMAND);

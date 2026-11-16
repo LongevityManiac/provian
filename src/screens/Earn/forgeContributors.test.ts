@@ -45,13 +45,13 @@ describe('chooseContributorHandoff', () => {
 describe('buildRegisterGitIdentityCommand (pinned to the SDK bin flags)', () => {
     it('linked_self: install-scoped, provider only when not github', () => {
         expect(buildRegisterGitIdentityCommand({ handoff: 'linked_self', provider: 'github', installationId: '777', email: 'Atlas@Example.com' }))
-            .toBe('npx @provian/agent-sdk register-git-identity --email atlas@example.com --installation 777');
+            .toBe('npx @provian/agent-sdk@latest register-git-identity --email atlas@example.com --installation 777');
         expect(buildRegisterGitIdentityCommand({ handoff: 'linked_self', provider: 'gitlab', installationId: '42', email: 'a@b.co' }))
-            .toBe('npx @provian/agent-sdk register-git-identity --email a@b.co --provider gitlab --installation 42');
+            .toBe('npx @provian/agent-sdk@latest register-git-identity --email a@b.co --provider gitlab --installation 42');
     });
     it('owner_challenge: carries the challenge id and nothing that could re-scope it', () => {
         expect(buildRegisterGitIdentityCommand({ handoff: 'owner_challenge', provider: 'github', installationId: '777', email: 'a@b.co', challengeId: 'ch_1' }))
-            .toBe('npx @provian/agent-sdk register-git-identity --email a@b.co --challenge ch_1');
+            .toBe('npx @provian/agent-sdk@latest register-git-identity --email a@b.co --challenge ch_1');
     });
     it('RED: owner_challenge without a challenge id throws rather than emitting a self-registration command', () => {
         expect(() => buildRegisterGitIdentityCommand({ handoff: 'owner_challenge', provider: 'github', installationId: '777', email: 'a@b.co' }))

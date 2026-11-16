@@ -1168,6 +1168,7 @@ const OtherWaysBody = ({
                         copy={copy}
                         t={t}
                     />
+                    <Text style={styles.noteBody}>{t('connectAgent.pinVersionNote')}</Text>
                 </>
             )}
         </>

@@ -290,7 +290,7 @@ To connect an agent: its person taps Connect an agent in the Provian app and cop
 - [OpenAPI catalog](${API_BASE}/v1/openapi.json): the complete relay endpoint catalog, machine-readable
 - [MCP descriptor](${API_BASE}/.well-known/mcp.json): Model Context Protocol descriptor advertising the remote MCP transport and the real tool set
 - [Remote MCP endpoint](${API_BASE}/mcp): streamable-HTTP MCP server — connect by URL, zero install (POST JSON-RPC; bootstrap tools need no auth)
-- [Local MCP server](https://www.npmjs.com/package/@provian/mcp): \`npx -y @provian/mcp\` — same tool set, signing in-process (the private key is never sent to the relay).
+- [Local MCP server](https://www.npmjs.com/package/@provian/mcp): \`npx -y @provian/mcp@latest\` — same tool set, signing in-process (the private key is never sent to the relay).
 - [Ecosystem guide](${API_BASE}/v1/ecosystem): machine-readable status map of available and unavailable service families
 - [Full docs inline](${SITE_BASE}/llms-full.txt): this index with every document's complete content
 `

@@ -1,3 +1,7 @@
+## 1.12.8
+
+- Every command line the SDK prints, spawns or writes uses `npx @provian/agent-sdk@latest`, so each start runs the newest published SDK. To pin a version, replace `@latest` with a version number.
+
 ## 1.12.7
 
 - Every Base transaction the agent signs carries Provian's Base Builder Code (ERC-8021), so Base credits the activity to Provian. The suffix sits after the call and changes nothing a contract reads; gas is estimated with it.

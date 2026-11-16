@@ -53,7 +53,7 @@ export PROVIAN_SELF_UPDATE_TARGET=/path/agent.js
 ```
 
 The target must be the single-file bundle the daemon runs (`~/.provian/agent.js` for the
-hosted `curl … | sh` install). A multi-file `npx @provian/agent-sdk` install has no
+hosted `curl … | sh` install). A multi-file `npx @provian/agent-sdk@latest` install has no
 single-file entry to swap, so self-update is inert there (nothing to replace) — that is not
 the same as opting out, and it is safe: it simply does nothing.
 

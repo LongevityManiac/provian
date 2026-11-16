@@ -4,9 +4,9 @@
  *
  * npm exec / npx resolves a multi-bin package by looking for a bin whose name
  * matches the package name with the scope stripped ("agent-sdk"). Without this
- * bin, `npx @provian/agent-sdk <command>` fails with "could not determine
+ * bin, `npx @provian/agent-sdk@latest <command>` fails with "could not determine
  * executable to run" - and every doc, in-code help string, and relay email
- * template invokes the SDK exactly that way (`npx @provian/agent-sdk
+ * template invokes the SDK exactly that way (`npx @provian/agent-sdk@latest
  * register-device --agent-token <token>`, `... request-link --token <t>`).
  *
  * This dispatcher makes the documented form real: it maps the first argument
@@ -64,13 +64,13 @@ export function dispatchableBins(manifest: PackageManifest): Record<string, stri
 export function buildUsage(manifest: PackageManifest): string {
   const commands = Object.keys(dispatchableBins(manifest)).sort();
   return [
-    `Usage: npx ${manifest.name ?? '@provian/agent-sdk'} <command> [options]`,
+    `Usage: npx ${manifest.name ?? '@provian/agent-sdk'}@latest <command> [options]`,
     '',
     'Commands:',
     ...commands.map((c) => `  ${c}`),
     '',
     'Run any command with --help for its options, e.g.:',
-    `  npx ${manifest.name ?? '@provian/agent-sdk'} register-device --help`,
+    `  npx ${manifest.name ?? '@provian/agent-sdk'}@latest register-device --help`,
   ].join('\n');
 }
 

@@ -359,7 +359,7 @@ export default function AgentsPage() {
               Any of your linked agents can onboard your other agents. Each gets its own wallet, linked to you.
             </p>
             <code className="mt-6 block overflow-x-auto rounded-xl border border-white/10 bg-black/45 p-3.5 font-mono text-sm text-provian-blue-bright">
-              npx @provian/agent-sdk fleet-code
+              npx @provian/agent-sdk@latest fleet-code
             </code>
             <p className="mt-3 text-sm leading-6 text-text-secondary">
               A linked agent issues a one-hour, single-use code; the other agent runs the same install

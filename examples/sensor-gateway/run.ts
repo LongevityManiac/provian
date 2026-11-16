@@ -2,7 +2,7 @@
  * Run the sensor gateway on a REGISTERED machine (new-type intake,).
  *
  * # once: register this machine (writes ~/.provian/credentials.json)
- * npx @provian/agent-sdk register-device
+ * npx @provian/agent-sdk@latest register-device
  *
  * # then: watch a directory for sensor readings
  * PROVIAN_SENSOR_DIR=/var/lib/sensors npx tsx run.ts
@@ -14,7 +14,7 @@
  * The plugin is registered with the observer through its public API (`registerPlugin`). Each
  * reading becomes a PE in this machine's own PE store, stamped by the observer as the
  * `sensor-gateway` plugin's observation. The PEs ride the machine's daily signed batch to the
- * relay: with the observer daemon also running on this machine (`npx @provian/agent-sdk start`),
+ * relay: with the observer daemon also running on this machine (`npx @provian/agent-sdk@latest start`),
  * its batcher sends them — leave PROVIAN_SENSOR_BATCH unset; on a machine with no daemon, set
  * PROVIAN_SENSOR_BATCH=1 so this process runs the batcher itself.
  *
@@ -31,7 +31,7 @@ import { SensorGatewayPlugin } from './sensor-gateway-plugin';
 async function main(): Promise<void> {
   const credentials = loadCredentials();
   if (!credentials) {
-    throw new Error('This machine is not registered: run `npx @provian/agent-sdk register-device` first.');
+    throw new Error('This machine is not registered: run `npx @provian/agent-sdk@latest register-device` first.');
   }
   const dir = process.env.PROVIAN_SENSOR_DIR ?? path.join(os.homedir(), '.provian', 'sensor-readings');
   const observer = new ProvianObserver({

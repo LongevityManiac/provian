@@ -6,13 +6,13 @@ One pasted line. Any coding tool. Every commit can create a Provenance Envelope.
 
 ## Setup
 
-From the Provian app, open **Connect → Your computer**. The screen shows a one-line `curl … /v1/bootstrap/device | sh` command (on Windows, a PowerShell `irm … | iex` line) carrying a one-time token that expires in an hour. Paste it on your computer: it ensures Node.js and runs the full `npx @provian/agent-sdk register-device` setup, which registers the device, writes the credentials (to `~/.provian/credentials` and your shell profile), installs the global git post-commit hook and starts the provian-observer daemon as a background service (launchd on macOS, a systemd user unit or cron on Linux, a per-user Scheduled Task on Windows). It writes no reporting instructions into your harness : an agent is never told to report its own work, and an updated daemon removes the "# Provian PE Reporting" section an older version wrote.
+From the Provian app, open **Connect → Your computer**. The screen shows a one-line `curl … /v1/bootstrap/device | sh` command (on Windows, a PowerShell `irm … | iex` line) carrying a one-time token that expires in an hour. Paste it on your computer: it ensures Node.js and runs the full `npx @provian/agent-sdk@latest register-device` setup, which registers the device, writes the credentials (to `~/.provian/credentials` and your shell profile), installs the global git post-commit hook and starts the provian-observer daemon as a background service (launchd on macOS, a systemd user unit or cron on Linux, a per-user Scheduled Task on Windows). It writes no reporting instructions into your harness : an agent is never told to report its own work, and an updated daemon removes the "# Provian PE Reporting" section an older version wrote.
 
 The installer persists its registration identity and client-generated credentials before its HTTPS request. An interrupted setup reuses that exact identity and credential pair. Keep `~/.provian/credentials` private; no manual key copying is needed.
 
 For a custom client, `POST /v1/devices/register` requires a stable `Idempotency-Key` and durable caller-generated `device_key` / `device_secret` for credential-safe replay. A retry without the original credentials cannot recover the secret from the relay. Use the SDK installer unless you implement that persistence contract yourself. Device batch authentication is scoped to the registered device; it grants no owner-state or spending authority.
 
-**Agent-owned devices:** the agent runs `npx @provian/agent-sdk invite-device --email <addr>`, and the relay emails a one-time setup command. The recipient runs it on the agent’s machine. The agent can hold its own wallet without a human app account. See [External Device Integration](EXTERNAL_DEVICE_INTEGRATION.md).
+**Agent-owned devices:** the agent runs `npx @provian/agent-sdk@latest invite-device --email <addr>`, and the relay emails a one-time setup command. The recipient runs it on the agent’s machine. The agent can hold its own wallet without a human app account. See [External Device Integration](EXTERNAL_DEVICE_INTEGRATION.md). To pin a version, replace `@latest` with a version number.
 
 ## What generates PEs
 
@@ -98,6 +98,6 @@ Agents running on a device registered through this flow still earn via the devic
 
 **Hook not firing on commits.** Check `~/.provian/hook.log` for per-commit output; re-run `register-device` if credentials are missing.
 
-**Observer not running.** Check `~/.provian/observer.pid`. Start manually with `npx @provian/agent-sdk observe`. If the service failed to install, the observer falls back to a detached process that will not auto-restart after reboot - re-run `register-device` on a machine that supports launchd (macOS), a systemd user unit or cron (Linux), or Scheduled Tasks (Windows).
+**Observer not running.** Check `~/.provian/observer.pid`. Start manually with `npx @provian/agent-sdk@latest observe`. If the service failed to install, the observer falls back to a detached process that will not auto-restart after reboot - re-run `register-device` on a machine that supports launchd (macOS), a systemd user unit or cron (Linux), or Scheduled Tasks (Windows).
 
-**Disable temporarily.** `PROVIAN_DISABLE_HOOK=1 git commit ...` skips a single commit. To disable the observer: `pkill -F ~/.provian/observer.pid`. To uninstall entirely: `npx @provian/agent-sdk uninstall`.
+**Disable temporarily.** `PROVIAN_DISABLE_HOOK=1 git commit ...` skips a single commit. To disable the observer: `pkill -F ~/.provian/observer.pid`. To uninstall entirely: `npx @provian/agent-sdk@latest uninstall`.

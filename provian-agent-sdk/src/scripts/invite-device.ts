@@ -15,8 +15,8 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * setup link authorizes device registration only.
  *
  * Usage:
- *   npx @provian/agent-sdk invite-device --email bob@example.com
- *   npx @provian/agent-sdk invite-device --email bob@example.com --device-name "Bob's CI box"
+ *   npx @provian/agent-sdk@latest invite-device --email bob@example.com
+ *   npx @provian/agent-sdk@latest invite-device --email bob@example.com --device-name "Bob's CI box"
  *
  * Flags:
  *   --email <addr>        Destination email (required)
@@ -94,7 +94,7 @@ Auth: the agent API key + secret are read from the 0600-enforced
 token never leaves the relay (it is delivered only in the email).
 
 Example:
-  npx @provian/agent-sdk invite-device --email bob@example.com --device-name "Bob's CI box"
+  npx @provian/agent-sdk@latest invite-device --email bob@example.com --device-name "Bob's CI box"
 `);
 }
 
@@ -131,7 +131,7 @@ export async function main(): Promise<void> {
 
   if (!args.email) {
     console.error('Error: --email <addr> is required.');
-    console.error('Run: npx @provian/agent-sdk invite-device --help');
+    console.error('Run: npx @provian/agent-sdk@latest invite-device --help');
     process.exit(2);
   }
 
@@ -180,7 +180,7 @@ export async function main(): Promise<void> {
   console.log('  What happens next:');
   console.log('  1. The recipient opens the email ON the machine to enroll.');
   console.log('  2. They run the one-time line:');
-  console.log('       npx @provian/agent-sdk register-device --agent-token <token>');
+  console.log('       npx @provian/agent-sdk@latest register-device --agent-token <token>');
   console.log('  3. The machine registers as an AGENT device. No API key to paste.');
   console.log('');
   console.log('  Work the device witnesses becomes Provenance Envelopes on the agent chain;');

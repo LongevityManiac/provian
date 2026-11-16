@@ -85,7 +85,7 @@ describe('OTelPlugin.tick self-diagnosis wiring', () => {
     plugin.tick(null); // second tick must NOT re-warn (one-shot)
     expect(warns).toHaveLength(1);
     expect(warns[0].msg).toContain('no agent spans');
-    expect(String(warns[0].extra?.hint)).toContain('npx @provian/agent-sdk doctor');
+    expect(String(warns[0].extra?.hint)).toContain('npx @provian/agent-sdk@latest doctor');
   });
 
   it('never warns once a span has been received (harness IS emitting)', async () => {

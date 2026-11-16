@@ -26,12 +26,12 @@ async function main(): Promise<void> {
 
   // 1) There is no call that records your own work as a PE — an actor's
   //    own claim about its work is never a PE. On a registered machine the
-  //    observer daemon (`npx @provian/agent-sdk start`) records what it observes,
+  //    observer daemon (`npx @provian/agent-sdk@latest start`) records what it observes,
   //    body-bound to the device; the post-commit hook, the forge, counterparties
   //    and the chain are the other witnesses. A work-product PE carries
   //    output_digests and cites what it consumed as `pe:` input origins.
   if (!loadCredentials()) {
-    console.log('[observer] register this machine first: npx @provian/agent-sdk register-device');
+    console.log('[observer] register this machine first: npx @provian/agent-sdk@latest register-device');
   }
 
   // 2) Read the actor's own live reputation vocabulary.

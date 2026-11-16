@@ -1,7 +1,7 @@
 /**
  * Remote MCP endpoint — POST /mcp (Model Context Protocol, streamable HTTP).
  *
- * Serves the SAME tool core as the local `npx @provian/mcp` stdio server
+ * Serves the SAME tool core as the local `npx @provian/mcp@latest` stdio server
  * (mirrored from provian-mcp/src/core → src/mcp/core; see
  * scripts/sync-mcp-core.sh) so hosted agents — Claude connectors, agent
  * platforms, framework runtimes — connect by URL with zero install.

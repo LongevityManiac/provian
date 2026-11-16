@@ -1,5 +1,5 @@
 /**
- * `npx @provian/agent-sdk doctor` — local inference surfacing (the human-lane producer).
+ * `npx @provian/agent-sdk@latest doctor` — local inference surfacing (the human-lane producer).
  * Each scanner / check ships with the negative control that proves it can
  * say "no": a compute_session submit is not inference capture, an undetected
  * machine is not green, a running runtime with no log is RED with the exact

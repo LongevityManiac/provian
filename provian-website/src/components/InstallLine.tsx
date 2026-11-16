@@ -8,9 +8,9 @@ export type InstallKind = 'curl' | 'npx' | 'mcp-url' | 'mcp-stdio'
 export function installLines(kind: InstallKind): string[] {
   switch (kind) {
     case 'curl': return ["curl -sSL -H 'x-provian-token: PROV-XXXX-XXXX' \"https://api.provian.ai/v1/bootstrap/agent\" | sh"]
-    case 'npx': return ['npx @provian/agent-sdk onboard --code PROV-XXXX-XXXX']
+    case 'npx': return ['npx @provian/agent-sdk@latest onboard --code PROV-XXXX-XXXX']
     case 'mcp-url': return ['https://api.provian.ai/mcp']
-    case 'mcp-stdio': return ['npx -y @provian/mcp']
+    case 'mcp-stdio': return ['npx -y @provian/mcp@latest']
   }
 }
 
@@ -67,6 +67,11 @@ export function InstallLine({
           </button>
         )}
       </div>
+      {(kind === 'npx' || kind === 'mcp-stdio') && (
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
+          To pin a version, replace @latest with a version number.
+        </p>
+      )}
     </div>
   )
 }

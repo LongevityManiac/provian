@@ -11,7 +11,7 @@
 # backend cross-witnesses against the webhook github_commit on the same sha.
 #
 # Disable:   export PROVIAN_DISABLE_HOOK=1
-# Uninstall: npx @provian/agent-sdk setup-hook --remove   (marker-delimited)
+# Uninstall: npx @provian/agent-sdk@latest setup-hook --remove   (marker-delimited)
 #
 # The global WS3 SDK capture (3bffca61) still ships at flip for every OTHER repo;
 # this file is the this-repo-only pre-flip equivalent and is not descoped by it.
@@ -46,7 +46,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/provian-agent-sdk/dist/scripts/report-pe.js" ]; then
   REPORT_PE="node $REPO_ROOT/provian-agent-sdk/dist/scripts/report-pe.js"
 else
-  REPORT_PE="npx -y @provian/agent-sdk report-pe"
+  REPORT_PE="npx -y @provian/agent-sdk@latest report-pe"
 fi
 
 # Commit identity for the cross-witness mint-once (user, commit_sha) slot shared

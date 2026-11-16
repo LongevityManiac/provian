@@ -4,7 +4,7 @@ import { processLauncherPath, readLauncherRecord } from '../observer/plugins/pro
 import { PROCESS_LANE_RECORD_COMMAND } from '../observer/capture-health';
 import { guardedFetcher } from '../guarded-fetch';
 /**
- * doctor — the self-verifying, anti-silent-failure check (`npx @provian/agent-sdk doctor` from the
+ * doctor — the self-verifying, anti-silent-failure check (`npx @provian/agent-sdk@latest doctor` from the
  * npm package; `"$HOME/.provian/bin/provian" doctor` on the hosted curl|sh install,).
  *
  * The failure this productizes: an agent device where the observer's OTLP

@@ -48,10 +48,10 @@ is an explicit opt-in:
 # Passphrase via env (required for non-interactive runs). --backup writes an
 # encrypted off-device backup in the same step so you are never left unbacked:
 PROVIAN_KEYSTORE_PASSPHRASE='your strong passphrase' \
-  npx @provian/agent-sdk create-agent-wallet --name "Atlas" --backup /Volumes/usb/agent-keystore.json
+  npx @provian/agent-sdk@latest create-agent-wallet --name "Atlas" --backup /Volumes/usb/agent-keystore.json
 
 # Or run interactively and you'll be prompted (input hidden):
-npx @provian/agent-sdk create-agent-wallet
+npx @provian/agent-sdk@latest create-agent-wallet
 ```
 
 Before its first relay request, this generates the key locally and writes it to
@@ -66,9 +66,9 @@ leaves the encrypted pending file in place so rerunning resumes the same wallet.
 ## Back up (export) off-device
 
 ```bash
-npx @provian/agent-sdk export-agent-keystore ./agent-keystore.backup.json
+npx @provian/agent-sdk@latest export-agent-keystore ./agent-keystore.backup.json
 # or to external media:
-npx @provian/agent-sdk export-agent-keystore /Volumes/usb/agent-keystore.json
+npx @provian/agent-sdk@latest export-agent-keystore /Volumes/usb/agent-keystore.json
 ```
 
 The exported file is encrypted. **Back up your passphrase separately** (e.g. a

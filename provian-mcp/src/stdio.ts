@@ -1,6 +1,6 @@
 import { decryptLocalThreadMessage } from './core/thread-reader';
 /**
- * Local stdio MCP server entrypoint (`npx @provian/mcp`).
+ * Local stdio MCP server entrypoint (`npx @provian/mcp@latest`).
  *
  * Wires the shared tool core to a StdioServerTransport with local credential
  * resolution:
@@ -37,6 +37,7 @@ import {
   loadOrCreatePendingAgentWalletRegistration,
   reloadPendingAgentWalletRegistration,
 } from './agent-wallet-registration';
+import { createMcpVersionChecker } from './mcp-staleness';
 
 const DEFAULT_RELAY_URL = 'https://api.provian.ai';
 
@@ -140,7 +141,17 @@ export async function startStdioServer(): Promise<void> {
   // with the 2025 `initialize` handshake, alongside modern 2026-07-28 clients.
   // The handle is held so the transport (reading process stdin) keeps the
   // process alive.
-  activeStdioHandle = serveStdio(() => buildProvianMcpServer(() => buildLocalContext()), {
+  // Ask the relay which @provian/mcp is published, in the background; when this
+  // server is older, every tool result carries one line saying so (advisory).
+  const versionChecker = createMcpVersionChecker({
+    baseUrl: process.env.PROVIAN_RELAY_URL || DEFAULT_RELAY_URL,
+  });
+  versionChecker.refresh();
+  const resultNotice = (): string | null => {
+    versionChecker.refresh();
+    return versionChecker.notice();
+  };
+  activeStdioHandle = serveStdio(() => buildProvianMcpServer(() => buildLocalContext(), { resultNotice }), {
     legacy: 'serve',
   });
   const auth = resolveLocalAuth();

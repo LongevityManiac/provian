@@ -7,7 +7,7 @@
  * lists, or a day root Base does not hold; 2 usage; 3 incomplete — every line in the file verifies,
  * but its end line names PEs the owner holds that it does not carry (printed under `missing`).
  *
- * Usage (npm: `npx @provian/agent-sdk verify-export <file>`; hosted: `"$HOME/.provian/bin/provian" verify-export <file>`):
+ * Usage (npm: `npx @provian/agent-sdk@latest verify-export <file>`; hosted: `"$HOME/.provian/bin/provian" verify-export <file>`):
  *   verify-export <file> [--rpc-url <url>] [--offline]
  */
 import { runActVerbCli } from '../act-verbs';

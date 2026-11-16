@@ -12,15 +12,15 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * execution environment. All PEs attribute to the device owner automatically.
  *
  * Interactive:
- * npx @provian/agent-sdk register-device
+ * npx @provian/agent-sdk@latest register-device
  *
  * Non-interactive (from app token flow):
- * npx @provian/agent-sdk register-device \
+ * npx @provian/agent-sdk@latest register-device \
  * --token <wallet_session_token> \
  * --name "the operator’s MacBook Pro"
  *
  * Credentials only (old behavior, no shell/hook modifications):
- * npx @provian/agent-sdk register-device --credentials-only
+ * npx @provian/agent-sdk@latest register-device --credentials-only
  */
 
 import { createInterface } from 'readline';
@@ -1011,7 +1011,7 @@ async function main() {
       console.log('  Then restart your terminal or run:');
       console.log(`  source ${shellProfileDisplay}\n`);
       console.log('  Next, install the git hook:');
-      console.log('  npx @provian/agent-sdk setup-hook --global\n');
+      console.log('  npx @provian/agent-sdk@latest setup-hook --global\n');
       console.log('  Pending registration retained so this printed-only response can be recovered safely.\n');
       return;
     }
@@ -1111,7 +1111,7 @@ async function main() {
       console.log('  core.hooksPath set to ~/.provian/hooks/\n');
     } catch (hookError) {
       console.error(`  Warning: Could not install git hook: ${(hookError as Error).message}`);
-      console.error('  You can install it manually later: npx @provian/agent-sdk setup-hook --global\n');
+      console.error('  You can install it manually later: npx @provian/agent-sdk@latest setup-hook --global\n');
     }
 
     // no PE-reporting instruction section is written to
@@ -1196,14 +1196,14 @@ async function main() {
     } catch (err) {
       observerStatus = `not started (${(err as Error).message})`;
       console.warn(`  ⚠ Could not start observer: ${(err as Error).message}`);
-      console.warn('  You can start it manually with: npx @provian/agent-sdk observe');
+      console.warn('  You can start it manually with: npx @provian/agent-sdk@latest observe');
     }
 
     if (otelActive) {
       // Lever 3: publish the endpoint session-wide NOW so an agent restarted
       // right after onboarding inherits it without waiting for a login/reboot.
       // Best-effort; the observer re-publishes on every start (Lever 1) and
-      // `npx @provian/agent-sdk run` is the launch-mode-independent fallback (Lever 2).
+      // `npx @provian/agent-sdk@latest run` is the launch-mode-independent fallback (Lever 2).
       try {
         const pub = publishSessionOtelEndpoint(OTLP_DEFAULT_PORT);
         if (pub.published) {
@@ -1217,7 +1217,7 @@ async function main() {
       console.log('  OTel integration active. Agent frameworks on this machine will automatically');
       console.log('  export telemetry to the Provian observer. If your agent runs in a separate');
       console.log('  terminal or an already-running process, set this in its environment (or');
-      console.log('  launch it once via `npx @provian/agent-sdk run`):');
+      console.log('  launch it once via `npx @provian/agent-sdk@latest run`):');
       console.log('');
       console.log(`    export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:${OTLP_DEFAULT_PORT}`);
       console.log('');
@@ -1231,9 +1231,9 @@ async function main() {
       for (const line of guidance.steps) console.log(`  ${line}`);
       console.log('');
       console.log('  Then confirm capture end-to-end:');
-      console.log('    npx @provian/agent-sdk doctor');
+      console.log('    npx @provian/agent-sdk@latest doctor');
       console.log('  Or run the guided setup that does all of this for you:');
-      console.log('    npx @provian/agent-sdk start');
+      console.log('    npx @provian/agent-sdk@latest start');
     }
     if (isAgentDevice) for (const line of witnessSetupLines('  ')) console.log(line);
     console.log('');

@@ -27,7 +27,7 @@
  * core/bootstrap-node-ensure: keeps the system Node only if it has a working
  * flagless node:sqlite, else an official checksum-verified download into
  * ~/.provian/node — no sudo, removable), and
- * 2. runs `npx @provian/agent-sdk register-device` full setup, which registers
+ * 2. runs `npx @provian/agent-sdk@latest register-device` full setup, which registers
  * the device, writes ~/.provian/credentials, installs the global git hook,
  * and starts the observer — one paste, no leftover manual steps.
  *

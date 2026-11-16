@@ -450,9 +450,13 @@ app.use((req, _res, next) => {
 // gate, and NOTHING here gates an agent's own x402 spending. See core/sdk-version.ts.
 // =============================================================================
 import { sdkVersionInfo, SDK_LATEST as SDK_LATEST_HDR, SDK_MIN_SUPPORTED as SDK_MIN_HDR } from './core/sdk-version';
+// The local @provian/mcp server's latest published version rides the same way
+// (core/mcp-version.ts): the stdio server compares it with its own running version.
+import { mcpVersionInfo, MCP_LATEST as MCP_LATEST_HDR } from './core/mcp-version';
 app.use((_req, res, next) => {
   res.set('X-Provian-SDK-Latest', SDK_LATEST_HDR);
   res.set('X-Provian-SDK-Min', SDK_MIN_HDR);
+  res.set('X-Provian-MCP-Latest', MCP_LATEST_HDR);
   next();
 });
 
@@ -3943,6 +3947,12 @@ app.use('/v1/ecosystem', createEcosystemRouter(db));
 // able to learn staleness at any time. Fail-open — this never gates anything.
 app.get('/v1/sdk/version', (_req, res) => {
   res.json(sdkVersionInfo());
+});
+// GET /v1/mcp/version — the latest published @provian/mcp and its launch line.
+// PUBLIC, ungated, advisory; the local stdio server reads it to tell its agent
+// when it is behind. Never gates anything.
+app.get('/v1/mcp/version', (_req, res) => {
+  res.json(mcpVersionInfo());
 });
 mountOpenAPIRoutes(app);
 // The relay origin's x402 discovery document (`GET /openapi.json`): the PE Archive's agent pay route,

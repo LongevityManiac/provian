@@ -10,7 +10,7 @@
  * The file is written 0600 (it holds the agent's PE content) and verified offline before this
  * returns. The same verb as the hosted `provian export-pes` and `provian pes export`.
  *
- * Usage (npm: `npx @provian/agent-sdk export-pes`; hosted: `"$HOME/.provian/bin/provian" export-pes`):
+ * Usage (npm: `npx @provian/agent-sdk@latest export-pes`; hosted: `"$HOME/.provian/bin/provian" export-pes`):
  *   export-pes [--out <file>]
  */
 import { runActVerbCli } from '../act-verbs';

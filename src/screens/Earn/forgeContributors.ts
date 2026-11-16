@@ -72,7 +72,7 @@ export interface ContributorCommandInput {
  */
 export function buildRegisterGitIdentityCommand(input: ContributorCommandInput): string {
     const email = input.email.trim().toLowerCase();
-    const parts = ['npx @provian/agent-sdk register-git-identity', `--email ${email}`];
+    const parts = ['npx @provian/agent-sdk@latest register-git-identity', `--email ${email}`];
     if (input.handoff === 'owner_challenge') {
         if (!input.challengeId) {
             throw new Error('owner_challenge handoff requires a challengeId');

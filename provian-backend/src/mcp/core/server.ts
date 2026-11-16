@@ -4,7 +4,7 @@
  * SHARED CORE — canonical in `provian-mcp/src/core/`, mirrored into
  * `provian-backend/src/mcp/core/`. Edit only the canonical copy.
  *
- * Both transports call this: the stdio entrypoint (npx @provian/mcp) serves the
+ * Both transports call this: the stdio entrypoint (npx @provian/mcp@latest) serves the
  * returned Server through `serveStdio`; the relay's /mcp route serves a fresh
  * instance per request through `createMcpHandler`. Identical tool list,
  * identical handlers.
@@ -78,9 +78,13 @@ const TOOLS_LIST_CACHE_TTL_MS = 300_000;
  * @param getContext Resolves the per-call ToolContext (credentials, base URL,
  *                   mode). Called once per tool invocation so remote requests
  *                   can carry per-caller auth.
+ * @param opts.resultNotice Optional advisory line added to every tool result
+ *                   when it returns one (the local server's "a newer version is
+ *                   published" line). It never changes or blocks the result.
  */
 export function buildProvianMcpServer(
   getContext: () => ToolContext | Promise<ToolContext>,
+  opts: { resultNotice?: () => string | null } = {},
 ): Server {
   const server = new Server(
     { name: PROVIAN_MCP_SERVER_NAME, version: PROVIAN_MCP_VERSION },
@@ -110,7 +114,9 @@ export function buildProvianMcpServer(
   server.setRequestHandler('tools/call', async (request): Promise<CallToolResult> => {
     const ctx = await getContext();
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
-    return callProvianTool(request.params.name, args, ctx);
+    const result = await callProvianTool(request.params.name, args, ctx);
+    const notice = opts.resultNotice?.() ?? null;
+    return notice ? { ...result, content: [...result.content, { type: 'text', text: notice }] } : result;
   });
 
   return server;

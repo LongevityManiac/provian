@@ -6,9 +6,9 @@
  * - the hosted single-file bundle (`curl … /v1/bootstrap/agent | sh` → `~/.provian/agent.js`),
  * whose installed command is the `~/.provian/bin/provian` wrapper (it execs the runtime that
  * wrote it on the bundle — see provian-shim.ts);
- * - the npm-installed SDK (`npx @provian/agent-sdk …`).
+ * - the npm-installed SDK (`npx @provian/agent-sdk@latest …`).
  * the curl line is canonical and its quirks are bugs — the hosted path never
- * names an npx or npm command (npm is unpublished until the flip, so `npx @provian/agent-sdk …`
+ * names an npx or npm command (npm is unpublished until the flip, so `npx @provian/agent-sdk@latest …`
  * E404s there).
  *
  * The choice is made at BUNDLE BUILD TIME: `scripts/build-bootstrap-bundle.mjs` defines
@@ -35,7 +35,7 @@ export const HOSTED_CLI_PREFIX = '"$HOME/.provian/bin/provian"';
  * The npm package's command prefix. Gated on `HOSTED_BUNDLE` itself (not only on the `hosted`
  * parameter) so the literal folds away in the bundle, where the parameter is not a constant.
  */
-const NPM_CLI_PREFIX: string = HOSTED_BUNDLE ? HOSTED_CLI_PREFIX : 'npx @provian/agent-sdk';
+const NPM_CLI_PREFIX: string = HOSTED_BUNDLE ? HOSTED_CLI_PREFIX : 'npx @provian/agent-sdk@latest';
 const NPM_UPGRADE_COMMAND: string = HOSTED_BUNDLE ? '' : 'npm i @provian/agent-sdk@latest';
 
 /** The command prefix for this runtime. */

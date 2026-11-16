@@ -887,7 +887,7 @@ describe('tool copy is pre-flip truthful (audit 2026-08-16 item 5)', () => {
     // Proves the absence assertions above are falsifiable: the exact pre-fix
     // wording registers against the same needle.
     const preFix =
-      'Use the safe SDK prepared-registration flow or local `npx @provian/mcp` with PROVIAN_KEYSTORE_PASSPHRASE.';
+      'Use the safe SDK prepared-registration flow or local `npx @provian/mcp@latest` with PROVIAN_KEYSTORE_PASSPHRASE.';
     expect(preFix).toMatch(NPX_INSTRUCTION);
   });
 });

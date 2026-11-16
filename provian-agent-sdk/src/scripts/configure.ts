@@ -2,7 +2,7 @@
 /**
  * configure - Opt-in configuration helpers for the observer.
  *
- *   configure --llm-log /path/to/llm.jsonl   (npm: `npx @provian/agent-sdk configure …`;
+ *   configure --llm-log /path/to/llm.jsonl   (npm: `npx @provian/agent-sdk@latest configure …`;
  *                                               hosted: `"$HOME/.provian/bin/provian" configure …`)
  *
  * Updates the service file (launchd/systemd) with the env var, then restarts

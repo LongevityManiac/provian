@@ -3,7 +3,7 @@
  * start-observer - Run the Provian observer daemon in the foreground.
  *
  * Normally started by launchd/systemd/schtasks after `register-device`. Can also
- * be run manually: `npx @provian/agent-sdk observe`.
+ * be run manually: `npx @provian/agent-sdk@latest observe`.
  *
  * The daemon body lives in ../observer/run-daemon (runObserverDaemon) so the
  * hosted onboarding bundle can run the SAME observer from its own `observe`

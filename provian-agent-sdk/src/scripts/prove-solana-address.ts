@@ -10,7 +10,7 @@
  * (src/solana-address-proof.ts). IDEMPOTENT: an address already proven to this agent is
  * a clean no-op.
  *
- * Usage (npm: `npx @provian/agent-sdk prove-solana-address`; hosted: `"$HOME/.provian/bin/provian" prove-solana-address`):
+ * Usage (npm: `npx @provian/agent-sdk@latest prove-solana-address`; hosted: `"$HOME/.provian/bin/provian" prove-solana-address`):
  *   prove-solana-address                       # the agent's OWN Solana address (origin native)
  *   prove-solana-address --address <base58>    # a Solana keypair the agent already holds
  *                                              # (origin external; key from the env, below)

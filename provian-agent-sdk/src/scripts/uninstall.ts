@@ -2,7 +2,7 @@
 /**
  * uninstall - Remove the observer service, git hook, and credentials.
  *
- * One-command clean removal: `uninstall --yes` (npm: `npx @provian/agent-sdk uninstall`; hosted:
+ * One-command clean removal: `uninstall --yes` (npm: `npx @provian/agent-sdk@latest uninstall`; hosted:
  * `"$HOME/.provian/bin/provian" uninstall`). Also removes the shell-startup restart hook
  * (via uninstallService).
  */

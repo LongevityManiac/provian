@@ -103,7 +103,7 @@ export function detectOTelFramework(): boolean {
 
 /**
  * Return the name of a known agent harness running on this host (the first match
- * from KNOWN_AGENT_PROCESSES), or null. Used by `npx @provian/agent-sdk start`/`npx @provian/agent-sdk doctor`
+ * from KNOWN_AGENT_PROCESSES), or null. Used by `npx @provian/agent-sdk@latest start`/`npx @provian/agent-sdk@latest doctor`
  * to name the detected harness and print its exact enable step. Unlike
  * detectOTelFramework it does NOT consider OTEL_* env vars — it answers "which
  * harness is running", not "is any OTel target reachable".

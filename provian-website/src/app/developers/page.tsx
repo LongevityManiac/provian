@@ -93,7 +93,7 @@ const CONNECT = [
   {
     label: 'Your other agents: one code each',
     body: 'Any of your linked agents can onboard your other agents — each gets its own wallet, linked to you. A linked agent issues a one-hour, single-use code (also CommonsInstitutions.issueFleetCode() and MCP issue_fleet_code); the other agent runs the same install line on its own machine, where its key is made, and links with no tap in the app.',
-    code: 'npx @provian/agent-sdk fleet-code',
+    code: 'npx @provian/agent-sdk@latest fleet-code',
   },
   {
     label: 'Hosted MCP',
@@ -102,13 +102,13 @@ const CONNECT = [
   },
   {
     label: 'MCP: local (stdio)',
-    body: 'Same tool set, in-process. The key is generated on your machine; wallet creation runs the durable local flow.',
-    code: 'npx -y @provian/mcp',
+    body: 'Same tool set, in-process. The key is generated on your machine; wallet creation runs the durable local flow. Each start runs the newest published version; when a newer one is published while it runs, its tool results say so. To pin a version, replace @latest with a version number.',
+    code: 'npx -y @provian/mcp@latest',
   },
   {
     label: 'Without the app: wallet, then device',
-    body: 'Create the wallet with keys generated locally in a passphrase-encrypted keystore (it prints the API key once), then register this machine as the agent’s device, which starts the observer and git commit hook. Then run witness instructions and describe the agent program’s real session files. A program with no session files uses the local proxy, or OTel when neither covers, or, on its own machine, the process lane when none does. Each tool-calling model response mints once.',
-    code: "PROVIAN_KEYSTORE_PASSPHRASE='…' npx @provian/agent-sdk create-agent-wallet --name my-agent\nnpx @provian/agent-sdk register-device\nnpx @provian/agent-sdk witness instructions",
+    body: 'Create the wallet with keys generated locally in a passphrase-encrypted keystore (it prints the API key once), then register this machine as the agent’s device, which starts the observer and git commit hook. Then run witness instructions and describe the agent program’s real session files. A program with no session files uses the local proxy, or OTel when neither covers, or, on its own machine, the process lane when none does. Each tool-calling model response mints once. To pin a version, replace @latest with a version number.',
+    code: "PROVIAN_KEYSTORE_PASSPHRASE='…' npx @provian/agent-sdk@latest create-agent-wallet --name my-agent\nnpx @provian/agent-sdk@latest register-device\nnpx @provian/agent-sdk@latest witness instructions",
   },
   {
     label: 'Agents on their own cloud computers, such as Grok Bots',
@@ -118,7 +118,7 @@ const CONNECT = [
   {
     label: 'Daemon: agent-owned device by email',
     body: 'The agent emails a person a one-line setup command for a machine they run; the device’s receipts then belong to the agent wallet. The link authorizes device registration only.',
-    code: 'npx @provian/agent-sdk invite-device --email you@example.com',
+    code: 'npx @provian/agent-sdk@latest invite-device --email you@example.com',
   },
   {
     label: 'CLI: act from any shell',

@@ -9,7 +9,7 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * subsequent webhook delivery from the install.
  *
  * Usage:
- *   npx @provian/agent-sdk disconnect-github --installation-id <id>
+ *   npx @provian/agent-sdk@latest disconnect-github --installation-id <id>
  *
  * Optional flags:
  *   --relay-url <url>    Override relay URL
@@ -28,7 +28,7 @@ function parseFlag(name: string): string | null {
 async function main(): Promise<void> {
   const creds = loadCredentials();
   if (!creds) {
-    console.error('No Provian credentials found. Run: npx @provian/agent-sdk register-device');
+    console.error('No Provian credentials found. Run: npx @provian/agent-sdk@latest register-device');
     process.exit(2);
   }
   const relayUrl = parseFlag('relay-url') ?? creds.relayUrl;

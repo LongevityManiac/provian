@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * npx @provian/agent-sdk run -- <agent cmd> [args…]
+ * npx @provian/agent-sdk@latest run -- <agent cmd> [args…]
  *
  * Lever 2: the GUARANTEED, launch-mode-independent fallback for OTel tool-call
  * capture. It execs the given command with OTEL_EXPORTER_OTLP_ENDPOINT injected
@@ -14,8 +14,8 @@
  * collector), inherits stdio, and forwards the child's exit code / signal so it
  * is a transparent wrapper.
  *
- *   npx @provian/agent-sdk run -- python my_agent.py
- *   npx @provian/agent-sdk run -- ./openclaw --serve
+ *   npx @provian/agent-sdk@latest run -- python my_agent.py
+ *   npx @provian/agent-sdk@latest run -- ./openclaw --serve
  */
 
 import { spawn } from 'child_process';
@@ -25,7 +25,7 @@ import { isDirectCliEntry } from './cli-entry';
 
 function printUsage(): void {
   console.log(`
-Usage: npx @provian/agent-sdk run [--] <command> [args…]
+Usage: npx @provian/agent-sdk@latest run [--] <command> [args…]
 
 Runs <command> with ${SESSION_OTEL_ENV_KEY}=http://localhost:${OTLP_DEFAULT_PORT}
 injected into its environment, so an OTel-emitting agent exports its tool/API
@@ -34,8 +34,8 @@ spans to the local Provian observer receiver regardless of how it is launched.
 An endpoint the caller already set is respected (not overridden).
 
 Examples:
-  npx @provian/agent-sdk run -- python my_agent.py
-  npx @provian/agent-sdk run -- ./openclaw --serve
+  npx @provian/agent-sdk@latest run -- python my_agent.py
+  npx @provian/agent-sdk@latest run -- ./openclaw --serve
 `);
 }
 
@@ -84,7 +84,7 @@ function main(): void {
     env: buildChildEnv(process.env),
   });
 
-  // Forward the common termination signals so `npx @provian/agent-sdk run` is transparent to a
+  // Forward the common termination signals so `npx @provian/agent-sdk@latest run` is transparent to a
   // supervisor that signals it (Ctrl-C, SIGTERM from launchd/systemd).
   const forward = (sig: NodeJS.Signals) => {
     try { child.kill(sig); } catch { /* child already gone */ }

@@ -634,7 +634,7 @@ describe('defaultBootstrapDeps.registerDevice wire shape', () => {
 
 // ---------------------------------------------------------------------------
 // The observer service command, chosen by CONTEXT: hosted bundle vs npm install.
-// The hosted sh wrapper exports PROVIAN_BUNDLE_PATH; `npx @provian/agent-sdk
+// The hosted sh wrapper exports PROVIAN_BUNDLE_PATH; `npx @provian/agent-sdk@latest
 // onboard` never does. Both entrypoints reach this through the same
 // `defaultBootstrapDeps().startObserver` (source-bound below), so the choice is
 // made once, here, and tested without installing a service.
@@ -709,7 +709,7 @@ describe('renderBootstrapOutcome — git identity guidance (Part 2)', () => {
     const v = renderBootstrapOutcome({ ...linked, gitAuthorEmail: 'atlas@example.com' });
     expect(v.exitCode).toBe(0);
     const text = v.stdout.join('\n');
-    expect(text).toContain('npx @provian/agent-sdk register-git-identity --email atlas@example.com');
+    expect(text).toContain('npx @provian/agent-sdk@latest register-git-identity --email atlas@example.com');
     expect(text).not.toMatch(/every (commit|push) (earns|mints)/i);
   });
 

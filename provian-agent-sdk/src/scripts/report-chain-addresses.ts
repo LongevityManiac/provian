@@ -12,8 +12,8 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * POSTs them under the agent's own API credentials.
  *
  * Usage:
- * npx @provian/agent-sdk report-chain-addresses
- * npx @provian/agent-sdk report-chain-addresses --print # derive + print only
+ * npx @provian/agent-sdk@latest report-chain-addresses
+ * npx @provian/agent-sdk@latest report-chain-addresses --print # derive + print only
  *
  * Key handling: the keystore passphrase is read from PROVIAN_KEYSTORE_PASSPHRASE,
  * or — for a passphrase-less two-touch install — from ~/.provian/agent-keystore.secret.

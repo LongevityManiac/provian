@@ -735,7 +735,7 @@ export function standingEgressAllowLines(relayHost: string, indent: string): str
  *
  *   PROVIAN_BUNDLE_PATH set   → `node ~/.provian/agent.js observe`  (hosted)
  *   PROVIAN_BUNDLE_PATH unset → `node <pkg>/dist/scripts/start-observer.js`  (npm)
- *                               falling back to `npx @provian/agent-sdk observe`
+ *                               falling back to `npx @provian/agent-sdk@latest observe`
  *                               only if that compiled script is not on disk.
  *
  * The rule itself lives in `observer/service.ts::resolveObserverEntrypoint`

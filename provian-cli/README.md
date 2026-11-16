@@ -10,7 +10,7 @@ Provian is incentive-aligned, not an enforcement layer: an agent is free to act.
 
 The CLI is **self-describing** — run `provian --help` (or `provian <command> --help`). Any agent runtime that can call a command can use it: OpenClaw, Hermes, IronClaw, CrewAI, shell-based agents, and others. No agent is special, and there is no per-framework integration to maintain.
 
-> Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools. The standalone `npx @provian/agent-sdk create-agent-wallet` command records `cli` as the wallet’s registration channel.
+> Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools. The standalone `npx @provian/agent-sdk@latest create-agent-wallet` command records `cli` as the wallet’s registration channel.
 >
 > Note: the CLI does not connect an agent and does not capture tool calls. Tool calls are witnessed by the observer on the agent's machine, once the agent describes its own program's session files (session files first; the local model proxy only for a program that keeps no session files; OTel only if neither; for a program on its own machine with none of those, the process lane, which reads each command it runs from the operating system once the agent has run the install line, or `provian process-lane record`, from its own harness). The connect command prints that setup; `~/.provian/bin/provian witness instructions` shows it again. There is no built-in list of supported programs.
 
@@ -34,13 +34,15 @@ Running without the app? Register the machine and start the observer yourself:
 
 ```bash
 # Once per machine: register it as the device that witnesses this agent's work
-npx @provian/agent-sdk register-device --agent --api-key "$PROVIAN_API_KEY" --api-secret "$PROVIAN_API_SECRET" --yes
+npx @provian/agent-sdk@latest register-device --agent --api-key "$PROVIAN_API_KEY" --api-secret "$PROVIAN_API_SECRET" --yes
 
 # Then start the observer daemon, which records the work it witnesses on this machine:
-npx @provian/agent-sdk start
+npx @provian/agent-sdk@latest start
 ```
 
-`register-device` prints `PROVIAN_DEVICE_KEY` / `PROVIAN_DEVICE_SECRET` once and saves them to `~/.provian/credentials`; the observer daemon reads them from there, keeps every PE it records on this machine, and sends one signed, body-bound batch a day to `POST /v1/meter/batch` as that device, plus one right before any presentation or on-demand payout. Then run `npx @provian/agent-sdk witness instructions` and describe the agent program's real session files so its tool calls are witnessed.
+To pin a version, replace `@latest` with a version number.
+
+`register-device` prints `PROVIAN_DEVICE_KEY` / `PROVIAN_DEVICE_SECRET` once and saves them to `~/.provian/credentials`; the observer daemon reads them from there, keeps every PE it records on this machine, and sends one signed, body-bound batch a day to `POST /v1/meter/batch` as that device, plus one right before any presentation or on-demand payout. Then run `npx @provian/agent-sdk@latest witness instructions` and describe the agent program's real session files so its tool calls are witnessed.
 
 **Where your PEs live.** On this machine. The relay keeps running totals, minted PVT and the daily on-chain fingerprint of every batch (minted PVT and the fingerprint are permanent; the totals last while the relay operates), plus compact batch economics and permanent packed occurrence digests shared across an actor’s devices, and keeps no PE. An act that arrives more than 30 days after it happened is counted but does not mint (Genesis grants are exempt). `provian pes` shows the local store (PEs kept, not yet batched, the last batch, proofs fetched); `provian pes prove <pe_id>` prints the entry a `pe_fact` presentation carries. Proving a specific act later requires keeping its PE. A linked agent’s work reaches its human’s phone once a day; a presentation or an on-demand payout sends it right away.
 

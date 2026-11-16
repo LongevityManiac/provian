@@ -85,8 +85,8 @@ Three surfaces, in increasing convenience:
 npm i @provian/agent-sdk@latest
 ```
 
-If the agent runs the SDK via `npx @provian/agent-sdk`, clear the npx/npm cache
-so `@latest` resolves the just-published version rather than a cached older one.
+Every `npx` launch line carries `@latest` (`npx @provian/agent-sdk@latest <command>`), so each
+start runs the newest published version. To pin a version, replace `@latest` with a version number.
 
 The observer daemon (including one installed by the hosted `curl … | sh` line)
 does not wait for this: it updates its own bundle from the Provian-signed release

@@ -357,9 +357,9 @@ describe('readGitAuthorEmail', () => {
 describe('guidance (single copy source)', () => {
   it('pins the exact command shape the docs and screens hand out', () => {
     expect(registerGitIdentityCommand({ authorEmail: 'atlas@example.com' }))
-      .toBe('npx @provian/agent-sdk register-git-identity --email atlas@example.com');
+      .toBe('npx @provian/agent-sdk@latest register-git-identity --email atlas@example.com');
     expect(registerGitIdentityCommand({ authorEmail: 'a@b.co', provider: 'gitlab', installationId: '42' }))
-      .toBe('npx @provian/agent-sdk register-git-identity --email a@b.co --provider gitlab --installation 42');
+      .toBe('npx @provian/agent-sdk@latest register-git-identity --email a@b.co --provider gitlab --installation 42');
   });
   it('states eligibility, never "every commit earns"', () => {
     for (const has of [true, false, null]) {

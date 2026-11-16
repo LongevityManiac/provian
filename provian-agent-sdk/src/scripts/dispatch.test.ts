@@ -1,7 +1,7 @@
 /**
  * agent-sdk dispatcher tests.
  *
- * The dispatcher exists because npx resolves `npx @provian/agent-sdk <cmd>`
+ * The dispatcher exists because npx resolves `npx @provian/agent-sdk@latest <cmd>`
  * through a bin named after the unscoped package name ("agent-sdk"); without
  * it, every documented npx invocation (docs, README help strings, and the
  * relay's device-invite / connect-agent email templates) fails with npm's
@@ -88,7 +88,7 @@ describe('resolveDispatch (pure)', () => {
   });
 
   it('usage names the scoped package so the printed example is copy-pasteable', () => {
-    expect(buildUsage(FAKE_MANIFEST)).toContain('npx @provian/agent-sdk register-device --help');
+    expect(buildUsage(FAKE_MANIFEST)).toContain('npx @provian/agent-sdk@latest register-device --help');
   });
 });
 

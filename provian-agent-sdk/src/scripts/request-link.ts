@@ -10,7 +10,7 @@
  * that is the security anchor. This command only files the request.
  *
  * Usage:
- * npx @provian/agent-sdk request-link --token PROV-XXXX-XXXX
+ * npx @provian/agent-sdk@latest request-link --token PROV-XXXX-XXXX
  */
 
 import { loadAgentCredentialsFile } from './agent-credentials-file';
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   const creds = loadAgentCredentialsFile();
   if (!creds || !creds.api_key || !creds.api_secret || !creds.wallet_id) {
     console.error('  Error: no agent credentials found at ~/.provian/agent-credentials.json.');
-    console.error('  Create your wallet first: npx @provian/agent-sdk create-agent-wallet\n');
+    console.error('  Create your wallet first: npx @provian/agent-sdk@latest create-agent-wallet\n');
     process.exit(1);
   }
   const walletId = (args.wallet as string) || creds.wallet_id;

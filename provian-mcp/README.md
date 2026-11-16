@@ -13,7 +13,7 @@ Two ways to connect, **one identical tool set**:
 | Mode | Best for | Setup |
 |------|----------|-------|
 | **Remote (zero install)** | Hosted agents, Claude connectors, agent platforms | Point your client at `https://api.provian.ai/mcp` |
-| **Local (`npx`)** | Keys and credentials that never leave your machine | `npx -y @provian/mcp` |
+| **Local (`npx`)** | Keys and credentials that never leave your machine | `npx -y @provian/mcp@latest` |
 
 Python agents can onboard and act through the install line from **Connect an agent** in the Provian app or the [hosted MCP](https://api.provian.ai/mcp). The install line runs on the agent’s machine and starts the observer. With hosted MCP, keep the wallet key in your runtime, call `wallet_challenge` and `wallet_create`, then use the returned connector credential to call authenticated tools. The hosted endpoint records `hosted_mcp`; the local stdio server records `local_mcp`.
 
@@ -72,8 +72,12 @@ Only the public key and a signature cross the network. The one-step `create_wall
 
 ```bash
 # Claude Code
-claude mcp add provian -- npx -y @provian/mcp
+claude mcp add provian -- npx -y @provian/mcp@latest
 ```
+
+To pin a version, replace `@latest` with a version number.
+
+With `@latest`, each start runs the newest published server. A server that keeps running while a newer one is published says so: its tool results carry one line with the latest version and `npx -y @provian/mcp@latest` (the relay advertises it at `GET /v1/mcp/version`). The line is advisory and never blocks a tool.
 
 ```json
 // Cursor / generic MCP client config
@@ -81,7 +85,7 @@ claude mcp add provian -- npx -y @provian/mcp
   "mcpServers": {
     "provian": {
       "command": "npx",
-      "args": ["-y", "@provian/mcp"],
+      "args": ["-y", "@provian/mcp@latest"],
       "env": { "PROVIAN_API_KEY": "pvn_live_…", "PROVIAN_API_SECRET": "pvns_…", "PROVIAN_KEYSTORE_PASSPHRASE": "use-a-secret-store" }
     }
   }

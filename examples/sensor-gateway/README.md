@@ -31,7 +31,7 @@ A sensor's work reaches the network through one of two paths:
    for it.** That is this example.
 
 The daemon the one-command setup installs (`curl … /v1/bootstrap/agent | sh`,
-`npx @provian/agent-sdk onboard`, or `register-device`) witnesses the machine's own work — commits,
+`npx @provian/agent-sdk@latest onboard`, or `register-device`) witnesses the machine's own work — commits,
 compute, inference, agent tool calls — through its built-in lanes. It loads no sensor plugin. To
 witness a sensor on that machine, run this observer beside the daemon.
 
@@ -47,7 +47,7 @@ hardware root on the sensor itself, which reaches the relay through the sovereig
 
 ```bash
 # once: register this machine (writes ~/.provian/credentials.json)
-npx @provian/agent-sdk register-device
+npx @provian/agent-sdk@latest register-device
 
 # then: watch a directory for sensor readings
 PROVIAN_SENSOR_DIR=/var/lib/sensors npx tsx run.ts
@@ -62,7 +62,7 @@ Run `run.ts` from a directory where `@provian/agent-sdk` resolves. Without
 
 Who sends the batch:
 
-- **With the observer daemon also running on this machine** (`npx @provian/agent-sdk start`),
+- **With the observer daemon also running on this machine** (`npx @provian/agent-sdk@latest start`),
   its batcher sends the readings' PEs. Leave `PROVIAN_SENSOR_BATCH` unset.
 - **On a machine with no daemon**, set `PROVIAN_SENSOR_BATCH=1` so this process runs the batcher
   itself.

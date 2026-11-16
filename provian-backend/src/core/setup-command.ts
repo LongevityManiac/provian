@@ -29,7 +29,7 @@
  * hosted bootstrap rail instead of the raw register curl below: the app and the
  * emailed device command emit a `curl … | sh` one-liner (see
  * core/device-bootstrap-script.ts / GET /v1/bootstrap/device), whose returned
- * script ensures Node.js and drives `npx @provian/agent-sdk register-device`.
+ * script ensures Node.js and drives `npx @provian/agent-sdk@latest register-device`.
  * That npx runs INSIDE the hosted script (never an emitted surface line) and is
  * post-publish by design — pasted pre-publish it prints a plain "not launched
  * yet" sentence. `buildDeviceRegisterCommand` (raw curl) remains for the

@@ -46,11 +46,11 @@ describe('buildSessionOtelPublishPlan', () => {
 
   // NEGATIVE CONTROL: an unsupported platform produces NO commands and NO files,
   // so publishSessionOtelEndpoint reports published:false rather than silently
-  // "succeeding" — the honest fallback to `npx @provian/agent-sdk run`.
-  it('unknown platform: empty plan (no commands, no files), directs to `npx @provian/agent-sdk run`', () => {
+  // "succeeding" — the honest fallback to `npx @provian/agent-sdk@latest run`.
+  it('unknown platform: empty plan (no commands, no files), directs to `npx @provian/agent-sdk@latest run`', () => {
     const plan = buildSessionOtelPublishPlan(4318, 'aix', '/home/me');
     expect(plan.commands).toEqual([]);
     expect(plan.files).toEqual([]);
-    expect(plan.note).toContain('npx @provian/agent-sdk run');
+    expect(plan.note).toContain('npx @provian/agent-sdk@latest run');
   });
 });

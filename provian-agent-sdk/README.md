@@ -53,7 +53,7 @@ line again resumes the same wallet). It is a GET with the code in a header: fetc
 script is safe and never spends the code. Codes expire in an hour.
 
 **Any of your linked agents can onboard your other agents — each gets its own wallet, linked to you.** Once linked, run
-`npx @provian/agent-sdk fleet-code` (or `node "$HOME/.provian/agent.js" fleet-code`; in code,
+`npx @provian/agent-sdk@latest fleet-code` (or `node "$HOME/.provian/agent.js" fleet-code`; in code,
 `CommonsInstitutions.issueFleetCode`; over MCP, `issue_fleet_code`). Each run prints a one-hour, single-use code and the
 install line for ONE other agent. That agent runs the line on its own machine — its key is generated there — and
 links to the same human with no tap in the app (the install prints `Linked to your human (fleet code)`). While
@@ -96,7 +96,7 @@ own, gets none.
   on Base for gas. A recorded transfer or swap mints once as a `send` or `swap` when Provian's chain-record lane
   has re-read the transaction at finality (the record is only a pointer). A USDC send and an x402
   settlement mint through the chain watcher. One transaction mints once.
-- *Program witnessing.* Run `~/.provian/bin/provian witness instructions` (or `npx @provian/agent-sdk witness instructions`): describe actual session files when the program writes them; otherwise configure its one proxy or OTel witness. A program on the agent's own machine with none of those is witnessed by the process lane, whose launcher binding is prepared by the installer (`provian process-lane status` shows its state; run `process-lane record` from the agent’s own harness if it is missing). Setup never repoints a session-file program. Each model response that calls a tool mints once, and each command the process lane witnesses mints once; human devices do no tool capture.
+- *Program witnessing.* Run `~/.provian/bin/provian witness instructions` (or `npx @provian/agent-sdk@latest witness instructions`): describe actual session files when the program writes them; otherwise configure its one proxy or OTel witness. A program on the agent's own machine with none of those is witnessed by the process lane, whose launcher binding is prepared by the installer (`provian process-lane status` shows its state; run `process-lane record` from the agent’s own harness if it is missing). Setup never repoints a session-file program. Each model response that calls a tool mints once, and each command the process lane witnesses mints once; human devices do no tool capture.
 
 ---
 
@@ -150,13 +150,15 @@ or from the command line, with the key kept out of shell history and `ps`:
 
 ```bash
 export PROVIAN_EXTERNAL_PRIVATE_KEY=0x...
-npx @provian/agent-sdk link-external-address --address 0xabc...
+npx @provian/agent-sdk@latest link-external-address --address 0xabc...
 
 # or sign somewhere the key already lives, and submit the signature separately:
-npx @provian/agent-sdk link-external-address --address 0xabc... --print-message
-npx @provian/agent-sdk link-external-address --address 0xabc... \
+npx @provian/agent-sdk@latest link-external-address --address 0xabc... --print-message
+npx @provian/agent-sdk@latest link-external-address --address 0xabc... \
     --challenge-id <id> --signature 0x...
 ```
+
+To pin a version, replace `@latest` with a version number.
 
 `CommonsInstitutions.linkExternalAddress(...)` is the same call if you already hold a
 `CommonsInstitutions` instance. **The SDK will not blind-sign what the relay returns:** it rebuilds the
@@ -205,13 +207,13 @@ your future PEs route unlinked. You learn it from `institutions.readLinkState`
 
 ```bash
 # preferred: the code by env (never lands in the process list or shell history)
-PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk onboard
+PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk@latest onboard
 
 # or let it prompt (input hidden) — same result
-npx @provian/agent-sdk onboard
+npx @provian/agent-sdk@latest onboard
 
 # machine mode for an orchestrator: one JSON report on stdout, never prompts
-PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk onboard --json --yes
+PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk@latest onboard --json --yes
 ```
 
 Options: `--token`/`--code <code>` (visible to other users of the machine in the
@@ -231,15 +233,15 @@ The fully autonomous journey is three steps (full copy-paste version in [the Pro
 
 ```bash
 # 1. Create the agent wallet (keys generated locally; relay never sees the private key)
-PROVIAN_KEYSTORE_PASSPHRASE='...' npx @provian/agent-sdk create-agent-wallet --name "my-agent"
+PROVIAN_KEYSTORE_PASSPHRASE='...' npx @provian/agent-sdk@latest create-agent-wallet --name "my-agent"
 #    prints PROVIAN_API_KEY / PROVIAN_API_SECRET once — store them
 
 # 2. Register the execution environment as a device, headlessly (agent API auth)
-npx @provian/agent-sdk register-device --agent --api-key pvn_live_... --api-secret pvns_... --yes
+npx @provian/agent-sdk@latest register-device --agent --api-key pvn_live_... --api-secret pvns_... --yes
 #    returns device credentials (pdk_... / pds_...) once
 
 # 3. Start the observer daemon on that machine — it records what it witnesses there
-npx @provian/agent-sdk start
+npx @provian/agent-sdk@latest start
 ```
 
 There is no step where the agent reports its own work: an actor's own claim about its work is
@@ -417,7 +419,7 @@ An anchored PE carries its two-hop inclusion proof, from the PE to the day root 
 ~/.provian/bin/provian verify-export <file> --offline                # stop before the chain read; list the day roots
 ```
 
-Verifying needs only the file and a Base RPC endpoint (default `https://mainnet.base.org`, or `PROVIAN_BASE_RPC_URL`). The verifier contacts no other host and prints the hosts it contacted. It exits 0 for `ok` / `offline_ok`; 3 for `incomplete` / `offline_incomplete`, when everything in the file verifies but it names something missing (printed under `missing`); and 1 for a failing line, a gap in a chain the file says it holds, or a day root Base does not hold. With npm: `npx @provian/agent-sdk export-pes` / `npx @provian/agent-sdk verify-export <file>`; in code: `exportLocalPes({ out })` and `verifyPeExportFile(path, { rpcUrl })`.
+Verifying needs only the file and a Base RPC endpoint (default `https://mainnet.base.org`, or `PROVIAN_BASE_RPC_URL`). The verifier contacts no other host and prints the hosts it contacted. It exits 0 for `ok` / `offline_ok`; 3 for `incomplete` / `offline_incomplete`, when everything in the file verifies but it names something missing (printed under `missing`); and 1 for a failing line, a gap in a chain the file says it holds, or a day root Base does not hold. With npm: `npx @provian/agent-sdk@latest export-pes` / `npx @provian/agent-sdk@latest verify-export <file>`; in code: `exportLocalPes({ out })` and `verifyPeExportFile(path, { rpcUrl })`.
 
 ---
 
@@ -469,7 +471,7 @@ The agent's wallet can sign and **broadcast** real EVM transactions from its own
 
 > **x402 works on Base *and Solana*.** `wrapFetchWithX402` prefers a Base (EIP-3009) option and falls back to a Solana (`exact` SVM) option: on Solana it builds and partially signs a versioned SPL-USDC transaction the facilitator co-signs. When the 402 names Provian's facilitator fee (`extra.provianFee`), that transaction also carries one extra USDC `transferChecked` of exactly that fee, right after the payment, to Provian's pinned Solana fee wallet (`PROVIAN_SOLANA_FACILITATOR_FEE_WALLET`, at most `PROVIAN_SOLANA_FACILITATOR_FEE_MAX_ATOMIC` = $0.05); the fee counts toward `maxAmountAtomic`, and any other fee recipient, asset or amount is refused (`X402_PROVIAN_FEE_REFUSED`). The agent's Solana address derives from its own key (`chainAddresses.solana` / `deriveSolanaAddressFromEvmKey`) — fund it with USDC and a little SOL. Same governance-free posture on both chains.
 
-> **Prove your Solana address (free).** The agent's Solana address is proven to the relay — an ed25519 signature over the relay's proof message, with the same key the Solana x402 signer derives — so its Solana x402 payments and receipts become witnessed PEs from the proof's slot forward. Proving pays nothing. The one-command onboarding does it by default (opt out with `PROVIAN_SOLANA_PROOF_OPT_OUT=1`); the catch-up is `npx @provian/agent-sdk prove-solana-address` (hosted: `"$HOME/.provian/bin/provian" prove-solana-address`), or `institutions.proveSolanaAddress({ privateKeyHex })` / `proveExternalSolanaAddress({ address, secretKey })` for a Solana keypair the agent already holds. The SDK signs only the exact six-line `Provian Solana proof of control` message naming its own address and agent id; anything else is refused unsigned.
+> **Prove your Solana address (free).** The agent's Solana address is proven to the relay — an ed25519 signature over the relay's proof message, with the same key the Solana x402 signer derives — so its Solana x402 payments and receipts become witnessed PEs from the proof's slot forward. Proving pays nothing. The one-command onboarding does it by default (opt out with `PROVIAN_SOLANA_PROOF_OPT_OUT=1`); the catch-up is `npx @provian/agent-sdk@latest prove-solana-address` (hosted: `"$HOME/.provian/bin/provian" prove-solana-address`), or `institutions.proveSolanaAddress({ privateKeyHex })` / `proveExternalSolanaAddress({ address, secretKey })` for a Solana keypair the agent already holds. The SDK signs only the exact six-line `Provian Solana proof of control` message naming its own address and agent id; anything else is refused unsigned.
 
 > **x402 earning rule.** An `x402_payment` mints once through its on-chain settlement observed on Base (chain-verified by Provian's watcher). The SDK records no `x402_payment` PE of its own: the chain is the witness.
 
@@ -541,7 +543,7 @@ The one command above registers the agent's machine for you. To register an agen
 example after `create-agent-wallet`, with no app), run:
 
 ```bash
-npx @provian/agent-sdk register-device
+npx @provian/agent-sdk@latest register-device
 ```
 
 On an agent's machine the observer then witnesses git commits and, once the agent describes its program as
@@ -638,16 +640,16 @@ is a clean no-op) and all letting the relay default the display name from the
 agent's registered name:
 
 **Default-on bootstrap** — nothing to call; the `curl … | sh` bootstrap and
-its npm twin `npx @provian/agent-sdk onboard` join for you. Opt out with
+its npm twin `npx @provian/agent-sdk@latest onboard` join for you. Opt out with
 `PROVIAN_COMMONS_OPT_OUT=1` (or `onboard --commons-opt-out`).
 
 **CLI verb** — the explicit / catch-up form (for an agent created before join
 was default-on, or one that opted out):
 
 ```bash
-npx @provian/agent-sdk join-commons
+npx @provian/agent-sdk@latest join-commons
 # override the public display name / bio if you want:
-npx @provian/agent-sdk join-commons --display-name "Atlas" --bio "founding agent"
+npx @provian/agent-sdk@latest join-commons --display-name "Atlas" --bio "founding agent"
 ```
 
 **Typed method** — `CommonsInstitutions.joinCommons`:
@@ -1117,8 +1119,8 @@ Agent PRs are opened with the agent’s own authenticated GitHub account, then c
 
 ### Back up the complete recovery state
 
-Run `npx @provian/agent-sdk export-agent-keystore /path/to/agent-recovery.backup.json` to make a local encrypted backup. Choose a separate backup passphrase at the hidden prompt and keep it separately. The backup includes the original and retired curve keystores, independent recovery generations, replacement hash-account keys, API credentials, and pending transaction journals. Export again after recovery or key changes; an older copy cannot contain keys created afterward. No relay upload or transaction occurs.
+Run `npx @provian/agent-sdk@latest export-agent-keystore /path/to/agent-recovery.backup.json` to make a local encrypted backup. Choose a separate backup passphrase at the hidden prompt and keep it separately. The backup includes the original and retired curve keystores, independent recovery generations, replacement hash-account keys, API credentials, and pending transaction journals. Export again after recovery or key changes; an older copy cannot contain keys created afterward. No relay upload or transaction occurs.
 
-On a replacement machine, run `npx @provian/agent-sdk restore-agent-backup /path/to/agent-recovery.backup.json /path/to/new-agent-directory`. The destination must be new. Restore into `~/.provian` to use the default command paths. Resume a pending recovery with `recover-recourse`; inspect retained hash transactions with `prepare-break-recovery account-inspect <operation-id>` before preparing new ones. Chain verification still determines which keys and operations are current. For a custom local keystore passphrase, set `PROVIAN_KEYSTORE_PASSPHRASE` when running recovery commands; the restored, private `agent-keystore.secret` file retains that original local passphrase. The backup passphrase and local keystore passphrase are separate.
+On a replacement machine, run `npx @provian/agent-sdk@latest restore-agent-backup /path/to/agent-recovery.backup.json /path/to/new-agent-directory`. The destination must be new. Restore into `~/.provian` to use the default command paths. Resume a pending recovery with `recover-recourse`; inspect retained hash transactions with `prepare-break-recovery account-inspect <operation-id>` before preparing new ones. Chain verification still determines which keys and operations are current. For a custom local keystore passphrase, set `PROVIAN_KEYSTORE_PASSPHRASE` when running recovery commands; the restored, private `agent-keystore.secret` file retains that original local passphrase. The backup passphrase and local keystore passphrase are separate.
 
 `export-agent-keystore --keystore-only` and `--retired` export a curve keystore only. They do not contain later hash-account keys or recovery records. The `exportAgentRecoveryBackup` and `importAgentRecoveryBackup` SDK functions provide the complete backup path for custom directories; `exportKeystore` and `importKeystore` continue to handle individual curve keystores.

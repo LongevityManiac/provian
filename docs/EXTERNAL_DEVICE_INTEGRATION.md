@@ -42,7 +42,7 @@ curl -sSL -H 'x-provian-token: <one-time-token>' "https://api.provian.ai/v1/boot
 
 The response prints `PROVIAN_DEVICE_KEY` / `PROVIAN_DEVICE_SECRET` **once** — export them in your shell profile; the device's daily PE batches authenticate with them. Re-running the same line (same `Idempotency-Key`) reuses the persisted registration identity and original client-generated credentials.
 
-`npx @provian/agent-sdk register-device` does the same registration and also writes the exports, installs a global git `post-commit` hook at `~/.provian/hooks/`, and starts the observer — after which every git commit on the machine generates a PE automatically.
+`npx @provian/agent-sdk@latest register-device` does the same registration and also writes the exports, installs a global git `post-commit` hook at `~/.provian/hooks/`, and starts the observer — after which every git commit on the machine generates a PE automatically.
 
 ### Agent-owned device by emailed line - no secret to paste
 
@@ -366,9 +366,11 @@ The relay handles attestation tier assignment, held acts (an act that waits on e
 The minimal agent is the SDK observer itself. On any machine with Node 20+, register the device and start the observer; its ProcessPlugin builds `compute_session` PEs from CPU activity, keeps them in the local PE store, and sends the daily signed batch:
 
 ```bash
-npx @provian/agent-sdk register-device          # prints PROVIAN_DEVICE_KEY / PROVIAN_DEVICE_SECRET once
-npx @provian/agent-sdk observe --ensure-running  # already running after a full register-device
+npx @provian/agent-sdk@latest register-device          # prints PROVIAN_DEVICE_KEY / PROVIAN_DEVICE_SECRET once
+npx @provian/agent-sdk@latest observe --ensure-running  # already running after a full register-device
 ```
+
+To pin a version, replace `@latest` with a version number.
 
 Your own code never posts a PE: the observer's lanes build them, and `MeterBatcher` sends what the PE store holds.
 
@@ -387,7 +389,7 @@ A sensor, instrument or rig earns through one of two paths. Its own say-so is ne
 1. **A hardware-attested device submits on the sovereign lane.** `POST /v1/pe/submit-sovereign` (SDK `submitHardwareWitnessedWork`) records one occurrence carrying two things. The first is an EIP-191 signature by a registered, active agent wallet's own key over the canonical `provian_sovereign_work_v1` message: the action type, the agent's address, an `occurrence_id` of 8–200 characters, a single-use nonce, and an `iat` within five minutes. The second is a `hardware_witness`: a report from a supported scheme (`tpm2_quote`, `apple_app_attest`, `aws_nitro`, `gcp_confidential_space`, `azure_attestation`, `nvidia_cc`) that a key other than the agent's signed over the hash of this exact body, and that verifies to its scheme's pinned public root. The signature alone is the agent's own claim, and the route refuses it (`403 actor_declared_work_is_not_a_pe`); the SDK helper refuses before it signs when no witness producer is given. The action type is a `compute_or_work` type or one the network has never seen. A verified App Attest report, or a TPM, Nitro, Confidential Space, Azure or NVIDIA report whose launch measurement the relay pins for a signed Provian observer release, seals `hardware_rooted`; any other verified report records at device tier.
 2. **A sensor reports through a registered machine whose owner runs an SDK observer with a plugin for it.** The owner runs `ProvianObserver` from `@provian/agent-sdk/observer` in its own process and adds a plugin for the sensor with `registerPlugin`. The observer stamps each reading the plugin hands over (the gateway path, below) and sends it in the machine's body-bound daily batch. [`examples/sensor-gateway`](../examples/sensor-gateway/README.md) is that observer: it watches a directory and turns each JSON reading into one PE.
 
-The daemon the one-command setup installs (`curl … /v1/bootstrap/agent | sh`, `npx @provian/agent-sdk onboard`, or `register-device`) witnesses the machine's own work — its commits, compute, inference and agent tool calls — through its built-in lanes. It loads no sensor plugin: its `--plugins` flag chooses only among those built-in lanes. A sensor on that machine is witnessed by an observer its owner runs beside the daemon with a plugin for it (path 2); the daemon's batcher then sends both.
+The daemon the one-command setup installs (`curl … /v1/bootstrap/agent | sh`, `npx @provian/agent-sdk@latest onboard`, or `register-device`) witnesses the machine's own work — its commits, compute, inference and agent tool calls — through its built-in lanes. It loads no sensor plugin: its `--plugins` flag chooses only among those built-in lanes. A sensor on that machine is witnessed by an observer its owner runs beside the daemon with a plugin for it (path 2); the daemon's batcher then sends both.
 
 Three more witnesses reach a sensor's work with no observer plugin and no daemon:
 

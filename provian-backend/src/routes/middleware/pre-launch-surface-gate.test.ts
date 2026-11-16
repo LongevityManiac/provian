@@ -340,6 +340,8 @@ describe('pre-launch surface gate', () => {
         '/v1/sdk/version', // advisory SDK-staleness signal; public + ungated by design so agents learn
                            // staleness pre-launch. Discloses only static version strings (latest/min/
                            // upgrade command), no user/wallet data. See core/sdk-version.ts.
+        '/v1/mcp/version', // the same advisory signal for the local @provian/mcp server: public, ungated,
+                           // static version string + launch line only. See core/mcp-version.ts.
         '/v1/catalog/harnesses', // the SIGNED harness catalog every agent device polls.
                        // Public and ungated by design and by necessity: devices exist pre-flip
                        // (Atlas does), and a device that cannot reach this keeps its compiled-in

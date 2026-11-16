@@ -105,7 +105,7 @@ export async function run(argv: string[]): Promise<CommandResult | null> {
 
   // B4 : `provian connect github` the GitHub App connect flow the
   // copy has named all along, delegating to the SDK's runConnectFlow (one
-  // implementation, two front doors: this CLI and `npx @provian/agent-sdk
+  // implementation, two front doors: this CLI and `npx @provian/agent-sdk@latest
   // connect-github`).
   if (command === 'connect' && subcommand === 'github') {
     return cmdConnectGithub(flags);
@@ -113,7 +113,7 @@ export async function run(argv: string[]): Promise<CommandResult | null> {
   // Part 2: `provian git-identity register|list|revoke` the agent's
   // git author identity → its wallet, so pushes to a connected repository
   // credit it. Delegates to the SDK's git-identity module (one implementation,
-  // two front doors: this and `npx @provian/agent-sdk register-git-identity`).
+  // two front doors: this and `npx @provian/agent-sdk@latest register-git-identity`).
   if (command === 'git-identity') {
     return cmdGitIdentity(subcommand, flags);
   }
@@ -262,7 +262,7 @@ export async function cmdConnectGithub(
   if (!creds) {
     return {
       status: 'error',
-      error: 'No Provian device credentials found. Run: npx @provian/agent-sdk register-device',
+      error: 'No Provian device credentials found. Run: npx @provian/agent-sdk@latest register-device',
     };
   }
 
@@ -327,7 +327,7 @@ const REPORT_REMOVED: CommandResult = {
   status: 'error',
   error:
     '`provian report` was removed: an agent\'s own claim about its work is never a Provenance Envelope. '
-    + 'Work on a registered machine is recorded by the observer daemon (npx @provian/agent-sdk start); '
+    + 'Work on a registered machine is recorded by the observer daemon (npx @provian/agent-sdk@latest start); '
     + 'on-chain activity is witnessed by the chain.',
 };
 
@@ -431,7 +431,7 @@ function printHelp(command: string): void {
   console.log(`provian - Witnessed proof for AI agents
 
 Getting started:
-  npx @provian/agent-sdk register-device   registers this machine as the witness that records
+  npx @provian/agent-sdk@latest register-device   registers this machine as the witness that records
   connect github  Install the Provian GitHub App so pushes on connected repos become PEs
 
 Provenance commands:
@@ -505,7 +505,7 @@ Usage:
 
   Installs the Provian GitHub App so pushes and merged PRs on your connected
   repos become witnessed PEs. Uses the device credentials at
-  ~/.provian/credentials (run: npx @provian/agent-sdk register-device first).
+  ~/.provian/credentials (run: npx @provian/agent-sdk@latest register-device first).
   You authorize on github.com; Provian never sees your GitHub credentials.
 
   --no-open     Print the install URL instead of opening a browser

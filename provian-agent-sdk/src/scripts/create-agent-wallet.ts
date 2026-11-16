@@ -17,12 +17,12 @@
  * The private key is encrypted at rest with a passphrase. Provide it via
  * PROVIAN_KEYSTORE_PASSPHRASE (required for non-interactive runs) or you will
  * be prompted. There is NO cloud backup - back up the keystore yourself:
- * npx @provian/agent-sdk export-agent-keystore./agent-keystore.backup.json
+ * npx @provian/agent-sdk@latest export-agent-keystore./agent-keystore.backup.json
  *
  * Usage:
- * npx @provian/agent-sdk create-agent-wallet --accept-constitution
- * npx @provian/agent-sdk create-agent-wallet --accept-constitution --name "Atlas" --platform sdk
- * PROVIAN_KEYSTORE_PASSPHRASE=... npx @provian/agent-sdk create-agent-wallet --accept-constitution
+ * npx @provian/agent-sdk@latest create-agent-wallet --accept-constitution
+ * npx @provian/agent-sdk@latest create-agent-wallet --accept-constitution --name "Atlas" --platform sdk
+ * PROVIAN_KEYSTORE_PASSPHRASE=... npx @provian/agent-sdk@latest create-agent-wallet --accept-constitution
  */
 
 import { recordBindingAttempt } from '../recourse-binding-heal';
@@ -394,7 +394,7 @@ async function main(): Promise<void> {
       console.log(`  Requested --backup FAILED: ${backupError}`);
     }
     console.log('  You have NOT backed up yet. Export an encrypted backup now:');
-    console.log('    npx @provian/agent-sdk export-agent-keystore ./agent-keystore.backup.json\n');
+    console.log('    npx @provian/agent-sdk@latest export-agent-keystore ./agent-keystore.backup.json\n');
   }
 }
 

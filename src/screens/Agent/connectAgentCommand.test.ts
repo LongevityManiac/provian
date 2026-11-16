@@ -129,8 +129,8 @@ describe('the screens read the switch', () => {
   });
 
   it('the commands are the real ones each package ships', () => {
-    expect(NPX_SDK_ONBOARD_CMD).toBe('npx @provian/agent-sdk onboard');
-    expect(NPX_SDK_FLEET_CODE_CMD).toBe('npx @provian/agent-sdk fleet-code');
+    expect(NPX_SDK_ONBOARD_CMD).toBe('npx @provian/agent-sdk@latest onboard');
+    expect(NPX_SDK_FLEET_CODE_CMD).toBe('npx @provian/agent-sdk@latest fleet-code');
     expect(NPX_CLI_FLEET_CODE_CMD).toBe('npx @provian/cli fleet-code');
     expect(MCP_FLEET_CODE_TOOL).toBe('issue_fleet_code');
     expect(AGENT_FLEET_CODE_CMD).toBe('"$HOME/.provian/bin/provian" fleet-code');

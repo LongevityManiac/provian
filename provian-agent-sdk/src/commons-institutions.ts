@@ -4618,7 +4618,7 @@ export class CommonsInstitutions {
    * API auth (Bearer api_key:api_secret); the relay mints a single-use token
    * (device-registration scope only) and emails:
    *
-   *   npx @provian/agent-sdk register-device --agent-token <token>
+   *   npx @provian/agent-sdk@latest register-device --agent-token <token>
    *
    * The token is NEVER returned over the wire - the response is { sent,
    * expires_at } only. Work the resulting device witnesses becomes Provenance

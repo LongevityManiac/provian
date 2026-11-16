@@ -5,12 +5,12 @@ import {commonsRuntime} from '../commons-runtime';
 /**
  * run-daemon — the Provian observer daemon runner, extracted from
  * scripts/start-observer so BOTH entrypoints share ONE implementation:
- *   - `scripts/start-observer.ts` — the `npx @provian/agent-sdk observe` CLI, and
+ *   - `scripts/start-observer.ts` — the `npx @provian/agent-sdk@latest observe` CLI, and
  *     the launchd/systemd/schtasks exec target for a normally-installed SDK.
  *   - the hosted onboarding bundle's `observe` subcommand
  *     (`node ~/.provian/agent.js observe`). Pre-publish the bundle IS the SDK, so
  *     the LaunchAgent runs the observer FROM the bundle instead of
- *     `npx @provian/agent-sdk observe`, which E404s until the npm-publish flip and
+ *     `npx @provian/agent-sdk@latest observe`, which E404s until the npm-publish flip and
  *     exited 78 (empty observer.log, service dead).
  * One source = no drift between the two (never redeclare the logic the other
  * entrypoint runs).
@@ -350,7 +350,7 @@ export async function runObserverDaemon(argv: string[] = process.argv.slice(2)):
   // is RunAtLoad, this re-publishes on every login/reboot — an agent launched
   // headless / under launchd / systemd (which sources no shell rc file) still
   // inherits OTEL_EXPORTER_OTLP_ENDPOINT and exports to the local receiver.
-  // Best-effort and never throws; a failure degrades to `npx @provian/agent-sdk run`.
+  // Best-effort and never throws; a failure degrades to `npx @provian/agent-sdk@latest run`.
   if (isAgentDevice) {
     try {
       const pub = publishSessionOtelEndpoint(OTLP_DEFAULT_PORT);

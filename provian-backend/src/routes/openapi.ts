@@ -1900,7 +1900,7 @@ function buildMCPDescriptor(): Record<string, unknown> {
     // A REAL MCP server. One transport is advertised pre-flip:
     //   remote — connect by URL, zero install (hosted agents, Claude
     //            connectors, agent platforms)
-    // The local stdio transport (npx @provian/mcp) exists in-tree but the
+    // The local stdio transport (npx @provian/mcp@latest) exists in-tree but the
     // package is unpublished until public launch; its block returns here in
     // the same B5 flip act that publishes the package. Never advertise an
     // uninstallable package (audit 2026-08-16 item 5).

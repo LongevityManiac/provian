@@ -15,10 +15,10 @@
  * the machine, and a code the relay could not rule on stops too.
  *
  * Usage:
- *   PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk onboard
- *   npx @provian/agent-sdk onboard                       # prompts for the code (hidden input)
- *   npx @provian/agent-sdk onboard --token PROV-XXXX-XXXX
- *   npx @provian/agent-sdk onboard --json --yes          # machine mode: never prompts
+ *   PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk@latest onboard
+ *   npx @provian/agent-sdk@latest onboard                       # prompts for the code (hidden input)
+ *   npx @provian/agent-sdk@latest onboard --token PROV-XXXX-XXXX
+ *   npx @provian/agent-sdk@latest onboard --json --yes          # machine mode: never prompts
  *
  * While the Genesis window is open the run LEADS with the Genesis offer line
  * (../genesis-offer; a runtime date check — it prints nothing after the window).
@@ -108,7 +108,7 @@ export function parseOnboardArgs(argv: string[]): OnboardArgs {
 
 export function usageText(): string {
   return [
-    'Usage: npx @provian/agent-sdk onboard [options]',
+    'Usage: npx @provian/agent-sdk@latest onboard [options]',
     '',
     'One command from a connection code to a linked, recoverable, observed agent wallet.',
     'Generate the code in the Provian app under "Connect an agent".',

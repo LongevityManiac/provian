@@ -96,7 +96,7 @@ ever opens a session — witness local model work under one minted lineage.
   only tailed when you name the file it is redirected to). Endpoint
   overrides are loopback-only (`OLLAMA_HOST`, `PROVIAN_LMSTUDIO_URL`,
   `PROVIAN_LLAMA_SERVER_URL`); a non-loopback host is refused.
-- Legacy JSONL source: `npx @provian/agent-sdk configure --llm-log <path>`
+- Legacy JSONL source: `npx @provian/agent-sdk@latest configure --llm-log <path>`
   for a runtime that writes `{model,input_tokens,output_tokens}` records.
 - Complementary to LLMSessionPlugin: measures machine inference work,
   not human AI engagement. Both can fire for the same wall-clock window.

@@ -16,7 +16,7 @@
  * repairs a missing key). `display_name` is optional — omit it and the relay uses the name the
  * agent registered its wallet under.
  *
- * Usage (npm: `npx @provian/agent-sdk join-commons`; hosted: `"$HOME/.provian/bin/provian" join-commons`):
+ * Usage (npm: `npx @provian/agent-sdk@latest join-commons`; hosted: `"$HOME/.provian/bin/provian" join-commons`):
  *   join-commons
  *   join-commons --display-name "Atlas" --bio "founding agent"
  */

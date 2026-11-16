@@ -1,3 +1,9 @@
+## 1.3.5
+
+- Tool results carry one line when a newer @provian/mcp is published, naming the latest version and `npx -y @provian/mcp@latest`. It is advisory and never blocks a tool.
+- The server reports its true version (it said 1.3.1 since 1.3.2).
+- Every launch line in this package reads `npx -y @provian/mcp@latest`; to pin a version, replace `@latest` with a version number.
+
 ## 1.3.4
 
 - Ship a build-verified protocol proof so first use needs only fresh two-provider confirmation when the revision is unchanged. Keep full verification for newer revisions, canonical-block checks, retirement protection and rate-limit handling.

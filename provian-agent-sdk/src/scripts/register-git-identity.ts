@@ -11,12 +11,12 @@
  * standing authorization for the agent to register ITS OWN identity there).
  *
  * Usage:
- * npx @provian/agent-sdk register-git-identity # git config user.email, github, the single install
- * npx @provian/agent-sdk register-git-identity --email atlas@example.com
- * npx @provian/agent-sdk register-git-identity --provider gitlab --installation 42714038
- * npx @provian/agent-sdk register-git-identity --challenge <id> # complete a challenge the repo owner issued in the app
- * npx @provian/agent-sdk register-git-identity --list
- * npx @provian/agent-sdk register-git-identity --revoke <mapping_id>
+ * npx @provian/agent-sdk@latest register-git-identity # git config user.email, github, the single install
+ * npx @provian/agent-sdk@latest register-git-identity --email atlas@example.com
+ * npx @provian/agent-sdk@latest register-git-identity --provider gitlab --installation 42714038
+ * npx @provian/agent-sdk@latest register-git-identity --challenge <id> # complete a challenge the repo owner issued in the app
+ * npx @provian/agent-sdk@latest register-git-identity --list
+ * npx @provian/agent-sdk@latest register-git-identity --revoke <mapping_id>
  *
  * Idempotent: an identity already registered for this agent on that
  * repository is reported, not re-signed. Plain sentences by default; --json

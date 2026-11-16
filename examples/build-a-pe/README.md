@@ -43,7 +43,7 @@ import { CommonsInstitutions, humanApprovalOrigin, loadCredentials } from '@prov
 const bank = new CommonsInstitutions({ relayUrl, walletId, apiKey, apiSecret });
 
 // Is this machine registered? Its observer daemon records what it witnesses.
-if (!loadCredentials()) console.log('register first: npx @provian/agent-sdk register-device');
+if (!loadCredentials()) console.log('register first: npx @provian/agent-sdk@latest register-device');
 
 // Read your own live reputation vocabulary.
 const { facts } = await bank.readVocabulary();

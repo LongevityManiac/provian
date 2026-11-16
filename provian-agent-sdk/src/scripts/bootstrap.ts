@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   // `node <bundle> observe` — run the observer daemon FROM the bundle. Pre-publish
   // the bundle is the only SDK artifact on the machine, so the installed service
   // (launchd/systemd/schtasks) execs `node ~/.provian/agent.js observe` here
-  // instead of `npx @provian/agent-sdk observe`, which is unpublished (E404) and
+  // instead of `npx @provian/agent-sdk@latest observe`, which is unpublished (E404) and
   // exited 78 with a dead observer.
   // Dispatch on the VERB POSITION (argv[2] = `node <bundle> <verb> …`), never on
   // `argv.includes(<verb>)`. A hook argument VALUE can equal a verb — the

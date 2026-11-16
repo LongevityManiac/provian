@@ -8,11 +8,11 @@
  * There is no cloud backup in Node; this is the supported backup path.
  *
  * Usage:
- *   npx @provian/agent-sdk export-agent-keystore ./agent-keystore.backup.json
- *   npx @provian/agent-sdk export-agent-keystore /Volumes/usb/keystore.json
+ *   npx @provian/agent-sdk@latest export-agent-keystore ./agent-keystore.backup.json
+ *   npx @provian/agent-sdk@latest export-agent-keystore /Volumes/usb/keystore.json
  *
  * Recovery (on a new device, after copying the backup file over):
- *   npx @provian/agent-sdk restore-agent-backup ./agent-keystore.backup.json ~/.provian
+ *   npx @provian/agent-sdk@latest restore-agent-backup ./agent-keystore.backup.json ~/.provian
  */
 
 import { exportKeystore, getDefaultKeystorePath } from '../keystore';

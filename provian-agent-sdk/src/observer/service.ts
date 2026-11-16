@@ -59,7 +59,7 @@ export interface ServiceInstallOptions {
    * Explicit exec target for the service. Overrides the auto-detected entrypoint.
    * The hosted onboarding bundle passes `node ~/.provian/agent.js observe` here,
    * because in that context there is no npm-installed SDK and observerEntrypoint()
-   * would fall back to `npx @provian/agent-sdk observe` — unpublished (E404),
+   * would fall back to `npx @provian/agent-sdk@latest observe` — unpublished (E404),
    * which exited 78 and left the observer dead.
    */
   entrypoint?: ObserverEntrypoint;
@@ -99,8 +99,8 @@ export interface ObserverEntrypointContext {
  *      the only runnable artifact, so the service runs the daemon FROM it.
  *   2. npm install (the compiled script is on disk) → `node dist/scripts/start-observer.js`
  *      Runs the installed package directly so login-time start never depends
- *      on npx/network. This is the branch `npx @provian/agent-sdk onboard` takes.
- *   3. neither on disk                              → `npx @provian/agent-sdk observe`
+ *      on npx/network. This is the branch `npx @provian/agent-sdk@latest onboard` takes.
+ *   3. neither on disk                              → `npx @provian/agent-sdk@latest observe`
  *      Last resort only; unreachable from an installed package and fatal
  *      (E404 → exit 78) while the package is unpublished.
  *
@@ -134,7 +134,7 @@ export function resolveObserverEntrypoint(ctx: ObserverEntrypointContext = {}): 
         return { command: execPath, args: [ctx.distObserverScript] };
       }
     }
-    return { command: 'npx', args: ['@provian/agent-sdk', 'observe'] };
+    return { command: 'npx', args: ['@provian/agent-sdk@latest', 'observe'] };
   }
 }
 
@@ -152,7 +152,7 @@ function observerEntrypoint(): ObserverEntrypoint {
   });
   // The one genuinely dead outcome while the package is unpublished: neither a
   // bundle, nor a real npm install, nor a built dist resolved, so the service
-  // would exec `npx @provian/agent-sdk observe` and E404. Surface it — a service
+  // would exec `npx @provian/agent-sdk@latest observe` and E404. Surface it — a service
   // that cannot start must never install in silence (the Atlas lesson).
   if (entrypoint.command === 'npx') {
     console.warn(HOSTED_BUNDLE
@@ -952,7 +952,7 @@ function stopDetached(): void {
 //
 // Endpoint ONLY — deliberately NOT OTEL_SERVICE_NAME: a session-wide service
 // name would mislabel every OTel emitter on the box. Best-effort and never
-// throws: a failure here degrades to the rc-file path + the `npx @provian/agent-sdk run`
+// throws: a failure here degrades to the rc-file path + the `npx @provian/agent-sdk@latest run`
 // wrapper, exactly the fallbacks that exist for it.
 // ============================================================================
 

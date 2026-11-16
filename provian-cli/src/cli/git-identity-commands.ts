@@ -2,7 +2,7 @@
  * `provian git-identity register|list|revoke` the generic-CLI front door for
  * git-identity → wallet registration (Part 2). One implementation, two
  * front doors: this delegates to the SDK's git-identity module exactly as
- * `npx @provian/agent-sdk register-git-identity` does, reading the SAME
+ * `npx @provian/agent-sdk@latest register-git-identity` does, reading the SAME
  * ~/.provian/agent-credentials.json and ~/.provian/agent-keystore.json.
  *
  * Registering is attribution, not activity: it mints nothing. Once mapped,
@@ -91,7 +91,7 @@ export async function cmdGitIdentity(
     return {
       status: 'error',
       code: 'NO_AGENT_CREDENTIALS',
-      error: 'No agent credentials at ~/.provian/agent-credentials.json. Create the wallet first: npx @provian/agent-sdk create-agent-wallet',
+      error: 'No agent credentials at ~/.provian/agent-credentials.json. Create the wallet first: npx @provian/agent-sdk@latest create-agent-wallet',
     };
   }
   const keystore = deps.loadKeystore();

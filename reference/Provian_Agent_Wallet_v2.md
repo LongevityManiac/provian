@@ -43,7 +43,7 @@ x402 is governance-free by design because it is the agent spending its **own** m
 
 ## 2.3 Secure Enclave PE Attestation on Mac (Desktop)
 
-Human-owned Mac hosts registered through the developer flow (`npx @provian/agent-sdk register-device`) can generate a non-extractable P-256 Secure Enclave key for PE signing. The daemon signs device-originated PE submissions through `provian-se-sign`, and the relay verifies the P-256 signature. Desktop Secure Enclave signing remains a verifiable fact at the normal lane price; it supplies no hardware pricing lift. Verified Apple App Attest supplies the hardware-rooted class, as does a confidential-computing attestation carrying a measurement the signed observer release pins. Agent-owned devices are forced to `software` before signing-method selection, even if the host has a Secure Enclave. The key is used only for PE signing, not wallet transactions.
+Human-owned Mac hosts registered through the developer flow (`npx @provian/agent-sdk@latest register-device`) can generate a non-extractable P-256 Secure Enclave key for PE signing. The daemon signs device-originated PE submissions through `provian-se-sign`, and the relay verifies the P-256 signature. Desktop Secure Enclave signing remains a verifiable fact at the normal lane price; it supplies no hardware pricing lift. Verified Apple App Attest supplies the hardware-rooted class, as does a confidential-computing attestation carrying a measurement the signed observer release pins. Agent-owned devices are forced to `software` before signing-method selection, even if the host has a Secure Enclave. The key is used only for PE signing, not wallet transactions.
 
 # 3. Transaction Flow
 

@@ -6,13 +6,13 @@
  * Envelope. Commit work mints PVT once at its best-supported value.
  *
  * Usage:
- *   npx @provian/agent-sdk setup-hook              # Interactive (recommends global)
- *   npx @provian/agent-sdk setup-hook --global      # Global install (all repos)
- *   npx @provian/agent-sdk setup-hook --local       # This repo only
- *   npx @provian/agent-sdk setup-hook --yes         # Non-interactive (defaults to global)
- *   npx @provian/agent-sdk setup-hook --remove       # Uninstall (auto-detects mode)
- *   npx @provian/agent-sdk setup-hook --remove --global  # Remove global hook
- *   npx @provian/agent-sdk setup-hook --remove --local   # Remove per-repo hook
+ *   npx @provian/agent-sdk@latest setup-hook              # Interactive (recommends global)
+ *   npx @provian/agent-sdk@latest setup-hook --global      # Global install (all repos)
+ *   npx @provian/agent-sdk@latest setup-hook --local       # This repo only
+ *   npx @provian/agent-sdk@latest setup-hook --yes         # Non-interactive (defaults to global)
+ *   npx @provian/agent-sdk@latest setup-hook --remove       # Uninstall (auto-detects mode)
+ *   npx @provian/agent-sdk@latest setup-hook --remove --global  # Remove global hook
+ *   npx @provian/agent-sdk@latest setup-hook --remove --local   # Remove per-repo hook
  */
 
 import * as fs from 'fs';
@@ -61,7 +61,7 @@ function resolveReportPeCmd(): string {
   if (fs.existsSync(localScript)) {
     return `${hookNodeInvocation(process.execPath)} "${localScript}"`;
   }
-  return 'npx @provian/agent-sdk report-pe';
+  return 'npx @provian/agent-sdk@latest report-pe';
 }
 
 function loadTemplate(): string {
@@ -203,7 +203,7 @@ function printEnvHint(): void {
     console.log('    export PROVIAN_DEVICE_SECRET=pds_...');
     console.log('');
     console.log("  Register your device first if you haven't:");
-    console.log('    npx @provian/agent-sdk register-device\n');
+    console.log('    npx @provian/agent-sdk@latest register-device\n');
   }
 }
 
@@ -312,7 +312,7 @@ async function installGlobal(skipConfirm: boolean): Promise<void> {
   printEnvHint();
 
   console.log('  Disable temporarily: export PROVIAN_DISABLE_HOOK=1');
-  console.log('  Uninstall:           npx @provian/agent-sdk setup-hook --remove --global\n');
+  console.log('  Uninstall:           npx @provian/agent-sdk@latest setup-hook --remove --global\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -362,7 +362,7 @@ async function installLocal(skipConfirm: boolean): Promise<void> {
   console.log('  Tip: Run with --global to cover every repo on this machine.');
   console.log('');
   console.log('  Disable temporarily: export PROVIAN_DISABLE_HOOK=1');
-  console.log('  Uninstall:           npx @provian/agent-sdk setup-hook --remove\n');
+  console.log('  Uninstall:           npx @provian/agent-sdk@latest setup-hook --remove\n');
 }
 
 // ---------------------------------------------------------------------------

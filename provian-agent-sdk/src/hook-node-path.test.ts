@@ -195,7 +195,7 @@ describe('healGlobalHook (D) — repairs BROKEN hooks, never re-targets a workin
 
   it('never downgrades a broken hook to the npx fallback', () => {
     const d = dirWith(composePostCommit(null, STALE));
-    expect(healGlobalHook({ hooksDir: d, section: buildSection('npx @provian/agent-sdk report-pe') })).toBe('skipped');
+    expect(healGlobalHook({ hooksDir: d, section: buildSection('npx @provian/agent-sdk@latest report-pe') })).toBe('skipped');
     expect(read(d)).toBe(composePostCommit(null, STALE));
   });
 });

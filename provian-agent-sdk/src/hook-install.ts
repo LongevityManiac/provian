@@ -40,7 +40,7 @@ import { execFileSync } from 'child_process';
  * checkout). Joined at runtime so the hosted bundle — which always resolves its own bundle and never
  * reaches this — carries no npx command literal.
  */
-const NPX_REPORT_PE_FALLBACK = ['npx', '@provian/agent-sdk', 'report-pe'].join(' ');
+const NPX_REPORT_PE_FALLBACK = ['npx', '@provian/agent-sdk@latest', 'report-pe'].join(' ');
 
 export const HOOK_START_MARKER = '# --- Provian PE Hook Start ---';
 export const HOOK_END_MARKER = '# --- Provian PE Hook End ---';

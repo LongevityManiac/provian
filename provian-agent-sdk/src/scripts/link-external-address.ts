@@ -9,8 +9,8 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * single off-chain signature. Verify IS the link.
  *
  * Usage:
- *   npx @provian/agent-sdk link-external-address --address 0xabc...
- *   npx @provian/agent-sdk link-external-address --address 0xabc... --print-message
+ *   npx @provian/agent-sdk@latest link-external-address --address 0xabc...
+ *   npx @provian/agent-sdk@latest link-external-address --address 0xabc... --print-message
  *
  * Flags:
  *   --address <0x...>   The external address to prove (required)
@@ -96,11 +96,11 @@ accepted as a flag, never printed, and never written to disk. Prefer
 
 Examples:
   export ${KEY_ENV}=0x...
-  npx @provian/agent-sdk link-external-address --address 0xabc...
+  npx @provian/agent-sdk@latest link-external-address --address 0xabc...
 
   # sign elsewhere (contract wallet / hardware wallet):
-  npx @provian/agent-sdk link-external-address --address 0xabc... --print-message
-  npx @provian/agent-sdk link-external-address --address 0xabc... \\
+  npx @provian/agent-sdk@latest link-external-address --address 0xabc... --print-message
+  npx @provian/agent-sdk@latest link-external-address --address 0xabc... \\
       --challenge-id <id> --signature 0x...
 `);
 }
@@ -139,7 +139,7 @@ export async function main(): Promise<void> {
   }
   if (!args.address) {
     console.error('Error: --address <0x...> is required.');
-    console.error('Run: npx @provian/agent-sdk link-external-address --help');
+    console.error('Run: npx @provian/agent-sdk@latest link-external-address --help');
     process.exit(2);
   }
 
@@ -186,7 +186,7 @@ export async function main(): Promise<void> {
       console.log(`  expires:      ${new Date(challenge.expires_at).toISOString()}`);
       console.log('');
       console.log('Then submit it:');
-      console.log(`  npx @provian/agent-sdk link-external-address --address ${args.address} \\`);
+      console.log(`  npx @provian/agent-sdk@latest link-external-address --address ${args.address} \\`);
       console.log(`      --challenge-id ${challenge.challenge_id} --signature 0x...`);
       console.log('');
       process.exit(0);

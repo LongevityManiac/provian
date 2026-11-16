@@ -6,7 +6,7 @@
  * remote /mcp endpoint). Never edit the mirror directly; edit the canonical
  * copy and run `scripts/sync-mcp-core.sh` from the repo root.
  *
- * The core is transport-agnostic: the stdio server (npx @provian/mcp) and the
+ * The core is transport-agnostic: the stdio server (npx @provian/mcp@latest) and the
  * relay's streamable-HTTP /mcp endpoint both assemble the SAME tool set from
  * these definitions. Handlers speak to the Provian REST API over fetch — they
  * never reach into relay internals, so every existing auth path, rate limit,

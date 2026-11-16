@@ -90,7 +90,7 @@ describe('resolveObserverEntrypoint', () => {
 
   it('RED — neither a bundle nor the compiled script → the npx fallback (the branch that is fatal pre-publish)', () => {
     const r = resolveObserverEntrypoint({ ...REFUSE_PRIMARY, execPath: NODE, distObserverScript: DIST, exists: () => false });
-    expect(r).toEqual({ command: 'npx', args: ['@provian/agent-sdk', 'observe'] });
+    expect(r).toEqual({ command: 'npx', args: ['@provian/agent-sdk@latest', 'observe'] });
   });
 
   it('an EMPTY bundlePath is "not set" — it must not produce `node "" observe`', () => {
@@ -133,7 +133,7 @@ describe('resolveObserverEntrypoint', () => {
     // The plist must NOT contain the checkout path. Baking it is precisely what
     // left the Mac mini one process-exit from permanent silence.
     expect(JSON.stringify(r)).not.toContain(checkout);
-    expect(r).toEqual({ command: 'npx', args: ['@provian/agent-sdk', 'observe'] });
+    expect(r).toEqual({ command: 'npx', args: ['@provian/agent-sdk@latest', 'observe'] });
   });
 
   it('NEGATIVE CONTROL — a symlinked global install resolves to the checkout and is refused too', () => {

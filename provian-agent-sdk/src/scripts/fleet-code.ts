@@ -12,7 +12,7 @@
  * without a tap in the app. Run it once per agent.
  *
  * Usage:
- * npx @provian/agent-sdk fleet-code # after the npm publish
+ * npx @provian/agent-sdk@latest fleet-code # after the npm publish
  * node "$HOME/.provian/agent.js" fleet-code # the hosted install's bundle
  * … fleet-code --json # one JSON object on stdout
  */

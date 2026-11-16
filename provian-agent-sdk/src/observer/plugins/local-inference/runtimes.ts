@@ -493,7 +493,7 @@ export function probeHasWitnessableSource(probe: LocalInferenceProbe): boolean {
 
 /**
  * One human-readable line shared by the daemon startup log, `register-device`,
- * `npx @provian/agent-sdk start`, and `npx @provian/agent-sdk doctor` (single copy source).
+ * `npx @provian/agent-sdk@latest start`, and `npx @provian/agent-sdk@latest doctor` (single copy source).
  */
 export function describeLocalInferenceProbe(probe: LocalInferenceProbe): string {
   const parts: string[] = [];

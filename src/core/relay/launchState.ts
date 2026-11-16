@@ -40,11 +40,11 @@ export type LaunchGate = 'live' | 'opens_at_launch';
 export interface ConnectLaunchGates {
     /** The agent adds Provian's MCP server (`/mcp`,). */
     mcp: LaunchGate;
-    /** `npx @provian/agent-sdk onboard` (the published SDK). */
+    /** `npx @provian/agent-sdk@latest onboard` (the published SDK). */
     sdk: LaunchGate;
     /** `"$HOME/.provian/bin/provian" fleet-code` — the installed agent script, live today. */
     fleetInstalled: LaunchGate;
-    /** `npx @provian/agent-sdk fleet-code`. */
+    /** `npx @provian/agent-sdk@latest fleet-code`. */
     fleetNpx: LaunchGate;
     /** `npx @provian/cli fleet-code`. */
     fleetCli: LaunchGate;

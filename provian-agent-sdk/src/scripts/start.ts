@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * npx @provian/agent-sdk start — the ONE interactive command that shepherds a user from nothing
+ * npx @provian/agent-sdk@latest start — the ONE interactive command that shepherds a user from nothing
  * to CONFIRMED tool-call capture, and does not declare success until it is
  * proven. Each program has exactly one witness lane — its own session records
  * if it keeps them (zero harness changes), otherwise the local model proxy,
@@ -15,7 +15,7 @@
  * [2/4] Detect the harness — process scan; confirm or note it.
  * [3/4] Guide the ONE enable step for THAT harness (copy-paste ready), then
  * pause for the human to add it.
- * [4/4] PROVE it — `npx @provian/agent-sdk doctor` synthetic span → PE (Provian side), then
+ * [4/4] PROVE it — `npx @provian/agent-sdk@latest doctor` synthetic span → PE (Provian side), then
  * watch for the user's REAL spans → GREEN, or RED with the exact next
  * step. Loop until GREEN.
  *
@@ -104,7 +104,7 @@ function runRegisterDevice(passthrough: string[]): number {
   const script = resolveSiblingScript('register-device');
   if (!script) {
     // Fall back to the published bin via npx if the sibling isn't on disk.
-    const r = spawnSync('npx', ['@provian/agent-sdk', 'register-device', ...passthrough], { stdio: 'inherit' });
+    const r = spawnSync('npx', ['@provian/agent-sdk@latest', 'register-device', ...passthrough], { stdio: 'inherit' });
     return r.status ?? 1;
   }
   const r = spawnSync(process.execPath, [script, ...passthrough], { stdio: 'inherit' });
@@ -147,7 +147,7 @@ export async function runStart(args: StartArgs): Promise<StartReport> {
       const code = runRegisterDevice(args.passthrough);
       onboarded = isOnboarded();
       if (code !== 0 && !onboarded) {
-        say('    Registration did not complete. Fix the error above and re-run `npx @provian/agent-sdk start`.');
+        say('    Registration did not complete. Fix the error above and re-run `npx @provian/agent-sdk@latest start`.');
       }
     }
 
@@ -159,8 +159,8 @@ export async function runStart(args: StartArgs): Promise<StartReport> {
         harness_tier: harnessEnableGuidance(args.harness ?? detectAgentHarness()).tier,
         enable_steps: [],
         doctor: null,
-        next_step: 'Register this device, then re-run `npx @provian/agent-sdk start`.',
-        next_command: 'npx @provian/agent-sdk register-device --yes',
+        next_step: 'Register this device, then re-run `npx @provian/agent-sdk@latest start`.',
+        next_command: 'npx @provian/agent-sdk@latest register-device --yes',
       };
       return report;
     }
@@ -168,7 +168,7 @@ export async function runStart(args: StartArgs): Promise<StartReport> {
     if (isObserverRunning()) {
       say('    Observer is running.');
     } else {
-      say('    Note: the observer is not running yet — it starts at registration and at login; `npx @provian/agent-sdk observe` starts it now.');
+      say('    Note: the observer is not running yet — it starts at registration and at login; `npx @provian/agent-sdk@latest observe` starts it now.');
     }
 
     // ---- [2/4] Detect the harness ----------------------------------------
@@ -251,7 +251,7 @@ async function main(): Promise<void> {
   const args = parseStartArgs(process.argv.slice(2));
   if (args.help) {
     console.log(`
-Usage: npx @provian/agent-sdk start [options]
+Usage: npx @provian/agent-sdk@latest start [options]
 
 The guided, one-terminal-session setup for Provian tool-call capture:
 onboard → detect your harness → enable the one emission step → PROVE capture.
@@ -280,7 +280,7 @@ register-device during onboarding.
   } else if (report.status === 'green') {
     process.stderr.write('\n  All set — capture is confirmed. Your agent is earning from tool calls.\n\n');
   } else {
-    process.stderr.write('\n  Not confirmed yet. Follow the next step above and re-run `npx @provian/agent-sdk start` (or `npx @provian/agent-sdk doctor`).\n\n');
+    process.stderr.write('\n  Not confirmed yet. Follow the next step above and re-run `npx @provian/agent-sdk@latest start` (or `npx @provian/agent-sdk@latest doctor`).\n\n');
   }
   process.exit(report.status === 'green' ? 0 : 1);
 }

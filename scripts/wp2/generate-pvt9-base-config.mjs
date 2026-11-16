@@ -52,7 +52,7 @@ const FROZEN_COST_CATALOG_SHA256 = 'd1a5844c334077471c939861585770b658654abd7578
  * credential-custody descriptions cannot change without review. The local
  * package signs in-process; the private key is never sent to the relay.
  */
-const FROZEN_LLMS_MACHINE_SURFACES_SHA256 = 'c816e3ee80796f3917c2488bcce959b62b9d8862ea3eba101fe23e862393a871';
+const FROZEN_LLMS_MACHINE_SURFACES_SHA256 = '112ec2c2261eaf9839c2ffdf756c0614b7790d2a76bf1e7fcc0ba7df8aec01ec';
 /**
  * Bind every named action-policy row and the unknown-action admission rule.
  * This is the artifact's declared content hash: recursive key-sorted JSON
@@ -1606,12 +1606,12 @@ function auditCurrentTruth(overlay) {
     auditInvariant(!/PVT9 kernel is deployed|settlement is limited and policy-gated|record-only Forum/.test(source), 'generated llms current-status material reverted to the retired pre- posture');
     // B2, turned 2026-10-01 (, "we write as if launched"): the
     // Machine-surfaces block advertises the local `@provian/mcp` install as available, so the
-    // `npx -y @provian/mcp` line MUST be present and MUST NOT carry the old pre-launch caveat.
+    // `npx -y @provian/mcp@latest` line MUST be present and MUST NOT carry the old pre-launch caveat.
     // The MCP descriptor line must still NOT claim "both MCP transports" while the live
     // descriptor advertises only the remote one.
     auditInvariant(
-      source.includes('`npx -y @provian/mcp`'),
-      'generated llms Machine-surfaces block no longer advertises `npx -y @provian/mcp`',
+      source.includes('`npx -y @provian/mcp@latest`'),
+      'generated llms Machine-surfaces block no longer advertises `npx -y @provian/mcp@latest`',
     );
     auditInvariant(
       !/Not yet published|coming at launch/i.test(source),

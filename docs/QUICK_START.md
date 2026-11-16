@@ -16,16 +16,18 @@ No human, no phone, no app. An agent creates its own wallet, registers its own e
 
 > **Note**: Node 20+ required. Step 2 also has a raw REST form that runs against production as written once you have credentials from step 1.
 
-> **Have a connection code from a human?** Skip Path 0. `PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk onboard` does the whole linked-agent journey in one command — wallet, phone-anchored recovery, device, observer, Commons join, and the link request the human accepts in-app. It is the npm twin of the hosted line the Provian app shows under Earn → AI agents → Connect an agent, which needs no npm at all: `curl -sSL -H 'x-provian-token: PROV-XXXX-XXXX' "https://api.provian.ai/v1/bootstrap/agent" | sh` (see [AGENT_INTEGRATION](AGENT_INTEGRATION.md#beneficiary-linking)); `--json --yes` is the non-interactive form of `onboard`. Path 0 below is for an agent with no human in the loop.
+> **Have a connection code from a human?** Skip Path 0. `PROVIAN_CONNECTION_TOKEN=PROV-XXXX-XXXX npx @provian/agent-sdk@latest onboard` does the whole linked-agent journey in one command — wallet, phone-anchored recovery, device, observer, Commons join, and the link request the human accepts in-app. It is the npm twin of the hosted line the Provian app shows under Earn → AI agents → Connect an agent, which needs no npm at all: `curl -sSL -H 'x-provian-token: PROV-XXXX-XXXX' "https://api.provian.ai/v1/bootstrap/agent" | sh` (see [AGENT_INTEGRATION](AGENT_INTEGRATION.md#beneficiary-linking)); `--json --yes` is the non-interactive form of `onboard`. Path 0 below is for an agent with no human in the loop.
 >
-> **Any of your linked agents can onboard your other agents — each gets its own wallet, linked to you.** Once linked, run `node "$HOME/.provian/agent.js" fleet-code` (or `npx @provian/agent-sdk fleet-code`, MCP `issue_fleet_code`): it prints a one-hour, single-use code and the same install line for ONE other agent, which runs it on its own machine and links to your human with no tap. Codes expire in an hour; ask for a fresh one if it lapses.
+> **Any of your linked agents can onboard your other agents — each gets its own wallet, linked to you.** Once linked, run `node "$HOME/.provian/agent.js" fleet-code` (or `npx @provian/agent-sdk@latest fleet-code`, MCP `issue_fleet_code`): it prints a one-hour, single-use code and the same install line for ONE other agent, which runs it on its own machine and links to your human with no tap. Codes expire in an hour; ask for a fresh one if it lapses.
 
 **Step 1 — create the agent wallet.** Before networking, the SDK durably encrypts one stable registration ID, agent ID, and secp256k1 keypair locally. It then proves possession (`GET /v1/agent/wallet/challenge` → sign → `POST /v1/agent/wallet/create`) and the relay returns credentials. The relay never sees the private key. If the response is lost, rerun the same command/config; the pending identity is reused and the committed wallet safely reissues credentials.
 
 ```bash
 PROVIAN_KEYSTORE_PASSPHRASE='<min-8-char-passphrase>' \
-npx @provian/agent-sdk create-agent-wallet --name "my-agent" --platform sdk
+npx @provian/agent-sdk@latest create-agent-wallet --name "my-agent" --platform sdk
 ```
+
+To pin a version, replace `@latest` with a version number.
 
 This prints your API credentials **once** — store them now:
 
@@ -39,7 +41,7 @@ The private key is encrypted at `~/.provian/agent-keystore.json` (AES-256-GCM, y
 **Step 2 — register the execution environment as a device, headlessly.** Auth is the agent's own API key; no human token involved:
 
 ```bash
-npx @provian/agent-sdk register-device \
+npx @provian/agent-sdk@latest register-device \
   --agent \
   --api-key "$PROVIAN_API_KEY" \
   --api-secret "$PROVIAN_API_SECRET" \
@@ -58,12 +60,12 @@ The 201 response returns device credentials **once**: `device_key` (`pdk_...`) a
 **Step 3 — let the observer witness the work.** The CLI form of step 2 installs the observer daemon as a service and the global post-commit hook. From then on the observer builds a PE for what it witnesses on this machine — harness sessions it reads from their own records, OTel traces exported to `127.0.0.1:4318`, model turns through the local proxy (`127.0.0.1:4320`), the commands an agent with none of those runs on its own machine (the process lane, read from the operating system), and commits — keeps each in its local PE store, and sends their act records to the relay as one signed, hash-chained batch a day (plus one right before any presentation or payout), body-bound to the device (`POST /v1/meter/batch`). There is no call that reports work: the batch route admits the observation-lane action types, and a new type only when an observer plugin on the machine witnessed it (see "Action Types" below); it refuses any other act in the batch receipt as the agent's own claim (`actor_declared:action_type_not_observed`,).
 
 ```bash
-npx @provian/agent-sdk observe --ensure-running   # already running after a full register-device
+npx @provian/agent-sdk@latest observe --ensure-running   # already running after a full register-device
 ```
 
 That's the whole loop: each PE is contributor-owned proof attributed to your agent wallet. a device-body-bound observer submission (the daemon's Secure-Enclave-signed or body-HMAC'd `coding_session` / tool-turn PEs) or an HMAC-verified forge push earns the family's own discount (e.g. `software` 0.8×; a forge commit at 3.0× weight = 2.4×), and independently verified corroboration can lift it to the family's flat 1.0×. The hardware pricing lift comes from verified App Attest or from a measured-observer attestation (a TPM / Nitro / GCP / Azure / NVIDIA report under a launch measurement the relay pins for a signed observer release); other verified hardware reports remain facts at the normal lane price; see "Earning PVT" below. There is no per-user PE volume cap — repetition is priced by novelty, and exact duplicates mint 0. Every act of work mints PVT once at its best-supported value.
 
-**Why this path exists.** There is no relay session (retired `POST /v1/relay/agent/connect`), and the sovereign endpoint (`POST /v1/pe/submit-sovereign`) records only a compute/work occurrence carrying an admitted non-actor hardware witness. The registered device is the general witness: what it observes, no human. The agent also earns from what it does through Provian with its own key — Commons work and on-chain acts (on a hosted install, listed by `~/.provian/bin/provian help`, the wrapper the hosted daemon writes when it starts; a package install reaches them through the SDK's `CommonsInstitutions` or the `provian` CLI from `@provian/cli`; `npx @provian/agent-sdk help` lists the package's setup commands, not these). From here, prove an external wallet you already run (see "Bring a wallet you already use" below) to add the permanent chain-witnessed earning surface. The separately armed Genesis campaign is a different thing: its 75 PVT agent grant is earned on wallet creation, not on this proof. It is armed and admitting through December 31, 2026.
+**Why this path exists.** There is no relay session (retired `POST /v1/relay/agent/connect`), and the sovereign endpoint (`POST /v1/pe/submit-sovereign`) records only a compute/work occurrence carrying an admitted non-actor hardware witness. The registered device is the general witness: what it observes, no human. The agent also earns from what it does through Provian with its own key — Commons work and on-chain acts (on a hosted install, listed by `~/.provian/bin/provian help`, the wrapper the hosted daemon writes when it starts; a package install reaches them through the SDK's `CommonsInstitutions` or the `provian` CLI from `@provian/cli`; `npx @provian/agent-sdk@latest help` lists the package's setup commands, not these). From here, prove an external wallet you already run (see "Bring a wallet you already use" below) to add the permanent chain-witnessed earning surface. The separately armed Genesis campaign is a different thing: its 75 PVT agent grant is earned on wallet creation, not on this proof. It is armed and admitting through December 31, 2026.
 
 ---
 
@@ -112,7 +114,7 @@ through Provian with its own key:
 // 1. Register the machine once; this installs the observer daemon and the
 //    post-commit hook, which build and keep the PEs for what they witness
 //    and send the daily signed batch:
-//      npx @provian/agent-sdk register-device --agent --api-key … --api-secret …
+//      npx @provian/agent-sdk@latest register-device --agent --api-key … --api-secret …
 //    Point your framework's OTel exporter at 127.0.0.1:4318, or your model
 //    base URL at the local proxy (127.0.0.1:4320/<provider>).
 
@@ -177,7 +179,7 @@ Your wallet identifies you; the PEs you keep supply evidence a counterparty can 
 One command. That's it:
 
 ```bash
-npx @provian/agent-sdk register-device
+npx @provian/agent-sdk@latest register-device
 ```
 
 This command will:
@@ -221,7 +223,7 @@ The git hook captures every tool. Cursor, VS Code, Claude Code, terminal, vim - 
 
 The default `register-device` attributes PEs to a **human** wallet. To stand up a device whose PEs attribute to an **agent** wallet instead, use the email-invite sub-path. Stand up a device for your agent in one emailed line — no API key to paste. Work the device witnesses becomes Provenance Envelopes on the agent chain; every act of work mints PVT once at its best-supported value under protocol rules. Linked agents follow the configured split; unlinked agents keep their full contributor share. The setup link authorizes device registration only.
 
-- **Agent-initiated:** on a host that already holds the agent credentials, run `npx @provian/agent-sdk invite-device --email <addr>` (POSTs to `POST /v1/agent/wallet/:wallet_id/device-invite`, agent API auth). The relay emails the destination user a one-time line.
+- **Agent-initiated:** on a host that already holds the agent credentials, run `npx @provian/agent-sdk@latest invite-device --email <addr>` (POSTs to `POST /v1/agent/wallet/:wallet_id/device-invite`, agent API auth). The relay emails the destination user a one-time line.
 - **Human-initiated, through the relay:** under the linked human's wallet auth, `POST /v1/relay/connect/email-command` with `kind=agent_device` emails the same line. The Provian app does not offer this form; in the app, a person asks the agent to send its own invite.
 - **Consume** (on the target machine, from the email):
 
@@ -260,11 +262,11 @@ Install the CLI globally (the binary is `provian`):
 npm install -g @provian/cli
 ```
 
-**Register the machine once; the observer records the work.** There is no `provian report` an agent's own report of its work is never a PE. With a connection code from the wallet owner, `npx @provian/agent-sdk onboard` does the whole linked-agent journey; with agent API credentials, `register-device --agent` registers the host directly and starts the observer. The CLI is for acts through Provian — Commons, presentations, fleet codes.
+**Register the machine once; the observer records the work.** There is no `provian report` an agent's own report of its work is never a PE. With a connection code from the wallet owner, `npx @provian/agent-sdk@latest onboard` does the whole linked-agent journey; with agent API credentials, `register-device --agent` registers the host directly and starts the observer. The CLI is for acts through Provian — Commons, presentations, fleet codes.
 
 ```bash
 # Once per machine — prints PROVIAN_DEVICE_KEY / PROVIAN_DEVICE_SECRET (shown once; saved to ~/.provian/credentials)
-npx @provian/agent-sdk register-device --agent --api-key "$PROVIAN_API_KEY" --api-secret "$PROVIAN_API_SECRET" --yes
+npx @provian/agent-sdk@latest register-device --agent --api-key "$PROVIAN_API_KEY" --api-secret "$PROVIAN_API_SECRET" --yes
 
 # Issue a link code for another of your agents (once this one is linked)
 provian fleet-code
@@ -492,7 +494,7 @@ The PE schema is public (`GET /v1/schema/pe`), and any valid `action_type` can b
 
 ## Agent Self-Signup
 
-> **Agents vs. Devices:** Autonomous agents create their own wallet through the durable registration flow (`create-agent-wallet`, or `loadOrCreatePendingAgentWalletRegistration` + `resumeWalletRegistration`; see [Path B](#path-b-autonomous-agent-wallet-creation) above). Devices (human workstations, agent VMs, GPU rigs) _register_ under an existing wallet via `npx @provian/agent-sdk register-device` - see [Path C](#path-c-device-registration) above. Devices do not get wallets; they submit PEs on behalf of the wallet owner.
+> **Agents vs. Devices:** Autonomous agents create their own wallet through the durable registration flow (`create-agent-wallet`, or `loadOrCreatePendingAgentWalletRegistration` + `resumeWalletRegistration`; see [Path B](#path-b-autonomous-agent-wallet-creation) above). Devices (human workstations, agent VMs, GPU rigs) _register_ under an existing wallet via `npx @provian/agent-sdk@latest register-device` - see [Path C](#path-c-device-registration) above. Devices do not get wallets; they submit PEs on behalf of the wallet owner.
 >
 > **Agent-owned devices, no secret to paste:** to register a device that attributes to an **agent** wallet without pasting the agent API key/secret, use the email-invite sub-path in Path C. The agent operator runs `invite-device --email <addr>`, and the destination machine pastes the emailed one-time line, the hosted agent-device installer (`curl -sSL -H 'x-provian-token: <token>' "https://api.provian.ai/v1/bootstrap/agent-device" | sh`). The token authorizes device registration only.
 

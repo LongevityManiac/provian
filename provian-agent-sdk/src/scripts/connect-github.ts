@@ -13,7 +13,7 @@ import { guardedFetch as fetch, guardedFetcher } from '../guarded-fetch';
  * relay binds the install to that device's owning wallet.
  *
  * Usage:
- *   npx @provian/agent-sdk connect-github
+ *   npx @provian/agent-sdk@latest connect-github
  *
  * Optional flags:
  *   --relay-url <url>    Override relay URL (defaults to file/env value)
@@ -75,7 +75,7 @@ function openInBrowser(url: string): Promise<void> {
 async function main(): Promise<void> {
   const creds = loadCredentials();
   if (!creds) {
-    console.error('No Provian credentials found. Run: npx @provian/agent-sdk register-device');
+    console.error('No Provian credentials found. Run: npx @provian/agent-sdk@latest register-device');
     process.exit(2);
   }
 
