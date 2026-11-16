@@ -194,7 +194,8 @@ export async function listTheftTransfers(account: string, network: RecourseChain
 
 /** Resolve the block and actual transfer from two canonical chain views. No
  * block number is ever requested from the member. */
-export async function verifyTheftTransfer(selected: TheftTransfer, account: string, network: RecourseChainNetwork): Promise<VerifiedTheftTransfer> {
+export async function verifyTheftTransfer(selected: TheftTransfer, account: string, network: RecourseChainNetwork,
+  owners: readonly string[] = [account]): Promise<VerifiedTheftTransfer> {
   if (selected.from !== account.toLowerCase() || !HASH.test(selected.transactionHash)) return fail('the selected transfer is not from this account');
   const deployment = await network.deployment(), kernel = deployment.addresses.kernel.toLowerCase();
   const facts = await Promise.all(network.rpcs.map(async rpc => {
@@ -220,16 +221,17 @@ export async function verifyTheftTransfer(selected: TheftTransfer, account: stri
       moves.push({ index: quantity(log.logIndex, 'transfer log without an index'), from: String(transfer.args.from).toLowerCase(),
         to: String(transfer.args.to).toLowerCase(), value: BigInt(transfer.args.value) });
     }
-    // The relay's loss rule: from the account's first outflow in this transaction on, PVT out of the
-    // account counts, PVT back into it is subtracted.
-    const self = account.toLowerCase();
-    const first = Math.min(...moves.filter(m => m.from === self && m.to !== self && m.value > 0n).map(m => m.index));
+    // The relay's loss rule over every address the owner has bound: from the owner's first outflow to
+    // an address it does not own, PVT out of its addresses counts and PVT back into them is subtracted;
+    // transfers between its own addresses are neither.
+    const own = new Set([account, ...owners].map(a => a.toLowerCase()));
+    const first = Math.min(...moves.filter(m => own.has(m.from) && !own.has(m.to) && m.value > 0n).map(m => m.index));
     if (!Number.isFinite(first)) return fail('no PVT left this account in this transaction');
     let amount = 0n;
     const recipients = new Map<string, bigint>();
     for (const m of moves.filter(x => x.index >= first).sort((a, b) => a.index - b.index)) {
-      if (m.from === self && m.to !== self) { amount += m.value; recipients.set(m.to, (recipients.get(m.to) ?? 0n) + m.value); }
-      if (m.from !== self && m.to === self) amount -= m.value;
+      if (own.has(m.from) && !own.has(m.to)) { amount += m.value; recipients.set(m.to, (recipients.get(m.to) ?? 0n) + m.value); }
+      if (!own.has(m.from) && own.has(m.to)) amount -= m.value;
     }
     if (amount <= 0n) return fail('no net PVT left this account in this transaction');
     const timestamp = Number(BigInt(canonical.timestamp)) * 1000;
@@ -243,12 +245,14 @@ export async function verifyTheftTransfer(selected: TheftTransfer, account: stri
 }
 
 /** Choose a transfer by its transaction hash, then verify it on both RPCs. A report covers the whole
- * transaction, as the relay records it, whatever the number of recipients. */
-export async function resolveTheftTransfer(transactionHash: string, account: string, network: RecourseChainNetwork): Promise<VerifiedTheftTransfer> {
+ * transaction, as the relay records it, whatever the number of recipients. `owners` is every address the
+ * owner has bound (from GET /v1/recourse/ownership); transfers among them are not a loss. */
+export async function resolveTheftTransfer(transactionHash: string, account: string, network: RecourseChainNetwork,
+  owners: readonly string[] = [account]): Promise<VerifiedTheftTransfer> {
   const hash = transactionHash.toLowerCase(), self = account.toLowerCase();
   if (!HASH.test(hash)) throw Error('recourse_transfer_hash_invalid');
   try {
-    const verified = await verifyTheftTransfer({ transactionHash: hash, from: self, to: self, amount: '0', timestamp: 0 }, self, network);
+    const verified = await verifyTheftTransfer({ transactionHash: hash, from: self, to: self, amount: '0', timestamp: 0 }, self, network, owners);
     // A burn sends PVT nowhere it can be reversed from; it is never a theft to report.
     if (verified.recipients.every(r => r.to === ZeroAddress)) throw Error('no PVT left this account to another address');
     return verified;

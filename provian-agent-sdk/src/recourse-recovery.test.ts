@@ -237,6 +237,16 @@ it('a prepared loss from a retired kernel never reaches owner signing or queuein
   expect(network.queue).not.toHaveBeenCalled();
   expect(loadKeystore(path.join(directory, 'agent-keystore.json'))).toEqual(old);
 });
+it('RED: a relay loss that differs from the reviewed amount stops before any replacement key or request', async () => {
+  network.fetch.mockResolvedValue({ ok: true, json: async () => ({ request: `0x${'ab'.repeat(32)}`,
+    lossHash: `0x${'bc'.repeat(32)}`, maximumLoss: '55', kernel: `0x${'99'.repeat(20)}` }) });
+  const old = loadKeystore(path.join(directory, 'agent-keystore.json'))!;
+  await expect(recoverRecourseAgent({ ...input(), restoration: { transactionHash: `0x${'cd'.repeat(32)}`, block: 100,
+    apiKey: 'old-api', apiSecret: 'old-secret', expectedMaximumLoss: '5' } })).rejects.toThrow(/recourse_loss_mismatch/);
+  expect(network.queue).not.toHaveBeenCalled();
+  expect(fs.existsSync(path.join(directory, 'recourse-recovery.json'))).toBe(false);
+  expect(loadKeystore(path.join(directory, 'agent-keystore.json'))).toEqual(old);
+});
 it('re-signs a queued bounded intent after ordinary succession while preserving the historical loss and destination', {timeout:30000},async()=>{
  const scope={request:`0x${'ab'.repeat(32)}`,lossHash:`0x${'bc'.repeat(32)}`,maximumLoss:'99'};
  const originalKernel=requireConfiguredPvt9Runtime().address.toLowerCase(),nextKernel=`0x${'99'.repeat(20)}`;

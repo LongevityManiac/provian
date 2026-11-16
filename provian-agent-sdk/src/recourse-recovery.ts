@@ -136,7 +136,7 @@ export async function recoverRecourseAgent(input: {
   relayUrl: string; directory: string; passphrase: string; fetch?: typeof globalThis.fetch;
   /** Begin a new recovery only after the preceding operation finished. */
   newRecovery?: boolean;
-  restoration?: { transactionHash: string; block: number; apiKey: string; apiSecret: string };
+  restoration?: { transactionHash: string; block: number; apiKey: string; apiSecret: string; expectedMaximumLoss?: string };
   signal?: AbortSignal;
 }): Promise<{ walletId: string; destination: string; generation: number; restorationRequestId?: string }> {
   const network = ownerChainNetwork();
@@ -185,6 +185,11 @@ export async function recoverRecourseAgent(input: {
         const prepared: unknown = await response.json();
         if (!prepared || typeof prepared !== 'object' || !('kernel' in prepared) || typeof prepared.kernel !== 'string'
           || !('request' in prepared) || !('lossHash' in prepared) || !('maximumLoss' in prepared)) throw new Error('Restoration preparation invalid');
+        // The member reviewed one amount; the relay must record exactly that loss, or nothing proceeds
+        // (no replacement key is generated and no request is filed).
+        if (input.restoration.expectedMaximumLoss !== undefined && String(prepared.maximumLoss) !== input.restoration.expectedMaximumLoss) {
+          throw new Error(`recourse_loss_mismatch: the relay records ${String(prepared.maximumLoss)} atomic PVT for this transaction, not the ${input.restoration.expectedMaximumLoss} reviewed; nothing was submitted`);
+        }
         restoration = { transactionHash: input.restoration.transactionHash, block: input.restoration.block, kernel: prepared.kernel,
           scope: parseRestorationScope({ request: prepared.request, lossHash: prepared.lossHash, maximumLoss: prepared.maximumLoss }) };
       }

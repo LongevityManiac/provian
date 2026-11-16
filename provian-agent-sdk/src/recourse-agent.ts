@@ -24,7 +24,7 @@
  */
 import * as path from 'path';
 import { homedir } from 'os';
-import { formatUnits } from 'ethers';
+import { formatUnits, parseUnits } from 'ethers';
 import { loadKeystore, type AgentKeystore } from './keystore';
 import { loadBoundAgentCredentialsFile } from './scripts/agent-credentials-file';
 import { readLocalKeystoreSecret } from './local-keystore-secret';
@@ -32,7 +32,7 @@ import { readRecoursePoolChain, type RecoursePoolState } from './recourse-pool-c
 import { ownerChainNetwork } from './protocol-runtime';
 import {
   beginAgentMembership, readAgentMembershipTransition, authorizeAgentMembershipConsent, leaveAgentMembership,
-  submitAgentRestorationRequest, readRestorationRequests, readRecoursePool, type RecourseConfig,
+  submitAgentRestorationRequest, readRestorationRequests, readRecoursePool, readRecourseOwnership, type RecourseConfig,
 } from './recourse';
 import type { MembershipConsentChallenge, MembershipOperationStatus, MembershipTransitionView } from './recourse-membership-client';
 import {
@@ -484,6 +484,16 @@ export async function readAgentRecourseStatus(config: RecourseConfig,
   return { ...relay, pendingAction };
 }
 
+/** Every address this owner has bound and confirmed, from the relay; the agent's own address always. A
+ * failed read refuses (Unknown = block): a loss reviewed without the owner's full set could differ from
+ * the one the relay records. */
+export async function ownedAddresses(config: RecourseConfig, address: string): Promise<string[]> {
+  const reply = object(await readRecourseOwnership(config));
+  if (!Array.isArray(reply.addresses)) return invalid();
+  const bound = reply.addresses.map(object).filter(row => row.chainBindingStatus === 'confirmed').map(row => text(String(row.address ?? '').toLowerCase(), ADDRESS));
+  return [...new Set([address.toLowerCase(), ...bound])];
+}
+
 export function defaultAgentRecourseDeps(identity: AgentRecourseIdentity, command: (sub: string) => string,
   sleep: (ms: number) => Promise<void> = ms => new Promise(resolve => setTimeout(resolve, ms))): AgentRecourseDeps {
   const config = identity.config;
@@ -496,9 +506,9 @@ export function defaultAgentRecourseDeps(identity: AgentRecourseIdentity, comman
       kind: view.kind, challenge }),
     leave: async view => leaveAgentMembership(config, { ...signer(identity), transitionId: view.id }),
     listTransfers: scan => listTheftTransfers(identity.address, ownerChainNetwork(), scan),
-    resolveTransfer: tx => resolveTheftTransfer(tx, identity.address, ownerChainNetwork()),
+    resolveTransfer: async tx => resolveTheftTransfer(tx, identity.address, ownerChainNetwork(), await ownedAddresses(config, identity.address)),
     submitRestoration: async transfer => submitAgentRestorationRequest(config, { ...signer(identity),
-      transactionHash: transfer.transactionHash, block: transfer.block }),
+      transactionHash: transfer.transactionHash, block: transfer.block, expectedMaximumLoss: parseUnits(transfer.amount, 18).toString() }),
     readRequests: () => readRestorationRequests(config),
     sleep, command,
   };

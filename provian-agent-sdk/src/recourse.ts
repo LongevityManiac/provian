@@ -135,9 +135,12 @@ export async function readRecourseOwnership(config: RecourseConfig): Promise<unk
  * Adjudication and execution use that one-use scope without another signature. */
 export async function submitAgentRestorationRequest(config: RecourseConfig, input: {
   readonly directory: string; readonly passphrase: string; readonly transactionHash: string; readonly block: number;
+  /** The loss the member reviewed, atomic PVT; the relay's prepared loss must equal it before anything is submitted. */
+  readonly expectedMaximumLoss?: string;
 }): Promise<{ walletId: string; destination: string; generation: number; restorationRequestId?: string }> {
   const recovered = await recoverRecourseAgent({ ...input, relayUrl: config.relayUrl, fetch: config.fetch, signal: config.signal,
-    restoration: { transactionHash: input.transactionHash, block: input.block, apiKey: config.apiKey, apiSecret: config.apiSecret } });
+    restoration: { transactionHash: input.transactionHash, block: input.block, apiKey: config.apiKey, apiSecret: config.apiSecret,
+      ...(input.expectedMaximumLoss !== undefined ? { expectedMaximumLoss: input.expectedMaximumLoss } : {}) } });
   if (recovered.walletId !== config.walletId || !recovered.restorationRequestId) throw new Error('recourse_wallet_mismatch');
   return recovered;
 }

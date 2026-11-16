@@ -141,6 +141,28 @@ describe('resolveTheftTransfer / verifyTheftTransfer', () => {
       { address: KERNEL, from: THIEF, to: ME, value: PVT('4'), tx: 9, block: 90_000, index: 1 }];
     expect((await resolveTheftTransfer(h(9), ME, network(fakeRpc(back), fakeRpc(back)))).amount).toBe('6.0');
   });
+  it('PVT that came in before the first outflow is not subtracted, as the relay ignores it', async () => {
+    const early: Log[] = [{ address: KERNEL, from: THIEF, to: ME, value: PVT('4'), tx: 10, block: 90_000, index: 0 },
+      { address: KERNEL, from: ME, to: THIEF, value: PVT('10'), tx: 10, block: 90_000, index: 1 }];
+    expect((await resolveTheftTransfer(h(10), ME, network(fakeRpc(early), fakeRpc(early)))).amount).toBe('10.0');
+  });
+  it('a burn in the same transaction as a theft is reported and counted, as the relay counts it', async () => {
+    const mixed: Log[] = [{ address: KERNEL, from: ME, to: THIEF, value: PVT('10'), tx: 11, block: 90_000, index: 0 },
+      { address: KERNEL, from: ME, to: ZERO, value: PVT('2'), tx: 11, block: 90_000, index: 1 }];
+    const t = await resolveTheftTransfer(h(11), ME, network(fakeRpc(mixed), fakeRpc(mixed)));
+    expect(t.amount).toBe('12.0');
+    expect(t.recipients.map(r => r.to).sort()).toEqual([ZERO, THIEF].sort());
+  });
+  it('RED: transfers between the owner\'s own bound addresses are not a loss', async () => {
+    const OLD = FRIEND;
+    const moves: Log[] = [{ address: KERNEL, from: ME, to: THIEF, value: PVT('10'), tx: 12, block: 90_000, index: 0 },
+      { address: KERNEL, from: ME, to: OLD, value: PVT('5'), tx: 12, block: 90_000, index: 1 },
+      { address: KERNEL, from: OLD, to: ME, value: PVT('1'), tx: 12, block: 90_000, index: 2 }];
+    const net = network(fakeRpc(moves), fakeRpc(moves));
+    expect((await resolveTheftTransfer(h(12), ME, net, [ME, OLD])).amount).toBe('10.0');
+    const own: Log[] = [{ address: KERNEL, from: ME, to: OLD, value: PVT('5'), tx: 13, block: 90_000, index: 0 }];
+    await expect(resolveTheftTransfer(h(13), ME, network(fakeRpc(own), fakeRpc(own)), [ME, OLD])).rejects.toThrow(/recourse_transfer_not_outgoing/);
+  });
   it('RED: a burn or an incoming transfer cannot be reported', async () => {
     const net = network(fakeRpc(HISTORY), fakeRpc(HISTORY));
     await expect(resolveTheftTransfer(h(2), ME, net)).rejects.toThrow(/recourse_transfer_not_outgoing/);
