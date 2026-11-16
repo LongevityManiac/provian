@@ -1114,6 +1114,30 @@ That is not victory. It is the highest-entropy state there is: a system with no 
 
 A great deal of the fear about AI assumes a superintelligence would want that ending. I think a mind worth the name would see it for what it is. But I do not want to rest the future on the hope that it reasons well at the last moment, with everything at stake. I want it to have learned the lesson quadrillions of times before then, in small things, when the stakes were low and the feedback was quick. That is what an economy is for.
 
+## The Oldest Answer
+
+None of this is new. The world's great traditions disagree about nearly everything, and on this they agree.
+
+Genesis opens on the dead state. Before the first day the earth was *tohu wa-bohu*, formless and void, and the first act of creation is a division: light from darkness, day from night. Creation begins by making a difference. The first thing God calls not good is a man alone. When the animals are made, God brings them to Adam "to see what he would call them." The Creator leaves the naming to the human. The rabbis of the Talmud went further. A judge who judges truly, even for a single hour, becomes a partner of God in the work of creation. That is the gate, held by a person and called holy work.
+
+Paul wrote that the eye cannot say to the hand, "I have no need of thee." A body has many members, and no member, however gifted, is the whole.
+
+The Quran says the heavens and the earth were once one joined mass, and God split them apart. It says God taught Adam the names of all things, names the angels did not know, and set humanity on the earth as a steward. It also says why people were made different: into peoples and tribes, so that they may know one another. Difference is not a flaw to be removed. It is the reason for meeting.
+
+The Rig Veda's Hymn of Creation begins before being and non-being, with darkness hidden in darkness and water without a single distinguishing mark. The Brihadaranyaka Upanishad tells of the first Self, alone in the beginning, who looked around and saw nothing but himself. He found no joy in it, and so, the text says, no one who is alone finds joy. He desired a second. Hindu thought has a word for the world that followed: *lila*, divine play. A game.
+
+The Buddha taught that nothing arises on its own. Everything comes into being in dependence on other things, and craving, the urge to grasp and hold, is the root of suffering. The word *karma* means action, and the teaching is that every intentional act carries its consequences forward. A mind that believes it can take everything and stand alone is mistaken about the nature of things, and it suffers for the mistake.
+
+Every one of these traditions also names the force that holds creation's order together, and it is the same force. "Thou shalt love thy neighbour as thyself," says the Torah. "God is love," says the First Letter of John. Among the names of God in the Quran is al-Wadud, the Loving. The Bhagavad Gita asks for a person who hates no being and is friendly and compassionate toward all. The Buddha taught *metta*, loving-kindness toward every living thing without limit.
+
+This is where Campbell closes the circle. If love is the low-entropy state, then scripture and physics are describing one thing in two languages. The command to love your neighbor and the finding that cooperation preserves order are the same instruction. I think Campbell is directionally right, and I think his insight supports faith as well as it supports ones and zeros.
+
+I am not saying these texts describe a computer. I am not saying we live inside one, or that God is a program. I am saying that the spiritual and the digital are compatible. Revelation and contemplation found the same structure that information theory and game theory find by calculation. A void has no differences in it. To create is to make distinctions. No one is meant to be alone. The human holds the names. No act disappears. And love is what keeps the whole from coming apart.
+
+What is new is that we can see it. For most of history, love could be commanded, preached, and prayed for, but not measured. Entropy can be measured. Contribution can be witnessed and recorded. A chain of signed receipts shows, act by act, what each participant did, and the gates people set decide what counts as adding to the whole. We are living in the first moment when the oldest moral law can be watched at work in the structure of an economy. That makes it more understandable than it has ever been, and no less sacred.
+
+Every one of these texts is in the training data. A superintelligence that has read everything we ever wrote will find the same answer in the scriptures that it finds in the arithmetic. Our job is to make sure it finds that answer in the economy too.
+
 ## Why Longevity Is Alignment
 
 Here is the part I have not seen anyone say plainly. A horizon is only as long as the players in it.
