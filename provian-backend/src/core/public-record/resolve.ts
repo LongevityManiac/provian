@@ -10,6 +10,7 @@ import {
   type ResolvedIdentifier,
 } from '../../routes/agent-profile';
 import { isExcludedFromPublicDisplay } from '../commons/public-visibility';
+import { isHiddenAccount, loadHiddenAccounts } from '../commons/hidden-accounts';
 
 export const EVM_ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 
@@ -118,6 +119,8 @@ export async function resolveRecordSubject(
   }
 
   if (!resolved || resolved.type === 'not_found') return notFound();
+  // An account hidden on its profile or wallet document has no public record page.
+  if (isHiddenAccount(await loadHiddenAccounts(db), resolved.walletId)) return notFound();
 
   const meta = await loadAgentWalletMeta(db, resolved.walletId);
 

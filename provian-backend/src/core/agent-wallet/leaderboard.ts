@@ -13,6 +13,7 @@
  */
 
 import { isExcludedFromPublicDisplay } from '../commons/public-visibility';
+import { isHiddenAccount, loadHiddenAccounts } from '../commons/hidden-accounts';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { RedisCache } from '../../cache';
 import { readActorStats } from '../pvt/actor-stats';
@@ -83,12 +84,13 @@ export async function getLeaderboard(
     .limit(LEADERBOARD_LIMIT)
     .get();
 
+  const hidden = await loadHiddenAccounts(db);
   const wallets: AgentWalletDocument[] = snapshot.docs
     .map((doc) => {
       const data = doc.data() as AgentWalletDocument;
       return { ...data, id: data.id || doc.id };
     })
-    .filter((w) => !isExcludedFromPublicDisplay(w));
+    .filter((w) => !isExcludedFromPublicDisplay(w) && !isHiddenAccount(hidden, w.id));
 
   // Live PE counts for the candidate set (actor stats).
   const liveCounts = await Promise.all(wallets.map((w) => livePECount(db, w.agent_id)));

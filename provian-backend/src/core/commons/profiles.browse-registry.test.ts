@@ -12,10 +12,17 @@ import type { CommonsDeps } from './types';
 
 type Profile = Record<string, unknown>;
 
+// The hidden-account marker reads (`public_visibility`, `platform`, `user_id`) are their own
+// queries, not the browse query; no account is marked here, so they read empty.
+const MARKER_FIELDS = new Set(['public_visibility', 'platform', 'user_id']);
+interface EmptyQuery { where: () => EmptyQuery; get: () => Promise<{ docs: never[] }> }
+const emptyQuery = (): EmptyQuery => ({ where: emptyQuery, get: async () => ({ docs: [] }) });
+
 function makeDeps(candidates: Profile[]): { deps: CommonsDeps; whereCalls: string[] } {
   const whereCalls: string[] = [];
   const query = {
-    where(field: string, op: string, value: unknown) {
+    where(field: string, op: string, value: unknown): unknown {
+      if (MARKER_FIELDS.has(field)) return emptyQuery();
       whereCalls.push(`${field} ${op} ${String(value)}`);
       // Only the status equality is allowed to hit Firestore. Anything else means a
       // composite-index-requiring query slipped back in (the 5c regression).
@@ -117,7 +124,7 @@ function makeLiveDeps(
   failFor: string[] = [],
 ): CommonsDeps {
   const profilesQuery = {
-    where() { return profilesQuery; },
+    where(field: string): unknown { return MARKER_FIELDS.has(field) ? emptyQuery() : profilesQuery; },
     orderBy() { return profilesQuery; },
     limit() { return profilesQuery; },
     async get() { return { docs: candidates.map((c) => ({ data: () => c })) }; },
@@ -135,6 +142,7 @@ function makeLiveDeps(
     collection(name: string) {
       if (name === 'agent_wallets') {
         return {
+          where: emptyQuery,
           doc: (id: string) => ({
             async get() {
               const agentId = agentIds[id];

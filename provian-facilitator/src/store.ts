@@ -77,6 +77,12 @@ export interface SellerRecord {
   readonly settlement_count?: number;
   /** Settlements that reverted after broadcast (e.g. the seller front-ran its own authorization). */
   readonly strike_count?: number;
+  /**
+   * Set only by Provian's operator (never by a registration): a seller carrying it is left off the
+   * relay's public seller list and agent directory. Display only — settlement is unaffected — and
+   * kept across re-registration like `status`.
+   */
+  readonly public_visibility?: string;
 }
 
 export type SettlementStatus = 'submitting' | 'submitted' | 'confirmed' | 'failed';
@@ -151,6 +157,7 @@ export class MemoryStore implements FacilitatorStore {
           status: prior.status,
           ...(prior.settlement_count !== undefined ? { settlement_count: prior.settlement_count } : {}),
           ...(prior.strike_count !== undefined ? { strike_count: prior.strike_count } : {}),
+          ...(prior.public_visibility !== undefined ? { public_visibility: prior.public_visibility } : {}),
         }
       : record;
     this.sellers.set(record.seller_id, next);

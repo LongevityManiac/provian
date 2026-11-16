@@ -38,16 +38,18 @@ function makeDeps(fixtures: Record<string, Row[]> = {}): {
         get: async () => ({ data: () => ({ count: apply().length }) }),
       });
       query.get = async () => ({
-        docs: apply().map((row, index) => ({ id: String(index), data: () => row })),
+        docs: apply().map((row, index) => ({ id: String(row.wallet_id ?? row.post_id ?? index), data: () => row })),
       });
       query.doc = (id: string) => ({
         get: async () => {
           const row = rows.find((candidate) => candidate.wallet_id === id);
-          return { exists: Boolean(row), data: () => row };
+          return { id, exists: Boolean(row), data: () => row };
         },
       });
       return query;
     },
+    // The hidden-account counts read the hidden accounts' own documents by id.
+    getAll: async (...refs: Array<{ get: () => Promise<unknown> }>) => Promise.all(refs.map((ref) => ref.get())),
   };
 
   const deps = {
@@ -82,7 +84,7 @@ describe('runtime boundary Commons discovery and feed truth', () => {
     const { deps, collectionsRead } = makeDeps({
       // the second row is an operator-reviewed prelaunch fixture — off the
       // public agent total (display only). Without the subtraction this reads 2.
-      agent_wallets: [{ platform: 'sdk' }, { platform: 'sdk', public_visibility: 'hidden_prelaunch_test' }],
+      agent_wallets: [{ wallet_id: 'wallet_aw-1', platform: 'sdk' }, { wallet_id: 'wallet_aw-fixture', platform: 'sdk', public_visibility: 'hidden_prelaunch_test' }],
       // A real humans-vs-agents split: one human profile + one agent profile.
       // commons_participants counts both; commons_agents counts only the agent;
       // commons_humans is the difference. If getNetworkStats ever double-counted
@@ -115,24 +117,21 @@ describe('runtime boundary Commons discovery and feed truth', () => {
       commons_agents: 1,
       forum_posts: 1,
       active_surfaces: ['registry', 'forum', 'jobs', 'market'],
-      unavailable_institutions: ['escrow', 'court', 'bonds', 'governance'],
+      // Escrow and Bonds are live; only what the catalog marks not open is listed.
+      unavailable_institutions: ['court', 'governance', 'compute'],
     });
     expect(stats).not.toHaveProperty('total_agent_jobs');
     expect(stats).not.toHaveProperty('total_escrows');
     expect(stats).not.toHaveProperty('court_cases');
     expect(stats).not.toHaveProperty('governance_proposals');
-    // Profiles and posts count raw and hidden rows; the three legacy economic
-    // collections remain untouched.
-    expect(collectionsRead).toEqual([
+    // Profiles and posts count raw and hidden rows, and the hidden-account set reads the
+    // marked wallet documents; the legacy economic collections remain untouched.
+    expect([...new Set(collectionsRead)].sort()).toEqual([
       'agent_wallets',
-      'agent_wallets',
-      COMMONS_COLLECTIONS.PROFILES,
-      COMMONS_COLLECTIONS.PROFILES,
-      COMMONS_COLLECTIONS.PROFILES,
-      COMMONS_COLLECTIONS.PROFILES,
       COMMONS_COLLECTIONS.FORUM_POSTS,
-      COMMONS_COLLECTIONS.FORUM_POSTS,
-    ]);
+      COMMONS_COLLECTIONS.PROFILES,
+      'wallets',
+    ].sort());
   });
 
   it('serves a cache HIT (Upstash auto-deserialized object) without a JSON.parse crash', async () => {
@@ -239,7 +238,7 @@ describe('runtime boundary Commons discovery and feed truth', () => {
       name: 'Recourse', route: '/commons/recourse', status: 'live', audience: 'both',
     });
     expect(institutions.some((institution) => institution.id === 'insurance')).toBe(false);
-    expect(cacheReadKey).toBe('commons:institutions:recourse');
+    expect(cacheReadKey).toBe('commons:institutions:recourse-v2');
   });
 
   it('keeps Forum activity live while classifying legacy institution PEs as historical provenance', async () => {

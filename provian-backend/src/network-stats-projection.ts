@@ -51,6 +51,7 @@
 import type { Firestore, Query } from 'firebase-admin/firestore';
 import { TEST_PLATFORM_VALUE } from './core/pvt/genesis-award-state-machine';
 import { HIDDEN_PRELAUNCH_TEST, isExcludedFromPublicDisplay } from './core/commons/public-visibility';
+import { loadHiddenAccounts, readDocsById } from './core/commons/hidden-accounts';
 import {
   WALLET_PE_COUNT_FIELD,
   WALLET_WEEKLY_PE_COUNT_FIELD,
@@ -211,6 +212,11 @@ async function readTestWallets(
   for (const doc of [...testSnap.docs, ...hiddenSnap.docs]) {
     if (!byId.has(doc.id)) byId.set(doc.id, toRankable(doc.id, doc.data(), window, weekStart));
   }
+  // An account hidden on its profile or agent-wallet document is off the board too, even when its
+  // `wallets` doc carries no mark. Only the ids not already read above are fetched.
+  const hidden = await loadHiddenAccounts(db);
+  const extra = await readDocsById(db, WALLETS_COLLECTION, [...hidden.ids].filter((id) => !byId.has(id)));
+  for (const [id, data] of extra) byId.set(id, toRankable(id, data, window, weekStart));
   return [...byId.values()];
 }
 
@@ -262,7 +268,7 @@ export async function readNetworkStats(
   const board: RankableWallet[] = [];
   for (const doc of boardSnap.docs) {
     const data = doc.data();
-    if (isExcludedFromPublicDisplay(data)) continue;
+    if (isExcludedFromPublicDisplay(data) || testIdSet.has(doc.id)) continue;
     const wallet = toRankable(doc.id, data, window, weekStart);
     // The weekly query already filtered on the week; the all-time query orders
     // by pe_count so zero-count rows can only trail. Either way a zero never

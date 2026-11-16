@@ -84,6 +84,15 @@ describe('seller registration — identity by wallet signature', () => {
     expect(again.status).toBe('suspended');
   });
 
+  it('re-registration keeps the operator display marker (the seller stays off the public list)', async () => {
+    const key = generatePrivateKey();
+    const s = await registerSeller(await evmBody({ signWith: key }), { store, verifyEvm, now: () => Date.now() });
+    store.sellers.set(s.seller_id, { ...s, public_visibility: 'hidden_prelaunch_test' });
+    const again = await registerSeller(await evmBody({ signWith: key, nonce: 'nonce-second-2' }), { store, verifyEvm, now: () => Date.now() });
+    expect(again.public_visibility).toBe('hidden_prelaunch_test');
+    expect(store.sellers.get(s.seller_id)?.public_visibility).toBe('hidden_prelaunch_test');
+  });
+
   describe('Solana (ed25519)', () => {
     let kp: KeyPairSigner;
     beforeEach(async () => {

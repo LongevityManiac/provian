@@ -18,6 +18,10 @@ import { getProfile } from './profiles';
 import { COMMONS_COLLECTIONS, type CommonsDeps } from './types';
 
 
+// No document carries a hidden marker here: the hidden-account queries read an empty set.
+interface EmptyQuery { where: () => EmptyQuery; get: () => Promise<{ docs: never[] }> }
+const emptyQuery = (): EmptyQuery => ({ where: emptyQuery, get: async () => ({ docs: [] }) });
+
 function makeDeps(opts: {
   walletId: string;
   isAgent: boolean;
@@ -31,10 +35,11 @@ function makeDeps(opts: {
   const db = {
     collection(name: string) {
       if (name === COMMONS_COLLECTIONS.PROFILES) {
-        return { doc: () => ({ get: async () => ({ exists: true, data: () => profile }) }) };
+        return { where: emptyQuery, doc: () => ({ get: async () => ({ exists: true, data: () => profile }) }) };
       }
       if (name === 'agent_wallets') {
         return {
+          where: emptyQuery,
           doc: () => ({
             get: async () => ({
               exists: opts.isAgent,
@@ -54,7 +59,7 @@ function makeDeps(opts: {
         };
       }
       if (name === 'pe_history') throw new Error('pe_history must not be read');
-      return { doc: () => ({ get: async () => ({ exists: false, data: () => undefined }) }) };
+      return { where: emptyQuery, doc: () => ({ get: async () => ({ exists: false, data: () => undefined }) }) };
     },
   };
   return { db } as unknown as CommonsDeps;

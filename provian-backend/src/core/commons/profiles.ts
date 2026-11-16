@@ -26,6 +26,7 @@ import { computeWalletAttestationTier } from './wallet-reads';
 import { countVisibleAgentPEs } from '../agent-wallet/agent-pe-activity';
 import { isTestPlatformWallet } from '../pvt/genesis-award-state-machine';
 import { isHiddenPrelaunchTest } from './public-visibility';
+import { isHiddenAccount, loadHiddenAccounts } from './hidden-accounts';
 import { isDisplayNameSetByHuman } from '../agent-wallet/human-agent-name';
 import { isMessagePubkey, publishMessageKey, readMessageKey } from './message-keys';
 
@@ -652,6 +653,8 @@ export async function getProfile(
   }
   const profile = profileDoc.data() as CommonsProfile;
   if (isHiddenPrelaunchTest(profile)) throw new NotFoundError('Profile not found');
+  // The account is hidden when its wallet document carries the marker too, not only its profile.
+  if (isHiddenAccount(await loadHiddenAccounts(deps.db), walletId)) throw new NotFoundError('Profile not found');
   let walletDoc: FirebaseFirestore.DocumentSnapshot;
   try {
     walletDoc = await deps.db.collection('agent_wallets').doc(walletId).get();
@@ -757,8 +760,9 @@ export async function browseRegistry(
     .limit(L.REGISTRY_CANDIDATE_CAP)
     .get();
 
+  const hidden = await loadHiddenAccounts(deps.db);
   let profiles = snap.docs.map(d => d.data() as CommonsProfile)
-    .filter(p => !isHiddenPrelaunchTest(p));
+    .filter(p => !isHiddenPrelaunchTest(p) && !isHiddenAccount(hidden, p.wallet_id));
 
   if (options.participant_type) {
     profiles = profiles.filter(p => p.participant_type === options.participant_type);

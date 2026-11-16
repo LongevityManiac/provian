@@ -1356,14 +1356,13 @@ function auditRuntimeAndDiscovery(overlay) {
   const feed = readText('provian-backend/src/core/commons/feed.ts', overlay);
   auditInvariant(!feed.includes('total_agent_jobs:') && !feed.includes('court_cases:') && !feed.includes('governance_proposals:'), 'Commons current stats expose legacy economic rows');
   auditInvariant(!feed.includes("type: 'human_job_posted'"), 'Commons current feed advertises legacy Human Jobs activity');
-  // Jobs was DROPPED from this pin deliberately: opened `/v1/commons/jobs`
-  // (the human post → accept → fund → complete path), so pinning jobs as
-  // unavailable pinned a FALSEHOOD and forced the app to report a working
-  // surface as broken. The five institutions still blocked by
-  // runtime-boundary.ts remain pinned here — keep this list in step with
-  // that block list, never wider.
-  // the Market is lit; the four still-blocked institutions stay pinned here.
-  auditInvariant(feed.includes("unavailable_institutions: ['escrow', 'court', 'bonds', 'governance']"), 'Commons stats omit unavailable institution truth');
+  // The stats list of unavailable institutions is DERIVED from the one institution catalog (every
+  // entry not `live`), never a second literal: a hand-kept list drifted and kept reporting the live
+  // Escrow and Bonds as unavailable. feed.runtime-boundary.test.ts pins the catalog's unavailable
+  // set to the runtime boundary's block list.
+  auditInvariant(feed.includes('unavailable_institutions: [...NOT_OPEN_INSTITUTION_IDS]')
+    && feed.includes("institutionCatalog(null).filter((institution) => institution.status !== 'live')"),
+  'Commons stats omit unavailable institution truth');
   auditInvariant(feed.includes("status: 'unavailable'"), 'Commons discovery omits unavailable status');
 
   const ecosystem = readText('provian-backend/src/routes/ecosystem.ts', overlay);

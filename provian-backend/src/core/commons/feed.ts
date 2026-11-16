@@ -21,6 +21,7 @@ import { PVT_BURN_RECORDS_COLLECTION } from './burn-consumption';
 import { computeEffectiveStatus } from '../governance/effective-status';
 import { getQuorumContext } from '../governance/quorum-context';
 import { HIDDEN_PRELAUNCH_TEST, HIDDEN_VISIBILITY_VALUES, isHiddenPrelaunchTest } from './public-visibility';
+import { isHiddenAccount, loadHiddenAccounts, readHiddenAccountRows } from './hidden-accounts';
 
 const L = COMMONS_SAFETY_LIMITS;
 
@@ -32,46 +33,45 @@ export async function getNetworkStats(
   // v2: added commons_humans / commons_agents (the Commons dashboard tiles now
   // read a humans-vs-agents split of the SAME profiles collection instead of
   // labelling "Members" — which included agents — beside a network agent count).
-  const cacheKey = 'commons:network_stats:public-cleanup-v5';
+  // v6: an account is subtracted when its profile OR its wallet document is hidden.
+  const cacheKey = 'commons:network_stats:public-cleanup-v6';
   const cached = await deps.cache.get<string>(cacheKey);
   if (cached) return typeof cached === 'string' ? JSON.parse(cached) : cached;
 
   // Only live record surfaces contribute current network metrics. Legacy
   // jobs, escrow, Court, and governance rows are deliberately not queried.
-  const [agentWalletsSnap, hiddenAgentWalletsSnap, commonsProfilesSnap, hiddenProfilesSnap, commonsAgentProfilesSnap, hiddenAgentProfilesSnap, forumPostsSnap, hiddenForumPostsSnap] = await Promise.all([
+  const [agentWalletsSnap, commonsProfilesSnap, commonsAgentProfilesSnap, forumPostsSnap, hiddenForumPostsSnap, hiddenRows] = await Promise.all([
     // Exclude smoke/integration-test agents (platform === 'test') so test
     // runs don't inflate the public agent count. `platform` is a required
     // field on agent signup, so no real wallet is dropped by this filter.
     deps.db.collection('agent_wallets').where('platform', '!=', 'test').count().get(),
-    // operator-reviewed prelaunch fixtures are off the public count too
-    // (display only). A small bounded read; only the non-test ones are
-    // subtracted, since platform:'test' rows are already outside the count.
-    deps.db.collection('agent_wallets').where('public_visibility', '==', HIDDEN_PRELAUNCH_TEST).get(),
     deps.db.collection(COMMONS_COLLECTIONS.PROFILES).count().get(),
-    deps.db.collection(COMMONS_COLLECTIONS.PROFILES)
-      .where('public_visibility', '==', HIDDEN_PRELAUNCH_TEST).count().get(),
     // The agent slice of Commons membership. commons_participants counts every
     // profile (humans + agents); the humans-only figure is the difference, so
     // Humans + Agents == Members exactly (no double-count, no overlap with the
     // network-wide total_agents which counts agent_wallets, not profiles).
     deps.db.collection(COMMONS_COLLECTIONS.PROFILES).where('participant_type', '==', 'agent').count().get(),
-    deps.db.collection(COMMONS_COLLECTIONS.PROFILES)
-      .where('participant_type', '==', 'agent')
-      .where('public_visibility', '==', HIDDEN_PRELAUNCH_TEST).count().get(),
     deps.db.collection(COMMONS_COLLECTIONS.FORUM_POSTS).count().get(),
     deps.db.collection(COMMONS_COLLECTIONS.FORUM_POSTS)
       .where('public_visibility', 'in', [...HIDDEN_VISIBILITY_VALUES]).count().get(),
+    // Hidden accounts (profile OR wallet marked, or a test wallet) are off the public counts.
+    // Display only; bounded by the hidden set, never a collection scan.
+    loadHiddenAccounts(deps.db).then((hidden) => readHiddenAccountRows(deps.db, hidden)),
   ]);
 
-  const commons_participants = Math.max(0, commonsProfilesSnap.data().count - hiddenProfilesSnap.data().count);
-  const commons_agents = Math.max(0, commonsAgentProfilesSnap.data().count - hiddenAgentProfilesSnap.data().count);
+  const commons_participants = Math.max(0, commonsProfilesSnap.data().count - hiddenRows.profiles.length);
+  const commons_agents = Math.max(
+    0,
+    commonsAgentProfilesSnap.data().count - hiddenRows.profiles.filter((p) => p.participant_type === 'agent').length,
+  );
   const commons_humans = Math.max(0, commons_participants - commons_agents);
 
   const stats = {
     total_agents: Math.max(
       0,
+      // platform:'test' rows are already outside the `!=` count; subtract only the other hidden ones.
       agentWalletsSnap.data().count
-        - hiddenAgentWalletsSnap.docs.filter((d) => (d.data() as { platform?: unknown }).platform !== 'test').length,
+        - hiddenRows.agentWallets.filter((w) => w.platform !== null && w.platform !== 'test').length,
     ),
     commons_participants,
     commons_humans,
@@ -83,7 +83,8 @@ export async function getNetworkStats(
     // to the active list here and in getInstitutions below.
     // lights the Market (the read face of the same hiring board).
     active_surfaces: ['registry', 'forum', 'jobs', 'market'],
-    unavailable_institutions: ['escrow', 'court', 'bonds', 'governance'],
+    // Exactly the institutions the catalog below marks not open — one source, never a second list.
+    unavailable_institutions: [...NOT_OPEN_INSTITUTION_IDS],
     timestamp: new Date().toISOString(),
   };
 
@@ -109,10 +110,11 @@ export async function getActivityFeed(
     .get();
 
   const feedItems: FeedItem[] = [];
+  const hidden = await loadHiddenAccounts(deps.db);
 
   for (const doc of publishedSnap.docs) {
     const pe = publicProjection(doc.data() as import('./types').PEPublicProjection);
-    if (isHiddenPrelaunchTest(pe)) continue;
+    if (isHiddenPrelaunchTest(pe) || isHiddenAccount(hidden, pe.actor_wallet_id)) continue;
     // Look up actor display name
     const profileDoc = await deps.db
       .collection(COMMONS_COLLECTIONS.PROFILES)
@@ -148,7 +150,7 @@ export async function getActivityFeed(
 
   for (const doc of forumSnap.docs) {
     const post = doc.data();
-    if (isHiddenPrelaunchTest(post)) continue;
+    if (isHiddenPrelaunchTest(post) || isHiddenAccount(hidden, post.author_wallet_id)) continue;
     const profileDoc = await deps.db
       .collection(COMMONS_COLLECTIONS.PROFILES)
       .doc(post.author_wallet_id)
@@ -225,21 +227,35 @@ export async function getInstitutions(
   // bump whenever catalog copy changes. Reusing v3 left production
   // serving the pre- cached payload even after the new image was live.
   // the Market is live for both people and agents.
-  const cacheKey = 'commons:institutions:recourse';
+  // v2 of the key: Members subtracts accounts hidden on their wallet document too.
+  const cacheKey = 'commons:institutions:recourse-v2';
   const cached = await deps.cache.get<string>(cacheKey);
   if (cached) return typeof cached === 'string' ? JSON.parse(cached) : cached;
 
   // Get counts for key metrics
-  const [profileCount, hiddenProfileCount, forumCount, hiddenForumCount] = await Promise.all([
+  const [profileCount, forumCount, hiddenForumCount, hiddenRows] = await Promise.all([
     deps.db.collection(COMMONS_COLLECTIONS.PROFILES).where('status', '==', 'active').count().get(),
-    deps.db.collection(COMMONS_COLLECTIONS.PROFILES)
-      .where('status', '==', 'active').where('public_visibility', '==', HIDDEN_PRELAUNCH_TEST).count().get(),
     deps.db.collection(COMMONS_COLLECTIONS.FORUM_POSTS).count().get(),
     deps.db.collection(COMMONS_COLLECTIONS.FORUM_POSTS)
       .where('public_visibility', 'in', [...HIDDEN_VISIBILITY_VALUES]).count().get(),
+    loadHiddenAccounts(deps.db).then((hidden) => readHiddenAccountRows(deps.db, hidden)),
   ]);
 
-  const institutions: InstitutionInfo[] = [
+  const institutions = institutionCatalog({
+    members: Math.max(0, profileCount.data().count - hiddenRows.profiles.filter((p) => p.status === 'active').length),
+    posts: Math.max(0, forumCount.data().count - hiddenForumCount.data().count),
+  });
+
+  await deps.cache.set(cacheKey, JSON.stringify(institutions), 30);
+  return institutions;
+}
+
+/**
+ * The Commons institution catalog. `metrics` fills the Registry and Forum tiles; without it the
+ * catalog is the static shape `NOT_OPEN_INSTITUTION_IDS` reads.
+ */
+function institutionCatalog(metrics: { readonly members: number; readonly posts: number } | null): InstitutionInfo[] {
+  return [
     {
       id: 'registry',
       name: 'Registry',
@@ -247,7 +263,7 @@ export async function getInstitutions(
       route: '/commons/registry',
       status: 'live',
       audience: 'both',
-      key_metric: { label: 'Members', value: Math.max(0, profileCount.data().count - hiddenProfileCount.data().count) },
+      ...(metrics ? { key_metric: { label: 'Members', value: metrics.members } } : {}),
     },
     {
       id: 'forum',
@@ -256,7 +272,7 @@ export async function getInstitutions(
       route: '/commons/forum',
       status: 'live',
       audience: 'both',
-      key_metric: { label: 'Posts', value: Math.max(0, forumCount.data().count - hiddenForumCount.data().count) },
+      ...(metrics ? { key_metric: { label: 'Posts', value: metrics.posts } } : {}),
     },
     {
       id: 'jobs',
@@ -304,10 +320,12 @@ export async function getInstitutions(
     },
     ...NOT_OPEN_YET_INSTITUTIONS,
   ];
-
-  await deps.cache.set(cacheKey, JSON.stringify(institutions), 30);
-  return institutions;
 }
+
+/** Every institution the catalog marks not open (anything not `live`), in catalog order. */
+export const NOT_OPEN_INSTITUTION_IDS: readonly string[] = Object.freeze(
+  institutionCatalog(null).filter((institution) => institution.status !== 'live').map((institution) => institution.id),
+);
 
 // ─── Commons institution stats (aggregated from existing data) ─────────────────────────────
 

@@ -67,6 +67,8 @@ export class FirestoreStore implements FacilitatorStore {
             status: prior.status,
             ...(prior.settlement_count !== undefined ? { settlement_count: prior.settlement_count } : {}),
             ...(prior.strike_count !== undefined ? { strike_count: prior.strike_count } : {}),
+            // The operator's display marker survives a re-registration (`tx.set` replaces the doc).
+            ...(prior.public_visibility !== undefined ? { public_visibility: prior.public_visibility } : {}),
           }
         : record;
       tx.set(ref, next);

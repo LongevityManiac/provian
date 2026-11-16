@@ -29,9 +29,11 @@ function makeDeps() {
   const count = { get: async () => ({ data: () => ({ count: 0 }) }) };
   // A chainable query: getInstitutions filters with one or two `.where()` calls before `.count()`
   // (the prelaunch-visibility counts chain a second filter).
-  const query: { where: () => typeof query; count: () => typeof count } = {
+  // `get` answers the hidden-account marker reads (no hidden account here).
+  const query: { where: () => typeof query; count: () => typeof count; get: () => Promise<{ docs: never[] }> } = {
     where: () => query,
     count: () => count,
+    get: async () => ({ docs: [] }),
   };
   const db = {
     batch: () => ({ set: () => undefined, commit: async () => undefined }),

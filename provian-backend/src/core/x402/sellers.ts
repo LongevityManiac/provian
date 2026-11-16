@@ -13,6 +13,7 @@
  */
 
 import { FieldPath, type Firestore } from 'firebase-admin/firestore';
+import { isHiddenPrelaunchTest } from '../commons/public-visibility';
 
 export const X402_SELLERS_COLLECTION = 'x402_sellers_v1';
 export const X402_SELLERS_MAX_PAGE = 100;
@@ -101,11 +102,15 @@ function projectPresentation(raw: unknown): X402SellerRequirePresentation | null
 /**
  * Project a stored seller doc to its public fields, or null when it is not an active, well-formed
  * seller (suspended, malformed, or an id that does not match its own chain/address — never shown).
+ * A seller whose doc carries a hidden marker (`public_visibility`, e.g. a test fixture) is not shown
+ * either; the marker is display only, so the facilitator keeps settling for it. The facilitator
+ * preserves the marker when the seller re-registers.
  */
 export function projectX402Seller(docId: string, raw: unknown): X402PublicSeller | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const r = raw as Record<string, unknown>;
   if (r.status !== 'active') return null;
+  if (isHiddenPrelaunchTest(r)) return null;
   if (!isX402SellerChain(r.chain) || typeof r.address !== 'string') return null;
   const expectedId = `${r.chain}:${r.address}`;
   if (docId !== expectedId || r.seller_id !== expectedId || !isX402SellerId(expectedId)) return null;

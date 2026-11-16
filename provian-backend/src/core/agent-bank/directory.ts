@@ -20,6 +20,7 @@ import { generatePE } from './pe-utils';
 import { countVisibleAgentPEs } from '../agent-wallet/agent-pe-activity';
 import { isTestPlatformWallet } from '../pvt/genesis-award-state-machine';
 import { isExcludedFromPublicDisplay } from '../commons/public-visibility';
+import { isHiddenAccount, loadHiddenAccounts } from '../commons/hidden-accounts';
 
 /**
  * Register or update agent capabilities in the directory.
@@ -147,7 +148,10 @@ export async function browseDirectory(
   // Defense in depth for any directory row created before the writer gate:
   // public discovery must resolve the authoritative agent-wallet marker and
   // fail closed on a missing/test wallet. New test rows are refused above.
+  // An account hidden on its profile or wallet document is off the directory too.
+  const hidden = await loadHiddenAccounts(deps.db);
   const publicFlags = await Promise.all(results.map(async (entry) => {
+    if (isHiddenAccount(hidden, entry.wallet_id)) return false;
     const walletDoc = await deps.db.collection('agent_wallets').doc(entry.wallet_id).get();
     return walletDoc.exists && !isExcludedFromPublicDisplay(walletDoc.data());
   }));
@@ -177,7 +181,8 @@ export async function getDirectoryProfile(
 
   // Enrich with the live visible-PE count (never a stored per-wallet tally).
   const walletDoc = await deps.db.collection('agent_wallets').doc(walletId).get();
-  if (!walletDoc.exists || isExcludedFromPublicDisplay(walletDoc.data())) {
+  if (!walletDoc.exists || isExcludedFromPublicDisplay(walletDoc.data())
+    || isHiddenAccount(await loadHiddenAccounts(deps.db), walletId)) {
     throw new NotFoundError('Agent not found in directory');
   }
   const wallet = walletDoc.data() as AgentWalletDocument;
