@@ -11,7 +11,10 @@
  * license files of the app's dependencies verbatim; only its license-text line is set aside, and
  * only while the whole module is byte-identical to what scripts/generate-oss-notices.mjs derives
  * from package-lock.json, the installed packages, ios/Podfile.lock and scripts/oss-notices/. A hand
- * edit, a stale module or a missing install scans the module in full. The license files under
+ * edit, a stale module or a missing install scans the module in full, except the exact third-party
+ * texts pinned in THIRD_PARTY_LICENSE_TEXTS by their sha256: license wording that happens to use a
+ * flagged word, set aside text by text so a checkout without an install still passes and any other
+ * text, or any change to a pinned one, is scanned. The license files under
  * scripts/oss-notices/licenses/ are scanned like any other tracked file.
  *
  * Tracked paths are product names too. A file or directory name may not carry an internal
@@ -202,10 +205,39 @@ export function findInternalPathNames(files) {
 
 const LICENSE_TEXTS_LINE = 'export const OSS_LICENSE_TEXTS: readonly string[] = ';
 
-/** The open source notices module with its license-text line blanked, only when `expected` matches it byte for byte. */
-export function withoutVerifiedLicenseTexts(file, decoded, expected) {
-  if (file !== OSS_NOTICES_MODULE || typeof expected !== 'string' || decoded !== expected) return decoded;
-  return decoded.split('\n').map((line) => (line.startsWith(LICENSE_TEXTS_LINE) ? '' : line)).join('\n');
+// Third-party license texts, each by the sha256 of the exact text, whose own wording uses a word the
+// scan flags. Each is set aside even when the module cannot be verified against an install.
+export const THIRD_PARTY_LICENSE_TEXTS = Object.freeze({
+  // WalletConnect Community License: its arbitration clause names the act of sending a dispute
+  // to arbitrators with a word the removed-earning-path rule flags.
+  a6b3d62e5b580961d4018b2a8ea29fe01606e1ead2546b3a0f404f7bbd77df32: 'WalletConnect Community License Agreement',
+  // An MIT license (2016) whose copyright holder's surname is the name the attribution rule flags.
+  '24052e630f1d85e6a82018e7fe42e2753e3f8bd6e508543f37584b5e45366585': 'MIT License (2016)',
+});
+
+const sha256Hex = (text) => createHash('sha256').update(text).digest('hex');
+
+/** The license texts in the notices module's license-text line, or null when it has none or it does not parse. */
+export function licenseTexts(decoded) {
+  const line = decoded.split('\n').find((l) => l.startsWith(LICENSE_TEXTS_LINE));
+  if (!line || !line.endsWith(';')) return null;
+  try {
+    const texts = JSON.parse(line.slice(LICENSE_TEXTS_LINE.length, -1));
+    return Array.isArray(texts) && texts.every((t) => typeof t === 'string') ? texts : null;
+  } catch { return null; }
+}
+
+/** The open source notices module with its license-text line blanked when `expected` matches it byte
+ * for byte; otherwise with only the pinned third-party texts removed from that line. */
+export function withoutVerifiedLicenseTexts(file, decoded, expected, pinned = THIRD_PARTY_LICENSE_TEXTS) {
+  if (file !== OSS_NOTICES_MODULE) return decoded;
+  if (typeof expected === 'string' && decoded === expected) {
+    return decoded.split('\n').map((line) => (line.startsWith(LICENSE_TEXTS_LINE) ? '' : line)).join('\n');
+  }
+  const texts = licenseTexts(decoded);
+  if (!texts) return decoded;
+  const kept = texts.filter((t) => !Object.hasOwn(pinned, sha256Hex(t)));
+  return decoded.split('\n').map((line) => (line.startsWith(LICENSE_TEXTS_LINE) ? `${LICENSE_TEXTS_LINE}${JSON.stringify(kept)};` : line)).join('\n');
 }
 
 function expectedOssNoticesModule() {
@@ -369,6 +401,22 @@ function selfTest() {
     || findIds(['src/other.ts'], () => withoutVerifiedLicenseTexts('src/other.ts', notices, notices)).length !== 1
     || findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, `// ${key}\n${licenseLine}\n`, `// ${key}\n${licenseLine}\n`)).length !== 1) {
     throw new Error('self-test: third-party license texts were set aside without verification, or a planted key beside them escaped');
+  }
+  // Unverified: a pinned text is set aside, a changed pinned text and an unpinned text beside it are not.
+  const pinnedText = `Copyright ${name}`;
+  const pinnedOnly = { [sha256Hex(pinnedText)]: 'planted' };
+  const lineOf = (texts) => `// generated\n${LICENSE_TEXTS_LINE}${JSON.stringify(texts)};\n`;
+  if (findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, lineOf([pinnedText]), null, pinnedOnly)).length !== 0
+    || findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, lineOf([`${pinnedText} `]), null, pinnedOnly)).length !== 1
+    || findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, lineOf([pinnedText, key]), null, pinnedOnly)).length !== 1
+    || findIds([OSS_NOTICES_MODULE], () => withoutVerifiedLicenseTexts(OSS_NOTICES_MODULE, lineOf([pinnedText]), null, {})).length !== 1) {
+    throw new Error('self-test: an unpinned or changed third-party license text was set aside without verification');
+  }
+  // Every pin names a text the module carries today, so no pin outlives its text.
+  const carried = new Set((licenseTexts(readBytes(OSS_NOTICES_MODULE).toString('utf8')) || []).map(sha256Hex));
+  if (carried.size === 0) throw new Error('self-test: the notices module carries no license texts');
+  for (const hash of Object.keys(THIRD_PARTY_LICENSE_TEXTS)) {
+    if (!carried.has(hash)) throw new Error(`self-test: stale third-party license pin ${hash}`);
   }
   const plantedPaths = [
     `provian-backend/src/core/pvt/${['w', 'p4'].join('')}/settlement-cycle-runner.ts`,
