@@ -111,6 +111,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── THE OPEN PROTOCOL ── one band under the hero: the envelope is an open
+          protocol, and anyone can build a witness. */}
+      <section className="border-b border-white/10 bg-surface px-6 py-10 md:px-10 md:py-12 lg:px-14">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 md:flex-row md:items-center md:justify-between md:gap-12">
+          <div>
+            <h2 className="font-display text-2xl font-semibold tracking-[-0.02em] md:text-3xl">
+              The envelope is <span className="gradient-text">an open protocol.</span>
+            </h2>
+            <p className="mt-3 max-w-3xl text-lg leading-8 text-text-secondary">
+              Anything that can be witnessed can leave one: a laptop, an agent, a well pump.
+            </p>
+          </div>
+          <Link
+            href={route.protocol}
+            className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-provian-blue-bright transition-colors hover:text-text-primary"
+          >
+            Build a witness
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </section>
+
       {/* ── 2 · THE FILM ── To The Stars, the overview, first: a visitor learns what
           this is before Genesis asks them to join it. The hero's film action opens
           this same watch target. */}

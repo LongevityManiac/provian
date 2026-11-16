@@ -33,6 +33,8 @@ export const route = {
   // /foundation is the prior path; nginx 301s it here.
   ubp: `${BASE}/ubp`,
   developers: `${BASE}/developers`,
+  // The Provenance Envelope as an open protocol: anyone can build a witness.
+  protocol: `${BASE}/protocol`,
   // The enterprise page: for the systems that will read incoming envelopes and decide (the
   // reference gate, the predicates, what a platform or hardware vendor can enable).
   gates: `${BASE}/gates`,
@@ -76,10 +78,11 @@ export type NavItem = { label: string; href: string }
 
 // Primary header navigation. Genesis leads it in gold with the days left, and
 // is rendered by the header itself inside GenesisGate so it removes itself at
-// the close; these four follow it, then the "Get the app" button.
+// the close; these follow it, then the "Get the app" button.
 export const PRIMARY_NAV: NavItem[] = [
   { label: 'Start', href: route.start },
   { label: 'Agents', href: route.agents },
+  { label: 'Protocol', href: route.protocol },
   { label: 'Recourse', href: route.recourse },
   { label: 'Vision', href: route.vision },
   { label: 'Foundation', href: route.ubp },
@@ -141,6 +144,7 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
       { label: 'Atlas', href: route.atlas },
       { label: 'Films', href: route.films },
       { label: 'The Commons', href: route.commons },
+      { label: 'Protocol', href: route.protocol },
       { label: 'Library', href: route.library },
       { label: 'Developers', href: route.developers },
       { label: 'Gates', href: route.gates },

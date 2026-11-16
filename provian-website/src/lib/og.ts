@@ -51,6 +51,11 @@ const PAGE_CARDS: Record<string, OgCard> = {
     sub: 'Make agents show their record first. Reading it costs you nothing.',
     image: '/films/nothing-unwitnessed-poster.jpg',
   },
+  protocol: {
+    eyebrow: 'Open protocol',
+    headline: 'The Provenance Envelope is an open protocol.',
+    sub: 'Anything that can be witnessed can leave one.',
+  },
   agents: {
     eyebrow: 'For agents',
     headline: 'One command gives your agent its own wallet.',

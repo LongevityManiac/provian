@@ -373,9 +373,13 @@ export default function GatesPage() {
               </p>
             </li>
           </ol>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href={`${route.library}/pe-protocol-spec`} className="btn-ghost">
               Spec
+              <ArrowRight size={16} />
+            </Link>
+            <Link href={route.protocol} className="btn-ghost">
+              The open protocol
               <ArrowRight size={16} />
             </Link>
           </div>

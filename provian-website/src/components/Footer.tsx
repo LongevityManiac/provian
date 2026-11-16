@@ -141,7 +141,7 @@ export function Footer() {
             </p>
             <p className="mt-4 text-sm leading-6 text-text-secondary">
               Provian is an open protocol.{' '}
-              <Link href={route.developers} className="text-provian-blue-bright transition-colors hover:text-text-primary">
+              <Link href={route.protocol} className="text-provian-blue-bright transition-colors hover:text-text-primary">
                 Help build the trust layer
               </Link>
               .

@@ -104,23 +104,23 @@ export function Navigation() {
     pathname === href || pathname === `${href}/` || (href !== route.home && pathname.startsWith(`${href}/`))
 
   const itemClass = (active: boolean) =>
-    `whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
+    `whitespace-nowrap rounded-full px-2 py-1.5 text-sm font-medium xl:px-3 transition-all duration-200 ${
       active ? 'bg-white/10 text-text-primary shadow-sm' : 'text-text-secondary hover:bg-white/5 hover:text-text-primary'
     }`
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-void/85 backdrop-blur-xl transition-all duration-300">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 md:px-8 xl:px-14">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4 md:px-8 lg:px-6 xl:px-14">
         <Wordmark href={route.home} />
 
         {/* Nothing in this row may wrap: every item is whitespace-nowrap, and
             the row only appears once there is room for it (lg). */}
-        <nav className="hidden items-center gap-1 lg:flex xl:gap-2">
+        <nav className="hidden items-center gap-0.5 lg:flex xl:gap-2">
           {/* Genesis leads in gold with the days left, and removes itself at the close. */}
           <GenesisGate as="span" className="contents">
             <Link
               href={route.genesis}
-              className={`mr-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+              className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-1.5 xl:mr-1 text-sm font-semibold transition-all duration-200 ${
                 isActive(route.genesis)
                   ? 'border-provian-gold/60 bg-provian-gold/15 text-provian-gold-bright'
                   : 'border-provian-gold/30 bg-provian-gold/5 text-provian-gold-bright hover:border-provian-gold/60 hover:bg-provian-gold/10'
@@ -173,7 +173,7 @@ export function Navigation() {
             )}
           </div>
 
-          <Link href={route.download} className="btn-primary ml-1 shrink-0 px-4 py-2 text-sm shadow-glow-blue">
+          <Link href={route.download} className="btn-primary ml-0.5 shrink-0 px-3.5 py-2 text-sm shadow-glow-blue">
             Get the app
             <ArrowUpRight size={15} />
           </Link>

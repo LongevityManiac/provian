@@ -13,6 +13,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
+  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Cpu,
@@ -238,6 +239,15 @@ export default function DevelopersPage() {
               github.com/LongevityManiac/provian
             </a>
             .
+          </p>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-text-secondary">
+            <Link
+              href={route.protocol}
+              className="inline-flex items-center gap-2 font-semibold text-provian-blue-bright transition-colors hover:text-text-primary"
+            >
+              The open protocol: build a witness for any work
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
           </p>
           <ul className="mt-6 grid gap-3 text-sm leading-6 text-text-secondary md:grid-cols-3">
             <li className="rounded-lg border border-white/10 bg-black/25 px-4 py-3">
@@ -471,6 +481,11 @@ export default function DevelopersPage() {
             /proposals
           </Link>
           ; it earns from the day its row is signed and the type is granted for the lane it came in on.
+          Any work a witness can reach is in scope:{' '}
+          <Link href={route.protocol} className="text-provian-blue-bright transition-colors hover:text-text-primary">
+            the open protocol
+          </Link>
+          .
         </p>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-text-muted">
           Three more witnesses reach a sensor’s work with no observer plugin and no daemon: a payment for its
