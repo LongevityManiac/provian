@@ -1274,7 +1274,7 @@
     "scripts/recourse/snapshot-cli.mjs": "9a12b8e29981b4f3d8be28804b4b0d33fd96738acafc4ebd4502c3d3795b3695",
     "scripts/recourse/snapshot-historical-reads.mjs": "0e2762acd414402e1dc7ff9a92df0aa18ec2af21663bae38378c2bca72a7b5f5",
     "scripts/recourse/snapshot-historical-reads.test.mjs": "f5b7a088db224e225f71805019793a874e4d8055930876cb6d6e82388e627a5c",
-    "scripts/recourse/snapshot-history.mjs": "a031995052ed598fb64aadba5e723e7fe7fe67cdb676593caf6b52d596000d7f",
+    "scripts/recourse/snapshot-history.mjs": "5830f777a287b0391a098d3c4d20c34b0a3589e9307846a7d82698d7d001a5a5",
     "scripts/recourse/snapshot-history.test.mjs": "2d72a6ceef14ee7465be7279550af9c0f2aa0b5ce0f5ad362916e6a0367c48e5",
     "scripts/recourse/snapshot-rpc.test.mjs": "d2952234d1ba7ca09d504dc7b49eb635e6ebd20b941841e06e7913208b14fdee",
     "scripts/recourse/snapshot.d.mts": "5d9f499572cf2eedbb623d3312091a148cee9b4e6ca95dd53025c1bf0178bc7f",

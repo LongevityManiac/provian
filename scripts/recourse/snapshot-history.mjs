@@ -2,7 +2,10 @@ import { readFileSync } from 'node:fs';
 import { AbiCoder, Interface, getAddress } from 'ethers';
 import { merkle, verifyProof, historyLeaf, batchLeaf } from './snapshot.mjs';
 const coder = AbiCoder.defaultAbiCoder();
-const historyAbi = new Interface(JSON.parse(readFileSync(new URL('../../contracts/out/ProvianRecoveryHistory.sol/ProvianRecoveryHistory.json',import.meta.url))).abi);
+// Read on first use, not at import: the merkle routine in snapshot.mjs imports this module and must
+// work where the contracts are not compiled; any history read still requires the compiled ABI.
+let compiledHistoryAbi;
+const historyAbi = () => (compiledHistoryAbi ??= new Interface(JSON.parse(readFileSync(new URL('../../contracts/out/ProvianRecoveryHistory.sol/ProvianRecoveryHistory.json',import.meta.url))).abi));
 function ensure(ok,reason){if(!ok)throw Error(reason);}
 /** An imported history is enumerable from its public proof artifact, but that
  * artifact is authoritative only after its complete root/count/domain match the
@@ -10,7 +13,7 @@ function ensure(ok,reason){if(!ok)throw Error(reason);}
 export async function inheritedMonetaryHistory({prior,historyAddress,port,blockHash,iface,read,predecessor,block}){
  ensure(prior?.format==='provian-succession-snapshot'&&Array.isArray(prior.history)
    &&Number.isSafeInteger(prior.historyCount)&&prior.historyCount===prior.history.length,'snapshot_prior_artifact_required');
- const call=async name=>historyAbi.decodeFunctionResult(name,await port.call(historyAddress,historyAbi.encodeFunctionData(name),blockHash))[0];
+ const call=async name=>historyAbi().decodeFunctionResult(name,await port.call(historyAddress,historyAbi().encodeFunctionData(name),blockHash))[0];
  const [root,count,old,cutoff,complete]=await Promise.all(['root','entryCount','predecessor','lastGoodBlock','complete'].map(call));
  ensure(complete&&root===prior.historyRoot&&count===BigInt(prior.historyCount)
    &&getAddress(old)===getAddress(prior.predecessor)&&cutoff===BigInt(prior.block),'snapshot_prior_history_mismatch');
@@ -19,18 +22,18 @@ export async function inheritedMonetaryHistory({prior,historyAddress,port,blockH
  let frozenState = base;
  if (base.economicCount > 0n) {
   ensure(base.economicCount <= BigInt(Number.MAX_SAFE_INTEGER),'snapshot_economic_count_invalid');
-  const shape=historyAbi.getFunction('baseState').outputs[0],epochs=[],schedules=[];
+  const shape=historyAbi().getFunction('baseState').outputs[0],epochs=[],schedules=[];
   for(let index=0;index<Number(base.economicCount);index++){
-   const [data,isEpoch]=historyAbi.decodeFunctionResult('economicEntry',await port.call(historyAddress,
-    historyAbi.encodeFunctionData('economicEntry',[index]),blockHash));
+   const [data,isEpoch]=historyAbi().decodeFunctionResult('economicEntry',await port.call(historyAddress,
+    historyAbi().encodeFunctionData('economicEntry',[index]),blockHash));
    const type=shape.components.find(p=>p.name===(isEpoch?'epochs':'schedules')).arrayChildren;
    (isEpoch?epochs:schedules).push(coder.decode([type],data)[0]);
   }
   frozenState={...base.toObject(),epochs,schedules};
  }
  const publishedState=prior.deployedHistoryState??prior.state;
- ensure(publishedState && coder.encode([historyAbi.getFunction('state').outputs[0]],[{economicRoot:'0x'+'00'.repeat(32),economicCount:0,...publishedState}])
-   ===coder.encode([historyAbi.getFunction('state').outputs[0]],[frozenState]),'snapshot_prior_state_mismatch');
+ ensure(publishedState && coder.encode([historyAbi().getFunction('state').outputs[0]],[{economicRoot:'0x'+'00'.repeat(32),economicCount:0,...publishedState}])
+   ===coder.encode([historyAbi().getFunction('state').outputs[0]],[frozenState]),'snapshot_prior_state_mismatch');
  const entries=[],claims=new Set(),anchors=new Set(),wallets=new Set(),batches=new Set();let minted=0n;
  for(const entry of prior.history){
   ensure(Array.isArray(entry.proof)&&verifyProof(entry.leaf,entry.proof,root),'snapshot_prior_proof_invalid');
