@@ -20,7 +20,9 @@ import { readContinuedRestorationStatus } from './recourse-restoration-ticket';
 interface Input {
   readonly directory: string; readonly passphrase: string; readonly relayUrl: string; readonly network: OwnerChainNetwork;
   readonly fetch?: typeof globalThis.fetch; readonly signal?: AbortSignal; readonly newRecovery?: boolean;
-  readonly restoration?: { readonly transactionHash: string; readonly block: number; readonly apiKey: string; readonly apiSecret: string };
+  readonly restoration?: { readonly transactionHash: string; readonly block: number; readonly apiKey: string; readonly apiSecret: string;
+    /** The loss the member reviewed, atomic PVT; a different prepared loss is never signed or filed. */
+    readonly expectedMaximumLoss?: string };
 }
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('hash_recovery_response_invalid');
@@ -212,6 +214,10 @@ export async function recoverHashRecourseAgent(supplied: Input): Promise<{
       }
       const response = object(prepared);
       if (typeof response.kernel !== 'string') throw Error('hash_recovery_loss_invalid');
+      // The reviewed amount must be the loss the relay prepared; otherwise nothing is signed or filed.
+      if (input.restoration.expectedMaximumLoss !== undefined && String(response.maximumLoss) !== input.restoration.expectedMaximumLoss) {
+        throw Error(`recourse_loss_mismatch: the relay records ${String(response.maximumLoss)} atomic PVT for this transaction, not the ${input.restoration.expectedMaximumLoss} reviewed; nothing was submitted`);
+      }
       loss = { transactionHash: input.restoration.transactionHash, block: input.restoration.block, kernel: response.kernel,
         scope: parseRestorationScope({ request: response.request, lossHash: response.lossHash, maximumLoss: response.maximumLoss }) };
     }

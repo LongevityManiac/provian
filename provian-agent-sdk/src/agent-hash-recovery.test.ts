@@ -119,6 +119,12 @@ test('a carried loss returns its own request id even when the latest recovery ha
  const first=await recoverHashRecourseAgent({...input(),restoration:restoration()});expect(first.restorationRequestId).toBe(loss().scope.request);expect(ownerOperations).toHaveLength(2);
  expect((await recoverHashRecourseAgent(input())).restorationRequestId).toBeUndefined();
 });
+test('RED: a prepared loss that differs from the reviewed amount is never signed or filed',async()=>{
+ await expect(recoverHashRecourseAgent({...input(),restoration:{...restoration(),expectedMaximumLoss:'5'}})).rejects.toThrow(/recourse_loss_mismatch/);
+ expect(ownerOperations).toHaveLength(0);expect(submissions).toHaveLength(0);
+ const result=await recoverHashRecourseAgent({...input(),restoration:{...restoration(),expectedMaximumLoss:loss().scope.maximumLoss}});
+ expect(result.restorationRequestId).toBe(loss().scope.request);
+},20000);
 test('a denied stale credential retries preparation only with an authenticated current local account record',async()=>{
  const normal=http.request.getMockImplementation()!;let denied=false;
  http.request.mockImplementation(async(url:string,options:RequestInit)=>{if(url.endsWith('/restoration-intents')){
