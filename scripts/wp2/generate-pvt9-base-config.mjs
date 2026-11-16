@@ -1562,9 +1562,9 @@ function auditCurrentTruth(overlay) {
     'The PVT kernel is live on Base; every act of work mints once through batch settlement: standard earnings on a schedule Provian sets, currently every 30 days, daily for Genesis grants',
     // made the one Commons hiring board the product ("Human Jobs" retired as a name).
     'Human Commons surface: profile, Directory, Forum, the hiring board, vouching',
-    // the published Library is nine documents; the llms header's Library
+    // the published Library is ten documents; the llms header's Library
     // note says so (it no longer advertises design papers, reserved extensions or history).
-    'Library note: the Library is nine documents.',
+    'Library note: the Library is ten documents.',
   ]) {
     auditInvariant(docsGenerator.includes(truth), `website docs generator omits controlling current status: ${truth}`);
   }
@@ -1645,17 +1645,18 @@ function auditCurrentTruth(overlay) {
   );
 
   const manifest = JSON.parse(readText('provian-website/src/data/docsManifest.json', overlay));
-  // the published Library is exactly these nine documents, in this order.
+  // the published Library is exactly these ten documents, in this order.
   // (This replaces the per-document lifecycle-status pins: the contract-status, Commons,
   // supported-assets and tokenomics references are no longer published, and the Library shows
   // no lifecycle statuses.)
   const PUBLISHED_LIBRARY = [
     'executive-summary', 'the-provian-thesis', 'the-exponential-currency', 'founding-statement',
+    'the-game-that-cannot-be-won-alone',
     'network-constitution', 'manual', 'pe-protocol-spec', 'burn-to-present', 'contributing',
   ];
   auditInvariant(
     JSON.stringify(manifest.docs.map((doc) => doc.slug)) === JSON.stringify(PUBLISHED_LIBRARY),
-    'docs manifest is not exactly the nine published Library documents',
+    'docs manifest is not exactly the ten published Library documents',
   );
   auditInvariant(!/PVT9|PVTv8|record-only Forum|limited, policy-gated/.test(JSON.stringify(manifest)), 'docs manifest carries a retired version token or pre- posture');
 

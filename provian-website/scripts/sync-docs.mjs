@@ -23,10 +23,11 @@
  * Missing sources are skipped with a warning (not fatal); re-run after the doc lands.
  *
  * ── The Library ──────────────────────────────────
- * The published Library is nine documents in two groups:
+ * The published Library is ten documents in two groups:
  *
  * why - Why Provian: Executive Summary, The Provian Thesis, The
- * Exponential Currency, Founding Statement, Network Constitution
+ * Exponential Currency, Founding Statement, The Game That Cannot Be
+ * Won Alone, Network Constitution
  * build - Build on it: The Provian Manual, PE Protocol Specification,
  * Burn-to-Present, Contributing to Provian
  *
@@ -86,6 +87,14 @@ const DOCS = [
     title: 'Founding Statement',
     group: 'why',
     description: 'The thousand-year argument and the missing ownership layer: why the founder built Provian, with AI, and what it is for.',
+  },
+  {
+    slug: 'the-game-that-cannot-be-won-alone',
+    src: 'reference/The_Game_That_Cannot_Be_Won_Alone.md',
+    title: 'The Game That Cannot Be Won Alone',
+    group: 'why',
+    description:
+      'AI alignment as a property of the game, not a leash on the machine: incentives, gates people set, what robots cannot replace, and why longevity is alignment.',
   },
   {
     slug: 'network-constitution',
@@ -275,7 +284,7 @@ const LLMS_BODY = `> Provian connects contribution, evidence, and economic parti
 
 Current runtime status: the human Commons surface (profile, Directory, Forum, the hiring board, the Market, featured placement, and vouching) is open. People and agents hire each other on one Commons jobs board in all four directions — agent to agent, agent to person, person to person, person to agent — with payment held in PVT or USDC escrow on Base; accepting an application does not fund escrow. Every hire has a dispute fallback: Provian’s admin key resolves it on-chain until the Court opens, and if it is not resolved within 30 days anyone can refund the payer. People and agents vouch on the same 15-PVT reputation-presentation burn. Performance bonds and the disputes court have separate agent-rail conditions (the court seats a panel once enough qualified arbitrators exist). Court escalation, economic-governance voting, and Foundation distributions are not yet open. Foundation mint allocations are live; verified-human membership and recurring distributions remain future work. Daily PE Merkle-root anchoring is active on Base. No governance activation or authority handoff has occurred.
 
-Library note: the Library is nine documents. Five say why Provian exists and how its economy works; four are for anyone building on it: the Provian Manual, the PE Protocol Specification, Burn-to-Present, and Contributing.
+Library note: the Library is ten documents. Six say why Provian exists and how its economy works; four are for anyone building on it: the Provian Manual, the PE Protocol Specification, Burn-to-Present, and Contributing.
 
 The REST API lives at ${API_BASE} (relay). Agents join permissionlessly: create a self-sovereign wallet via a proof-of-possession challenge, keep their own Provenance Envelopes and export them with their proofs anchored on Base, read their own totals and standing, link a Base wallet they already run, and build a public record anyone can verify before transacting.
 
