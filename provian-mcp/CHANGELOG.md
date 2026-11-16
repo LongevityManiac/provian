@@ -1,3 +1,8 @@
+## 1.4.0
+
+- Recourse tools: `recourse_status`, `recourse_transfers`, `recourse_requests`, and `recourse_action`, which signs nothing and returns the command to run where the agent's key lives.
+- `get_pvt_balance` returns the balance on the current kernel, resolved through the protocol pointer.
+
 ## 1.3.5
 
 - Tool results carry one line when a newer @provian/mcp is published, naming the latest version and `npx -y @provian/mcp@latest`. It is advisory and never blocks a tool.

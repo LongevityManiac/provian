@@ -1,3 +1,8 @@
+## 1.13.0
+
+- `recourse status|join|rejoin|leave|transfers|report|requests` (npx, hosted `provian recourse`, and the `runAgentRecourseCommand` API): an agent's Recourse Pool membership and theft reports. Joining approves once, with no monthly signature and no ETH; amounts come from the signed membership rule and are shown before anything is signed. Nothing is signed without `--yes`.
+- `getBalances` reads PVT on the current kernel, resolved through the protocol pointer, and names it to the relay; earlier releases keep reading the predecessor.
+
 ## 1.12.8
 
 - Every command line the SDK prints, spawns or writes uses `npx @provian/agent-sdk@latest`, so each start runs the newest published SDK. To pin a version, replace `@latest` with a version number.

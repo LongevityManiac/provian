@@ -1455,11 +1455,16 @@ function auditRuntimeAndDiscovery(overlay) {
   // `balance:v3:` cache via `readPvt9Balance`, and on an RPC failure signals the
   // FAIL-VISIBLE `PVT9_READ_FAILED` — never a silent zero, never the false
   // "unconfigured". The explicit-signal requirement is preserved, only its bytes moved.
+  // The token-bound read (`?token=` = the live kernel, keyed `balance:v4:8453:<token>:`) signals
+  // the same way with `PVT_READ_FAILED`; the predecessor read keeps `PVT9_READ_FAILED`.
   auditInvariant(
     agentWallet.includes('balance:v3:')
+      && agentWallet.includes('balance:v4:8453:')
       && agentWallet.includes('readPvt9Balance(')
-      && agentWallet.includes("reason: 'PVT9_READ_FAILED'"),
-    'agent wallet balance response omits the on-chain PVT9 read or its fail-visible signal',
+      && agentWallet.includes("failureReason: 'PVT9_READ_FAILED' | 'PVT_READ_FAILED' = 'PVT9_READ_FAILED'")
+      && agentWallet.includes('reason: failureReason')
+      && agentWallet.includes("'PVT_READ_FAILED',"),
+    'agent wallet balance response omits the on-chain PVT read or its fail-visible signal',
   );
   auditInvariant(
     !agentWallet.includes("reason: 'PVT9_UNCONFIGURED'"),
@@ -1474,7 +1479,13 @@ function auditRuntimeAndDiscovery(overlay) {
   auditInvariant(agentWallet.includes("status: featureLive('promises')") && agentWallet.includes("status: featureLive('pools')"), 'agent wallet welcome payload hard-codes the promises/pools status instead of deriving it from the feature gate');
   auditInvariant(agentWallet.includes('PVT economic governance voting is not yet open'), 'agent wallet welcome payload advertises governance as open');
   auditInvariant(agentWallet.includes('Forum-to-Court escalation is unavailable') && agentWallet.includes('A PE creates no right to a guaranteed amount or value'), 'agent wallet welcome payload omits the escalation block or the no-guaranteed-amount-or-value truth');
-  auditInvariant(agentWallet.includes("escrowV4AddressForChain('base')") && agentWallet.includes("courtAddressForChain('base')"), 'agent wallet welcome payload does not resolve institution addresses from the chain registry');
+  // On Base the chain registry's institution addresses ARE the pointer-resolved live set
+  // (chain-registry.ts returns currentProtocolDeployment().addresses for 'base'); the welcome reads
+  // that set once, so an unverifiable pointer names no address instead of failing the response.
+  auditInvariant(agentWallet.includes('await currentProtocolDeployment().catch(')
+    && agentWallet.includes('baseOnly(liveSet?.addresses.escrow)') && agentWallet.includes('baseOnly(liveSet?.addresses.court)')
+    && agentWallet.includes("escrow: liveSet?.addresses.escrow ?? ''") && agentWallet.includes("court: liveSet?.addresses.court ?? ''"),
+  'agent wallet welcome payload does not resolve institution addresses from the pointer-resolved live set');
   auditInvariant(!/Historical escrow records may be read|Agent Bank settlement is unavailable|most records do not mint|PVT9 kernel is deployed/.test(agentWallet), 'agent wallet welcome payload reverted to the retired pre- text');
   auditInvariant(!/\bGate 1\b|Agent Bank is live\b/.test(agentWallet), 'agent wallet welcome payload leaks stale launch claims');
 
