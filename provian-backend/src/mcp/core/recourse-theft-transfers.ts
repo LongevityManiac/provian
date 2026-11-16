@@ -28,7 +28,13 @@ export interface TheftTransfer {
   readonly transactionHash: string; readonly from: string; readonly to: string;
   readonly amount: string; readonly timestamp: number;
 }
-export interface VerifiedTheftTransfer extends TheftTransfer { readonly block: number; readonly blockHash: string }
+/** A whole transaction as a report covers it: `amount` is the net PVT that left the account in it (every
+ * outflow from the first one on, less any PVT returned to the account in the same transaction), the
+ * same loss the relay records, and `recipients` lists where each part went. `to` is the first recipient. */
+export interface VerifiedTheftTransfer extends TheftTransfer {
+  readonly block: number; readonly blockHash: string;
+  readonly recipients: ReadonlyArray<{ readonly to: string; readonly amount: string }>;
+}
 export interface ListedTheftTransfer extends TheftTransfer { readonly block: number }
 export interface TheftTransferPage {
   readonly account: string; readonly kernel: string;
@@ -202,7 +208,7 @@ export async function verifyTheftTransfer(selected: TheftTransfer, account: stri
       || !Number.isSafeInteger(block) || block < 1 || BigInt(block) > BigInt(finalized.number)) return fail('the transaction is not yet finalized');
     const canonical = record(await rpc.request('eth_getBlockByNumber', [receipt.blockNumber, false]), 'no block');
     if (canonical.hash !== receipt.blockHash || typeof canonical.timestamp !== 'string' || !QUANTITY.test(canonical.timestamp)) return fail('the block is not canonical');
-    let amount = 0n;
+    const moves: Array<{ index: number; from: string; to: string; value: bigint }> = [];
     for (const raw of receipt.logs) {
       const log = record(raw, 'invalid log');
       if (typeof log.address !== 'string' || log.address.toLowerCase() !== kernel || !Array.isArray(log.topics)
@@ -210,43 +216,45 @@ export async function verifyTheftTransfer(selected: TheftTransfer, account: stri
       if (log.removed === true || log.transactionHash !== selected.transactionHash || log.blockHash !== receipt.blockHash
         || typeof log.data !== 'string' || !log.topics.every(t => typeof t === 'string')) return fail('invalid transfer log');
       const transfer = TOKEN.parseLog({ data: log.data, topics: log.topics as string[] });
-      if (transfer?.args.from.toLowerCase() === account.toLowerCase() && transfer.args.to.toLowerCase() === selected.to) amount += BigInt(transfer.args.value);
+      if (!transfer) return fail('invalid transfer log');
+      moves.push({ index: quantity(log.logIndex, 'transfer log without an index'), from: String(transfer.args.from).toLowerCase(),
+        to: String(transfer.args.to).toLowerCase(), value: BigInt(transfer.args.value) });
     }
-    if (amount <= 0n) return fail('no PVT left this account to that recipient in this transaction');
+    // The relay's loss rule: from the account's first outflow in this transaction on, PVT out of the
+    // account counts, PVT back into it is subtracted.
+    const self = account.toLowerCase();
+    const first = Math.min(...moves.filter(m => m.from === self && m.to !== self && m.value > 0n).map(m => m.index));
+    if (!Number.isFinite(first)) return fail('no PVT left this account in this transaction');
+    let amount = 0n;
+    const recipients = new Map<string, bigint>();
+    for (const m of moves.filter(x => x.index >= first).sort((a, b) => a.index - b.index)) {
+      if (m.from === self && m.to !== self) { amount += m.value; recipients.set(m.to, (recipients.get(m.to) ?? 0n) + m.value); }
+      if (m.from !== self && m.to === self) amount -= m.value;
+    }
+    if (amount <= 0n) return fail('no net PVT left this account in this transaction');
     const timestamp = Number(BigInt(canonical.timestamp)) * 1000;
     if (!Number.isSafeInteger(timestamp)) return fail('invalid block time');
-    return { ...selected, block, blockHash: receipt.blockHash, timestamp, amount: formatUnits(amount, 18) };
+    const list = [...recipients].sort(([a], [b]) => a.localeCompare(b)).map(([to, value]) => ({ to, amount: formatUnits(value, 18) }));
+    return { ...selected, to: list[0].to, block, blockHash: receipt.blockHash, timestamp, amount: formatUnits(amount, 18), recipients: list };
   }));
   if (JSON.stringify(facts[0]) !== JSON.stringify(facts[1])) return fail('the two RPCs disagree on this transaction');
   if ((await network.deployment()).manifestHash !== deployment.manifestHash) return fail('the protocol deployment changed during the read; retry');
   return facts[0];
 }
 
-/** Choose a transfer by its transaction hash (and recipient, when it sent PVT to
- * several), then verify it on both RPCs. */
-export async function resolveTheftTransfer(transactionHash: string, account: string, network: RecourseChainNetwork,
-  recipient?: string): Promise<VerifiedTheftTransfer> {
-  const hash = transactionHash.toLowerCase(), self = account.toLowerCase(), to = recipient?.toLowerCase();
+/** Choose a transfer by its transaction hash, then verify it on both RPCs. A report covers the whole
+ * transaction, as the relay records it, whatever the number of recipients. */
+export async function resolveTheftTransfer(transactionHash: string, account: string, network: RecourseChainNetwork): Promise<VerifiedTheftTransfer> {
+  const hash = transactionHash.toLowerCase(), self = account.toLowerCase();
   if (!HASH.test(hash)) throw Error('recourse_transfer_hash_invalid');
-  if (to !== undefined && !ADDRESS.test(to)) throw Error('recourse_transfer_recipient_invalid');
-  const deployment = await network.deployment(), kernel = deployment.addresses.kernel.toLowerCase();
-  const receipt = record(await network.rpcs[0].request('eth_getTransactionReceipt', [hash]), 'no receipt for that transaction');
-  if (!Array.isArray(receipt.logs)) return fail('the receipt carries no logs');
-  const recipients = new Set<string>();
-  for (const raw of receipt.logs) {
-    const log = record(raw, 'invalid log');
-    if (typeof log.address !== 'string' || log.address.toLowerCase() !== kernel || !Array.isArray(log.topics)
-      || log.topics[0] !== TRANSFER_TOPIC || typeof log.data !== 'string' || !log.topics.every(t => typeof t === 'string')) continue;
-    const transfer = TOKEN.parseLog({ data: log.data, topics: log.topics as string[] });
-    if (!transfer || String(transfer.args.from).toLowerCase() !== self) continue;
-    const dest = String(transfer.args.to).toLowerCase();
-    if (dest !== self && dest !== ZeroAddress && BigInt(transfer.args.value) > 0n) recipients.add(dest);
+  try {
+    const verified = await verifyTheftTransfer({ transactionHash: hash, from: self, to: self, amount: '0', timestamp: 0 }, self, network);
+    // A burn sends PVT nowhere it can be reversed from; it is never a theft to report.
+    if (verified.recipients.every(r => r.to === ZeroAddress)) throw Error('no PVT left this account to another address');
+    return verified;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/no (net )?PVT left this account/.test(message)) throw Error('recourse_transfer_not_outgoing: that transaction moved no PVT out of this account');
+    throw error;
   }
-  if (recipients.size === 0) throw Error('recourse_transfer_not_outgoing: that transaction moved no PVT from this account to another address');
-  if (to !== undefined && !recipients.has(to)) throw Error('recourse_transfer_not_outgoing: that transaction sent no PVT from this account to that recipient');
-  if (to === undefined && recipients.size > 1) {
-    throw Error(`recourse_transfer_recipient_ambiguous: that transaction sent PVT to ${[...recipients].sort().join(', ')}; choose one recipient`);
-  }
-  const chosen = to ?? [...recipients][0];
-  return verifyTheftTransfer({ transactionHash: hash, from: self, to: chosen, amount: '0', timestamp: 0 }, self, network);
 }

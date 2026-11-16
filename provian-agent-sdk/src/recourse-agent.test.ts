@@ -49,7 +49,7 @@ function deps(s: AgentRecourseStatus, over: Partial<AgentRecourseDeps> = {}): Ag
     leave: vi.fn(async () => undefined),
     listTransfers: vi.fn(),
     resolveTransfer: vi.fn(async (): Promise<VerifiedTheftTransfer> => ({ transactionHash: h(1), from: ME, to: THIEF, amount: '42.5',
-      timestamp: Date.UTC(2026, 5, 2), block: 99_000, blockHash: h(99) })),
+      timestamp: Date.UTC(2026, 5, 2), block: 99_000, blockHash: h(99), recipients: [{ to: THIEF, amount: '42.5' }] })),
     submitRestoration: vi.fn(async () => ({ walletId: 'wallet_aw_x', destination: '0x4444444444444444444444444444444444444444', generation: 1, restorationRequestId: h(55) })),
     readRequests: vi.fn(async () => ({ requests: [] })),
     sleep: vi.fn(async () => undefined),
@@ -203,13 +203,14 @@ describe('report', () => {
     const d = deps(status('protected'));
     const out = await runAgentRecourseCommand('report', { tx: h(1) }, d);
     expect(out.lines.join('\n')).toContain('I did not authorize this transfer of 42.5 PVT.');
-    expect(d.resolveTransfer).toHaveBeenCalledWith(h(1), undefined);
+    expect(out.lines.join('\n')).toContain(`  42.5 PVT to ${THIEF}`);
+    expect(d.resolveTransfer).toHaveBeenCalledWith(h(1));
     expect(d.submitRestoration).not.toHaveBeenCalled();
   });
   it('RED control: with --yes the restoration path receives the chosen transaction and its verified block', async () => {
     const d = deps(status('protected'));
-    const out = await runAgentRecourseCommand('report', { tx: h(1), to: THIEF, yes: true }, d);
-    expect(d.resolveTransfer).toHaveBeenCalledWith(h(1), THIEF);
+    const out = await runAgentRecourseCommand('report', { tx: h(1), yes: true }, d);
+    expect(d.resolveTransfer).toHaveBeenCalledWith(h(1));
     expect(d.submitRestoration).toHaveBeenCalledWith(expect.objectContaining({ transactionHash: h(1), block: 99_000 }));
     expect(out.result).toMatchObject({ status: 'reported', restoration_request_id: h(55) });
   });

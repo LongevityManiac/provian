@@ -129,12 +129,17 @@ describe('resolveTheftTransfer / verifyTheftTransfer', () => {
     const t = await resolveTheftTransfer(h(1).toUpperCase().replace('0X', '0x'), ME, network(fakeRpc(HISTORY), fakeRpc(HISTORY)));
     expect(t).toMatchObject({ transactionHash: h(1), to: THIEF, amount: '42.5', block: 99_000, blockHash: blockHash(99_000) });
   });
-  it('asks for a recipient when one transaction sent PVT to several', async () => {
-    const split: Log[] = [{ address: KERNEL, from: ME, to: THIEF, value: 5n, tx: 8, block: 90_000, index: 0 },
-      { address: KERNEL, from: ME, to: FRIEND, value: 6n, tx: 8, block: 90_000, index: 1 }];
-    const net = network(fakeRpc(split), fakeRpc(split));
-    await expect(resolveTheftTransfer(h(8), ME, net)).rejects.toThrow(/recourse_transfer_recipient_ambiguous/);
-    expect((await resolveTheftTransfer(h(8), ME, net, FRIEND)).to).toBe(FRIEND);
+  it('RED: a transaction that paid several recipients is reported whole, as the relay records the loss', async () => {
+    const split: Log[] = [{ address: KERNEL, from: ME, to: THIEF, value: PVT('5'), tx: 8, block: 90_000, index: 0 },
+      { address: KERNEL, from: ME, to: FRIEND, value: PVT('50'), tx: 8, block: 90_000, index: 1 }];
+    const t = await resolveTheftTransfer(h(8), ME, network(fakeRpc(split), fakeRpc(split)));
+    expect(t.amount).toBe('55.0');
+    expect(t.recipients).toEqual([{ to: THIEF, amount: '5.0' }, { to: FRIEND, amount: '50.0' }]);
+  });
+  it('PVT returned to the account later in the same transaction is subtracted, as the relay does', async () => {
+    const back: Log[] = [{ address: KERNEL, from: ME, to: THIEF, value: PVT('10'), tx: 9, block: 90_000, index: 0 },
+      { address: KERNEL, from: THIEF, to: ME, value: PVT('4'), tx: 9, block: 90_000, index: 1 }];
+    expect((await resolveTheftTransfer(h(9), ME, network(fakeRpc(back), fakeRpc(back)))).amount).toBe('6.0');
   });
   it('RED: a burn or an incoming transfer cannot be reported', async () => {
     const net = network(fakeRpc(HISTORY), fakeRpc(HISTORY));

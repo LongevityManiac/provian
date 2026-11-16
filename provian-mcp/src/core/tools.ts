@@ -3772,8 +3772,7 @@ const recourseActionTool: ProvianToolDef = {
     type: 'object',
     properties: {
       action: { type: 'string', enum: ['join', 'rejoin', 'leave', 'report'], description: 'What to do.' },
-      tx_hash: { type: 'string', description: 'report: the transaction you did not make (from recourse_transfers).' },
-      to: { type: 'string', description: 'report: the recipient, when that transaction sent PVT to several addresses.' },
+      tx_hash: { type: 'string', description: 'report: the transaction you did not make (from recourse_transfers). A report covers the whole transaction.' },
     },
     required: ['action'],
   },
@@ -3785,9 +3784,7 @@ const recourseActionTool: ProvianToolDef = {
     if (action === 'report') {
       const tx = requireString(args, 'tx_hash');
       if (!tx || !/^0x[0-9a-fA-F]{64}$/.test(tx)) return errorResult('report needs tx_hash: choose the transfer with recourse_transfers.');
-      const to = requireString(args, 'to');
-      if (to !== null && !/^0x[0-9a-fA-F]{40}$/.test(to)) return errorResult('to must be a 0x address.');
-      sub = `report --tx ${tx.toLowerCase()}${to ? ` --to ${to.toLowerCase()}` : ''}`;
+      sub = `report --tx ${tx.toLowerCase()}`;
     }
     let current: Record<string, unknown> | null = null;
     if (ctx.auth) {

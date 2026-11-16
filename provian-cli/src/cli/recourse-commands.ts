@@ -48,7 +48,7 @@ export async function cmdRecourse(
   }
   let options: RecourseCommandOptions;
   try {
-    options = { yes: flags.yes === true, tx: str(flags, 'tx'), to: str(flags, 'to'), beforeBlock: whole(flags, 'before'),
+    options = { yes: flags.yes === true, tx: str(flags, 'tx'), beforeBlock: whole(flags, 'before'),
       windowBlocks: whole(flags, 'window'), windows: whole(flags, 'windows'), limit: whole(flags, 'limit') };
   } catch (error) {
     return { status: 'error', code: 'USAGE', error: (error as Error).message };
@@ -80,7 +80,7 @@ Usage:
   provian recourse leave [--yes]             End future burns and contributions
   provian recourse transfers [--before <block>] [--window <blocks>] [--windows <n>] [--limit <n>]
                                              Your finalized outgoing PVT transfers, newest first, read from Base
-  provian recourse report --tx <hash> [--to <address>] [--yes]
+  provian recourse report --tx <hash> [--yes]
                                              Report a transfer you did not make
   provian recourse requests                  Your restoration requests and their status
 

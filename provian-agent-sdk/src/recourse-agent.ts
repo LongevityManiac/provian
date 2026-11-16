@@ -222,7 +222,7 @@ export interface AgentRecourseDeps {
   authorize(view: MembershipTransitionView, challenge: MembershipConsentChallenge): Promise<MembershipOperationStatus>;
   leave(view: MembershipTransitionView): Promise<void>;
   listTransfers(scan: TheftTransferScan): Promise<TheftTransferPage>;
-  resolveTransfer(transactionHash: string, recipient?: string): Promise<VerifiedTheftTransfer>;
+  resolveTransfer(transactionHash: string): Promise<VerifiedTheftTransfer>;
   submitRestoration(transfer: VerifiedTheftTransfer): Promise<RestorationSubmission>;
   readRequests(): Promise<unknown>;
   sleep(ms: number): Promise<void>;
@@ -230,7 +230,7 @@ export interface AgentRecourseDeps {
   command(sub: string): string;
 }
 export interface RecourseCommandOptions {
-  readonly yes?: boolean; readonly tx?: string; readonly to?: string;
+  readonly yes?: boolean; readonly tx?: string;
   readonly beforeBlock?: number; readonly windowBlocks?: number; readonly windows?: number; readonly limit?: number;
   /** Polls of an open action before reporting it as still in progress (default 20, 3 s apart). */
   readonly polls?: number;
@@ -343,8 +343,10 @@ async function runLeave(opts: RecourseCommandOptions, deps: AgentRecourseDeps): 
       : `Departure retained by the relay; it completes even if this machine goes offline. Run ${deps.command('recourse status')} to check.`]);
 }
 
-function transferJson(t: { transactionHash: string; to: string; amount: string; timestamp: number; block: number }): Record<string, unknown> {
-  return { transaction_hash: t.transactionHash, to: t.to, amount_pvt: t.amount, at: new Date(t.timestamp).toISOString(), block: t.block };
+function transferJson(t: { transactionHash: string; to: string; amount: string; timestamp: number; block: number;
+  recipients?: ReadonlyArray<{ to: string; amount: string }> }): Record<string, unknown> {
+  return { transaction_hash: t.transactionHash, ...(t.recipients ? { recipients: t.recipients.map(r => ({ to: r.to, amount_pvt: r.amount })) } : { to: t.to }),
+    amount_pvt: t.amount, at: new Date(t.timestamp).toISOString(), block: t.block };
 }
 
 async function runTransfers(opts: RecourseCommandOptions, deps: AgentRecourseDeps): Promise<RecourseCommandOutcome> {
@@ -362,15 +364,17 @@ async function runReport(opts: RecourseCommandOptions, deps: AgentRecourseDeps):
   if (!opts.tx) {
     return refused('MISSING_TX', `Choose the transfer you did not make: list them with ${deps.command('recourse transfers')}, then run ${deps.command('recourse report --tx <transaction hash>')}.`);
   }
-  const transfer = await deps.resolveTransfer(opts.tx, opts.to);
+  const transfer = await deps.resolveTransfer(opts.tx);
   const review = [
-    `Report this transfer: ${transfer.amount} PVT from ${transfer.from} to ${transfer.to} on ${utcDay(transfer.timestamp)} (UTC), block ${transfer.block}, tx ${transfer.transactionHash}.`,
+    `Report this transaction: ${transfer.amount} PVT left ${transfer.from} on ${utcDay(transfer.timestamp)} (UTC), block ${transfer.block}, tx ${transfer.transactionHash}.`,
+    ...transfer.recipients.map(r => `  ${r.amount} PVT to ${r.to}`),
+    'The report covers the whole transaction.',
     `I did not authorize this transfer of ${transfer.amount} PVT.`,
     'Reporting moves control of your agent identity to a fresh recovery key in this keystore directory (your credentials are updated in place). PVT still held by whoever took it is reversed first; the pool determines restoration of any remaining loss.',
     'Restoration is a discretionary determination of the pool: no member has a contractual right to it. Until the Court opens, Provian reviews a theft report and decides what the pool can restore. Recourse restores PVT only.',
   ];
   if (!opts.yes) {
-    const cmd = deps.command(`recourse report --tx ${transfer.transactionHash}${opts.to ? ` --to ${transfer.to}` : ''} --yes`);
+    const cmd = deps.command(`recourse report --tx ${transfer.transactionHash} --yes`);
     return ok({ status: 'review', signed: false, transfer: transferJson(transfer), next_step: cmd }, [...review, `Nothing was submitted. To report it, run: ${cmd}`]);
   }
   const result = await deps.submitRestoration(transfer);
@@ -492,7 +496,7 @@ export function defaultAgentRecourseDeps(identity: AgentRecourseIdentity, comman
       kind: view.kind, challenge }),
     leave: async view => leaveAgentMembership(config, { ...signer(identity), transitionId: view.id }),
     listTransfers: scan => listTheftTransfers(identity.address, ownerChainNetwork(), scan),
-    resolveTransfer: (tx, to) => resolveTheftTransfer(tx, identity.address, ownerChainNetwork(), to),
+    resolveTransfer: tx => resolveTheftTransfer(tx, identity.address, ownerChainNetwork()),
     submitRestoration: async transfer => submitAgentRestorationRequest(config, { ...signer(identity),
       transactionHash: transfer.transactionHash, block: transfer.block }),
     readRequests: () => readRestorationRequests(config),

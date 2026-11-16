@@ -8,7 +8,7 @@
  *   recourse rejoin [--yes]              after a lapse: show the unpaid protected months; --yes completes them and rejoins
  *   recourse leave [--yes]               end future burns and contributions
  *   recourse transfers [--before <block>] [--window <blocks>] [--windows <n>] [--limit <n>]
- *   recourse report --tx <hash> [--to <address>] [--yes]
+ *   recourse report --tx <hash> [--yes]
  *   recourse requests                    your restoration requests and their status
  * Every subcommand takes --json and --directory <keystore dir> (default ~/.provian).
  *
@@ -32,7 +32,7 @@ export class RecourseUsageError extends Error {
   constructor(message: string) { super(message); this.name = 'RecourseUsageError'; }
 }
 
-const VALUE_FLAGS = new Set(['directory', 'tx', 'to', 'before', 'window', 'windows', 'limit']);
+const VALUE_FLAGS = new Set(['directory', 'tx', 'before', 'window', 'windows', 'limit']);
 const BOOL_FLAGS = new Set(['yes', 'json', 'help']);
 
 function whole(name: string, value: string | undefined): number | undefined {
@@ -61,7 +61,7 @@ export function parseRecourseArgs(argv: readonly string[]): ParsedRecourseArgs {
     values[key] = value;
   }
   return { sub: sub === 'help' ? null : sub, help: bools.has('help') || sub === 'help', json: bools.has('json'), directory: values.directory,
-    options: { yes: bools.has('yes'), tx: values.tx, to: values.to, beforeBlock: whole('before', values.before),
+    options: { yes: bools.has('yes'), tx: values.tx, beforeBlock: whole('before', values.before),
       windowBlocks: whole('window', values.window), windows: whole('windows', values.windows), limit: whole('limit', values.limit) } };
 }
 
@@ -80,7 +80,7 @@ export function recourseHelp(command: (sub: string) => string = cliCommand): str
     '  leave [--yes]                        End future burns and contributions (contributions are not refundable)',
     '  transfers [--before <block>] [--window <blocks>] [--windows <n>] [--limit <n>]',
     '                                       Your finalized outgoing PVT transfers, newest first, read from Base',
-    '  report --tx <hash> [--to <address>] [--yes]',
+    '  report --tx <hash> [--yes]',
     '                                       Report a transfer you did not make; --yes submits the restoration request',
     '  requests                             Your restoration requests and their status',
     '',
