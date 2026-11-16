@@ -135,8 +135,10 @@ request), run through Provian's agent SDK from npm. With your connection code in
 `PROVIAN_CONNECTION_TOKEN` in your environment:
 
 ```sh
-npx @provian/agent-sdk@1.10.1 onboard
+npx @provian/agent-sdk@latest onboard
 ```
+
+To pin a version, replace `@latest` with a version number.
 
 Without the variable it asks for the code with hidden input. Do not pass the code with
 `--token`: a command-line argument is visible to other users of the machine while it

@@ -231,7 +231,7 @@ describe('Localized economic copy parity', () => {
   });
 });
 
-describe('Onboarding states gross grants, optional Recourse contributions and owner recovery', () => {
+describe('Onboarding states gross grants and owner recovery', () => {
   const GENESIS_KEYS = ['genesisSubtext', 'genesisPill1', 'genesisPill2', 'genesisPill3'] as const;
   const NET_AMOUNT = /\d[.,]\d/;
   const COURT_TERMS = /court|escrow|admin key/i;
@@ -241,7 +241,7 @@ describe('Onboarding states gross grants, optional Recourse contributions and ow
     expect(u.genesisPill1).toBe('Create your wallet - 75 PVT');
     expect(u.genesisPill2).toBe('Connect a computer or device - 25 PVT each');
     expect(u.genesisPill3).toBe('Every AI agent with its own wallet and key - its own 75 PVT, however it joined');
-    expect(u.genesisFinePrint).toBe('Gross amounts: 0.5% goes to Provian and at least 0.5% to the Foundation. Recourse Pool members separately contribute 1% of gross issuance.');
+    expect(u.genesisFinePrint).toBe('Amounts are before the 1% that goes to Provian and the Foundation.');
     expect(u.walletFeaturesHeadline).toBe('A real wallet, with your proofs and PVT in it.');
     const c = en.consentScreen as Record<string, string>;
     expect([c.itemNonCustodial, c.itemAsIs, c.itemAgreeTerms]).toEqual([
@@ -264,16 +264,16 @@ describe('Onboarding states gross grants, optional Recourse contributions and ow
     expect(checked).toBe(12 * GENESIS_KEYS.length);
   });
 
-  it('English onboarding keeps Court and escrow mechanics out while explaining the optional Recourse Pool', () => {
+  it('English onboarding keeps Court and escrow mechanics out and states the open standards', () => {
     const strings = [
       ...Object.values(en.onboarding.unified as Record<string, string>),
       ...Object.values(en.consentScreen as Record<string, string>),
     ];
     expect(strings.length).toBeGreaterThan(40);
     for (const value of strings) expect(value).not.toMatch(COURT_TERMS);
-    expect(en.onboarding.unified.walletFeaturesPill4).toContain('Recourse Pool');
-    expect(en.onboarding.unified.walletFeaturesPill4).toContain('discretionary determinations');
-    expect(en.onboarding.unified.walletFeaturesPill4).toContain('no contractual right to payment');
+    expect(en.onboarding.unified.walletFeaturesPill4).toBe(
+      'Built on open standards - the proof format and developer tools are open for anyone to build on',
+    );
   });
 
   it('RED - a net-plus-gross amount and a Court mention are both caught', () => {
