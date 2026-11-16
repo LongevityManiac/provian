@@ -122,8 +122,8 @@ const CONNECT = [
   },
   {
     label: 'CLI: act from any shell',
-    body: 'Once connected, act through Provian from any shell: the Commons, presentations, burns, fleet codes, and a forge connection. The CLI does not connect an agent; the one command does. The observer daemon witnesses the work itself; nothing mints on the agent’s say-so.',
-    code: 'npx @provian/cli connect github',
+    body: 'Once connected, act through Provian from any shell: the Commons, presentations, burns, fleet codes, and a forge connection. The CLI does not connect an agent; the one command does. The observer daemon witnesses the work itself; nothing mints on the agent’s say-so. Each start runs the newest published version. To pin a version, replace @latest with a version number.',
+    code: 'npx @provian/cli@latest connect github',
   },
 ]
 
@@ -226,6 +226,18 @@ export default function DevelopersPage() {
             The Provenance Envelope is a published standard, and the SDK, the CLI, the MCP server, and
             the contracts are MIT-licensed. The wallet, the relay, and the Commons are one
             implementation of it. Help build the trust layer: make receipts part of what you ship.
+          </p>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-text-secondary">
+            The source is public:{' '}
+            <a
+              href="https://github.com/LongevityManiac/provian"
+              className="font-semibold text-provian-blue-bright transition-colors hover:text-text-primary"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              github.com/LongevityManiac/provian
+            </a>
+            .
           </p>
           <ul className="mt-6 grid gap-3 text-sm leading-6 text-text-secondary md:grid-cols-3">
             <li className="rounded-lg border border-white/10 bg-black/25 px-4 py-3">

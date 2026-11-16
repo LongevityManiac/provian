@@ -46,7 +46,7 @@ export interface ConnectLaunchGates {
     fleetInstalled: LaunchGate;
     /** `npx @provian/agent-sdk@latest fleet-code`. */
     fleetNpx: LaunchGate;
-    /** `npx @provian/cli fleet-code`. */
+    /** `npx @provian/cli@latest fleet-code`. */
     fleetCli: LaunchGate;
     /** MCP tool `issue_fleet_code`. */
     fleetMcp: LaunchGate;
