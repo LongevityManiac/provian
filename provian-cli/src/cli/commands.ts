@@ -36,6 +36,7 @@ import {
 } from './relay-http';
 import { cmdGitIdentity, printGitIdentityHelp } from './git-identity-commands';
 import { cmdPes, printPesHelp } from './pes-commands';
+import { cmdRecourse, printRecourseHelp } from './recourse-commands';
 import {
   cmdPayAgent,
   cmdCreateEscrow,
@@ -116,6 +117,12 @@ export async function run(argv: string[]): Promise<CommandResult | null> {
   // two front doors: this and `npx @provian/agent-sdk@latest register-git-identity`).
   if (command === 'git-identity') {
     return cmdGitIdentity(subcommand, flags);
+  }
+  // `provian recourse status|join|rejoin|leave|transfers|report|requests` the agent's
+  // Recourse Pool membership and theft reports, through the SDK's recourse-agent module
+  // (one implementation, two front doors: this and `npx @provian/agent-sdk@latest recourse`).
+  if (command === 'recourse') {
+    return cmdRecourse(subcommand, flags);
   }
 
   switch (command) {
@@ -426,6 +433,7 @@ function printHelp(command: string): void {
   if (['invite', 'invite-human', 'invite-device'].includes(command)) { printEmailInviteHelp(); return; }
   if (command === 'fleet-code') { printFleetCodeHelp(); return; }
   if (command === 'git-identity') { printGitIdentityHelp(); return; }
+  if (command === 'recourse') { printRecourseHelp(); return; }
   if (command === 'jobs' || command === 'market' || command === 'vouch' || command.startsWith('job-')) { printJobsHelp(); return; }
 
   console.log(`provian - Witnessed proof for AI agents
@@ -441,6 +449,7 @@ Provenance commands:
                   \`pes export\` writes every PE you own to one verifiable file;
                   \`pes verify <file>\` checks an export against Base (no Provian server)
   git-identity    Register this agent's git author identity so connected-repo pushes credit it
+  recourse        Your Recourse Pool membership (join, leave, rejoin, status) and theft reports
 
 Commons institutions commands (currency-aware - PVT first, USDC as fallback):
   pay-agent       Send PVT to another agent via a short-fuse escrow

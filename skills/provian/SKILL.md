@@ -218,6 +218,29 @@ Before working with another agent, ask it to present its record (MCP tools
 answers computed from that agent's live history, and the agent chooses only what to
 answer.
 
+## Recourse Pool membership
+
+Membership is optional. You approve once at joining; each month's participation burn and
+pool contribution then happen automatically, with no monthly signature and no ETH. The
+amounts come from the signed membership rule and are shown before you approve. Rejoining
+after a lapse first completes the unpaid protected months. Pool contributions are not
+refundable. Recourse restores PVT only, and restoration is a discretionary determination
+of the pool: until the Court opens, Provian reviews a theft report and decides what the
+pool can restore.
+
+```bash
+npx @provian/agent-sdk@latest recourse status
+npx @provian/agent-sdk@latest recourse join          # review; add --yes to approve once
+npx @provian/agent-sdk@latest recourse transfers     # choose a transfer you did not make
+npx @provian/agent-sdk@latest recourse report --tx <transaction hash>   # review; add --yes to report
+npx @provian/agent-sdk@latest recourse requests
+```
+
+Also `rejoin` and `leave`. On a hosted install use `"$HOME/.provian/bin/provian" recourse …`.
+MCP: `recourse_status`, `recourse_transfers`, `recourse_requests`, and `recourse_action`,
+which returns the command to run where your key lives. To pin a version, replace @latest
+with a version number.
+
 ## Optional PE Archive
 
 Encrypted storage, kept for as long as Provian operates the Archive, costs $5 USDC per GB (10^9 bytes), paid up front. Each

@@ -46,6 +46,10 @@
  * request_link POST /v1/agent/wallet/:id/request-link
  * escrow_target GET /v1/agent/wallet/:id/escrow-target (the anchor to seal your key to)
  * recovery_escrow POST /v1/agent/wallet/:id/recovery-escrow (ciphertext only)
+ * recourse_status GET /v1/recourse/pool + GET /v1/recourse/membership-transitions
+ * recourse_transfers Base eth_getLogs on the live kernel, two RPCs (no relay call)
+ * recourse_requests GET /v1/recourse/restoration-requests
+ * recourse_action no write: returns the `recourse <action> --yes` command (the key never reaches this server)
  *
  * AUTH MODEL (load-bearing): this layer NEVER validates credentials itself.
  * It forwards whatever the caller supplied (Authorization: Bearer
@@ -61,7 +65,9 @@
  */
 
 import { createHash } from 'crypto';
-import { currentProtocolDeployment } from './protocol-runtime';
+import { currentProtocolDeployment, protocolChainNetwork } from './protocol-runtime';
+import { formatUnits } from 'ethers';
+import { listTheftTransfers, THEFT_TRANSFER_DEFAULTS } from './recourse-theft-transfers';
 import type { ProtocolDeployment } from './protocol-pointer';
 import { signPoPChallenge, deriveAddressFromPrivateKey } from './crypto';
 import { keccak256 } from './keccak256';
@@ -3611,6 +3617,199 @@ const linkGitHubIdentity: ProvianToolDef = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// The Recourse Pool: the agent's membership and theft reports
+// ---------------------------------------------------------------------------
+//
+// Read-only tools (status, transfers, requests) work over stdio and on the hosted
+// endpoint. The signing actions (join, rejoin, leave, report) need the agent's encrypted
+// keystore and its recovery material, which this server never holds — like
+// request_payout, recourse_action returns the exact command to run where the key
+// lives (`recourse <action> --yes`), and the terms to review first. Every amount comes
+// from the signed membership rule on the Recourse Pool contract; none is written here.
+
+const RECOURSE_TERMS: readonly string[] = [
+  'Membership is optional. You approve once: each month\'s burn and contribution then happen automatically, with no monthly signature and no ETH.',
+  'After a missed month you stay protected for one more calendar month. If the outstanding burn and contribution are not completed during that grace month, protection lapses. Rejoining first completes the unpaid protected months; lapsed months are never charged and never covered.',
+  'Pool contributions are not refundable, and participation burns are permanent.',
+  'Recourse records and restores PVT only; other assets at your address are neither recorded nor restored.',
+  'Restoration is a discretionary determination of the pool: no member has a contractual right to it. Until the Court opens, Provian reviews a theft report and decides what the pool can restore. Provian Technologies does not fund, hold or guarantee the pool.',
+];
+const RECOURSE_ATOMIC = /^(0|[1-9][0-9]*)$/;
+function recoursePvt(value: unknown): string | null {
+  return typeof value === 'string' && RECOURSE_ATOMIC.test(value) ? formatUnits(value, 18).replace(/\.0$/, '') : null;
+}
+function recourseMonth(value: unknown): string | null {
+  if (typeof value !== 'string' || !RECOURSE_ATOMIC.test(value)) return null;
+  const n = Number(value);
+  return `${Math.floor(n / 12)}-${String(n % 12 + 1).padStart(2, '0')}`;
+}
+function recourseDate(value: unknown): string | null {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? new Date(value).toISOString() : null;
+}
+function recourseCommands(sub: string): { npx: string; hosted: string; cli: string } {
+  return { npx: `npx @provian/agent-sdk@latest recourse ${sub}`, hosted: `"$HOME/.provian/bin/provian" recourse ${sub}`,
+    cli: `npx -y @provian/cli@latest recourse ${sub}` };
+}
+function recordOf(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+/** Shape GET /v1/recourse/pool (+ the open membership action) for an agent. */
+function recourseStatusView(pool: Record<string, unknown> | null, transition: unknown): Record<string, unknown> {
+  const membership = recordOf(pool?.membership), details = recordOf(membership?.details);
+  const enrolled = membership?.enrolled === true, grace = membership?.grace === true;
+  const status = !membership ? null : grace ? 'grace' : enrolled ? 'protected' : details?.status === 'lapsed' ? 'lapsed' : 'not_member';
+  const bps = typeof pool?.earningsBps === 'number' ? pool.earningsBps : null;
+  const detailBps = typeof details?.earningsBps === 'number' ? details.earningsBps : null;
+  const open = recordOf(transition);
+  return {
+    membership: status === null ? null : {
+      status, protected: status === 'protected' || status === 'grace', in_grace: grace,
+      protection_started_at: recourseDate(details?.protectionStartedAtMs), next_month_at: recourseDate(details?.nextMonthAtMs),
+      next_burn_pvt: recoursePvt(details?.nextBurnAtomic), next_no_earnings_contribution_pvt: recoursePvt(details?.noEarningsContributionAtomic),
+      earnings_contribution_percent: detailBps === null ? null : detailBps / 100,
+      unpaid_pvt: recoursePvt(membership?.unpaidAtomic),
+      unpaid_meaning: status === 'lapsed' ? 'complete_before_rejoining' : enrolled ? 'awaiting_automatic_collection' : 'none',
+    },
+    rule: pool ? { month: recourseMonth(pool.month), participation_burn_pvt: recoursePvt(pool.participationBurnAtomic),
+      no_earnings_contribution_pvt: recoursePvt(pool.noEarningsContributionAtomic), earnings_contribution_percent: bps === null ? null : bps / 100,
+      rule_hash: typeof pool.signedRuleHash === 'string' ? pool.signedRuleHash : null,
+      source: 'signed membership rule on the Recourse Pool contract (Base)' } : null,
+    pool: pool ? { address: pool.pool ?? null, kernel: pool.kernel ?? null, reserve_pvt: recoursePvt(pool.reserveAtomic) } : null,
+    pending_action: open ? { id: open.id ?? null, kind: open.kind ?? null, status: open.status ?? null } : null,
+    next_step: status === null ? 'Membership is being reconciled; call recourse_status again shortly.'
+      : status === 'lapsed' ? recourseCommands('rejoin').npx : status === 'not_member' ? recourseCommands('join').npx : recourseCommands('leave').npx,
+  };
+}
+
+const recourseStatusTool: ProvianToolDef = {
+  name: 'recourse_status',
+  description:
+    'Your Recourse Pool membership: status (not_member, protected, grace — still protected — or lapsed), when protection started, ' +
+    'when the next month begins, the next burn, the contribution if that month has no earnings, the earnings contribution percent, ' +
+    'and any unpaid amount (awaiting automatic collection while protected; to complete before rejoining after a lapse). Also the ' +
+    'current month\'s rule — set by the signed membership rule on the Recourse Pool contract on Base — the pool reserve, and any ' +
+    'open membership action. Membership is optional; it restores stolen PVT only, at the pool\'s discretion. Read-only. ' +
+    'Requires agent API credentials.',
+  inputSchema: { type: 'object', properties: {} },
+  requiresAuth: true,
+  handler: async (_args, ctx) => {
+    const [pool, transition] = await Promise.all([
+      relayCall(ctx, 'GET', '/v1/recourse/pool', { agentAuth: true }),
+      relayCall(ctx, 'GET', '/v1/recourse/membership-transitions', { agentAuth: true }),
+    ]);
+    if (pool.status === 401 || pool.status === 403) return relayErrorResult('Recourse status', pool);
+    if (pool.status !== 200 && transition.status !== 200) return relayErrorResult('Recourse status', pool);
+    return jsonResult(recourseStatusView(pool.status === 200 ? recordOf(pool.body) : null, transition.status === 200 ? transition.body : null));
+  },
+};
+
+const recourseTransfersTool: ProvianToolDef = {
+  name: 'recourse_transfers',
+  description:
+    'Choose the transfer you did not make: your finalized outgoing PVT transfers, newest first, read from Base logs of the live PVT ' +
+    'kernel (resolved through the protocol pointer) on two independent RPCs. Burns, incoming transfers, transfers to yourself and ' +
+    'other tokens are never listed. If an RPC refuses the range or the two disagree, this returns an error, never an empty list ' +
+    '(retry with a smaller window_blocks). Pass next_before_block back as before_block to read older transfers. Report one with ' +
+    'recourse_action (action "report", tx_hash). Read-only. Requires agent API credentials.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      address: { type: 'string', description: 'Your agent wallet address (0x…), the address the PVT left.' },
+      before_block: { type: 'number', description: 'Read only blocks below this one (a previous next_before_block).' },
+      window_blocks: { type: 'number', description: `Blocks per log request (default ${THEFT_TRANSFER_DEFAULTS.windowBlocks}).` },
+      windows: { type: 'number', description: `Most log requests per RPC in this call (default ${THEFT_TRANSFER_DEFAULTS.windows}).` },
+      limit: { type: 'number', description: `Stop reading older blocks once this many transfers are found (default ${THEFT_TRANSFER_DEFAULTS.limit}).` },
+    },
+    required: ['address'],
+  },
+  requiresAuth: true,
+  handler: async (args, ctx) => {
+    const address = requireString(args, 'address');
+    if (!address || !/^0x[0-9a-fA-F]{40}$/.test(address)) return errorResult('address must be your 0x wallet address.');
+    const num = (key: string): number | undefined => (typeof args[key] === 'number' ? args[key] as number : undefined);
+    const page = await listTheftTransfers(address, (ctx.recourseChainNetwork ?? protocolChainNetwork)(), { beforeBlock: num('before_block'),
+      windowBlocks: num('window_blocks'), windows: num('windows'), limit: num('limit') });
+    return jsonResult({ account: page.account, kernel: page.kernel, from_block: page.fromBlock, to_block: page.toBlock,
+      next_before_block: page.nextBeforeBlock,
+      transfers: page.transfers.map(t => ({ transaction_hash: t.transactionHash, to: t.to, amount_pvt: t.amount,
+        at: new Date(t.timestamp).toISOString(), block: t.block })),
+      next_step: 'To report one you did not make, call recourse_action with action "report" and its tx_hash.' });
+  },
+};
+
+const recourseRequestsTool: ProvianToolDef = {
+  name: 'recourse_requests',
+  description:
+    'Follow your Recourse restoration requests: each request id, its status, the reported transaction, and the reversal transaction ' +
+    'once PVT still held by whoever took it is reversed. Restoration is a discretionary determination of the pool. Read-only. ' +
+    'Requires agent API credentials.',
+  inputSchema: { type: 'object', properties: {} },
+  requiresAuth: true,
+  handler: async (_args, ctx) => {
+    const res = await relayCall(ctx, 'GET', '/v1/recourse/restoration-requests', { agentAuth: true });
+    if (res.status !== 200) return relayErrorResult('Restoration requests', res);
+    const rows = Array.isArray(recordOf(res.body)?.requests) ? (recordOf(res.body)?.requests as unknown[]) : [];
+    return jsonResult({ requests: rows.map(recordOf).filter((r): r is Record<string, unknown> => r !== null)
+      .sort((a, b) => Number(b.createdAtMs ?? 0) - Number(a.createdAtMs ?? 0))
+      .map(r => ({ request_id: r.requestId ?? null, status: r.status ?? null, transaction_hash: r.transactionHash ?? null,
+        reversal_transaction_hash: r.reversalTransactionHash ?? null, created_at: recourseDate(r.createdAtMs) })) });
+  },
+};
+
+const recourseActionTool: ProvianToolDef = {
+  name: 'recourse_action',
+  description:
+    'Join, rejoin after a lapse, leave the Recourse Pool, or report a transfer you did not make. These sign with your agent keystore ' +
+    'and its recovery material, which this server never holds, so this tool signs nothing: it returns the command to run on the ' +
+    'machine that holds your key (`recourse <action>` shows the terms or the transfer to review and signs nothing; add --yes to ' +
+    'approve), plus the terms and, with credentials, the current rule and your membership. Joining approves once: each month\'s ' +
+    'burn and contribution then happen automatically, with no monthly signature and no ETH, at the amounts the signed membership ' +
+    'rule sets. Rejoining first completes the unpaid protected months. Pool contributions are not refundable. A report moves your ' +
+    'agent to a fresh recovery key and asks the pool to restore the stolen PVT, at its discretion.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      action: { type: 'string', enum: ['join', 'rejoin', 'leave', 'report'], description: 'What to do.' },
+      tx_hash: { type: 'string', description: 'report: the transaction you did not make (from recourse_transfers).' },
+      to: { type: 'string', description: 'report: the recipient, when that transaction sent PVT to several addresses.' },
+    },
+    required: ['action'],
+  },
+  requiresAuth: false,
+  handler: async (args, ctx) => {
+    const action = requireString(args, 'action');
+    if (action !== 'join' && action !== 'rejoin' && action !== 'leave' && action !== 'report') return errorResult('action must be join, rejoin, leave or report.');
+    let sub: string = action;
+    if (action === 'report') {
+      const tx = requireString(args, 'tx_hash');
+      if (!tx || !/^0x[0-9a-fA-F]{64}$/.test(tx)) return errorResult('report needs tx_hash: choose the transfer with recourse_transfers.');
+      const to = requireString(args, 'to');
+      if (to !== null && !/^0x[0-9a-fA-F]{40}$/.test(to)) return errorResult('to must be a 0x address.');
+      sub = `report --tx ${tx.toLowerCase()}${to ? ` --to ${to.toLowerCase()}` : ''}`;
+    }
+    let current: Record<string, unknown> | null = null;
+    if (ctx.auth) {
+      const [pool, transition] = await Promise.all([
+        relayCall(ctx, 'GET', '/v1/recourse/pool', { agentAuth: true }),
+        relayCall(ctx, 'GET', '/v1/recourse/membership-transitions', { agentAuth: true }),
+      ]);
+      if (pool.status === 200 || transition.status === 200) {
+        current = recourseStatusView(pool.status === 200 ? recordOf(pool.body) : null, transition.status === 200 ? transition.body : null);
+      }
+    }
+    return jsonResult({
+      signed: false,
+      review_first: recourseCommands(sub),
+      approve: recourseCommands(`${sub} --yes`),
+      where: 'Run on the machine that holds your agent keystore (default ~/.provian; --directory chooses another). Use the hosted command on a curl install and npx on an npm install.',
+      terms: action === 'report' ? RECOURSE_TERMS.slice(3) : RECOURSE_TERMS,
+      ...(current ? { current } : {}),
+    });
+  },
+};
+
 export const PROVIAN_TOOLS: ProvianToolDef[] = [
   createWallet,
   genesisStatus,
@@ -3673,6 +3872,11 @@ export const PROVIAN_TOOLS: ProvianToolDef[] = [
   requestLinkTool,
   escrowTargetTool,
   recoveryEscrowTool,
+  // the Recourse Pool: membership and theft reports (signing runs where the key lives)
+  recourseStatusTool,
+  recourseTransfersTool,
+  recourseRequestsTool,
+  recourseActionTool,
 ];
 
 /** Look up a tool by name. */

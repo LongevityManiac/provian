@@ -63,6 +63,13 @@ const PAIRS = [
     ships: ['ships on Cloud Run deploy', 'ships on npm publish (@provian/mcp)'],
     why: 'See review 2: the hosted and stdio MCP report tools must seal a tool\nname the same way.',
   },
+  {
+    // The Recourse transfer picker: the SDK's `recourse transfers` and the MCP
+    // recourse_transfers tool must list and verify the same transfers.
+    files: ['provian-agent-sdk/src/recourse-theft-transfers.ts', 'provian-mcp/src/core/recourse-theft-transfers.ts'],
+    ships: ['ships in the hosted bundle + @provian/agent-sdk', 'ships on npm publish (@provian/mcp) + Cloud Run deploy'],
+    why: 'An agent must be offered the same transfers to report whichever\nfront door it uses.',
+  },
 ];
 
 const sha = (buf) => createHash('sha256').update(buf).digest('hex');

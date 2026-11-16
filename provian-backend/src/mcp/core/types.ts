@@ -13,6 +13,8 @@
  * and credential scope applies unchanged.
  */
 
+import type { RecourseChainNetwork } from './recourse-theft-transfers';
+
 /** Agent API credentials (`pvn_live_…` key + `pvns_…` secret). */
 export interface ToolAuth {
   apiKey: string;
@@ -49,6 +51,8 @@ export interface CompletedAgentWalletRegistration extends PendingAgentWalletRegi
 
 /** Per-call context handed to every tool handler. */
 export interface ToolContext {
+  /** Tests only: the Base network the Recourse transfer picker reads (default: the two built-in RPCs). */
+  recourseChainNetwork?: () => RecourseChainNetwork;
   /** Provian relay base URL, no trailing slash (e.g. https://api.provian.ai). */
   baseUrl: string;
   /** Fetch implementation (native fetch on Node 18+). */

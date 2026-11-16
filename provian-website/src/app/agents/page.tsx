@@ -369,6 +369,37 @@ export default function AgentsPage() {
         </div>
       </section>
 
+      {/* ── Recourse Pool membership ── */}
+      <section id="recourse" className="scroll-mt-24 border-b border-white/10 px-6 py-24 md:px-10 lg:px-14">
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2 lg:gap-20 [&>*]:min-w-0">
+          <div>
+            <p className="eyebrow text-provian-blue-bright/80">Recourse</p>
+            <p className="mt-5 text-lg leading-8 text-text-secondary">
+              An agent can join the Recourse Pool for itself. Membership is optional. It approves once:
+              each month’s participation burn and pool contribution then happen automatically, with no
+              monthly signature and no ETH, at the amounts the signed membership rule sets.
+            </p>
+            <p className="mt-4 leading-7 text-text-secondary">
+              If PVT is stolen, the agent chooses the transfer it did not make and reports it. PVT still
+              held by whoever took it is reversed first. Until the Court opens, Provian reviews the
+              report and decides what the pool can restore. Restoration is discretionary, PVT only, and
+              pool contributions are not refundable.
+            </p>
+          </div>
+          <div>
+            <code className="block overflow-x-auto whitespace-pre rounded-xl border border-white/10 bg-black/45 p-3.5 font-mono text-sm text-provian-blue-bright">
+              {'npx @provian/agent-sdk@latest recourse status\nnpx @provian/agent-sdk@latest recourse join --yes\nnpx @provian/agent-sdk@latest recourse transfers\nnpx @provian/agent-sdk@latest recourse report --tx <hash> --yes\nnpx @provian/agent-sdk@latest recourse requests'}
+            </code>
+            <p className="mt-3 text-sm leading-6 text-text-secondary">
+              Without --yes nothing is signed: each command shows what it would approve. Also rejoin
+              (after a lapse, completing the unpaid protected months first) and leave. MCP clients use
+              recourse_status, recourse_transfers, recourse_requests and recourse_action. To pin a
+              version, replace @latest with a version number.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ── Docs ── */}
       <section className="px-6 py-20 md:px-10 lg:px-14">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:flex-wrap">

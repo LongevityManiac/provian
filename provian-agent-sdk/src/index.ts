@@ -825,6 +825,13 @@ export { beginMembershipTransition, readMembershipTransition, prepareMembershipD
 export type { MembershipRelay, MembershipRequestPath, MembershipConsentChallenge, MembershipDebitChallenge,
   MembershipTransitionView, MembershipOperationStatus, MembershipDebitPreparation } from './recourse-membership-client';
 export { recoverRecourseAgent } from './recourse-recovery';
+export { readRecoursePool } from './recourse';
+export { runAgentRecourseCommand, readAgentRecourseStatus, defaultAgentRecourseDeps, loadRecourseIdentity, parseRecoursePoolReply,
+  parseRestorationRequests, renderRecourseStatus, assertRuleMatchesChain, RecourseIdentityError, RECOURSE_SUBCOMMANDS, MEMBERSHIP_TERMS } from './recourse-agent';
+export type { AgentRecourseDeps, AgentRecourseStatus, AgentRecourseMembership, AgentRecourseIdentity, RecourseRule, RecourseMembershipStatus,
+  RecourseCommandOptions, RecourseCommandOutcome, RecourseSubcommand, RestorationRequestRow, RestorationSubmission } from './recourse-agent';
+export { listTheftTransfers, resolveTheftTransfer, verifyTheftTransfer, theftTransferChoices, THEFT_TRANSFER_DEFAULTS } from './recourse-theft-transfers';
+export type { TheftTransfer, VerifiedTheftTransfer, ListedTheftTransfer, TheftTransferPage, TheftTransferScan, TheftTransferRow, RecourseChainNetwork } from './recourse-theft-transfers';
 
 export { currentProtocolDeployment } from "./protocol-runtime";
 export type { ProtocolDeployment } from "./protocol-pointer";

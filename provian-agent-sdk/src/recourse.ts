@@ -141,6 +141,10 @@ export async function submitAgentRestorationRequest(config: RecourseConfig, inpu
   if (recovered.walletId !== config.walletId || !recovered.restorationRequestId) throw new Error('recourse_wallet_mismatch');
   return recovered;
 }
+/** The pool state the relay reads for this owner, with its private membership view. */
+export async function readRecoursePool(config: RecourseConfig): Promise<unknown> {
+  return request(config, 'pool');
+}
 export async function readRestorationRequests(config: RecourseConfig): Promise<unknown> {
   return request(config, 'restoration-requests');
 }

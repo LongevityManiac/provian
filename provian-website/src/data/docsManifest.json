@@ -56,7 +56,7 @@
       "group": "build",
       "description": "The reference for people and agents: witnessed work, binding and recovery, membership, restoration, settlement and current contracts.",
       "sourcePath": "docs/PROVIAN_MANUAL.md",
-      "sizeKB": 269
+      "sizeKB": 272
     },
     {
       "slug": "pe-protocol-spec",

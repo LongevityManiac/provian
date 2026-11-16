@@ -21,3 +21,7 @@ export function verifiedProtocolSnapshot(): ProtocolDeployment { return verifier
 /** Unconfirmed hint for speculative reads only. */
 export async function protocolDeploymentCandidate(): Promise<ProtocolDeployment | undefined> { return verifier().candidate(); }
 export async function currentProtocolDeployment(): Promise<ProtocolDeployment> { return verifier().current(); }
+/** Both independent Base RPCs and the pointer-resolved deployment, for chain reads. */
+export function protocolChainNetwork(): { rpcs: readonly [PointerRpc, PointerRpc]; deployment(): Promise<ProtocolDeployment> } {
+  return { rpcs: [transport(urls[0]), transport(urls[1])], deployment: currentProtocolDeployment };
+}

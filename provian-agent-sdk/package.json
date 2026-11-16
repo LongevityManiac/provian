@@ -42,6 +42,7 @@
     "restore-wallet": "dist/scripts/restore-wallet.js",
     "rotate-key": "dist/scripts/rotate-key.js",
     "recover-recourse": "dist/scripts/recover-recourse.js",
+    "recourse": "dist/scripts/recourse.js",
     "report-pe": "dist/scripts/report-pe.js",
     "setup-hook": "dist/scripts/setup-hook.js",
     "observe": "dist/scripts/start-observer.js",

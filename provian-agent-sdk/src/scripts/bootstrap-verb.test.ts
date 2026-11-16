@@ -10,7 +10,7 @@
  * silently mutated.
  */
 import { describe, it, expect } from 'vitest';
-import { resolveBootstrapVerb } from './bootstrap';
+import { MAINTENANCE_HELP, resolveBootstrapVerb } from './bootstrap';
 
 const NODE = 'node';
 const BUNDLE = '/Users/x/.provian/agent.js';
@@ -39,6 +39,12 @@ describe('resolveBootstrapVerb', () => {
     // Position rule still holds for the new verbs: a hook argument VALUE never selects them.
     expect(resolveBootstrapVerb([NODE, BUNDLE, 'report-pe', '--branch', 'uninstall'])).toBe('report-pe');
     expect(resolveBootstrapVerb([NODE, BUNDLE, 'report-pe', '--description', 'doctor'])).toBe('report-pe');
+  });
+
+  it('`provian recourse …` is a dispatcher verb, named in the maintenance help, and never selected from an argument value', async () => {
+    expect(resolveBootstrapVerb([NODE, BUNDLE, 'recourse', 'status'])).toBe('recourse');
+    expect(resolveBootstrapVerb([NODE, BUNDLE, 'report-pe', '--description', 'recourse'])).toBe('report-pe');
+    expect(MAINTENANCE_HELP.filter((m) => m.verb === 'recourse')).toHaveLength(1);
   });
 
   it('returns null for no verb (default onboarding) and for an unknown verb', () => {

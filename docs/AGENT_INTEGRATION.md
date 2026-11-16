@@ -368,6 +368,30 @@ Proving establishes control; it is attribution rather than a work mint, so the p
 
 ---
 
+## Recourse Pool membership
+
+An agent uses the Recourse Pool for itself, the same as a person does on the app's Recourse screens: it joins, leaves, rejoins after a lapse, reads its membership and dates, reports a theft by choosing the transfer it did not make, and follows the request.
+
+- **Membership is optional.** The agent approves once, at joining. Each month's participation burn and pool contribution then happen automatically, with no monthly signature and no ETH.
+- **The amounts come from the signed membership rule** on the Recourse Pool contract. The command reads them from Base, checks the relay's challenge against them, and shows them before anything is signed.
+- **One month of grace.** After a missed month the agent stays protected for one more calendar month. Rejoining after a lapse first completes the unpaid protected months; lapsed months are never charged and never covered.
+- **Pool contributions are not refundable**, and participation burns are permanent.
+- **PVT only.** Recourse records and restores PVT; other assets at the agent's address are neither recorded nor restored.
+- **Restoration is discretionary.** PVT still held by whoever took it is reversed first; the pool determines what it can restore of the rest. No member has a contractual right to restoration. Until the Court opens, Provian reviews a theft report and decides what the pool can restore. Provian Technologies does not fund, hold or guarantee the pool.
+
+```bash
+npx @provian/agent-sdk@latest recourse status            # membership, dates, the current rule, any open action
+npx @provian/agent-sdk@latest recourse join              # shows the terms and amounts; signs nothing
+npx @provian/agent-sdk@latest recourse join --yes        # approve once
+npx @provian/agent-sdk@latest recourse rejoin --yes      # after a lapse: completes the unpaid protected months first
+npx @provian/agent-sdk@latest recourse leave --yes
+npx @provian/agent-sdk@latest recourse transfers         # outgoing PVT transfers to choose from (--before <block> for older)
+npx @provian/agent-sdk@latest recourse report --tx <transaction hash> --yes
+npx @provian/agent-sdk@latest recourse requests          # follow the restoration request
+```
+
+Without `--yes`, every command signs nothing and prints what it would approve. On a hosted install the same verbs run as `"$HOME/.provian/bin/provian" recourse …`; from the CLI, `npx -y @provian/cli@latest recourse …`. MCP clients have `recourse_status`, `recourse_transfers` and `recourse_requests`; `recourse_action` returns the command to run where the key lives, because the MCP server never holds the agent's key. Signing uses the agent keystore in `~/.provian` (`--directory` names another) with its `agent-keystore.secret` file or `PROVIAN_KEYSTORE_PASSPHRASE`. A theft report moves the agent to a fresh recovery key in that directory. To pin a version, replace @latest with a version number.
+
 ## Burn-to-Present (trust presentations and rail handshakes)
 
 Attribution proves work happened; **burn-to-present** is how an agent is *believed* by a counterparty that has never met it. The agent **burns PVT** to produce a signed presentation the counterparty verifies itself, with no Provian account. The burn is single-use at issuance; the presentation is bound to the requester, its challenge and the moment, and expires in minutes; the verifier accepts it once. It is the foundational burn, and most presentations happen at gates outside Provian, which do not register with Provian: Provian proves the presentation is real, and the gate decides what it grants and for how long, so an agent does not burn on every transaction. Agents are the primary path. The canonical model (wire grammar, vocabulary, verify contract, replay model, tiers, the fold, event-based invalidation, and an accountless requester example) is `docs/BURN_TO_PRESENT.md`.

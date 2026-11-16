@@ -51,6 +51,8 @@ export const BOOTSTRAP_VERBS = [
   'prove-solana-address',
   // re-record which program launches the agent's commands (after a harness change).
   'process-lane',
+  // the agent's Recourse Pool membership and theft reports.
+  'recourse',
 ] as const;
 export type BootstrapVerb = typeof BOOTSTRAP_VERBS[number];
 
@@ -186,6 +188,10 @@ async function main(): Promise<void> {
   if (verb === 'register-git-identity') {
     const { runRegisterGitIdentity, parseArgs, defaultDeps } = await import('./register-git-identity.js');
     process.exit(await runRegisterGitIdentity(parseArgs(process.argv.slice(3)), defaultDeps()));
+  }
+  if (verb === 'recourse') {
+    const { runRecourseCli } = await import('./recourse.js');
+    process.exit(await runRecourseCli(process.argv.slice(3)));
   }
   if (verb === 'uninstall') {
     const { runUninstallCli } = await import('./uninstall.js');
@@ -423,6 +429,7 @@ export const MAINTENANCE_HELP: ReadonlyArray<{ verb: BootstrapVerb; usage: strin
   { verb: 'git-identity', usage: 'git-identity github-link [--state <state>]', summary: 'Prove the GitHub account linked to this wallet for the PR gate' },
   { verb: 'register-git-identity', usage: 'register-git-identity [--email <address>]', summary: 'Bind your git author identity so connected-repo pushes credit you' },
   { verb: 'fleet-code', usage: 'fleet-code', summary: 'Issue a link code so another of your human\'s agents links with no tap' },
+  { verb: 'recourse', usage: 'recourse status|join|rejoin|leave|transfers|report|requests', summary: 'Your Recourse Pool membership (approve once; amounts from the signed membership rule) and theft reports; nothing is signed without --yes' },
   { verb: 'uninstall', usage: 'uninstall --yes', summary: 'Stop the observer and remove the service, restart hook, git hook and ~/.provian' },
 ];
 

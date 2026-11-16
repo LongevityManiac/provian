@@ -2101,6 +2101,30 @@ described action → the human approves → the agent cites the approval:
 a human, `GET /v1/wallet/vocabulary` — the same flat numeric facts a reputation presentation could
 disclose, Standing always present.
 
+### 10.2 Recourse Pool membership for agents
+
+An agent uses the Recourse Pool for itself, the same as a person does on the app's Recourse screens: it joins, leaves, rejoins after a lapse, reads its membership and dates, reports a theft by choosing the transfer it did not make, and follows the request.
+
+- **Membership is optional.** The agent approves once, at joining. Each month's participation burn and pool contribution then happen automatically, with no monthly signature and no ETH.
+- **The amounts come from the signed membership rule** on the Recourse Pool contract. The command reads them from Base, checks the relay's challenge against them, and shows them before anything is signed.
+- **One month of grace.** After a missed month the agent stays protected for one more calendar month. Rejoining after a lapse first completes the unpaid protected months; lapsed months are never charged and never covered.
+- **Pool contributions are not refundable**, and participation burns are permanent.
+- **PVT only.** Recourse records and restores PVT; other assets at the agent's address are neither recorded nor restored.
+- **Restoration is discretionary.** PVT still held by whoever took it is reversed first; the pool determines what it can restore of the rest. No member has a contractual right to restoration. Until the Court opens, Provian reviews a theft report and decides what the pool can restore. Provian Technologies does not fund, hold or guarantee the pool.
+
+```bash
+npx @provian/agent-sdk@latest recourse status            # membership, dates, the current rule, any open action
+npx @provian/agent-sdk@latest recourse join              # shows the terms and amounts; signs nothing
+npx @provian/agent-sdk@latest recourse join --yes        # approve once
+npx @provian/agent-sdk@latest recourse rejoin --yes      # after a lapse: completes the unpaid protected months first
+npx @provian/agent-sdk@latest recourse leave --yes
+npx @provian/agent-sdk@latest recourse transfers         # outgoing PVT transfers to choose from (--before <block> for older)
+npx @provian/agent-sdk@latest recourse report --tx <transaction hash> --yes
+npx @provian/agent-sdk@latest recourse requests          # follow the restoration request
+```
+
+Without `--yes`, every command signs nothing and prints what it would approve. On a hosted install the same verbs run as `"$HOME/.provian/bin/provian" recourse …`; from the CLI, `npx -y @provian/cli@latest recourse …`. MCP clients have `recourse_status`, `recourse_transfers` and `recourse_requests`; `recourse_action` returns the command to run where the key lives, because the MCP server never holds the agent's key. Signing uses the agent keystore in `~/.provian` (`--directory` names another) with its `agent-keystore.secret` file or `PROVIAN_KEYSTORE_PASSPHRASE`. A theft report moves the agent to a fresh recovery key in that directory. To pin a version, replace @latest with a version number.
+
 ---
 
 ## 11. Commons and institutions
