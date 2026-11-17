@@ -524,6 +524,20 @@ describe('a proven gitlab/bitbucket install is keyed by its proven path, not the
     expect((await getServiceInstallByInstallationId(db, 'gitlab', '7'))?.user_id).toBe('squatter');
   });
 
+  it('RED: a proven registration revokes the same wallet\'s earlier id-keyed row for that id, and no other wallet\'s', async () => {
+    const { db, store } = makeFakeDb();
+    await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '900' });
+    await createServiceInstall(db, { user_id: 'other', provider: 'gitlab', installation_id: '901' });
+    await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '900', control_proof: proofFor('group/project') });
+    await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '901', control_proof: proofFor('group/other') });
+    const rows = store.get('service_installs')!;
+    expect((rows.get('gitlab_900') as ServiceInstallDocument).revoked_at).toEqual(expect.any(Number));
+    expect((rows.get('gitlab_901') as ServiceInstallDocument).user_id).toBe('other');
+    expect((rows.get('gitlab_901') as ServiceInstallDocument).revoked_at).toBeNull();
+    // Revoking by id afterwards touches only the live proven row; the earlier one is already revoked.
+    expect(await revokeOwnedServiceInstalls(db, 'owner', 'gitlab', '900')).toEqual({ found: true, revoked: 1 });
+  });
+
   it('RED: a proof whose path is not normalized is refused', async () => {
     const { db } = makeFakeDb();
     for (const path of ['', 'Group/Project', ' group/project']) {

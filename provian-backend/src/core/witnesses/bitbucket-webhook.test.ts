@@ -523,6 +523,30 @@ describe('a registration holds only the path it proved; the uuid it names holds 
     expect(enqueued).toHaveLength(1);
   });
 
+  it('RED: a row keyed only by the repository uuid (an earlier registration) is refused even carrying a proof, mints nothing, and never blocks a proven registration', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const legacySecret = 'e'.repeat(64);
+    await deps.db.collection('service_installs').doc(`bitbucket_${REPO_UUID}`).set({
+      user_id: 'squatter', provider: 'bitbucket', installation_id: REPO_UUID, installed_at: 1, revoked_at: null,
+      webhook_secret: legacySecret, control_proof: { ...PROVEN, project_path: 'victim/repo' },
+    });
+    const raw = JSON.stringify(victimPayload());
+    const legacy = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, legacySecret), eventKey: 'repo:push', deliveryId: 'req-legacy-row-1', config: CONFIG_ENABLED,
+    });
+    expect(legacy.status).toBe(403);
+    expect(legacy.body.error).toBe('control_proof_required');
+    expect(enqueued).toHaveLength(0);
+    const victim = await createServiceInstall(deps.db, {
+      user_id: 'victim', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: { ...PROVEN, project_path: 'victim/repo' },
+    });
+    const ok = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, victim.doc.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-legacy-row-1', config: CONFIG_ENABLED,
+    });
+    expect(ok.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+  });
+
   it('RED: a delivery whose repository uuid differs from the uuid recorded at registration is refused and records nothing', async () => {
     const { deps, enqueued } = makeFakeDeps();
     const { doc: install } = await createServiceInstall(deps.db, {

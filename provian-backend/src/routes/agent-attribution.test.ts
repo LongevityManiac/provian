@@ -180,6 +180,52 @@ describe('POST /author-mappings/challenge - forge-account scoping', () => {
     expect(res.body.forge_account_id).toBe('attacker/x');
   });
 
+  it('RED: a re-registration as instructed leaves no ambiguity: the wallet\'s own earlier id-keyed row is revoked, and scope resolves to the proven install', async () => {
+    const fake = createFakeFirestore();
+    seedAgentWallet(fake);
+    // wallet_B registered bitbucket repo 900 before proof was required.
+    seedInstall(fake, { provider: 'bitbucket', installationId: '900', userId: 'wallet_B' });
+    // It registers again, as instructed, proving group/project.
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_B', provider: 'bitbucket', installation_id: '900',
+      control_proof: { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'F'.repeat(43), verified_at: 1, project_path: 'group/project' },
+    });
+    expect((fake.store.get('service_installs/bitbucket_900') as { revoked_at: number | null }).revoked_at).toEqual(expect.any(Number));
+    const app = makeApp(fake, makeFakeCache(), 'wallet_B');
+    for (const body of [{ ...MAPPING_BODY, provider: 'bitbucket' }, { ...MAPPING_BODY, provider: 'bitbucket', installation_id: '900' }]) {
+      const res = await request(app).post('/v1/agent-attribution/author-mappings/challenge').send(body);
+      expect([body, res.status, res.body.forge_account_id]).toEqual([body, 200, 'group/project']);
+    }
+  });
+
+  it('RED: a stray unproven row beside a proven one never makes the proven one ambiguous', async () => {
+    const fake = createFakeFirestore();
+    seedAgentWallet(fake);
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_B', provider: 'bitbucket', installation_id: '900',
+      control_proof: { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'F'.repeat(43), verified_at: 1, project_path: 'group/project' },
+    });
+    // An active unproven row written afterwards (not through registration).
+    seedInstall(fake, { provider: 'bitbucket', installationId: '900', userId: 'wallet_B' });
+    const app = makeApp(fake, makeFakeCache(), 'wallet_B');
+    for (const body of [{ ...MAPPING_BODY, provider: 'bitbucket' }, { ...MAPPING_BODY, provider: 'bitbucket', installation_id: '900' }]) {
+      const res = await request(app).post('/v1/agent-attribution/author-mappings/challenge').send(body);
+      expect([body, res.status, res.body.forge_account_id]).toEqual([body, 200, 'group/project']);
+    }
+  });
+
+  it('another wallet\'s earlier id-keyed row with the same id is left untouched by a proven registration', async () => {
+    const fake = createFakeFirestore();
+    seedInstall(fake, { provider: 'bitbucket', installationId: '900', userId: 'wallet_C' });
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_B', provider: 'bitbucket', installation_id: '900',
+      control_proof: { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'F'.repeat(43), verified_at: 1, project_path: 'group/project' },
+    });
+    const legacy = fake.store.get('service_installs/bitbucket_900') as { user_id: string; revoked_at: number | null };
+    expect(legacy.user_id).toBe('wallet_C');
+    expect(legacy.revoked_at).toBeNull();
+  });
+
   it('refuses a gitlab install with no control proof: it has no scope', async () => {
     const fake = createFakeFirestore();
     seedAgentWallet(fake);

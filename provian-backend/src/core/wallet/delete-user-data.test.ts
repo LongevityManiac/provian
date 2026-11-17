@@ -42,6 +42,7 @@ import { leaveCommons } from '../commons/profiles';
 import type { CommonsDeps } from '../commons/types';
 import { USER_RECORD_DISPOSITIONS, deleteUserRelayData, type DeleteUserDataDeps } from './delete-user-data';
 import { SESSION_COLLECTION } from '../jurisdiction/mint-compliance';
+import { createServiceInstall } from '../witnesses/service-installs';
 
 const DB = (fake: FakeFirestore) => fake as unknown as Firestore;
 const T0 = Date.parse('2026-10-01T00:00:00Z');
@@ -284,6 +285,24 @@ describe('deleteUserRelayData — the Privacy Policy\'s deletion, record class b
     expect(USER_RECORD_DISPOSITIONS[SESSION_COLLECTION]).toBe('compliance_retention');
     expect(fake.store.has(key)).toBe(false);
     expect(fake.store.has('users/u1')).toBe(false);
+  });
+
+  it('revokes the person\'s proven forge install where it is keyed (by path), never another wallet\'s row with the same id', async () => {
+    const fake = createFakeFirestore();
+    seedUser(fake, 'u1');
+    await createServiceInstall(DB(fake), {
+      user_id: 'u1', provider: 'gitlab', installation_id: '100',
+      control_proof: { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'A'.repeat(43), verified_at: T0, project_path: 'group/project' },
+    });
+    // Another wallet's earlier registration naming the same id, keyed by that id.
+    fake.store.set('service_installs/gitlab_100', { user_id: 'u2', provider: 'gitlab', installation_id: '100', installed_at: T0, revoked_at: null });
+    const pathKey = [...fake.store.keys()].find((k) => k.startsWith('service_installs/gitlab@path_'));
+    expect(pathKey).toBeDefined();
+    expect((fake.store.get(pathKey as string) as Record<string, unknown>).revoked_at).toBeNull();
+
+    await deleteUserRelayData('u1', depsFor(fake));
+    expect((fake.store.get(pathKey as string) as Record<string, unknown>).revoked_at).toEqual(expect.any(Number));
+    expect(fake.store.get('service_installs/gitlab_100')).toMatchObject({ user_id: 'u2', revoked_at: null });
   });
 
   it('the seeded Policy classes cover every collection the module claims to delete, revoke or deactivate', () => {

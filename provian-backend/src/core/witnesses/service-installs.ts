@@ -287,9 +287,16 @@ export async function createServiceInstall(
   const ref = db.collection(COLLECTION).doc(provenPath !== null
     ? provenPathDocIdFor(params.provider, provenPath)
     : docIdFor(params.provider, params.installation_id));
+  // The same wallet's earlier row keyed by this id (registered before
+  // registrations were keyed by proven path) is superseded by its proven one.
+  const legacyRef = provenPath !== null
+    ? db.collection(COLLECTION).doc(docIdFor(params.provider, params.installation_id))
+    : null;
   return await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const existing = snap.exists ? (snap.data() as ServiceInstallDocument) : null;
+    const legacySnap = legacyRef !== null ? await tx.get(legacyRef) : null;
+    const legacy = legacySnap !== null && legacySnap.exists ? (legacySnap.data() as ServiceInstallDocument) : null;
     // HIJACK GUARD (2026-10-17): an ACTIVE row belongs to exactly one user, and
     // re-pointing it is refused HERE, inside the transaction, for every provider.
     // The GitHub connect flow had no owner check at all — its setup-callback is
@@ -344,6 +351,17 @@ export async function createServiceInstall(
     // a same-owner re-install or a post-revoke re-point. Every field this call
     // owns is written explicitly above, so nothing stale can hide behind it.
     tx.set(ref, doc, { merge: true });
+    // Revoke only this wallet's own earlier id-keyed row for the same provider
+    // and id; another wallet's row is never touched. It authenticated nothing,
+    // and left active it would stand beside the proven install wherever the
+    // owner's installs are read by id.
+    if (legacyRef !== null && legacy !== null
+      && legacy.user_id === params.user_id
+      && legacy.provider === params.provider
+      && legacy.installation_id === params.installation_id
+      && legacy.revoked_at == null) {
+      tx.update(legacyRef, { revoked_at: doc.installed_at });
+    }
     return { doc, secretIssued };
   });
 }

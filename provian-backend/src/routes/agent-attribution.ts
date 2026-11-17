@@ -173,6 +173,17 @@ async function resolveRegistrationScope(
   installationId: string,
 ): Promise<RegistrationScopeResult> {
   let install: ServiceInstallDocument | null = null;
+  // A gitlab/bitbucket row with no proof has no scope and authenticates
+  // nothing (an earlier registration, or one left beside a proven one): it is
+  // never a candidate, so it can never make a proven install ambiguous.
+  const withScope = (docs: ServiceInstallDocument[]): ServiceInstallDocument[] =>
+    docs.filter((doc) => doc.provider === 'github' || installForgeAccountScope(doc) !== null);
+  const unproven = (): RegistrationScopeResult => ({
+    ok: false,
+    status: 409,
+    error: 'install_forge_account_unknown',
+    detail: 'register the project again with a deploy key, then retry',
+  });
   if (installationId) {
     // Owner-scoped: only the candidates' own installs with this id are read,
     // wherever they are keyed (a proven gitlab/bitbucket install is keyed by
@@ -186,10 +197,12 @@ async function resolveRegistrationScope(
     if (owned.length === 0) {
       return { ok: false, status: 404, error: 'install_not_found' };
     }
-    const active = owned.filter((doc) => doc.revoked_at === null);
-    if (active.length === 0) {
+    const allActive = owned.filter((doc) => doc.revoked_at === null);
+    if (allActive.length === 0) {
       return { ok: false, status: 410, error: 'install_revoked' };
     }
+    const active = withScope(allActive);
+    if (active.length === 0) return unproven();
     if (active.length > 1) {
       return {
         ok: false,
@@ -209,7 +222,9 @@ async function resolveRegistrationScope(
     if (actives.length === 0) {
       return { ok: false, status: 404, error: 'no_active_install_for_provider' };
     }
-    if (actives.length > 1) {
+    const scoped = withScope(actives);
+    if (scoped.length === 0) return unproven();
+    if (scoped.length > 1) {
       return {
         ok: false,
         status: 400,
@@ -217,7 +232,7 @@ async function resolveRegistrationScope(
         detail: 'multiple active installs for this provider; name installation_id explicitly',
       };
     }
-    install = actives[0];
+    install = scoped[0];
   }
 
   const forgeAccountId = installForgeAccountScope(install);
