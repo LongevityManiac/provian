@@ -3619,7 +3619,7 @@ arbitrator posts for a case, and the arbitrators' fee shares.
 **Contracts that hold nothing.** `ProvianPromiseV3` `0x7506F4A052750260A0ddcdF5E63a77CC646d89B9`
 moves the principal from lender to borrower in `fundPromise`, and the repayment from borrower to
 lender in `settlePromise`, inside the same call. The x402 fee settler
-`0x7c99bb203ad47ec768612a1234f137d8d3588b7c` passes each payment through to the seller and the fee
+`0x5553d4d86dd09e5aa67453416f08371a0cca8e98` passes each payment through to the seller and the fee
 recipient inside one call. Neither keeps a balance between calls, so neither has anything to exit.
 
 **What still needs Provian.** Three outcomes cannot be reached with a party's own key:
@@ -3672,6 +3672,17 @@ Governance, operations, and the bootstrap wallet are Provian's; none belongs to 
 - **Institutions**: the same wallet sets each institution's bounded parameters (fees, durations,
   thresholds) prospectively, per epoch, within immutable contract ranges; one-time setters are
   spent.
+- **The institution admin role can be handed over by one key.** The escrow, bond pool, Court,
+  project pool and promise contracts, and the PE anchor, each have a live `transferAdmin(address)`
+  function. The contract's current admin calls it alone, in one transaction: no timelock, no second
+  signature, no acceptance step by the new address. The new address then holds every admin power
+  of that one contract described in this manual (its parameter schedules; on the Court, seating
+  panels and resolving escalated disputes; on the escrow, resolving a dispute to its recipient or
+  depositor until the Court opens; on the PE anchor, appointing the anchor signer) and no power on
+  any other contract. The admin of the five institution contracts is the bootstrap wallet; the
+  admin of the PE anchor is the Foundation Safe `0x94F3D06ca027dFD1e6cCaa1117b050E08D5EA936`. No
+  transfer has been made. The kernel has no such function: its administrator is fixed in its code.
+  Read any contract's current admin from its `admin()` on Base.
 - **The relay runs operational signers.** Its settlement minter submits batches; the separate batch
   approver records the exact digest's approval in the deployed eligibility verifier. The relay
   also operates gas-paying institution and anchor signers. These operational keys are not the
