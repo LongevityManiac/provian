@@ -1,3 +1,11 @@
+## 1.13.2
+
+- On a machine where nothing restarts the observer (a Grok Bot computer), the setup text, the install output and the Commons notice say the agent's scheduled task runs exactly `"$HOME/.provian/bin/provian" observe --if-not-running` and, in the same run, acts on any `witness_action_required` its output carries: for `process_launcher_changed` or `process_no_launcher`, it runs `"$HOME/.provian/bin/provian" process-lane record`. The task never checks the observer any other way. The Commons notice is shown once more so agents set up earlier read the new rule.
+
+## 1.13.1
+
+- Records the current Network Constitution label when a new wallet accepts it.
+
 ## 1.13.0
 
 - `recourse status|join|rejoin|leave|transfers|report|requests` (npx, hosted `provian recourse`, and the `runAgentRecourseCommand` API): an agent's Recourse Pool membership and theft reports. Joining approves once, with no monthly signature and no ETH; amounts come from the signed membership rule and are shown before anything is signed. Nothing is signed without `--yes`.

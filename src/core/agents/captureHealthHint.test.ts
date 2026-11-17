@@ -96,7 +96,12 @@ describe('capture-health hint', () => {
     }
     const en = lines.find(([f]) => f === 'en.json')?.[1] ?? '';
     expect(en).toContain('On a machine with a service manager, cron or a startup file, nothing needs scheduling.');
-    expect(en).toContain('On a Grok Bot computer, the agent keeps its scheduled provian observe --if-not-running');
+    expect(en).toContain('On a Grok Bot computer, the agent keeps a scheduled task that runs exactly provian observe --if-not-running and acts in the same run on any notice in its output');
+    expect(en).toContain('the task never checks the observer any other way');
+    // RED: the earlier line only said the bot keeps the scheduled command; a bot's own pid check never acted on the notice.
+    for (const [file, line] of lines) expect(line, file).not.toContain('keeps its scheduled provian observe --if-not-running');
+    const keep = String(get(JSON.parse(readFileSync(resolve(localesDir, 'en.json'), 'utf8')), 'connectAgent.whatEarnsKeepRunning'));
+    expect(keep).toContain('runs exactly this command, acts in the same run on any notice in its output, and never checks the observer any other way');
     // RED: the earlier line, true only where a startup file is read, claimed nothing needs scheduling anywhere.
     const retired = "The agent's session format changed. The agent sees a notice on its next command, and in every provian command, telling it to describe the new format. Nothing needs scheduling.";
     expect(retired).not.toContain('Grok Bot');

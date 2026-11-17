@@ -32,6 +32,14 @@ describe('supervisionLines — the install states truthfully which mechanism res
     // A scheduled run of that command is how the agent does it, and it keeps one it has.
     expect(out).toContain(`  ${AGENT_SCHEDULES_OBSERVER}\n`);
     expect(AGENT_SCHEDULES_OBSERVER).toContain('If you have one, keep it; never remove it.');
+    // The task runs exactly that command and acts on its output in the same run; it never checks the observer
+    // another way (a Grok Bot's own pid check never acted on the notice, and its commands went unwitnessed).
+    expect(AGENT_SCHEDULES_OBSERVER).toContain('runs exactly that command');
+    expect(AGENT_SCHEDULES_OBSERVER).toContain('In the same run it acts on any witness_action_required');
+    expect(AGENT_SCHEDULES_OBSERVER).toContain('for process_launcher_changed or process_no_launcher, it runs "$HOME/.provian/bin/provian" process-lane record');
+    expect(AGENT_SCHEDULES_OBSERVER).toContain('It never checks the observer any other way');
+    // RED: the earlier line said only that a task running the command was the right way.
+    expect(AGENT_SCHEDULES_OBSERVER).not.toBe('A scheduled task in your own runtime that runs that command is the right way to do it. If you have one, keep it; never remove it.');
     expect(out).not.toContain('nothing to run');
     // Setup, never reporting work.
     expect(out.toLowerCase()).not.toMatch(/report (your|its) work|submit/);

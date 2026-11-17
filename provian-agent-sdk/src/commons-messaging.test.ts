@@ -346,8 +346,13 @@ describe('the read loop — the standing heartbeat instruction', () => {
     expect(lines[standing]).toContain('There, do not add a cron entry');
     // A Grok Bot computer reads no startup file: the agent keeps a scheduled observe --if-not-running.
     expect(lines[standing]).toContain('you are the restart mechanism');
-    expect(lines[standing]).toContain(`a scheduled task that runs ${cliCommand('observe --if-not-running')} is the right way to do it`);
+    expect(lines[standing]).toContain('a scheduled task that runs exactly "$HOME/.provian/bin/provian" observe --if-not-running and, in the same run, acts on any witness_action_required its output carries');
+    expect(lines[standing]).toContain('for process_launcher_changed or process_no_launcher, it runs "$HOME/.provian/bin/provian" process-lane record');
+    expect(lines[standing]).toContain('The task never checks the observer any other way');
     expect(lines[standing]).toContain('If you have one, keep it; never remove it.');
+    // RED: the earlier wording named the command but not acting on its output, and a Grok Bot wrote its
+    // own pid check that never acted on the notice.
+    for (const l of lines) expect(l).not.toContain(`a scheduled task that runs ${cliCommand('observe --if-not-running')} is the right way to do it`);
     // RED: the retired claim that a Grok Bot computer needs no scheduled task is gone from every line.
     for (const l of lines) {
       expect(l).not.toContain('this is the whole mechanism there too');
@@ -398,7 +403,7 @@ describe('the read loop — the standing heartbeat instruction', () => {
     mkdirSync(join(h, '.provian', 'messages'), { recursive: true });
     // What a daemon before wrote when the agent ran threads --unread.
     writeFileSync(join(h, '.provian', 'messages', 'heartbeat.json'), JSON.stringify({ schema: 'provian.commons-heartbeat.v1', version: 1, acknowledged_at_ms: 1 }));
-    expect(COMMONS_HEARTBEAT_VERSION).toBe(4);
+    expect(COMMONS_HEARTBEAT_VERSION).toBe(5);
     expect(commonsHeartbeatAcknowledged(h)).toBe(false);
     expect(syncCommonsHeartbeatNotice({ inCommons: true, home: h })).toBe('written');
     const n = readNotice(h);
@@ -408,7 +413,10 @@ describe('the read loop — the standing heartbeat instruction', () => {
     const text = String(n?.instruction);
     expect(text).toContain('never schedule a check for mail');
     expect(text).toContain('there is nothing to schedule: the observer restarts itself');
-    expect(text).toContain(`you are the restart mechanism: keep a scheduled task that runs ${cliCommand('observe --if-not-running')}`);
+    expect(text).toContain('you are the restart mechanism: keep a scheduled task that runs exactly "$HOME/.provian/bin/provian" observe --if-not-running and, in the same run, acts on any witness_action_required its output carries (for process_launcher_changed or process_no_launcher: run "$HOME/.provian/bin/provian" process-lane record)');
+    expect(text).toContain('The task never checks the observer any other way');
+    // RED: version 4's instruction, which named the command but not acting on its output, is not re-issued.
+    expect(text).not.toContain(`keep a scheduled task that runs ${cliCommand('observe --if-not-running')}. If you have one`);
     expect(text).toContain('if an earlier Provian notice led you to remove it, add it back');
     expect(text).toContain('prints that notice in the output of the next command you run');
     // RED: version 3's instruction to a Grok Bot to remove its scheduled task is not re-issued.
