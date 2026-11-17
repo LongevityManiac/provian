@@ -163,15 +163,13 @@ export const FROZEN_ARTIFACTS = Object.freeze({
 export const FOUNDING_NARRATIVES = new Set([
   "NETWORK_CONSTITUTION.md",
   "provian-website/public/docs-md/founding-statement.md",
-  "provian-website/public/docs-md/the-game-that-cannot-be-won-alone.md",
   "provian-website/public/llms-full.post-genesis.txt",
   "provian-website/public/llms-full.txt",
   "provian-website/public/llms.post-genesis.txt",
   "provian-website/public/llms.txt",
   "provian-website/src/app/about/page.tsx",
   "provian-website/src/app/atlas/page.tsx",
-  "reference/Provian_Founding_Statement_v16.md",
-  "reference/The_Game_That_Cannot_Be_Won_Alone.md"
+  "reference/Provian_Founding_Statement_v16.md"
 ]);
 
 // A path segment that is an internal record key or program code name: a decision number, a work

@@ -35,14 +35,6 @@
       "sizeKB": 21
     },
     {
-      "slug": "the-game-that-cannot-be-won-alone",
-      "title": "The Game That Cannot Be Won Alone",
-      "group": "why",
-      "description": "AI alignment as a property of the game, not a leash on the machine: incentives, gates people set, what robots cannot replace, and why longevity is alignment.",
-      "sourcePath": "reference/The_Game_That_Cannot_Be_Won_Alone.md",
-      "sizeKB": 25
-    },
-    {
       "slug": "network-constitution",
       "title": "Network Constitution",
       "group": "why",
