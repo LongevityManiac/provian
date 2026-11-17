@@ -24,6 +24,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import type { RedisCache } from '../cache';
 import type { AgentWalletDocument } from '../core/agent-wallet/types';
 import { createAgentAttributionRouter } from './agent-attribution';
+import { createServiceInstall } from '../core/witnesses/service-installs';
 import { createFakeFirestore, type FakeFirestore } from '../core/pvt/__test-helpers__/fake-firestore';
 import {
   createVerifiedAuthorMapping,
@@ -141,16 +142,53 @@ describe('POST /author-mappings/challenge - forge-account scoping', () => {
     expect(res.body.message).toContain(`forge_account_id=${FORGE_A}`);
   });
 
-  it('scopes a gitlab registration by installation_id directly (no stamp needed)', async () => {
+  it('scopes a gitlab registration by its proven project path (never the unproven id)', async () => {
     const fake = createFakeFirestore();
     seedAgentWallet(fake);
-    seedInstall(fake, { provider: 'gitlab', installationId: 'proj_9', userId: 'wallet_B' });
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_B', provider: 'gitlab', installation_id: '9',
+      control_proof: { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'F'.repeat(43), verified_at: 1, project_path: 'group/project' },
+    });
     const app = makeApp(fake, makeFakeCache(), 'wallet_B');
 
     const res = await request(app).post('/v1/agent-attribution/author-mappings/challenge')
       .send({ ...MAPPING_BODY, provider: 'gitlab' });
     expect(res.status).toBe(200);
-    expect(res.body.forge_account_id).toBe('proj_9');
+    expect(res.body.forge_account_id).toBe('group/project');
+    expect(res.body.installation_id).toBe('9');
+    // Naming the id finds the caller's own path-keyed install.
+    const named = await request(app).post('/v1/agent-attribution/author-mappings/challenge')
+      .send({ ...MAPPING_BODY, provider: 'gitlab', installation_id: '9' });
+    expect(named.status).toBe(200);
+    expect(named.body.forge_account_id).toBe('group/project');
+  });
+
+  it('RED: another wallet that named the same gitlab id for its own proven path gets its own path as scope, never the victim\'s', async () => {
+    const fake = createFakeFirestore();
+    seedAgentWallet(fake);
+    const proof = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'F'.repeat(43), verified_at: 1 } as const;
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_victim', provider: 'gitlab', installation_id: '9', control_proof: { ...proof, project_path: 'victim/project' },
+    });
+    await createServiceInstall(fake as unknown as Firestore, {
+      user_id: 'wallet_B', provider: 'gitlab', installation_id: '9', control_proof: { ...proof, project_path: 'attacker/x' },
+    });
+    const app = makeApp(fake, makeFakeCache(), 'wallet_B');
+    const res = await request(app).post('/v1/agent-attribution/author-mappings/challenge')
+      .send({ ...MAPPING_BODY, provider: 'gitlab', installation_id: '9' });
+    expect(res.status).toBe(200);
+    expect(res.body.forge_account_id).toBe('attacker/x');
+  });
+
+  it('refuses a gitlab install with no control proof: it has no scope', async () => {
+    const fake = createFakeFirestore();
+    seedAgentWallet(fake);
+    seedInstall(fake, { provider: 'gitlab', installationId: 'proj_9', userId: 'wallet_B' });
+    const app = makeApp(fake, makeFakeCache(), 'wallet_B');
+    const res = await request(app).post('/v1/agent-attribution/author-mappings/challenge')
+      .send({ ...MAPPING_BODY, provider: 'gitlab' });
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('install_forge_account_unknown');
   });
 
   // RED controls — every refusal is a constructible violating input:

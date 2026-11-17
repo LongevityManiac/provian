@@ -16,7 +16,7 @@ import {
 } from './bitbucket-webhook';
 import { makeCorroborationTargetDocs, makeMeterActKeyDoc } from '../../__test-helpers__/pe-doc-fixtures';
 import type { BitbucketAppConfig } from './bitbucket-app-config';
-import { createServiceInstall, markServiceInstallRevoked } from './service-installs';
+import { createServiceInstall, revokeOwnedServiceInstalls } from './service-installs';
 import { makeWitnessFakeDeps, type WitnessStagedAct } from './__test-helpers__/witness-fake-deps';
 
 /** A registration that proved control of the project by deploy key (what the registration route records). */
@@ -222,7 +222,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
   it('returns 410 when the install is revoked', async () => {
     const { deps } = makeFakeDeps();
     const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
-    await markServiceInstallRevoked(deps.db, 'bitbucket', REPO_UUID);
+    await revokeOwnedServiceInstalls(deps.db, 'user_1', 'bitbucket', REPO_UUID);
     const raw = JSON.stringify(makePushPayload());
     const result = await handleBitbucketWebhook(deps, {
       rawBody: raw,
@@ -329,7 +329,7 @@ describe('B2 per-install secrets — bitbucket mirror controls', () => {
   it('[ RED] CROSS-INSTALL FORGERY: install A\'s secret cannot sign for install B; app-wide refused for per-install rows', async () => {
     const { deps } = makeFakeDeps();
     const { doc: installA } = await createServiceInstall(deps.db, {
-      user_id: 'user_a', provider: 'bitbucket', installation_id: 'other-repo-uuid', control_proof: PROVEN,
+      user_id: 'user_a', provider: 'bitbucket', installation_id: 'other-repo-uuid', control_proof: { ...PROVEN, project_path: 'workspace/other' },
     });
     const { doc: installB } = await createServiceInstall(deps.db, {
       user_id: 'user_b', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN,
@@ -390,11 +390,14 @@ describe('a registration without a control proof earns nothing', () => {
     expect(refused.body.error).toBe('control_proof_required');
     expect(enqueued).toHaveLength(0);
 
-    // Registered again with proof (same owner keeps the secret): the SAME delivery now lands.
+    // Registered again with proof: the proven path holds a new row with a new
+    // secret; the earlier row's secret no longer verifies anything for it.
     const { doc: proven, secretIssued } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
-    expect(secretIssued).toBe(false);
-    expect(proven.webhook_secret).toBe(unproven.webhook_secret);
-    const accepted = await handleBitbucketWebhook(deps, input);
+    expect(secretIssued).toBe(true);
+    expect(proven.webhook_secret).not.toBe(unproven.webhook_secret);
+    expect((await handleBitbucketWebhook(deps, input)).status).toBe(401);
+    // The refusal consumed no delivery id: the same delivery, signed with the new secret, lands.
+    const accepted = await handleBitbucketWebhook(deps, { ...input, signatureHeader: sign(input.rawBody, proven.webhook_secret!) });
     expect(accepted.status).toBe(200);
     expect(enqueued).toHaveLength(1);
   });
@@ -462,7 +465,7 @@ describe('ids that cannot be document ids never reach a document reference', () 
 });
 
 describe('a delivery must name the repository path the registration proved', () => {
-  it('RED: the proven repository uuid with a different full_name is 403 and records nothing', async () => {
+  it('RED: the proven repository uuid with a different full_name finds no registration and records nothing', async () => {
     const { deps, enqueued } = makeFakeDeps();
     const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const payload = makePushPayload();
@@ -471,8 +474,9 @@ describe('a delivery must name the repository path the registration proved', () 
     const refused = await handleBitbucketWebhook(deps, {
       rawBody: raw, signatureHeader: sign(raw, install.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-path-1', config: CONFIG_ENABLED,
     });
-    expect(refused.status).toBe(403);
-    expect(refused.body.error).toBe('project_path_mismatch');
+    // Resolution is by the delivered path: an unregistered path is answered
+    // like any unregistered repository (401 unless the operator secret asks).
+    expect(refused.status).toBe(401);
     expect(enqueued).toHaveLength(0);
   });
 
@@ -487,5 +491,52 @@ describe('a delivery must name the repository path the registration proved', () 
     });
     expect(ok.status).toBe(200);
     expect(enqueued).toHaveLength(1);
+  });
+});
+
+describe('a registration holds only the path it proved; the uuid it names holds nothing', () => {
+  const victimPayload = () => {
+    const payload = makePushPayload();
+    (payload.repository as Record<string, unknown>).full_name = 'victim/repo';
+    return payload;
+  };
+
+  it('RED: a registrant who proved attacker/x while naming the victim\'s repository uuid neither locks the victim out nor receives its deliveries', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const attacker = await createServiceInstall(deps.db, {
+      user_id: 'attacker', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
+    });
+    const victim = await createServiceInstall(deps.db, {
+      user_id: 'victim', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: { ...PROVEN, project_path: 'victim/repo' },
+    });
+    expect(victim.doc.user_id).toBe('victim');
+    const raw = JSON.stringify(victimPayload());
+    const ok = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, victim.doc.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-victim-1', config: CONFIG_ENABLED,
+    });
+    expect(ok.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+    const forged = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, attacker.doc.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-victim-2', config: CONFIG_ENABLED,
+    });
+    expect(forged.status).toBe(401);
+    expect(enqueued).toHaveLength(1);
+  });
+
+  it('RED: a delivery whose repository uuid differs from the uuid recorded at registration is refused and records nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, {
+      user_id: 'attacker', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
+    });
+    const payload = makePushPayload();
+    (payload.repository as Record<string, unknown>).full_name = 'attacker/x';
+    (payload.repository as Record<string, unknown>).uuid = '{11111111-2222-3333-4444-555555555555}';
+    const raw = JSON.stringify(payload);
+    const refused = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, install.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-idmm-1', config: CONFIG_ENABLED,
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('project_id_mismatch');
+    expect(enqueued).toHaveLength(0);
   });
 });

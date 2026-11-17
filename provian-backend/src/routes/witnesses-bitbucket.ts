@@ -13,8 +13,9 @@
  * (core/witnesses/forge-deploy-key.ts); on success it returns the per-install
  * webhook secret, which the user sets as the repository webhook's Secret. No
  * forge credential ever reaches the relay. Only repositories on bitbucket.org
- * can be registered; a registration without that proof, or a delivery whose
- * repository path is not the proven one, authenticates nothing.
+ * can be registered. The registration is keyed by the proven path and records
+ * the repository UUID; a delivery resolves by its path and must carry that
+ * UUID. A registration without proof authenticates nothing.
  *
  * Config is loaded at factory time (read-once-at-startup pattern). Disabling
  * the connector means unsetting BITBUCKET_WEBHOOK_SECRET and restarting -
@@ -27,11 +28,11 @@ import { handleBitbucketWebhook, normalizeRepoUuid } from '../core/witnesses/bit
 import { loadBitbucketAppConfig } from '../core/witnesses/bitbucket-app-config';
 import {
   createServiceInstall,
-  getServiceInstallByInstallationId,
+  getProvenServiceInstallByProjectPath,
   getServiceInstallsByUser,
   installControlProven,
   isUsableInstallationId,
-  markServiceInstallRevoked,
+  revokeOwnedServiceInstalls,
   ServiceInstallOwnedByOtherUserError,
 } from '../core/witnesses/service-installs';
 import {
@@ -54,7 +55,7 @@ const REPO_UUID_RE = /^\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-
 /**
  * Emit a `service_install_revoked` PE for a user-initiated Bitbucket
  * disconnect. Best-effort (returns null on failure): the install row mutated
- * by markServiceInstallRevoked is the source of truth; this is the
+ * by revokeOwnedServiceInstalls is the source of truth; this is the
  * audit-trail PE. Shared by this router's own revoke route and the
  * cross-provider wallet-auth revoke in routes/witnesses-installs.ts so the
  * emission site stays in this file (which the pinned policy-matrix emitter
@@ -122,22 +123,20 @@ export function createWitnessesBitbucketRouter(deps: AgentBankDeps, options: Wit
   }
 
   /**
-   * An ACTIVE registration that proved control holds the repository: no other
-   * wallet can begin or verify for it.
+   * An ACTIVE registration that proved control of this path holds it: no other
+   * wallet can register it. The repository id a registrant names holds nothing —
+   * it is not proven, so two registrations may name the same id; each is
+   * keyed by the path it proved, and a delivery must carry both.
    */
-  async function heldByAnotherProvenWallet(userId: string, installationId: string): Promise<boolean> {
-    const existing = await getServiceInstallByInstallationId(deps.db, PROVIDER, installationId);
-    return existing !== null && existing.revoked_at === null && existing.user_id !== userId
-      && installControlProven(existing);
+  async function heldByAnotherProvenWallet(userId: string, projectPath: string): Promise<boolean> {
+    const existing = await getProvenServiceInstallByProjectPath(deps.db, PROVIDER, projectPath);
+    return existing !== null && existing.revoked_at === null && existing.user_id !== userId;
   }
 
   /** Step 1 (both auth variants): a fresh deploy key for this wallet and repository. */
   async function beginForUser(userId: string, req: Request, res: Response): Promise<Response> {
     const installationId = parseInstallationId(req, res);
     if (installationId === null) return res;
-    if (await heldByAnotherProvenWallet(userId, installationId)) {
-      return res.status(409).json({ error: 'repo_already_linked' });
-    }
     const attempt = await beginDeployKeyAttempt(deps.db, {
       walletId: userId,
       provider: PROVIDER,
@@ -164,7 +163,7 @@ export function createWitnessesBitbucketRouter(deps: AgentBankDeps, options: Wit
     if (projectPath === null) {
       return res.status(400).json({ error: 'invalid_project_path' });
     }
-    if (await heldByAnotherProvenWallet(userId, installationId)) {
+    if (await heldByAnotherProvenWallet(userId, projectPath)) {
       return res.status(409).json({ error: 'repo_already_linked' });
     }
 
@@ -180,7 +179,7 @@ export function createWitnessesBitbucketRouter(deps: AgentBankDeps, options: Wit
       return res.status(httpStatusForVerifyFailure(verified.reason)).json({ error: verified.reason });
     }
 
-    const existing = await getServiceInstallByInstallationId(deps.db, PROVIDER, installationId);
+    const existing = await getProvenServiceInstallByProjectPath(deps.db, PROVIDER, projectPath);
     const heldByOther = existing !== null && existing.revoked_at === null && existing.user_id !== userId;
     let created: Awaited<ReturnType<typeof createServiceInstall>>;
     try {
@@ -313,6 +312,7 @@ export function createWitnessesBitbucketRouter(deps: AgentBankDeps, options: Wit
         .filter((i) => i.provider === PROVIDER)
         .map((i) => ({
           installation_id: i.installation_id,
+          project_path: installControlProven(i) ? i.control_proof?.project_path ?? null : null,
           installed_at: i.installed_at,
           revoked_at: i.revoked_at ?? null,
           control_proven: installControlProven(i),
@@ -340,15 +340,15 @@ export function createWitnessesBitbucketRouter(deps: AgentBankDeps, options: Wit
       if (!userId) {
         return res.status(401).json({ error: 'no_device_owner' });
       }
-      const install = await getServiceInstallByInstallationId(deps.db, PROVIDER, installationId);
-      if (!install || install.user_id !== userId) {
-        // 404 (not 403) so a probe can't enumerate other users' installs.
+      // Owner-scoped: only the caller's own installs with this id, wherever
+      // they are keyed. 404 (not 403) so a probe can't enumerate other users'.
+      const { found, revoked } = await revokeOwnedServiceInstalls(deps.db, userId, PROVIDER, installationId);
+      if (!found) {
         return res.status(404).json({ error: 'install_not_found' });
       }
-      if (install.revoked_at !== null) {
+      if (revoked === 0) {
         return res.status(200).json({ revoked: true, idempotent: true });
       }
-      await markServiceInstallRevoked(deps.db, PROVIDER, installationId);
       const peId = await emitBitbucketInstallRevokedPE(deps, userId, installationId);
       return res.status(200).json({ revoked: true, pe_id: peId });
     }),

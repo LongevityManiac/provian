@@ -26,11 +26,10 @@
 import { Router, type Request, type Response } from 'express';
 import type { AgentBankDeps } from '../core/agent-bank/types';
 import {
-  getServiceInstallByInstallationId,
   getServiceInstallsByUser,
   installControlProven,
   installForgeAccountScope,
-  markServiceInstallRevoked,
+  revokeOwnedServiceInstalls,
   type ServiceInstallProvider,
 } from '../core/witnesses/service-installs';
 import { emitServiceInstallRevokedPE } from '../core/witnesses/github-connect';
@@ -68,7 +67,8 @@ export function createWitnessesInstallsRouter(deps: AgentBankDeps): Router {
         revoked_at: i.revoked_at ?? null,
         // Part 2: the STABLE scope author mappings are keyed to, so the
         // owner's Contributors view can list the mappings on THIS install.
-        // github: null until the first signed delivery stamps it.
+        // github: null until the first signed delivery stamps it;
+        // gitlab/bitbucket: the proven project path, null without a proof.
         forge_account_id: installForgeAccountScope(i),
         forge_account_login: i.forge_account_login ?? null,
         // gitlab/bitbucket: false until the project is registered with a control
@@ -99,15 +99,16 @@ export function createWitnessesInstallsRouter(deps: AgentBankDeps): Router {
         return res.status(400).json({ error: 'missing_installation_id' });
       }
       const userId = req.walletOwnerId as string;
-      const install = await getServiceInstallByInstallationId(deps.db, provider, installationId);
-      if (!install || install.user_id !== userId) {
-        // 404 (not 403) so a probe can't enumerate other users' installs.
+      // Owner-scoped: only the caller's own installs with this id, wherever
+      // they are keyed (a proven gitlab/bitbucket install is keyed by its
+      // path). 404 (not 403) so a probe can't enumerate other users' installs.
+      const { found, revoked } = await revokeOwnedServiceInstalls(deps.db, userId, provider, installationId);
+      if (!found) {
         return res.status(404).json({ error: 'install_not_found' });
       }
-      if (install.revoked_at !== null) {
+      if (revoked === 0) {
         return res.status(200).json({ revoked: true, idempotent: true });
       }
-      await markServiceInstallRevoked(deps.db, provider, installationId);
       // Best-effort per-provider emitters (null on failure — the install row
       // is the source of truth). The emission sites deliberately live in each
       // provider's own module: those are the files the pinned policy-matrix

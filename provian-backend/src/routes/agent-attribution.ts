@@ -22,7 +22,7 @@ import {
   type NormalizedAuthorKey,
 } from '../core/agent-attribution/author-mappings';
 import {
-  getServiceInstallByInstallationId,
+  getOwnedServiceInstallsByInstallationId,
   getServiceInstallsByUser,
   installForgeAccountScope,
   type ServiceInstallDocument,
@@ -174,16 +174,31 @@ async function resolveRegistrationScope(
 ): Promise<RegistrationScopeResult> {
   let install: ServiceInstallDocument | null = null;
   if (installationId) {
-    const found = await getServiceInstallByInstallationId(db, provider, installationId);
-    // Uniform refusal for missing-or-not-owned: naming someone else's install
-    // id must not act as an existence oracle.
-    if (!found || !ownerCandidates.includes(found.user_id)) {
+    // Owner-scoped: only the candidates' own installs with this id are read,
+    // wherever they are keyed (a proven gitlab/bitbucket install is keyed by
+    // its path, and another wallet may name the same unproven id). Uniform
+    // refusal for missing-or-not-owned: naming someone else's install id must
+    // not act as an existence oracle.
+    const owned: ServiceInstallDocument[] = [];
+    for (const owner of ownerCandidates) {
+      owned.push(...await getOwnedServiceInstallsByInstallationId(db, owner, provider, installationId));
+    }
+    if (owned.length === 0) {
       return { ok: false, status: 404, error: 'install_not_found' };
     }
-    if (found.revoked_at !== null) {
+    const active = owned.filter((doc) => doc.revoked_at === null);
+    if (active.length === 0) {
       return { ok: false, status: 410, error: 'install_revoked' };
     }
-    install = found;
+    if (active.length > 1) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'installation_id_ambiguous',
+        detail: 'more than one active install carries this installation_id; revoke the one no longer in use',
+      };
+    }
+    install = active[0];
   } else {
     const actives: ServiceInstallDocument[] = [];
     for (const owner of ownerCandidates) {
@@ -207,14 +222,17 @@ async function resolveRegistrationScope(
 
   const forgeAccountId = installForgeAccountScope(install);
   if (!forgeAccountId) {
-    // github only: the install learns its forge account from the first
-    // HMAC-verified delivery (stampServiceInstallForgeAccount). A
-    // never-pushed install cannot scope a registration yet.
+    // github: the install learns its forge account from the first
+    // HMAC-verified delivery (stampServiceInstallForgeAccount); a never-pushed
+    // install cannot scope a registration yet. gitlab/bitbucket: the scope is
+    // the proven project path; an install without a proof has none.
     return {
       ok: false,
       status: 409,
       error: 'install_forge_account_unknown',
-      detail: 'push once from the connected repository so the install learns its GitHub account, then retry',
+      detail: install.provider === 'github'
+        ? 'push once from the connected repository so the install learns its GitHub account, then retry'
+        : 'register the project again with a deploy key, then retry',
     };
   }
   return { ok: true, scope: { install, forgeAccountId } };

@@ -19,6 +19,9 @@ import {
   installControlProven,
   installProjectPathMatches,
   isUsableInstallationId,
+  getProvenServiceInstallByProjectPath,
+  getOwnedServiceInstallsByInstallationId,
+  revokeOwnedServiceInstalls,
 } from './service-installs';
 
 // -----------------------------------------------------------------------------
@@ -292,7 +295,7 @@ describe('stampServiceInstallForgeAccount / installForgeAccountScope', () => {
     expect(row?.forge_account_id).toBeUndefined();
   });
 
-  it('installForgeAccountScope: github = stamped id or NULL (never installation_id); gitlab/bitbucket = installation_id', () => {
+  it('installForgeAccountScope: github = stamped id or NULL (never installation_id); gitlab/bitbucket = the proven path or NULL (never the id)', () => {
     const githubUnstamped: ServiceInstallDocument = {
       user_id: 'u1', provider: 'github', installation_id: '42', installed_at: 1, revoked_at: null,
     };
@@ -305,15 +308,20 @@ describe('stampServiceInstallForgeAccount / installForgeAccountScope', () => {
     };
     expect(installForgeAccountScope(githubStamped)).toBe('21031067');
 
+    // The id a registrant names is not proven (two wallets may name the same
+    // one), so it is never a scope: the proven path is, and no proof, no scope.
+    const proof = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'D'.repeat(43), verified_at: 1 } as const;
     const gitlab: ServiceInstallDocument = {
       user_id: 'u1', provider: 'gitlab', installation_id: 'proj_9', installed_at: 1, revoked_at: null,
     };
-    expect(installForgeAccountScope(gitlab)).toBe('proj_9');
+    expect(installForgeAccountScope(gitlab)).toBeNull();
+    expect(installForgeAccountScope({ ...gitlab, control_proof: { ...proof, project_path: 'group/project' } })).toBe('group/project');
 
     const bitbucket: ServiceInstallDocument = {
       user_id: 'u1', provider: 'bitbucket', installation_id: '{uuid-1}', installed_at: 1, revoked_at: null,
     };
-    expect(installForgeAccountScope(bitbucket)).toBe('{uuid-1}');
+    expect(installForgeAccountScope(bitbucket)).toBeNull();
+    expect(installForgeAccountScope({ ...bitbucket, control_proof: { ...proof, project_path: 'workspace/repo' } })).toBe('workspace/repo');
   });
 });
 
@@ -469,5 +477,70 @@ describe('installProjectPathMatches', () => {
 
   it('RED: an install with no proof matches no path', () => {
     expect(installProjectPathMatches({ ...install, control_proof: null }, 'group/project')).toBe(false);
+  });
+});
+
+describe('a proven gitlab/bitbucket install is keyed by its proven path, not the id it names', () => {
+  const proofFor = (project_path: string) =>
+    ({ method: 'deploy_key', key_fingerprint: 'SHA256:' + 'E'.repeat(43), verified_at: 5, project_path }) as const;
+
+  it('RED: two wallets naming the same id under different proven paths both register; neither touches the other', async () => {
+    const { db, store } = makeFakeDb();
+    const attacker = await createServiceInstall(db, { user_id: 'attacker', provider: 'gitlab', installation_id: '100', control_proof: proofFor('attacker/x') });
+    const victim = await createServiceInstall(db, { user_id: 'victim', provider: 'gitlab', installation_id: '100', control_proof: proofFor('victim/project') });
+    expect(victim.doc.user_id).toBe('victim');
+    expect((await getProvenServiceInstallByProjectPath(db, 'gitlab', 'victim/project'))?.user_id).toBe('victim');
+    expect((await getProvenServiceInstallByProjectPath(db, 'gitlab', 'attacker/x'))?.user_id).toBe('attacker');
+    expect(attacker.doc.webhook_secret).not.toBe(victim.doc.webhook_secret);
+    // Nothing is written at the id key.
+    expect(store.get('service_installs')!.has('gitlab_100')).toBe(false);
+    expect([...store.get('service_installs')!.keys()].every((k) => k.startsWith('gitlab@path_'))).toBe(true);
+  });
+
+  it('the path is held by one active wallet: a second wallet proving the same path is refused, whatever id it names', async () => {
+    const { db } = makeFakeDb();
+    await createServiceInstall(db, { user_id: 'owner', provider: 'bitbucket', installation_id: 'uuid-1', control_proof: proofFor('workspace/repo') });
+    await expect(createServiceInstall(db, { user_id: 'other', provider: 'bitbucket', installation_id: 'uuid-2', control_proof: proofFor('workspace/repo') }))
+      .rejects.toBeInstanceOf(ServiceInstallOwnedByOtherUserError);
+  });
+
+  it('the same wallet keeps its secret only for the same path AND the same id', async () => {
+    const { db } = makeFakeDb();
+    const first = await createServiceInstall(db, { user_id: 'u', provider: 'gitlab', installation_id: '1', control_proof: proofFor('g/p') });
+    const again = await createServiceInstall(db, { user_id: 'u', provider: 'gitlab', installation_id: '1', control_proof: proofFor('g/p') });
+    expect(again.secretIssued).toBe(false);
+    expect(again.doc.webhook_secret).toBe(first.doc.webhook_secret);
+    const otherId = await createServiceInstall(db, { user_id: 'u', provider: 'gitlab', installation_id: '2', control_proof: proofFor('g/p') });
+    expect(otherId.secretIssued).toBe(true);
+    expect(otherId.doc.installation_id).toBe('2');
+  });
+
+  it('a row keyed only by the id is never found by path, and does not block a proven registration', async () => {
+    const { db } = makeFakeDb();
+    await createServiceInstall(db, { user_id: 'squatter', provider: 'gitlab', installation_id: '7' });
+    expect(await getProvenServiceInstallByProjectPath(db, 'gitlab', 'group/project')).toBeNull();
+    const owner = await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '7', control_proof: proofFor('group/project') });
+    expect(owner.doc.user_id).toBe('owner');
+    expect((await getServiceInstallByInstallationId(db, 'gitlab', '7'))?.user_id).toBe('squatter');
+  });
+
+  it('RED: a proof whose path is not normalized is refused', async () => {
+    const { db } = makeFakeDb();
+    for (const path of ['', 'Group/Project', ' group/project']) {
+      await expect(createServiceInstall(db, { user_id: 'u', provider: 'gitlab', installation_id: '1', control_proof: proofFor(path) }))
+        .rejects.toThrow(/not a normalized path/);
+    }
+  });
+
+  it('revoke and lookup by id are owner-scoped and reach the path-keyed row', async () => {
+    const { db } = makeFakeDb();
+    await createServiceInstall(db, { user_id: 'attacker', provider: 'gitlab', installation_id: '100', control_proof: proofFor('attacker/x') });
+    await createServiceInstall(db, { user_id: 'victim', provider: 'gitlab', installation_id: '100', control_proof: proofFor('victim/project') });
+    expect((await getOwnedServiceInstallsByInstallationId(db, 'attacker', 'gitlab', '100')).map((i) => i.control_proof?.project_path)).toEqual(['attacker/x']);
+    expect(await revokeOwnedServiceInstalls(db, 'attacker', 'gitlab', '100')).toEqual({ found: true, revoked: 1 });
+    expect((await getProvenServiceInstallByProjectPath(db, 'gitlab', 'attacker/x'))?.revoked_at).not.toBeNull();
+    expect((await getProvenServiceInstallByProjectPath(db, 'gitlab', 'victim/project'))?.revoked_at).toBeNull();
+    expect(await revokeOwnedServiceInstalls(db, 'attacker', 'gitlab', '100')).toEqual({ found: true, revoked: 0 });
+    expect(await revokeOwnedServiceInstalls(db, 'nobody', 'gitlab', '100')).toEqual({ found: false, revoked: 0 });
   });
 });

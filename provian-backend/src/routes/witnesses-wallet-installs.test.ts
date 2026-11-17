@@ -203,6 +203,14 @@ async function register(app: express.Express, forge: FakeForge, user: string, pr
   return verify(app, user, provider, id, projectPath);
 }
 
+/** The stored install row for a proven path (rows are keyed by the proven path, not the id). */
+function installFor(store: FakeStore, provider: Provider, projectPath: string): any {
+  const rows = Object.entries(store.installs)
+    .filter(([key, row]) => key.startsWith(`${provider}@path_`) && row.control_proof?.project_path === projectPath);
+  expect(rows).toHaveLength(1);
+  return rows[0][1];
+}
+
 function withConnectorSecrets(): void {
   let prevGitLab: string | undefined;
   let prevBitbucket: string | undefined;
@@ -260,7 +268,7 @@ describe('wallet-auth forge install routes', () => {
     expect(first.body.webhook_secret).toMatch(/^[0-9a-f]{64}$/);
     expect(first.body.setup).toContain('/v1/witnesses/gitlab/webhook');
     // Attribution is the WALLET doc id (same id space as the DeviceKey path).
-    expect(store.installs['gitlab_123'].user_id).toBe('wallet_1');
+    expect(installFor(store, 'gitlab', 'group/project').user_id).toBe('wallet_1');
     expect(mockPEs[0].walletId).toBe('wallet_1');
     expect(mockPEs[0].actionType).toBe('service_install_created');
 
@@ -270,15 +278,16 @@ describe('wallet-auth forge install routes', () => {
     expect(second.body.webhook_secret_already_issued).toBe(true);
     expect(second.body.setup).toContain('revoke');
     // The stored secret was PRESERVED (no silent rotation).
-    expect(store.installs['gitlab_123'].webhook_secret).toBe(first.body.webhook_secret);
+    expect(installFor(store, 'gitlab', 'group/project').webhook_secret).toBe(first.body.webhook_secret);
   });
 
-  it('409 when the project is already linked to a different wallet', async () => {
+  it('409 when the project path is already linked to a different wallet', async () => {
     const store = freshStore();
     const forge = new FakeForge();
     const app = buildApp(store, forge);
     expect((await register(app, forge, 'user_1', 'gitlab', '777', 'group/project')).status).toBe(200);
-    const res = await begin(app, 'user_2', 'gitlab', '777');
+    expect((await begin(app, 'user_2', 'gitlab', '777')).status).toBe(200);
+    const res = await verify(app, 'user_2', 'gitlab', '777', 'group/project');
     expect(res.status).toBe(409);
     expect(res.body).toEqual({ error: 'project_already_linked' });
   });
@@ -292,7 +301,7 @@ describe('wallet-auth forge install routes', () => {
     expect(res.body.repo_uuid).toBe(REPO_UUID_NORM);
     expect(res.body.webhook_secret).toMatch(/^[0-9a-f]{64}$/);
     expect(res.body.webhook_secret_already_issued).toBe(false);
-    expect(store.installs[`bitbucket_${REPO_UUID_NORM}`].user_id).toBe('wallet_1');
+    expect(installFor(store, 'bitbucket', 'workspace/repo').user_id).toBe('wallet_1');
   });
 
   it('GET /installs lists across providers and NEVER carries webhook_secret', async () => {
@@ -303,8 +312,8 @@ describe('wallet-auth forge install routes', () => {
     await register(app, forge, 'user_1', 'bitbucket', REPO_UUID, 'workspace/repo');
 
     // Non-vacuous masking control: the stored rows really do hold secrets.
-    expect(store.installs['gitlab_123'].webhook_secret).toMatch(/^[0-9a-f]{64}$/);
-    expect(store.installs[`bitbucket_${REPO_UUID_NORM}`].webhook_secret).toMatch(/^[0-9a-f]{64}$/);
+    expect(installFor(store, 'gitlab', 'group/project').webhook_secret).toMatch(/^[0-9a-f]{64}$/);
+    expect(installFor(store, 'bitbucket', 'workspace/repo').webhook_secret).toMatch(/^[0-9a-f]{64}$/);
 
     const res = await request(app)
       .get('/v1/witnesses/installs')
@@ -320,12 +329,10 @@ describe('wallet-auth forge install routes', () => {
       expect(install.revoked_at).toBeNull();
       // The list carries the STABLE mapping scope, derived by the ONE scope
       // rule (installForgeAccountScope) — for these self-serve providers that
-      // is the installation id itself.
-      expect(install.forge_account_id).toBe(installForgeAccountScope({
-        user_id: 'x', provider: install.provider, installation_id: install.installation_id,
-        installed_at: 0, revoked_at: null,
-      }));
-      expect(install.forge_account_id).toBe(install.installation_id);
+      // is the proven project path, never the unproven id.
+      const path = install.provider === 'gitlab' ? 'group/project' : 'workspace/repo';
+      expect(install.forge_account_id).toBe(installForgeAccountScope(installFor(store, install.provider, path)));
+      expect(install.forge_account_id).toBe(path);
     }
     // Other users see none of it.
     const other = await request(app)
@@ -358,7 +365,7 @@ describe('wallet-auth forge install routes', () => {
       .set('Authorization', 'Bearer valid:user_1');
     expect(revoked.status).toBe(200);
     expect(revoked.body.revoked).toBe(true);
-    expect(store.installs['gitlab_123'].revoked_at).toEqual(expect.any(Number));
+    expect(installFor(store, 'gitlab', 'group/project').revoked_at).toEqual(expect.any(Number));
     const revokePE = mockPEs.find((p) => p.actionType === 'service_install_revoked');
     expect(revokePE.metadata.provider).toBe('gitlab');
 
@@ -397,7 +404,7 @@ describe('wallet-auth forge install routes', () => {
     expect(second.body.webhook_secret).toMatch(/^[0-9a-f]{64}$/);
     expect(second.body.webhook_secret).not.toBe(first.body.webhook_secret);
     // Registering again reactivated the install.
-    expect(store.installs['gitlab_123'].revoked_at).toBeNull();
+    expect(installFor(store, 'gitlab', 'group/project').revoked_at).toBeNull();
   });
 });
 
@@ -563,7 +570,7 @@ describe('registration requires a deploy key on exactly that project', () => {
     expect(res.body.project_path).toBe('group/project');
     expect(res.body.setup).toContain('The relay has deleted its private key. Remove the deploy key from the project now');
     expect(store.attempts).toEqual({});
-    expect(store.installs['gitlab_123'].control_proof).toEqual({
+    expect(installFor(store, 'gitlab', 'group/project').control_proof).toEqual({
       method: 'deploy_key', key_fingerprint: started.body.key_fingerprint, verified_at: expect.any(Number), project_path: 'group/project',
     });
     // The relay probed the named project once, on the fixed forge only (GitLab has no canary).
@@ -601,25 +608,58 @@ describe('registration requires a deploy key on exactly that project', () => {
 
     const res = await register(app, forge, 'user_1', 'gitlab', '555', 'group/project');
     expect(res.status).toBe(200);
-    expect(store.installs['gitlab_555'].user_id).toBe('wallet_1');
+    // The proven registration lives at its path; the earlier id-keyed row is
+    // untouched and authenticates nothing.
+    expect(installFor(store, 'gitlab', 'group/project').user_id).toBe('wallet_1');
+    expect(store.installs['gitlab_555'].user_id).toBe('wallet_2');
     // A fresh secret: the earlier holder's secret no longer verifies anything.
     expect(res.body.webhook_secret).toMatch(/^[0-9a-f]{64}$/);
     expect(res.body.webhook_secret).not.toBe('a'.repeat(64));
-    expect(store.installs['gitlab_555'].webhook_secret).toBe(res.body.webhook_secret);
+    expect(installFor(store, 'gitlab', 'group/project').webhook_secret).toBe(res.body.webhook_secret);
     expect(mockPEs.map((p) => p.actionType)).toEqual(['service_install_created']);
   });
 
-  it('a proven registration holds the project against a second wallet at begin and at verify, before any forge read', async () => {
+  it('a proven registration holds its path against a second wallet at verify, before any forge read, whatever id it names', async () => {
     const store = freshStore();
     const forge = new FakeForge();
     const app = buildApp(store, forge);
     expect((await register(app, forge, 'user_1', 'gitlab', '777', 'group/project')).status).toBe(200);
     const readsBefore = forge.reads.length;
-    expect((await begin(app, 'user_2', 'gitlab', '777')).status).toBe(409);
-    expect((await verify(app, 'user_2', 'gitlab', '777', 'group/project')).status).toBe(409);
-    expect(store.installs['gitlab_777'].user_id).toBe('wallet_1');
+    for (const id of ['777', '888']) {
+      expect((await begin(app, 'user_2', 'gitlab', id)).status).toBe(200);
+      expect((await verify(app, 'user_2', 'gitlab', id, 'group/project')).status).toBe(409);
+    }
+    expect(installFor(store, 'gitlab', 'group/project').user_id).toBe('wallet_1');
     expect(forge.reads).toHaveLength(readsBefore);
   });
+
+  for (const [provider, victimId, victimPath, attackerPath] of [
+    ['gitlab', '4242', 'victim/project', 'attacker/x'],
+    ['bitbucket', REPO_UUID, 'victim/repo', 'attacker/x'],
+  ] as const) {
+    it(`RED: ${provider}: naming the victim's id while proving attacker/x locks nothing — the victim registers its own path`, async () => {
+      const store = freshStore();
+      const forge = new FakeForge();
+      const app = buildApp(store, forge);
+      // The attacker begins with the victim's id, adds the key (write, on GitLab) to its own project, verifies that path.
+      const attacker = await register(app, forge, 'user_2', provider, victimId, attackerPath);
+      expect(attacker.status).toBe(200);
+      // The victim, real maintainer of victimPath, registers it under its own id.
+      const victim = await register(app, forge, 'user_1', provider, victimId, victimPath);
+      expect(victim.status).toBe(200);
+      expect(victim.body.webhook_secret).toMatch(/^[0-9a-f]{64}$/);
+      expect(installFor(store, provider, victimPath).user_id).toBe('wallet_1');
+      // The attacker's row covers only its own path.
+      expect(installFor(store, provider, attackerPath).user_id).toBe('wallet_2');
+      expect(Object.keys(store.installs).filter((k) => k.startsWith(`${provider}_`))).toEqual([]);
+      // Revoking by the shared id revokes only the caller's own row.
+      const idParam = provider === 'gitlab' ? victimId : REPO_UUID_NORM;
+      expect((await request(app).post(`/v1/witnesses/installs/${provider}/${encodeURIComponent(idParam)}/revoke`)
+        .set('Authorization', 'Bearer valid:user_2')).status).toBe(200);
+      expect(installFor(store, provider, attackerPath).revoked_at).toEqual(expect.any(Number));
+      expect(installFor(store, provider, victimPath).revoked_at).toBeNull();
+    });
+  }
 
   it('the list shows which installs still need to be registered with proof', async () => {
     const store = freshStore();

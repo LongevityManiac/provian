@@ -13,7 +13,7 @@ import {
   checkAndMarkDelivery,
 } from './gitlab-webhook';
 import type { GitLabAppConfig } from './gitlab-app-config';
-import { createServiceInstall, markServiceInstallRevoked } from './service-installs';
+import { createServiceInstall, revokeOwnedServiceInstalls } from './service-installs';
 import { makeCorroborationTargetDocs, makeMeterActKeyDoc } from '../../__test-helpers__/pe-doc-fixtures';
 import { makeWitnessFakeDeps, type WitnessStagedAct } from './__test-helpers__/witness-fake-deps';
 
@@ -197,7 +197,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
   it('returns 410 when the install is revoked', async () => {
     const { deps } = makeFakeDeps();
     const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
-    await markServiceInstallRevoked(deps.db, 'gitlab', '100');
+    await revokeOwnedServiceInstalls(deps.db, 'user_1', 'gitlab', '100');
     const result = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: install100.webhook_secret!,
@@ -325,7 +325,7 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
   it('[ RED] CROSS-INSTALL FORGERY: install A\'s secret cannot deliver for install B', async () => {
     const { deps } = makeFakeDeps();
     const { doc: installA } = await createServiceInstall(deps.db, {
-      user_id: 'user_a', provider: 'gitlab', installation_id: '200', control_proof: PROVEN,
+      user_id: 'user_a', provider: 'gitlab', installation_id: '200', control_proof: { ...PROVEN, project_path: 'other/project' },
     });
     await createServiceInstall(deps.db, {
       user_id: 'user_b', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
@@ -376,11 +376,14 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
     expect(refused.body.error).toBe('control_proof_required');
     expect(enqueued).toHaveLength(0);
 
+    // Registered again with proof: the proven path holds a new row with a new
+    // secret; the earlier row's secret no longer verifies anything for it.
     const { doc: proven, secretIssued } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
-    expect(secretIssued).toBe(false);
-    expect(proven.webhook_secret).toBe(unproven.webhook_secret);
-    // The refusal consumed no delivery id: the forge's redelivery of the SAME delivery lands.
-    const accepted = await handleGitLabWebhook(deps, input);
+    expect(secretIssued).toBe(true);
+    expect(proven.webhook_secret).not.toBe(unproven.webhook_secret);
+    expect((await handleGitLabWebhook(deps, input)).status).toBe(401);
+    // The refusal consumed no delivery id: the forge's redelivery of the SAME delivery, under the new secret, lands.
+    const accepted = await handleGitLabWebhook(deps, { ...input, tokenHeader: proven.webhook_secret! });
     expect(accepted.status).toBe(200);
     expect(enqueued).toHaveLength(1);
   });
@@ -413,7 +416,7 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
     });
     expect(rePost.secretIssued).toBe(false);
     expect(rePost.doc.webhook_secret).toBe(first.doc.webhook_secret);
-    await markServiceInstallRevoked(deps.db, 'gitlab', '100');
+    await revokeOwnedServiceInstalls(deps.db, 'user_1', 'gitlab', '100');
     const rotated = await createServiceInstall(deps.db, {
       user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
@@ -483,15 +486,16 @@ describe('ids that cannot be document ids never reach a document reference', () 
 });
 
 describe('a delivery must name the project path the registration proved', () => {
-  it('RED: the proven project id with a different path (a renamed project, or a forged one) is 403 and records nothing', async () => {
+  it('RED: the proven project id with a different path (a renamed project, or a forged one) finds no registration and records nothing', async () => {
     const { deps, enqueued } = makeFakeDeps();
     const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const refused = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'group/renamed' } })),
       tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-path-1', config: CONFIG_ENABLED,
     });
-    expect(refused.status).toBe(403);
-    expect(refused.body.error).toBe('project_path_mismatch');
+    // Resolution is by the delivered path: an unregistered path is answered
+    // like any unregistered project (401 unless the operator secret asks).
+    expect(refused.status).toBe(401);
     expect(enqueued).toHaveLength(0);
   });
 
@@ -514,9 +518,81 @@ describe('a delivery must name the project path the registration proved', () => 
       rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'group/renamed' } })),
       tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-path-3', config: CONFIG_ENABLED,
     };
-    expect((await handleGitLabWebhook(deps, input)).status).toBe(403);
-    await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: { ...PROVEN, project_path: 'group/renamed' } });
-    expect((await handleGitLabWebhook(deps, input)).status).toBe(200);
+    expect((await handleGitLabWebhook(deps, input)).status).toBe(401);
+    const renamed = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: { ...PROVEN, project_path: 'group/renamed' } });
+    expect(renamed.secretIssued).toBe(true);
+    expect((await handleGitLabWebhook(deps, { ...input, tokenHeader: renamed.doc.webhook_secret! })).status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+  });
+});
+
+describe('a registration holds only the path it proved; the id it names holds nothing', () => {
+  const VICTIM_ID = '100';
+  const victimPayload = () => makePushPayload({ project: { id: Number(VICTIM_ID), path_with_namespace: 'victim/project' } });
+
+  it('RED: a registrant who proved attacker/x while naming the victim\'s project id neither locks the victim out nor receives its deliveries', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const attacker = await createServiceInstall(deps.db, {
+      user_id: 'attacker', provider: 'gitlab', installation_id: VICTIM_ID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
+    });
+    // The real maintainer proves its own path under its own id: no 409.
+    const victim = await createServiceInstall(deps.db, {
+      user_id: 'victim', provider: 'gitlab', installation_id: VICTIM_ID, control_proof: { ...PROVEN, project_path: 'victim/project' },
+    });
+    expect(victim.doc.user_id).toBe('victim');
+    expect(victim.secretIssued).toBe(true);
+    // The victim's deliveries attribute to the victim, under the victim's secret only.
+    const ok = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(victimPayload()), tokenHeader: victim.doc.webhook_secret!,
+      eventType: 'Push Hook', deliveryId: 'uuid-victim-1', config: CONFIG_ENABLED,
+    });
+    expect(ok.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+    // The attacker's secret signs nothing for the victim's project.
+    const forged = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(victimPayload()), tokenHeader: attacker.doc.webhook_secret!,
+      eventType: 'Push Hook', deliveryId: 'uuid-victim-2', config: CONFIG_ENABLED,
+    });
+    expect(forged.status).toBe(401);
+    expect(enqueued).toHaveLength(1);
+  });
+
+  it('RED: a delivery whose project id differs from the id recorded at registration is refused and records nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, {
+      user_id: 'attacker', provider: 'gitlab', installation_id: VICTIM_ID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
+    });
+    // attacker/x's real deliveries carry its real id, not the one named at registration.
+    const refused = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(makePushPayload({ project: { id: 555, path_with_namespace: 'attacker/x' } })),
+      tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-idmm-1', config: CONFIG_ENABLED,
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('project_id_mismatch');
+    expect(enqueued).toHaveLength(0);
+  });
+
+  it('a row keyed only by the project id (an earlier registration) is refused and never blocks a proven registration', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const legacySecret = 'e'.repeat(64);
+    await deps.db.collection('service_installs').doc(`gitlab_${VICTIM_ID}`).set({
+      user_id: 'squatter', provider: 'gitlab', installation_id: VICTIM_ID, installed_at: 1, revoked_at: null,
+      webhook_secret: legacySecret, control_proof: { ...PROVEN, project_path: 'victim/project' },
+    });
+    const legacy = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(victimPayload()), tokenHeader: legacySecret,
+      eventType: 'Push Hook', deliveryId: 'uuid-legacy-row-1', config: CONFIG_ENABLED,
+    });
+    expect(legacy.status).toBe(403);
+    expect(legacy.body.error).toBe('control_proof_required');
+    const victim = await createServiceInstall(deps.db, {
+      user_id: 'victim', provider: 'gitlab', installation_id: VICTIM_ID, control_proof: { ...PROVEN, project_path: 'victim/project' },
+    });
+    const ok = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(victimPayload()), tokenHeader: victim.doc.webhook_secret!,
+      eventType: 'Push Hook', deliveryId: 'uuid-legacy-row-1', config: CONFIG_ENABLED,
+    });
+    expect(ok.status).toBe(200);
     expect(enqueued).toHaveLength(1);
   });
 });

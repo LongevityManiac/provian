@@ -14,12 +14,12 @@
  * to github-webhook.ts `verifyGitHubSignature` - an HMAC compare over rawBody,
  * BEFORE the body is parsed. (GitLab differs: verbatim-token compare, no HMAC.)
  *
- * **Attribution:** Bitbucket has no installation_id. Like GitLab keys on
- * project.id, this keys on the repository UUID (rename-stable). The user links
- * a repo to their wallet via the bitbucket/installs route; the service_installs
- * row (provider='bitbucket', installation_id=<normalized repo uuid>) maps the
- * inbound delivery to the owning Provian user. Delivery dedup uses
- * `X-Request-UUID`.
+ * **Attribution:** Bitbucket has no installation_id. The user links a repo to
+ * their wallet via the bitbucket/installs route, proving control of its path
+ * (`workspace/repo`); the service_installs row is keyed by that proven path and
+ * records the repository UUID named at registration. A delivery resolves by
+ * its `repository.full_name` and must carry the recorded UUID. Delivery dedup
+ * uses `X-Request-UUID`.
  *
  * **Scope:** Bitbucket **Cloud** event shapes (`repo:push`,
  * `pullrequest:fulfilled`). Data Center keys (`repo:refs_changed`, `pr:merged`)
@@ -47,11 +47,15 @@ import type { InputOrigin } from '../provenance/input-origins';
 import { resolvableOrigin, forgeWebhookWitness, mergeInputOrigins } from '../provenance/origin-capture';
 import { emitBackendCorroboration } from '../corroboration/CorroborationManager';
 import {
+  getProvenServiceInstallByProjectPath,
   getServiceInstallByInstallationId,
   installControlProven,
+  installForgeAccountScope,
   installProjectPathMatches,
   isUsableInstallationId,
+  type ServiceInstallDocument,
 } from './service-installs';
+import { normalizeProjectPath } from './forge-deploy-key';
 import type { BitbucketAppConfig } from './bitbucket-app-config';
 import { findPEsByCommitSha, findCommitOriginsBySha } from './pe-lookup';
 import {
@@ -349,7 +353,16 @@ export async function handleBitbucketWebhook(
   // an unregistered repo uuid answers 401 unless the app-wide (operator)
   // secret signed the delivery, so probes cannot enumerate registrations;
   // revocation (410) is disclosed only after a successful verify.
-  const install = await getServiceInstallByInstallationId(deps.db, PROVIDER, repo.uuid);
+  // A proven registration is found by the path the forge delivered (the
+  // proven path holds the project, never the claimed id); a row keyed only by
+  // the id is an earlier registration, found so it can be told to register
+  // again, and authenticates nothing.
+  const deliveredPath = normalizeProjectPath(PROVIDER, repo.fullName);
+  const provenInstall = deliveredPath === null
+    ? null
+    : await getProvenServiceInstallByProjectPath(deps.db, PROVIDER, deliveredPath);
+  const install: ServiceInstallDocument | null = provenInstall
+    ?? await getServiceInstallByInstallationId(deps.db, PROVIDER, repo.uuid);
   if (!install) {
     if (!verifyBitbucketSignature(input.rawBody, input.signatureHeader, input.config.webhookSecret)) {
       return { status: 401, body: { error: 'invalid_signature' } };
@@ -372,8 +385,13 @@ export async function handleBitbucketWebhook(
   // PE, however its secret verified. It stays on record and starts working
   // again when the project is registered with proof. Checked before dedup so
   // the forge's redelivery after re-registration is still processed.
-  if (!installControlProven(install)) {
+  if (provenInstall === null || !installControlProven(install)) {
     return { status: 403, body: { error: 'control_proof_required' } };
+  }
+  // The id the forge delivered must be the one recorded at registration: a
+  // proven path never vouches for a delivery naming another project's id.
+  if (install.installation_id !== repo.uuid) {
+    return { status: 403, body: { error: 'project_id_mismatch' } };
   }
   // The forge sends the repository id and its path together. A delivery for this
   // install whose path is not the one the registration proved (a renamed
@@ -418,10 +436,10 @@ export async function handleBitbucketWebhook(
   // this PE records as 'corroborated_duplicate'.
   const attribution = await resolveAgentAuthorAttribution(deps.db, {
     provider: PROVIDER,
-    // For bitbucket the self-serve installation_id IS the stable repo uuid
-    // (routes/witnesses-bitbucket.ts) — it survives a wallet re-point, so it
-    // is the forge-account scope directly (no stamp needed).
-    forgeAccountId: install.installation_id,
+    // The forge-account scope of a self-serve install is its proven path
+    // (installForgeAccountScope): one active registration holds it, so no
+    // other wallet's mappings can attribute this delivery.
+    forgeAccountId: installForgeAccountScope(install) as string,
     sourceOwnerWalletId: install.user_id,
     candidates: extractBitbucketAuthorKeyCandidates(payload),
   });

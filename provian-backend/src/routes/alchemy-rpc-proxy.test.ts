@@ -16,6 +16,8 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import request from 'supertest';
 import http from 'http';
 import type { AddressInfo } from 'net';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   createAlchemyRpcHandler,
   classifyRpcBody,
@@ -268,14 +270,50 @@ describe('Alchemy RPC proxy — method allowlist', () => {
     expect(h.upstreamCalls()).toBe(ALCHEMY_EVM_ALLOWED_METHODS.size + ALCHEMY_SOLANA_ALLOWED_METHODS.size);
   });
 
-  it('the allowlist is exactly the app\'s callers (TransactionHistoryService.alchemyRpc, SolanaRpc.call)', () => {
-    expect([...ALCHEMY_EVM_ALLOWED_METHODS].sort()).toEqual([
-      'alchemy_getAssetTransfers', 'eth_blockNumber', 'eth_getBlockByNumber', 'eth_getLogs', 'eth_getTransactionReceipt',
-    ]);
-    expect([...ALCHEMY_SOLANA_ALLOWED_METHODS].sort()).toEqual([
-      'getAccountInfo', 'getBalance', 'getFeeForMessage', 'getLatestBlockhash',
-      'getMinimumBalanceForRentExemption', 'getSignaturesForAddress', 'getTransaction', 'sendTransaction',
-    ]);
+  /**
+   * The methods the app actually sends, read from its two proxy call sites:
+   * every `this.call(...)` in SolanaRpc.ts and every `this.alchemyRpc(...)` in
+   * TransactionHistoryService.ts. A call site whose method is not a string
+   * literal is not parsed, so the parsed count must equal the call-site count.
+   */
+  const APP_ROOT = resolve(__dirname, '../../..');
+  function appProxyMethods(file: string, callSite: RegExp, method: RegExp): { sites: number; methods: Set<string> } {
+    const source = readFileSync(resolve(APP_ROOT, file), 'utf8');
+    const sites = (source.match(callSite) ?? []).length;
+    const methods = [...source.matchAll(method)].map((m) => m[1]);
+    expect([file, methods.length]).toEqual([file, sites]);
+    return { sites, methods: new Set(methods) };
+  }
+  const solanaApp = () => appProxyMethods(
+    'src/core/chains/solana/SolanaRpc.ts',
+    /\bthis\.call\b/g,
+    /\bthis\.call(?:<[\s\S]*?>)?\(\s*'([A-Za-z_]+)'/g,
+  );
+  const evmApp = () => appProxyMethods(
+    'src/core/history/TransactionHistoryService.ts',
+    /\bthis\.alchemyRpc\(/g,
+    /\bthis\.alchemyRpc\(\s*[A-Za-z_.]+\s*,\s*'([A-Za-z_]+)'/g,
+  );
+  const notAllowed = (methods: Set<string>, network: string) =>
+    [...methods].filter((m) => firstDisallowedRpcMethod(rpc(m), network) !== null).sort();
+
+  it('every method the app sends through the proxy, read from its call sites, is allowed on its family', () => {
+    const solana = solanaApp();
+    const evm = evmApp();
+    expect(solana.methods.size).toBeGreaterThan(0);
+    expect(evm.methods.size).toBeGreaterThan(0);
+    expect(notAllowed(solana.methods, 'solana-mainnet')).toEqual([]);
+    expect(notAllowed(evm.methods, 'base-mainnet')).toEqual([]);
+  });
+
+  it('the allowlist carries nothing the app does not send', () => {
+    expect([...ALCHEMY_SOLANA_ALLOWED_METHODS].sort()).toEqual([...solanaApp().methods].sort());
+    expect([...ALCHEMY_EVM_ALLOWED_METHODS].sort()).toEqual([...evmApp().methods].sort());
+  });
+
+  it('RED control: the derivation reports a method missing from the allowlist', () => {
+    expect(notAllowed(new Set(['getBalance', 'getProgramAccounts']), 'solana-mainnet')).toEqual(['getProgramAccounts']);
+    expect(notAllowed(new Set(['eth_blockNumber', 'eth_call']), 'base-mainnet')).toEqual(['eth_call']);
     expect(firstDisallowedRpcMethod(rpc('eth_blockNumber'), 'base-mainnet')).toBeNull();
     expect(firstDisallowedRpcMethod(rpc('x'.repeat(500)), 'base-mainnet')).toHaveLength(64);
   });

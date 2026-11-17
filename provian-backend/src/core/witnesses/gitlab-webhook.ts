@@ -11,10 +11,12 @@
  *   - Auth is a constant-time compare of the `X-Gitlab-Token` header against
  *     the configured secret. GitLab does NOT HMAC-sign the body, so there is
  *     no signature-over-rawBody step. We still verify BEFORE parsing.
- *   - Attribution keys on `project.id` (GitLab has no installation_id). The
- *     user links a project to their wallet via the gitlab/installs route; the
- *     service_installs row (provider='gitlab', installation_id=project.id)
- *     maps the inbound delivery to the owning Provian user.
+ *   - GitLab has no installation_id. The user links a project to their
+ *     wallet via the gitlab/installs route, proving control of its path
+ *     (`group/project`); the service_installs row is keyed by that proven
+ *     path and records the project id named at registration. A delivery
+ *     resolves by its `project.path_with_namespace` and must carry the
+ *     recorded id.
  *   - Delivery dedup uses `X-Gitlab-Event-UUID`.
  *
  * Order of operations is security-critical and matches github-webhook.ts:
@@ -37,11 +39,15 @@ import type { InputOrigin } from '../provenance/input-origins';
 import { resolvableOrigin, forgeWebhookWitness, mergeInputOrigins } from '../provenance/origin-capture';
 import { emitBackendCorroboration } from '../corroboration/CorroborationManager';
 import {
+  getProvenServiceInstallByProjectPath,
   getServiceInstallByInstallationId,
   installControlProven,
+  installForgeAccountScope,
   installProjectPathMatches,
   isUsableInstallationId,
+  type ServiceInstallDocument,
 } from './service-installs';
+import { normalizeProjectPath } from './forge-deploy-key';
 import type { GitLabAppConfig } from './gitlab-app-config';
 import { findPEsByCommitSha, findCommitOriginsBySha } from './pe-lookup';
 import {
@@ -311,7 +317,16 @@ export async function handleGitLabWebhook(
   //    enumerate which projects are registered (the old order got this for
   //    free by verifying first; this preserves it);
   //  - revocation (410) is disclosed only AFTER a successful verify.
-  const install = await getServiceInstallByInstallationId(deps.db, PROVIDER, project.id);
+  // A proven registration is found by the path the forge delivered (the
+  // proven path holds the project, never the claimed id); a row keyed only by
+  // the id is an earlier registration, found so it can be told to register
+  // again, and authenticates nothing.
+  const deliveredPath = normalizeProjectPath(PROVIDER, project.fullName);
+  const provenInstall = deliveredPath === null
+    ? null
+    : await getProvenServiceInstallByProjectPath(deps.db, PROVIDER, deliveredPath);
+  const install: ServiceInstallDocument | null = provenInstall
+    ?? await getServiceInstallByInstallationId(deps.db, PROVIDER, project.id);
   if (!install) {
     if (!verifyGitLabToken(input.tokenHeader, input.config.webhookSecret)) {
       return { status: 401, body: { error: 'invalid_token' } };
@@ -334,8 +349,13 @@ export async function handleGitLabWebhook(
   // PE, however its secret verified. It stays on record and starts working
   // again when the project is registered with proof. Checked before dedup so
   // the forge's redelivery after re-registration is still processed.
-  if (!installControlProven(install)) {
+  if (provenInstall === null || !installControlProven(install)) {
     return { status: 403, body: { error: 'control_proof_required' } };
+  }
+  // The id the forge delivered must be the one recorded at registration: a
+  // proven path never vouches for a delivery naming another project's id.
+  if (install.installation_id !== project.id) {
+    return { status: 403, body: { error: 'project_id_mismatch' } };
   }
   // The forge sends the project id and its path together. A delivery for this
   // install whose path is not the one the registration proved (a renamed
@@ -380,10 +400,10 @@ export async function handleGitLabWebhook(
   // this PE records as 'corroborated_duplicate'.
   const attribution = await resolveAgentAuthorAttribution(deps.db, {
     provider: PROVIDER,
-    // For gitlab the self-serve installation_id IS the stable GitLab project
-    // id (routes/witnesses-gitlab.ts) — it survives a wallet re-point, so it
-    // is the forge-account scope directly (no stamp needed).
-    forgeAccountId: install.installation_id,
+    // The forge-account scope of a self-serve install is its proven path
+    // (installForgeAccountScope): one active registration holds it, so no
+    // other wallet's mappings can attribute this delivery.
+    forgeAccountId: installForgeAccountScope(install) as string,
     sourceOwnerWalletId: install.user_id,
     candidates: extractGitLabAuthorKeyCandidates(payload),
   });

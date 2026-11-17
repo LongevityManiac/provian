@@ -15,7 +15,7 @@ import { deleteWalletLocation, COMPLIANCE_EVENTS_COLLECTION } from '../jurisdict
 import { SESSION_COLLECTION } from '../jurisdiction/mint-compliance';
 import {
   SERVICE_INSTALLS_COLLECTION,
-  markServiceInstallRevoked,
+  revokeOwnedServiceInstalls,
   type ServiceInstallDocument,
 } from '../witnesses/service-installs';
 
@@ -136,7 +136,9 @@ export async function deleteUserRelayData(userId: string, deps: DeleteUserDataDe
   for (const doc of installSnap.docs) {
     const install = doc.data() as ServiceInstallDocument;
     if (install.user_id !== userId || install.revoked_at != null) continue;
-    if (await markServiceInstallRevoked(db, install.provider, install.installation_id)) revoked += 1;
+    // Wherever the install is keyed (a proven gitlab/bitbucket install by its
+    // path), owner-scoped.
+    revoked += (await revokeOwnedServiceInstalls(db, userId, install.provider, install.installation_id)).revoked;
   }
   // c. Their human wallets, released BEFORE the meter wipe: the chain lanes stop pricing
   //       a released wallet, so nothing regrows under this id in step 3. A re-sent request keeps the

@@ -61,7 +61,7 @@ export interface AlchemyRpcProxyDeps {
  *
  * EVM (app: TransactionHistoryService.alchemyRpc): transfer history, the block
  * number and block timestamps around it, receipts, and approval logs.
- * Solana (app: SolanaRpc.call): balances, account reads, history, fee and rent
+ * Solana (app: SolanaRpc.call): balances (native and token accounts), account reads, history, fee and rent
  * quotes, the latest blockhash, and broadcasting a transaction the owner signed.
  *
  * A new first-party call is added here in the same change that adds the caller.
@@ -80,6 +80,7 @@ export const ALCHEMY_SOLANA_ALLOWED_METHODS: ReadonlySet<string> = new Set([
   'getLatestBlockhash',
   'getMinimumBalanceForRentExemption',
   'getSignaturesForAddress',
+  'getTokenAccountsByOwner',
   'getTransaction',
   'sendTransaction',
 ]);

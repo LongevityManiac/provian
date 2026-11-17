@@ -32,9 +32,13 @@
  * GitLab and Bitbucket witness routers (`routes/witnesses-*.ts`) import this
  * module for install registration and per-delivery resolution.
  *
- * Doc id convention: `{provider}_{installation_id}` so a single Firestore
- * `.doc()` lookup serves the per-delivery resolution path the future
- * webhook verifier needs.
+ * Doc id convention: a github install lives at `{provider}_{installation_id}`.
+ * A gitlab/bitbucket install that proved control lives at the key of its
+ * PROVEN project path (`{provider}@path_{sha256(path)}`): the registrant
+ * names the project id, but only the path is proven, so only the path may
+ * hold a project. The id is recorded on the row and every delivery must carry
+ * it. Rows at `{provider}_{installation_id}` for gitlab/bitbucket are earlier
+ * registrations; they authenticate no delivery and hold nothing.
  */
 
 import * as crypto from 'crypto';
@@ -94,7 +98,7 @@ export interface ServiceInstallDocument {
   /**
    * gitlab/bitbucket only: the record that the registrant proved control of
    * the project at registration (see forge-deploy-key.ts): a deploy key the
-   * relay generated read exactly this project path on the forge. It holds the
+   * relay generated was accepted on exactly this project path on the forge. It holds the
    * key's fingerprint, the proven path and the time — never the key. A row
    * without it authenticates no delivery into a PE: the receiver refuses it
    * until the project is registered again with proof.
@@ -168,6 +172,24 @@ function docIdFor(provider: ServiceInstallProvider, installationId: string): str
 }
 
 /**
+ * Document id of a gitlab/bitbucket install by its proven project path. "@"
+ * never appears in a usable installation id, so this id space cannot meet
+ * `{provider}_{installation_id}`.
+ */
+function provenPathDocIdFor(provider: ServiceInstallProvider, projectPath: string): string {
+  return `${provider}@path_${crypto.createHash('sha256').update(projectPath, 'utf8').digest('hex')}`;
+}
+
+/** The documents an install may live at: its id key, and its proven-path key when it has one. */
+function candidateDocIds(install: ServiceInstallDocument): string[] {
+  const ids = isUsableInstallationId(install.installation_id) ? [docIdFor(install.provider, install.installation_id)] : [];
+  if (PER_INSTALL_SECRET_PROVIDERS.has(install.provider) && installControlProven(install)) {
+    ids.push(provenPathDocIdFor(install.provider, (install.control_proof as ServiceInstallControlProof).project_path));
+  }
+  return ids;
+}
+
+/**
  * True when `installationId` can be part of a document id. Installation ids
  * arrive from request bodies, URL parameters and webhook payloads; one that is
  * not a plain token (a "/", a control character, an over-long value) names no
@@ -196,8 +218,9 @@ export function mintInstallWebhookSecret(): string {
 }
 
 /**
- * Thrown by `createServiceInstall` when an ACTIVE row for (provider,
- * installation_id) belongs to a different user. Callers map it to a 409 /
+ * Thrown by `createServiceInstall` when the ACTIVE row it would write (for
+ * gitlab/bitbucket with a proof: the proven path's row; otherwise the
+ * (provider, installation_id) row) belongs to a different user. Callers map it to a 409 /
  * `conflict` answer; the row is never touched.
  */
 export class ServiceInstallOwnedByOtherUserError extends Error {
@@ -254,7 +277,16 @@ export async function createServiceInstall(
   }
 
   const wantsSecret = PER_INSTALL_SECRET_PROVIDERS.has(params.provider);
-  const ref = db.collection(COLLECTION).doc(docIdFor(params.provider, params.installation_id));
+  // A proven gitlab/bitbucket registration is keyed by the path it proved, so
+  // the project id it names can never hold a project the registrant did not
+  // prove: uniqueness, the hijack guard and secret reuse all apply per path.
+  const provenPath = wantsSecret && params.control_proof !== undefined ? params.control_proof.project_path : null;
+  if (provenPath !== null && (typeof provenPath !== 'string' || provenPath.length === 0 || provenPath !== provenPath.trim().toLowerCase())) {
+    throw new Error('createServiceInstall: control_proof.project_path is not a normalized path');
+  }
+  const ref = db.collection(COLLECTION).doc(provenPath !== null
+    ? provenPathDocIdFor(params.provider, provenPath)
+    : docIdFor(params.provider, params.installation_id));
   return await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const existing = snap.exists ? (snap.data() as ServiceInstallDocument) : null;
@@ -284,6 +316,7 @@ export async function createServiceInstall(
     const keepExistingSecret = wantsSecret
       && existing !== null
       && existing.user_id === params.user_id
+      && existing.installation_id === params.installation_id
       && existing.revoked_at === null
       && typeof existing.webhook_secret === 'string'
       && existing.webhook_secret.length > 0;
@@ -316,9 +349,11 @@ export async function createServiceInstall(
 }
 
 /**
- * Resolve an install by (provider, installation_id). The future webhook
- * verifier uses this to map an inbound delivery's `installation_id` to
- * the owning Provian `user_id` before it submits the PE.
+ * Resolve an install by (provider, installation_id): a github install, or a
+ * gitlab/bitbucket row from before registrations were keyed by proven path
+ * (such a row authenticates no delivery). A proven gitlab/bitbucket install is
+ * found by `getProvenServiceInstallByProjectPath`, or among its owner's
+ * installs by `getOwnedServiceInstallsByInstallationId`.
  *
  * Returns null when no install exists. Returns the document including
  * `revoked_at` when revoked - callers decide whether a revoked install
@@ -333,6 +368,74 @@ export async function getServiceInstallByInstallationId(
   const snap = await db.collection(COLLECTION).doc(docIdFor(provider, installationId)).get();
   if (!snap.exists) return null;
   return snap.data() as ServiceInstallDocument;
+}
+
+/**
+ * The proven gitlab/bitbucket install for a normalized project path, or null.
+ * The webhook receivers resolve every delivery this way: by the path the forge
+ * delivered, never by the project id alone.
+ */
+export async function getProvenServiceInstallByProjectPath(
+  db: Firestore,
+  provider: ServiceInstallProvider,
+  projectPath: string,
+): Promise<ServiceInstallDocument | null> {
+  if (!PER_INSTALL_SECRET_PROVIDERS.has(provider) || projectPath.length === 0) return null;
+  const snap = await db.collection(COLLECTION).doc(provenPathDocIdFor(provider, projectPath)).get();
+  if (!snap.exists) return null;
+  const install = snap.data() as ServiceInstallDocument;
+  return install.provider === provider && installControlProven(install)
+    && (install.control_proof as ServiceInstallControlProof).project_path === projectPath
+    ? install
+    : null;
+}
+
+/**
+ * The caller's own installs for (provider, installation_id), wherever they are
+ * keyed. Owner-scoped: another wallet's row with the same id is never seen.
+ */
+export async function getOwnedServiceInstallsByInstallationId(
+  db: Firestore,
+  userId: string,
+  provider: ServiceInstallProvider,
+  installationId: string,
+): Promise<ServiceInstallDocument[]> {
+  if (!userId || !isUsableInstallationId(installationId)) return [];
+  return (await getServiceInstallsByUser(db, userId))
+    .filter((install) => install.user_id === userId
+      && install.provider === provider
+      && install.installation_id === installationId);
+}
+
+/**
+ * Revoke every ACTIVE install of the caller for (provider, installation_id),
+ * wherever it is keyed. `found` says whether the caller owns any such install
+ * (active or not); `revoked` counts the rows this call revoked.
+ */
+export async function revokeOwnedServiceInstalls(
+  db: Firestore,
+  userId: string,
+  provider: ServiceInstallProvider,
+  installationId: string,
+): Promise<{ found: boolean; revoked: number }> {
+  const owned = await getOwnedServiceInstallsByInstallationId(db, userId, provider, installationId);
+  let revoked = 0;
+  const seen = new Set<string>();
+  for (const install of owned) {
+    for (const docId of candidateDocIds(install)) {
+      if (seen.has(docId)) continue;
+      seen.add(docId);
+      const ref = db.collection(COLLECTION).doc(docId);
+      const snap = await ref.get();
+      if (!snap.exists) continue;
+      const row = snap.data() as ServiceInstallDocument;
+      if (row.user_id !== userId || row.provider !== provider || row.installation_id !== installationId) continue;
+      if (row.revoked_at != null) continue;
+      await ref.update({ revoked_at: Date.now() });
+      revoked += 1;
+    }
+  }
+  return { found: owned.length > 0, revoked };
 }
 
 /**
@@ -373,10 +476,12 @@ export async function markServiceInstallRevoked(
  * guess). installation_id is deliberately NOT a fallback here: GitHub
  * installation ids and account ids are different numbering spaces, and a
  * cross-space compare could collide.
- * - gitlab / bitbucket: the self-serve `installation_id` (GitLab project id
- * / Bitbucket repo uuid) IS the stable scope — it survives a wallet
- * re-point because createServiceInstall keys the row by
- * (provider, installation_id) and only overwrites user_id.
+ * - gitlab / bitbucket: the PROVEN project path (GitLab `group/project`,
+ * Bitbucket `workspace/repo`). The project id a registrant names is not
+ * proven, so two wallets may name the same id; scoping by it would let one
+ * wallet's mappings attribute another's deliveries. The path is held by one
+ * active registration at a time, and survives a wallet re-point. NULL for a
+ * row with no proof, which authenticates nothing.
  */
 export function installForgeAccountScope(install: ServiceInstallDocument): string | null {
   if (install.provider === 'github') {
@@ -384,7 +489,7 @@ export function installForgeAccountScope(install: ServiceInstallDocument): strin
       ? install.forge_account_id
       : null;
   }
-  return install.installation_id;
+  return installControlProven(install) ? (install.control_proof as ServiceInstallControlProof).project_path : null;
 }
 
 /**
