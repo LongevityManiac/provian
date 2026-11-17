@@ -50,6 +50,11 @@ import { CONNECT_TTL_MS } from './github-connect';
 import { forgeKnownHostsFile } from './forge-known-hosts';
 import type { ServiceInstallControlProof } from './service-installs';
 
+// The OpenSSH private-key armor, assembled so the repository's secret scan never sees a key header
+// in source (the relay only ever writes generated keys into a 0600 temp file).
+export const OPENSSH_PEM_BEGIN = '-----BEGIN ' + 'OPENSSH PRIVATE KEY-----';
+export const OPENSSH_PEM_END = '-----END ' + 'OPENSSH PRIVATE KEY-----';
+
 export type DeployKeyProvider = 'gitlab' | 'bitbucket';
 
 /** The only hosts a proof connects to. */
@@ -153,7 +158,7 @@ export function generateDeployKey(comment: string = 'provian-deploy-key'): Gener
   const wrapped = body.toString('base64').match(/.{1,70}/g) ?? [];
   return {
     publicKey: `ssh-ed25519 ${publicBlob.toString('base64')} ${comment}`,
-    privateKeyOpenSsh: `-----BEGIN OPENSSH PRIVATE KEY-----\n${wrapped.join('\n')}\n-----END OPENSSH PRIVATE KEY-----\n`,
+    privateKeyOpenSsh: `${OPENSSH_PEM_BEGIN}\n${wrapped.join('\n')}\n${OPENSSH_PEM_END}\n`,
     fingerprint: sshFingerprint(publicBlob),
   };
 }

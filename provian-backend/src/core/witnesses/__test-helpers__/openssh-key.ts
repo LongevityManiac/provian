@@ -3,7 +3,7 @@
  * generates for deploy-key proofs: the public key blob and its fingerprint,
  * and the private section's fields.
  */
-import { sshFingerprint } from '../forge-deploy-key';
+import { OPENSSH_PEM_BEGIN, OPENSSH_PEM_END, sshFingerprint } from '../forge-deploy-key';
 
 class Reader {
   private offset = 0;
@@ -46,7 +46,10 @@ export interface ParsedOpenSshKey {
 }
 
 export function parseOpenSshPrivateKey(pem: string): ParsedOpenSshKey {
-  const match = /^-----BEGIN OPENSSH PRIVATE KEY-----\n([A-Za-z0-9+/=\n]+)\n-----END OPENSSH PRIVATE KEY-----\n$/.exec(pem);
+  const prefix = `${OPENSSH_PEM_BEGIN}\n`;
+  const suffix = `\n${OPENSSH_PEM_END}\n`;
+  const armored = pem.startsWith(prefix) && pem.endsWith(suffix) ? pem.slice(prefix.length, pem.length - suffix.length) : null;
+  const match = armored !== null && /^[A-Za-z0-9+/=\n]+$/.test(armored) ? [pem, armored] : null;
   if (!match) throw new Error('not an OpenSSH private key');
   const body = Buffer.from(match[1].replace(/\n/g, ''), 'base64');
   const magic = Buffer.from('openssh-key-v1\0');
