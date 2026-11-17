@@ -9,6 +9,9 @@ import type { SolPrice } from '../solana/price.js';
 import type { WitnessReport, WitnessReporter } from '../witness.js';
 import type { SellerRecord } from '../store.js';
 
+/** A stand-in PVT token address for unit tests (the real one is read from the protocol pointer). */
+export const TEST_PVT = '0x00000000000000000000000000000000000A11CE' as const;
+
 export class FakeBaseChain implements BaseChain {
   operator: `0x${string}` = '0x00000000000000000000000000000000000000A1';
   settler: `0x${string}` = '0x00000000000000000000000000000000000000B2';
@@ -114,6 +117,13 @@ export class FakeBaseChain implements BaseChain {
   }
   async readSettlerConfig() {
     return { usdc: '', operator: '', feeRecipient: '', permit2Proxy: '', pvt: '', maxFee: 50_000n };
+  }
+  /** The token the pointer names now; set `livePvtError` to make the pointer unreadable. */
+  livePvt: `0x${string}` = TEST_PVT;
+  livePvtError: Error | null = null;
+  async readLivePvt(): Promise<`0x${string}`> {
+    if (this.livePvtError) throw this.livePvtError;
+    return this.livePvt;
   }
   async sendRaw(to: `0x${string}`, data: Hex, value: bigint): Promise<Hex> {
     this.raw.push({ to, data, value });

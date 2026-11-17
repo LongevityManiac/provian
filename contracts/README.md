@@ -32,6 +32,8 @@ Provian Technologies, LLC administers the kernel through its bootstrap wallet, `
 
 The institutions bind the kernel and their counterpart contracts through constructor immutables and one-time setters. They cannot be repointed by repeating those setters.
 
+Each institution contract (escrow, bond pool, Court, project pool, promises) and the PE anchor has a live single-key `transferAdmin(address)`: the current admin alone hands that contract's admin role to another address in one transaction, with no timelock and no acceptance step. The kernel has no admin transfer.
+
 - **Escrow:** PVT and USDC principal; 0.5% protocol fee. PVT fees burn and USDC fees go to Provian’s fee wallet. Dispute resolution can pay only the original recipient or refund the depositor. An unresolved dispute has a 30-day timeout refund.
 - **On-chain promises:** 0.25% of settlement; PVT fees burn and USDC fees go to the fee wallet. Human informal promises in the mobile app are a separate signed, encrypted relay feature.
 - **Capital pools:** 0.5% of execution; PVT fees burn and USDC fees go to the fee wallet. The admin may execute a funded pool only to its creator-fixed target or refund contributors. Anyone may refund an unexecuted pool after its deadline. Pools are an agent API feature.

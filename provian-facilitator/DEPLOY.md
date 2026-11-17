@@ -29,8 +29,6 @@ export SA="$SERVICE@$PROJECT.iam.gserviceaccount.com"
 export BASE_GAS_EOA=0xA37fC594E98e951571C771C9e77CDC73f67d3efB
 export SOL_GAS_WALLET=DPB89TipwTCxFnQCdtvJE8cm8718jytvzyYEBfQP3t2
 export USDC=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-# Set PVT to the verified PVT10 kernel resolved from the permanent protocol pointer.
-export PVT="${VERIFIED_CURRENT_PVT_KERNEL:?Resolve and verify the current kernel first}"
 export X402_PERMIT2_PROXY=0x402085c248EeA27D92E8b30b2C58ed07f9E20001
 # The same Base / Solana RPC endpoints the relay uses (read them from the live relay; they may embed a key):
 gcloud run services describe provian-api --region $REGION --project $PROJECT --format=json \
@@ -71,20 +69,21 @@ Immutables only — no owner, no setters, no proxy. Constructor: `(usdc, operato
 permit2Proxy, pvt)`; operator and fee recipient are BOTH the gas EOA.
 
 ```bash
-cd contracts
-forge build --contracts src/ProvianX402FeeSettler.sol
-FACILITATOR_BASE_GAS_KEY="$(gcloud secrets versions access latest --secret=facilitator-base-gas-key --project $PROJECT)"
-forge create src/ProvianX402FeeSettler.sol:ProvianX402FeeSettler \
-  --rpc-url "$BASE_RPC_URL" --broadcast \
-  --private-key "$FACILITATOR_BASE_GAS_KEY" \
-  --constructor-args $USDC $BASE_GAS_EOA $BASE_GAS_EOA $X402_PERMIT2_PROXY $PVT
-unset FACILITATOR_BASE_GAS_KEY
+forge build --root contracts
+cd provian-facilitator
+BASE_RPC_URL="$BASE_RPC_URL" node scripts/deploy-fee-settler.mjs              # dry run
+BASE_RPC_URL="$BASE_RPC_URL" node scripts/deploy-fee-settler.mjs --broadcast  # deploys and verifies
 cd ..
-export SETTLER=0x...   # "Deployed to:" above
-# Verify the immutables on chain (the service refuses to enable Base unless they match exactly):
-for f in 'usdc(address)' 'operator(address)' 'feeRecipient(address)' 'permit2Proxy(address)' 'pvt(address)' 'MAX_FEE(uint256)'; do
-  cast call $SETTLER "$f" --rpc-url "$BASE_RPC_URL"; done
+export SETTLER=0x...   # "address" in the script's output
 ```
+
+The script reads the PVT token from the permanent protocol pointer (slot 0), reads the gas key from
+Secret Manager inside its own process (never a command-line argument), and refuses to finish unless
+every immutable on the deployed contract matches. The service makes the same check on boot and
+enables Base only when the settler's token is the one the pointer names.
+
+A new settler is a new address: every Base seller's one-time USDC fee approval names the settler,
+so each seller approves the new one before its next payment (`GET /supported` shows the address).
 
 Record it in `contracts/deployments/base-x402-fee-settler.json` (address, tx, block, constructor
 args) and commit.

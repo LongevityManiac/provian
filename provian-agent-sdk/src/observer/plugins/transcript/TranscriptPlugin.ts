@@ -5,7 +5,7 @@ import os from 'os';
 import type { ProvianObserver } from '../../ProvianObserver';
 import type { ObserverPlugin, PECommitOutcome } from '../PluginInterface';
 import type { PluginPE, PluginContribution, SessionState } from '../../types';
-import { ProgramWitnessRegistry, programWitnessPath, describedEvents, recordPlacementProblem, recordSources, readSource, sourceCheckpoint, valuesAt, writeLocal, hash, canonicalRecord, type ProgramWitness } from '../../program-witness';
+import { ProgramWitnessRegistry, programWitnessPath, describedEvents, recordPlacementProblem, recordSourcesAsync, readSource, sourceCheckpoint, sameFileStamp, FileCheckpoint, valuesAt, writeLocal, hash, canonicalRecord, type ProgramWitness, type FileStamp, type RecordSource } from '../../program-witness';
 import { toolInputOriginDrafts, stampWitness, mergeInputOrigins } from '../../origin-capture';
 import { linkSpendInvocationFromToolCall, pairLinkSpend, linkSpendBindingTag, type LinkSpendInvocation } from '../../../link-invocation';
 import { recognizeLinkSpendInText, linkSpendDescription, linkSpendWitnessMetadata } from '../../../link-witness';
@@ -16,6 +16,14 @@ interface Response { program?:string; key:string; start:number; end:number; call
 interface SourceState { cursor:number; checkpoint?:string; replay?:boolean; response?:string;origins?:NonNullable<PluginPE['input_origins']> }
 interface State { sources:Record<string,SourceState>; pending:Record<string,PluginPE>; responses:Record<string,Response>; closed:Record<string,boolean>; copies:Record<string,boolean>; serial:number; lastReadMs:number }
 export const TRANSCRIPT_RESCAN_INTERVAL_MS=5000;
+/** A file whose times are this recent is read again next pass: a same-size rewrite inside one clock tick would not move its stamp. */
+export const TRANSCRIPT_STAMP_SETTLE_MS=2000;
+/** Bytes of a session file parsed between two turns of the event loop. */
+const READ_SLICE_BYTES=1024*1024;
+/** A file source as last fully read: unchanged while its stamp, cursor and checkpoint all still match. */
+interface FileMark { stamp:FileStamp; cursor:number; checkpoint:string }
+export interface TranscriptScan { sources:number; unchanged:number; bytesVerified:number; bytesParsed:number }
+const turn=():Promise<void>=>new Promise<void>(resolve=>setImmediate(resolve));
 /** Preserve the local store's primitive identity type: 17 and "17" are distinct. */
 const recordIdentity=(value:unknown):string|undefined=>typeof value==='string'||typeof value==='number'&&Number.isFinite(value)?JSON.stringify([typeof value,value]):undefined;
 export class TranscriptPlugin implements ObserverPlugin {
@@ -32,41 +40,65 @@ export class TranscriptPlugin implements ObserverPlugin {
  private lastCapture:number|null=null;
  private deviceRegisteredAtMs:number|null=null;
  private readonly now:()=>number;
- constructor(options:{home?:string;registry?:ProgramWitnessRegistry;statePath?:string;now?:()=>number}={}) {
+ private readonly settleMs:number;
+ private readonly marks=new Map<string,FileMark>();
+ private polling:Promise<void>|null=null;
+ private scan:TranscriptScan={sources:0,unchanged:0,bytesVerified:0,bytesParsed:0};
+ constructor(options:{home?:string;registry?:ProgramWitnessRegistry;statePath?:string;now?:()=>number;stampSettleMs?:number}={}) {
   const home=options.home??os.homedir();this.registry=options.registry??new ProgramWitnessRegistry(programWitnessPath(home));
-  this.statePath=options.statePath??path.join(home,'.provian','described-response-state.json');this.now=options.now??Date.now;
+  this.statePath=options.statePath??path.join(home,'.provian','described-response-state.json');this.now=options.now??Date.now;this.settleMs=options.stampSettleMs??TRANSCRIPT_STAMP_SETTLE_MS;
   this.state=fs.existsSync(this.statePath)?JSON.parse(fs.readFileSync(this.statePath,'utf8')):{sources:{},pending:{},responses:{},closed:{},copies:{},serial:0,lastReadMs:0};
   try{const r=JSON.parse(fs.readFileSync(path.join(path.dirname(this.statePath),'witness-action-required.json'),'utf8'));for(const p of r.programs??[])if(typeof p==='string')this.broken.add(p);}catch{/* no outstanding instruction */}
  }
  async init(observer:ProvianObserver):Promise<void>{this.observer=observer;}
- async start():Promise<void>{this.queue=Object.values(this.state.pending);this.poll();}
- async stop():Promise<void>{this.save();}
+ async start():Promise<void>{this.queue=Object.values(this.state.pending);await this.rescan();}
+ async stop():Promise<void>{await this.polling;this.save();}
  async finalize():Promise<void>{this.save();}
- tick(_session:SessionState|null):PluginContribution|null{if(this.now()-this.lastPoll>=TRANSCRIPT_RESCAN_INTERVAL_MS)this.poll();return null;}
+ tick(_session:SessionState|null):PluginContribution|null{if(!this.polling&&this.now()-this.lastPoll>=TRANSCRIPT_RESCAN_INTERVAL_MS)void this.rescan();return null;}
+ /** One pass over every described store. Passes never overlap; the returned promise settles when the pass is done. */
+ rescan():Promise<void>{return this.polling??=this.poll().catch(err=>{this.observer?.log('warn','capture.transcript_pass_failed',{error:err instanceof Error?err.message:String(err)});}).finally(()=>{this.polling=null;});}
+ /** What the latest pass cost: sources seen, sources left unread because nothing changed, bytes hashed to verify a prefix, bytes parsed. */
+ lastScan():TranscriptScan{return {...this.scan};}
  setDeviceRegisteredAtMs(ms:number|null):void{this.deviceRegisteredAtMs=ms;}
  drainPEs():PluginPE[]{const out=this.queue;this.queue=[];return out;}
  onCommitted(pe:PluginPE,outcome:PECommitOutcome):void{if(!pe.idempotencyKey)return;if(outcome==='failed'){this.queue.push(pe);return;}delete this.state.pending[pe.idempotencyKey];this.save();}
  private save():void{writeLocal(this.statePath,this.state);}
  private flag(program:string):void{this.broken.add(program);writeLocal(path.join(path.dirname(this.statePath),'witness-action-required.json'),{instruction:'Your observer cannot parse the current session records. Inspect the real files. Re-describe their response/tool format with provian witness configure --description <local-json-file>: it refuses a description that leaves a record the observer will read unplaced and names the first one. Keep the observer running. Never declare work or submit PEs.',programs:[...this.broken]});this.observer.log('warn','capture.session_format_broken — re-describe your session store',{program});}
- private poll():void {
+ private async poll():Promise<void> {
   this.lastPoll=this.now();this.harnesses=[];
+  const scan:TranscriptScan={sources:0,unchanged:0,bytesVerified:0,bytesParsed:0};this.scan=scan;
   for(const p of this.registry.programs().filter(x=>x.lane==='transcript')) {
-   const spec=p.session!;let sources:ReturnType<typeof recordSources>=[];let healthy=true;
-   try{sources=recordSources(spec);}catch{this.flag(p.program);healthy=false;}
+   const spec=p.session!;let sources:RecordSource[]=[];let healthy=true;
+   try{sources=await recordSourcesAsync(spec);}catch{this.flag(p.program);healthy=false;}
    this.harnesses.push({harness:p.program,sources:sources.length,containers:[spec.sqlite?'sqlite':'file']});
    for(const src of sources) {
     const source=p.program+':'+src.source;
     const st=this.state.sources[source]??={cursor:p.baseline[src.source]??0,replay:p.baseline[src.source]===undefined};
+    scan.sources++;
+    // A file whose stamp, cursor and checkpoint are those of its last complete read holds nothing new.
+    const mark=this.marks.get(source);
+    if(mark&&src.stamp&&sameFileStamp(mark.stamp,src.stamp)&&mark.cursor===st.cursor&&mark.checkpoint===st.checkpoint){scan.unchanged++;continue;}
+    this.marks.delete(source);
+    await turn();
     try {
-     if(src.tip<st.cursor||st.checkpoint&&sourceCheckpoint(spec,src,st.cursor)!==st.checkpoint){st.cursor=0;st.replay=true;delete st.response;}
-     const read=readSource(spec,src,st.cursor);
-     while(spec.sqlite&&read.tip<src.tip){const next=readSource(spec,src,read.tip);if(next.tip<=read.tip)break;read.records.push(...next.records);read.tip=next.tip;}
+     // A file source's prefix is hashed once to detect a rewrite; the digest then follows the bytes this pass reads.
+     let running:FileCheckpoint|undefined;let rewritten=src.tip<st.cursor;
+     if(!rewritten&&st.checkpoint) {
+      if(spec.sqlite)rewritten=sourceCheckpoint(spec,src,st.cursor)!==st.checkpoint;
+      else{running=await FileCheckpoint.open(src.file,st.cursor);scan.bytesVerified+=st.cursor;rewritten=running.value()!==st.checkpoint;}
+     }
+     if(rewritten){st.cursor=0;st.replay=true;delete st.response;running=undefined;}
+     let halted=false;let from=st.cursor;let slice=READ_SLICE_BYTES;
+     while(!halted) {
+      // Files are parsed a bounded slice at a time, yielding between slices; a record larger than the slice widens it.
+      const read=spec.sqlite?readSource(spec,src,from):readSource(spec,{...src,tip:Math.min(src.tip,from+slice)},from);
+      if(!spec.sqlite)scan.bytesParsed+=read.tip-from;
      // Known pure responses, user prompts, results and ignored records remain readable
      // without a tool call. The validators below hold genuinely unrecognized formats.
      for(const row of read.records) {
       this.records++;const events=describedEvents(row.record,spec);
       // The same placement check configure applies to every real record (program-witness.ts).
-      if(recordPlacementProblem(row.record,spec,row.atMs,events)!==null){this.flag(p.program);healthy=false;break;}
+      if(recordPlacementProblem(row.record,spec,row.atMs,events)!==null){this.flag(p.program);healthy=false;halted=true;break;}
       const ts=(normalizeEpoch(valuesAt(row.record,spec.timestamp)[0])??row.atMs) as number;
       const at=Math.min(ts,this.now());
       if(at<Math.max(p.setupAtMs,this.deviceRegisteredAtMs??0)){st.cursor=row.ordinal;continue;}
@@ -124,7 +156,18 @@ export class TranscriptPlugin implements ObserverPlugin {
       // State, cursor, pending PE and response ownership are one durable transaction.
       this.save();
      }
-     st.checkpoint=sourceCheckpoint(spec,src,st.cursor);if(st.cursor>=src.tip&&src.tip>0)st.replay=false;
+      if(halted)break;
+      if(spec.sqlite){if(read.tip<=from||read.tip>=src.tip)break;from=read.tip;}
+      else if(read.tip>from){from=read.tip;slice=READ_SLICE_BYTES;if(from>=src.tip)break;}
+      else if(from+slice>=src.tip)break;
+      else slice*=2;
+      await turn();
+     }
+     if(spec.sqlite)st.checkpoint=sourceCheckpoint(spec,src,st.cursor);
+     else{if(running)await running.extend(src.file,st.cursor);else running=await FileCheckpoint.open(src.file,st.cursor);st.checkpoint=running.value();}
+     if(st.cursor>=src.tip&&src.tip>0)st.replay=false;
+     // Only a complete, clean read of a file that has stopped changing may be skipped next pass.
+     if(!halted&&src.stamp&&Date.now()-Math.max(src.stamp.mtimeMs,src.stamp.ctimeMs)>=this.settleMs)this.marks.set(source,{stamp:src.stamp,cursor:st.cursor,checkpoint:st.checkpoint});
     }catch{this.flag(p.program);healthy=false;}
    }
    if(healthy&&this.broken.delete(p.program))writeLocal(path.join(path.dirname(this.statePath),'witness-action-required.json'),{programs:[...this.broken]});

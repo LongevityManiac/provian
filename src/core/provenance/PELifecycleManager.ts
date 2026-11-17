@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProvenanceEnvelope } from './types';
 import { GENESIS_PREV_HASH } from './constants';
 import { hashEnvelopeCanonical } from './peHash';
-import { setItemHmac, getItemHmacWithLegacyFallback } from '../security/hmacAsyncStorage';
+import { setItemHmac, getItemHmac } from '../security/hmacAsyncStorage';
 import {
     StorageTier,
     TierConfig,
@@ -128,12 +128,9 @@ class PELifecycleManager {
      */
     private async migrateFromMonolithic(biometricAction?: BiometricAction): Promise<void> {
         try {
-            // Load existing PEs from monolithic storage. [Group 9 / chunk-i]
-            // The legacy key may have been written either as plain JSON
-            // (pre-chunk-i) or as an HMAC envelope (post-chunk-i, after the
-            // saveEnvelopeToHistory writer rewrote it). Use the migrating
-            // helper so either source resolves correctly.
-            const legacyPEs = await getItemHmacWithLegacyFallback<ProvenanceEnvelope[]>(
+            // Load existing PEs from monolithic storage. Only an integrity-checked
+            // value is read; anything else at the key is untrusted and reads as absent.
+            const legacyPEs = await getItemHmac<ProvenanceEnvelope[]>(
                 STORAGE_KEYS.legacyHistory,
             );
             if (!legacyPEs) {
@@ -387,10 +384,10 @@ class PELifecycleManager {
 
     /**
      * Load tiered storage from AsyncStorage.
-     * [Group 9 / chunk-i] HMAC-protected with legacy fallback.
+     * Integrity-checked: a value without a valid tag reads as absent.
      */
     private async loadTieredStorage(): Promise<LocalPEStorage> {
-        const stored = await getItemHmacWithLegacyFallback<LocalPEStorage>(STORAGE_KEYS.tieredStorage);
+        const stored = await getItemHmac<LocalPEStorage>(STORAGE_KEYS.tieredStorage);
         if (stored) {
             return stored;
         }

@@ -6,31 +6,36 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { OperatorRefusal, runSettlement } from '../pvt/settlement/operator-runtime';
 import type { SettlementDb } from '../pvt/settlement/durable-settlement-store';
 import { createUsdcChargeRuntime, USDC_CHARGE_PRICE_MAX_AGE_MS } from '../payments/usdc-charge-runtime';
+import { issuancePayeeHold } from '../recourse/settlement-issuance-runtime';
 import type { PayoutDeps, PayoutSettleOutcome } from './on-demand-payout';
 
 /** An ETH price older than this is treated as unknown (the payout then waits, never charges). */
 export const PAYOUT_PRICE_MAX_AGE_MS = USDC_CHARGE_PRICE_MAX_AGE_MS;
 
-/** Map one scoped settlement run onto the payout's outcome. Pure; tested. */
+/**
+ * Map one scoped settlement run onto the payout's outcome. Pure; tested.
+ *
+ * The payee paid for its whole payable set, so only a run that FINISHED closes the request. A run
+ * that stopped early (a limit, a deferral, a refusal) waits for the next sweep whatever it settled
+ * on the way, and reports that progress so the request's record keeps it.
+ */
 export function payoutOutcomeOf(result: Awaited<ReturnType<typeof runSettlement>>): PayoutSettleOutcome {
   const s = result.settlement;
   if (s === null) return { kind: 'wait', reason: 'settlement_not_run' };
-  if (s.claimsSettled > 0) {
-    return {
-      kind: 'settled',
-      cycleId: s.cycleId,
-      claimsSettled: s.claimsSettled,
-      batchesConfirmed: s.batchesConfirmed,
-      feeWeiSpent: s.feeWeiSpent.toString(10),
-    };
-  }
-  // work a demotion in flight holds is still owed — the paid payout waits for the
-  // hold to end, never closes as nothing (whatever state the request was advanced from).
-  if ((result.meterInlet?.held ?? 0) > 0) return { kind: 'wait', reason: 'demotion_hold' };
-  if (s.outcome === 'completed' && (s.stopReason === null || s.stopReason === 'backlog_exhausted')) {
-    return { kind: 'nothing', cycleId: s.cycleId };
-  }
-  return { kind: 'wait', reason: s.stopReason ?? s.outcome };
+  const settled = {
+    cycleId: s.cycleId,
+    claimsSettled: s.claimsSettled,
+    batchesConfirmed: s.batchesConfirmed,
+    feeWeiSpent: s.feeWeiSpent.toString(10),
+  };
+  const progress = s.claimsSettled > 0 ? { progress: settled } : {};
+  const finished = s.outcome === 'completed' && (s.stopReason === null || s.stopReason === 'backlog_exhausted');
+  if (!finished) return { kind: 'wait', reason: s.stopReason ?? s.outcome, ...progress };
+  // Work a demotion in flight holds is still owed: the paid payout waits for the hold to end,
+  // never closes around it (whatever state the request was advanced from).
+  if ((result.meterInlet?.held ?? 0) > 0) return { kind: 'wait', reason: 'demotion_hold', ...progress };
+  if (s.claimsSettled > 0) return { kind: 'settled', ...settled };
+  return { kind: 'nothing', cycleId: s.cycleId };
 }
 
 export async function settleOnePayee(
@@ -39,6 +44,10 @@ export async function settleOnePayee(
   requestId: string,
   log: (message: string) => void,
 ): Promise<PayoutSettleOutcome> {
+  // A payee whose owner has a membership change open cannot be paid until it completes: the paid
+  // request waits, with the reason, and no settlement run is spent on it.
+  const hold = await issuancePayeeHold(db, payee);
+  if (hold !== null) return { kind: 'wait', reason: hold };
   try {
     const result = await runSettlement({
       db: db as unknown as SettlementDb,

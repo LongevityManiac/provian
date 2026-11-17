@@ -22,7 +22,7 @@ import { ZeroHash } from 'ethers';
 
 import { captureShownOutput } from '../../core/commons/commonsOutputSigning';
 import { deliverableOutputText, jobPostOutputText } from '../../core/meter/output-signature';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -138,6 +138,9 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
   const walletAddress = useWalletStore((s) => s.address);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  // One approved action at a time: set before the approval prompt is requested, cleared when it
+  // settles. Approval prompts queue, so a second tap must be refused before it asks for one.
+  const actionInFlight = useRef(false);
   const [ratingValue, setRatingValue] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [deliverUri, setDeliverUri] = useState('');
@@ -229,6 +232,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
 
   // Run a PE-generating relay action behind biometric verification (invariant #38).
   const runAction = async (reason: string, fn: (action: BiometricAction) => Promise<unknown>, successMsg: string) => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     try {
       return await withBiometricAction(reason, async (biometricAction) => {
     setBusy(true);
@@ -253,6 +258,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
         );
       }
       return;
+    } finally {
+      actionInFlight.current = false;
     }
   };
 
@@ -296,6 +303,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
         {
           text: t('commonsHumanJobManage.accept'),
           onPress: async () => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     try {
       return await withBiometricAction(t('commonsHumanJobManage.biometricPromptAccept'), async (biometricAction) => {
             setBusy(true);
@@ -335,6 +344,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
                 Alert.alert(t('commonsHumanJobManage.confirmationNeededTitle'), t('commonsHumanJobManage.confirmationNeededMessage'));
               }
               return;
+            } finally {
+              actionInFlight.current = false;
             }
   },
         },
@@ -366,6 +377,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
         {
           text: t('commonsHumanJobManage.fund'),
           onPress: async () => {
+            if (actionInFlight.current) return;
+            actionInFlight.current = true;
             setBusy(true);
             try {
               buildEscrowFundingPlan(escrow, ZeroHash);
@@ -378,6 +391,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
             } catch (err) {
               Alert.alert(t('commonsHumanJobManage.fundErrorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commonsHumanJobManage.fundErrorFallback')));
             } finally {
+              actionInFlight.current = false;
               setBusy(false);
             }
           },
@@ -414,6 +428,8 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
         {
           text: t('commonsJobs.releaseConfirm'),
           onPress: async () => {
+            if (actionInFlight.current) return;
+            actionInFlight.current = true;
             setBusy(true);
             try {
               const out = await releaseJobPayment(jobId, t('commonsJobs.biometricRelease'));
@@ -426,6 +442,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
               showError(err, 'commonsHumanJobManage.actionFailed');
               await load();
             } finally {
+              actionInFlight.current = false;
               setBusy(false);
             }
           },

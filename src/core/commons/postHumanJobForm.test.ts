@@ -85,8 +85,9 @@ describe('buildPostHumanJobBody', () => {
     }
   });
 
-  it('RED: a deadline over 672 hours is refused (the relay ceiling)', () => {
-    expect(() => buildPostHumanJobBody({ ...VALID_FORM, deadlineHours: '673' })).toThrow(PostHumanJobValidationError);
+  it('RED: a deadline over 336 hours is refused (the relay ceiling: what the job escrow accepts)', () => {
+    expect(() => buildPostHumanJobBody({ ...VALID_FORM, deadlineHours: '337' })).toThrow(PostHumanJobValidationError);
+    expect(() => buildPostHumanJobBody({ ...VALID_FORM, deadlineHours: '336' })).not.toThrow();
   });
 
   it('threads the optional direction field when supplied', () => {

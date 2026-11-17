@@ -27,6 +27,36 @@ import { utcCalendarMonth } from './calendar-month';
 
 const kernelAbi = new Interface(KERNEL_OBSERVATION_ABI);
 const fail = (reason:string):never => { throw Error(`recourse_settlement_execution_${reason}`); };
+/** Why a payee is withheld while its owner changes membership. */
+export const MEMBERSHIP_TRANSITION_PENDING = 'recourse_membership_transition_pending';
+/**
+ * A recipient cannot be paid right now, through no fault of the batch or of the system: its owner
+ * is part-way through joining, leaving or renewing, and until that completes the owner's
+ * membership — and so what its issuance contributes — is undecided. It is a verdict about that one
+ * recipient, never about the payees it shares a batch with.
+ */
+export class IssuanceRecipientWithheld extends Error {
+  constructor(readonly reason: string) { super(`recourse_settlement_execution_${reason}`); }
+}
+async function ownerTransitionPending(db:Firestore,ownerIdentity:string):Promise<boolean>{
+  return (await db.collection(R.owners).doc(ownerIdentity).get()).get('membershipTransition')!=null;
+}
+
+/**
+ * Whether `address` must be left out of settlement for now: a reason, or null. An address no owner
+ * has registered is never withheld. An owner with a membership change open is first reconciled
+ * against the chain — a change that has in fact completed is recorded and stops withholding at
+ * once — and is withheld only while the change is still open afterwards. A reconciliation that
+ * cannot finish leaves the payee withheld: its claims stay unsettled backlog and are offered again
+ * on the next run.
+ */
+export async function issuancePayeeHold(db:Firestore,address:string):Promise<string|null>{
+  const row=await db.collection(R.addresses).doc(address.toLowerCase()).get();
+  const ownerIdentity:unknown=row.exists?row.get('ownerIdentity'):null;
+  if(typeof ownerIdentity!=='string'||!await ownerTransitionPending(db,ownerIdentity))return null;
+  try{await reconcileCurrentPrivateMembership(db,ownerIdentity);}catch{return MEMBERSHIP_TRANSITION_PENDING;}
+  return await ownerTransitionPending(db,ownerIdentity)?MEMBERSHIP_TRANSITION_PENDING:null;
+}
 export async function finalizedIssuanceDeployment(): Promise<{ deployment:ProtocolDeployment;block:number;timestamp:number }> {
   const chain=createRecourseChainPort(),block=await chain.finalizedBlock(),blockHash=await chain.blockHash(block);
   const { address,runtimeHash }=PROTOCOL_POINTER_PIN;
@@ -188,6 +218,10 @@ async function planPrivateIssuanceExecution(db:Firestore,parent:SettlementBatchD
         consentNonce=state.consentNonce;
         consenting=state.addressConsent;
         const ownerIdentity=String(row.get('ownerIdentity')),accountRow=await db.collection(C.owners).doc(ownerIdentity).get();
+        // The reservation refuses an owner whose membership change is open. Say so here, where the
+        // reverting probe shares this classification, so the condition is reported before anything
+        // is reserved and is attributed to this recipient alone.
+        if(await ownerTransitionPending(db,ownerIdentity))throw new IssuanceRecipientWithheld(MEMBERSHIP_TRANSITION_PENDING);
         if(!accountRow.exists){
           if(state.addressConsent)return fail('unreconciled_membership');
           unadmitted.push({ordinal:r.ordinal,ownerIdentity,addressRecordHash:hash(row.data())});

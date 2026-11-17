@@ -13,6 +13,10 @@
  * missing HMACs are treated as "value not present" so the caller's
  * existing initialise-from-server code path runs again.
  *
+ * There is no plaintext fallback: a stored value that is not a valid
+ * envelope is untrusted and reads as absent. Adopting it (and signing it)
+ * would let anyone who can write the file hand the app a trusted value.
+ *
  * Storage format:
  *   { v: 1, payload: "<json>", mac: "<hex hmac-sha256>" }
  *
@@ -119,10 +123,12 @@ export async function getItemHmac<T>(key: string, options: { preserveInvalid?: b
   try {
     parsed = JSON.parse(raw);
   } catch {
-    // Not in our envelope format - treat as missing.
+    // Not in our envelope format: untrusted, never adopted.
     return null;
   }
 
+  // A value without a valid tag is untrusted whatever it holds. It is never returned and never
+  // re-signed; the caller starts from its safe default and its next write replaces it.
   if (!parsed || typeof parsed !== 'object' || parsed.v !== FORMAT_VERSION || typeof parsed.mac !== 'string') {
     return null;
   }
@@ -145,47 +151,6 @@ export async function getItemHmac<T>(key: string, options: { preserveInvalid?: b
  */
 export async function removeItemHmac(key: string): Promise<void> {
   await AsyncStorage.removeItem(key);
-}
-
-/**
- * Read an HMAC-protected value with a one-time migration from plain
- * AsyncStorage. Used for keys that existed in plaintext before chunk-i
- * rolled out HMAC protection.
- *
- * Resolution order:
- *  1. Try to read+verify the HMAC envelope at `key`. If present and valid,
- *     return its payload.
- *  2. Otherwise, read plain AsyncStorage at the same `key`. If present
- *     and parseable, immediately re-write it as an HMAC envelope (silent
- *     migration), then return the parsed value.
- *  3. Otherwise return null.
- *
- * The legacy parser defaults to JSON.parse. Pass a custom `parseLegacy`
- * for keys whose plaintext format was not JSON.
- *
- * Migration is silent: callers always see either the parsed value or
- * null. Subsequent reads are pure HMAC.
- */
-export async function getItemHmacWithLegacyFallback<T>(
-  key: string,
-  parseLegacy: (raw: string) => T = (raw) => JSON.parse(raw) as T,
-): Promise<T | null> {
-  const hmacValue = await getItemHmac<T>(key);
-  if (hmacValue !== null) return hmacValue;
-
-  const raw = await AsyncStorage.getItem(key);
-  if (!raw) return null;
-
-  // Skip legacy migration if the raw value looks like our envelope wrapper
-  // (HMAC mismatch already caused getItemHmac to return null and remove
-  // the key, so this branch is for plaintext leftovers only).
-  try {
-    const parsed = parseLegacy(raw);
-    await setItemHmac(key, parsed);
-    return parsed;
-  } catch {
-    return null;
-  }
 }
 
 /**

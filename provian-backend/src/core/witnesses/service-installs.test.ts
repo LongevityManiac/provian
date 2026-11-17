@@ -16,6 +16,9 @@ import {
   stampServiceInstallForgeAccount,
   ServiceInstallOwnedByOtherUserError,
   type ServiceInstallDocument,
+  installControlProven,
+  installProjectPathMatches,
+  isUsableInstallationId,
 } from './service-installs';
 
 // -----------------------------------------------------------------------------
@@ -361,5 +364,110 @@ describe('createServiceInstall hijack guard (2026-10-17)', () => {
     expect(row.forge_account_id).toBe('4242');
     expect(row.forge_account_login).toBe('owner');
     expect(row.user_id).toBe('wallet_owner');
+  });
+});
+
+describe('installation ids that cannot be document ids', () => {
+  /** Firestore refuses a document id containing "/"; this db does the same. */
+  function strictDb(): any {
+    const { db } = makeFakeDb();
+    const collection = db.collection.bind(db);
+    db.collection = (name: string) => {
+      const col = collection(name);
+      const doc = col.doc.bind(col);
+      col.doc = (id: string) => {
+        if (id.includes('/')) throw new Error('Value for argument "documentPath" must point to a document');
+        return doc(id);
+      };
+      return col;
+    };
+    return db;
+  }
+
+  it('RED: a lookup, a revoke and a stamp for an id containing "/" answer "no such install" instead of throwing', async () => {
+    const db = strictDb();
+    for (const id of ['a/b', 'a/b/c', '../x', '', ' 12', 'x'.repeat(129)]) {
+      expect(await getServiceInstallByInstallationId(db, 'gitlab', id)).toBeNull();
+      expect(await markServiceInstallRevoked(db, 'gitlab', id)).toBe(false);
+    }
+  });
+
+  it('RED: such an id is never registered', async () => {
+    const db = strictDb();
+    await expect(createServiceInstall(db, { user_id: 'u1', provider: 'gitlab', installation_id: 'a/b' }))
+      .rejects.toThrow(/not a usable id/);
+  });
+
+  it('real ids are usable: a numeric project id, a normalized repository uuid', () => {
+    expect(isUsableInstallationId('278964')).toBe(true);
+    expect(isUsableInstallationId('a1b2c3d4-1111-2222-3333-444455556666')).toBe(true);
+    expect(isUsableInstallationId(278964)).toBe(false);
+  });
+});
+
+describe('control proof on a self-serve install', () => {
+  const PROOF = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'B'.repeat(43), verified_at: 5, project_path: 'group/project' } as const;
+
+  it('a registration records the proof it was given, and none when it was given none', async () => {
+    const { db } = makeFakeDb();
+    const proven = await createServiceInstall(db, { user_id: 'u1', provider: 'gitlab', installation_id: '1', control_proof: PROOF });
+    expect(installControlProven(proven.doc)).toBe(true);
+    const unproven = await createServiceInstall(db, { user_id: 'u1', provider: 'gitlab', installation_id: '2' });
+    expect(installControlProven(unproven.doc)).toBe(false);
+    // A proof is of THAT registration: registering again without one clears it.
+    const again = await createServiceInstall(db, { user_id: 'u1', provider: 'gitlab', installation_id: '1' });
+    expect(installControlProven(again.doc)).toBe(false);
+    expect((await getServiceInstallByInstallationId(db, 'gitlab', '1'))?.control_proof).toBeNull();
+  });
+
+  it('a github install needs no recorded proof; a malformed proof is no proof', () => {
+    expect(installControlProven({ user_id: 'u', provider: 'github', installation_id: '9', installed_at: 1, revoked_at: null })).toBe(true);
+    const base = { user_id: 'u', provider: 'gitlab' as const, installation_id: '9', installed_at: 1, revoked_at: null };
+    expect(installControlProven(base)).toBe(false);
+    expect(installControlProven({ ...base, control_proof: null })).toBe(false);
+    expect(installControlProven({ ...base, control_proof: { ...PROOF, method: 'unknown_method' } as never })).toBe(false);
+    expect(installControlProven({ ...base, control_proof: { ...PROOF, key_fingerprint: 'MD5:aa' } })).toBe(false);
+    expect(installControlProven({ ...base, control_proof: { ...PROOF, project_path: '' } })).toBe(false);
+    expect(installControlProven({ ...base, control_proof: { method: 'deploy_key', verified_at: 1 } as never })).toBe(false);
+    expect(installControlProven({ ...base, control_proof: PROOF })).toBe(true);
+  });
+
+  it('RED: an unproven active row yields to a different user who brings a proof, with a fresh secret', async () => {
+    const { db } = makeFakeDb();
+    const squatter = await createServiceInstall(db, { user_id: 'squatter', provider: 'gitlab', installation_id: '7' });
+    const owner = await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '7', control_proof: PROOF });
+    expect(owner.doc.user_id).toBe('owner');
+    expect(owner.secretIssued).toBe(true);
+    expect(owner.doc.webhook_secret).not.toBe(squatter.doc.webhook_secret);
+  });
+
+  it('the hijack guard still holds: no proof takes nothing, and a proven row yields to no one', async () => {
+    const { db } = makeFakeDb();
+    await createServiceInstall(db, { user_id: 'first', provider: 'gitlab', installation_id: '8' });
+    await expect(createServiceInstall(db, { user_id: 'second', provider: 'gitlab', installation_id: '8' }))
+      .rejects.toBeInstanceOf(ServiceInstallOwnedByOtherUserError);
+    await createServiceInstall(db, { user_id: 'owner', provider: 'gitlab', installation_id: '9', control_proof: PROOF });
+    await expect(createServiceInstall(db, { user_id: 'second', provider: 'gitlab', installation_id: '9', control_proof: PROOF }))
+      .rejects.toBeInstanceOf(ServiceInstallOwnedByOtherUserError);
+    // github is never superseded this way.
+    await createServiceInstall(db, { user_id: 'first', provider: 'github', installation_id: '10' });
+    await expect(createServiceInstall(db, { user_id: 'second', provider: 'github', installation_id: '10', control_proof: PROOF }))
+      .rejects.toBeInstanceOf(ServiceInstallOwnedByOtherUserError);
+  });
+});
+
+describe('installProjectPathMatches', () => {
+  const PROOF = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'C'.repeat(43), verified_at: 5, project_path: 'group/project' } as const;
+  const install: ServiceInstallDocument = { user_id: 'u', provider: 'gitlab', installation_id: '1', installed_at: 1, revoked_at: null, control_proof: PROOF };
+
+  it('matches the proven path case-insensitively and nothing else', () => {
+    expect(installProjectPathMatches(install, 'group/project')).toBe(true);
+    expect(installProjectPathMatches(install, 'Group/Project')).toBe(true);
+    expect(installProjectPathMatches(install, 'group/project2')).toBe(false);
+    expect(installProjectPathMatches(install, 'group')).toBe(false);
+  });
+
+  it('RED: an install with no proof matches no path', () => {
+    expect(installProjectPathMatches({ ...install, control_proof: null }, 'group/project')).toBe(false);
   });
 });

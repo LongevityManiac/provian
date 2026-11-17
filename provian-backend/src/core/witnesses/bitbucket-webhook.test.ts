@@ -19,6 +19,9 @@ import type { BitbucketAppConfig } from './bitbucket-app-config';
 import { createServiceInstall, markServiceInstallRevoked } from './service-installs';
 import { makeWitnessFakeDeps, type WitnessStagedAct } from './__test-helpers__/witness-fake-deps';
 
+/** A registration that proved control of the project by deploy key (what the registration route records). */
+const PROVEN = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'A'.repeat(43), verified_at: 1, project_path: 'workspace/repo' } as const;
+
 // PE METER (2026-10-03): the shared forge-witness fake (see its header). `enqueued` lists the acts
 // the relay STAGED in their chain-tip transaction (`meter_relay_acts_v1` intakes: identity + the
 // PE's pricing projection) — the relay keeps no readable PE, and enqueueing one throws.
@@ -188,7 +191,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
 
   it('returns 401 on a bad signature BEFORE any DB lookup', async () => {
     const { deps, store, enqueued } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const raw = JSON.stringify(makePushPayload());
     const result = await handleBitbucketWebhook(deps, {
       rawBody: raw,
@@ -218,7 +221,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
 
   it('returns 410 when the install is revoked', async () => {
     const { deps } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     await markServiceInstallRevoked(deps.db, 'bitbucket', REPO_UUID);
     const raw = JSON.stringify(makePushPayload());
     const result = await handleBitbucketWebhook(deps, {
@@ -233,7 +236,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
 
   it('submits a PE on a valid push and is idempotent on redelivery', async () => {
     const { deps, enqueued, store } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const raw = JSON.stringify(makePushPayload());
     const input = {
       rawBody: raw,
@@ -259,7 +262,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
 
   it('acknowledges 200 but emits no PE for an unsupported event', async () => {
     const { deps, enqueued } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const raw = JSON.stringify(makePushPayload());
     const result = await handleBitbucketWebhook(deps, {
       rawBody: raw,
@@ -275,7 +278,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
 
   it('emits a cross-witness corroboration for a prior PE with the same commit (PRE-METER row)', async () => {
     const { deps, store } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     // Prior PE in REAL production shapes (built via the shared fixture builder):
     // envelope carries hash + metadata.commit_sha; pe_history mirror carries
     // peHash (== hash), NO hash/metadata.
@@ -303,7 +306,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
   // its priced row lives on its 31-day act key, which is where the commit lookup finds it.
   it('emits a cross-witness corroboration for a prior METERED act with the same commit (act key)', async () => {
     const { deps, store } = makeFakeDeps();
-    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     if (!store.has('meter_act_keys_v1')) store.set('meter_act_keys_v1', new Map());
     store.get('meter_act_keys_v1')!.set('pe_prior_dev', makeMeterActKeyDoc({
       peId: 'pe_prior_dev', actorId: 'user_1', peHash: 'priorhash', commitSha: PUSH_SHA,
@@ -326,10 +329,10 @@ describe('B2 per-install secrets — bitbucket mirror controls', () => {
   it('[ RED] CROSS-INSTALL FORGERY: install A\'s secret cannot sign for install B; app-wide refused for per-install rows', async () => {
     const { deps } = makeFakeDeps();
     const { doc: installA } = await createServiceInstall(deps.db, {
-      user_id: 'user_a', provider: 'bitbucket', installation_id: '{other-repo-uuid}',
+      user_id: 'user_a', provider: 'bitbucket', installation_id: 'other-repo-uuid', control_proof: PROVEN,
     });
     const { doc: installB } = await createServiceInstall(deps.db, {
-      user_id: 'user_b', provider: 'bitbucket', installation_id: REPO_UUID,
+      user_id: 'user_b', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN,
     });
     const raw = JSON.stringify(makePushPayload());
     // Forgery: signed with A's secret, targets B's repo.
@@ -370,5 +373,119 @@ describe('B2 per-install secrets — bitbucket mirror controls', () => {
       eventKey: 'repo:push', deliveryId: 'req-probe-2', config: CONFIG_ENABLED,
     });
     expect(operator.status).toBe(404);
+  });
+});
+
+describe('a registration without a control proof earns nothing', () => {
+  it('RED: a correctly signed delivery for an install with no control proof is 403 and records nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: unproven } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
+    const raw = JSON.stringify(makePushPayload());
+    const input = {
+      rawBody: raw, signatureHeader: sign(raw, unproven.webhook_secret!),
+      eventKey: 'repo:push', deliveryId: 'req-unproven-1', config: CONFIG_ENABLED,
+    };
+    const refused = await handleBitbucketWebhook(deps, input);
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('control_proof_required');
+    expect(enqueued).toHaveLength(0);
+
+    // Registered again with proof (same owner keeps the secret): the SAME delivery now lands.
+    const { doc: proven, secretIssued } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
+    expect(secretIssued).toBe(false);
+    expect(proven.webhook_secret).toBe(unproven.webhook_secret);
+    const accepted = await handleBitbucketWebhook(deps, input);
+    expect(accepted.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+  });
+
+  it('RED: a secret-less row signed with the app-wide secret is refused the same way; a bad signature is still 401', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    await deps.db.collection('service_installs').doc(`bitbucket_${REPO_UUID}`).set({
+      user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, installed_at: Date.now(), revoked_at: null,
+    });
+    const raw = JSON.stringify(makePushPayload());
+    const refused = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, SECRET), eventKey: 'repo:push', deliveryId: 'req-legacy-1', config: CONFIG_ENABLED,
+    });
+    expect(refused.status).toBe(403);
+    expect(enqueued).toHaveLength(0);
+    const bad = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: 'sha256=' + 'f'.repeat(64), eventKey: 'repo:push', deliveryId: 'req-legacy-2', config: CONFIG_ENABLED,
+    });
+    expect(bad.status).toBe(401);
+  });
+});
+
+describe('ids that cannot be document ids never reach a document reference', () => {
+  /** Firestore refuses a document id containing "/"; this db does the same. */
+  function strictDeps(): { deps: ReturnType<typeof makeFakeDeps>['deps'] } {
+    const { deps } = makeFakeDeps();
+    const collection = deps.db.collection.bind(deps.db);
+    deps.db.collection = (name: string) => {
+      const col = collection(name);
+      const doc = col.doc.bind(col);
+      col.doc = (id: string) => {
+        if (typeof id !== 'string' || id.includes('/')) throw new Error('Value for argument "documentPath" must point to a document');
+        return doc(id);
+      };
+      return col;
+    };
+    return { deps };
+  }
+
+  it('RED: a repository uuid containing "/" answers 401 unsigned and 404 to the operator — it never throws', async () => {
+    const { deps } = strictDeps();
+    const payload = makePushPayload();
+    (payload.repository as Record<string, unknown>).uuid = '{a/b}';
+    const raw = JSON.stringify(payload);
+    const unsigned = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: 'sha256=' + 'f'.repeat(64), eventKey: 'repo:push', deliveryId: 'req-slash-1', config: CONFIG_ENABLED,
+    });
+    expect(unsigned.status).toBe(401);
+    const operator = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, SECRET), eventKey: 'repo:push', deliveryId: 'req-slash-2', config: CONFIG_ENABLED,
+    });
+    expect(operator.status).toBe(404);
+  });
+
+  it('RED: a delivery id containing "/" is 400 after the signature verifies — it never throws', async () => {
+    const { deps } = strictDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
+    const raw = JSON.stringify(makePushPayload());
+    const result = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, install.webhook_secret!), eventKey: 'repo:push', deliveryId: 'a/b', config: CONFIG_ENABLED,
+    });
+    expect(result.status).toBe(400);
+    expect(result.body.error).toBe('invalid_delivery_id');
+  });
+});
+
+describe('a delivery must name the repository path the registration proved', () => {
+  it('RED: the proven repository uuid with a different full_name is 403 and records nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
+    const payload = makePushPayload();
+    (payload.repository as Record<string, unknown>).full_name = 'workspace/other';
+    const raw = JSON.stringify(payload);
+    const refused = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, install.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-path-1', config: CONFIG_ENABLED,
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('project_path_mismatch');
+    expect(enqueued).toHaveLength(0);
+  });
+
+  it('the proven full_name matches whatever its case', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
+    const payload = makePushPayload();
+    (payload.repository as Record<string, unknown>).full_name = 'Workspace/Repo';
+    const raw = JSON.stringify(payload);
+    const ok = await handleBitbucketWebhook(deps, {
+      rawBody: raw, signatureHeader: sign(raw, install.webhook_secret!), eventKey: 'repo:push', deliveryId: 'req-path-2', config: CONFIG_ENABLED,
+    });
+    expect(ok.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
   });
 });

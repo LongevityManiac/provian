@@ -2,6 +2,7 @@ import { Interface, ZeroAddress, ZeroHash, keccak256, sha256, toUtf8Bytes } from
 import { LEGACY_INSTITUTIONS } from './institution-snapshot.mjs';
 import { verifySuccessorPlan } from './successor-verification.mjs';
 import { reconstructSuccessorPlan, verifySuccessorSourceInterval } from './successor-preflight.mjs';
+import { assertManifestSuccession } from './pointer-manifest-succession.mjs';
 const ensure = (value, reason) => { if (!value) throw Error('pointer_publication_' + reason); };
 const digest = value => sha256(toUtf8Bytes(JSON.stringify(value)));
 const lower = value => String(value).toLowerCase();
@@ -33,6 +34,9 @@ export async function preparePointerPublication({ stage, successor, institutions
   ensure(authority === successor.pointerAuthority && authority !== ZeroAddress
     && keccak256(await port.code(authority, block.hash)) === keccak256(artifacts.ProvianHashAccount.deployedBytecode.object), 'authority_changed');
   ensure(await call(successor.pointer, 'revision') === 0n, 'already_published');
+  // This tool publishes the first manifest only. The succession rule still runs here so every
+  // publish call this repository encodes passes through the one check.
+  assertManifestSuccession({ revision: 0n, current: Array(10).fill(ZeroAddress), next: reconciled.components });
   // The client forbidden-address inventory spans chains. Only contracts present
   // on this chain can be retired; retain absent entries as verified plan facts.
   // Required source contracts and import helpers may never be absent.

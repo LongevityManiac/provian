@@ -14,7 +14,7 @@
  * its receipt must carry, from the asset contract, `Transfer(buyer → seller, amount)`; from
  * USDC, `Transfer(seller → feeRecipient, fee)`; and, from the settler, `FeeSettled(buyer,
  * seller, token, value, fee)` naming exactly those values. The asset is Base USDC or the live
- * PVT9 token; nothing else.
+ * PVT token; nothing else.
  * - SOLANA. The transaction must be FINALIZED with `meta.err === null`, paid for by the
  * facilitator's fee wallet, and its token-balance deltas (by owner + mint) must show the
  * seller +amount of the asset (Solana USDC), the fee wallet +fee USDC, and the buyer debited
@@ -104,7 +104,7 @@ export function facilitatorSolanaRpcUrl(env: Env = process.env): string {
     : 'https://api.mainnet-beta.solana.com';
 }
 
-/** The Base assets a facilitator settlement may move: USDC and the live PVT9 token. Nothing else. */
+/** The Base assets a facilitator settlement may move: USDC and the live PVT token. Nothing else. */
 export function facilitatorBaseAssets(kernel?: string): Readonly<Record<string, 'USDC' | 'PVT'>> {
   return Object.freeze({
     [BASE_USDC_ADDRESS]: 'USDC',

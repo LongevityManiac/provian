@@ -5,7 +5,7 @@ import { Mutex } from 'async-mutex';
 import stableStringify from 'json-stable-stringify';
 import KeyManager from '../security/KeyManager';
 import securityLog from '../security/securityLogger';
-import { setItemHmac, getItemHmac, getItemHmacWithLegacyFallback } from '../security/hmacAsyncStorage';
+import { setItemHmac, getItemHmac } from '../security/hmacAsyncStorage';
 import { ProvenanceEnvelope, ActionType, RiskLevel, AgreementDetails, PromiseStatus, AgreementSettlementDetails, OfflineSettlementPayload, RecoveryEnvelopeDetails, RecoveryAttestation, AIConversationMetadata } from './types';
 import { GENESIS_PREV_HASH } from './constants';
 import { hashEnvelopeCanonical } from './peHash';
@@ -178,6 +178,8 @@ class ProvenanceEnvelopeManager {
     // createEnvelope re-mints a fresh envelope_id per call (no content dedup), so
     // two overlapping runs would duplicate a confirmed action's PE.
     private deferredRetryInFlight = false;
+    // Serializes every read-modify-write of the stored deferred queue (mutateDeferredQueue).
+    private deferredQueueTail: Promise<void> = Promise.resolve();
     // Item 2a: re-entrancy guard for resubmitUnrecordedHistory (same rationale
     // as deferredRetryInFlight — it is fired non-blocking from app start and
     // can be re-triggered while a pass is mid-flight; overlapping passes would
@@ -255,7 +257,7 @@ class ProvenanceEnvelopeManager {
         if (this.pendingQueue.length > 0) {
             return this.hashEnvelope(this.pendingQueue[this.pendingQueue.length - 1]);
         }
-        const storedHead = await getItemHmacWithLegacyFallback<string>(CHAIN_HEAD_KEY, (raw) => raw);
+        const storedHead = await getItemHmac<string>(CHAIN_HEAD_KEY);
         if (storedHead && typeof storedHead === 'string' && storedHead.length > 0) {
             return storedHead;
         }
@@ -276,7 +278,7 @@ class ProvenanceEnvelopeManager {
      */
     private async getChainAnchorHash(): Promise<string> {
         try {
-            const tiered = await getItemHmacWithLegacyFallback<{ warmBoundaryHash?: string }>('provian_pe_tiered');
+            const tiered = await getItemHmac<{ warmBoundaryHash?: string }>('provian_pe_tiered');
             if (tiered && typeof tiered.warmBoundaryHash === 'string' && tiered.warmBoundaryHash.length > 0) {
                 return tiered.warmBoundaryHash;
             }
@@ -683,77 +685,99 @@ class ProvenanceEnvelopeManager {
     // state; retryDeferredEnvelopes re-attempts creation on the next foreground.
 
     /**
+     * Every change to the stored deferred queue runs here, one at a time, as a fresh
+     * read-modify-write. An entry queued while a retry pass is running is therefore appended to
+     * what the pass last wrote, and the pass removes only the entry it just recorded — neither
+     * can overwrite the other with a stale copy of the queue.
+     */
+    private mutateDeferredQueue<T>(change: (queue: EnvelopeContext[]) => { next: EnvelopeContext[] | null; result: T }): Promise<T> {
+        const run = this.deferredQueueTail.then(async () => {
+            const raw = await AsyncStorage.getItem(PE_DEFERRED_CREATE_KEY);
+            let queue: EnvelopeContext[] = [];
+            if (raw) {
+                try {
+                    const parsed: unknown = JSON.parse(raw);
+                    if (Array.isArray(parsed)) queue = parsed as EnvelopeContext[];
+                } catch {
+                    // Unreadable: nothing in it can be recorded. Start from an empty queue.
+                }
+            }
+            const { next, result } = change(queue);
+            if (next !== null) await AsyncStorage.setItem(PE_DEFERRED_CREATE_KEY, JSON.stringify(next));
+            return result;
+        });
+        this.deferredQueueTail = run.then(() => undefined, () => undefined);
+        return run;
+    }
+
+    /**
      * Durably queue a PE-creation request whose createEnvelope threw after its
      * underlying action already succeeded. Best-effort; never throws.
      */
     async enqueueDeferredEnvelope(params: EnvelopeContext): Promise<void> {
         try {
-            const raw = await AsyncStorage.getItem(PE_DEFERRED_CREATE_KEY);
-            const queue: EnvelopeContext[] = raw ? JSON.parse(raw) : [];
-            // Bound the queue; drop the oldest if we somehow accumulate a backlog.
-            if (queue.length >= PE_DEFERRED_CREATE_CAP) queue.shift();
-            queue.push(params);
-            await AsyncStorage.setItem(PE_DEFERRED_CREATE_KEY, JSON.stringify(queue));
-            console.warn(`[PE] Deferred PE creation queued (${queue.length} pending) - will retry on foreground`);
+            const pending = await this.mutateDeferredQueue((queue) => {
+                // Bound the queue; drop the oldest if we somehow accumulate a backlog.
+                const next = queue.length >= PE_DEFERRED_CREATE_CAP ? queue.slice(1) : queue.slice();
+                next.push(params);
+                return { next, result: next.length };
+            });
+            console.warn(`[PE] Deferred PE creation queued (${pending} pending) - will retry on foreground`);
         } catch (err) {
             console.warn('[PE] Failed to queue deferred envelope:', err);
         }
     }
 
     /**
-     * Re-attempt any deferred PE creations. Each success drains its entry; a
-     * still-failing entry (and everything after it) is kept for the next attempt
-     * so nothing is lost. Returns the number of PEs created this pass.
+     * Re-attempt any deferred PE creations, oldest first. Each success removes that one entry
+     * from the stored queue; a still-failing entry (and everything after it, including entries
+     * queued during this pass) is kept for the next attempt so nothing is lost. Returns the
+     * number of PEs created this pass.
      */
     async retryDeferredEnvelopes(biometricAction?: BiometricAction): Promise<number> {
-        // [Audit N3 follow-up] Re-entrancy guard: an overlapping run would read the
-        // same queue and re-create the same deferred entry with a new envelope_id
-        // (no content dedup), duplicating a confirmed action's PE. Set/reset is
-        // synchronous around the whole body, so a concurrent caller no-ops.
+        // Re-entrancy guard: an overlapping run would read the same head and re-create the same
+        // deferred entry with a new envelope_id (no content dedup), duplicating a confirmed
+        // action's PE. Set/reset is synchronous around the whole body, so a concurrent caller
+        // no-ops.
         if (this.deferredRetryInFlight) return 0;
         this.deferredRetryInFlight = true;
+        let created = 0;
         try {
-            let raw: string | null;
-            try {
-                raw = await AsyncStorage.getItem(PE_DEFERRED_CREATE_KEY);
-            } catch {
-                return 0;
-            }
-            if (!raw) return 0;
-            let queue: EnvelopeContext[];
-            try {
-                queue = JSON.parse(raw);
-            } catch {
-                await AsyncStorage.removeItem(PE_DEFERRED_CREATE_KEY).catch(() => {});
-                return 0;
-            }
-            if (queue.length === 0) return 0;
-
-            let created = 0;
-            for (let i = 0; i < queue.length; i++) {
+            for (;;) {
+                let head: EnvelopeContext | undefined;
                 try {
-                    await this.createEnvelope(queue[i], biometricAction);
-                    created++;
-                    // Incrementally persist the un-created TAIL after each success
-                    // so a crash mid-loop re-creates at most the single in-flight
-                    // entry, not the whole queue (bounds duplicate provenance
-                    // records to ≤1 per crash instead of the entire backlog).
-                    await AsyncStorage.setItem(PE_DEFERRED_CREATE_KEY, JSON.stringify(queue.slice(i + 1)))
-                        .catch((persistErr) => console.warn('[PE] Failed to persist deferred tail mid-drain:', persistErr));
+                    head = await this.mutateDeferredQueue((queue) => ({ next: null, result: queue[0] }));
+                } catch {
+                    break;
+                }
+                if (head === undefined) break;
+                const headJson = JSON.stringify(head);
+                try {
+                    await this.createEnvelope(head, biometricAction);
                 } catch (err) {
-                    // Still can't create (e.g. hardware key still unavailable).
-                    // Persist this AND every remaining entry (order preserved), stop.
+                    // Still can't create (e.g. hardware key still unavailable). The entry and
+                    // everything after it stay stored, in order; stop until the next pass.
                     console.warn('[PE] Deferred envelope still failing, will retry later:', err);
-                    await AsyncStorage.setItem(PE_DEFERRED_CREATE_KEY, JSON.stringify(queue.slice(i)))
-                        .catch((persistErr) => console.warn('[PE] Failed to persist deferred queue after failure:', persistErr));
-                    if (created > 0) {
-                        console.log(`[PE] Recorded ${created} deferred PE(s), ${queue.length - i} remaining`);
-                    }
-                    return created;
+                    break;
+                }
+                created++;
+                // Remove exactly the entry just recorded, from the queue as it is NOW. Persisting
+                // after each success means a crash mid-pass re-creates at most that one entry.
+                try {
+                    await this.mutateDeferredQueue((queue) => {
+                        const at = queue.findIndex((entry) => JSON.stringify(entry) === headJson);
+                        if (at < 0) return { next: null, result: undefined };
+                        return { next: [...queue.slice(0, at), ...queue.slice(at + 1)], result: undefined };
+                    });
+                } catch (persistErr) {
+                    // The recorded entry is still stored. Stop: going on would record it again.
+                    console.warn('[PE] Failed to persist deferred queue after a recorded entry:', persistErr);
+                    break;
                 }
             }
             if (created > 0) {
-                console.log(`[PE] Recorded ${created} deferred PE(s), 0 remaining`);
+                const remaining = await this.mutateDeferredQueue((queue) => ({ next: null, result: queue.length })).catch(() => 0);
+                console.log(`[PE] Recorded ${created} deferred PE(s), ${remaining} remaining`);
             }
             return created;
         } finally {
@@ -890,8 +914,8 @@ class ProvenanceEnvelopeManager {
     }
 
     private async saveEnvelopeToHistory(pe: ProvenanceEnvelope) {
-        // [Group 9 / chunk-i] HMAC-protected with legacy fallback.
-        const history = (await getItemHmacWithLegacyFallback<ProvenanceEnvelope[]>('provian_pe_history')) ?? [];
+        // Integrity-checked: a value without a valid tag reads as absent.
+        const history = (await getItemHmac<ProvenanceEnvelope[]>('provian_pe_history')) ?? [];
         history.unshift(pe);
         await setItemHmac('provian_pe_history', history);
     }
@@ -984,13 +1008,13 @@ class ProvenanceEnvelopeManager {
     }
 
     async getHistoryRaw(): Promise<ProvenanceEnvelope[]> {
-        // [Group 9 / chunk-i] HMAC-protected reads with legacy fallback.
-        const legacyPEs = (await getItemHmacWithLegacyFallback<ProvenanceEnvelope[]>('provian_pe_history')) ?? [];
+        // Integrity-checked reads: a value without a valid tag reads as absent.
+        const legacyPEs = (await getItemHmac<ProvenanceEnvelope[]>('provian_pe_history')) ?? [];
 
         // Also include PEs from tiered storage (hot tier)
         try {
             type TieredShape = { hotPEs?: ProvenanceEnvelope[] };
-            const tiered = await getItemHmacWithLegacyFallback<TieredShape>('provian_pe_tiered');
+            const tiered = await getItemHmac<TieredShape>('provian_pe_tiered');
             if (tiered && tiered.hotPEs && Array.isArray(tiered.hotPEs)) {
                 // Merge and deduplicate by envelope_id
                 const seen = new Set(legacyPEs.map(pe => pe.envelope_id));
@@ -1136,8 +1160,8 @@ class ProvenanceEnvelopeManager {
             }
 
             // Verify the stored chain head matches the last envelope.
-            // [Group 9 / chunk-i] HMAC-protected with legacy fallback.
-            const storedHead = await getItemHmacWithLegacyFallback<string>(CHAIN_HEAD_KEY, (raw) => raw);
+            // Integrity-checked: a value without a valid tag reads as absent.
+            const storedHead = await getItemHmac<string>(CHAIN_HEAD_KEY);
             const lastEnvelope = history[history.length - 1];
             const lastHash = await this.hashEnvelope(lastEnvelope);
 

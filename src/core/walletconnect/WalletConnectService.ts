@@ -12,12 +12,13 @@ import SeedManager from '../wallet/SeedManager';
 import ProvenanceEnvelopeManager from '../provenance/ProvenanceEnvelopeManager';
 import { getChainById, getActiveChains, getRpcUrls } from '../chains/evm/config';
 import { decodeTransactionCall, DecodedCall } from './decodeCalldata';
-import { decodeTypedData, isKnownNonSpendTypedData, DecodedPermit } from './decodeTypedData';
+import { decodeTypedData, isKnownNonSpendTypedData, checkTypedDataRoot, DecodedPermit } from './decodeTypedData';
 import {
     evaluateWalletConnectTransaction,
     evaluateWalletConnectPermit,
     makeFailClosedVerdict,
     makeUnknownTypedDataVerdict,
+    makeTypedDataRootMismatchVerdict,
     WalletConnectVerdict,
     WalletConnectPolicyError,
 } from './WalletConnectGovernance';
@@ -114,6 +115,21 @@ interface WCTypedData {
     message: Record<string, unknown>;
     /** dApp-supplied EIP-712 primary type (used only for display / PE enrichment). */
     primaryType?: string;
+}
+
+/**
+ * The `types` map handed to the signer (EIP712Domain removed). The signer picks
+ * the struct to sign from this map alone, so this is the last point at which
+ * the declared primaryType can be held to it: throws unless the root the signer
+ * will derive is the declared primaryType the request was classified under.
+ */
+function signableTypes(typedData: WCTypedData): Record<string, ethers.TypedDataField[]> {
+    if (!checkTypedDataRoot(typedData).ok) {
+        throw new Error('Typed data primaryType does not match the type that would be signed');
+    }
+    const types = { ...typedData.types };
+    delete types.EIP712Domain;
+    return types;
 }
 
 /** Parsed transaction details for UI display */
@@ -555,6 +571,11 @@ class WalletConnectService {
                     ? JSON.parse(typedDataString)
                     : typedDataString;
                 sessionChainId = parseInt(request.chainId.split(':')[1] || '1');
+                // The struct shown must be the struct signed: a declared
+                // primaryType that is not the root the signer derives is a block.
+                if (!checkTypedDataRoot(typedData).ok) {
+                    return makeTypedDataRootMismatchVerdict();
+                }
                 permit = decodeTypedData(typedData, sessionChainId);
             } catch {
                 // Could not even parse the typed data → unclassifiable. [Invariant
@@ -740,6 +761,20 @@ class WalletConnectService {
                 : typedDataString;
             const sessionChainId = parseInt(request.chainId.split(':')[1] || '1');
 
+            // The signer derives the struct it signs from `types` and never reads
+            // the declared primaryType, which is what every label and policy
+            // decision below is keyed on. Unless the two are provably the same
+            // struct, refuse — before any classification and before any prompt.
+            const root = checkTypedDataRoot(typedData);
+            if (!root.ok) {
+                const verdict = makeTypedDataRootMismatchVerdict();
+                await this.recordDeniedPE('approve', request, `typed_data_root:${root.reason}`, 100, verdict, undefined, biometricAction).catch(() => { });
+                throw new WalletConnectPolicyError(
+                    verdict.denyReason || 'This signature is blocked by your WalletConnect security policy.',
+                    verdict,
+                );
+            }
+
             // Detect gasless spend-authority signatures. A revoke (DAI allowed=false)
             // reduces risk and is NOT governed — the owner should
             // always be able to protect themselves.
@@ -864,8 +899,7 @@ class WalletConnectService {
                 originBinding: request.peerMeta.url,
             }, biometricAction);
 
-            const types = { ...typedData.types };
-            delete types.EIP712Domain;
+            const types = signableTypes(typedData);
             try {
                 const signature = await wallet.signTypedData(typedData.domain, types, typedData.message);
                 // [Pass-2 #29] Record the gasless permit's authorized USD into the
@@ -938,8 +972,7 @@ class WalletConnectService {
                 originBinding: request.peerMeta.url,
             }, biometricAction);
 
-            const types = { ...typedData.types };
-            delete types.EIP712Domain;
+            const types = signableTypes(typedData);
             try {
                 return await wallet.signTypedData(typedData.domain, types, typedData.message);
             } catch (e) {
@@ -1002,8 +1035,7 @@ class WalletConnectService {
                 originBinding: request.peerMeta.url,
             }, biometricAction);
 
-            const types = { ...typedData.types };
-            delete types.EIP712Domain;
+            const types = signableTypes(typedData);
             try {
                 return await wallet.signTypedData(typedData.domain, types, typedData.message);
             } catch (e) {

@@ -27,6 +27,11 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
+# git + an SSH client: a GitLab/Bitbucket registration proves control of the
+# project by reading it (`git ls-remote` over SSH, pinned host keys) with the
+# deploy key the relay issued (src/core/witnesses/forge-deploy-key.ts).
+RUN apk add --no-cache git openssh-client
+
 # Copy package files
 COPY package*.json ./
 

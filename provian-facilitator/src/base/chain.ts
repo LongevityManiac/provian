@@ -22,8 +22,8 @@ import { base } from 'viem/chains';
 import { estimateL1Fee } from 'viem/op-stack';
 import type { PrivateKeyAccount } from 'viem/accounts';
 import type { FacilitatorEvmSigner } from '@x402/evm';
-import { settlerAbi, erc20Abi, chainlinkAbi } from './abi.js';
-import { BASE_CHAINLINK_ETH_USD } from '../constants.js';
+import { settlerAbi, erc20Abi, chainlinkAbi, pointerAbi } from './abi.js';
+import { BASE_CHAINLINK_ETH_USD, BASE_PROTOCOL_POINTER, POINTER_SLOT_PVT } from '../constants.js';
 import { randomUUID } from 'node:crypto';
 import { sendWithCanonicalNonce, type NonceJournalStore, type SignedNonceAttempt } from '../canonical-nonce.js';
 
@@ -93,6 +93,8 @@ export interface BaseChain {
   /** The receipt if the node has mined this hash, null when it has not; throws when the lookup itself fails. */
   getReceipt(hash: Hex): Promise<Receipt | null>;
   readSettlerConfig(): Promise<{ usdc: string; operator: string; feeRecipient: string; permit2Proxy: string; pvt: string; maxFee: bigint }>;
+  /** The PVT token the permanent protocol pointer names now; throws when the pointer cannot vouch for it. */
+  readLivePvt(): Promise<`0x${string}`>;
   /** Raw contract write from the operator (refill/sweep only). */
   sendRaw(to: `0x${string}`, data: Hex, value: bigint): Promise<Hex>;
 }
@@ -319,6 +321,9 @@ export function createViemBaseChain(opts: {
         pub.readContract({ address: opts.settler, abi: settlerAbi, functionName: 'MAX_FEE' }),
       ]);
       return { usdc, operator: operatorOnChain, feeRecipient, permit2Proxy, pvt, maxFee };
+    },
+    async readLivePvt() {
+      return pub.readContract({ address: BASE_PROTOCOL_POINTER, abi: pointerAbi, functionName: 'component', args: [POINTER_SLOT_PVT] });
     },
     async sendRaw(to, rawData, value) {
       const data = withBuilderCodeFor(to, rawData) as Hex;

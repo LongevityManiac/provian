@@ -34,6 +34,9 @@ import type { BiometricAction } from '../security/biometricAction';
  * stablecoin-denominated value and to unlimited approvals (forced block); other
  * assets are governed by classification + approval rules + biometric, not the
  * USD cap. Caps are disabled (0) by default so the owner is never surprised.
+ * A router / multicall wrapper is priced as the sum of the stablecoin value its
+ * inner calls move or authorize; a wrapper with any inner value that cannot be
+ * determined is escalated to hard_confirm rather than counted as $0.
  */
 
 import { FrictionLane, SpendingPolicy } from '../crypto-governance/types';
@@ -195,6 +198,34 @@ function deriveGovernanceAmountUsd(
     return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+/**
+ * Price a wrapped call (router `execute`, `multicall`) from the calls inside
+ * it. The wrapper itself carries no token or amount, so the stablecoin value it
+ * moves or authorizes is the sum over its decoded inner transfers and bounded
+ * approvals — that sum is what the per-transaction and daily caps see.
+ *
+ * `fullyPriced` is false whenever any part of the wrapper's value could not be
+ * determined: an element the decoder could not read as a value call, an inner
+ * call on an unverified token, an inner amount that would not parse, or a
+ * verified token that has no on-device price. The caller escalates those — an
+ * unknown value is never treated as a known $0.
+ *
+ * An unlimited inner approval is priced by the unlimited rule, not here.
+ */
+function priceWrappedCalls(decoded: DecodedCall): { amountUsd: number; fullyPriced: boolean } {
+    let amountUsd = 0;
+    let fullyPriced = (decoded.undecodedInnerCount ?? 0) === 0;
+    for (const inner of decoded.innerCalls || []) {
+        if (inner.kind === 'erc721_approve_all') continue; // no amount; governed as an approval
+        if (inner.kind === 'erc20_approve' && inner.isUnlimitedApproval) continue;
+        if (inner.amountRaw === '0') continue; // provably moves nothing
+        const usd = deriveGovernanceAmountUsd(inner.tokenSymbol, inner.tokenKnown, inner.amountFormatted);
+        if (usd > 0) amountUsd += usd;
+        else fullyPriced = false;
+    }
+    return { amountUsd, fullyPriced };
+}
+
 // ============================================================================
 // VERDICT HELPERS
 // ============================================================================
@@ -287,6 +318,22 @@ export function makeUnknownTypedDataVerdict(): WalletConnectVerdict {
     );
 }
 
+/**
+ * Verdict for typed data whose declared `primaryType` is not the struct the
+ * signer would actually sign (or whose `types` map has no single root struct).
+ * What the owner would be shown and what the key would sign cannot be proven to
+ * be the same thing, so this is a hard block — never a confirmation the owner
+ * can talk themselves through.
+ */
+export function makeTypedDataRootMismatchVerdict(): WalletConnectVerdict {
+    return buildVerdict(
+        'block',
+        'unknown',
+        ['This request names one signature type but would sign a different one — blocked for safety.'],
+        100,
+    );
+}
+
 function ownerRequest(
     actionType: AgentSpendActionType,
     dappName: string,
@@ -346,10 +393,17 @@ export async function evaluateWalletConnectTransaction(
             decoded.kind === 'erc721_approve_all' ||
             decoded.kind === 'wrapped_calls') && !!decoded.isUnlimitedApproval;
 
-    // Unlimited grants are unpriceable by design; let the unlimited rule govern.
-    const amountUsd = isUnlimited
-        ? 0
-        : deriveGovernanceAmountUsd(decoded.tokenSymbol, decoded.tokenKnown, decoded.amountFormatted);
+    // A wrapper is priced from its inner calls. Their stablecoin value counts
+    // toward the caps even when another inner call is an unlimited approval:
+    // the unlimited rule governs that grant, and the rest still moves value.
+    const wrappedPrice = decoded.kind === 'wrapped_calls' ? priceWrappedCalls(decoded) : null;
+
+    // A direct unlimited grant is unpriceable by design; the unlimited rule governs it.
+    const amountUsd = wrappedPrice
+        ? wrappedPrice.amountUsd
+        : isUnlimited
+            ? 0
+            : deriveGovernanceAmountUsd(decoded.tokenSymbol, decoded.tokenKnown, decoded.amountFormatted);
 
     const controls = deriveOwnerControls(settings);
     const txInput: CryptoTransactionInput = {
@@ -377,6 +431,13 @@ export async function evaluateWalletConnectTransaction(
     // reflects the unknown-contract escalation; only the category is refined).
     if (decoded.kind === 'wrapped_calls') {
         verdict.category = classifyKind(decoded);
+    }
+
+    // A wrapper whose inner value could not be fully determined is never a
+    // known $0: the caps cannot be shown to hold, so it takes the strongest
+    // human confirmation. Escalation only — a block already reached stands.
+    if (wrappedPrice && !wrappedPrice.fullyPriced) {
+        verdict = escalate(verdict, 'hard_confirm', 'Part of this bundled call could not be priced — your spending limits cannot be checked against it.');
     }
 
     // UNLIMITED approval / setApprovalForAll(true): apply the owner's unlimited policy.

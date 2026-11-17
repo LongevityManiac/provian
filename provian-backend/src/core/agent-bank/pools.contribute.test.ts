@@ -15,7 +15,7 @@ import { currentProtocolDeployment } from '../protocol/runtime';
  * every recorded contributor is bound to one on-chain poolId.
  */
 
-import { contribute } from './pools';
+import { contribute, POOL_CONTRIBUTION_LOCKS_COLLECTION } from './pools';
 import { ValidationError, NotFoundError } from './errors';
 import type { AgentBankDeps, PoolDocument } from './types';
 import type { GeneratePEParams } from './pe-utils';
@@ -64,17 +64,33 @@ function makeDeps(pool: PoolDocument | null, opts: { fresh?: PoolDocument | null
   const poolRef = { get: jest.fn(async () => ({ exists: pool != null, data: () => pool })) };
   const walletRef = { get: jest.fn(async () => ({ exists: wallet != null, data: () => wallet })) };
   const txUpdate = jest.fn();
+  // Single-use contribution locks persist across calls on the same deps, and a
+  // lock lands only when its transaction callback resolves (all-or-nothing).
+  const locks = new Map<string, Record<string, unknown>>();
+  const lockRef = (id: string) => ({ __lockId: id });
   const db = {
-    collection: jest.fn((name: string) => ({ doc: jest.fn(() => (name === 'pools' ? poolRef : walletRef)) })),
+    collection: jest.fn((name: string) => ({
+      doc: jest.fn((id: string) => (
+        name === 'pools' ? poolRef : name === POOL_CONTRIBUTION_LOCKS_COLLECTION ? lockRef(id) : walletRef
+      )),
+    })),
     runTransaction: jest.fn(async (fn: (tx: unknown) => Promise<void>) => {
+      const pendingLocks: Array<[string, Record<string, unknown>]> = [];
       const tx = {
-        get: jest.fn(async () => ({ exists: fresh != null, data: () => fresh })),
+        get: jest.fn(async (ref: { __lockId?: string }) => (
+          typeof ref.__lockId === 'string'
+            ? { exists: locks.has(ref.__lockId), data: () => locks.get(ref.__lockId as string) }
+            : { exists: fresh != null, data: () => fresh }
+        )),
+        set: jest.fn((ref: { __lockId: string }, data: Record<string, unknown>) => { pendingLocks.push([ref.__lockId, data]); }),
         update: jest.fn((_ref: unknown, patch: Record<string, unknown>) => txUpdate(patch)),
       };
-      return fn(tx);
+      const out = await fn(tx);
+      for (const [id, data] of pendingLocks) locks.set(id, data);
+      return out;
     }),
   };
-  return { deps: { db } as unknown as AgentBankDeps, txUpdate };
+  return { deps: { db } as unknown as AgentBankDeps, txUpdate, locks };
 }
 
 function usdcPool(overrides: Partial<PoolDocument> = {}): PoolDocument {
@@ -220,5 +236,42 @@ describe('contribute - PVT branch', () => {
     );
     expect(txUpdate).toHaveBeenCalledWith(expect.objectContaining({ onchain_pool_id: POOL_ID }));
     expect(mockGeneratePE.mock.calls[0][1].metadata).toMatchObject({ currency: 'pvt' });
+  });
+});
+
+describe('contribute - one on-chain contribution is recorded once', () => {
+  it('RED: the same tx_hash a second time records nothing (no credit, no PE, no stats)', async () => {
+    const { deps, txUpdate, locks } = makeDeps(usdcPool());
+    await contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX);
+    expect(txUpdate).toHaveBeenCalledTimes(1);
+    expect([...locks.keys()]).toEqual([`base:${CONTRIB_TX}`]);
+    expect(locks.get(`base:${CONTRIB_TX}`)).toMatchObject({ pool_id: 'pool_1', contributor_wallet_id: 'wallet_a', contribute_tx_hash: CONTRIB_TX });
+
+    await expect(contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX))
+      .rejects.toThrow(/already recorded/);
+    expect(txUpdate).toHaveBeenCalledTimes(1);
+    expect(mockGeneratePE).toHaveBeenCalledTimes(1);
+    expect(mockUpdateWalletStats).toHaveBeenCalledTimes(1);
+  });
+
+  it('RED: a differently-cased copy of the same tx_hash is the same contribution', async () => {
+    const { deps, txUpdate } = makeDeps(usdcPool());
+    await contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX);
+    await expect(contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX.toUpperCase().replace('0X', '0x')))
+      .rejects.toThrow(/already recorded/);
+    expect(txUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it('a refused contribution takes no lock, so the real one can still be recorded', async () => {
+    const { deps, locks } = makeDeps(usdcPool({ onchain_pool_id: POOL_ID_OTHER }));
+    await expect(contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX)).rejects.toThrow(/does not match/);
+    expect(locks.size).toBe(0);
+  });
+
+  it('a distinct tx_hash is a distinct contribution', async () => {
+    const { deps, txUpdate } = makeDeps(usdcPool());
+    await contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, CONTRIB_TX);
+    await contribute(deps, 'pool_1', 'wallet_a', { amountUsdc: 10 }, '0x' + '7'.repeat(64));
+    expect(txUpdate).toHaveBeenCalledTimes(2);
   });
 });

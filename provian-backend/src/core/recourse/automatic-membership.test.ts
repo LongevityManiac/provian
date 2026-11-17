@@ -168,3 +168,81 @@ test('a snapshot longer than the sweep lease keeps the lease, so no other run ta
  expect(result.passes).toBe(1);
 });
 
+
+describe('a member whose membership has ended',()=>{
+ const JOIN_REQUIRED='recourse_membership_debit_join_required';
+ const DORMANT=(owner:string)=>`${AUTOMATIC_MEMBERSHIP_SWEEP}/dormant-${owner}`;
+ const FOLLOWUP=(owner:string)=>`recourse_private_membership_followups_v1/${owner}`;
+ /** A lapsed account: one unpaid protected month long past its month of grace. */
+ function lapsed(){
+  const s=setup(),month=Math.floor(Date.now()/1000/86400/30)-12;
+  const account={ownerIdentity:s.owner,version:7,checkpoint:{pool:a(6)},needsScan:false,pendingReservation:null,
+   episode:{generation:1,joined:true,observedMonth:month,lastAssessedMonth:month,invoices:{[month]:{month,burnDueAtomic:'100',burnPaidAtomic:'0',
+     reserveDueAtomic:'100',reservePaidAtomic:'0',noEarningsContributionAtomic:'100',earnings:{grossAtomic:'0'}}}}};
+  s.fake.store.set(`${C.owners}/${s.owner}`,account);
+  (prepareMembershipDebit as jest.Mock).mockRejectedValue(Error(JOIN_REQUIRED));
+  const chainReads=()=>(reconcileCurrentPrivateMembership as jest.Mock).mock.calls.length+(readRecoursePoolState as jest.Mock).mock.calls.length
+   +(prepareMembershipDebit as jest.Mock).mock.calls.length;
+  return {...s,account,chainReads};
+ }
+ test('RED: a lapsed member is lapsed, not a failure, and is read from the chain once — later visits read nothing',async()=>{
+  const s=lapsed();
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('lapsed');
+  const first=s.chainReads();expect(first).toBeGreaterThan(0);
+  expect(s.fake.store.get(DORMANT(s.owner))).toMatchObject({ownerIdentity:s.owner,result:'lapsed',accountVersion:7,generation:1});
+  for(let i=0;i<3;i++)expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('lapsed');
+  expect(s.chainReads()).toBe(first);expect(breakDeploymentChain).toHaveBeenCalledTimes(1);
+ });
+ test('RED: the sweep keeps no follow-up for a lapsed member, so nothing retries it',async()=>{
+  const s=lapsed();
+  expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({visited:1,retry:0,queued:0,pending:0,passes:1});
+  expect(s.fake.store.has(FOLLOWUP(s.owner))).toBe(false);
+  // A follow-up left by earlier retries is cleared by the next visit that finds the member lapsed.
+  s.fake.store.set(FOLLOWUP(s.owner),{ownerIdentity:s.owner,attempts:5,dueAtMs:0});
+  s.fake.store.delete(`${AUTOMATIC_MEMBERSHIP_SWEEP}/cursor`);
+  expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({followups:1,retry:0});
+  expect(s.fake.store.has(FOLLOWUP(s.owner))).toBe(false);
+ });
+ test('a member that left with an unpaid month is likewise read once',async()=>{
+  const s=lapsed();s.state.addressConsent=false;
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('left');
+  const first=s.chainReads();
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('left');
+  expect(s.chainReads()).toBe(first);
+ });
+ test('rejoining sets the record aside: an open membership change, a new episode, or any change to the account is read from the chain again',async()=>{
+  const s=lapsed();
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('lapsed');
+  const first=s.chainReads();
+  // The owner starts to rejoin: the change is advanced as for any member.
+  s.fake.store.get(`${R.owners}/${s.owner}`)!.membershipTransition=h(20);
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('pending');
+  expect(s.chainReads()).toBeGreaterThan(first);
+  expect(s.fake.store.has(DORMANT(s.owner))).toBe(false);
+  // The rejoin completed: a new episode, collected normally.
+  s.fake.store.get(`${R.owners}/${s.owner}`)!.membershipTransition=null;
+  s.fake.store.set(DORMANT(s.owner),{ownerIdentity:s.owner,result:'lapsed',accountVersion:7,generation:1,pool:a(6),recordedAtMs:1});
+  s.account.episode.generation=2;s.account.version=9;
+  (prepareMembershipDebit as jest.Mock).mockResolvedValue({status:'ready',challenge:s.challenge});
+  expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('queued');
+  expect(s.fake.store.has(DORMANT(s.owner))).toBe(false);
+  // Each guard alone sets a matching record aside.
+  for(const change of [()=>{s.account.version=10;},()=>{s.account.needsScan=true;},()=>{(s.account as {pendingReservation:string|null}).pendingReservation=h(30);},
+   ()=>{s.account.checkpoint.pool=a(66);},()=>{s.fake.store.get(`${R.owners}/${s.owner}`)!.membershipScanRequired=true;}]){
+   s.account.version=9;s.account.needsScan=false;(s.account as {pendingReservation:string|null}).pendingReservation=null;s.account.checkpoint.pool=a(6);
+   s.fake.store.get(`${R.owners}/${s.owner}`)!.membershipScanRequired=false;
+   s.fake.store.set(DORMANT(s.owner),{ownerIdentity:s.owner,result:'lapsed',accountVersion:9,generation:2,pool:a(6),recordedAtMs:1});
+   const before=s.chainReads();
+   expect(await collectAutomaticMembershipOwner(s.db,s.owner)).toBe('lapsed');expect(s.chainReads()).toBe(before);
+   change();
+   await collectAutomaticMembershipOwner(s.db,s.owner);expect(s.chainReads()).toBeGreaterThan(before);
+  }
+ });
+ test('control: any other collection failure is still a failure the sweep retries',async()=>{
+  const s=lapsed();(prepareMembershipDebit as jest.Mock).mockRejectedValue(Error('recourse_membership_debit_reconciliation_pending'));
+  await expect(collectAutomaticMembershipOwner(s.db,s.owner)).rejects.toThrow('reconciliation_pending');
+  expect(s.fake.store.has(DORMANT(s.owner))).toBe(false);
+  expect(await runAutomaticMembershipSweep(s.db)).toMatchObject({retry:1});
+  expect(s.fake.store.has(FOLLOWUP(s.owner))).toBe(true);
+ });
+});

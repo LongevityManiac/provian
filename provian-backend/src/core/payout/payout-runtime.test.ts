@@ -1,7 +1,8 @@
 /**
  * — how one scoped settlement run maps onto a payout request. A run that settled
- * claims is `settled`; a run that completed with nothing for this payee is `nothing`; anything else
- * (a stop, no run) WAITS for the sweep — never `settled`, so a stopped run cannot close a request.
+ * claims and FINISHED is `settled`; a run that completed with nothing for this payee is `nothing`;
+ * anything else (a stop, no run) WAITS for the sweep — never `settled`, whatever it settled on the
+ * way, so a stopped run cannot close a request.
  */
 import { describe, it, expect } from '@jest/globals';
 import { payoutOutcomeOf } from './payout-runtime';
@@ -13,9 +14,24 @@ function run(settlement: Record<string, unknown> | null, meterInlet?: Record<str
 const base = { cycleId: 'epoch1-2026-10-04-payout-po_x', batchesConfirmed: 1, feeWeiSpent: 7n };
 
 describe('payoutOutcomeOf', () => {
-  it('settled when claims settled (even if the run then stopped)', () => {
-    expect(payoutOutcomeOf(run({ ...base, outcome: 'stopped', stopReason: 'run_time_limit', claimsSettled: 2 })))
+  it('settled when a finished run settled claims', () => {
+    expect(payoutOutcomeOf(run({ ...base, outcome: 'completed', stopReason: null, claimsSettled: 2 })))
       .toEqual({ kind: 'settled', cycleId: base.cycleId, claimsSettled: 2, batchesConfirmed: 1, feeWeiSpent: '7' });
+    expect(payoutOutcomeOf(run({ ...base, outcome: 'completed', stopReason: 'backlog_exhausted', claimsSettled: 2 })).kind).toBe('settled');
+  });
+  it('RED: a run that settled some claims and then stopped waits, carrying what it settled — never closes the paid request', () => {
+    for (const [outcome, stopReason] of [['stopped', 'run_time_limit'], ['stopped', 'transaction_limit'], ['stopped', 'epoch_cap_deferral'], ['refused', 'lease_refused']] as const) {
+      expect(payoutOutcomeOf(run({ ...base, outcome, stopReason, claimsSettled: 2 }))).toEqual({
+        kind: 'wait', reason: stopReason,
+        progress: { cycleId: base.cycleId, claimsSettled: 2, batchesConfirmed: 1, feeWeiSpent: '7' },
+      });
+    }
+  });
+  it('RED: a finished run that settled claims while a demotion held the rest still waits', () => {
+    expect(payoutOutcomeOf(run({ ...base, outcome: 'completed', stopReason: null, claimsSettled: 2 }, { held: 1 }))).toEqual({
+      kind: 'wait', reason: 'demotion_hold',
+      progress: { cycleId: base.cycleId, claimsSettled: 2, batchesConfirmed: 1, feeWeiSpent: '7' },
+    });
   });
   it('nothing when the run completed with nothing to settle', () => {
     expect(payoutOutcomeOf(run({ ...base, outcome: 'completed', stopReason: 'backlog_exhausted', claimsSettled: 0 })))

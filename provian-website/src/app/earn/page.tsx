@@ -92,7 +92,7 @@ const groups: Group[] = [
       {
         name: 'GitLab',
         receipt: 'A receipt for pushes and merged merge requests.',
-        body: 'Cloud or self-hosted. Pushes and merged MRs are witnessed as they land; a commit seen by both GitLab and your desktop app mints once, at the better-supported value.',
+        body: 'Projects on gitlab.com. Pushes and merged MRs are witnessed as they land; a commit seen by both GitLab and your desktop app mints once, at the better-supported value.',
       },
       {
         name: 'Bitbucket',

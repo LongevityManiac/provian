@@ -81,6 +81,7 @@ export const TRANSIENT_COLLECTIONS: readonly string[] = Object.freeze([
   'webhook_deliveries',
   'witness_webhook_deliveries',
   'github_webhook_inbox_v1',
+  'forge_deploy_key_attempts_v1',
 ]);
 
 /** Subcollection group ids the relay uses (listCollections() only returns top-level ids). */

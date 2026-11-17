@@ -17,6 +17,16 @@ import { humanPromiseSignMessage } from '../../../../provian-backend/src/core/hu
 import { buildProofMessage } from '../../../../provian-backend/src/core/external-address/challenge';
 import { presentationBindingString } from '../../presentation/humanPresentation';
 import { HIRE_ESCROW_SALT_MESSAGE } from '../../wallet/hireEscrowSaltMessage';
+import {
+    authenticatedDepartureSigningHash,
+    addressMembershipSigningHash,
+    exactMembershipDebitSigningHash,
+    standingMembershipSigningHash,
+    standingMembershipDebitSigningHash,
+    type AddressMembershipConsent,
+    type ExactMembershipDebit,
+    type MembershipAuthorizationDomain,
+} from '../../recourse/membership-authorization';
 
 export interface SignVector {
     name: string;
@@ -25,6 +35,21 @@ export interface SignVector {
 }
 
 export const WALLET = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
+
+const MEMBERSHIP_DOMAIN: MembershipAuthorizationDomain = {
+    chainId: '8453',
+    pointer: '0x619eae740ce56c5a8edbb2b047e58369281ddad7',
+    kernel: `0x${'1'.repeat(40)}`,
+    pool: `0x${'2'.repeat(40)}`,
+};
+const MEMBERSHIP_CONSENT: AddressMembershipConsent = {
+    binding: `0x${'b'.repeat(64)}`, account: WALLET.toLowerCase(), nonce: '3', joined: true,
+    revision: '1', ruleHash: `0x${'e'.repeat(64)}`, expiresAt: '1790000000',
+};
+const MEMBERSHIP_DEBIT: ExactMembershipDebit = {
+    binding: `0x${'b'.repeat(64)}`, payer: WALLET.toLowerCase(), month: '682', burn: '100000000000000000000', reserve: '0',
+    nonce: '1', generation: '1', revision: '1', ruleHash: `0x${'e'.repeat(64)}`, expiresAt: '1790000000',
+};
 const DIGEST = 'a'.repeat(64);
 
 const hex = (text: string): string => `0x${Buffer.from(text, 'utf8').toString('hex')}`;
@@ -203,6 +228,27 @@ export const RESERVED_VECTORS: SignVector[] = [
         method: 'eth_signTypedData',
         params: [[{ type: 'string', name: 'note', value: 'Recover Provian relay credentials' }], WALLET],
     },
+    // Recourse consents are EIP-191 signatures over a bare 32-byte SHA-256 value: a
+    // personal_sign of that value IS the consent signature. Built by the app's own hashers.
+    { name: 'Recourse membership departure signing hash', method: 'personal_sign', params: [authenticatedDepartureSigningHash(MEMBERSHIP_DOMAIN, { ...MEMBERSHIP_CONSENT, joined: false }), WALLET] },
+    { name: 'Recourse membership departure signing hash ([address, message] order)', method: 'personal_sign', params: [WALLET, authenticatedDepartureSigningHash(MEMBERSHIP_DOMAIN, { ...MEMBERSHIP_CONSENT, joined: false })] },
+    { name: 'Recourse address membership consent signing hash', method: 'personal_sign', params: [addressMembershipSigningHash(MEMBERSHIP_DOMAIN, MEMBERSHIP_CONSENT), WALLET] },
+    {
+        name: 'Recourse standing membership consent signing hash',
+        method: 'personal_sign',
+        params: [standingMembershipSigningHash(MEMBERSHIP_DOMAIN, {
+            admissionMonth: '682', rejoinPayments: [], consent: MEMBERSHIP_CONSENT, fixedChargePayer: true,
+            burnLimit: '100000000000000000000', reserveLimit: '100000000000000000000', earningsBpsLimit: 100,
+            exitCommitment: `0x${'c'.repeat(64)}`, exitSalt: `0x${'d'.repeat(64)}`,
+        }), WALLET],
+    },
+    { name: 'Recourse exact membership debit signing hash', method: 'personal_sign', params: [exactMembershipDebitSigningHash(MEMBERSHIP_DOMAIN, MEMBERSHIP_DEBIT), WALLET] },
+    { name: 'Recourse standing membership debit signing hash', method: 'personal_sign', params: [standingMembershipDebitSigningHash(MEMBERSHIP_DOMAIN, MEMBERSHIP_DEBIT), WALLET] },
+    { name: 'bare 32-byte value (hex)', method: 'personal_sign', params: [`0x${'ab'.repeat(32)}`, WALLET] },
+    { name: 'bare 32-byte value (upper-case 0X prefix)', method: 'personal_sign', params: [`0X${'AB'.repeat(32)}`, WALLET] },
+    // The same 32 bytes signed either way: a value that is valid UTF-8 can be sent as text.
+    { name: 'bare 32-byte value delivered as text', method: 'personal_sign', params: ['Q7f!kz0pLm#9xT2vYb$4nRw8Hc&6Jd1s', WALLET] },
+    { name: 'bare 32-byte value delivered as multi-byte text', method: 'personal_sign', params: ['é'.repeat(16), WALLET] },
 ];
 
 /** Ordinary requests that must still reach the normal signing path. */
@@ -223,8 +269,10 @@ export const ALLOWED_VECTORS: SignVector[] = [
             'Issued At: 2026-09-26T00:00:00.000Z',
         ].join('\n'), WALLET],
     },
-    { name: 'SIWE-style login (hex)', method: 'personal_sign', params: [hex('Welcome to OpenSea!\n\nNonce: 1234'), WALLET] },
-    { name: '32-byte digest', method: 'personal_sign', params: [`0x${'ab'.repeat(32)}`, WALLET] },
+    { name: 'SIWE-style login (hex)', method: 'personal_sign', params: [hex('Welcome to OpenSea!\n\nNonce: 12345'), WALLET] },
+    { name: '20-byte binary value', method: 'personal_sign', params: [`0x${'ab'.repeat(20)}`, WALLET] },
+    { name: '64-byte binary value', method: 'personal_sign', params: [`0x${'ab'.repeat(64)}`, WALLET] },
+    { name: '31- and 33-byte text', method: 'personal_sign', params: ['a'.repeat(31), 'b'.repeat(33)] },
     { name: 'JSON message without consent keys', method: 'personal_sign', params: [JSON.stringify({ nonce: 5, app: 'game' }), WALLET] },
     { name: 'generic JSON sign-in with an "action" key', method: 'personal_sign', params: [JSON.stringify({ action: 'login', nonce: 'abc', timestamp: 1790000000 }), WALLET] },
     {

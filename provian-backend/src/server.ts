@@ -891,6 +891,7 @@ function forwardUpstreamResponse(
 import { verifyWalletAuthToken as verifyWalletAuthTokenShared } from './routes/middleware/wallet-auth';
 import { createSwapProxyRouter } from './routes/swap-proxy';
 import { createAlchemyRpcHandler } from './routes/alchemy-rpc-proxy';
+import { explorerQueryAllowed } from './routes/explorer-proxy-allowlist';
 import {
   createPriceFeed,
   PRICE_FEED_COLLECTION,
@@ -2634,6 +2635,11 @@ app.get('/api/proxy/explorer/:network', authenticate, async (req: Request, res: 
 
     if (!Object.prototype.hasOwnProperty.call(EXPLORER_NETWORKS, network)) {
       return res.status(400).json({ error: `Unknown explorer network: ${network}`, code: 'INVALID_NETWORK' });
+    }
+
+    // Only allowlisted module/action pairs reach the keyed upstream.
+    if (!explorerQueryAllowed(req.query as Record<string, unknown>)) {
+      return res.status(403).json({ error: 'Explorer action not allowed', code: 'EXPLORER_ACTION_NOT_ALLOWED' });
     }
 
     if (!(await checkProxyRateLimit(user_id, 'explorer', PROXY_CONFIG.explorer.rateLimit))) {
@@ -5155,23 +5161,9 @@ app.post('/v1/internal/scheduler/deferred-release', async (req, res) => {
       return;
     }
 
-    // Get trailing daily mint average for ceiling calculation
-    const recentBatches = await db.collection('pvt_mint_batches')
-      .orderBy('created_at', 'desc')
-      .limit(100)
-      .get();
-
-    let trailingDailyMintAvg = 0;
-    if (!recentBatches.empty) {
-      const totalPEs = recentBatches.docs.reduce((sum, doc) => {
-        return sum + (doc.data().pe_count || 0);
-      }, 0);
-      const oldestBatch = recentBatches.docs[recentBatches.docs.length - 1].data();
-      const daySpan = Math.max(1, (Date.now() - oldestBatch.created_at) / (24 * 60 * 60 * 1000));
-      trailingDailyMintAvg = totalPEs / daySpan;
-    }
-
-    const { processDeferredReleaseBatch } = await import('./core/pvt/deferred-release');
+    // The ceiling's input: eligible acts the meter recorded per day, trailing 12 epochs.
+    const { processDeferredReleaseBatch, trailingDailyEligibleActAverage } = await import('./core/pvt/deferred-release');
+    const trailingDailyMintAvg = await trailingDailyEligibleActAverage(db, Date.now());
 
     let totalReleased = 0;
     for (const configDoc of configSnapshot.docs) {

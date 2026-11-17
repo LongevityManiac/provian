@@ -350,6 +350,12 @@ export interface ForgeInstall {
      */
     forge_account_id?: string | null;
     forge_account_login?: string | null;
+    /**
+     * gitlab/bitbucket: false when the registration carries no proof that its
+     * owner controls the project. Such an install creates no PEs until the
+     * project is registered again with a deploy key.
+     */
+    control_proven?: boolean;
 }
 
 /**
@@ -395,7 +401,23 @@ export type GitHubConnectPoll =
     | { ok: true; status: 'pending' | 'completed' | 'expired'; installId?: string; peId?: string }
     | { ok: false; status: number; code: string };
 
-/** Result of POST /v1/witnesses/{gitlab|bitbucket}/wallet/installs. */
+/** Result of POST /v1/witnesses/{gitlab|bitbucket}/wallet/installs/begin. */
+export type ForgeDeployKeyBeginResult =
+    | {
+        ok: true;
+        installationId: string;
+        /** `ssh-ed25519 ...` — the user adds this to the project as a deploy key (on GitLab with write permission; on Bitbucket read-only). */
+        publicKey: string;
+        /** `SHA256:...` — the fingerprint the forge shows next to the key. */
+        keyFingerprint: string;
+        /** Unix ms after which verify refuses this key; begin again for a new one. */
+        expiresAt: number;
+        /** Relay-authored forge steps. */
+        instructions: string;
+    }
+    | { ok: false; status: number; code: string };
+
+/** Result of POST /v1/witnesses/{gitlab|bitbucket}/wallet/installs/verify. */
 export type ForgeRegisterResult =
     | {
         ok: true;
@@ -1731,25 +1753,64 @@ class RelayAPIService {
     }
 
     /**
-     * Register a GitLab project (numeric id) or Bitbucket repository (UUID)
-     * under this wallet so inbound webhook deliveries attribute to it.
-     *
-     * The relay's response carries the ONE-TIME per-install webhook secret
-     * exactly when this call minted it (B2): surface `webhookSecret`
-     * immediately - it is never returned again. `webhookSecretAlreadyIssued`
-     * means an active registration already holds one; rotation is revoke +
-     * re-register.
+     * Step 1 of registering a GitLab project (numeric id) or Bitbucket
+     * repository (UUID): the relay generates a deploy key for this attempt and
+     * returns its PUBLIC half. The user adds it to the project as a read-only
+     * deploy key (GitLab: needs Maintainer; Bitbucket: needs repository admin).
+     * The private half never leaves the relay, and no forge credential is ever
+     * sent to it.
      */
-    async registerForgeInstall(
+    async beginForgeInstall(
         provider: 'gitlab' | 'bitbucket',
         installationId: string, biometricAction?: BiometricAction,
-    ): Promise<ForgeRegisterResult> {
-        const body = provider === 'gitlab'
-            ? { project_id: installationId }
-            : { repo_uuid: installationId };
+    ): Promise<ForgeDeployKeyBeginResult> {
+        const body = provider === 'gitlab' ? { project_id: installationId } : { repo_uuid: installationId };
         try {
             const response = await this.makeAuthenticatedRequest(
-                `/v1/witnesses/${provider}/wallet/installs`,
+                `/v1/witnesses/${provider}/wallet/installs/begin`,
+                { method: 'POST', body: JSON.stringify(body) }, undefined, biometricAction
+            );
+            const data = (await response.json().catch(() => ({}))) as {
+                project_id?: string; repo_uuid?: string; public_key?: string; key_fingerprint?: string;
+                expires_at?: number; instructions?: string; error?: string;
+            };
+            if (!response.ok || typeof data.public_key !== 'string' || typeof data.key_fingerprint !== 'string') {
+                return { ok: false, status: response.status, code: data.error || `http_${response.status}` };
+            }
+            return {
+                ok: true,
+                installationId: data.project_id ?? data.repo_uuid ?? installationId,
+                publicKey: data.public_key,
+                keyFingerprint: data.key_fingerprint,
+                expiresAt: typeof data.expires_at === 'number' ? data.expires_at : 0,
+                instructions: data.instructions ?? '',
+            };
+        } catch (err) {
+            return { ok: false, status: 0, code: err instanceof Error ? err.message : 'network_error' };
+        }
+    }
+
+    /**
+     * Step 2: the relay reads `projectPath` (GitLab `group/project`, Bitbucket
+     * `workspace/repo`) with the deploy key from step 1 and, when that works,
+     * registers the project under this wallet so inbound webhook deliveries
+     * attribute to it. The user may then remove the deploy key.
+     *
+     * The relay's response carries the ONE-TIME per-install webhook secret
+     * exactly when this call minted it: surface `webhookSecret` immediately -
+     * it is never returned again. `webhookSecretAlreadyIssued` means an active
+     * registration already holds one; rotation is revoke + register again.
+     */
+    async verifyForgeInstall(
+        provider: 'gitlab' | 'bitbucket',
+        installationId: string, projectPath: string, biometricAction?: BiometricAction,
+    ): Promise<ForgeRegisterResult> {
+        const body = provider === 'gitlab'
+            ? { project_id: installationId, project_path: projectPath }
+            : { repo_uuid: installationId, project_path: projectPath };
+        try {
+            const response = await this.makeAuthenticatedRequest(
+                `/v1/witnesses/${provider}/wallet/installs/verify`,
                 { method: 'POST', body: JSON.stringify(body) }, undefined, biometricAction
             );
             const data = (await response.json().catch(() => ({}))) as {

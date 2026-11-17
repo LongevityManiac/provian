@@ -1,6 +1,6 @@
 {
   "name": "@provian/cli",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "The generic Provian CLI: the Commons institutions, the Commons hiring board, burn-to-present, GitHub connect, and status. Works with any agent runtime that can call a command.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

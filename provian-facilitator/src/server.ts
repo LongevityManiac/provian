@@ -7,7 +7,7 @@ import { createKeyPairFromBytes, getAddressFromPublicKey } from '@solana/kit';
 import { createPublicClient, getAddress, http, isAddressEqual } from 'viem';
 import { base } from 'viem/chains';
 import { loadConfig, parseSolanaKeypair } from './config.js';
-import { BASE_GAS_WALLET, BASE_PVT, BASE_USDC, MAX_FEE_USDC_ATOMIC, X402_EXACT_PERMIT2_PROXY } from './constants.js';
+import { BASE_GAS_WALLET, BASE_USDC, MAX_FEE_USDC_ATOMIC, X402_EXACT_PERMIT2_PROXY } from './constants.js';
 import { createApp } from './app.js';
 import { createViemBaseChain, type BaseChain } from './base/chain.js';
 import { BaseFacilitator } from './base/facilitator.js';
@@ -47,14 +47,16 @@ async function main(): Promise<void> {
     try {
       // The deployed settler must be exactly the one this service expects: immutables checked on chain.
       const s = await chain.readSettlerConfig();
+      // The settler must be built for the PVT token the permanent protocol pointer names now.
+      const livePvt = getAddress(await chain.readLivePvt());
       const ok =
         isAddressEqual(getAddress(s.usdc), BASE_USDC) &&
         isAddressEqual(getAddress(s.operator), BASE_GAS_WALLET) &&
         isAddressEqual(getAddress(s.feeRecipient), BASE_GAS_WALLET) &&
         isAddressEqual(getAddress(s.permit2Proxy), X402_EXACT_PERMIT2_PROXY) &&
-        isAddressEqual(getAddress(s.pvt), BASE_PVT) &&
+        isAddressEqual(getAddress(s.pvt), livePvt) &&
         s.maxFee === MAX_FEE_USDC_ATOMIC;
-      if (!ok) disabledReasons.base = 'settler immutables do not match the pinned configuration';
+      if (!ok) disabledReasons.base = 'settler immutables do not match the pinned configuration or the live PVT token';
       else {
         baseChain = chain;
         baseFacilitator = new BaseFacilitator({
@@ -63,6 +65,7 @@ async function main(): Promise<void> {
           relayUrl: config.relayUrl,
           fetch: fetchImpl,
           witness,
+          pvt: livePvt,
           priceMaxAgeSeconds: config.base.priceMaxAgeSeconds,
           now: () => Date.now(),
         });

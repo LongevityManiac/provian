@@ -215,7 +215,7 @@ describe('postHumanJob — four directions, PVT or USDC', () => {
     await expect(institutions.postHumanJob({ ...POST_BASE, currency: 'usdc', budget_usdc: 10_000.01 })).rejects.toThrow(/at most 10000/);
     await expect(institutions.postHumanJob({ ...POST_BASE, currency: 'usdc', budget_usdc: 1.0000001 })).rejects.toThrow(/6 decimal/);
     await expect(institutions.postHumanJob({ ...POST_BASE, currency: 'usdc', budget_usdc: 0 })).rejects.toThrow(ProvianValidationError);
-    await expect(institutions.postHumanJob({ ...POST_BASE, deadline_hours: 673, budget_pvt: '1' })).rejects.toThrow(/672/);
+    await expect(institutions.postHumanJob({ ...POST_BASE, deadline_hours: 337, budget_pvt: '1' })).rejects.toThrow(/336/);
     expect(calls).toHaveLength(0);
   });
 

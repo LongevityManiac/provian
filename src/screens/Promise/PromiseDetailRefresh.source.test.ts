@@ -44,7 +44,8 @@ const NOTIFICATIONS = readFileSync(resolve(__dirname, '../../services/Notificati
 describe('a link or notification for the promise already on screen reloads it', () => {
     it('every app-level open of PromiseDetail carries a fresh openedAt', () => {
         const opens = [
-            ...(NAVIGATOR.match(/navigate\('PromiseDetail',[^)]*\)/g) ?? []),
+            // The navigator opens the promise screen through openBehindLock (never over the lock).
+            ...(NAVIGATOR.match(/\{ screen: 'PromiseDetail', params: \{[^}]*\} \}/g) ?? []),
             ...(NOTIFICATIONS.match(/navigateProtected\('PromiseDetail',[^)]*\)/g) ?? []),
         ];
         expect(opens.length).toBe(3); // the link import, its pre-onboarding replay, the notification tap

@@ -3573,3 +3573,53 @@ describe('member settlement transaction envelope',()=>{
     expect(batchDocs(h.store)[0].attempts).toHaveLength(0);expect(h.chain.broadcasts).toBe(0);
   });
 });
+
+describe('a payee that cannot be paid right now is left out, and the rest of the queue settles', () => {
+  const HELD = ADDR(0xa1);
+  const FREE = ADDR(0xa2);
+  const rowOf = (h: Harness, n: number) => h.store.get(`${CLAIM_LEDGER_COLLECTION}/${claimKeyOf(`pe-${String(n).padStart(4, '0')}`, 'sole')}`);
+
+  it('RED: the withheld payee\'s claims stay unsettled and untouched while its batch-mates settle and the run completes', async () => {
+    const h = makeHarness();
+    await registerClaimsBulk(h.db, [standardClaim(1, HELD), standardClaim(2, FREE), standardClaim(3, HELD)], 50_000);
+    const asked: string[] = [];
+    const outcome = await runSettlementCycle({
+      ...h.deps,
+      payeeHold: async (address) => { asked.push(address); return address === HELD ? 'recourse_membership_transition_pending' : null; },
+    }, h.config);
+
+    expect(outcome.outcome).toBe('completed');
+    expect(outcome.claimsSettled).toBe(1);
+    expect(outcome.claimsHeld).toBe(0);
+    expect(rowOf(h, 2)).toMatchObject({ settled: true });
+    for (const n of [1, 3]) {
+      const row = rowOf(h, n)!;
+      expect(row.settled).toBe(false);
+      expect(row.reserved_batch_id ?? null).toBeNull();
+      expect(row.hold ?? null).toBeNull();
+    }
+    // The payee was actually consulted (the control is not vacuous).
+    expect(asked).toContain(HELD);
+    expect(asked).toContain(FREE);
+  });
+
+  it('control: with no payee withheld the same backlog settles whole, and the claims wait for nothing else', async () => {
+    const h = makeHarness();
+    await registerClaimsBulk(h.db, [standardClaim(1, HELD), standardClaim(2, FREE), standardClaim(3, HELD)], 50_000);
+    const outcome = await runSettlementCycle({ ...h.deps, payeeHold: async () => null }, h.config);
+    expect(outcome.outcome).toBe('completed');
+    expect(outcome.claimsSettled).toBe(3);
+  });
+
+  it('selection reports who was left out and why, asking once per payee', async () => {
+    const h = makeHarness();
+    await registerClaimsBulk(h.db, [standardClaim(1, HELD), standardClaim(2, FREE), standardClaim(3, HELD)], 50_000);
+    let asks = 0;
+    const work = await selectLaneWork(h.db, 50, 50, 60_000, undefined, undefined,
+      async (address) => { asks += 1; return address === HELD ? 'recourse_membership_transition_pending' : null; });
+    expect([...work.withheld.entries()]).toEqual([[HELD, { reason: 'recourse_membership_transition_pending', claims: 2 }]]);
+    expect(work.standard.items.map((item) => item.contributor)).toEqual([FREE]);
+    expect(asks).toBe(2); // once per payee: a withheld payee's later rows reuse its answer
+    expect((await selectLaneWork(h.db, 50, 50)).withheld.size).toBe(0);
+  });
+});

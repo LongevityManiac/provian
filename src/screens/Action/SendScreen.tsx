@@ -97,6 +97,9 @@ const SendScreen = ({ navigation, route }: any) => {
     const reviewedRef = React.useRef<{ recipient: string; amount: string; asset: string; chain: string; chainId: number } | null>(null);
     /** One Continue at a time ( ): a second run while the first waits on the network must not re-arm the review. */
     const continueInFlightRef = React.useRef(false);
+    // One Confirm at a time: set before the approval prompt is requested, cleared when the send
+    // settles. Approval prompts queue, so a second tap must be refused before it asks for one.
+    const confirmInFlightRef = React.useRef(false);
     const [amount, setAmount] = useState('');
     const [step, setStep] = useState<'input' | 'warnings' | 'review' | 'processing' | 'success' | 'blocked'>('input');
     const [policyResult, setPolicyResult] = useState<any | null>(null);
@@ -660,7 +663,7 @@ const SendScreen = ({ navigation, route }: any) => {
         // transition at the render layer, but a rapid double-tap can fire
         // two handleConfirm calls before React commits state. Swallow the
         // second call unconditionally.
-        if (loading || step === 'processing') {
+        if (confirmInFlightRef.current || loading || step === 'processing') {
             return;
         }
         if (!selectedAsset) {
@@ -689,6 +692,7 @@ const SendScreen = ({ navigation, route }: any) => {
         // requireBiometric() uses disableDeviceFallback:true so a device
         // passcode cannot substitute for hardware biometric. The fallback
         // onboarding path is handled inside requireBiometric() itself.
+        confirmInFlightRef.current = true;
         try {
             return await withBiometricAction(t('send.approveSendBiometric', { amount, symbol: asset.symbol }), async (biometricAction) => {
 
@@ -904,6 +908,8 @@ const SendScreen = ({ navigation, route }: any) => {
                 Alert.alert(t('send.sendCancelled'), t('send.biometricFailed'));
             }
             return;
+        } finally {
+            confirmInFlightRef.current = false;
         }
 };
 

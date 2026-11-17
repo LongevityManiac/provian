@@ -46,7 +46,12 @@ import { generatePE } from '../agent-bank/pe-utils';
 import type { InputOrigin } from '../provenance/input-origins';
 import { resolvableOrigin, forgeWebhookWitness, mergeInputOrigins } from '../provenance/origin-capture';
 import { emitBackendCorroboration } from '../corroboration/CorroborationManager';
-import { getServiceInstallByInstallationId } from './service-installs';
+import {
+  getServiceInstallByInstallationId,
+  installControlProven,
+  installProjectPathMatches,
+  isUsableInstallationId,
+} from './service-installs';
 import type { BitbucketAppConfig } from './bitbucket-app-config';
 import { findPEsByCommitSha, findCommitOriginsBySha } from './pe-lookup';
 import {
@@ -67,7 +72,7 @@ const EVENT_KEY_TO_ACTION_TYPE: Record<string, string> = {
 };
 
 export interface BitbucketWebhookResult {
-  status: 200 | 400 | 401 | 404 | 410 | 503;
+  status: 200 | 400 | 401 | 403 | 404 | 410 | 503;
   body: Record<string, unknown>;
 }
 
@@ -339,7 +344,8 @@ export async function handleBitbucketWebhook(
 
   // (4) Install lookup, then VERIFY — the invariants, enumeration-safe
   // (mirrors gitlab-webhook.ts): per-install secret verifies ONLY its own
-  // install; legacy secret-less rows grandfather onto the app-wide secret;
+  // install; a secret-less row verifies against the app-wide secret and is
+  // then refused for want of a control proof until re-registered;
   // an unregistered repo uuid answers 401 unless the app-wide (operator)
   // secret signed the delivery, so probes cannot enumerate registrations;
   // revocation (410) is disclosed only after a successful verify.
@@ -361,6 +367,24 @@ export async function handleBitbucketWebhook(
   }
   if (install.revoked_at !== null) {
     return { status: 410, body: { error: 'install_revoked' } };
+  }
+  // A registration that never proved control of the project authenticates no
+  // PE, however its secret verified. It stays on record and starts working
+  // again when the project is registered with proof. Checked before dedup so
+  // the forge's redelivery after re-registration is still processed.
+  if (!installControlProven(install)) {
+    return { status: 403, body: { error: 'control_proof_required' } };
+  }
+  // The forge sends the repository id and its path together. A delivery for this
+  // install whose path is not the one the registration proved (a renamed
+  // repository included) is refused until the repository is registered again.
+  if (!installProjectPathMatches(install, repo.fullName)) {
+    return { status: 403, body: { error: 'project_path_mismatch' } };
+  }
+  // The delivery id becomes part of a document id; one that is not a plain
+  // token identifies nothing.
+  if (!isUsableInstallationId(input.deliveryId)) {
+    return { status: 400, body: { error: 'invalid_delivery_id' } };
   }
 
   // (6) Dedup BEFORE synthesize / submit.

@@ -58,7 +58,7 @@ export const PRIVATE_STORE_COLLECTIONS=new Set([
  'human_approval_requests_v1','presentation_requests_v1','commons_threads',
  'commons_thread_messages','commons_human_jobs','commons_human_job_applications','jobs',
  'commons_publication_consents','commons_published_pes','actor_stats_v1','actor_stats_applied','devices',
- 'escrows','promises','general_disputes','human_promises','service_installs','github_webhook_inbox_v1','agent_bank_event_outbox_v1',
+ 'escrows','promises','general_disputes','human_promises','service_installs','forge_deploy_key_attempts_v1','github_webhook_inbox_v1','agent_bank_event_outbox_v1',
  'agent_inbox_heads_v1','agent_author_mappings','webhook_subscriptions','pvt_novelty_counters_v1',
 ]);
 export function isPrivateCollection(path:string):boolean{return PRIVATE_STORE_COLLECTIONS.has(path)||/^agent_wallets\/[^/]+\/inbox_v1$/.test(path);}

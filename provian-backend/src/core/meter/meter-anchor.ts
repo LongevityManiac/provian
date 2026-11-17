@@ -23,7 +23,7 @@ import { randomUUID } from 'node:crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import { buildMerkleTreeFromLeafHashes, generateProof, hashEnvelopeHashLeaf } from '../pvt/merkle';
 import { utcDayBounds, utcDayKeyFromMs, utcDayNumber } from '../pvt/daily-pe-anchor';
-import { expireAt, METER_ANCHOR_DAYS_COLLECTION, METER_BATCHES_COLLECTION } from './meter-store';
+import { expireAt, METER_ANCHOR_DAY_CLOSING_FIELD, METER_ANCHOR_DAYS_COLLECTION, METER_BATCHES_COLLECTION } from './meter-store';
 import { METER_ANCHOR_STATE_DOC, meterAnchorBatchIdPreimage } from './meter-constants';
 
 /** A day is anchored only once it has been closed this long (relay clocks across instances). */
@@ -226,7 +226,11 @@ async function anchorSelection(deps: MeterAnchorDeps, dayKey: string, close: boo
   const acquired = await db.runTransaction(async (txn) => {
     const data = (await txn.get(dayRef)).data() ?? {};
     if (typeof data.lease_at_ms === 'number' && nowMs - data.lease_at_ms < STALE_PENDING_MS) return null;
-    txn.set(dayRef, { day: dayKey, lease_token: token, lease_at_ms: nowMs, expire_at: null }, { merge: true });
+    // Beginning the close shuts the day to new batches, in this transaction and before anything is
+    // selected: a batch commit reads this record in its own transaction, so a batch is either
+    // already stamped onto the day when the close selects, or is stamped onto a later one.
+    const closing = close && typeof data[METER_ANCHOR_DAY_CLOSING_FIELD] !== 'number' ? { [METER_ANCHOR_DAY_CLOSING_FIELD]: nowMs } : {};
+    txn.set(dayRef, { day: dayKey, lease_token: token, lease_at_ms: nowMs, expire_at: null, ...closing }, { merge: true });
     return data;
   });
   const inFlight = (reason: string): MeterAnchorDayResult & { segment: number | null } => {

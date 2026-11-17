@@ -137,6 +137,12 @@ vi.mock('../WalletConnectGovernance', () => {
             riskScore: 80, riskCategory: 'high', category: 'unknown',
             reasons: ['Could not verify what this signature authorizes.'],
         }),
+        makeTypedDataRootMismatchVerdict: () => ({
+            lane: 'block', allowed: false, requiresStrongConfirm: false,
+            riskScore: 100, riskCategory: 'high', category: 'unknown',
+            reasons: ['This request names one signature type but would sign a different one — blocked for safety.'],
+            denyReason: 'This request names one signature type but would sign a different one — blocked for safety.',
+        }),
         WalletConnectPolicyError,
     };
 });
@@ -248,6 +254,9 @@ vi.mock('ethers', async (importOriginal) => {
     }
 
     return {
+        // Named exports stay real (the shared signing vectors hash with them);
+        // only the `ethers` namespace the service signs through is replaced.
+        ...actual,
         ethers: { id: actual.ethers.id, toQuantity: actual.ethers.toQuantity, formatEther, isHexString, toUtf8String, getBytes, Wallet: MockWallet, JsonRpcProvider: MockJsonRpcProvider },
     };
 });
@@ -712,11 +721,12 @@ describe('WalletConnectService', () => {
             expect(mockSignMessage).toHaveBeenCalledWith('Hello plain text');
         });
 
-        it('personal_sign: signs a binary (non-UTF-8) 32-byte digest as raw bytes', async () => {
-            // A 32-byte digest that is not valid UTF-8 - the exact case the old
-            // toUtf8String() path corrupted or threw on (review #6).
-            const digest = new Uint8Array(32);
-            for (let i = 0; i < 32; i++) digest[i] = (i * 7 + 0x80) & 0xff;
+        it('personal_sign: signs a binary (non-UTF-8) payload as raw bytes', async () => {
+            // Bytes that are not valid UTF-8 - the exact case a decode-to-text
+            // path corrupts or throws on. (A payload of exactly 32 bytes is
+            // refused at the door; see the reserved-message suite.)
+            const digest = new Uint8Array(48);
+            for (let i = 0; i < 48; i++) digest[i] = (i * 7 + 0x80) & 0xff;
             const hexDigest = '0x' + Buffer.from(digest).toString('hex');
             await capturedHandlers.sessionRequest?.(
                 makeSessionRequestEvent(203, SESSION_TOPIC, 'personal_sign', [hexDigest, TEST_ADDRESS])
@@ -727,6 +737,7 @@ describe('WalletConnectService', () => {
 
         it('eth_signTypedData_v4: parses JSON and strips EIP712Domain from types', async () => {
             const typedData = JSON.stringify({
+                primaryType: 'Mail',
                 types: {
                     EIP712Domain: [{ name: 'name', type: 'string' }],
                     Mail: [{ name: 'content', type: 'string' }],
@@ -750,6 +761,7 @@ describe('WalletConnectService', () => {
 
         it('eth_signTypedData (v3 alias): same code path', async () => {
             const typedData = JSON.stringify({
+                primaryType: 'Simple',
                 types: { EIP712Domain: [], Simple: [{ name: 'val', type: 'uint256' }] },
                 domain: {},
                 message: { val: '42' },
@@ -1528,6 +1540,94 @@ describe('WalletConnectService', () => {
             expect(sig).toBe('0xmocksignature_typed');
             expect(mockEvaluateWalletConnectPermit).not.toHaveBeenCalled();
             expect(mockSignTypedData).toHaveBeenCalled();
+        });
+    });
+
+    // =========================================================================
+    // The struct shown must be the struct signed
+    //
+    // The signer derives the struct it signs from `types`; the declared
+    // primaryType is only what the request is classified and labelled by. A
+    // Permit2 witness transfer whose witness embeds a DAI `Permit`, declared
+    // as primaryType `Permit` with allowed=false, would otherwise be shown as
+    // a protective revoke and signed biometric-only.
+    // =========================================================================
+    describe('typed data whose declared primaryType is not the signed struct', () => {
+        const SESSION_TOPIC = 'topic_root_type';
+        const daiPermit = [
+            { name: 'holder', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'expiry', type: 'uint256' },
+            { name: 'allowed', type: 'bool' },
+        ];
+        const revokeFields = { holder: TEST_ADDRESS, spender: GOV_SPENDER, nonce: '0', expiry: '1900000000', allowed: false };
+        const disguisedWitnessTransfer = JSON.stringify({
+            primaryType: 'Permit',
+            domain: { name: 'Permit2', chainId: 8453, verifyingContract: '0x000000000022D473030F116dDEE9F6B43aC78BA3' },
+            types: {
+                PermitWitnessTransferFrom: [
+                    { name: 'permitted', type: 'TokenPermissions' },
+                    { name: 'spender', type: 'address' },
+                    { name: 'nonce', type: 'uint256' },
+                    { name: 'deadline', type: 'uint256' },
+                    { name: 'witness', type: 'Witness' },
+                ],
+                TokenPermissions: [{ name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }],
+                Witness: [{ name: 'cover', type: 'Permit' }],
+                Permit: daiPermit,
+            },
+            message: {
+                ...revokeFields,
+                permitted: { token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', amount: '5000000000' },
+                deadline: '1900000000',
+                witness: { cover: revokeFields },
+            },
+        });
+
+        beforeEach(async () => {
+            await initWithSession(SESSION_TOPIC);
+            mockSignTypedData.mockClear();
+            mockEvaluateWalletConnectPermit.mockClear();
+            vi.mocked(ProvenanceEnvelopeManager.createEnvelope).mockClear();
+        });
+
+        it('is refused at execution: nothing is signed, a deny PE is recorded', async () => {
+            await capturedHandlers.sessionRequest?.(
+                makeSessionRequestEvent(15001, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, disguisedWitnessTransfer])
+            );
+            await expect(WalletConnectService.approveRequest(15001, undefined, confirmedFor(15001)))
+                .rejects.toThrow('names one signature type but would sign a different one');
+            expect(mockSignTypedData).not.toHaveBeenCalled();
+            expect(ProvenanceEnvelopeManager.createEnvelope).toHaveBeenCalledWith(expect.objectContaining({
+                policyDecision: 'block',
+                authorizationDecision: 'deny',
+                intentText: expect.stringContaining('typed_data_root:primary_type_mismatch'),
+            }), expect.toSatisfy((value: unknown) => value === undefined || (typeof value === 'object' && value !== null && 'nativeId' in value)));
+        });
+
+        it('is shown to the owner as blocked before they act', async () => {
+            await capturedHandlers.sessionRequest?.(
+                makeSessionRequestEvent(15002, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, disguisedWitnessTransfer])
+            );
+            const request = WalletConnectService.getPendingRequest(15002);
+            expect(request).toBeDefined();
+            const verdict = await WalletConnectService.evaluateRequestGovernance(request!);
+            expect(verdict).toMatchObject({ lane: 'block', allowed: false });
+        });
+
+        it('control: the same revoke declared honestly (Permit is the only struct) still signs', async () => {
+            const honest = JSON.stringify({
+                primaryType: 'Permit',
+                domain: { chainId: 8453, verifyingContract: GOV_UNKNOWN_TOKEN, name: 'Dai Stablecoin', version: '1' },
+                types: { Permit: daiPermit },
+                message: revokeFields,
+            });
+            await capturedHandlers.sessionRequest?.(
+                makeSessionRequestEvent(15003, SESSION_TOPIC, 'eth_signTypedData_v4', [TEST_ADDRESS, honest])
+            );
+            await expect(WalletConnectService.approveRequest(15003)).resolves.toBe('0xmocksignature_typed');
+            expect(mockSignTypedData).toHaveBeenCalledTimes(1);
         });
     });
 

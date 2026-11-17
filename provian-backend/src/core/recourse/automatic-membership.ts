@@ -15,12 +15,33 @@ import { breakDeploymentChain } from './break-deployment-queue';
 import { scanQueryUnordered } from '../provenance/query-pages';
 
 export const AUTOMATIC_MEMBERSHIP_SWEEP='recourse_private_membership_sweep_v1';
-export type AutomaticMembershipResult='queued'|'settled'|'pending'|'approval_required'|'left';
+export type AutomaticMembershipResult='queued'|'settled'|'pending'|'approval_required'|'left'|'lapsed';
+/** What `prepareMembershipDebit` answers for an owner whose protection has ended: nothing can be collected until the owner rejoins. */
+const JOIN_REQUIRED='recourse_membership_debit_join_required';
+/**
+ * A member whose membership has ended — it left, or it lapsed past its month of grace — owes the
+ * sweep nothing it can collect: only the owner's own rejoin (which first pays the unpaid protected
+ * months) changes that. The sweep records that finding against the exact account it was read
+ * from, and while the account is unchanged later visits answer from the record without reading
+ * the chain. A rejoin opens a membership change on the owner and then a new episode generation,
+ * either of which sets the record aside.
+ */
+const dormantId=(ownerIdentity:string)=>`dormant-${ownerIdentity}`;
+interface DormantRecord { readonly ownerIdentity:string; readonly result:'left'|'lapsed'; readonly accountVersion:number; readonly generation:number; readonly pool:string; readonly recordedAtMs:number }
+function dormantStillHolds(record:FirebaseFirestore.DocumentData|undefined,ownerIdentity:string,owner:FirebaseFirestore.DocumentSnapshot,
+  account:PrivateMembershipAccount|undefined,pool:string):'left'|'lapsed'|null{
+  if(!record||!account||record.ownerIdentity!==ownerIdentity||(record.result!=='left'&&record.result!=='lapsed'))return null;
+  if(owner.get('membershipTransition')!=null||owner.get('membershipScanRequired')===true)return null;
+  if(account.needsScan!==false||account.pendingReservation!==null||account.checkpoint?.pool!==pool||record.pool!==pool)return null;
+  if(!Number.isSafeInteger(account.version)||record.accountVersion!==account.version)return null;
+  if(!Number.isSafeInteger(account.episode?.generation)||record.generation!==account.episode.generation)return null;
+  return record.result;
+}
 /** The private owner ledger reserves one exact obligation across the portfolio.
  * The standing mandate independently bounds the selected payer on chain. No
  * member presence, fresh owner signature, allowance transaction or ETH is used. */
 export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity:string):Promise<AutomaticMembershipResult>{
-  let owner=await db.collection(R.owners).doc(ownerIdentity).get();
+  const owner=await db.collection(R.owners).doc(ownerIdentity).get();
   if(!owner.exists||owner.get('ownerIdentity')!==ownerIdentity)throw Error('recourse_automatic_owner');
   const saved = await db.collection(C.owners).doc(ownerIdentity).get();
   const account = saved.exists ? saved.data() as PrivateMembershipAccount : undefined;
@@ -35,8 +56,24 @@ export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity
       BigInt(invoice.burnPaidAtomic) >= BigInt(invoice.burnDueAtomic)
       && BigInt(invoice.reservePaidAtomic) >= BigInt(invoice.month < month && BigInt(invoice.earnings.grossAtomic) === 0n
         ? invoice.noEarningsContributionAtomic : invoice.reserveDueAtomic))) return 'settled';
+  const dormantRef=db.collection(AUTOMATIC_MEMBERSHIP_SWEEP).doc(dormantId(ownerIdentity)),dormantRow=await dormantRef.get();
+  const dormant=dormantStillHolds(dormantRow.data(),ownerIdentity,owner,account,pool);
+  if(dormant)return dormant;
+  const result=await collectFromChain(db,ownerIdentity);
+  if(result==='left'||result==='lapsed'){
+    // Recorded against the account as it stands after this visit's reconciliation.
+    const current=await db.collection(C.owners).doc(ownerIdentity).get(),now=current.exists?current.data() as PrivateMembershipAccount:undefined;
+    if(now&&Number.isSafeInteger(now.version)&&Number.isSafeInteger(now.episode?.generation)){
+      const record:DormantRecord={ownerIdentity,result,accountVersion:now.version,generation:now.episode.generation,pool,recordedAtMs:Date.now()};
+      await dormantRef.set(record);
+    }else if(dormantRow.exists)await dormantRef.delete();
+  }else if(dormantRow.exists)await dormantRef.delete();
+  return result;
+}
+/** The full visit: reconcile against the chain, then collect whatever is due and approved. */
+async function collectFromChain(db:Firestore,ownerIdentity:string):Promise<AutomaticMembershipResult>{
   await reconcileCurrentPrivateMembership(db,ownerIdentity);
-  owner = await db.collection(R.owners).doc(ownerIdentity).get();
+  const owner=await db.collection(R.owners).doc(ownerIdentity).get();
   if (!owner.exists || owner.get('ownerIdentity') !== ownerIdentity) throw Error('recourse_automatic_owner');
   const transition:unknown=owner.get('membershipTransition');
   if(typeof transition==='string'){
@@ -49,7 +86,13 @@ export async function collectAutomaticMembershipOwner(db:Firestore,ownerIdentity
   const chain=breakDeploymentChain(),deployment=await chain.deployment();
   const state=await readRecoursePoolState(binding,deployment);
   if(!state.addressConsent)return 'left';
-  const prepared=await prepareMembershipDebit(db,ownerIdentity,state.currentAddress);
+  let prepared:Awaited<ReturnType<typeof prepareMembershipDebit>>;
+  try{prepared=await prepareMembershipDebit(db,ownerIdentity,state.currentAddress);}
+  catch(error){
+    // Protection has ended with the address still consenting on chain: lapsed, not a failure to retry.
+    if(error instanceof Error&&error.message===JOIN_REQUIRED)return 'lapsed';
+    throw error;
+  }
   if(prepared.status!=='ready')return prepared.status;
   const {reservationId,domain,debit}=prepared.challenge;
   await queueMembershipDebit(db,ownerIdentity,{reservationId,domain,debit});return 'queued';

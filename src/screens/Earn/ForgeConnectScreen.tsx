@@ -8,8 +8,12 @@
  * (state nonce), the system browser opens github.com's install page, the
  * user authorizes THERE (Provian never receives a credential that can
  * read code), and this screen polls until the relay records the install.
- * - GitLab / Bitbucket: registration. The user enters their project id /
- * repo UUID; the relay links it to this wallet and returns a ONE-TIME
+ * - GitLab / Bitbucket: registration in two steps. The user enters their
+ * project id / repo UUID and the relay returns the PUBLIC half of a deploy
+ * key it generated; the user adds it to the project as a read-only deploy
+ * key (which needs Maintainer / repository admin), enters the project's
+ * path, and the relay reads the project with that key. No forge credential
+ * is ever entered here or sent to the relay. On success the relay links it to this wallet and returns a ONE-TIME
  * per-install webhook secret (B2) that must be surfaced immediately -
  * it is never shown again. Rotation is revoke + re-register.
  *
@@ -37,6 +41,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
 import { COLORS, GRADIENTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import RelayAPIService, {
+    type ForgeDeployKeyBeginResult,
     type ForgeInstall,
     type ForgeRegisterResult,
 } from '../../services/RelayAPIService';
@@ -61,6 +66,9 @@ type GitHubPhase =
     | 'not_configured'
     | 'error';
 
+/** A begun registration: the deploy key the user must add before verifying. */
+type PendingDeployKey = Extract<ForgeDeployKeyBeginResult, { ok: true }>;
+
 /** Non-null exactly when the last registration minted the one-time secret. */
 type IssuedSecret = { installationId: string; secret: string; setup: string };
 
@@ -79,6 +87,9 @@ export default function ForgeConnectScreen({
 
     // ── GitLab / Bitbucket registration state ────────────────────────
     const [installationIdInput, setInstallationIdInput] = useState('');
+    const [projectPathInput, setProjectPathInput] = useState('');
+    const [pendingKey, setPendingKey] = useState<PendingDeployKey | null>(null);
+    const [keyCopied, setKeyCopied] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [inputError, setInputError] = useState<string | null>(null);
     const [notConfigured, setNotConfigured] = useState(false);
@@ -139,7 +150,8 @@ export default function ForgeConnectScreen({
         }
     }, []);
 
-    const handleRegister = useCallback(async () => {
+    /** Step 1: get a deploy key for this project. */
+    const handleBegin = useCallback(async () => {
         if (provider === 'github') return;
         const trimmed = installationIdInput.trim();
         const valid = provider === 'gitlab'
@@ -151,8 +163,7 @@ export default function ForgeConnectScreen({
         }
         setInputError(null);
         setSubmitting(true);
-        setSecretCopied(false);
-        const result: ForgeRegisterResult = await RelayAPIService.registerForgeInstall(provider, trimmed);
+        const result = await RelayAPIService.beginForgeInstall(provider, trimmed);
         setSubmitting(false);
         if (!result.ok) {
             if (result.status === 503) {
@@ -166,8 +177,64 @@ export default function ForgeConnectScreen({
             }
             return;
         }
+        setKeyCopied(false);
+        setProjectPathInput('');
+        setPendingKey(result);
+    }, [provider, installationIdInput, t]);
+
+    const handleCopyKey = useCallback(async () => {
+        if (!pendingKey) return;
+        await Clipboard.setStringAsync(pendingKey.publicKey);
+        setKeyCopied(true);
+        setTimeout(() => setKeyCopied(false), 2000);
+    }, [pendingKey]);
+
+    const handleStartOver = useCallback(() => {
+        setPendingKey(null);
+        setProjectPathInput('');
+        setInputError(null);
+    }, []);
+
+    /** Step 2: the relay checks the deploy key against the project, then registers it. */
+    const handleVerify = useCallback(async () => {
+        if (provider === 'github' || !pendingKey) return;
+        const path = projectPathInput.trim();
+        if (path.length === 0) {
+            setInputError(t(`earn.forge.${provider}.invalidPath`));
+            return;
+        }
+        setInputError(null);
+        setSubmitting(true);
+        setSecretCopied(false);
+        const result: ForgeRegisterResult = await RelayAPIService.verifyForgeInstall(
+            provider, pendingKey.installationId, path,
+        );
+        setSubmitting(false);
+        if (!result.ok) {
+            if (result.code === 'deploy_key_not_found') {
+                setInputError(t('earn.forge.deployKeyNotFound'));
+            } else if (result.code === 'deploy_key_not_project_specific') {
+                // That key is spent; the next try needs a new one.
+                setPendingKey(null);
+                setInputError(t('earn.forge.deployKeyNotSpecific'));
+            } else if (result.code === 'attempt_expired' || result.code === 'attempt_not_found' || result.code === 'attempt_consumed') {
+                setPendingKey(null);
+                setInputError(t('earn.forge.attemptExpired'));
+            } else if (result.code === 'invalid_project_path') {
+                setInputError(t(`earn.forge.${provider}.invalidPath`));
+            } else if (result.code === 'forge_unavailable') {
+                setInputError(t('earn.forge.genericError'));
+            } else if (result.status === 503) {
+                setNotConfigured(true);
+            } else if (result.status === 409) {
+                setInputError(t('earn.forge.alreadyLinkedElsewhere'));
+            } else {
+                setInputError(t('earn.forge.genericError'));
+            }
+            return;
+        }
         if (result.webhookSecret) {
-            // One-time disclosure (B2): this is the only moment the secret exists
+            // One-time disclosure: this is the only moment the secret exists
             // outside the relay. Keep it on screen until the user leaves.
             setIssuedSecret({
                 installationId: result.installationId,
@@ -179,9 +246,11 @@ export default function ForgeConnectScreen({
             setIssuedSecret(null);
             setAlreadyIssued({ installationId: result.installationId, setup: result.setup });
         }
+        setPendingKey(null);
+        setProjectPathInput('');
         setInstallationIdInput('');
         loadInstalls();
-    }, [provider, installationIdInput, loadInstalls, t]);
+    }, [provider, pendingKey, projectPathInput, loadInstalls, t]);
 
     const handleCopySecret = useCallback(async () => {
         if (!issuedSecret) return;
@@ -269,7 +338,7 @@ export default function ForgeConnectScreen({
                                 <Ionicons name="time-outline" size={18} color={COLORS.textMuted} />
                                 <Text style={styles.infoCardText}>{t('earn.forge.notConfigured')}</Text>
                             </View>
-                        ) : (
+                        ) : pendingKey === null ? (
                             <View style={styles.formCard}>
                                 <Text style={styles.inputLabel}>{t(`earn.forge.${provider}.inputLabel`)}</Text>
                                 <TextInput
@@ -289,7 +358,64 @@ export default function ForgeConnectScreen({
                                 {inputError && <Text style={styles.inputError}>{inputError}</Text>}
                                 <TouchableOpacity
                                     style={[styles.ctaBtn, submitting && styles.ctaBtnDisabled]}
-                                    onPress={handleRegister}
+                                    onPress={handleBegin}
+                                    disabled={submitting}
+                                    activeOpacity={0.85}
+                                >
+                                    <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
+                                        {submitting ? (
+                                            <ActivityIndicator size="small" color="#FFF" />
+                                        ) : (
+                                            <>
+                                                <Text style={styles.ctaText}>{t('earn.forge.beginCta')}</Text>
+                                                <Ionicons name="key-outline" size={16} color="#FFF" />
+                                            </>
+                                        )}
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <View style={styles.formCard}>
+                                <Text style={styles.inputLabel}>{t('earn.forge.deployKeyTitle')}</Text>
+                                <Text style={styles.setupText}>{pendingKey.instructions}</Text>
+                                <View style={styles.secretValueRow}>
+                                    <Text style={styles.secretValue} selectable>
+                                        {pendingKey.publicKey}
+                                    </Text>
+                                </View>
+                                <Text style={styles.installMeta}>{pendingKey.keyFingerprint}</Text>
+                                <TouchableOpacity
+                                    style={styles.copyBtn}
+                                    onPress={handleCopyKey}
+                                    activeOpacity={0.85}
+                                >
+                                    <Ionicons
+                                        name={keyCopied ? 'checkmark-outline' : 'copy-outline'}
+                                        size={16}
+                                        color={keyCopied ? COLORS.success : COLORS.primary}
+                                    />
+                                    <Text style={[styles.copyBtnText, keyCopied && { color: COLORS.success }]}>
+                                        {keyCopied ? t('earn.forge.copied') : t('earn.forge.copyKey')}
+                                    </Text>
+                                </TouchableOpacity>
+                                <Text style={styles.inputLabel}>{t(`earn.forge.${provider}.pathLabel`)}</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={projectPathInput}
+                                    onChangeText={(v) => {
+                                        setProjectPathInput(v);
+                                        setInputError(null);
+                                    }}
+                                    placeholder={t(`earn.forge.${provider}.pathPlaceholder`)}
+                                    placeholderTextColor={COLORS.textMuted}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                />
+                                <Text style={styles.inputHelp}>{t(`earn.forge.${provider}.pathHelp`)}</Text>
+                                {inputError && <Text style={styles.inputError}>{inputError}</Text>}
+                                <TouchableOpacity
+                                    style={[styles.ctaBtn, submitting && styles.ctaBtnDisabled]}
+                                    onPress={handleVerify}
                                     disabled={submitting}
                                     activeOpacity={0.85}
                                 >
@@ -303,6 +429,9 @@ export default function ForgeConnectScreen({
                                             </>
                                         )}
                                     </LinearGradient>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleStartOver} activeOpacity={0.8}>
+                                    <Text style={styles.inputHelp}>{t('earn.forge.startOver')}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -335,6 +464,7 @@ export default function ForgeConnectScreen({
                                 </TouchableOpacity>
                                 <Text style={styles.setupTitle}>{t('earn.forge.setupTitle')}</Text>
                                 <Text style={styles.setupText}>{issuedSecret.setup}</Text>
+                                <Text style={styles.inputHelp}>{t('earn.forge.removeKeyAfter')}</Text>
                             </View>
                         )}
 
@@ -369,6 +499,9 @@ export default function ForgeConnectScreen({
                                         <Text style={styles.installMeta}>
                                             {new Date(install.installed_at).toLocaleDateString()}
                                         </Text>
+                                        {install.control_proven === false && (
+                                            <Text style={styles.inputError}>{t('earn.forge.needsProof')}</Text>
+                                        )}
                                     </View>
                                     <TouchableOpacity
                                         onPress={() => handleRevoke(install.installation_id)}

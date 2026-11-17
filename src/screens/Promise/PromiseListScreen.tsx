@@ -24,6 +24,7 @@ import type { IoniconsName } from '../../types/icons';
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '../../store/walletStore';
 import { requestAttentionRefresh } from '../../core/attention/attentionRefresh';
+import { promiseListBody, type PromiseListLoad } from './promiseListBody';
 
 type TabType = 'active' | 'completed';
 
@@ -35,7 +36,9 @@ const PromiseListScreen = ({ navigation, route }: any) => {
     const [promises, setPromises] = useState<PromiseType[]>([]);
 
     const backgroundGradient = GRADIENTS.backgroundDiagonal;
-    const [loading, setLoading] = useState(true);
+    // 'loading' until the first read answers: "no promises" is shown only for a read that
+    // returned none, never before it or instead of a failed one (promiseListBody).
+    const [loadState, setLoadState] = useState<PromiseListLoad>('loading');
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>(initialTab);
     const [selectedPromise, setSelectedPromise] = useState<PromiseType | null>(null);
@@ -50,10 +53,11 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                 ? await PromiseService.getActivePromises()
                 : await PromiseService.getCompletedPromises();
             setPromises(data);
+            setLoadState('loaded');
         } catch (error) {
             console.error('[PromiseList] Load error:', error);
+            setLoadState((prev) => (prev === 'loaded' ? 'loaded' : 'failed'));
         } finally {
-            setLoading(false);
             setRefreshing(false);
         }
     }, [activeTab]);
@@ -244,7 +248,30 @@ const PromiseListScreen = ({ navigation, route }: any) => {
         </TouchableOpacity>
     );
 
-    const renderEmpty = () => (
+    const renderEmpty = () => {
+        const body = promiseListBody(loadState, promises.length);
+        if (body === 'loading') {
+            return (
+                <View style={styles.emptyContainer}>
+                    <ActivityIndicator color={COLORS.primary} />
+                </View>
+            );
+        }
+        if (body === 'failed') {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptySubtitle}>{t('promise.loadFailed')}</Text>
+                    <TouchableOpacity
+                        style={styles.createButton}
+                        onPress={() => { setLoadState('loading'); void loadPromises(); }}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.createButtonText}>{t('common.tryAgain')}</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+        return (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
                 <Ionicons name="heart" size={48} color="#9CA3AF" />
@@ -267,12 +294,19 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
             )}
         </View>
-    );
+        );
+    };
 
     const TabButton = ({ tab, label, icon }: { tab: TabType; label: string; icon: IoniconsName }) => (
         <TouchableOpacity
             style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-            onPress={() => setActiveTab(tab)}
+            onPress={() => {
+                if (tab === activeTab) return;
+                // The other tab's rows are not this tab's answer: show loading until its read lands.
+                setPromises([]);
+                setLoadState('loading');
+                setActiveTab(tab);
+            }}
         >
             <Ionicons
                 name={icon}

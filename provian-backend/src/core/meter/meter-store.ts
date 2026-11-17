@@ -72,6 +72,40 @@ export function expireAt(ms: number): Timestamp {
 }
 
 /**
+ * Set on a day's anchor record in the transaction that begins the day's CLOSE selection. From then
+ * on the day takes no more batches: the close commits exactly the batches already stamped onto it.
+ */
+export const METER_ANCHOR_DAY_CLOSING_FIELD = 'closing_at_ms';
+/** A batch is never stamped further ahead than this many days past its acceptance day. */
+export const METER_ANCHOR_DAY_MAX_ADVANCE = 3;
+
+/** Whether a day's anchor record says its close has begun (or finished): it takes no more batches. */
+export function meterAnchorDayClosed(day: Readonly<Record<string, unknown>> | undefined): boolean {
+  if (day === undefined) return false;
+  return typeof day[METER_ANCHOR_DAY_CLOSING_FIELD] === 'number' || day.status === 'anchored' || day.status === 'empty';
+}
+
+/**
+ * The anchor day a batch accepted at `acceptedAtMs` is stamped with: its UTC day, or — when that
+ * day's close has already begun — the first later day still open. Read inside the batch's commit
+ * transaction, against the same record the close marks in its own transaction, so the two are
+ * serialized: a batch is either stamped before the close selects (and is selected), or it sees the
+ * close and joins a later day. Every accepted batch is therefore committed by some anchor.
+ */
+export async function openMeterAnchorDay(
+  txn: { get(ref: FirebaseFirestore.DocumentReference): Promise<FirebaseFirestore.DocumentSnapshot> },
+  db: FirebaseFirestore.Firestore,
+  acceptedAtMs: number,
+): Promise<string> {
+  for (let advance = 0; advance <= METER_ANCHOR_DAY_MAX_ADVANCE; advance += 1) {
+    const day = new Date(acceptedAtMs + advance * DAY_MS).toISOString().slice(0, 10);
+    const snap = await txn.get(db.collection(METER_ANCHOR_DAYS_COLLECTION).doc(day));
+    if (!meterAnchorDayClosed(snap.exists ? snap.data() : undefined)) return day;
+  }
+  throw new Error('meter_anchor_day_unavailable');
+}
+
+/**
  * The relay's id for an act: derived from the device's pe_hash, so it is globally unique (the
  * hash covers device_id and pe_id) and deterministic (a retried batch maps every act to the same
  * id, which is what makes each act's mint-once claims self-owned on retry). A client-chosen

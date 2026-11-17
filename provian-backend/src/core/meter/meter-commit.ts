@@ -75,6 +75,7 @@ import {
   METER_DEVICE_TIPS_COLLECTION,
   METER_HELD_ACTS_COLLECTION,
   METER_PENDING_CLAIMS_COLLECTION,
+  openMeterAnchorDay,
   type MeterActDisposition,
   type MeterActReceipt,
   type MeterBatchReceipt,
@@ -357,6 +358,9 @@ export async function commitMeterBatch(db: Firestore, input: MeterBatchCommitInp
       committedReceipt = (prior.relay_receipt as MeterBatchReceipt | undefined) ?? receipt;
       return;
     }
+    // The day this batch is anchored under, decided against the day's anchor record in this
+    // transaction: a day whose close has begun takes no more batches.
+    const anchorDay = await openMeterAnchorDay(txn, db, acceptedAtMs);
     const allocations = [...new Set(fresh.map(o => o.ordinalCounters).filter(a => a !== undefined))];
     for (const allocation of allocations) await allocation.inspect(txn);
     const aggregateWriter = new EconomicAggregateWriter(db, txn, acceptedAtMs);
@@ -496,7 +500,7 @@ export async function commitMeterBatch(db: Firestore, input: MeterBatchCommitInp
       economic_paid_claim_keys: [],
       economic_settled: economicTotals.length === 0,
       settlement_complete: claims.length === 0 && fresh.every(o => o.heldReason === null),
-      day: new Date(acceptedAtMs).toISOString().slice(0, 10),
+      day: anchorDay,
       accepted_at_ms: acceptedAtMs,
       anchored: false,
       anchor: null,

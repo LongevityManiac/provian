@@ -3241,6 +3241,30 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
         return;
       }
 
+      // The agent's share is the human's to set. A share named in the request is
+      // bound into the payload the human signed, so a value the human did not sign
+      // fails signature verification; a request naming no share links at the default.
+      const hasCurrentBps = body.operational_reserve_bps !== undefined;
+      const hasLegacyRatio = body.operational_reserve_ratio !== undefined;
+      if (hasCurrentBps && hasLegacyRatio) {
+        res.status(400).json({
+          error: 'provide operational_reserve_bps only; legacy operational_reserve_ratio cannot be combined with it',
+        });
+        return;
+      }
+      const shareNamed = hasCurrentBps || hasLegacyRatio;
+      const agentShareBps = !shareNamed
+        ? DEFAULT_AGENT_BENEFICIARY_SHARE_BPS
+        : canonicalAgentBeneficiaryShareBps(hasCurrentBps
+          ? { bps: body.operational_reserve_bps }
+          : { legacyRatio: body.operational_reserve_ratio });
+      if (agentShareBps === null) {
+        res.status(400).json({
+          error: 'operational_reserve_bps must be an exact integer within [500, 5000]',
+        });
+        return;
+      }
+
       // Verify EIP-191 personal_sign signature over canonical payload.
       // The recovered EVM address must match the human wallet's address.
       const signedPayload: LinkSignaturePayload = {
@@ -3248,6 +3272,7 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
         agent_wallet_id: wallet_id,
         human_wallet_id: body.human_wallet_id,
         link_epoch: linkEpoch,
+        ...(shareNamed ? { operational_reserve_bps: agentShareBps } : {}),
         timestamp: body.timestamp,
       };
       const canonicalPayload = canonicalLinkSignaturePayload(signedPayload);
@@ -3262,26 +3287,6 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
 
       if (recoveredAddress.toLowerCase() !== humanWallet.address.toLowerCase()) {
         res.status(401).json({ error: 'Signature does not match human wallet address' });
-        return;
-      }
-
-      const hasCurrentBps = body.operational_reserve_bps !== undefined;
-      const hasLegacyRatio = body.operational_reserve_ratio !== undefined;
-      if (hasCurrentBps && hasLegacyRatio) {
-        res.status(400).json({
-          error: 'provide operational_reserve_bps only; legacy operational_reserve_ratio cannot be combined with it',
-        });
-        return;
-      }
-      const agentShareBps = !hasCurrentBps && !hasLegacyRatio
-        ? DEFAULT_AGENT_BENEFICIARY_SHARE_BPS
-        : canonicalAgentBeneficiaryShareBps(hasCurrentBps
-          ? { bps: body.operational_reserve_bps }
-          : { legacyRatio: body.operational_reserve_ratio });
-      if (agentShareBps === null) {
-        res.status(400).json({
-          error: 'operational_reserve_bps must be an exact integer within [500, 5000]',
-        });
         return;
       }
 

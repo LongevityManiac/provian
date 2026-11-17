@@ -51,18 +51,31 @@ const CONTRIB_ADDR = '0x1111111111111111111111111111111111111111';
 const CONTRIB_TX = '0x' + 'c'.repeat(64);
 const WITHDRAW_TX = '0x' + 'd'.repeat(64);
 
-function makeDeps(pool: PoolDocument | null, wallet: unknown = { agent_id: 'agent_a', address: CONTRIB_ADDR }) {
+function makeDeps(
+  pool: PoolDocument | null,
+  wallet: unknown = { agent_id: 'agent_a', address: CONTRIB_ADDR },
+  opts: { fresh?: PoolDocument | null } = {},
+) {
+  // `fresh` is what the pool looks like when the write transaction reads it —
+  // it differs from `pool` when something landed during on-chain verification.
+  const fresh = opts.fresh === undefined ? pool : opts.fresh;
   const poolRef = {
     get: jest.fn(async () => ({ exists: pool != null, data: () => pool })),
-    update: jest.fn(async () => {}),
+    // The pool is written only through the transaction; `update` records that write.
+    update: jest.fn(),
   };
   const walletRef = { get: jest.fn(async () => ({ exists: wallet != null, data: () => wallet })) };
+  const runTransaction = jest.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({
+    get: jest.fn(async () => ({ exists: fresh != null, data: () => fresh })),
+    update: jest.fn((_ref: unknown, patch: Record<string, unknown>) => poolRef.update(patch)),
+  }));
   const db = {
     collection: jest.fn((name: string) => ({
       doc: jest.fn(() => (name === 'pools' ? poolRef : walletRef)),
     })),
+    runTransaction,
   };
-  return { deps: { db } as unknown as AgentBankDeps, poolRef, walletRef };
+  return { deps: { db } as unknown as AgentBankDeps, poolRef, walletRef, runTransaction };
 }
 
 function usdcPool(overrides: Partial<PoolDocument> = {}): PoolDocument {
@@ -217,5 +230,48 @@ describe('withdrawContribution - confirmed withdrawal effects', () => {
     );
     const peArg = mockGeneratePE.mock.calls[0][1];
     expect(peArg.metadata).toMatchObject({ currency: 'pvt', withdrawn_pvt: '50000000000000000000' });
+  });
+});
+
+describe('withdrawContribution - the pool write is one transaction over fresh state', () => {
+  it('writes through a transaction', async () => {
+    const { deps, runTransaction, poolRef } = makeDeps(usdcPool());
+    await withdrawContribution(deps, 'pool_1', 'wallet_a', WITHDRAW_TX);
+    expect(runTransaction).toHaveBeenCalledTimes(1);
+    expect(poolRef.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('RED: a contribution from another wallet that landed during verification is not lost from the total', async () => {
+    const other = { address: '0x' + '9'.repeat(40), amount_usdc: 25, contributed_at: 0, tx_hash: '0x' + '8'.repeat(64) };
+    const before = usdcPool();
+    const fresh = usdcPool({ total_contributed_usdc: 65, contributions: { ...before.contributions, wallet_b: other } });
+    const { deps, poolRef } = makeDeps(before, undefined, { fresh });
+    const result = await withdrawContribution(deps, 'pool_1', 'wallet_a', WITHDRAW_TX);
+    expect(poolRef.update).toHaveBeenCalledWith(expect.objectContaining({ total_contributed_usdc: 25 }));
+    expect(result.total_contributed_usdc).toBe(25);
+    expect(result.contributions.wallet_b).toEqual(other);
+  });
+
+  it('RED: a pool that stopped being open during verification is not written, and no PE is emitted', async () => {
+    const { deps, poolRef } = makeDeps(usdcPool(), undefined, { fresh: usdcPool({ status: 'funded' }) });
+    await expect(withdrawContribution(deps, 'pool_1', 'wallet_a', WITHDRAW_TX)).rejects.toThrow(/expected open/);
+    expect(poolRef.update).not.toHaveBeenCalled();
+    expect(mockGeneratePE).not.toHaveBeenCalled();
+  });
+
+  it('RED: a contribution already withdrawn by a concurrent request is not withdrawn twice', async () => {
+    const { deps, poolRef } = makeDeps(usdcPool(), undefined, { fresh: usdcPool({ total_contributed_usdc: 0, contributions: {} }) });
+    await expect(withdrawContribution(deps, 'pool_1', 'wallet_a', WITHDRAW_TX)).rejects.toThrow(/No contribution/);
+    expect(poolRef.update).not.toHaveBeenCalled();
+    expect(mockGeneratePE).not.toHaveBeenCalled();
+  });
+
+  it('RED: a contribution that grew during verification is not removed against the smaller verified amount', async () => {
+    const grown = usdcPool({ total_contributed_usdc: 70, contributions: {
+      wallet_a: { address: CONTRIB_ADDR, amount_usdc: 70, contributed_at: 1, tx_hash: '0x' + '7'.repeat(64) },
+    } });
+    const { deps, poolRef } = makeDeps(usdcPool(), undefined, { fresh: grown });
+    await expect(withdrawContribution(deps, 'pool_1', 'wallet_a', WITHDRAW_TX)).rejects.toThrow(/changed while/);
+    expect(poolRef.update).not.toHaveBeenCalled();
   });
 });

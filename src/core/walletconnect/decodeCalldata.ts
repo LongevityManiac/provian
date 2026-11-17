@@ -195,6 +195,14 @@ export interface DecodedCall {
     wrapper?: WrapperKind;
     /** wrapped_calls only: the shallow-decoded inner value/authority calls */
     innerCalls?: DecodedCall[];
+    /**
+     * wrapped_calls only: how many of the wrapper's elements are NOT represented
+     * in innerCalls (swaps and other router commands, inputs that would not
+     * decode, calls with an unrecognised selector, commands with no input).
+     * Whatever those elements move is unknown to the decoder, so a non-zero
+     * count means the wrapper's value is not fully determined.
+     */
+    undecodedInnerCount?: number;
     riskLevel: 'low' | 'medium' | 'high';
 }
 
@@ -359,6 +367,7 @@ function buildWrapped(
     to: string,
     wrapper: WrapperKind,
     inner: DecodedCall[],
+    undecodedInnerCount: number,
 ): DecodedCall {
     const anyUnlimited = inner.some(
         c => (c.kind === 'erc20_approve' || c.kind === 'erc721_approve_all') && !!c.isUnlimitedApproval,
@@ -370,6 +379,7 @@ function buildWrapped(
         tokenKnown: false,
         wrapper,
         innerCalls: inner,
+        undecodedInnerCount,
         isUnlimitedApproval: anyUnlimited,
         riskLevel: maxInnerRisk(inner),
     };
@@ -414,7 +424,7 @@ function decodeMulticall(
             .map(el => decodeTransactionCall(to, el, chainId, depth + 1))
             .filter(isMeaningfulInner);
         if (inner.length === 0) return null;
-        return buildWrapped(selector, to, 'multicall', inner);
+        return buildWrapped(selector, to, 'multicall', inner, elements.length - inner.length);
     } catch {
         return null;
     }
@@ -475,7 +485,10 @@ function decodeUniversalRouter(
         }
 
         if (inner.length === 0) return null;
-        return buildWrapped(selector, to, 'universal_router', inner);
+        // Every command byte is one action; any that did not become an inner
+        // call (including a command with no matching input) is unaccounted for.
+        const actionCount = Math.max(commandBytes.length, inputs.length);
+        return buildWrapped(selector, to, 'universal_router', inner, actionCount - inner.length);
     } catch {
         return null;
     }

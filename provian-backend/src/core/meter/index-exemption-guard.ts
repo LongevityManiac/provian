@@ -44,6 +44,7 @@ export const KNOWN_OTHER_COLLECTION: Readonly<Record<string, string>> = {
   'src/core/meter/held-acts.ts#held_reason': 'meter_held_acts_v1',
   'src/core/pvt/settlement/genesis-inlet-source.ts#pe_id': 'genesis_qualification_outbox_v2',
   'scripts/reclassify-test-genesis-pes.ts#pe_id': 'genesis_qualification_outbox_v2 / genesis_reservations_v2',
+  'src/core/payout/on-demand-payout.ts#created_at_ms': 'pvt_payout_requests_v1',
 };
 
 export interface SourceFile {

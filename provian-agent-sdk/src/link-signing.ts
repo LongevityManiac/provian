@@ -37,6 +37,12 @@ export interface LinkPayload {
   human_wallet_id: string;
   /** the relationship epoch from `GET /v1/agent/wallet/:wallet_id/link-epoch`. */
   link_epoch: number;
+  /**
+   * The exact agent share (integer bps, 500–5000) the human consents to. Sign it
+   * exactly when the link request names a share; the relay refuses a share in the
+   * request that this payload does not carry. Omit it to link at the default share.
+   */
+  operational_reserve_bps?: number;
   timestamp: number;
 }
 
@@ -73,6 +79,8 @@ function canonicalize(payload: LinkConsentPayload): string {
   const keys = Object.keys(payload).sort() as Array<keyof typeof payload>;
   const parts: string[] = [];
   for (const k of keys) {
+    // An absent optional field is not part of the signed bytes.
+    if (payload[k] === undefined) continue;
     parts.push(`${JSON.stringify(k)}:${JSON.stringify(payload[k])}`);
   }
   return `{${parts.join(',')}}`;
@@ -108,6 +116,8 @@ function eip191Digest(message: string): Uint8Array {
  *     timestamp,
  *   });
  *   // POST { human_wallet_id, signature, timestamp, link_epoch } to /link-human
+ *   // To link at a share other than the default, put operational_reserve_bps in
+ *   // BOTH the signed payload and the request body.
  */
 export function signLinkPayload(
   privateKeyHex: string,

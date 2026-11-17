@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { createHash } from 'crypto';
+import { createHash, type Hash } from 'crypto';
 import type { OriginArgRule } from './origin-rules';
 import type { PeerProcessEntry } from './peer-process';
 import { listSessions, readRecordsAfter, normalizeEpoch, type RecordTableSpec } from './plugins/transcript/record-store';
@@ -236,6 +236,74 @@ export function sourceCheckpoint(spec: SessionDescription, src: ReturnType<typeo
     while(position<through){const b=Buffer.alloc(Math.min(through-position,1024*1024));const n=fs.readSync(fd,b,0,b.length,position);if(!n)break;digest.update(b.subarray(0,n));position+=n;}
   } finally {fs.closeSync(fd);}
   return digest.digest('hex');
+}
+/** What identifies one on-disk state of a session file without reading it. */
+export interface FileStamp { dev: number; ino: number; size: number; mtimeMs: number; ctimeMs: number }
+export const sameFileStamp = (a: FileStamp, b: FileStamp): boolean =>
+  a.dev === b.dev && a.ino === b.ino && a.size === b.size && a.mtimeMs === b.mtimeMs && a.ctimeMs === b.ctimeMs;
+export type RecordSource = ReturnType<typeof recordSources>[number] & { stamp?: FileStamp };
+
+/** `sessionFiles` without blocking: the same files in the same order. */
+export async function sessionFilesAsync(spec: SessionDescription): Promise<string[]> {
+  const out: string[] = [];
+  const walk = async (dir: string, depth: number): Promise<void> => {
+    for (const e of await fs.promises.readdir(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory() && depth < spec.maxDepth) await walk(p, depth + 1);
+      else if (e.isFile() && (spec.fileNames?.includes(e.name) || spec.suffix && e.name.endsWith(spec.suffix))) out.push(p);
+    }
+  };
+  await walk(spec.root, 0);
+  return out;
+}
+
+/** `recordSources` without blocking; a file source also carries the stamp its tip was read from. */
+export async function recordSourcesAsync(spec: SessionDescription): Promise<RecordSource[]> {
+  const out: RecordSource[] = [];
+  for (const file of await sessionFilesAsync(spec)) {
+    if (spec.sqlite) {
+      for (const s of listSessions(file, spec.sqlite)) out.push({ file, source: hash(file + '\0' + s.sessionId), sessionId: s.sessionId, tip: s.maxSeq });
+      await new Promise<void>(resolve => setImmediate(resolve));
+    } else {
+      const st = await fs.promises.stat(file);
+      out.push({ file, source: hash(file), tip: st.size, stamp: { dev: st.dev, ino: st.ino, size: st.size, mtimeMs: st.mtimeMs, ctimeMs: st.ctimeMs } });
+    }
+  }
+  return out;
+}
+
+/**
+ * The running digest behind a file source's checkpoint. Its value always equals
+ * `sourceCheckpoint` through the same offset, so the bytes a pass has just read
+ * extend the digest instead of the whole file being hashed again.
+ */
+export class FileCheckpoint {
+  private constructor(private readonly digest: Hash, private through: number) {}
+  static async open(file: string, through: number): Promise<FileCheckpoint> {
+    const digest = createHash('sha256');
+    const handle = await fs.promises.open(file, 'r');
+    try {
+      const st = await handle.stat(); digest.update(st.dev + ':' + st.ino + ':');
+      await FileCheckpoint.feed(handle, digest, 0, through);
+    } finally { await handle.close(); }
+    return new FileCheckpoint(digest, through);
+  }
+  private static async feed(handle: fs.promises.FileHandle, digest: Hash, from: number, to: number): Promise<void> {
+    let position = from;
+    while (position < to) {
+      const b = Buffer.alloc(Math.min(to - position, 1024 * 1024));
+      const { bytesRead } = await handle.read(b, 0, b.length, position);
+      if (!bytesRead) break;
+      digest.update(b.subarray(0, bytesRead)); position += bytesRead;
+    }
+  }
+  async extend(file: string, to: number): Promise<void> {
+    if (to <= this.through) return;
+    const handle = await fs.promises.open(file, 'r');
+    try { await FileCheckpoint.feed(handle, this.digest, this.through, to); } finally { await handle.close(); }
+    this.through = to;
+  }
+  value(): string { return this.digest.copy().digest('hex'); }
 }
 export function parseProgramDescription(raw: unknown): Omit<ProgramWitness, 'setupAtMs' | 'baseline'> {
   if (!object(raw) || typeof raw.program !== 'string' || !/^[a-z0-9][a-z0-9_-]{0,63}$/.test(raw.program)) throw new Error('program must be a simple name');

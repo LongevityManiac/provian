@@ -434,6 +434,12 @@ export interface CycleRunnerDeps {
 
   /** One due snapshot for this invocation; on-demand and Genesis bypass it. */
   readonly standardPayeeDue?: (address: string) => Promise<boolean>;
+  /**
+   * Why a payee cannot be paid right now, or null. A payee it names is left out of selection —
+   * its claims stay unsettled backlog, untouched — so the payees it would share a batch with
+   * settle without it. Both lanes.
+   */
+  readonly payeeHold?: (address: string) => Promise<string | null>;
   readonly db: SettlementDb;
   readonly chain: SettlementChainAdapter;
   readonly now: () => number;
@@ -621,7 +627,14 @@ export async function selectLaneWork(
   /** The run's set of ledger rows already twin-checked (see `auditLedgerSinceWatermark`). */
   auditedThisRun?: Set<string>,
   standardPayeeDue?: (address: string) => Promise<boolean>,
-): Promise<{ standard: LaneWork; genesis: LaneWork; ledger: Map<string, RecordedClaim>; exhausted: boolean }> {
+  /** A payee this names (a reason, not null) is left out of the sweep; see `CycleRunnerDeps.payeeHold`. */
+  payeeHold?: (address: string) => Promise<string | null>,
+): Promise<{
+  standard: LaneWork; genesis: LaneWork; ledger: Map<string, RecordedClaim>; exhausted: boolean;
+  /** Payees `payeeHold` left out of this sweep, each with its reason and how many claims waited. */
+  withheld: ReadonlyMap<string, { readonly reason: string; readonly claims: number }>;
+}> {
+  const withheld = new Map<string, { reason: string; claims: number }>();
   // Grouped by (contributor, beneficiary class) —. The kernel prices a recipient at ONE
   // class, and `assembleStandardBatch` refuses a batch whose contributor carries two
   // (`beneficiary_class_conflict`). Grouping by contributor alone put an agent's linked and
@@ -675,6 +688,14 @@ export async function selectLaneWork(
       }
       if (nowMs !== undefined && isClaimHeld(row, nowMs)) continue;
       if (row.lane === 'standard' && standardPayeeDue && !await standardPayeeDue(row.contributor)) continue;
+      if (payeeHold) {
+        const seen = withheld.get(row.contributor);
+        const reason = seen !== undefined ? seen.reason : await payeeHold(row.contributor);
+        if (reason !== null) {
+          withheld.set(row.contributor, { reason, claims: (seen?.claims ?? 0) + 1 });
+          continue;
+        }
+      }
       const groupKey = row.lane === 'standard'
         ? `${row.contributor}#${String(row.beneficiary_class)}`
         : row.contributor;
@@ -729,6 +750,7 @@ export async function selectLaneWork(
     genesis: toLaneWork('genesis'),
     ledger,
     exhausted,
+    withheld,
   };
 }
 
@@ -2938,6 +2960,7 @@ async function runSettlementCycleAttempt(
 
     const probeCounter = { next: 0 };
     let isolations = 0;
+    let withheldLogged = 0;
     // Ledger rows this run has already twin-checked (`auditLedgerSinceWatermark`): a re-selection
     // re-reads the overlap but does not re-query a row it already cleared.
     const auditedThisRun = new Set<string>();
@@ -2962,7 +2985,7 @@ async function runSettlementCycleAttempt(
       }
       const view = await chain.observe();
       const cycle = await readCycleOrThrow(db, config.cycleId);
-      const selection = await selectLaneWork(db, config.ledgerPageSize, config.selectionBudgetClaims, now(), auditedThisRun, deps.standardPayeeDue);
+      const selection = await selectLaneWork(db, config.ledgerPageSize, config.selectionBudgetClaims, now(), auditedThisRun, deps.standardPayeeDue, deps.payeeHold);
       const isolated = await isolateRefusedBatch(
         {
           deps, config: runConfig, view, cursor: BigInt(cycle.cursor_next), probeCounter, systemProven: confirmedThisRun > 0,
@@ -3174,9 +3197,16 @@ async function runSettlementCycleAttempt(
       }
 
       // ── Select work (bounded sweep). Held and reserved claims are left out.
-      const { standard: selectedStandardRaw, genesis: genesisRaw, ledger } = await selectLaneWork(
-        db, config.ledgerPageSize, config.selectionBudgetClaims, now(), auditedThisRun, deps.standardPayeeDue,
+      const { standard: selectedStandardRaw, genesis: genesisRaw, ledger, withheld } = await selectLaneWork(
+        db, config.ledgerPageSize, config.selectionBudgetClaims, now(), auditedThisRun, deps.standardPayeeDue, deps.payeeHold,
       );
+      if (withheld.size > 0 && withheld.size !== withheldLogged) {
+        withheldLogged = withheld.size;
+        const reasons = [...new Set([...withheld.values()].map((w) => w.reason))].sort().join(', ');
+        const claims = [...withheld.values()].reduce((count, w) => count + w.claims, 0);
+        log(`PAYEES WITHHELD: ${withheld.size} payee(s), ${claims} claim(s) left unsettled (${reasons}); `
+          + 'the rest of the queue settles without them');
+      }
       // lane scope: a scoped run settles only its lane (see `applyLaneScope`,
       // unit-tested in settlement-lane-scope.test.ts). The other lane's rows are left
       // untouched as durable backlog for their own cadence — NOT the recon-gate

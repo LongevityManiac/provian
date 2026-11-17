@@ -162,6 +162,8 @@ const useCommonsStore = create<CommonsState>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update';
       set({ error: message, isLoading: false });
+      // The caller shows "saved" only when this resolves.
+      throw err;
     }
   },
 

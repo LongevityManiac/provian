@@ -18,12 +18,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { execSync } from 'child_process';
 import * as os from 'os';
 // WS3 : one shared, tested composer that installs into the repo's ACTIVE
 // hooks path (respecting a repo-local/global core.hooksPath) instead of the
 // always-wrong `.git/hooks`.
-import { hookNodeInvocation, installIntoRepo, repoActiveHooksDir } from '../hook-install';
+import { hookNodeInvocation, installIntoRepo, isUsableGitConfigPath, realGit, repoActiveHooksDir } from '../hook-install';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -113,24 +112,18 @@ function confirm(question: string): Promise<boolean> {
   );
 }
 
+// git runs with an argument array and no shell: a configuration value, such as a hooks
+// path read back from git or from disk, is passed as data and never interpreted.
 function getGitConfig(key: string): string | null {
-  try {
-    return execSync(`git config --global ${key}`, { encoding: 'utf-8' }).trim() || null;
-  } catch {
-    return null;
-  }
+  return realGit.get('global', key);
 }
 
 function setGitConfig(key: string, value: string): void {
-  execSync(`git config --global ${key} "${value}"`);
+  realGit.set('global', key, value);
 }
 
 function unsetGitConfig(key: string): void {
-  try {
-    execSync(`git config --global --unset ${key}`);
-  } catch {
-    // already unset
-  }
+  realGit.unset('global', key);
 }
 
 function savePrevHooksPath(hooksPath: string): void {
@@ -403,7 +396,14 @@ async function removeGlobal(): Promise<void> {
 
   // Restore previous hooks path or unset
   const prev = loadPrevHooksPath();
-  if (prev) {
+  if (prev && !isUsableGitConfigPath(prev)) {
+    console.log('The saved previous core.hooksPath is not a usable path; it was not restored.');
+    if (getGitConfig('core.hooksPath') === GLOBAL_HOOKS_DIR) {
+      unsetGitConfig('core.hooksPath');
+      console.log('Unset git config --global core.hooksPath');
+    }
+    removePrevHooksPathFile();
+  } else if (prev) {
     setGitConfig('core.hooksPath', prev);
     removePrevHooksPathFile();
     console.log(`Restored core.hooksPath to: ${prev}`);

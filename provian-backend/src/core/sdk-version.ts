@@ -27,7 +27,7 @@
  */
 
 /** The version agents should be on — mirrors provian-agent-sdk/package.json. */
-export const SDK_LATEST = '1.13.2';
+export const SDK_LATEST = '1.13.3';
 
 /**
  * Advisory minimum. Deliberately permissive (1.0.0): no released SDK below the

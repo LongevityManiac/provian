@@ -43,7 +43,10 @@ export interface LinkSignaturePayload {
   human_wallet_id: string;
   /** The relationship revision the human consents to move FROM (`GET /:wallet_id/link-epoch`). */
   link_epoch: number;
-  /** Share changes only: the exact agent share the human consents to. */
+  /**
+   * The exact agent share the human consents to. Always present on a share change; present on a
+   * link exactly when the link request names a share (a link naming none uses the default).
+   */
   operational_reserve_bps?: number;
   timestamp: number;
 }

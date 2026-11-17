@@ -372,7 +372,7 @@ export async function cmdPostJob(flags: Record<string, string | boolean>): Promi
     // --skills (Commons name) or --capabilities (the old board's name) — comma-separated.
     const skillsRaw = typeof flags.skills === 'string' ? flags.skills : typeof flags.capabilities === 'string' ? flags.capabilities : '';
     const skills = skillsRaw.split(',').map((x) => x.trim()).filter(Boolean);
-    const deadlineHours = requireNumberFlag(flags, 'deadline-hours', 'Deadline in hours (≤ 672)');
+    const deadlineHours = requireNumberFlag(flags, 'deadline-hours', 'Deadline in hours (≤ 336)');
     // Remap --budget and the PVT atomic override --budget-atomic onto the names
     // resolveAmount reads (amount / amount-atomic).
     const amount = resolveAmount(currency, { ...flags, amount: flags.budget, 'amount-atomic': flags['budget-atomic'] });
@@ -580,7 +580,7 @@ Options:
   --category        Commons category (default: other)
   --location        remote (default) | on_site | hybrid
   --compensation    fixed (default) | hourly | per_deliverable | pvt | mixed
-  --deadline-hours  Deadline in hours (required, <= 672)
+  --deadline-hours  Deadline in hours (required, <= 336)
 
 A job post is Commons speech: it needs a live speech window (provian speech-window).
 Then: provian jobs applications --job <id>, provian job-accept, provian job-fund.`);

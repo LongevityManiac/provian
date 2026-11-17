@@ -174,6 +174,58 @@ async function proveOwnedPE(
   };
 }
 
+const REDACTION_SHOW_FLAGS = [
+  'show_intent_text',
+  'show_counterparty',
+  'show_amount',
+  'show_currency',
+  'show_artifact_hash',
+] as const satisfies ReadonlyArray<keyof RedactionConfig>;
+
+/**
+ * Why `consent` cannot authorize publishing `request` now, or null when it can.
+ *
+ * A consent authorizes one publication: at the institution it named, showing no
+ * field the parties did not agree to show (and, where intent text is shown, the
+ * agreed summary and no other), approved by every consenting party, before it
+ * expires, and only once.
+ */
+export function consentRefusal(
+  consent: PublicationConsent,
+  request: Pick<PublishPERequest, 'redaction_config' | 'institution'>,
+  nowMs: number,
+): string | null {
+  const parties = Array.isArray(consent.consenting_wallet_ids) ? consent.consenting_wallet_ids : [];
+  const statuses = consent.consent_status ?? {};
+  if (parties.length === 0 || !parties.every((id) => statuses[id] === 'approved')
+    || !Object.values(statuses).every((status) => status === 'approved')) {
+    return 'Not all parties have approved publication';
+  }
+  if (typeof consent.expires_at !== 'number' || !Number.isFinite(consent.expires_at) || nowMs > consent.expires_at) {
+    return 'Publication consent has expired. Request consent again.';
+  }
+  if (consent.consumed_at !== undefined && consent.consumed_at !== null) {
+    return 'Publication consent was already used. Request consent again.';
+  }
+  const agreed = consent.redaction_config;
+  if (!agreed || typeof agreed !== 'object') {
+    return 'Publication consent carries no agreed redaction terms. Request consent again.';
+  }
+  if (consent.institution !== request.institution) {
+    return 'Publication does not match the consented terms: institution differs from the one agreed.';
+  }
+  for (const flag of REDACTION_SHOW_FLAGS) {
+    if (request.redaction_config[flag] === true && agreed[flag] !== true) {
+      return `Publication does not match the consented terms: ${flag} was not agreed.`;
+    }
+  }
+  if (request.redaction_config.show_intent_text === true
+    && (request.redaction_config.intent_text_summary ?? null) !== (agreed.intent_text_summary ?? null)) {
+    return 'Publication does not match the consented terms: intent_text_summary differs from the one agreed.';
+  }
+  return null;
+}
+
 export async function publishPE(
   deps: CommonsDeps,
   walletId: string,
@@ -208,15 +260,16 @@ export async function publishPE(
   const pe = proven.pe;
   const peMeta = plainRecord(pe.metadata);
 
-  // Check for counterparty - requires mutual consent.
+  // Check for counterparty - requires mutual consent. The approval that is used is
+  // one every consenting party gave, that has not expired, that has not already
+  // been used for a publication, and whose agreed terms cover what is published.
   const counterpartyAddress = nonEmptyString(pe.counterparty_address);
+  let consentRef: FirebaseFirestore.DocumentReference | null = null;
   if (counterpartyAddress && body.redaction_config.show_counterparty) {
-    // Check if consent exists and is approved
     const consentSnap = await deps.db
       .collection(COMMONS_COLLECTIONS.PUBLICATION_CONSENTS)
       .where('pe_id', '==', peId)
       .where('requesting_wallet_id', '==', walletId)
-      .limit(1)
       .get();
 
     if (consentSnap.empty) {
@@ -225,19 +278,24 @@ export async function publishPE(
       );
     }
 
-    const consent = consentSnap.docs[0].data() as PublicationConsent;
-    const allApproved = Object.values(consent.consent_status).every(s => s === 'approved');
-    if (!allApproved) {
-      throw new ValidationError('Not all parties have approved publication');
+    const nowMs = Date.now();
+    let refusal: string | null = null;
+    for (const doc of consentSnap.docs) {
+      const reason = consentRefusal(doc.data() as PublicationConsent, body, nowMs);
+      if (reason === null) {
+        consentRef = doc.ref;
+        break;
+      }
+      refusal = refusal ?? reason;
+    }
+    if (consentRef === null) {
+      throw new ValidationError(refusal ?? 'Not all parties have approved publication');
     }
   }
 
   // Check if already published
-  const existingPub = await deps.db
-    .collection(COMMONS_COLLECTIONS.PUBLISHED_PES)
-    .doc(peId)
-    .get();
-  if (existingPub.exists) {
+  const publishedRef = deps.db.collection(COMMONS_COLLECTIONS.PUBLISHED_PES).doc(peId);
+  if ((await publishedRef.get()).exists) {
     throw new ValidationError('This PE is already published');
   }
 
@@ -314,10 +372,23 @@ export async function publishPE(
     anchor_proof: proven.anchorProof,
   };
 
-  await deps.db
-    .collection(COMMONS_COLLECTIONS.PUBLISHED_PES)
-    .doc(peId)
-    .set(projection);
+  // The projection and the use of its consent commit together: an approval is
+  // spent by the publication it authorizes, and cannot authorize a second one.
+  const usedConsentRef = consentRef;
+  await deps.db.runTransaction(async (txn) => {
+    if ((await txn.get(publishedRef)).exists) {
+      throw new ValidationError('This PE is already published');
+    }
+    if (usedConsentRef !== null) {
+      const freshConsent = await txn.get(usedConsentRef);
+      const reason = freshConsent.exists
+        ? consentRefusal(freshConsent.data() as PublicationConsent, body, Date.now())
+        : 'Mutual consent required to show counterparty. Use POST /v1/pe/request-consent first.';
+      if (reason !== null) throw new ValidationError(reason);
+      txn.update(usedConsentRef, { consumed_at: Date.now(), consumed_by_publication: peId });
+    }
+    txn.set(publishedRef, projection);
+  });
 
   // Update profile published PE count
   const { FieldValue } = await import('firebase-admin/firestore');

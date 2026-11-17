@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { ethers } from 'ethers';
-import { decodeTypedData, isKnownNonSpendTypedData, PERMIT2_ADDRESS } from '../decodeTypedData';
+import { decodeTypedData, isKnownNonSpendTypedData, checkTypedDataRoot, PERMIT2_ADDRESS } from '../decodeTypedData';
 
 const BASE = 8453;
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -361,5 +361,110 @@ describe('decodeTypedData — non-permit and malformed', () => {
         expect(decodeTypedData(null)).toBeNull();
         expect(decodeTypedData('nope')).toBeNull();
         expect(decodeTypedData({ primaryType: 'Permit' })).toBeNull();
+    });
+});
+
+// The signer is given (domain, types, message) and derives the struct it signs
+// from `types`; it never reads the declared primaryType. These tests bind the
+// app's root derivation to the signer's own (ethers.TypedDataEncoder) and show
+// that a payload declared as one struct but signed as another is refused.
+describe('declared primaryType must be the struct the signer signs', () => {
+    const WITNESS_TRANSFER_TYPES = {
+        // A Permit2 witness transfer whose attacker-chosen witness struct embeds a
+        // DAI-style `Permit`, so `Permit` is a declared type but NOT the root.
+        PermitWitnessTransferFrom: [
+            { name: 'permitted', type: 'TokenPermissions' },
+            { name: 'spender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' },
+            { name: 'witness', type: 'Witness' },
+        ],
+        TokenPermissions: [{ name: 'token', type: 'address' }, { name: 'amount', type: 'uint256' }],
+        Witness: [{ name: 'cover', type: 'Permit' }],
+        ...DAI_TYPES,
+    };
+    const daiRevokeFields = { holder: OWNER, spender: SPENDER, nonce: '0', expiry: '1900000000', allowed: false };
+    const disguised = {
+        primaryType: 'Permit',
+        domain: { name: 'Permit2', chainId: BASE, verifyingContract: PERMIT2_ADDRESS },
+        types: { EIP712Domain: [{ name: 'name', type: 'string' }], ...WITNESS_TRANSFER_TYPES },
+        message: {
+            // what the decoder reads for the declared `Permit` …
+            ...daiRevokeFields,
+            // … and what the signer actually encodes.
+            permitted: { token: USDC_BASE, amount: '5000000000' },
+            deadline: '1900000000',
+            witness: { cover: daiRevokeFields },
+        },
+    };
+
+    it('the signer really signs the witness transfer, not the declared Permit', () => {
+        const encoder = ethers.TypedDataEncoder.from(WITNESS_TRANSFER_TYPES);
+        expect(encoder.primaryType).toBe('PermitWitnessTransferFrom');
+        // It signs without complaint: nothing downstream of the app would stop it.
+        expect(() => ethers.TypedDataEncoder.hash(disguised.domain, WITNESS_TRANSFER_TYPES, disguised.message)).not.toThrow();
+    });
+
+    it('a witness transfer declared as a DAI revoke is not decoded as a revoke', () => {
+        expect(decodeTypedData(disguised, BASE)).toBeNull();
+        expect(checkTypedDataRoot(disguised)).toEqual({ ok: false, reason: 'primary_type_mismatch' });
+    });
+
+    it('control: the same DAI revoke on its own is still a revoke', () => {
+        const honest = { primaryType: 'Permit', domain: { chainId: BASE, verifyingContract: DAI_BASE }, types: DAI_TYPES, message: daiRevokeFields };
+        expect(checkTypedDataRoot(honest)).toEqual({ ok: true, primaryType: 'Permit' });
+        expect(decodeTypedData(honest, BASE)?.isRevoke).toBe(true);
+    });
+
+    it('a bounded permit declared over a hidden root struct is not decoded as a permit', () => {
+        const td = {
+            primaryType: 'Permit',
+            domain: { chainId: BASE, verifyingContract: USDC_BASE },
+            types: { ...EIP2612_TYPES, Order: [{ name: 'permit', type: 'Permit[]' }, { name: 'taker', type: 'address' }] },
+            message: { owner: OWNER, spender: SPENDER, value: '1000000', nonce: '0', deadline: '1900000000' },
+        };
+        expect(checkTypedDataRoot(td)).toEqual({ ok: false, reason: 'primary_type_mismatch' });
+        expect(decodeTypedData(td, BASE)).toBeNull();
+        expect(isKnownNonSpendTypedData(td)).toBe(false);
+    });
+
+    it('refuses an ambiguous root, a missing root, a missing primaryType and malformed types', () => {
+        const permit = EIP2612_TYPES.Permit;
+        expect(checkTypedDataRoot({ primaryType: 'Permit', types: { Permit: permit, Other: [{ name: 'x', type: 'uint256' }] } }))
+            .toEqual({ ok: false, reason: 'ambiguous_root_type' });
+        expect(checkTypedDataRoot({ primaryType: 'A', types: { A: [{ name: 'b', type: 'B' }], B: [{ name: 'a', type: 'A' }] } }))
+            .toEqual({ ok: false, reason: 'no_root_type' });
+        expect(checkTypedDataRoot({ primaryType: 'Permit', types: { EIP712Domain: [] } })).toEqual({ ok: false, reason: 'no_root_type' });
+        expect(checkTypedDataRoot({ types: { Permit: permit } })).toEqual({ ok: false, reason: 'missing_primary_type' });
+        expect(checkTypedDataRoot({ primaryType: 'EIP712Domain', types: { EIP712Domain: [], Permit: permit } }))
+            .toEqual({ ok: false, reason: 'primary_type_mismatch' });
+        for (const types of [undefined, null, 'x', [], { Permit: 'x' }, { Permit: [null] }, { Permit: [{ name: 'a' }] },
+            { Permit: [{ name: 'self', type: 'Permit' }] }, { uint256: permit }, { 'Permit[]': permit }]) {
+            expect(checkTypedDataRoot({ primaryType: 'Permit', types })).toEqual({ ok: false, reason: 'malformed_types' });
+        }
+        expect(checkTypedDataRoot(null)).toEqual({ ok: false, reason: 'malformed_types' });
+    });
+
+    it('agrees with the signer on the root of every shape the signer accepts', () => {
+        const shapes: Array<Record<string, Array<{ name: string; type: string }>>> = [
+            EIP2612_TYPES,
+            DAI_TYPES,
+            WITNESS_TRANSFER_TYPES,
+            { PermitSingle: [{ name: 'details', type: 'PermitDetails' }, { name: 'spender', type: 'address' }, { name: 'sigDeadline', type: 'uint256' }], PermitDetails: PERMIT_DETAILS },
+            { PermitBatch: [{ name: 'details', type: 'PermitDetails[]' }, { name: 'spender', type: 'address' }, { name: 'sigDeadline', type: 'uint256' }], PermitDetails: PERMIT_DETAILS },
+            { A: [{ name: 'b', type: 'B[2][]' }, { name: 'c', type: 'C' }], B: [{ name: 'c', type: 'C' }], C: [{ name: 'v', type: 'bytes32' }] },
+        ];
+        let checked = 0;
+        for (const withDomain of shapes) {
+            const types = { ...withDomain } as Record<string, Array<{ name: string; type: string }>>;
+            delete types.EIP712Domain;
+            const signerRoot = ethers.TypedDataEncoder.from(types).primaryType;
+            expect(checkTypedDataRoot({ primaryType: signerRoot, types: withDomain })).toEqual({ ok: true, primaryType: signerRoot });
+            for (const other of Object.keys(types).filter(name => name !== signerRoot)) {
+                expect(checkTypedDataRoot({ primaryType: other, types: withDomain }).ok).toBe(false);
+            }
+            checked += 1;
+        }
+        expect(checked).toBe(shapes.length);
     });
 });

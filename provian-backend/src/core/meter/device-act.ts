@@ -1,4 +1,5 @@
 import {openPrivatePricing} from './private-pricing';
+import { isReplicationPackHash } from '../pvt/policy/replication-pack';
 /**
  * PE METER — a device batch's act, turned into the accrual's pricing inputs.
  *
@@ -264,15 +265,18 @@ export async function deviceActToAccrualParams(
     return { ok: false, reason: 'agent_api_orchestration_requires_api_count' };
   }
 
+  // A Replication Pack counts only whole: its input, output and pack hashes are all present and
+  // each is a SHA-256 digest. Anything less is no pack, and so earns no attestation-tier upgrade.
   const replicationPack = obj(pricing.replication_pack);
   const replicationPackData: RecordPEAccrualParams['replication_pack'] = replicationPack
-    && typeof replicationPack.input_hash === 'string' && typeof replicationPack.output_hash === 'string'
+    && isReplicationPackHash(replicationPack.input_hash) && isReplicationPackHash(replicationPack.output_hash)
+    && isReplicationPackHash(replicationPack.pack_hash)
     ? {
       input_hash: replicationPack.input_hash,
       output_hash: replicationPack.output_hash,
       model_id: (replicationPack.model_id as string) || null,
       model_checkpoint_hash: (replicationPack.model_checkpoint_hash as string) || null,
-      pack_hash: (replicationPack.pack_hash as string) || null,
+      pack_hash: replicationPack.pack_hash,
     }
     : undefined;
   const attestationDepth = replicationPackData ? 'software_verified' : lane.attestationTier;

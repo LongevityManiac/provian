@@ -25,6 +25,53 @@ import {
   withIndexShard,
 } from './pe-history-index-shard';
 import { walkHeldActs } from './held-act-sweep';
+import { CONSOLE_ROLLUP_COLLECTION, CONSOLE_ROLLUP_SHARDS, consoleRollupDay, consoleRollupDocId } from './disposition-rollup';
+import type { DocumentReference, DocumentSnapshot, Firestore } from 'firebase-admin/firestore';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** The ceiling's trailing window: twelve seven-day epochs, in whole UTC days. */
+export const DEFERRED_RELEASE_TRAILING_DAYS = 12 * 7;
+
+/**
+ * The release ceiling's input: the trailing daily average of ELIGIBLE acts the meter recorded.
+ * Every eligible act mints exactly once, so this is the number of acts minted per day.
+ *
+ * Read from the per-day disposition counts every act commit maintains in its own transaction
+ * (`pvt_console_rollups/{day}__{shard}`, `counts.eligible`; a later disposition change moves the
+ * act between counts on its own day). Record-only, held and deferred acts are counted under their
+ * own dispositions and never here. The window is the twelve epochs before today: complete UTC
+ * days only, today's partial day left out. Its average is over the days since the first day in
+ * the window that recorded any act at all, so a network younger than the window is not diluted by
+ * days before it existed. Nothing recorded in the window is an average of zero.
+ */
+export async function trailingDailyEligibleActAverage(db: Firestore, nowMs: number): Promise<number> {
+  const todayStart = Math.floor(nowMs / DAY_MS) * DAY_MS;
+  const days: string[] = [];
+  for (let back = DEFERRED_RELEASE_TRAILING_DAYS; back >= 1; back -= 1) days.push(consoleRollupDay(todayStart - back * DAY_MS));
+  const refs: DocumentReference[] = [];
+  for (const day of days) {
+    for (let shard = 0; shard < CONSOLE_ROLLUP_SHARDS; shard += 1) refs.push(db.collection(CONSOLE_ROLLUP_COLLECTION).doc(consoleRollupDocId(day, shard)));
+  }
+  const snaps: DocumentSnapshot[] = typeof db.getAll === 'function' ? await db.getAll(...refs) : await Promise.all(refs.map((ref) => ref.get()));
+  const eligibleByDay = new Map<string, number>();
+  const recordedByDay = new Map<string, number>();
+  for (const snap of snaps) {
+    if (!snap.exists) continue;
+    const data = snap.data() ?? {};
+    const day = typeof data.day === 'string' ? data.day : null;
+    if (day === null) continue;
+    const counts = data.counts !== null && typeof data.counts === 'object' ? data.counts as Record<string, unknown> : {};
+    const eligible = typeof counts.eligible === 'number' && Number.isFinite(counts.eligible) ? Math.max(0, counts.eligible) : 0;
+    const recorded = Object.values(counts).reduce<number>((total, n) => total + (typeof n === 'number' && Number.isFinite(n) ? Math.max(0, n) : 0), 0);
+    eligibleByDay.set(day, (eligibleByDay.get(day) ?? 0) + eligible);
+    recordedByDay.set(day, (recordedByDay.get(day) ?? 0) + recorded);
+  }
+  const first = days.findIndex((day) => (recordedByDay.get(day) ?? 0) > 0);
+  if (first < 0) return 0;
+  const span = days.length - first;
+  const eligible = days.slice(first).reduce((total, day) => total + (eligibleByDay.get(day) ?? 0), 0);
+  return eligible / span;
+}
 
 /** PE METER — the per-jurisdiction cursors of the walk over metered acts held `deferred`. */
 export const DEFERRED_RELEASE_HELD_CURSOR_COLLECTION = 'pvt_deferred_release_held_cursor_v1';
@@ -42,7 +89,7 @@ function numberOrInfinity(value: unknown): number {
 
 export interface DeferredReleaseConfig {
   jurisdiction: string;            // ISO country code
-  daily_ceiling_percent: number;   // Max % of trailing 12-epoch avg daily mint volume
+  daily_ceiling_percent: number;   // Max % of the trailing 12-epoch average of eligible acts per day
   re_attestation_required: boolean;
   activated_at: number;            // Unix ms - authorized prospective policy event; the operator-EOA-direct during bootstrap unless separately handed off
   active: boolean;                 // Whether this release is currently active
@@ -54,7 +101,7 @@ export interface DeferredReleaseConfig {
  */
 export async function processDeferredReleaseBatch(
   config: DeferredReleaseConfig,
-  trailingDailyMintAvg: number,  // Average PEs minted per day over trailing 12 epochs
+  trailingDailyMintAvg: number,  // `trailingDailyEligibleActAverage`: eligible acts per day over the trailing 12 epochs
 ): Promise<number> {
   const db = relayDb();
 

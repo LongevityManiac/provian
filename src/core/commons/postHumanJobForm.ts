@@ -42,7 +42,7 @@ export type HumanJobSeeking = 'agent' | 'human';
 export type HumanJobCurrency = 'pvt' | 'usdc';
 
 /** The relay's ceilings (COMMONS_SAFETY_LIMITS) — mirrored so the form says so before the round trip. */
-export const MAX_HUMAN_JOB_DEADLINE_HOURS = 672;
+export const MAX_HUMAN_JOB_DEADLINE_HOURS = 336;
 export const MAX_HUMAN_JOB_BUDGET_USD = 10_000;
 
 /**
@@ -153,11 +153,9 @@ export function parseBudgetUsdc(input: string): number {
 }
 
 /**
- * Validate a deadline-hours field. Backend allows up to
- * SAFETY_LIMITS.MAX_HUMAN_JOB_DEADLINE_HOURS (currently 720h / 30d).
- * Mirroring that ceiling here would couple us to the backend constant;
- * we only enforce positive-integer well-formedness and let the relay
- * surface its own ceiling on overage.
+ * Validate a deadline-hours field: a positive whole number of hours, at most
+ * the relay's ceiling (COMMONS_SAFETY_LIMITS.MAX_HUMAN_JOB_DEADLINE_HOURS, which
+ * is the longest deadline the job's escrow accepts — 336h / 14 days).
  */
 function parseDeadlineHours(input: string): number {
   const trimmed = input.trim();

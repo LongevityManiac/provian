@@ -98,6 +98,13 @@ function proofDigest(proof: BugProof): string {
   })).digest('hex');
 }
 
+/** Why a claim row forbids demoting its PE: it is settled, or reserved by a batch. Null when neither. */
+function claimConflict(claim: Readonly<Record<string, unknown>>): 'claim_already_settled' | 'claim_reserved_or_in_flight' | null {
+  if (claim.settled === true || typeof claim.settled_tx_hash === 'string') return 'claim_already_settled';
+  if (typeof claim.reserved_batch_id === 'string' && claim.reserved_batch_id.length > 0) return 'claim_reserved_or_in_flight';
+  return null;
+}
+
 export async function demoteBugProducedPe(input: {
   db: Firestore;
   peId: string;
@@ -127,17 +134,14 @@ export async function demoteBugProducedPe(input: {
   if (proof === null || proof.detector_id !== detector.id || proof.detector_version !== detector.version) {
     return { kind: 'refused', reason: 'bug_not_proved' };
   }
-  const ledgerSnap = await input.db.collection(CLAIM_LEDGER_COLLECTION)
-    .where('pe_key', '==', peId).get();
+  const ledgerQuery = input.db.collection(CLAIM_LEDGER_COLLECTION).where('pe_key', '==', peId);
+  // Advisory for a dry run only. An executing run decides from the claim set it reads inside its
+  // own transaction, below: a leg registered or reserved after this read must refuse the demotion.
+  const ledgerSnap = await ledgerQuery.get();
   const claimRows = ledgerSnap.docs.length;
   for (const doc of ledgerSnap.docs) {
-    const claim = doc.data() as Record<string, unknown>;
-    if (claim.settled === true || typeof claim.settled_tx_hash === 'string') {
-      return { kind: 'refused', reason: 'claim_already_settled' };
-    }
-    if (typeof claim.reserved_batch_id === 'string' && claim.reserved_batch_id.length > 0) {
-      return { kind: 'refused', reason: 'claim_reserved_or_in_flight' };
-    }
+    const conflict = claimConflict(doc.data() as Record<string, unknown>);
+    if (conflict !== null) return { kind: 'refused', reason: conflict };
   }
   if (!input.execute) return { kind: 'dry_run_proved', proof, claim_rows: claimRows };
 
@@ -145,11 +149,14 @@ export async function demoteBugProducedPe(input: {
   const digest = proofDigest(proof);
   const demotionId = `bug_demotion_${digest.slice(0, 24)}_${peId}`;
   const demotionRef = input.db.collection(BUG_DEMOTION_COLLECTION).doc(peId);
-  const ledgerRefs = ledgerSnap.docs.map((doc) => doc.ref);
   const coordinated = await input.db.runTransaction(async (txn) => {
     const [freshPe, existingDemotion] = [await txn.get(peRef), await txn.get(demotionRef)];
-    const freshClaims = [];
-    for (const ref of ledgerRefs) freshClaims.push(await txn.get(ref));
+    // The PE's whole claim set is read HERE, in the transaction that writes the tombstone. Claim
+    // registration and batch reservation both read the tombstone in their own transactions, so
+    // every claim either appears in this read or is refused by the tombstone: none can be settled,
+    // reserved or in flight unseen.
+    const freshClaims = await txn.get(ledgerQuery);
+    const ledgerRefs = freshClaims.docs.map((doc) => doc.ref);
     if (existingDemotion.exists) {
       const existing = existingDemotion.data() as Record<string, unknown>;
       return existing.demotion_id === demotionId ? 'resume' as const : 'different_demotion' as const;
@@ -157,11 +164,10 @@ export async function demoteBugProducedPe(input: {
     const freshRow = freshPe.exists ? freshPe.data() as Record<string, unknown> : null;
     if (freshRow === null || freshRow.mint_status !== 'eligible'
       || freshRow.economic_snapshot_hash !== input.expectedSnapshotHash) return 'pe_changed' as const;
-    if (freshClaims.some((snap) => {
-      const claim = snap.exists ? snap.data() as Record<string, unknown> : null;
-      return claim === null || claim.settled === true
-        || (typeof claim.reserved_batch_id === 'string' && claim.reserved_batch_id.length > 0);
-    })) return 'claim_changed' as const;
+    for (const doc of freshClaims.docs) {
+      const conflict = claimConflict(doc.data() as Record<string, unknown>);
+      if (conflict !== null) return conflict;
+    }
     txn.create(demotionRef, {
       schema_version: BUG_DEMOTION_SCHEMA,
       demotion_id: demotionId,
@@ -183,7 +189,7 @@ export async function demoteBugProducedPe(input: {
     }
     return 'created' as const;
   });
-  if (coordinated === 'different_demotion' || coordinated === 'pe_changed' || coordinated === 'claim_changed') {
+  if (coordinated !== 'created' && coordinated !== 'resume') {
     return { kind: 'refused', reason: coordinated };
   }
 

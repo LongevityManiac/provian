@@ -220,6 +220,9 @@ export async function createPool(
   return doc;
 }
 
+/** Single-use locks binding one on-chain pool contribution to one recorded contribution. */
+export const POOL_CONTRIBUTION_LOCKS_COLLECTION = 'pool_contribution_locks';
+
 /**
  * Contribute to a pool. The amount currency is dictated by the pool -
  * `amountUsdc` is required for USDC pools, `amountPvtWei` for PVT pools.
@@ -287,6 +290,14 @@ export async function contribute(
   }
   const contributedOnchainPoolId = contribVerification.poolId;
 
+  // One on-chain contribution credits exactly one recorded contribution. The
+  // lock is created in the same transaction as the credit, so a second request
+  // naming the same transaction (replayed or concurrent) records nothing.
+  // Mirrors `escrow_fund_locks` / `promise_fund_locks`.
+  const contributionLockRef = deps.db
+    .collection(POOL_CONTRIBUTION_LOCKS_COLLECTION)
+    .doc(`${contribChain}:${txHash.toLowerCase()}`);
+
   // Phase 2.13 - Theme 8: read-modify-write of pool totals must run inside
   // a Firestore transaction so concurrent contributions don't lose updates.
   const now = Date.now();
@@ -301,6 +312,19 @@ export async function contribute(
     if (pool.status !== 'open') {
       throw new ValidationError(`Pool status is ${pool.status}, expected open`);
     }
+
+    const contributionLock = await tx.get(contributionLockRef);
+    if (contributionLock.exists) {
+      throw new ValidationError('This on-chain pool contribution is already recorded');
+    }
+    tx.set(contributionLockRef, {
+      pool_id: poolId,
+      chain: contribChain,
+      contributor_wallet_id: contributorWalletId,
+      contribute_tx_hash: txHash,
+      onchain_pool_id: contributedOnchainPoolId,
+      created_at: now,
+    });
 
     const existingContributors = Object.keys(pool.contributions).length;
     const isNewContributor = !pool.contributions[contributorWalletId];
@@ -592,37 +616,47 @@ export async function withdrawContribution(
   const now = Date.now();
   const { FieldValue } = await import('firebase-admin/firestore');
 
-  let updatedDoc: PoolDocument;
-  if (withdrawCurrency === 'pvt') {
-    const contribWei = BigInt(contribution.amount_pvt ?? '0');
-    const totalWei = BigInt(doc.total_contributed_pvt ?? '0');
-    const newTotalWei = totalWei - contribWei;
-    await docRef.update({
+  // The read-check-write of the pool runs in one transaction: the contribution
+  // removed and the total reduced are the ones the on-chain withdrawal was
+  // verified against, so a concurrent contribution, withdrawal or status change
+  // can neither be lost nor leave the totals out of step.
+  const updatedDoc = await deps.db.runTransaction(async (tx): Promise<PoolDocument> => {
+    const freshSnap = await tx.get(docRef);
+    if (!freshSnap.exists) throw new NotFoundError('Pool not found');
+    const fresh = freshSnap.data() as PoolDocument;
+    if (fresh.status !== 'open') {
+      throw new ValidationError(`Pool status is ${fresh.status}, expected open`);
+    }
+    const freshContribution = fresh.contributions[contributorWalletId];
+    if (!freshContribution) {
+      throw new ValidationError('No contribution found for this wallet');
+    }
+    if (
+      freshContribution.tx_hash !== contribution.tx_hash
+      || freshContribution.amount_usdc !== contribution.amount_usdc
+      || (freshContribution.amount_pvt ?? '0') !== (contribution.amount_pvt ?? '0')
+    ) {
+      throw new ValidationError('Contribution changed while the withdrawal was being verified; retry');
+    }
+    const newContributions = { ...fresh.contributions };
+    delete newContributions[contributorWalletId];
+    if (withdrawCurrency === 'pvt') {
+      const newTotalWei = BigInt(fresh.total_contributed_pvt ?? '0') - BigInt(freshContribution.amount_pvt ?? '0');
+      tx.update(docRef, {
+        [`contributions.${contributorWalletId}`]: FieldValue.delete(),
+        total_contributed_pvt: newTotalWei.toString(),
+        updated_at: now,
+      });
+      return { ...fresh, contributions: newContributions, total_contributed_pvt: newTotalWei.toString() };
+    }
+    const newTotalUsdc = fresh.total_contributed_usdc - freshContribution.amount_usdc;
+    tx.update(docRef, {
       [`contributions.${contributorWalletId}`]: FieldValue.delete(),
-      total_contributed_pvt: newTotalWei.toString(),
+      total_contributed_usdc: newTotalUsdc,
       updated_at: now,
     });
-    const newContributions = { ...doc.contributions };
-    delete newContributions[contributorWalletId];
-    updatedDoc = {
-      ...doc,
-      contributions: newContributions,
-      total_contributed_pvt: newTotalWei.toString(),
-    };
-  } else {
-    await docRef.update({
-      [`contributions.${contributorWalletId}`]: FieldValue.delete(),
-      total_contributed_usdc: doc.total_contributed_usdc - contribution.amount_usdc,
-      updated_at: now,
-    });
-    const newContributions = { ...doc.contributions };
-    delete newContributions[contributorWalletId];
-    updatedDoc = {
-      ...doc,
-      contributions: newContributions,
-      total_contributed_usdc: doc.total_contributed_usdc - contribution.amount_usdc,
-    };
-  }
+    return { ...fresh, contributions: newContributions, total_contributed_usdc: newTotalUsdc };
+  });
 
   // Emit a verified pool_withdrawn PE (on-chain confirmed above), currency-aware.
   const peMetadata: Record<string, unknown> = {

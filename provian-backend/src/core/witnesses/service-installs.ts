@@ -91,6 +91,55 @@ export interface ServiceInstallDocument {
   forge_account_id?: string | null;
   /** Display-only login for the stamped forge account (github only). */
   forge_account_login?: string | null;
+  /**
+   * gitlab/bitbucket only: the record that the registrant proved control of
+   * the project at registration (see forge-deploy-key.ts): a deploy key the
+   * relay generated read exactly this project path on the forge. It holds the
+   * key's fingerprint, the proven path and the time — never the key. A row
+   * without it authenticates no delivery into a PE: the receiver refuses it
+   * until the project is registered again with proof.
+   */
+  control_proof?: ServiceInstallControlProof | null;
+}
+
+/** How and when a registrant proved control of a self-serve project. */
+export interface ServiceInstallControlProof {
+  method: 'deploy_key';
+  /** `SHA256:` fingerprint of the deploy key that read the project. */
+  key_fingerprint: string;
+  verified_at: number;
+  /** The proven project path, lowercased: GitLab `group/project`, Bitbucket `workspace/repo`. */
+  project_path: string;
+}
+
+const KEY_FINGERPRINT_RE = /^SHA256:[A-Za-z0-9+/]{43}$/;
+
+/**
+ * True when the install may turn deliveries into PEs. A GitHub install is
+ * created by the GitHub App installation itself; a self-serve (gitlab /
+ * bitbucket) install needs a recorded deploy-key proof. Anything else is
+ * unknown, and unknown blocks.
+ */
+export function installControlProven(install: ServiceInstallDocument): boolean {
+  if (!PER_INSTALL_SECRET_PROVIDERS.has(install.provider)) return true;
+  const proof = install.control_proof;
+  return typeof proof === 'object' && proof !== null
+    && proof.method === 'deploy_key'
+    && typeof proof.key_fingerprint === 'string' && KEY_FINGERPRINT_RE.test(proof.key_fingerprint)
+    && typeof proof.verified_at === 'number' && Number.isFinite(proof.verified_at)
+    && typeof proof.project_path === 'string' && proof.project_path.length > 0;
+}
+
+/**
+ * True when a delivery's project path is the one the registration proved
+ * (compared case-insensitively, as the forges route paths). The forge sends
+ * the id and the path together; a delivery naming this install's id with any
+ * other path — a renamed project included — is refused until re-registered.
+ */
+export function installProjectPathMatches(install: ServiceInstallDocument, deliveredPath: string): boolean {
+  if (!installControlProven(install)) return false;
+  const proven = (install.control_proof as ServiceInstallControlProof).project_path;
+  return deliveredPath.trim().toLowerCase() === proven;
 }
 
 /**
@@ -116,6 +165,16 @@ const COLLECTION = SERVICE_INSTALLS_COLLECTION;
 
 function docIdFor(provider: ServiceInstallProvider, installationId: string): string {
   return `${provider}_${installationId}`;
+}
+
+/**
+ * True when `installationId` can be part of a document id. Installation ids
+ * arrive from request bodies, URL parameters and webhook payloads; one that is
+ * not a plain token (a "/", a control character, an over-long value) names no
+ * install and must never reach a document reference, which would throw.
+ */
+export function isUsableInstallationId(installationId: unknown): installationId is string {
+  return typeof installationId === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(installationId);
 }
 
 // -----------------------------------------------------------------------------
@@ -184,10 +243,15 @@ export async function createServiceInstall(
     user_id: string;
     provider: ServiceInstallProvider;
     installation_id: string;
+    /** gitlab/bitbucket: the control proof this registration just established. */
+    control_proof?: ServiceInstallControlProof;
   },
 ): Promise<CreateServiceInstallResult> {
   if (!params.user_id) throw new Error('createServiceInstall: user_id is required');
   if (!params.installation_id) throw new Error('createServiceInstall: installation_id is required');
+  if (!isUsableInstallationId(params.installation_id)) {
+    throw new Error('createServiceInstall: installation_id is not a usable id');
+  }
 
   const wantsSecret = PER_INSTALL_SECRET_PROVIDERS.has(params.provider);
   const ref = db.collection(COLLECTION).doc(docIdFor(params.provider, params.installation_id));
@@ -203,11 +267,23 @@ export async function createServiceInstall(
     // (and so the minting of the victim's commits). The GitLab/Bitbucket route
     // checks were read-then-set races. A REVOKED row may be re-registered by
     // anyone: revoke + re-register is the documented rotation / re-point path.
-    if (existing !== null && existing.revoked_at === null && existing.user_id !== params.user_id) {
+    //
+    // One exception, for the self-serve providers only: an active row that
+    // carries NO control proof does not hold the project against a registrant
+    // who has just proved control of it. Such a row authenticates nothing (the
+    // receiver refuses it), so it must not lock the real maintainer out. The
+    // new owner always gets a fresh secret.
+    const heldByOther = existing !== null && existing.revoked_at === null && existing.user_id !== params.user_id;
+    const supersedesUnproven = heldByOther
+      && wantsSecret
+      && params.control_proof !== undefined
+      && !installControlProven(existing);
+    if (heldByOther && !supersedesUnproven) {
       throw new ServiceInstallOwnedByOtherUserError(params.provider, params.installation_id);
     }
     const keepExistingSecret = wantsSecret
       && existing !== null
+      && existing.user_id === params.user_id
       && existing.revoked_at === null
       && typeof existing.webhook_secret === 'string'
       && existing.webhook_secret.length > 0;
@@ -224,6 +300,9 @@ export async function createServiceInstall(
           webhook_secret: keepExistingSecret
             ? (existing!.webhook_secret as string)
             : mintInstallWebhookSecret(),
+          // A registration without proof records none, and clears any earlier
+          // one: the proof is of THIS registration, never inherited.
+          control_proof: params.control_proof ?? null,
         }
         : {}),
     };
@@ -250,6 +329,7 @@ export async function getServiceInstallByInstallationId(
   provider: ServiceInstallProvider,
   installationId: string,
 ): Promise<ServiceInstallDocument | null> {
+  if (!isUsableInstallationId(installationId)) return null;
   const snap = await db.collection(COLLECTION).doc(docIdFor(provider, installationId)).get();
   if (!snap.exists) return null;
   return snap.data() as ServiceInstallDocument;
@@ -271,6 +351,7 @@ export async function markServiceInstallRevoked(
   provider: ServiceInstallProvider,
   installationId: string,
 ): Promise<boolean> {
+  if (!isUsableInstallationId(installationId)) return false;
   const ref = db.collection(COLLECTION).doc(docIdFor(provider, installationId));
   const snap = await ref.get();
   if (!snap.exists) return false;
@@ -321,6 +402,7 @@ export async function stampServiceInstallForgeAccount(
   account: { id: string; login: string | null },
 ): Promise<boolean> {
   if (!account.id) return false;
+  if (!isUsableInstallationId(installationId)) return false;
   const ref = db.collection(COLLECTION).doc(docIdFor(provider, installationId));
   const snap = await ref.get();
   if (!snap.exists) return false;

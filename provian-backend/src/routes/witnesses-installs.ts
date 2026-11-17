@@ -28,6 +28,7 @@ import type { AgentBankDeps } from '../core/agent-bank/types';
 import {
   getServiceInstallByInstallationId,
   getServiceInstallsByUser,
+  installControlProven,
   installForgeAccountScope,
   markServiceInstallRevoked,
   type ServiceInstallProvider,
@@ -70,6 +71,9 @@ export function createWitnessesInstallsRouter(deps: AgentBankDeps): Router {
         // github: null until the first signed delivery stamps it.
         forge_account_id: installForgeAccountScope(i),
         forge_account_login: i.forge_account_login ?? null,
+        // gitlab/bitbucket: false until the project is registered with a control
+        // proof; such an install earns nothing until it is registered again.
+        control_proven: installControlProven(i),
       })),
     });
   });

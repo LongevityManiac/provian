@@ -286,6 +286,18 @@ const MUTATION_SETS = {
         find: "  const checked = await verifyDurableHashAuthority(saved, plan, accountRuntimeHash);\n  ensure(await port.blockHash(checked.verifiedBlock.number) === checked.verifiedBlock.hash, 'checkpoint_changed');",
         replace: '  const checked = await verifyDurableHashAuthority(saved, plan, accountRuntimeHash);', expectedKilledBy: 'a checkpoint orphaned while saving cannot return a signature' }],
   },
+  'pointer-manifest-succession': {
+    runner: 'native-vitest', sourcePath: 'scripts/recourse/pointer-manifest-succession.mjs', testMatchPath: 'scripts/recourse/pointer-manifest-succession.test.mjs',
+    mutations: [{ id: 'SUCCESSION-ADAPTER', description: 'the settlement adapter is replaced beside the same token',
+      find: "  ensure(then[POINTER_SLOTS.settlementAdapter] === now[POINTER_SLOTS.settlementAdapter], 'settlement_adapter_replaced_under_same_token');\n", replace: '',
+      expectedKilledBy: 'replacing only the settlement adapter beside the same token is refused' },
+      { id: 'SUCCESSION-TOKEN-GATE', description: 'a changed token no longer releases the adapter',
+        find: 'if (then[POINTER_SLOTS.token] !== now[POINTER_SLOTS.token]) return;', replace: '',
+        expectedKilledBy: 'the adapter may change only together with the token' },
+      { id: 'SUCCESSION-POOL', description: 'the pool is replaced beside the same token',
+        find: "  ensure(then[POINTER_SLOTS.recoursePool] === now[POINTER_SLOTS.recoursePool], 'recourse_pool_replaced_under_same_token');\n", replace: '',
+        expectedKilledBy: 'the pool and the token-bound institutions are held to the same rule' }],
+  },
   'pointer-publication': {
     runner: 'native-vitest', sourcePath: 'scripts/recourse/pointer-publication.mjs', testMatchPath: 'scripts/recourse/pointer-publication.test.mjs',
     mutations: [{ id: 'PUBLICATION-RECONSTRUCTION', description: 'a self-consistent edited plan skips independent cutoff reconstruction',

@@ -48,14 +48,17 @@ The human signs this stable-stringified UTF-8 JSON:
   "agent_wallet_id": "<the wallet_id being linked>",
   "human_wallet_id": "<human's wallet_id>",
   "link_epoch": <from GET /v1/agent/wallet/:wallet_id/link-epoch>,
+  "operational_reserve_bps": <only when the request names a share>,
   "timestamp": <unix ms>
 }
 ```
 
+- **The agent's share is the human's to set.** When the request body carries `operational_reserve_bps`, the signed payload must carry the same value; a share the human did not sign fails signature verification (`401`). A request that names no share is signed without the field and links at the default.
+
 - **Every link, unlink and share-change signature is single-use.** `link_epoch` is the agent's beneficiary-relationship epoch, read with `GET /v1/agent/wallet/:wallet_id/link-epoch` (agent API-key auth, own wallet; the SDK's `CommonsInstitutions.readLinkEpoch`). Every link, unlink and share change advances it in the same transaction that writes the change, and the relay consumes each signed payload there. A signature over an older epoch is refused `409 link_epoch_stale`; a payload already consumed `409 link_signature_already_used`; a payload without `link_epoch` `400`. So a signature applies at most once and never after a later state change (no re-link after an unlink, no share revert, no stale unlink after a relink).
 - The timestamp must be within **plus or minus five minutes** of relay time (`LINK_TIMESTAMP_TOLERANCE_MS`).
 - The recovered address must equal the human wallet document's `address`, case-insensitively.
-- `operational_reserve_bps` is optional and defaults to `2000`.
+- `operational_reserve_bps` is optional and defaults to `2000`. A supplied value must also be in the signed payload.
 - A supplied value must be an exact integer in `[500, 5000]`; values outside the range or with sub-BPS precision are rejected, not clamped.
 - `operational_reserve_ratio` remains a legacy request-compatibility input only. If used, its decimal must convert exactly to the same BPS range; it cannot be combined with `operational_reserve_bps` and is never newly persisted.
 

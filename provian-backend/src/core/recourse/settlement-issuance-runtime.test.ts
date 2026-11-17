@@ -1,7 +1,7 @@
 import { Interface } from 'ethers';
 import { issuanceBatchFixture } from './__test-helpers__/issuance-batch-fixture';
 import { a,h,old,pointer } from './__test-helpers__/membership-receipt-fixture';
-import { preparePrivateIssuanceExecution, preparePrivateIssuanceProbe } from './settlement-issuance-runtime';
+import { preparePrivateIssuanceExecution, preparePrivateIssuanceProbe, issuancePayeeHold, IssuanceRecipientWithheld, MEMBERSHIP_TRANSITION_PENDING } from './settlement-issuance-runtime';
 import { currentProtocolDeployment } from '../protocol/runtime';
 import { resolveHistoricalProtocolDeployment } from '../protocol/pointer';
 import { createRecourseChainPort } from './chain-ledger';
@@ -132,4 +132,40 @@ test('parent retirement during signing, verification or signed retry never retai
   const id=s.fake.store.get(`${P}/${h(600)}`)?.membership_issuance_id;
   expect(s.fake.store.get(`${B}/${id}`)?.status).toBe(phase==='retry'?'signed':'reserved');
  }
+});
+
+describe('a recipient whose owner has a membership change open',()=>{
+ const open=(s:ReturnType<typeof setup>)=>s.fake.store.set(`${R.owners}/${h(500)}`,{ownerIdentity:h(500),membershipTransition:h(77)});
+ test('RED: the reverting probe reports it as a withheld recipient, for a member and a non-member owner alike',async()=>{
+  for(const member of [false,true]){
+   const s=setup(member);open(s);const before=new Map(s.fake.store);
+   const refusal=await preparePrivateIssuanceProbe(s.db,s.parent,gas,{}).catch((error:unknown)=>error);
+   expect(refusal).toBeInstanceOf(IssuanceRecipientWithheld);expect((refusal as IssuanceRecipientWithheld).reason).toBe(MEMBERSHIP_TRANSITION_PENDING);
+   expect(s.sign).not.toHaveBeenCalled();expect(s.fake.store).toEqual(before);
+  }
+ });
+ test('RED: execution refuses the same way before anything is reserved or signed',async()=>{
+  const s=setup();open(s);
+  await expect(preparePrivateIssuanceExecution(s.db,s.parent,gas,{})).rejects.toBeInstanceOf(IssuanceRecipientWithheld);
+  expect(s.sign).not.toHaveBeenCalled();expect(s.fake.store.get(`${P}/${h(600)}`)?.membership_issuance_id).toBeUndefined();expect(s.fake.store.has(`${B}/${s.batch.id}`)).toBe(false);
+ });
+ test('control: with no change open the same batch probes and reserves',async()=>{
+  const s=setup();await expect(preparePrivateIssuanceProbe(s.db,s.parent,gas,{})).resolves.toMatchObject({target:old[9]});
+  expect((await preparePrivateIssuanceExecution(s.db,s.parent,gas,{})).status).toBe('signed');
+ });
+ test('the payee hold names only an address whose owner still has the change open after reconciliation',async()=>{
+  const s=setup();
+  // An address no owner registered, and a registered owner with nothing open: never withheld, never reconciled.
+  expect(await issuancePayeeHold(s.db,a(4))).toBeNull();expect(await issuancePayeeHold(s.db,a(3))).toBeNull();
+  expect(reconcileCurrentPrivateMembership).not.toHaveBeenCalled();
+  // Open and still open after the chain was consulted: withheld.
+  open(s);expect(await issuancePayeeHold(s.db,a(3).toUpperCase().replace('0X','0x'))).toBe(MEMBERSHIP_TRANSITION_PENDING);
+  expect(reconcileCurrentPrivateMembership).toHaveBeenCalledWith(s.db,h(500));
+  // The change had in fact completed on chain: reconciliation records it and the payee is paid.
+  (reconcileCurrentPrivateMembership as jest.Mock).mockImplementationOnce(async()=>{s.fake.store.set(`${R.owners}/${h(500)}`,{ownerIdentity:h(500),membershipTransition:null});});
+  expect(await issuancePayeeHold(s.db,a(3))).toBeNull();
+  // Reconciliation cannot finish: the payee stays withheld, nothing is thrown at the run.
+  open(s);(reconcileCurrentPrivateMembership as jest.Mock).mockRejectedValueOnce(Error('rpc unavailable'));
+  expect(await issuancePayeeHold(s.db,a(3))).toBe(MEMBERSHIP_TRANSITION_PENDING);
+ });
 });

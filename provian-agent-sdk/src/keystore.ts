@@ -607,10 +607,24 @@ export interface PersistAgentWalletParams {
   kdfParams?: EncryptKeystoreParams['kdfParams'];
 }
 
+/** The stored keystore as a caller may name it: wallet id and address only. */
+const storedIdentity = (keystore: AgentKeystore): string => `${keystore.wallet_id} (${keystore.address})`;
+
+function sameWalletKey(existing: DecryptedKey, params: PersistAgentWalletParams): boolean {
+  return existing.walletId === params.walletId
+    && existing.privateKey === normalizePrivateKey(params.privateKey)
+    && existing.address.toLowerCase() === params.address.toLowerCase();
+}
+
 /**
  * Encrypt and persist a freshly created agent wallet's key in one call.
  * Returns the keystore and the path written. The caller should then drop the
  * plaintext private key from memory.
+ *
+ * A keystore already at the path is never replaced here, whatever its version:
+ * the same wallet and key is returned as it stands, and anything else is refused
+ * with the stored file untouched. Replacing a stored key is the job of
+ * `restoreAgentWalletKey` (same wallet, recovered key) or key rotation.
  */
 export function persistAgentWalletKey(
   params: PersistAgentWalletParams,
@@ -619,13 +633,24 @@ export function persistAgentWalletKey(
   fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
   return withFileLockSync(`${filePath}.identity.lock`, { timeoutMs: 10_000, staleMs: 0, syncOnly: true }, () => {
   const existing = loadKeystore(filePath);
-  if (existing?.version === 2) {
-    const previous = decryptKeystore(existing, params.passphrase);
-    if (previous.walletId !== params.walletId || previous.privateKey !== normalizePrivateKey(params.privateKey)) {
-      throw new ProvianError('Cannot overwrite a recovery identity; use key rotation', 'INVALID_KEYSTORE');
+  if (existing) {
+    let previous: DecryptedKey;
+    try { previous = decryptKeystore(existing, params.passphrase); } catch (error) {
+      if (!(error instanceof ProvianError) || error.code !== 'WRONG_PASSPHRASE') throw error;
+      throw new ProvianError(
+        `A keystore for ${storedIdentity(existing)} is already stored at ${filePath} and this machine's local secret does not open it. `
+        + 'It was left unchanged. Back it up with `export-agent-keystore --keystore-only <path>` and move it away before setting up a wallet here.',
+        'KEYSTORE_EXISTS');
     }
+    const same = sameWalletKey(previous, params);
     previous.privateKey = '';
-    return { keystore: existing, path: filePath };
+    if (same) return { keystore: existing, path: filePath };
+    throw new ProvianError(
+      `A keystore for ${storedIdentity(existing)} is already stored at ${filePath}; it was left unchanged. `
+      + (existing.wallet_id === params.walletId
+        ? 'To put a recovered key for this wallet in its place run `restore-wallet`; to change its key run `rotate-key`.'
+        : 'It belongs to a different wallet. Back it up with `export-agent-keystore --keystore-only <path>` and move it away before setting up another wallet here.'),
+      'KEYSTORE_EXISTS');
   }
   const keystore = encryptKeystore({
     privateKey: params.privateKey,
@@ -636,7 +661,72 @@ export function persistAgentWalletKey(
     createdAt: params.createdAt,
     kdfParams: params.kdfParams,
   });
-  const writtenPath = saveKeystore(keystore, params.filePath ?? DEFAULT_KEYSTORE_PATH);
+  const writtenPath = saveKeystore(keystore, filePath);
   return { keystore, path: writtenPath };
+  });
+}
+
+/**
+ * Install a recovered key for the wallet this machine already holds, or for a
+ * machine with no keystore yet.
+ *
+ * The stored keystore must name the same wallet; another wallet's key is refused
+ * and left untouched. A stored recovery identity keeps its recovery material when
+ * the local secret still opens it. The old keystore is first copied beside the
+ * active one, the new one is installed by atomic rename and read back, and only a
+ * keystore that decrypts to the recovered key counts as installed — otherwise the
+ * old one is put back.
+ */
+export function restoreAgentWalletKey(
+  params: PersistAgentWalletParams,
+): { keystore: AgentKeystore; path: string; replacedCopy?: string } {
+  const filePath = params.filePath ?? DEFAULT_KEYSTORE_PATH;
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  return withFileLockSync(`${filePath}.identity.lock`, { timeoutMs: 10_000, staleMs: 0, syncOnly: true }, () => {
+  const existing = loadKeystore(filePath);
+  const fresh = (): AgentKeystore => encryptKeystore({
+    privateKey: params.privateKey, address: params.address, publicKey: params.publicKey,
+    walletId: params.walletId, passphrase: params.passphrase, createdAt: params.createdAt,
+    kdfParams: params.kdfParams ?? existing?.crypto.kdfparams,
+  });
+  const installed = (expected: AgentKeystore): AgentKeystore => {
+    const written = loadKeystore(filePath);
+    const opened = written ? decryptKeystore(written, params.passphrase) : null;
+    const ok = !!opened && written?.version === expected.version && sameWalletKey(opened, params);
+    if (opened) opened.privateKey = '';
+    if (!written || !ok) throw new ProvianError('The restored keystore did not read back as written', 'INVALID_KEYSTORE');
+    return written;
+  };
+  if (!existing) {
+    const created = fresh();
+    saveKeystore(created, filePath);
+    return { keystore: installed(created), path: filePath };
+  }
+  if (existing.wallet_id !== params.walletId) {
+    throw new ProvianError(
+      `The keystore at ${filePath} belongs to a different wallet, ${storedIdentity(existing)}; it was left unchanged. `
+      + 'Back it up with `export-agent-keystore --keystore-only <path>` and move it away before restoring another wallet here.',
+      'KEYSTORE_EXISTS');
+  }
+  let next: AgentKeystore;
+  try {
+    const previous = decryptKeystore(existing, params.passphrase);
+    const same = sameWalletKey(previous, params);
+    previous.privateKey = '';
+    if (same) return { keystore: existing, path: filePath };
+    next = replaceKeystoreWalletKey(existing, params.passphrase, params);
+  } catch (error) {
+    if (!(error instanceof ProvianError) || error.code !== 'WRONG_PASSPHRASE') throw error;
+    // The local secret no longer opens the stored key, so nothing in it can be carried over.
+    next = fresh();
+  }
+  const replacedCopy = saveKeystore(existing, `${filePath}.replaced-${new Date().toISOString().replace(/[:.]/g, '-')}-${randomBytes(4).toString('hex')}`);
+  try {
+    saveKeystore(next, filePath);
+    return { keystore: installed(next), path: filePath, replacedCopy };
+  } catch (error) {
+    saveKeystore(existing, filePath);
+    throw error;
+  }
   });
 }

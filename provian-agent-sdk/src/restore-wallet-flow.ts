@@ -33,6 +33,13 @@
 
 import { deriveAgentIdentityFromPrivateKey } from './wallet';
 import { cliCommand, HOSTED_BUNDLE } from './cli-command';
+import { restoreAgentWalletKey } from './keystore';
+import { loadOrCreateLocalKeystoreSecret } from './local-keystore-secret';
+import {
+  AGENT_CREDS_PATH, isExactBoundCredentialsFile, loadAgentCredentialsFile, loadBoundAgentCredentialsFile,
+  type AgentCredentialsFile,
+} from './scripts/agent-credentials-file';
+import { atomicReplacePrivateFile } from './durable-private-file';
 
 export interface RestoreWalletInput {
   /** The wallet id the phone printed into the command (env PROVIAN_WALLET_ID). */
@@ -42,7 +49,11 @@ export interface RestoreWalletInput {
 }
 
 export interface RestoreWalletDeps {
-  /** Persist the key as local keystore ciphertext; the bootstrap's exact pair. */
+  /**
+   * Persist the key as local keystore ciphertext. A keystore already stored for the
+   * same wallet is replaced; one for another wallet is refused. When an older
+   * keystore was replaced, the path of the copy kept beside it is returned.
+   */
   persistKey(params: {
     privateKey: string;
     address: string;
@@ -50,7 +61,7 @@ export interface RestoreWalletDeps {
     walletId: string;
     passphrase: string;
     createdAt: string;
-  }): void;
+  }): { replacedCopy?: string } | void;
   loadOrCreateSecret(): string;
   /**
    * Persist freshly-rotated API credentials to ~/.provian/agent-credentials.json
@@ -141,7 +152,7 @@ export function runRestoreWallet(
   const payload = parseRestorePayloadFromStdin(input.stdinContent);
   const identity = deriveAgentIdentityFromPrivateKey(payload.privateKey);
   deps.log('Rebuilding the wallet keystore on this machine…');
-  deps.persistKey({
+  const persisted = deps.persistKey({
     privateKey: payload.privateKey,
     address: identity.address,
     publicKey: identity.publicKey,
@@ -157,6 +168,7 @@ export function runRestoreWallet(
     apiCredentialsRestored = true;
   }
   deps.log(`Wallet restored. Address ${identity.address}`);
+  if (persisted?.replacedCopy) deps.log(`The keystore this replaced was kept at ${persisted.replacedCopy}`);
   deps.log('Signing works again on this machine (funds, x402, connect).');
   if (apiCredentialsRestored) {
     deps.log('Rotated API credentials restored — the work observer can authenticate again.');
@@ -169,31 +181,51 @@ export function runRestoreWallet(
   return { walletId, address: identity.address, apiCredentialsRestored };
 }
 
+/**
+ * Install the credentials a recovery re-key issued for a wallet whose address
+ * changed with its key. The new pair is validated first, written to a temporary
+ * file and renamed over the old one, then read back; the old file is only ever
+ * removed by that rename, so a refused or failed write leaves it in place.
+ * Credentials bound to a different wallet id are never replaced.
+ */
+export function replaceAgentCredentialsFileAfterRekey(
+  credentials: Required<Pick<AgentCredentialsFile, 'api_key' | 'api_secret' | 'wallet_id' | 'address'>>,
+  credsPath: string = AGENT_CREDS_PATH,
+): string {
+  if (!isExactBoundCredentialsFile(credentials)) {
+    throw new Error('Refusing to persist malformed or unbound agent credentials');
+  }
+  const existing = loadAgentCredentialsFile(credsPath);
+  if (existing && typeof existing.wallet_id === 'string' && existing.wallet_id !== credentials.wallet_id) {
+    throw new Error(
+      `Refusing to replace credentials for different wallet identity ${existing.wallet_id} at ${credsPath}`,
+    );
+  }
+  atomicReplacePrivateFile(credsPath, `${JSON.stringify(credentials, null, 2)}\n`);
+  const written = loadBoundAgentCredentialsFile(credsPath);
+  if (!written || written.api_key !== credentials.api_key || written.api_secret !== credentials.api_secret
+    || written.wallet_id !== credentials.wallet_id || written.address !== credentials.address) {
+    throw new Error(`Credentials at ${credsPath} did not read back as written`);
+  }
+  return credsPath;
+}
+
 /** Wire the real keystore + local-secret implementations. */
 export function defaultRestoreWalletDeps(): RestoreWalletDeps {
   return {
     persistKey(params) {
-      // Lazy require keeps key material handling in one call frame.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { persistAgentWalletKey } = require('./keystore') as typeof import('./keystore');
-      persistAgentWalletKey(params);
+      const { replacedCopy } = restoreAgentWalletKey(params);
+      return { ...(replacedCopy ? { replacedCopy } : {}) };
     },
     loadOrCreateSecret() {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { loadOrCreateLocalKeystoreSecret } = require('./local-keystore-secret') as typeof import('./local-keystore-secret');
       return loadOrCreateLocalKeystoreSecret();
     },
     persistApiCredentials(params) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const credsMod = require('./scripts/agent-credentials-file') as typeof import('./scripts/agent-credentials-file');
-      // A re-key CHANGES this wallet's address, so the stored creds file (bound to
-      // the OLD address) would make persistAgentCredentialsFile refuse the replace
-      // (its cross-identity guard). This is a legitimate SAME-wallet_id re-key, so
-      // clear the old file first, then write the rotated creds cleanly.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const fs = require('fs') as typeof import('fs');
-      try { fs.rmSync(credsMod.AGENT_CREDS_PATH, { force: true }); } catch { /* best effort */ }
-      credsMod.persistAgentCredentialsFile({
+      // A re-key changes this wallet's address, so the stored file is bound to the old
+      // one. The same wallet id may take the new pair: it is written beside the old
+      // file and renamed over it, so the old pair is never removed before the new
+      // one is durable.
+      replaceAgentCredentialsFileAfterRekey({
         api_key: params.apiKey, api_secret: params.apiSecret,
         wallet_id: params.walletId, address: params.address,
       });

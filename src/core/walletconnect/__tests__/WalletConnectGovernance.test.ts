@@ -182,6 +182,109 @@ describe('evaluateWalletConnectTransaction', () => {
     });
 });
 
+// A router / multicall wrapper carries no token or amount of its own. Its value
+// is what its inner calls move, and that is what the owner's caps must see.
+describe('evaluateWalletConnectTransaction — wrapped calls are priced from their inner calls', () => {
+    const ROUTER = '0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD';
+    const WETH_BASE = '0x4200000000000000000000000000000000000006';
+    const WRAP = new ethers.Interface([
+        'function multicall(bytes[] data)',
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+    ]);
+    const coder = ethers.AbiCoder.defaultAbiCoder();
+    const multicallOf = (...calls: string[]) => WRAP.encodeFunctionData('multicall(bytes[])', [calls]);
+    const executeOf = (commands: number[], inputs: string[]) =>
+        WRAP.encodeFunctionData('execute(bytes,bytes[],uint256)', [new Uint8Array(commands), inputs, 1900000000n]);
+    const urTransfer = (token: string, amount: bigint) => coder.encode(['address', 'address', 'uint256'], [token, RECIPIENT, amount]);
+    const urPermit2TransferFrom = (token: string, amount: bigint) => coder.encode(['address', 'address', 'uint160'], [token, RECIPIENT, amount]);
+    const UR_PERMIT2_TRANSFER_FROM = 0x02, UR_TRANSFER = 0x05, UR_V3_SWAP_EXACT_IN = 0x00;
+
+    it('control: the same 50 USDC sent directly is blocked by a $10 per-transaction cap', async () => {
+        const v = await evaluateWalletConnectTransaction(txCtx(USDC_BASE, transferData(50_000_000n)), settings({ perTransactionLimitUsd: 10 }));
+        expect(v.lane).toBe('block');
+        expect(v.amountUsd).toBe(50);
+    });
+
+    it('multicall moving 50 USDC is priced at 50 and blocked by a $10 per-transaction cap', async () => {
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(USDC_BASE, multicallOf(transferData(50_000_000n))),
+            settings({ perTransactionLimitUsd: 10 }),
+        );
+        expect(v.amountUsd).toBe(50);
+        expect(v.lane).toBe('block');
+        expect(v.allowed).toBe(false);
+    });
+
+    it('Universal Router Permit2 transferFrom of 50 USDC is priced at 50 and blocked by the cap', async () => {
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_PERMIT2_TRANSFER_FROM], [urPermit2TransferFrom(USDC_BASE, 50_000_000n)])),
+            settings({ perTransactionLimitUsd: 10 }),
+        );
+        expect(v.amountUsd).toBe(50);
+        expect(v.lane).toBe('block');
+    });
+
+    it('inner stablecoin amounts are summed across the wrapper', async () => {
+        const data = executeOf(
+            [UR_TRANSFER, UR_PERMIT2_TRANSFER_FROM],
+            [urTransfer(USDC_BASE, 6_000_000n), urPermit2TransferFrom(USDC_BASE, 7_000_000n)],
+        );
+        const under = await evaluateWalletConnectTransaction(txCtx(ROUTER, data), settings({ perTransactionLimitUsd: 20 }));
+        expect(under.amountUsd).toBe(13);
+        expect(under.allowed).toBe(true);
+        const over = await evaluateWalletConnectTransaction(txCtx(ROUTER, data), settings({ perTransactionLimitUsd: 10 }));
+        expect(over.lane).toBe('block');
+    });
+
+    it('a wrapped stablecoin move counts against the daily cap', async () => {
+        await recordDailyCryptoSpendUsd('wallet-owner', '0xearlier', 80);
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_TRANSFER], [urTransfer(USDC_BASE, 30_000_000n)])),
+            settings({ dailyLimitUsd: 100 }),
+        );
+        expect(v.amountUsd).toBe(30);
+        expect(v.lane).toBe('block');
+    });
+
+    it('stablecoin value inside a wrapper still counts when another inner call is an unlimited approval', async () => {
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(USDC_BASE, multicallOf(approveData(SPENDER, ethers.MaxUint256), transferData(50_000_000n))),
+            settings({ unlimitedApprovalPolicy: 'hard_confirm' }),
+        );
+        expect(v.amountUsd).toBe(50);
+    });
+
+    it('an inner call on an unverified token is never a known $0 → hard_confirm with the reason', async () => {
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_TRANSFER, UR_TRANSFER], [urTransfer(USDC_BASE, 5_000_000n), urTransfer(RANDOM_CONTRACT, 5n)])),
+            settings(),
+        );
+        expect(v.amountUsd).toBe(5);
+        expect(v.lane).toBe('hard_confirm');
+        expect(v.reasons.join(' ')).toContain('could not be priced');
+    });
+
+    it('a verified token with no on-device price and an undecoded router command both escalate', async () => {
+        const unpricedToken = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_TRANSFER], [urTransfer(WETH_BASE, 10n ** 18n)])), settings());
+        expect(unpricedToken.lane).toBe('hard_confirm');
+        expect(unpricedToken.reasons.join(' ')).toContain('could not be priced');
+
+        const withSwap = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_V3_SWAP_EXACT_IN, UR_TRANSFER], ['0x' + '00'.repeat(64), urTransfer(USDC_BASE, 5_000_000n)])), settings());
+        expect(withSwap.amountUsd).toBe(5);
+        expect(withSwap.lane).toBe('hard_confirm');
+        expect(withSwap.reasons.join(' ')).toContain('could not be priced');
+    });
+
+    it('control: a fully priced wrapper does not carry the could-not-price reason', async () => {
+        const v = await evaluateWalletConnectTransaction(
+            txCtx(ROUTER, executeOf([UR_TRANSFER], [urTransfer(USDC_BASE, 5_000_000n)])), settings());
+        expect(v.amountUsd).toBe(5);
+        expect(v.reasons.join(' ')).not.toContain('could not be priced');
+    });
+});
+
 describe('evaluateWalletConnectPermit (gasless approvals / signature transfers)', () => {
     const basePermit = (over: Partial<DecodedPermit>): DecodedPermit => ({
         kind: 'permit2_single',

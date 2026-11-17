@@ -24,6 +24,12 @@
  *  - Token resolution keys off the SESSION chainId (authoritative), never the
  *    attacker-controlled domain.chainId.
  *  - An unverifiable token is the most-restrictive null-state: high risk.
+ *  - The struct that is classified is the struct that is signed. The signer
+ *    never reads the dApp's declared `primaryType`: it derives the root struct
+ *    from the `types` map (the one struct no other struct refers to). A
+ *    request whose declared primaryType is not that root is refused outright
+ *    (checkTypedDataRoot) — otherwise a payload could be shown as one struct
+ *    and signed as another.
  */
 import { resolveToken, formatAmount, isEffectivelyUnlimited, ResolvedToken } from './decodeCalldata';
 
@@ -120,6 +126,83 @@ function toBigInt(v: unknown): bigint | null {
         // fall through
     }
     return null;
+}
+
+// ── Root struct: what is classified must be what is signed ──────────────────
+
+export type TypedDataRootFailure =
+    | 'malformed_types'
+    | 'missing_primary_type'
+    | 'no_root_type'
+    | 'ambiguous_root_type'
+    | 'primary_type_mismatch';
+
+export type TypedDataRootCheck =
+    | { ok: true; primaryType: string }
+    | { ok: false; reason: TypedDataRootFailure };
+
+/** Solidity value types. A struct may not take one of these names: the signer
+ *  would read a field of that type as the value type, not as the struct. */
+const VALUE_TYPE_NAME = /^(address|bool|string|bytes\d*|u?int\d*)$/;
+
+/** `Foo[2][]` → `Foo`: everything before the first `[`. */
+function baseTypeOf(fieldType: string): string {
+    const at = fieldType.indexOf('[');
+    return at === -1 ? fieldType : fieldType.slice(0, at);
+}
+
+/**
+ * Derive the root struct exactly as the signer does, and require the dApp's
+ * declared `primaryType` to be that root.
+ *
+ * The signer is handed (domain, types without EIP712Domain, message) and no
+ * primaryType: it signs the single struct in `types` that no other struct has a
+ * field of. Everything this module shows the owner is keyed on the declared
+ * primaryType, so the two must be proven equal before anything is classified,
+ * displayed or signed. Any disagreement, any ambiguity (no root, or more than
+ * one) and any malformed `types` map is a refusal — never a warning. Never
+ * throws.
+ */
+export function checkTypedDataRoot(typedData: unknown): TypedDataRootCheck {
+    if (!typedData || typeof typedData !== 'object' || Array.isArray(typedData)) {
+        return { ok: false, reason: 'malformed_types' };
+    }
+    const td = typedData as TypedDataLike;
+    const rawTypes: unknown = td.types;
+    if (!rawTypes || typeof rawTypes !== 'object' || Array.isArray(rawTypes)) {
+        return { ok: false, reason: 'malformed_types' };
+    }
+    const typesMap = rawTypes as Record<string, unknown>;
+    // The signer is given the map with EIP712Domain removed.
+    const names = Object.keys(typesMap).filter(name => name !== 'EIP712Domain');
+    const structs = new Set(names);
+    const referenced = new Set<string>();
+    for (const name of names) {
+        if (name.length === 0 || name.includes('[') || VALUE_TYPE_NAME.test(name)) {
+            return { ok: false, reason: 'malformed_types' };
+        }
+        const fields = typesMap[name];
+        if (!Array.isArray(fields)) return { ok: false, reason: 'malformed_types' };
+        for (const field of fields as unknown[]) {
+            if (!field || typeof field !== 'object') return { ok: false, reason: 'malformed_types' };
+            const { name: fieldName, type: fieldType } = field as Field;
+            if (typeof fieldName !== 'string' || typeof fieldType !== 'string') {
+                return { ok: false, reason: 'malformed_types' };
+            }
+            const base = baseTypeOf(fieldType);
+            // A struct holding itself has no encoding; the signer refuses it too.
+            if (base === name) return { ok: false, reason: 'malformed_types' };
+            if (structs.has(base)) referenced.add(base);
+        }
+    }
+    const roots = names.filter(name => !referenced.has(name));
+    if (roots.length === 0) return { ok: false, reason: 'no_root_type' };
+    if (roots.length > 1) return { ok: false, reason: 'ambiguous_root_type' };
+    if (typeof td.primaryType !== 'string' || td.primaryType.length === 0) {
+        return { ok: false, reason: 'missing_primary_type' };
+    }
+    if (td.primaryType !== roots[0]) return { ok: false, reason: 'primary_type_mismatch' };
+    return { ok: true, primaryType: roots[0] };
 }
 
 interface AmountInfo { amountRaw?: string; amountFormatted?: string; isUnlimited: boolean }
@@ -254,6 +337,8 @@ export function isKnownNonSpendTypedData(typedData: unknown): boolean {
     const td = typedData as TypedDataLike;
     const primaryType = td.primaryType;
     if (!primaryType) return false;
+    // A shape is only "known" when it is the struct the signer will sign.
+    if (!checkTypedDataRoot(typedData).ok) return false;
     const types = td.types as Record<string, unknown> | undefined;
     for (const shape of KNOWN_NON_SPEND_SHAPES) {
         if (shape.primaryType === primaryType && typeMatches(types, primaryType, shape.fields)) {
@@ -270,6 +355,9 @@ function decodeTypedDataInner(typedData: unknown, sessionChainId?: number): Deco
     const message = td.message;
     const types = td.types as Record<string, unknown> | undefined;
     if (!primaryType || !message || typeof message !== 'object') return null;
+    // Never describe a struct the signer would not sign: the declared
+    // primaryType must be the root the signer derives from `types`.
+    if (!checkTypedDataRoot(typedData).ok) return null;
 
     // Resolve tokens on the session chain, never the dApp-supplied domain chain.
     const chainId = sessionChainId || toChainId(td.domain?.chainId);

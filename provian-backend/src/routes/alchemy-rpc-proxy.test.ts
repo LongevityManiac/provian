@@ -21,6 +21,9 @@ import {
   classifyRpcBody,
   ALCHEMY_RPC_MAX_BATCH,
   ALCHEMY_RPC_MAX_RESPONSE_BYTES,
+  ALCHEMY_EVM_ALLOWED_METHODS,
+  ALCHEMY_SOLANA_ALLOWED_METHODS,
+  firstDisallowedRpcMethod,
   type AlchemyRpcProxyDeps,
 } from './alchemy-rpc-proxy';
 import { fetchBounded, DeadlineExceededError } from '../core/net/bounded-fetch';
@@ -69,7 +72,7 @@ function harness(upstreamUrl: string | null, opts: { deadlineMs?: number; allow?
   const rateCalls: Harness['rateCalls'] = [];
   let upstreamCalls = 0;
   const deps: AlchemyRpcProxyDeps = {
-    upstreamUrlFor: (network) => (network === 'base-mainnet' ? upstreamUrl : null),
+    upstreamUrlFor: (network) => (network === 'base-mainnet' || network === 'solana-mainnet' ? upstreamUrl : null),
     apiKeyConfigured: () => true,
     checkProxyRateLimit: async (_user, service, max, cost) => {
       rateCalls.push({ service, max, cost });
@@ -212,5 +215,68 @@ describe('Alchemy RPC proxy — bounded upstream read ', () => {
     expect(res.status).toBe(504);
     expect(res.body.code).toBe('UPSTREAM_TIMEOUT');
     expect(Date.now() - started).toBeLessThan(2500);
+  });
+});
+
+describe('Alchemy RPC proxy — method allowlist', () => {
+  const rpc = (method: unknown, id = 1) => ({ jsonrpc: '2.0', id, method, params: [] });
+  const post = (h: Harness, network: string, body: unknown) =>
+    request(h.app).post(`/api/proxy/alchemy/rpc/${network}`).send(body as object);
+
+  it('RED: a method the app never sends is 403 and never reaches the rate limiter or upstream', async () => {
+    const h = harness(await upstream(echoRpc));
+    for (const method of ['eth_sendRawTransaction', 'eth_call', 'debug_traceTransaction', 'alchemy_getTokenBalances', 'eth_getBalance']) {
+      const res = await post(h, 'base-mainnet', rpc(method));
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({ code: 'RPC_METHOD_NOT_ALLOWED', method });
+    }
+    expect(h.rateCalls).toHaveLength(0);
+    expect(h.upstreamCalls()).toBe(0);
+  });
+
+  it('RED: one disallowed method anywhere in a batch refuses the whole batch', async () => {
+    const h = harness(await upstream(echoRpc));
+    const res = await post(h, 'base-mainnet', [rpc('eth_blockNumber', 1), rpc('eth_sendRawTransaction', 2)]);
+    expect(res.status).toBe(403);
+    expect(h.upstreamCalls()).toBe(0);
+  });
+
+  it('RED: a call with no string method, or a body that is not a call, is refused', async () => {
+    const h = harness(await upstream(echoRpc));
+    for (const body of [{ jsonrpc: '2.0', id: 1 }, rpc(7), rpc(null), [rpc('eth_blockNumber'), 'eth_blockNumber'], [[rpc('eth_blockNumber')]]]) {
+      expect((await post(h, 'base-mainnet', body)).status).toBe(403);
+    }
+    expect(h.upstreamCalls()).toBe(0);
+  });
+
+  it('RED: the families do not leak — a Solana method on an EVM network and an EVM method on Solana are refused', async () => {
+    const h = harness(await upstream(echoRpc));
+    expect((await post(h, 'base-mainnet', rpc('sendTransaction'))).status).toBe(403);
+    expect((await post(h, 'solana-mainnet', rpc('eth_getLogs'))).status).toBe(403);
+    expect(h.upstreamCalls()).toBe(0);
+  });
+
+  it('every method the app sends is forwarded on its own network family', async () => {
+    const h = harness(await upstream(echoRpc));
+    expect(ALCHEMY_EVM_ALLOWED_METHODS.size + ALCHEMY_SOLANA_ALLOWED_METHODS.size).toBeGreaterThan(0);
+    for (const method of ALCHEMY_EVM_ALLOWED_METHODS) {
+      expect((await post(h, 'base-mainnet', rpc(method))).status).toBe(200);
+    }
+    for (const method of ALCHEMY_SOLANA_ALLOWED_METHODS) {
+      expect((await post(h, 'solana-mainnet', rpc(method))).status).toBe(200);
+    }
+    expect(h.upstreamCalls()).toBe(ALCHEMY_EVM_ALLOWED_METHODS.size + ALCHEMY_SOLANA_ALLOWED_METHODS.size);
+  });
+
+  it('the allowlist is exactly the app\'s callers (TransactionHistoryService.alchemyRpc, SolanaRpc.call)', () => {
+    expect([...ALCHEMY_EVM_ALLOWED_METHODS].sort()).toEqual([
+      'alchemy_getAssetTransfers', 'eth_blockNumber', 'eth_getBlockByNumber', 'eth_getLogs', 'eth_getTransactionReceipt',
+    ]);
+    expect([...ALCHEMY_SOLANA_ALLOWED_METHODS].sort()).toEqual([
+      'getAccountInfo', 'getBalance', 'getFeeForMessage', 'getLatestBlockhash',
+      'getMinimumBalanceForRentExemption', 'getSignaturesForAddress', 'getTransaction', 'sendTransaction',
+    ]);
+    expect(firstDisallowedRpcMethod(rpc('eth_blockNumber'), 'base-mainnet')).toBeNull();
+    expect(firstDisallowedRpcMethod(rpc('x'.repeat(500)), 'base-mainnet')).toHaveLength(64);
   });
 });

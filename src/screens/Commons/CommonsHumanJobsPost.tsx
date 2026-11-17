@@ -13,7 +13,7 @@ import { withBiometricAction } from '../../core/security/biometricAction';
  * conversion can be tested under vitest without an RN render harness.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -108,6 +108,8 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
     seeking: route?.params?.seeking ?? INITIAL_FORM.seeking,
   }));
   const [submitting, setSubmitting] = useState(false);
+  // One post at a time: set before the approval prompt is requested, cleared when it settles.
+  const submitInFlightRef = useRef(false);
   const [errorField, setErrorField] = useState<keyof PostHumanJobForm | 'general' | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -123,6 +125,7 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (submitInFlightRef.current) return;
     setErrorField(null);
     setErrorMessage(null);
 
@@ -140,6 +143,7 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
       return;
     }
 
+    submitInFlightRef.current = true;
     try {
       await withBiometricAction(t('commonsHumanJobsPost.biometricPromptPost'), async biometricAction => {
     setSubmitting(true);
@@ -179,9 +183,9 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
         );
       }
       return;
+    } finally {
+      submitInFlightRef.current = false;
     }
-
-
   };
 
   const showFieldError = (field: keyof PostHumanJobForm) =>

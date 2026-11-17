@@ -165,3 +165,52 @@ describe('deferred PE creation (N3)', () => {
         expect(JSON.parse(mem.get(DEFERRED_KEY)!)).toEqual([]);
     });
 });
+
+describe('an entry queued while a retry pass runs survives the pass', () => {
+    it('is still stored (or recorded) after the pass writes its progress — never overwritten by the pass\'s older copy', async () => {
+        await ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(1));
+        await ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(2));
+
+        // While entry 1 is being recorded, a send confirms and queues entry 3. Entry 2 then fails.
+        const recorded: string[] = [];
+        let call = 0;
+        vi.spyOn(ProvenanceEnvelopeManager, 'createEnvelope').mockImplementation(async (params: EnvelopeContext) => {
+            call++;
+            if (call === 1) await ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(3));
+            if (call === 2) throw new Error('hardware key still unavailable');
+            recorded.push(params.intentText);
+            return { envelope_id: `pe-${call}` } as never;
+        });
+
+        expect(await ProvenanceEnvelopeManager.retryDeferredEnvelopes()).toBe(1);
+        expect(recorded).toEqual(['deferred-send-1']);
+        const stored = (JSON.parse(mem.get(DEFERRED_KEY)!) as EnvelopeContext[]).map((e) => e.intentText);
+        // Entry 2 (still failing) and entry 3 (queued mid-pass) are both kept, in order.
+        expect(stored).toEqual(['deferred-send-2', 'deferred-send-3']);
+    });
+
+    it('an entry queued while the LAST stored entry is being recorded is not wiped by the drain', async () => {
+        await ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(1));
+        const recorded: string[] = [];
+        let call = 0;
+        vi.spyOn(ProvenanceEnvelopeManager, 'createEnvelope').mockImplementation(async (params: EnvelopeContext) => {
+            call++;
+            if (call === 1) await ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(2));
+            recorded.push(params.intentText);
+            return { envelope_id: `pe-${call}` } as never;
+        });
+        const created = await ProvenanceEnvelopeManager.retryDeferredEnvelopes();
+        const stored = (JSON.parse(mem.get(DEFERRED_KEY)!) as EnvelopeContext[]).map((e) => e.intentText);
+        // Every queued entry is accounted for exactly once: recorded, or still stored.
+        expect([...recorded, ...stored].sort()).toEqual(['deferred-send-1', 'deferred-send-2']);
+        expect(created).toBe(recorded.length);
+    });
+
+    it('two entries queued at the same moment are both stored', async () => {
+        await Promise.all([
+            ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(1)),
+            ProvenanceEnvelopeManager.enqueueDeferredEnvelope(ctx(2)),
+        ]);
+        expect(JSON.parse(mem.get(DEFERRED_KEY)!)).toHaveLength(2);
+    });
+});

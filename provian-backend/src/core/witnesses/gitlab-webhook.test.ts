@@ -17,6 +17,9 @@ import { createServiceInstall, markServiceInstallRevoked } from './service-insta
 import { makeCorroborationTargetDocs, makeMeterActKeyDoc } from '../../__test-helpers__/pe-doc-fixtures';
 import { makeWitnessFakeDeps, type WitnessStagedAct } from './__test-helpers__/witness-fake-deps';
 
+/** A registration that proved control of the project by deploy key (what the registration route records). */
+const PROVEN = { method: 'deploy_key', key_fingerprint: 'SHA256:' + 'A'.repeat(43), verified_at: 1, project_path: 'group/project' } as const;
+
 // PE METER (2026-10-03): the shared forge-witness fake (see its header). `enqueued` lists the acts
 // the relay STAGED in their chain-tip transaction (`meter_relay_acts_v1` intakes: identity + the
 // PE's pricing projection) — the relay keeps no readable PE, and enqueueing one throws.
@@ -165,7 +168,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
 
   it('returns 401 on wrong token BEFORE any DB lookup', async () => {
     const { deps, store, enqueued } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const result = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: 'wrong-token-also-32-characters-long-abcdef',
@@ -193,7 +196,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
 
   it('returns 410 when the install is revoked', async () => {
     const { deps } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     await markServiceInstallRevoked(deps.db, 'gitlab', '100');
     const result = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
@@ -207,7 +210,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
 
   it('submits a PE on a valid push and is idempotent on redelivery', async () => {
     const { deps, enqueued, store } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const input = {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: install100.webhook_secret!,
@@ -233,7 +236,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
 
   it('acknowledges 200 but emits no PE for an unsupported event', async () => {
     const { deps, enqueued } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const result = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload({ object_kind: 'issue' })),
       tokenHeader: install100.webhook_secret!,
@@ -248,7 +251,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
 
   it('emits a cross-witness corroboration for a prior PE with the same commit (PRE-METER row)', async () => {
     const { deps, store } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     // A prior local observer PE already recorded this commit.
     const sha = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
     // Prior PE in REAL production shapes (built via the shared fixture builder):
@@ -278,7 +281,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
   // its priced row lives on its 31-day act key, which is where the commit lookup finds it.
   it('emits a cross-witness corroboration for a prior METERED act with the same commit (act key)', async () => {
     const { deps, store } = makeFakeDeps();
-    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const sha = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
     if (!store.has('meter_act_keys_v1')) store.set('meter_act_keys_v1', new Map());
     store.get('meter_act_keys_v1')!.set('pe_prior_dev', makeMeterActKeyDoc({
@@ -301,7 +304,7 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
   it('a delivery signed with the INSTALL OWN secret verifies; the app-wide secret is REFUSED for it', async () => {
     const { deps } = makeFakeDeps();
     const { doc: install } = await createServiceInstall(deps.db, {
-      user_id: 'user_1', provider: 'gitlab', installation_id: '100',
+      user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
     const ok = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
@@ -322,10 +325,10 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
   it('[ RED] CROSS-INSTALL FORGERY: install A\'s secret cannot deliver for install B', async () => {
     const { deps } = makeFakeDeps();
     const { doc: installA } = await createServiceInstall(deps.db, {
-      user_id: 'user_a', provider: 'gitlab', installation_id: '200',
+      user_id: 'user_a', provider: 'gitlab', installation_id: '200', control_proof: PROVEN,
     });
     await createServiceInstall(deps.db, {
-      user_id: 'user_b', provider: 'gitlab', installation_id: '100',
+      user_id: 'user_b', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
     // Payload targets project 100 (install B); token is install A's secret.
     const result = await handleGitLabWebhook(deps, {
@@ -336,26 +339,50 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
     expect(result.status).toBe(401);
   });
 
-  it('LEGACY GRANDFATHER: a secret-less pre-B2 row verifies against the app-wide secret', async () => {
-    const { deps } = makeFakeDeps();
-    // Simulate a pre-B2 row: write the install shape directly, no webhook_secret.
+  it('RED: a secret-less row verifies against the app-wide secret but, carrying no control proof, earns nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    // A row from before per-install secrets and control proofs: written directly.
     await deps.db.collection('service_installs').doc('gitlab_100').set({
       user_id: 'user_1', provider: 'gitlab', installation_id: '100',
       installed_at: Date.now(), revoked_at: null,
     });
-    const ok = await handleGitLabWebhook(deps, {
+    const refused = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: SECRET,
       eventType: 'Push Hook', deliveryId: 'uuid-legacy-1', config: CONFIG_ENABLED,
     });
-    expect(ok.status).toBe(200);
-    // RED: a random token still refuses for the legacy row.
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('control_proof_required');
+    expect(enqueued).toHaveLength(0);
+    // A random token still refuses for that row (401 comes before the proof check).
     const bad = await handleGitLabWebhook(deps, {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: 'not-the-secret-not-the-secret-abcdef',
       eventType: 'Push Hook', deliveryId: 'uuid-legacy-2', config: CONFIG_ENABLED,
     });
     expect(bad.status).toBe(401);
+  });
+
+  it('RED: an install registered without a control proof is 403 with its OWN valid secret, until registered again with proof', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: unproven } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
+    const input = {
+      rawBody: JSON.stringify(makePushPayload()),
+      tokenHeader: unproven.webhook_secret!,
+      eventType: 'Push Hook', deliveryId: 'uuid-unproven-1', config: CONFIG_ENABLED,
+    };
+    const refused = await handleGitLabWebhook(deps, input);
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('control_proof_required');
+    expect(enqueued).toHaveLength(0);
+
+    const { doc: proven, secretIssued } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    expect(secretIssued).toBe(false);
+    expect(proven.webhook_secret).toBe(unproven.webhook_secret);
+    // The refusal consumed no delivery id: the forge's redelivery of the SAME delivery lands.
+    const accepted = await handleGitLabWebhook(deps, input);
+    expect(accepted.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
   });
 
   it('ENUMERATION-SAFE: an unregistered project id answers 401 (not 404) without a valid secret', async () => {
@@ -378,17 +405,17 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
   it('SECRET LIFECYCLE: re-POST preserves; revoke + re-register ROTATES', async () => {
     const { deps } = makeFakeDeps();
     const first = await createServiceInstall(deps.db, {
-      user_id: 'user_1', provider: 'gitlab', installation_id: '100',
+      user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
     expect(first.secretIssued).toBe(true);
     const rePost = await createServiceInstall(deps.db, {
-      user_id: 'user_1', provider: 'gitlab', installation_id: '100',
+      user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
     expect(rePost.secretIssued).toBe(false);
     expect(rePost.doc.webhook_secret).toBe(first.doc.webhook_secret);
     await markServiceInstallRevoked(deps.db, 'gitlab', '100');
     const rotated = await createServiceInstall(deps.db, {
-      user_id: 'user_1', provider: 'gitlab', installation_id: '100',
+      user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
     });
     expect(rotated.secretIssued).toBe(true);
     expect(rotated.doc.webhook_secret).not.toBe(first.doc.webhook_secret);
@@ -405,5 +432,91 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
       eventType: 'Push Hook', deliveryId: 'uuid-rot-2', config: CONFIG_ENABLED,
     });
     expect(newSecret.status).toBe(200);
+  });
+});
+
+describe('ids that cannot be document ids never reach a document reference', () => {
+  /** Firestore refuses a document id containing "/"; this db does the same. */
+  function strictDeps(): { deps: ReturnType<typeof makeFakeDeps>['deps'] } {
+    const { deps } = makeFakeDeps();
+    const collection = deps.db.collection.bind(deps.db);
+    deps.db.collection = (name: string) => {
+      const col = collection(name);
+      const doc = col.doc.bind(col);
+      col.doc = (id: string) => {
+        if (typeof id !== 'string' || id.includes('/')) throw new Error('Value for argument "documentPath" must point to a document');
+        return doc(id);
+      };
+      return col;
+    };
+    return { deps };
+  }
+
+  it('RED: a project id containing "/" answers 401 without the secret and 404 to the operator — it never throws', async () => {
+    const { deps } = strictDeps();
+    const rawBody = JSON.stringify(makePushPayload({ project: { id: 'a/b', path_with_namespace: 'group/repo' } }));
+    const probe = await handleGitLabWebhook(deps, {
+      rawBody, tokenHeader: 'guessing-token-guessing-token-abcdef',
+      eventType: 'Push Hook', deliveryId: 'uuid-slash-1', config: CONFIG_ENABLED,
+    });
+    expect(probe.status).toBe(401);
+    const noToken = await handleGitLabWebhook(deps, {
+      rawBody, tokenHeader: undefined, eventType: 'Push Hook', deliveryId: 'uuid-slash-2', config: CONFIG_ENABLED,
+    });
+    expect(noToken.status).toBe(401);
+    const operator = await handleGitLabWebhook(deps, {
+      rawBody, tokenHeader: SECRET, eventType: 'Push Hook', deliveryId: 'uuid-slash-3', config: CONFIG_ENABLED,
+    });
+    expect(operator.status).toBe(404);
+  });
+
+  it('RED: a delivery id containing "/" is 400 after the token verifies — it never throws', async () => {
+    const { deps } = strictDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    const result = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(makePushPayload()), tokenHeader: install.webhook_secret!,
+      eventType: 'Push Hook', deliveryId: 'a/b', config: CONFIG_ENABLED,
+    });
+    expect(result.status).toBe(400);
+    expect(result.body.error).toBe('invalid_delivery_id');
+  });
+});
+
+describe('a delivery must name the project path the registration proved', () => {
+  it('RED: the proven project id with a different path (a renamed project, or a forged one) is 403 and records nothing', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    const refused = await handleGitLabWebhook(deps, {
+      rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'group/renamed' } })),
+      tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-path-1', config: CONFIG_ENABLED,
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.error).toBe('project_path_mismatch');
+    expect(enqueued).toHaveLength(0);
+  });
+
+  it('the proven path matches whatever its case, and the refusal consumed no delivery id', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    const input = {
+      rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'Group/Project' } })),
+      tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-path-2', config: CONFIG_ENABLED,
+    };
+    const ok = await handleGitLabWebhook(deps, input);
+    expect(ok.status).toBe(200);
+    expect(enqueued).toHaveLength(1);
+  });
+
+  it('after a rename the project registers again with the new path, and the forge\'s redelivery lands', async () => {
+    const { deps, enqueued } = makeFakeDeps();
+    const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    const input = {
+      rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'group/renamed' } })),
+      tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: 'uuid-path-3', config: CONFIG_ENABLED,
+    };
+    expect((await handleGitLabWebhook(deps, input)).status).toBe(403);
+    await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: { ...PROVEN, project_path: 'group/renamed' } });
+    expect((await handleGitLabWebhook(deps, input)).status).toBe(200);
+    expect(enqueued).toHaveLength(1);
   });
 });

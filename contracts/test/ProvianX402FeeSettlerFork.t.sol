@@ -24,8 +24,13 @@ interface IX402ProxyLike {
     function PERMIT2() external view returns (address);
 }
 
+interface IPointerLike {
+    function component(uint256 index) external view returns (address);
+}
+
 /// @notice Live-RPC fork suite: the settler against the REAL Base USDC (FiatToken v2.2),
-///         the REAL Permit2, the REAL x402ExactPermit2Proxy and the REAL PVT9 token.
+///         the REAL Permit2, the REAL x402ExactPermit2Proxy and the REAL live PVT token,
+///         read from the permanent protocol pointer.
 ///         Run with `BASE_FORK_RPC_URL=https://mainnet.base.org forge test --root contracts
 ///         --match-contract ProvianX402FeeSettlerFork -vv`. Skips cleanly when the env var is
 ///         unset. Nothing is broadcast: every transaction runs on the local fork only.
@@ -33,7 +38,8 @@ contract ProvianX402FeeSettlerForkTest is Test {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address constant X402_PROXY = 0x402085c248EeA27D92E8b30b2C58ed07f9E20001;
-    address constant PVT = 0x8811441914381143b9408c5C32247367F86F173A;
+    address constant POINTER = 0x619eAe740CE56C5a8edbB2B047E58369281ddAD7;
+    address PVT;
     address constant OPERATOR = 0xA37fC594E98e951571C771C9e77CDC73f67d3efB;
 
     bytes32 constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH = keccak256(
@@ -55,6 +61,7 @@ contract ProvianX402FeeSettlerForkTest is Test {
         vm.createSelectFork(rpc);
         forked = true;
         buyer = vm.addr(buyerPk);
+        PVT = IPointerLike(POINTER).component(0);
         settler = new ProvianX402FeeSettler(USDC, OPERATOR, OPERATOR, X402_PROXY, PVT);
     }
 
@@ -71,8 +78,8 @@ contract ProvianX402FeeSettlerForkTest is Test {
             keccak256("Witness(address to,uint256 validAfter)"),
             "proxy witness layout == ProvianX402FeeSettler.Witness"
         );
-        assertGt(PVT.code.length, 0, "PVT9 deployed");
-        assertEq(settler.pvt(), PVT, "settler pinned to live PVT9");
+        assertGt(PVT.code.length, 0, "live PVT token deployed");
+        assertEq(settler.pvt(), PVT, "settler bound to the live PVT token");
     }
 
     function test_fork_settleWithAuthorization_realUsdc() public {

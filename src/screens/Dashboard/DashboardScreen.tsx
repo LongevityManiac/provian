@@ -2,7 +2,7 @@ import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,7 @@ import ParticipationCard from '../../components/ParticipationCard';
 import relayService from '../../services/RelayAPIService';
 import type { PVTAccrual, LinkedAgent } from '../../services/RelayAPIService';
 import { deriveAgentStatus, type AgentStatusTone } from '../../core/agents/agentStatus';
+import { agentsLoadOnEnd, agentsLoadOnStart, yourAgentsCardMode, type AgentsLoad } from './yourAgentsCard';
 import { useAttentionCount } from '../../core/attention/useAttentionCount';
 import TransactionHistoryService, { isApprovalScanEnabled } from '../../core/history/TransactionHistoryService';
 import type { Transaction } from '../../core/history/TransactionHistoryService';
@@ -171,19 +172,27 @@ const DashboardScreen = ({ navigation }: any) => {
     // (the one-tap path to see/manage an agent). liveness comes from the
     // linked record's capture heartbeat — relay sessions no longer exist.
     const [linkedAgents, setLinkedAgents] = useState<LinkedAgent[]>([]);
+    // Whether the list above is an answer yet: the card says "connect an agent" only after a
+    // load that returned none (yourAgentsCardMode).
+    const [agentsLoad, setAgentsLoad] = useState<AgentsLoad>('loading');
 
-    useFocusEffect(
-        useCallback(() => {
-            let cancelled = false;
-            relayService.getLinkedAgents()
-                .then(({ linked_agents }) => {
-                    if (cancelled) return;
-                    setLinkedAgents(linked_agents ?? []);
-                })
-                .catch(() => { /* card degrades to hidden on load failure */ });
-            return () => { cancelled = true; };
-        }, [])
-    );
+    const loadLinkedAgents = useCallback(() => {
+        let cancelled = false;
+        setAgentsLoad(agentsLoadOnStart);
+        relayService.getLinkedAgents()
+            .then(({ linked_agents }) => {
+                if (cancelled) return;
+                setLinkedAgents(linked_agents ?? []);
+                setAgentsLoad((prev) => agentsLoadOnEnd(prev, true));
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setAgentsLoad((prev) => agentsLoadOnEnd(prev, false));
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    useFocusEffect(loadLinkedAgents);
 
     const [addressCopied, setAddressCopied] = useState(false);
 
@@ -255,7 +264,35 @@ const DashboardScreen = ({ navigation }: any) => {
     // directly on the agent (AgentDetail if one, AgentHub if several). When no
     // agent is linked, it stays a discoverable "connect an agent" entry.
     const renderYourAgentsCard = () => {
-        if (linkedAgents.length === 0) {
+        const mode = yourAgentsCardMode(agentsLoad, linkedAgents.length);
+        if (mode === 'loading') {
+            return (
+                <View style={styles.agentsCard} accessibilityRole="progressbar">
+                    <View style={styles.agentsIcon}>
+                        <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.title')}</Text>
+                    </View>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+            );
+        }
+        if (mode === 'failed') {
+            return (
+                <TouchableOpacity style={styles.agentsCard} onPress={() => { loadLinkedAgents(); }} activeOpacity={0.85} accessibilityRole="button">
+                    <View style={styles.agentsIcon}>
+                        <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.title')}</Text>
+                        <Text style={[styles.agentsSubtitle, { color: themeColors.textSecondary }]} numberOfLines={2}>{t('yourAgents.loadFailed')}</Text>
+                    </View>
+                    <Text style={[styles.agentsManage, { color: COLORS.primary }]}>{t('common.tryAgain')}</Text>
+                </TouchableOpacity>
+            );
+        }
+        if (mode === 'connect') {
             return (
                 <TouchableOpacity
                     style={styles.agentsCard}

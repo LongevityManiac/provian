@@ -59,7 +59,7 @@ const RPC = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
 const TARGET = process.env.X402_TARGET_URL || 'https://x402.ottoai.services/crypto-news';
 const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const MAX_X402_ATOMIC = process.env.X402_MAX_USDC_ATOMIC || '100000'; // 0.10 USDC per payment
-const SETTLER = (process.env.FACILITATOR_SETTLER_ADDRESS || '0x7c99bb203ad47ec768612a1234f137d8d3588b7c').toLowerCase();
+const SETTLER = (process.env.FACILITATOR_SETTLER_ADDRESS || '0x5553d4d86dd09e5aa67453416f08371a0cca8e98').toLowerCase();
 // keccak256("Transfer(address,address,uint256)") / keccak256("FeeSettled(address,address,address,uint256,uint256)")
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const FEE_SETTLED_TOPIC = '0x5239aaf6047eb7085755b84e198af2e81ff0b6035cd979d9ec8c9996c8fb4815';

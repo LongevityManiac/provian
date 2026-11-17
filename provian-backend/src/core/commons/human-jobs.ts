@@ -1027,24 +1027,48 @@ export async function acceptApplicant(
     escrowId = escrow.escrow_id;
   }
 
-  const now = Date.now();
-
-  // Update job
-  await deps.db
-    .collection(COMMONS_COLLECTIONS.HUMAN_JOBS)
-    .doc(jobId)
-    .update({
-      status: 'in_progress',
-      accepted_applicant_wallet_id: applicantWalletId,
-      escrow_id: escrowId,
-    });
-
-  // Update application status
-  const appDoc = appSnap.docs[0];
-  await deps.db
+  // The job and the application change together, and only while the job is still
+  // open: two accepts for one job cannot both win, and a job is never left
+  // accepted with its application still pending. The escrow above always comes
+  // from createEscrow; an accept that loses here removes its own unfunded escrow.
+  const jobRef = deps.db.collection(COMMONS_COLLECTIONS.HUMAN_JOBS).doc(jobId);
+  const applicationRef = deps.db
     .collection(COMMONS_COLLECTIONS.HUMAN_JOB_APPLICATIONS)
-    .doc(appDoc.id)
-    .update({ status: 'accepted' });
+    .doc(appSnap.docs[0].id);
+  try {
+    await deps.db.runTransaction(async (txn) => {
+      const freshJobSnap = await txn.get(jobRef);
+      if (!freshJobSnap.exists) {
+        throw new NotFoundError('Job not found');
+      }
+      const freshJob = freshJobSnap.data() as HumanJob;
+      if (freshJob.poster_wallet_id !== walletId) {
+        throw new ForbiddenError('Only the job poster can accept applicants');
+      }
+      if (freshJob.status !== 'open') {
+        throw new ValidationError('Job is not accepting applications');
+      }
+      const freshApplicationSnap = await txn.get(applicationRef);
+      if (!freshApplicationSnap.exists) {
+        throw new NotFoundError('Application not found');
+      }
+      txn.update(jobRef, {
+        status: 'in_progress',
+        accepted_applicant_wallet_id: applicantWalletId,
+        escrow_id: escrowId,
+      });
+      txn.update(applicationRef, { status: 'accepted' });
+    });
+  } catch (err) {
+    if (escrowId) {
+      try {
+        await deps.db.collection('escrows').doc(escrowId).delete();
+      } catch (cleanupErr) {
+        console.warn('[human-jobs] could not remove the escrow of an accept that did not land:', cleanupErr);
+      }
+    }
+    throw err;
+  }
 
   // Generate PE - currency-aware metadata so the PE accurately records
   // which currency the auto-escrow was funded in.
@@ -1505,20 +1529,33 @@ export async function rateHumanJob(
     throw new ValidationError('Rating must be an integer from 1 to 5');
   }
 
-  // Check for duplicate rating
-  const existingRating = await deps.db
-    .collection(COMMONS_COLLECTIONS.HUMAN_JOB_RATINGS)
-    .where('job_id', '==', jobId)
-    .where('rater_wallet_id', '==', walletId)
-    .limit(1)
-    .get();
-  if (!existingRating.empty) {
-    throw new ValidationError('Already rated this job');
-  }
-
   const rateeWalletId = isPoster
     ? job.accepted_applicant_wallet_id!
     : job.poster_wallet_id;
+
+  // The rating, the job's reference to it and the PE commit in one transaction,
+  // after re-reading the job and the rater's existing ratings inside it — so a
+  // rater has at most one rating per job and no PE exists without its rating.
+  const jobRef = deps.db.collection(COMMONS_COLLECTIONS.HUMAN_JOBS).doc(jobId);
+  const ratingId = `hrat_${uuidv4()}`;
+  const ratingRef = deps.db.collection(COMMONS_COLLECTIONS.HUMAN_JOB_RATINGS).doc(ratingId);
+  const existingRatingQuery = deps.db
+    .collection(COMMONS_COLLECTIONS.HUMAN_JOB_RATINGS)
+    .where('job_id', '==', jobId)
+    .where('rater_wallet_id', '==', walletId)
+    .limit(1);
+  const ratingField = isPoster ? 'rating_pe_id' : 'human_rating_pe_id';
+  const now = Date.now();
+  const buildRating = (peId: string): HumanJobRating => ({
+    rating_id: ratingId,
+    job_id: jobId,
+    pe_id: peId,
+    rater_wallet_id: walletId,
+    ratee_wallet_id: rateeWalletId,
+    rating: body.rating,
+    comment: body.comment?.trim(),
+    created_at: now,
+  });
 
   const { peId } = await generatePE(deps, {
     walletId,
@@ -1530,34 +1567,27 @@ export async function rateHumanJob(
       rating: body.rating,
       ratee_wallet_id: rateeWalletId,
     },
+    atomicEntityPrecondition: async (txn) => {
+      const freshJobSnap = await txn.get(jobRef);
+      if (!freshJobSnap.exists) {
+        throw new NotFoundError('Job not found');
+      }
+      const freshJob = freshJobSnap.data() as HumanJob;
+      if (freshJob.status !== 'completed') {
+        throw new ValidationError('Can only rate completed jobs');
+      }
+      const existingRating = await txn.get(existingRatingQuery);
+      if (!existingRating.empty) {
+        throw new ValidationError('Already rated this job');
+      }
+    },
+    atomicEntityWrite: (txn, generatedPeId) => {
+      txn.set(ratingRef, buildRating(generatedPeId));
+      txn.update(jobRef, { [ratingField]: generatedPeId });
+    },
   });
 
-  const now = Date.now();
-  const ratingId = `hrat_${uuidv4()}`;
-  const rating: HumanJobRating = {
-    rating_id: ratingId,
-    job_id: jobId,
-    pe_id: peId,
-    rater_wallet_id: walletId,
-    ratee_wallet_id: rateeWalletId,
-    rating: body.rating,
-    comment: body.comment?.trim(),
-    created_at: now,
-  };
-
-  await deps.db
-    .collection(COMMONS_COLLECTIONS.HUMAN_JOB_RATINGS)
-    .doc(ratingId)
-    .set(rating);
-
-  // Update the job's rating PE reference
-  const ratingField = isPoster ? 'rating_pe_id' : 'human_rating_pe_id';
-  await deps.db
-    .collection(COMMONS_COLLECTIONS.HUMAN_JOBS)
-    .doc(jobId)
-    .update({ [ratingField]: peId });
-
-  return rating;
+  return buildRating(peId);
 }
 
 // ─── Job Stats ──────────────────────────────────────────────────────────────

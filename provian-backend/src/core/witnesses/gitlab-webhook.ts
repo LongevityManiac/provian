@@ -36,7 +36,12 @@ import { generatePE } from '../agent-bank/pe-utils';
 import type { InputOrigin } from '../provenance/input-origins';
 import { resolvableOrigin, forgeWebhookWitness, mergeInputOrigins } from '../provenance/origin-capture';
 import { emitBackendCorroboration } from '../corroboration/CorroborationManager';
-import { getServiceInstallByInstallationId } from './service-installs';
+import {
+  getServiceInstallByInstallationId,
+  installControlProven,
+  installProjectPathMatches,
+  isUsableInstallationId,
+} from './service-installs';
 import type { GitLabAppConfig } from './gitlab-app-config';
 import { findPEsByCommitSha, findCommitOriginsBySha } from './pe-lookup';
 import {
@@ -57,7 +62,7 @@ const EVENT_TYPE_TO_ACTION_TYPE: Record<string, string> = {
 };
 
 export interface GitLabWebhookResult {
-  status: 200 | 400 | 401 | 404 | 410 | 503;
+  status: 200 | 400 | 401 | 403 | 404 | 410 | 503;
   body: Record<string, unknown>;
 }
 
@@ -298,9 +303,9 @@ export async function handleGitLabWebhook(
   //  - an install WITH a per-install secret verifies against ITS OWN secret
   //    and never the app-wide one (a secret holder can forge deliveries only
   //    against their own install);
-  //  - a LEGACY secret-less row (registered pre-B2) grandfathers onto the
-  //    app-wide secret until re-registered — that secret was never
-  //    distributed to a third party;
+  //  - a secret-less row (one registered before per-install secrets) verifies
+  //    against the app-wide secret, and is then refused for want of a control
+  //    proof until the project is registered again;
   //  - an UNREGISTERED project id answers 401 unless the caller presents the
   //    app-wide (operator) secret, so an unauthenticated probe cannot
   //    enumerate which projects are registered (the old order got this for
@@ -324,6 +329,24 @@ export async function handleGitLabWebhook(
   }
   if (install.revoked_at !== null) {
     return { status: 410, body: { error: 'install_revoked' } };
+  }
+  // A registration that never proved control of the project authenticates no
+  // PE, however its secret verified. It stays on record and starts working
+  // again when the project is registered with proof. Checked before dedup so
+  // the forge's redelivery after re-registration is still processed.
+  if (!installControlProven(install)) {
+    return { status: 403, body: { error: 'control_proof_required' } };
+  }
+  // The forge sends the project id and its path together. A delivery for this
+  // install whose path is not the one the registration proved (a renamed
+  // project included) is refused until the project is registered again.
+  if (!installProjectPathMatches(install, project.fullName)) {
+    return { status: 403, body: { error: 'project_path_mismatch' } };
+  }
+  // The delivery id becomes part of a document id; one that is not a plain
+  // token identifies nothing.
+  if (!isUsableInstallationId(input.deliveryId)) {
+    return { status: 400, body: { error: 'invalid_delivery_id' } };
   }
 
   // (6) Dedup BEFORE synthesize / submit.

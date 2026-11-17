@@ -180,7 +180,12 @@ describe('PE Immutability', () => {
                 lastArchivalAt: Date.now(),
                 migrationComplete: true,
             };
-            AsyncStorage.getItem.mockResolvedValue(JSON.stringify(storage));
+            // The tiered store is read only as an integrity-tagged envelope, so seed one.
+            const { setItemHmac } = await import('../../security/hmacAsyncStorage');
+            await setItemHmac('seed', storage);
+            const signed = AsyncStorage.setItem.mock.calls[0][1];
+            AsyncStorage.setItem.mockClear();
+            AsyncStorage.getItem.mockResolvedValue(signed);
 
             // Reset singleton to get a fresh instance with mocks
             const module = await import('../PELifecycleManager');
@@ -189,16 +194,22 @@ describe('PE Immutability', () => {
             const result = await manager.setPEHidden('pe-target', true);
 
             expect(result).toBe(true);
-            // [Drift C fix] AsyncStorage.setItem is invoked twice:
-            //   calls[0] = legacy-format migration write performed by
-            //              getItemHmacWithLegacyFallback before pe.hidden
-            //              is mutated; payload here still has hidden=undefined.
-            //   calls[1] = post-mutation write from setPEHidden itself.
-            // Each write is wrapped in the HMAC envelope { v, payload, mac }
-            // by setItemHmac, so the storage object lives under .payload.
-            const savedCall = AsyncStorage.setItem.mock.calls[1];
-            const savedEnvelope = JSON.parse(savedCall[1]);
+            // The one write is setPEHidden's own, wrapped in the envelope { v, payload, mac },
+            // so the storage object lives under .payload.
+            expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
+            const savedEnvelope = JSON.parse(AsyncStorage.setItem.mock.calls[0][1]);
             expect(savedEnvelope.payload.hotPEs[0].hidden).toBe(true);
+        });
+
+        it('plain JSON planted as the tiered store is not adopted: nothing in it can be hidden or re-signed', async () => {
+            const pe = createMockPE({ envelope_id: 'pe-planted' });
+            AsyncStorage.getItem.mockResolvedValue(JSON.stringify({
+                version: 1, hotPEs: [pe], coldHashes: [], warmBoundaryHash: 'genesis', lastArchivalAt: Date.now(), migrationComplete: true,
+            }));
+            AsyncStorage.setItem.mockClear();
+            const manager = (await import('../PELifecycleManager')).default;
+            expect(await manager.setPEHidden('pe-planted', true)).toBe(false);
+            expect(AsyncStorage.setItem).not.toHaveBeenCalled();
         });
 
         it('returns false when PE not found in hot tier', async () => {

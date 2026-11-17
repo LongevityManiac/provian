@@ -1,6 +1,6 @@
 import { readSettlementTransaction } from '../../recourse/settlement-transaction-evidence';
 import { finalizeSettlementIssuance, prepareSettlementIssuanceCancellation, reconcileSettlementIssuance } from '../../recourse/settlement-issuance-lifecycle';
-import { preparePrivateIssuanceProbe, preparePrivateIssuanceExecution } from '../../recourse/settlement-issuance-runtime';
+import { preparePrivateIssuanceProbe, preparePrivateIssuanceExecution, issuancePayeeHold, IssuanceRecipientWithheld } from '../../recourse/settlement-issuance-runtime';
 import { simulatePrivateIssuanceProbe } from '../../recourse/settlement-issuance-probe';
 import { assertServerNonceWriterActive } from '../../onchain/server-writer-cutover';
 import { recourseForwarderConfig } from '../../recourse/settlement-forwarder';
@@ -138,6 +138,39 @@ export type RuntimeRefusal =
   // — an on-demand payout must name one payee and its request.
   | 'payout_payee_invalid'
   | 'payout_request_id_invalid';
+
+/**
+ * The member batch's dry run. A recipient withheld while its owner changes membership answers as a
+ * batch that does not settle — the verdict the runner isolates to that recipient's claims — and
+ * never as an inconclusive probe, which would stop the run for every payee in the batch.
+ */
+export async function probeMemberBatch<P>(
+  prepare: () => Promise<P>,
+  simulate: (probe: P) => Promise<{ ok: boolean; revertReason: string | null }>,
+): Promise<{ ok: boolean; revertReason: string | null }> {
+  let probe: P;
+  try {
+    probe = await prepare();
+  } catch (error) {
+    if (error instanceof IssuanceRecipientWithheld) return { ok: false, revertReason: error.reason };
+    throw error;
+  }
+  return simulate(probe);
+}
+
+/** One answer per payee for the whole run: selection re-sweeps the ledger for every batch. */
+export function memoizedPayeeHold(read: (address: string) => Promise<string | null>): (address: string) => Promise<string | null> {
+  const answers = new Map<string, Promise<string | null>>();
+  return (address) => {
+    const key = address.toLowerCase();
+    let answer = answers.get(key);
+    if (answer === undefined) {
+      answer = read(key);
+      answers.set(key, answer);
+    }
+    return answer;
+  };
+}
 
 export class OperatorRefusal extends Error {
   constructor(readonly reason: RuntimeRefusal, message: string) {
@@ -832,8 +865,13 @@ export async function runSettlement(
         return {target: plan.target, data: plan.data};
       },
     },
-    memberBatchProbe: async batch => simulatePrivateIssuanceProbe(
-      await preparePrivateIssuanceProbe(db as unknown as Firestore, batch, minter.address, env), minter.address),
+    memberBatchProbe: batch => probeMemberBatch(
+      () => preparePrivateIssuanceProbe(db as unknown as Firestore, batch, minter.address, env),
+      probe => simulatePrivateIssuanceProbe(probe, minter.address)),
+    // A scheduled run leaves a payee whose owner's membership change is open out of selection. An
+    // on-demand payout names its one payee and keeps it: its run then stops at the dry run and the
+    // paid request waits, rather than completing with nothing selected.
+    ...(payee === undefined ? { payeeHold: memoizedPayeeHold(address => issuancePayeeHold(db as unknown as Firestore, address)) } : {}),
     db,
     ...(standardPayeeDue ? { standardPayeeDue } : {}),
     chain,

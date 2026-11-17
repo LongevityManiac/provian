@@ -141,4 +141,47 @@ describe('detector-backed single-PE bug demotion', () => {
     })).toEqual({ kind: 'refused', reason: 'claim_reserved_or_in_flight' });
     expect((await db.collection('pe_history').doc(PE).get()).data()).toMatchObject({ mint_status: 'eligible' });
   });
+  it('RED: a claim registered and reserved between the advisory read and the demotion transaction refuses the demotion', async () => {
+    const db = createFakeFirestore() as unknown as Firestore;
+    const settlementDb = db as unknown as SettlementDb;
+    // The PE is eligible and no claim is registered yet when the tool first looks.
+    await db.collection('pe_history').doc(PE).set({
+      peId: PE, timestamp: NOW, category: 'agent_action', mint_status: 'eligible', mint_disposition: 'eligible',
+      economic_snapshot_hash: HASH, economic_snapshot: { immutable: 'must-survive' },
+      record_points_atomic: '100', estimated_pvt_atomic: '100', estimatedPVT: 0.0000000000000001,
+    });
+    await acquireCycleLease(settlementDb, {
+      cycleId: 'cycle', workerId: 'worker', nowMs: NOW, leaseTtlMs: 60_000,
+      epoch: 0, policyHash: POLICY, signer: CONTRIBUTOR, baseNonce: 1,
+      limits: { max_transactions: 10, max_fee_wei_total: '1000000' }, cursorStart: 0n,
+    });
+    // The settlement run wins the race: it registers and reserves the claim after the tool's
+    // advisory read, immediately before the tool's own transaction begins.
+    const runTransaction = db.runTransaction.bind(db);
+    let raced = false;
+    (db as unknown as { runTransaction: typeof runTransaction }).runTransaction = (async (fn: Parameters<typeof runTransaction>[0]) => {
+      if (!raced) {
+        raced = true;
+        expect((await registerClaim(settlementDb, claim, NOW + 1)).kind).toBe('created');
+        expect((await reserveBatch(settlementDb, {
+          cycleId: 'cycle', workerId: 'worker', nowMs: NOW + 1,
+          batchId: BATCH, lane: 'standard', epoch: 0, policyHash: POLICY,
+          cursorStart: 0n, cursorEnd: 1n, recipientCount: 1, claimCount: 1,
+          totalMintedAtomic: 100n, calldata: '0x01',
+          members: [{ pe_id: PE, leg: 'sole', claim_id: CLAIM }],
+        })).kind).toBe('reserved');
+      }
+      return runTransaction(fn);
+    }) as typeof runTransaction;
+
+    const result = await demoteBugProducedPe({
+      db, peId: PE, detectorId: provingDetector.id, expectedSnapshotHash: HASH, execute: true,
+      detectors: { [provingDetector.id]: provingDetector }, nowMs: NOW + 2,
+    });
+    expect(raced).toBe(true);
+    expect(result).toEqual({ kind: 'refused', reason: 'claim_reserved_or_in_flight' });
+    // Nothing moved: the PE still mints with its in-flight claim, and no tombstone stands.
+    expect((await db.collection('pe_history').doc(PE).get()).data()).toMatchObject({ mint_status: 'eligible', mint_disposition: 'eligible' });
+    expect((await db.collection(BUG_DEMOTION_COLLECTION).doc(PE).get()).exists).toBe(false);
+  });
 });

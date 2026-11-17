@@ -98,10 +98,16 @@ export default function CommonsWants({ navigation, embedded = false, header }: P
   }, [myId]));
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
+  // One approved write at a time: set before the approval prompt is requested, cleared when it settles.
+  const gateInFlight = useRef(false);
   const gate = async (reason: string, fn: (action: BiometricAction) => Promise<void>): Promise<boolean> => {
+    if (gateInFlight.current) return false;
+    gateInFlight.current = true;
     try { await withBiometricAction(reason, fn); return true; } catch (err) {
       if (err instanceof BiometricNotAvailableError || err instanceof BiometricAuthError) Alert.alert(t('commons.confirmationNeededTitle'), errorDisplayCopy(err.message));
       return false;
+    } finally {
+      gateInFlight.current = false;
     }
   };
 

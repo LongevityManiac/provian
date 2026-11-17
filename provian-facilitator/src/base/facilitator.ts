@@ -22,7 +22,6 @@ import type { PaymentPayload, PaymentRequirements } from '@x402/core/types';
 import {
   BASE_GAS_WALLET,
   BASE_NETWORK,
-  BASE_PVT,
   BASE_USDC,
   BASE_USDC_EIP712,
   MAX_FEE_USDC_ATOMIC,
@@ -56,6 +55,11 @@ export interface BaseFacilitatorDeps {
   readonly witness: WitnessReporter;
   readonly priceMaxAgeSeconds: number;
   readonly now: () => number;
+  /**
+   * The PVT token the deployed settler is built for. Checked at startup against the settler's own
+   * immutable and the permanent protocol pointer, and again against the pointer on every PVT payment.
+   */
+  readonly pvt: `0x${string}`;
   /** The fee recipient the settler pays (pinned: the Base gas wallet). Overridable only for fork tests. */
   readonly feeRecipient?: `0x${string}`;
   /**
@@ -198,7 +202,16 @@ export class BaseFacilitator {
       };
       settlementKey = `base_eip3009_${payer.toLowerCase()}_${a.nonce.toLowerCase()}`;
     } else if (p2.success) {
-      if (!sameAddr(req.asset, BASE_PVT)) return refuse('asset_not_supported');
+      if (!sameAddr(req.asset, this.deps.pvt)) return refuse('asset_not_supported');
+      // The settler accepts one PVT token for good. Once the pointer names another (or can no longer
+      // vouch for this one), a payment in it is refused rather than settled in a retired token.
+      let livePvt: string;
+      try {
+        livePvt = await this.deps.chain.readLivePvt();
+      } catch {
+        return refuse('pvt_token_unconfirmed');
+      }
+      if (!sameAddr(livePvt, this.deps.pvt)) return refuse('asset_not_supported');
       const a = p2.data.permit2Authorization;
       if (!sameAddr(a.spender, X402_EXACT_PERMIT2_PROXY)) return refuse('invalid_permit2_spender');
       // PVT is priced by the seller in PVT, and only at a price it registered (Provian never quotes PVT in dollars).

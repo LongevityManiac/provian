@@ -135,4 +135,23 @@ describe('signLinkPayload', () => {
     expect(ethers.verifyMessage(canonical, sig)).toBe(TEST_ADDRESS);
     expect(ethers.verifyMessage(expectedCanonical({ ...payload, operational_reserve_bps: 5000 }), sig)).not.toBe(TEST_ADDRESS);
   });
+  it('binds a named agent share into a link payload, and signs a share-less link without the field', () => {
+    const base: LinkPayload = {
+      action: 'link_agent',
+      agent_wallet_id: 'wallet_atlas',
+      human_wallet_id: 'wallet_frank',
+      link_epoch: 1,
+      timestamp: 1730000000000,
+    };
+    const withShare: LinkPayload = { ...base, operational_reserve_bps: 1000 };
+    const sig = signLinkPayload(TEST_PRIV_KEY, withShare);
+    expect(expectedCanonical(withShare)).toContain('"operational_reserve_bps":1000');
+    expect(ethers.verifyMessage(expectedCanonical(withShare), sig)).toBe(TEST_ADDRESS);
+    // RED control: the signature is not consent to another share, nor to the default.
+    expect(ethers.verifyMessage(expectedCanonical({ ...withShare, operational_reserve_bps: 5000 }), sig)).not.toBe(TEST_ADDRESS);
+    expect(ethers.verifyMessage(expectedCanonical(base), sig)).not.toBe(TEST_ADDRESS);
+    // An explicitly undefined share signs the same bytes as an absent one.
+    const undefinedShare: LinkPayload = { ...base, operational_reserve_bps: undefined };
+    expect(ethers.verifyMessage(expectedCanonical(base), signLinkPayload(TEST_PRIV_KEY, undefinedShare))).toBe(TEST_ADDRESS);
+  });
 });

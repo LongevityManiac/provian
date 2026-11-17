@@ -99,7 +99,7 @@ export class ProvianClient {
   private deviceMode: boolean = false;
   /**
    * x402 idempotency memo (audit Pass-3 #9): the signed EIP-3009 authorization
-   * per logical payment (url+network+payTo+amount), reused within its validBefore
+   * per logical payment (payer+url+network+payTo+amount), reused within its validBefore
    * window so a caller retry — even across separate wrapFetchWithX402() calls on
    * this client — reuses the SAME single-use nonce and cannot mint a second
    * settleable authorization. Instance-scoped (not per-wrapper) to also cover the
@@ -1394,7 +1394,9 @@ export class ProvianClient {
         }
       }
 
-      const paymentKey = `${requestUrl}\x00${requirement.network}\x00${requirement.payTo.toLowerCase()}\x00${requirement.amount}\x00cap=${ceilingAtomic}${svmFeeKey}`;
+      // The paying wallet is part of the key: a signature is only ever reused for the
+      // wallet that made it, so one wallet's request never sends another wallet's payment.
+      const paymentKey = `${wallet.address.toLowerCase()}\x00${requestUrl}\x00${requirement.network}\x00${requirement.payTo.toLowerCase()}\x00${requirement.amount}\x00cap=${ceilingAtomic}${svmFeeKey}`;
       const nowSec = Math.floor(Date.now() / 1000);
       let paymentHeader: string;
       // Carried into the reputation PE: the EVM authorization (payer = from) or

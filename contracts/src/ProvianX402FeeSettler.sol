@@ -101,7 +101,7 @@ contract ProvianX402FeeSettler {
     address public immutable feeRecipient;
     /// @notice x402ExactPermit2Proxy (0x402085c248EeA27D92E8b30b2C58ed07f9E20001).
     address public immutable permit2Proxy;
-    /// @notice Base PVT9 (0x8811441914381143b9408c5C32247367F86F173A). With `usdc`, the only
+    /// @notice The Base PVT token this settler is built for. With `usdc`, the only
     ///         payment tokens the Permit2 path accepts.
     address public immutable pvt;
     /// @notice Fee ceiling: $0.05 in USDC atomic units (6 decimals).

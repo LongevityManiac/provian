@@ -22,6 +22,7 @@ import { useTheme } from '../../theme';
 import { useWalletStore } from '../../store/walletStore';
 import PromiseService, { PromiseRecord as PromiseType, PromiseEvent } from '../../core/promises/PromiseService';
 import { PROMISE_ACTION_STATUSES, counterOfferView } from './promiseActions';
+import { startPromiseLiveUpdates } from './promiseLiveUpdates';
 import type { IoniconsName } from '../../types/icons';
 import { useTranslation } from 'react-i18next';
 import BackButton from '../../components/BackButton';
@@ -51,15 +52,14 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
         // (they accept, request a close-out, agree to one, or dispute) so the two
         // parties can settle a promise without being co-located. No-op when the
         // relay is unavailable; the in-person QR flow is unaffected.
-        let unsubscribe: (() => void) | undefined;
-        (async () => {
-            await PromiseService.syncPendingPromises().catch(() => {});
-            unsubscribe = PromiseService.subscribeToUpdates(promiseId, (updated) => {
+        // The poller is released when the screen leaves, even if it leaves mid-sync.
+        return startPromiseLiveUpdates({
+            sync: () => PromiseService.syncPendingPromises(),
+            subscribe: () => PromiseService.subscribeToUpdates(promiseId, (updated) => {
                 setPromise({ ...updated });
-            });
-            loadPromise();
-        })();
-        return () => { unsubscribe?.(); };
+            }),
+            reload: () => { void loadPromise(); },
+        });
     }, [promiseId]);
 
     // Opened again from a link or a notification while already showing this promise: the screen

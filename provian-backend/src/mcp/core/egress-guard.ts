@@ -36,6 +36,12 @@ const BLOCKED_IPV4_RANGES: Array<{ start: string; end: string; name: string }> =
   { start: '0.0.0.0', end: '0.255.255.255', name: 'current-network' },
   { start: '255.255.255.255', end: '255.255.255.255', name: 'broadcast' },
   { start: '100.64.0.0', end: '100.127.255.255', name: 'shared-address-space' },
+  // IETF protocol assignments: never a public host, and 192.0.0.192 is a cloud metadata address.
+  { start: '192.0.0.0', end: '192.0.0.255', name: 'ietf-protocol-assignments' },
+  { start: '192.0.2.0', end: '192.0.2.255', name: 'documentation-test-net-1' },
+  { start: '198.51.100.0', end: '198.51.100.255', name: 'documentation-test-net-2' },
+  { start: '203.0.113.0', end: '203.0.113.255', name: 'documentation-test-net-3' },
+  { start: '192.88.99.0', end: '192.88.99.255', name: '6to4-relay-anycast' },
   { start: '198.18.0.0', end: '198.19.255.255', name: 'benchmark-testing' },
   { start: '240.0.0.0', end: '255.255.255.254', name: 'reserved-future' },
   { start: '224.0.0.0', end: '239.255.255.255', name: 'multicast' },
@@ -130,6 +136,14 @@ function parseIPv6(ip: string): { segments: number[]; isIPv4Mapped: boolean; map
   let cleanIp = ip.replace(/^\[|\]$/g, '');
   const mapped = cleanIp.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/i);
   if (mapped) return { segments: [0, 0, 0, 0, 0, 0xFFFF, 0, 0], isIPv4Mapped: true, mappedIPv4: mapped[1] };
+  // Any other dotted IPv4 tail (64:ff9b::10.0.0.1, ::10.0.0.1) is the same address as its two
+  // hexadecimal groups, and is judged as that address.
+  const tail = cleanIp.match(/^(.*:)(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (tail) {
+    const o = tail.slice(2).map(Number);
+    if (o.some(n => n > 255)) return null;
+    cleanIp = `${tail[1]}${((o[0] << 8) | o[1]).toString(16)}:${((o[2] << 8) | o[3]).toString(16)}`;
+  }
   if (cleanIp.includes('::')) {
     const parts = cleanIp.split('::');
     if (parts.length > 2) return null;

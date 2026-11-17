@@ -1,6 +1,6 @@
 /**
  * End to end on a Base mainnet fork (anvil): the REAL settler bytecode, REAL Base USDC (EIP-3009),
- * REAL Permit2 + x402's exact Permit2 proxy + PVT9, REAL Chainlink + GasPriceOracle, and @x402/evm's
+ * REAL Permit2 + x402's exact Permit2 proxy + the live PVT token, REAL Chainlink + GasPriceOracle, and @x402/evm's
  * REAL ExactEvmScheme verification — verify → settle through Provian's facilitator.
  *
  * Proves: the payment lands with the seller and the fee lands at the fee recipient in ONE transaction;
@@ -31,11 +31,11 @@ import { base } from 'viem/chains';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { createViemBaseChain } from './base/chain.js';
 import { BaseFacilitator } from './base/facilitator.js';
-import { chainlinkAbi, erc20Abi } from './base/abi.js';
+import { chainlinkAbi, erc20Abi, pointerAbi } from './base/abi.js';
 import { usdcAtomicFromWei } from './fee-math.js';
 import { MemoryStore } from './store.js';
 import { recordingWitness, seller, noFetch } from './test-support/fakes.js';
-import { BASE_CHAINLINK_ETH_USD, BASE_PVT, BASE_USDC, PERMIT2_ADDRESS, X402_EXACT_PERMIT2_PROXY } from './constants.js';
+import { BASE_CHAINLINK_ETH_USD, BASE_PROTOCOL_POINTER, BASE_USDC, PERMIT2_ADDRESS, POINTER_SLOT_PVT, X402_EXACT_PERMIT2_PROXY } from './constants.js';
 import type { Payload, Requirements } from './x402-types.js';
 
 const FORK = process.env.BASE_FORK_RPC_URL;
@@ -58,6 +58,8 @@ const RPC = `http://127.0.0.1:${PORT}`;
 let anvil: ChildProcess | null = null;
 let pub: PublicClient;
 let settler: `0x${string}`;
+/** The live PVT token, read from the permanent protocol pointer on the fork. */
+let BASE_PVT: `0x${string}`;
 
 async function rpc(method: string, params: unknown[]): Promise<unknown> {
   const res = await fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
@@ -148,6 +150,7 @@ describe.skipIf(!enabled)('e2e on a Base fork: verify → settle through Provian
     }
     pub = createPublicClient({ chain: base, transport: http(RPC) }) as PublicClient;
     for (const a of [operator, sellerAcct, buyer, feeRecipient]) await rpc('anvil_setBalance', [a.address, toHex(10n ** 18n)]);
+    BASE_PVT = await pub.readContract({ address: BASE_PROTOCOL_POINTER, abi: pointerAbi, functionName: 'component', args: [POINTER_SLOT_PVT] });
     const here = dirname(fileURLToPath(import.meta.url));
     const artifact = JSON.parse(readFileSync(join(here, '../../contracts/out/ProvianX402FeeSettler.sol/ProvianX402FeeSettler.json'), 'utf8')) as { bytecode: { object: Hex } };
     const deployer = wallet(OPERATOR_KEY);
@@ -178,6 +181,7 @@ describe.skipIf(!enabled)('e2e on a Base fork: verify → settle through Provian
       witness: witness.reporter,
       priceMaxAgeSeconds: 6 * 3600,
       now: () => Date.now(),
+      pvt: BASE_PVT,
       feeRecipient: feeRecipient.address,
     });
   }, 120_000);

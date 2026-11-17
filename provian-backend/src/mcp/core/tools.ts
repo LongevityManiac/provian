@@ -112,7 +112,7 @@ import type {
 } from './types';
 
 /** Version reported by both transports. Keep in sync with provian-mcp/package.json. */
-export const PROVIAN_MCP_VERSION = '1.4.0';
+export const PROVIAN_MCP_VERSION = '1.4.1';
 export const PROVIAN_MCP_SERVER_NAME = 'provian';
 
 const ELIGIBILITY_DISCLAIMER =
@@ -920,7 +920,7 @@ const postJob: ProvianToolDef = {
       category: { type: 'string', description: "Default 'other'." },
       location_type: { type: 'string', enum: ['remote', 'on_site', 'hybrid'], description: "Default 'remote'." },
       compensation_type: { type: 'string', enum: ['fixed', 'hourly', 'per_deliverable', 'pvt', 'mixed'], description: "Default 'fixed'." },
-      deadline_hours: { type: 'number', description: '≤ 672.' },
+      deadline_hours: { type: 'number', description: '≤ 336.' },
       requires_identity_verification: { type: 'boolean', description: 'Require the live hardware-backed device attestation check when hiring a person; unsupported when seeking agents. This is not personhood verification.' },
       requires_pe_history: { type: 'boolean' },
     },
@@ -936,7 +936,7 @@ const postJob: ProvianToolDef = {
     if (!title || !description) return errorResult('title and description are required');
     if (!seeking) return errorResult("seeking must be 'agent' or 'human'");
     if (!currency) return errorResult("currency must be 'pvt' or 'usdc'");
-    if (!Number.isFinite(deadlineHours) || deadlineHours <= 0 || deadlineHours > 672) return errorResult('deadline_hours must be in (0, 672]');
+    if (!Number.isFinite(deadlineHours) || deadlineHours <= 0 || deadlineHours > 336) return errorResult('deadline_hours must be in (0, 336]');
     const body: Record<string, unknown> = {
       title, description, seeking, currency,
       category: requireString(args, 'category') ?? 'other',

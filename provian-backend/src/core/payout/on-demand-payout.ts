@@ -98,6 +98,11 @@ export interface PayoutRequestDoc {
   } | null;
   readonly last_error: string | null;
   /**
+   * What each settlement cycle run for this request has settled so far, by cycle id. A run that
+   * stopped early leaves the request open; this keeps what it settled until the request closes.
+   */
+  readonly settlement_progress?: Readonly<Record<string, { readonly claims_settled: number; readonly batches_confirmed: number; readonly fee_wei_spent: string }>> | null;
+  /**
    * The x402 payment, kept so the sweep can re-check a charge whose receipt was not yet in. Null for
    * a request paid through an app store, which the store already confirmed before it was created.
    */
@@ -201,7 +206,44 @@ export async function quotePayoutGas(
 export type PayoutSettleOutcome =
   | { readonly kind: 'settled'; readonly cycleId: string | null; readonly claimsSettled: number; readonly batchesConfirmed: number; readonly feeWeiSpent: string }
   | { readonly kind: 'nothing'; readonly cycleId: string | null }
-  | { readonly kind: 'wait'; readonly reason: string };
+  | { readonly kind: 'wait'; readonly reason: string; readonly progress?: PayoutSettleProgress };
+
+/** What one settlement cycle has settled for a request so far (the cycle's running totals). */
+export interface PayoutSettleProgress {
+  readonly cycleId: string | null;
+  readonly claimsSettled: number;
+  readonly batchesConfirmed: number;
+  readonly feeWeiSpent: string;
+}
+
+type CycleTotals = { readonly claims_settled: number; readonly batches_confirmed: number; readonly fee_wei_spent: string };
+
+/** Record a cycle's running totals under its id: a later report of the same cycle replaces the earlier one. */
+function withCycleProgress(
+  prior: Readonly<Record<string, CycleTotals>> | null | undefined,
+  progress: PayoutSettleProgress | undefined,
+): Record<string, CycleTotals> {
+  const out: Record<string, CycleTotals> = { ...(prior ?? {}) };
+  if (progress !== undefined) {
+    out[progress.cycleId ?? ''] = {
+      claims_settled: progress.claimsSettled, batches_confirmed: progress.batchesConfirmed, fee_wei_spent: progress.feeWeiSpent,
+    };
+  }
+  return out;
+}
+
+/** Everything a request's settlement runs settled, across the cycles they ran under. */
+function settlementTotal(cycles: Readonly<Record<string, CycleTotals>>, cycleId: string | null): NonNullable<PayoutRequestDoc['settlement']> {
+  let claims = 0;
+  let batches = 0;
+  let fee = 0n;
+  for (const c of Object.values(cycles)) {
+    claims += c.claims_settled;
+    batches += c.batches_confirmed;
+    fee += BigInt(c.fee_wei_spent);
+  }
+  return { cycle_id: cycleId, claims_settled: claims, batches_confirmed: batches, fee_wei_spent: fee.toString(10) };
+}
 
 export interface PayoutDeps {
   readonly db: Firestore;
@@ -465,6 +507,8 @@ export async function advancePayout(
     // "check again" all advance the same request): one fee, one settlement.
     const lease = await takeSettleLease(deps.db, requestId, deps.now());
     if (lease === null) return (await readRequest(deps.db, requestId))!;
+    // Read under the lease: only its holder records settlement progress, so this is current.
+    const prior = (await readRequest(deps.db, requestId))?.settlement_progress;
     let outcome: PayoutSettleOutcome;
     try {
       outcome = await deps.settle(request.payee, requestId);
@@ -472,15 +516,18 @@ export async function advancePayout(
       outcome = { kind: 'wait', reason: error instanceof Error ? error.message.slice(0, 200) : 'settle_failed' };
     }
     if (outcome.kind === 'wait') {
-      await patchUnderLease(deps.db, requestId, lease, { state: 'charged', waiting_reason: outcome.reason, updated_at_ms: deps.now() });
+      await patchUnderLease(deps.db, requestId, lease, {
+        state: 'charged', waiting_reason: outcome.reason, updated_at_ms: deps.now(),
+        ...(outcome.progress !== undefined ? { settlement_progress: withCycleProgress(prior, outcome.progress) } : {}),
+      });
     } else {
+      const cycles = withCycleProgress(prior, outcome.kind === 'settled' ? outcome : undefined);
       await patchUnderLease(deps.db, requestId, lease, {
         state: 'settled',
         settled_at_ms: deps.now(),
         updated_at_ms: deps.now(),
-        settlement: outcome.kind === 'settled'
-          ? { cycle_id: outcome.cycleId, claims_settled: outcome.claimsSettled, batches_confirmed: outcome.batchesConfirmed, fee_wei_spent: outcome.feeWeiSpent }
-          : { cycle_id: outcome.cycleId, claims_settled: 0, batches_confirmed: 0, fee_wei_spent: '0' },
+        settlement_progress: cycles,
+        settlement: settlementTotal(cycles, outcome.cycleId),
       });
     }
     request = (await readRequest(deps.db, requestId))!;
@@ -491,9 +538,12 @@ export async function advancePayout(
 /** The sweep: finish every charged-but-unsettled request, oldest first, a bounded number per run. */
 export async function sweepPayouts(deps: PayoutDeps, limit = 10): Promise<{ examined: number; settled: number; waiting: number }> {
   const states: PayoutState[] = ['charging', 'charge_unconfirmed', 'charged', 'settling'];
-  const snap = await deps.db.collection(PAYOUT_REQUESTS_COLLECTION).where('state', 'in', states).limit(limit * 5).get();
-  const pending = snap.docs.map((d) => d.data() as PayoutRequestDoc)
-    .sort((a, b) => a.created_at_ms - b.created_at_ms).slice(0, limit);
+  // Oldest first, decided by the query: an unordered read bounded by a limit returns an arbitrary
+  // subset, and a backlog larger than it could leave the oldest paid requests unexamined run after
+  // run. Firestore breaks ties on the creation time by document id, so the order is total.
+  const snap = await deps.db.collection(PAYOUT_REQUESTS_COLLECTION)
+    .where('state', 'in', states).orderBy('created_at_ms', 'asc').limit(limit).get();
+  const pending = snap.docs.map((d) => d.data() as PayoutRequestDoc);
   let settled = 0;
   let waiting = 0;
   for (const request of pending) {

@@ -7,6 +7,7 @@
  */
 
 import type { ethers } from 'ethers';
+import { SAFETY_LIMITS } from '../agent-bank/types';
 import type { AgentBankDeps } from '../agent-bank/types';
 
 /**
@@ -50,7 +51,9 @@ export const COMMONS_SAFETY_LIMITS = {
 
   // Human Jobs
   MAX_HUMAN_JOB_BUDGET_USD: 10_000,
-  MAX_HUMAN_JOB_DEADLINE_HOURS: 672,   // 28 days
+  // An accepted job's deadline becomes its escrow's deadline, so a posting may not
+  // name one the escrow would refuse: the limit IS the escrow's own.
+  MAX_HUMAN_JOB_DEADLINE_HOURS: SAFETY_LIMITS.MAX_AUTO_RELEASE_HOURS,
   MAX_HUMAN_JOB_APPLICATIONS: 50,
   MAX_HUMAN_JOB_DESCRIPTION_LENGTH: 5_000,
   MAX_HUMAN_JOB_TITLE_LENGTH: 200,
@@ -279,6 +282,10 @@ export interface PublicationConsent {
   requested_at: number;
   expires_at: number;
   resolved_at?: number;
+  /** Set when a publication used this consent; a used consent authorizes nothing further. */
+  consumed_at?: number | null;
+  /** The publication (relay PE id) that used this consent. */
+  consumed_by_publication?: string;
 }
 
 // ─── Forum ──────────────────────────────────────────────────────────────────

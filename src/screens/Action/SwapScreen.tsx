@@ -511,6 +511,13 @@ const SwapScreen = ({ navigation }: any) => {
 
             }, undefined);
         } catch (error) {
+            // Declining or failing the approval prompt is not a swap failure: nothing was signed,
+            // and the review stays open.
+            if (error instanceof BiometricAuthError) return;
+            if (error instanceof BiometricNotAvailableError) {
+                Alert.alert(t('biometric.biometricRequired'), t('swap.errorBiometricUnavailable'));
+                return;
+            }
             Alert.alert(t('common.errorTitle'), t('swap.execution_error'), [
                 { text: t('common.ok'), onPress: () => setReviewVisible(false) },
             ]);

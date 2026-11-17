@@ -4,8 +4,10 @@ import { BaseFacilitator } from './facilitator.js';
 import { settlerAbi } from './abi.js';
 import type { SettleCall } from './chain.js';
 import { MemoryStore } from '../store.js';
-import { FakeBaseChain, recordingWitness, seller, noFetch } from '../test-support/fakes.js';
-import { BASE_PVT, BASE_USDC, X402_EXACT_PERMIT2_PROXY } from '../constants.js';
+import { FakeBaseChain, TEST_PVT, recordingWitness, seller, noFetch } from '../test-support/fakes.js';
+import { BASE_USDC, X402_EXACT_PERMIT2_PROXY } from '../constants.js';
+
+const BASE_PVT = TEST_PVT;
 import type { Payload, Requirements } from '../x402-types.js';
 import { retryPendingWitness } from '../witness.js';
 
@@ -99,6 +101,7 @@ function build(fetchImpl: typeof noFetch = noFetch) {
     witness: witness.reporter,
     priceMaxAgeSeconds: 3600,
     now: () => Date.now(),
+    pvt: TEST_PVT,
     standardVerify: async () => stdValid,
   });
 }
@@ -216,6 +219,51 @@ describe('Base verify', () => {
     const r = req({ asset: BASE_PVT, amount: '5000000000000000000' });
     const v = await fac.verify(permit2Payload(r), r);
     expect(v).toMatchObject({ isValid: true });
+  });
+});
+
+describe('Base PVT token: only the token the protocol pointer names now', () => {
+  const PRICE = '5000000000000000000';
+  const RETIRED_PVT = '0x8811441914381143b9408c5C32247367F86F173A';
+  const pvtReq = (asset: string) => req({ asset, amount: PRICE });
+  beforeEach(() => {
+    chain.balances.set(chain.key(BASE_USDC, SELLER), 1_000_000n);
+  });
+
+  it('control: a payment in the live token verifies', async () => {
+    const r = pvtReq(TEST_PVT);
+    expect(await fac.verify(permit2Payload(r), r)).toMatchObject({ isValid: true });
+  });
+
+  it('RED: a payment in a retired PVT token is refused and nothing is broadcast', async () => {
+    const r = pvtReq(RETIRED_PVT);
+    const payload = permit2Payload(r);
+    expect(await fac.verify(payload, r)).toMatchObject({ isValid: false, invalidReason: 'asset_not_supported' });
+    expect((await fac.settle(payload, r)).errorReason).toBe('asset_not_supported');
+    expect(chain.sent).toHaveLength(0);
+  });
+
+  it('RED: once the pointer names another token, the settler\'s token no longer settles', async () => {
+    chain.livePvt = '0x00000000000000000000000000000000000B0B0B';
+    const r = pvtReq(TEST_PVT);
+    const payload = permit2Payload(r);
+    expect(await fac.verify(payload, r)).toMatchObject({ isValid: false, invalidReason: 'asset_not_supported' });
+    expect((await fac.settle(payload, r)).success).toBe(false);
+    expect(chain.sent).toHaveLength(0);
+  });
+
+  it('RED: a pointer that cannot vouch for the token refuses the payment', async () => {
+    chain.livePvtError = new Error('InvalidManifest');
+    const r = pvtReq(TEST_PVT);
+    const payload = permit2Payload(r);
+    expect(await fac.verify(payload, r)).toMatchObject({ isValid: false, invalidReason: 'pvt_token_unconfirmed' });
+    expect((await fac.settle(payload, r)).success).toBe(false);
+    expect(chain.sent).toHaveLength(0);
+  });
+
+  it('a USDC payment never reads the pointer', async () => {
+    chain.livePvtError = new Error('InvalidManifest');
+    expect(await fac.verify(eip3009Payload(), req())).toMatchObject({ isValid: true });
   });
 });
 
@@ -342,7 +390,7 @@ describe('Base settle', () => {
 
   it('a hashless `submitting` record left by a dead attempt is taken over once it is stale (2026-10-17)', async () => {
     let now = Date.now();
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, pvt: TEST_PVT, standardVerify: async () => stdValid });
     // A dead attempt: claimed, never signed.
     const orig = store.updateSettlement.bind(store);
     store.updateSettlement = async () => { throw new Error('UNAVAILABLE'); };
@@ -381,7 +429,7 @@ describe('Base settle', () => {
 
   it('reconcileStaleSubmitted resolves a submitted record whose receipt wait was lost, and witnesses it (2026-10-17)', async () => {
     let now = Date.now();
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, pvt: TEST_PVT, standardVerify: async () => stdValid });
     const s = await fac.settle(eip3009Payload(), req());
     expect(s.success).toBe(true);
     const key = `base_eip3009_${BUYER.toLowerCase()}_${NONCE.toLowerCase()}`;
@@ -397,7 +445,7 @@ describe('Base settle', () => {
 
   it("reconcileStaleSubmitted closes a submitted record whose authorization expired without ever mining ", async () => {
     let now = Date.now();
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, pvt: TEST_PVT, standardVerify: async () => stdValid });
     expect((await fac.settle(eip3009Payload(), req())).success).toBe(true); // validBefore = now + 600
     const key = `base_eip3009_${BUYER.toLowerCase()}_${NONCE.toLowerCase()}`;
     await store.updateSettlement(key, { status: 'submitted', witness_status: 'pending' });
@@ -413,7 +461,7 @@ describe('Base settle', () => {
 
   it('RED: a record whose receipt LOOKUP fails is never closed, however old — only "not mined" closes', async () => {
     let now = Date.now();
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: witness.reporter, priceMaxAgeSeconds: 3600, now: () => now, pvt: TEST_PVT, standardVerify: async () => stdValid });
     expect((await fac.settle(eip3009Payload(), req())).success).toBe(true);
     const key = `base_eip3009_${BUYER.toLowerCase()}_${NONCE.toLowerCase()}`;
     await store.updateSettlement(key, { status: 'submitted', witness_status: 'pending' });
@@ -450,7 +498,7 @@ describe('Base settle', () => {
 
   it('a witness report that fails stays pending and is retried', async () => {
     const failing = recordingWitness(false);
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: failing.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: failing.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), pvt: TEST_PVT, standardVerify: async () => stdValid });
     const s = await fac.settle(eip3009Payload(), req());
     expect(s.success).toBe(true);
     expect([...store.settlements.values()][0]!.witness_status).toBe('pending');
@@ -462,7 +510,7 @@ describe('Base settle', () => {
 
   it('a witness report the relay refuses (400/409/422) is final, never retried', async () => {
     const refusing = recordingWitness('refused');
-    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: refusing.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), standardVerify: async () => stdValid });
+    fac = new BaseFacilitator({ chain, store, relayUrl: 'x', fetch: noFetch, witness: refusing.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), pvt: TEST_PVT, standardVerify: async () => stdValid });
     expect((await fac.settle(eip3009Payload(), req())).success).toBe(true);
     expect([...store.settlements.values()][0]!.witness_status).toBe('refused');
     expect(await retryPendingWitness(store, recordingWitness(true).reporter)).toEqual({ attempted: 0, reported: 0 });

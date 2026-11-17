@@ -1229,6 +1229,20 @@
       ]
     },
     {
+      "collectionGroup": "pvt_payout_requests_v1",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "state",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at_ms",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "pvt_mint_batches",
       "queryScope": "COLLECTION",
       "fields": [
@@ -3523,6 +3537,27 @@
     {
       "collectionGroup": "service_installs",
       "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "forge_deploy_key_attempts_v1",
+      "fieldPath": "body",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "forge_deploy_key_attempts_v1",
+      "fieldPath": "private_key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "forge_deploy_key_attempts_v1",
+      "fieldPath": "public_key",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "forge_deploy_key_attempts_v1",
+      "fieldPath": "expire_at",
+      "ttl": true,
       "indexes": []
     },
     {

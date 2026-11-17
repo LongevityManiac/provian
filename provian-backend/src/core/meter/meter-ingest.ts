@@ -197,6 +197,9 @@ export function memoizedReadDb(db: Firestore, memoize: (collection: string) => b
   });
 }
 
+/** The id every registered device carries (`deterministicDeviceRegistrationIds`). */
+const REGISTERED_DEVICE_ID = /^dev_[0-9a-f]{64}$/;
+
 export async function ingestMeterBatch(db: Firestore, lane: MeterLane, raw: unknown,
   nowMs: number = Date.now()): Promise<MeterIngestResult> {
   // Mapping can stage lineage, approval and queue hooks. Do it once, then only re-price on CAS
@@ -229,6 +232,17 @@ async function ingestMeterBatchAttempt(
   const tip = tipSnap.exists ? (tipSnap.data() as MeterDeviceTip) : null;
   if (lane.ownerBoundChain === true && tip !== null && tip.actor_id !== lane.actorId) {
     return { status: 403, body: { error: 'batch_device_not_owned', message: 'This device chain belongs to another wallet.' } };
+  }
+  // Opening a chain under a registered device's id: that id is derived at device registration and
+  // belongs to the device registered under it. A lane whose device id is only a label its caller
+  // chose may open such a chain only when that device is registered to the caller — never ahead of
+  // the registration, and never for a device registered to anyone else.
+  if (lane.ownerBoundChain === true && tip === null && REGISTERED_DEVICE_ID.test(batch.device_id)) {
+    const registered = await db.collection('devices').doc(batch.device_id).get();
+    const device = registered.exists ? (registered.data() ?? {}) : null;
+    if (device === null || device.owner_type !== 'human' || device.owner_user_id !== lane.actorId) {
+      return { status: 403, body: { error: 'batch_device_not_owned', message: 'This device chain belongs to the device registered under its id.' } };
+    }
   }
   if (tip !== null && tip.batch_hash === batchHash) {
     return { status: 200, body: tip.receipt }; // the same batch, re-sent: the same answer

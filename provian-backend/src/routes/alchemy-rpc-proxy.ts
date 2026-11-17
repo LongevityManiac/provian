@@ -7,6 +7,9 @@
  * cap, and an empty batch is refused), and EVERY call in a batch is charged against
  * the per-user proxy rate limit. Before, a ~1,000-call batch (express.json's 100 kB
  * fits that many small calls) was forwarded verbatim and counted as ONE hit.
+ * - METHODS: only the JSON-RPC methods the wallet app sends are forwarded
+ * (`allowedRpcMethodsFor`); any other method, in a single call or anywhere in a
+ * batch, is refused 403 before the rate limiter or the upstream.
  * - RESPONSE: the upstream exchange runs under one deadline across connect + headers
  * + the whole body, and the body is capped at ALCHEMY_RPC_MAX_RESPONSE_BYTES —
  * aborted past the cap (502), never buffered whole (core/net/bounded-fetch.ts).
@@ -50,6 +53,60 @@ export interface AlchemyRpcProxyDeps {
   logError: (label: string, err: unknown) => void;
 }
 
+/**
+ * The JSON-RPC methods the proxy forwards — exactly the ones the wallet app
+ * sends, per network family. Everything else is refused before the rate limiter
+ * or the upstream is touched, so the keyed upstream cannot be used as a
+ * general-purpose node.
+ *
+ * EVM (app: TransactionHistoryService.alchemyRpc): transfer history, the block
+ * number and block timestamps around it, receipts, and approval logs.
+ * Solana (app: SolanaRpc.call): balances, account reads, history, fee and rent
+ * quotes, the latest blockhash, and broadcasting a transaction the owner signed.
+ *
+ * A new first-party call is added here in the same change that adds the caller.
+ */
+export const ALCHEMY_EVM_ALLOWED_METHODS: ReadonlySet<string> = new Set([
+  'alchemy_getAssetTransfers',
+  'eth_blockNumber',
+  'eth_getBlockByNumber',
+  'eth_getLogs',
+  'eth_getTransactionReceipt',
+]);
+export const ALCHEMY_SOLANA_ALLOWED_METHODS: ReadonlySet<string> = new Set([
+  'getAccountInfo',
+  'getBalance',
+  'getFeeForMessage',
+  'getLatestBlockhash',
+  'getMinimumBalanceForRentExemption',
+  'getSignaturesForAddress',
+  'getTransaction',
+  'sendTransaction',
+]);
+
+/** The allowlist for a network slug: Solana clusters are `solana-*`, every other served network is EVM. */
+export function allowedRpcMethodsFor(network: string): ReadonlySet<string> {
+  return network.startsWith('solana-') ? ALCHEMY_SOLANA_ALLOWED_METHODS : ALCHEMY_EVM_ALLOWED_METHODS;
+}
+
+/**
+ * The first call in `body` the proxy will not forward for `network`, as a
+ * displayable method name — or null when every call is allowed. A call that is
+ * not an object with a string `method` is not a call the proxy can vouch for.
+ */
+export function firstDisallowedRpcMethod(body: unknown, network: string): string | null {
+  const allowed = allowedRpcMethodsFor(network);
+  const calls: unknown[] = Array.isArray(body) ? body : [body];
+  for (const call of calls) {
+    const method = typeof call === 'object' && call !== null && !Array.isArray(call)
+      ? (call as { method?: unknown }).method
+      : undefined;
+    if (typeof method !== 'string') return '(missing method)';
+    if (!allowed.has(method)) return method.slice(0, 64);
+  }
+  return null;
+}
+
 export type RpcBodyVerdict =
   | { ok: true; cost: number }
   | { ok: false; error: string; code: 'RPC_BATCH_TOO_LARGE' | 'RPC_BATCH_EMPTY' };
@@ -83,6 +140,12 @@ export function createAlchemyRpcHandler(deps: AlchemyRpcProxyDeps) {
       const verdict = classifyRpcBody(req.body);
       if (!verdict.ok) {
         res.status(400).json({ error: verdict.error, code: verdict.code, max_batch: ALCHEMY_RPC_MAX_BATCH });
+        return;
+      }
+
+      const disallowed = firstDisallowedRpcMethod(req.body, req.params.network);
+      if (disallowed !== null) {
+        res.status(403).json({ error: 'JSON-RPC method not allowed', code: 'RPC_METHOD_NOT_ALLOWED', method: disallowed });
         return;
       }
 

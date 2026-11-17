@@ -121,6 +121,12 @@ export const PRIVATE_LOOKUP_EXEMPTIONS: Readonly<Record<string, readonly string[
     "schema_version",
     "scope_id"
   ],
+  "forge_deploy_key_attempts_v1": [
+    "body",
+    "expire_at",
+    "private_key",
+    "public_key"
+  ],
   "general_disputes": [
     "body"
   ],

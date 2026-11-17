@@ -49,6 +49,7 @@ import RelayAPIService from '../services/RelayAPIService';
 import { captureInvite, startDeferredInviteCheck } from '../services/inviteRuntime';
 import { peekPendingLinkAccept, consumePendingLinkAccept, subscribePendingLinkAccept } from './pendingLinkAccept';
 import { stashProtectedNav, consumeProtectedNav } from './pendingProtectedNav';
+import { openBehindLock, type LockAwareNavigation } from './openBehindLock';
 import { startPhoneMeter } from '../core/meter/phoneMeterRuntime';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deepLinkValidator, matchesPath, isPromiseImportLink } from '../core/navigation/deepLinkValidator';
@@ -259,7 +260,13 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                         if (!imported) return;
                         const onboarded = useWalletStore.getState().onboardingComplete;
                         if (onboarded && navigationRef?.current) {
-                            navigationRef.current.navigate('PromiseDetail', { promiseId: imported.id, openedAt: Date.now() });
+                            // The promise screen carries Delete and Mark Broken: it never opens
+                            // over the lock. Locked → held until a real unlock.
+                            openBehindLock(
+                                navigationRef.current as LockAwareNavigation,
+                                useWalletStore.getState().isAuthenticated === true,
+                                { screen: 'PromiseDetail', params: { promiseId: imported.id, openedAt: Date.now() } },
+                            );
                         } else {
                             // Already saved locally; surface it once tabs exist.
                             pendingPromiseImport = { promiseId: imported.id };
@@ -347,7 +354,11 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
         if (!stashed) return;
         if (!navigationRef?.current) return;
         pendingPromiseImport = null;
-        navigationRef.current.navigate('PromiseDetail', { promiseId: stashed.promiseId, openedAt: Date.now() });
+        openBehindLock(
+            navigationRef.current as LockAwareNavigation,
+            useWalletStore.getState().isAuthenticated === true,
+            { screen: 'PromiseDetail', params: { promiseId: stashed.promiseId, openedAt: Date.now() } },
+        );
     }, [onboardingComplete, navigationRef]);
 
     // [F11] Replay a protected navigation target (a notification tap or deep link

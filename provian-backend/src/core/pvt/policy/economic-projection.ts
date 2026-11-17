@@ -1,6 +1,7 @@
 import { accrualEndMs, accrualEndedAt } from '../accrual-end-line';
 import { singleScanQuery } from '../../provenance/private-store';
 import { ordinaryHardwareAttestationTier } from './evidence-class';
+import { hasCompleteReplicationPackHashes } from './replication-pack';
 /**
  * Economic accrual projection — the per-row pricing functions behind the
  * Abundance dashboard and the allocation routes, plus the PURE reference fold
@@ -238,8 +239,8 @@ function currentAttestation(pe: PEHistoryDocument, snapshot: RecordEconomicSnaps
       || pe.corroboration_status === 'service_grant_attested') {
       return 'corroborated';
     }
-    if (pe.replication_pack?.input_hash
-      && pe.replication_pack?.output_hash
+    // Only a whole pack — input, output and pack hashes, each a SHA-256 digest — lifts a row.
+    if (hasCompleteReplicationPackHashes(pe.replication_pack)
       && pe.replication_pack?.model_id) {
       return 'software_verified';
     }

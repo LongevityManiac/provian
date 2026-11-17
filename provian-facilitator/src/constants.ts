@@ -15,8 +15,15 @@ export const BASE_CHAIN_ID = 8453;
 export const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as const;
 /** The EIP-712 domain Base USDC signs under (never read from the 402). */
 export const BASE_USDC_EIP712 = { name: 'USD Coin', version: '2' } as const;
-/** Provian's PVT9 token on Base (successor). No EIP-3009 → paid through x402's Permit2 path. */
-export const BASE_PVT = '0x8811441914381143b9408c5C32247367F86F173A' as const;
+/**
+ * Provian's permanent protocol pointer on Base. The PVT token this service settles is whatever the
+ * pointer's slot 0 names now; the token's own address is never pinned here, so a token the pointer
+ * has retired stops settling without a code change. PVT has no EIP-3009 → paid through x402's
+ * Permit2 path.
+ */
+export const BASE_PROTOCOL_POINTER = '0x619eAe740CE56C5a8edbB2B047E58369281ddAD7' as const;
+/** The pointer slot that names the live PVT token. */
+export const POINTER_SLOT_PVT = 0n;
 /** The facilitator's Base gas EOA: the settler's operator AND its fee recipient. */
 export const BASE_GAS_WALLET = '0xA37fC594E98e951571C771C9e77CDC73f67d3efB' as const;
 /** Provian's revenue wallet on Base (`PROVIAN_TREASURY`). Fee income above the gas buffer sweeps here. */

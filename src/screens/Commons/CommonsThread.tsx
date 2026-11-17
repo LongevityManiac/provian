@@ -77,6 +77,8 @@ export default function CommonsThread({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const visibleRef = useRef(false);
   const loadInFlight = useRef(false);
+  // One send at a time: set before the approval prompt is requested, cleared when it settles.
+  const sendInFlight = useRef(false);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   const scrollToLatest = useRef(true);
@@ -281,9 +283,10 @@ export default function CommonsThread({ navigation, route }: Props) {
    */
   type SendOutcome = 'sent' | 'not_sent' | 'refused' | 'uncertain';
   const sendText = async (body: string, draft?: PendingThreadDraft): Promise<SendOutcome> => {
-    if (!body || sending) return 'not_sent';
+    if (!body || sending || sendInFlight.current) return 'not_sent';
     let outcome: SendOutcome = 'not_sent';
     let attempted = false;
+    sendInFlight.current = true;
     try {
       await withBiometricAction(t('commons.biometricPromptMessage'), async (biometricAction) => {
 
@@ -317,7 +320,8 @@ export default function CommonsThread({ navigation, route }: Props) {
             return;
           }
           const r = await CommonsService.sendThreadMessage(threadId, { kind: 'text', ciphertexts: sealed.ciphertexts, content_sha256: sealed.content_sha256 }, biometricAction);
-          setMessages((prev) => [...prev, r.message]);
+          // A refresh can deliver this message before the send answers: merge by id, never append.
+          setMessages((prev) => mergeThreadMessages(prev, [r.message]));
           setPlain((prev) => ({ ...prev, [r.message.message_id]: body }));
           if (!draft) setText('');
           outcome = 'sent';
@@ -331,6 +335,8 @@ export default function CommonsThread({ navigation, route }: Props) {
       }, undefined);
     } catch (err) {
       if (err instanceof BiometricNotAvailableError || err instanceof BiometricAuthError) Alert.alert(t('commons.confirmationNeededTitle'), errorDisplayCopy(err.message));
+    } finally {
+      sendInFlight.current = false;
     }
     return outcome;
 };
@@ -355,7 +361,7 @@ export default function CommonsThread({ navigation, route }: Props) {
     try {
       if (!threadId) return;
       const r = await CommonsService.requestPresentationInThread(threadId, { tier: 'reputation', predicates: [built.predicate] });
-      setMessages((prev) => [...prev, r.message]);
+      setMessages((prev) => mergeThreadMessages(prev, [r.message]));
       setRequests((prev) => ({ ...prev, [r.request.request_id]: r.request }));
       setShowRequest(false);
     } catch (err) {

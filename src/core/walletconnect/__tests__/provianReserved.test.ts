@@ -70,6 +70,38 @@ describe('provianReserved — reserved vectors are refused', () => {
         expect(byName.get('typed data: RelayRecovery struct under an innocuous domain, no verifyingContract')).toMatchObject({ reason: 'provian_typed_data_type' });
         expect(byName.get('link_agent consent with an extra single-use nonce field')).toMatchObject({ reason: 'provian_link_consent_json' });
         expect(byName.get('typed data: RegisterHumanWallet struct under an innocuous domain')).toMatchObject({ reason: 'provian_typed_data_type' });
+        expect(byName.get('Recourse membership departure signing hash')).toMatchObject({ reason: 'raw_32_byte_message' });
+        expect(byName.get('Recourse standing membership consent signing hash')).toMatchObject({ reason: 'raw_32_byte_message' });
+        expect(byName.get('bare 32-byte value delivered as text')).toMatchObject({ reason: 'raw_32_byte_message' });
+    });
+});
+
+describe('provianReserved — a bare 32-byte personal_sign is a Recourse consent signature', () => {
+    it('signing the departure hash with EIP-191 yields exactly the signature the pool recovers', async () => {
+        const { Wallet, getBytes, verifyMessage, hashMessage } = await import('ethers');
+        const { authenticatedDepartureSigningHash } = await import('../../recourse/membership-authorization');
+        const signer = new Wallet(`0x${'11'.repeat(32)}`);
+        const hash = authenticatedDepartureSigningHash(
+            { chainId: '8453', pointer: `0x${'9'.repeat(40)}`, kernel: `0x${'1'.repeat(40)}`, pool: `0x${'2'.repeat(40)}` },
+            { binding: `0x${'b'.repeat(64)}`, account: signer.address.toLowerCase(), nonce: '3', joined: false,
+                revision: '1', ruleHash: `0x${'e'.repeat(64)}`, expiresAt: '1790000000' },
+        );
+        expect(getBytes(hash)).toHaveLength(32);
+        // What the WalletConnect personal_sign path does with a 0x-hex message: sign its raw bytes.
+        const signature = await signer.signMessage(getBytes(hash));
+        expect(verifyMessage(getBytes(hash), signature)).toBe(signer.address);
+        expect(hashMessage(getBytes(hash))).not.toBe(hash);
+        // …so the request that would produce it is refused.
+        expect(checkProvianReserved('personal_sign', [hash, signer.address])).toMatchObject({ reserved: true, reason: 'raw_32_byte_message' });
+    });
+
+    it('refuses exactly 32 signed bytes and nothing shorter or longer', () => {
+        for (const size of [1, 20, 31, 33, 64, 65]) {
+            expect(checkProvianReserved('personal_sign', [`0x${'ab'.repeat(size)}`, WALLET])).toEqual({ reserved: false });
+            expect(checkProvianReserved('personal_sign', ['m'.repeat(size), WALLET])).toEqual({ reserved: false });
+        }
+        expect(checkProvianReserved('personal_sign', [`0x${'ab'.repeat(32)}`, WALLET])).toMatchObject({ reserved: true, reason: 'raw_32_byte_message' });
+        expect(checkProvianReserved('personal_sign', ['m'.repeat(32), WALLET])).toMatchObject({ reserved: true, reason: 'raw_32_byte_message' });
     });
 });
 

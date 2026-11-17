@@ -353,3 +353,45 @@ describe('link / unlink / share-change signatures are single-use', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('the first link takes the agent share only from what the human signed', () => {
+  let ctx: Ctx;
+  beforeEach(() => { ctx = build(); });
+
+  it('RED: a share added to the request body that the human did not sign is refused, and nothing links', async () => {
+    const res = await post(ctx, 'link-human', { ...(await signedLink(ctx, 1)), operational_reserve_bps: 5000 });
+    expect(res.status).toBe(401);
+    expect(agentDoc(ctx).linked_human_wallet_id).toBeNull();
+    expect(consumptions(ctx)).toHaveLength(0);
+  });
+
+  it('RED: a legacy ratio added to the request body that the human did not sign is refused too', async () => {
+    const res = await post(ctx, 'link-human', { ...(await signedLink(ctx, 1)), operational_reserve_ratio: 0.5 });
+    expect(res.status).toBe(401);
+    expect(agentDoc(ctx).linked_human_wallet_id).toBeNull();
+  });
+
+  it('RED: a signed share cannot be swapped for a different one in the body', async () => {
+    const timestamp = Date.now();
+    const signature = await sign(ctx, { action: 'link_agent', agent_wallet_id: WALLET_ID, human_wallet_id: HUMAN_WALLET_ID, link_epoch: 1, operational_reserve_bps: 1000, timestamp });
+    const res = await post(ctx, 'link-human', { human_wallet_id: HUMAN_WALLET_ID, signature, timestamp, link_epoch: 1, operational_reserve_bps: 5000 });
+    expect(res.status).toBe(401);
+    expect(agentDoc(ctx).linked_human_wallet_id).toBeNull();
+  });
+
+  it('a share the human signed links at exactly that share', async () => {
+    const timestamp = Date.now();
+    const signature = await sign(ctx, { action: 'link_agent', agent_wallet_id: WALLET_ID, human_wallet_id: HUMAN_WALLET_ID, link_epoch: 1, operational_reserve_bps: 1000, timestamp });
+    const res = await post(ctx, 'link-human', { human_wallet_id: HUMAN_WALLET_ID, signature, timestamp, link_epoch: 1, operational_reserve_bps: 1000 });
+    expect(res.status).toBe(200);
+    expect(res.body.operational_reserve_bps).toBe(1000);
+    expect(agentDoc(ctx).operational_reserve_bps).toBe(1000);
+  });
+
+  it('a link whose signed payload names no share uses the default', async () => {
+    const res = await post(ctx, 'link-human', await signedLink(ctx, 1));
+    expect(res.status).toBe(200);
+    expect(res.body.operational_reserve_bps).toBe(2000);
+    expect(agentDoc(ctx).operational_reserve_bps).toBe(2000);
+  });
+});

@@ -29,7 +29,13 @@
  * message]`) is read as bytes (0x-hex → bytes, else UTF-8), decoded lossily, NFKC-normalized,
  * stripped of BOM / zero-width / format characters, whitespace and combining marks,
  * case-folded and homoglyph-folded; it is refused if it contains "provian", equals the hire
- * salt message, or is a JSON object carrying a link-consent key.
+ * salt message, or is a JSON object carrying a link-consent key. It is also refused if the
+ * bytes that would be signed are exactly 32 long (a 0x-hex value of 32 bytes, or text whose
+ * UTF-8 is 32 bytes): the Recourse membership, member-binding and membership-debit consents
+ * are EIP-191 signatures over a bare 32-byte SHA-256 value, so such a signature is replayable
+ * at the pool (a departure, a standing consent, a debit authorization). A 32-byte value
+ * carries no text to read and cannot be told apart from any other hash, so every one is
+ * refused — the wallet never blind-signs a bare 32-byte value for another app.
  *
  * eth_signTypedData(_v1/_v3/_v4) — every param (JSON string or object; the v1 array form
  * too) is refused if any domain string, type name, primaryType or field name/type contains
@@ -67,6 +73,7 @@ export type ProvianReservedReason =
     | 'provian_hire_salt'
     | 'provian_solana_proof'
     | 'provian_link_consent_json'
+    | 'raw_32_byte_message'
     | 'provian_typed_data_domain'
     | 'provian_typed_data_type'
     | 'provian_verifying_contract'
@@ -301,6 +308,32 @@ function inspectMessageText(text: string): ProvianReservedVerdict {
     return { reserved: false };
 }
 
+/** UTF-8 length of a string without allocating (lone surrogates count as U+FFFD, 3 bytes). */
+function utf8ByteLength(text: string): number {
+    let length = 0;
+    for (const ch of text) {
+        const cp = ch.codePointAt(0) ?? 0;
+        length += cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+    }
+    return length;
+}
+
+/** The size of the bare digest the Recourse consents are signed over (SHA-256). */
+const RESERVED_DIGEST_BYTES = 32;
+
+/**
+ * True when signing this personal_sign param would sign exactly 32 bytes: a 0x-prefixed hex
+ * value is signed as its bytes, anything else as its UTF-8 text. Both are refused, because a
+ * digest that happens to be valid UTF-8 could be delivered as text and sign the same bytes.
+ */
+function signsBareDigest(param: string): boolean {
+    if (/^0x/i.test(param)) {
+        const bytes = hexToBytes(param);
+        if (bytes) return bytes.length === RESERVED_DIGEST_BYTES;
+    }
+    return utf8ByteLength(param) === RESERVED_DIGEST_BYTES;
+}
+
 function checkPersonalSign(params: unknown): ProvianReservedVerdict {
     if (!Array.isArray(params)) {
         return { reserved: true, reason: 'unclassifiable_params', detail: 'personal_sign params are not an array' };
@@ -318,6 +351,9 @@ function checkPersonalSign(params: unknown): ProvianReservedVerdict {
         for (const text of texts) {
             const verdict = inspectMessageText(text);
             if (verdict.reserved) return verdict;
+        }
+        if (signsBareDigest(param)) {
+            return { reserved: true, reason: 'raw_32_byte_message', detail: 'message is a bare 32-byte value' };
         }
     }
     return { reserved: false };

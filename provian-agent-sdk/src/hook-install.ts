@@ -58,6 +58,17 @@ export interface GitConfigIO {
   repoRoot(cwd: string): string | null;
 }
 
+/**
+ * A value git may be handed as one configuration argument: non-empty, of path
+ * length, free of control characters, and not shaped like a command-line option.
+ * git is always run with an argument array and no shell, so nothing in a value is
+ * ever interpreted; this refuses the values that are not a usable path at all.
+ */
+export function isUsableGitConfigPath(value: unknown): value is string {
+  // eslint-disable-next-line no-control-regex
+  return typeof value === 'string' && value.length > 0 && value.length <= 4096 && !/[\x00-\x1f\x7f]/.test(value) && !value.startsWith('-');
+}
+
 export const realGit: GitConfigIO = {
   get(scope, key, cwd) {
     try {
@@ -69,6 +80,7 @@ export const realGit: GitConfigIO = {
     }
   },
   set(scope, key, value, cwd) {
+    if (!isUsableGitConfigPath(value)) throw new Error(`Refusing to set git ${key}: the value is not a usable path`);
     execFileSync('git', ['config', `--${scope}`, key, value], { cwd });
   },
   unset(scope, key, cwd) {

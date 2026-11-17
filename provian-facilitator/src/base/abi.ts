@@ -26,6 +26,11 @@ const witnessTuple = {
   ],
 } as const;
 
+/** The permanent protocol pointer. `component` reverts for a retired address or a changed runtime. */
+export const pointerAbi = [
+  { type: 'function', name: 'component', inputs: [{ name: 'index', type: 'uint256' }], outputs: [{ name: 'target', type: 'address' }], stateMutability: 'view' },
+] as const;
+
 export const settlerAbi = [
   { type: 'function', name: 'usdc', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },
   { type: 'function', name: 'operator', inputs: [], outputs: [{ type: 'address' }], stateMutability: 'view' },

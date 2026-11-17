@@ -4,7 +4,7 @@ import { generateKeyPairSigner } from '@solana/kit';
 import { createApp, secretMatches, type AppDeps } from './app.js';
 import { BaseFacilitator } from './base/facilitator.js';
 import { MemoryStore } from './store.js';
-import { FakeBaseChain, FakeSolanaChain, noFetch, recordingWitness, seller } from './test-support/fakes.js';
+import { FakeBaseChain, FakeSolanaChain, TEST_PVT, noFetch, recordingWitness, seller } from './test-support/fakes.js';
 import { SolanaFacilitator } from './solana/facilitator.js';
 import { checkPresentation } from './presentation.js';
 
@@ -20,7 +20,7 @@ beforeEach(async () => {
   const solChain = new FakeSolanaChain(kp.address, kp);
   const w = recordingWitness();
   deps = {
-    base: new BaseFacilitator({ chain: baseChain, store, relayUrl: 'r', fetch: noFetch, witness: w.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), standardVerify: async () => ({ isValid: true }) }),
+    base: new BaseFacilitator({ chain: baseChain, store, relayUrl: 'r', fetch: noFetch, witness: w.reporter, priceMaxAgeSeconds: 3600, now: () => Date.now(), pvt: TEST_PVT, standardVerify: async () => ({ isValid: true }) }),
     baseChain,
     basePriceMaxAgeSeconds: 3600,
     solana: new SolanaFacilitator({ chain: solChain, store, relayUrl: 'r', fetch: noFetch, witness: w.reporter, quoteSecret: SECRET, priceMaxAgeSeconds: 120, now: () => Date.now() }),

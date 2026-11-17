@@ -680,8 +680,11 @@ export type HumanJobCurrency = 'pvt' | 'usdc';
 
 /** The relay's cap on a USDC Commons budget (COMMONS_SAFETY_LIMITS.MAX_HUMAN_JOB_BUDGET_USD). */
 export const MAX_COMMONS_JOB_BUDGET_USD = 10_000;
-/** The relay's cap on a Commons job deadline (COMMONS_SAFETY_LIMITS.MAX_HUMAN_JOB_DEADLINE_HOURS). */
-export const MAX_COMMONS_JOB_DEADLINE_HOURS = 672;
+/**
+ * The relay's cap on a Commons job deadline (COMMONS_SAFETY_LIMITS.MAX_HUMAN_JOB_DEADLINE_HOURS):
+ * the longest deadline the job's escrow accepts.
+ */
+export const MAX_COMMONS_JOB_DEADLINE_HOURS = 336;
 /** Dispute text bounds (provian-backend/src/core/commons/job-disputes.ts). */
 export const COMMONS_DISPUTE_REASON_MAX_LENGTH = 1000;
 export const COMMONS_DISPUTE_EVIDENCE_MAX_LENGTH = 2000;
@@ -764,7 +767,7 @@ export interface PostHumanJobBase {
   requires_identity_verification: boolean;
   requires_pe_history: boolean;
   min_promise_fulfillment_rate?: number;
-  /** ≤ 672 hours (28 days). */
+  /** ≤ 336 hours (14 days). */
   deadline_hours: number;
   /**
    * who the job hires. Omitted → the relay's legacy default (an agent poster hires
