@@ -229,7 +229,7 @@ contract ProvianBondPool {
     //   never slash, and needs no privileged key, so it cannot be blocked by a
     //   missing/hostile admin. 60 days is >> the Court's 48h vote window (a real
     //   panel, once assigned, resolves via finalizeBondClaim ~48h in), and well
-    //   under the 180-day abandonment period, so it never races a live adjudication
+    //   under the 365-day abandonment period, so it never races a live adjudication
     //   and clears the freeze before the bond could be abandonment-burned. The
     //   filing fee is burned (same frivolous-claim deterrent as dismissClaim; no
     //   external transfer, so a blacklisted/reverting claimant can never brick the
@@ -1359,7 +1359,7 @@ contract ProvianBondPool {
         Bond storage bond = bonds[agent];
         if (bond.status != BondStatus.Active) revert BondNotActive();
         // WP5-rem: resolve the abandonment period through its prospective override
-        // (else the storage var); unset (shipped) → 180 days. renewalGracePeriod has
+        // (else the storage var); unset (shipped) → 365 days. renewalGracePeriod has
         // no setter (immutable-in-practice) and is read directly.
         if (block.timestamp < bond.renewalDeadline + renewalGracePeriod + _effAbandonmentPeriod()) {
             revert GracePeriodNotExpired();

@@ -8,7 +8,7 @@
     "config/pvt9-base.json": "46cd949f0a644a701a45afb5cc8577a0bba070fd6788b76145354805c60c0dd4",
     "config/recourse-membership-rule.json": "8a885cb87eb1e61fcf2e0417942015ce7c2365de9a7239ad6693a19a3934107f",
     "contracts/scripts/pvt9-base-config.generated.ts": "72a913b551e07f48a93df540db5e6821370439e813a77ead9ebd317573f04945",
-    "contracts/src/ProvianBondPool.sol": "e3fe8422165d6e1520c5e93324f743c042a26d93d5fa1d26e1491c4da2d1ad0b",
+    "contracts/src/ProvianBondPool.sol": "4456d3bf5b6442701ebc0f8fd4ac919ae251052e6db9f158aa7ecf5b9a3db3a4",
     "contracts/src/ProvianBreakRecoveryHistory.sol": "c466131d435637ad6dcd62209c3cdbdaa1d841427a211a57ecc8534d5ed6fe94",
     "contracts/src/ProvianCourtV2.sol": "8dc9d054d06fcd71981ba56cb62c5a1daf356413a2d14783a2aa0358ae2a5cdf",
     "contracts/src/ProvianEscrowV4.sol": "12c6d671bc00f1528ae08ac4f1524e1465c7deeef918d74452d4334882c071f6",

@@ -44,7 +44,7 @@ export const FROZEN_ARTIFACTS = Object.freeze({
   "config/integrity/baseline-pins.json": "0fb0079474af5c7102548deff6582bd972a7c4de8113121b7cbe7ec007c758f3",
   "config/integrity/retired-paths.json": "2e96661fcac969b3e615cc2a42efbd3d8b57b56186bda5fb1a900b37c568bfc5",
   "config/integrity/wp-merge-binding.json": "92d9ef7b6e2f25c32aa8808bd321081b60cd8b422d5d006f01035a3faf6cfdf0",
-  "contracts/src/ProvianBondPool.sol": "e3fe8422165d6e1520c5e93324f743c042a26d93d5fa1d26e1491c4da2d1ad0b",
+  "contracts/src/ProvianBondPool.sol": "4456d3bf5b6442701ebc0f8fd4ac919ae251052e6db9f158aa7ecf5b9a3db3a4",
   "contracts/src/ProvianCourtV2.sol": "8dc9d054d06fcd71981ba56cb62c5a1daf356413a2d14783a2aa0358ae2a5cdf",
   "contracts/src/ProvianEscrowV4.sol": "12c6d671bc00f1528ae08ac4f1524e1465c7deeef918d74452d4334882c071f6",
   "contracts/src/ProvianPEAnchor.sol": "2ad92d10fa7a178408c07c46bd418b2f8face39f82d3c1e7457d098fac40c3c4",

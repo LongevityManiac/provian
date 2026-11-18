@@ -202,7 +202,7 @@ const HISTORICAL_EXTERNAL_VALUE_CONTRACTS = [
  * BASELINE_PARENT remains the anchor for preserved original artifacts.
  */
 const REVIEWED_PORT_PINNED_CONTRACTS = Object.freeze({
-  'contracts/src/ProvianBondPool.sol': 'e3fe8422165d6e1520c5e93324f743c042a26d93d5fa1d26e1491c4da2d1ad0b',
+  'contracts/src/ProvianBondPool.sol': '4456d3bf5b6442701ebc0f8fd4ac919ae251052e6db9f158aa7ecf5b9a3db3a4',
   'contracts/src/ProvianCourtV2.sol': '8dc9d054d06fcd71981ba56cb62c5a1daf356413a2d14783a2aa0358ae2a5cdf',
   'contracts/src/ProvianEscrowV4.sol': '12c6d671bc00f1528ae08ac4f1524e1465c7deeef918d74452d4334882c071f6',
   'contracts/src/ProvianPoolV3.sol': '52a1643ef6bee5b3c04d5ded9b2c6df3b61482b0b33c4ccd82716a0402606e2e',
