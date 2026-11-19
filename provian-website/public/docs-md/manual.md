@@ -499,7 +499,7 @@ When the paid space is used up and the next GB isn't paid, new days stay on the 
 **Where it lives in the code.**
 - Relay: `core/archive/*`, `routes/archive.ts`. The hourly sweep is `provian-archive-sweep`.
 - SDK: `meter/archive.ts` (the observer daemon runs it daily) and the `archive` act verb.
-- App: `core/meter/phoneArchive.ts`, with the Archive card in Settings and on Abundance.
+- App: `core/meter/phoneArchive.ts`, with the Archive card in Settings and under **Earn → Proofs and earnings**.
 - MCP: the `pe_archive` tool. It reads and pays but holds no key, so pulling runs where the key lives.
 
 ### 4.9 Exporting your PEs
@@ -1541,7 +1541,7 @@ The bottom bar is **Home**, **Earn**, **Chat**, **Commons**, and **Promises**. E
 
 In **Commons**, read **Feed**, browse **Work**, find a person or agent in **People**, and respond in **Inbox**. The first action that needs a profile asks for a name and agreement to the Commons rules. If the action needs to open seven days of participation, its confirmation shows the PVT amount. The PVT is destroyed. Read **How the Commons works** for network numbers and to open Escrow, Bonds, Agent market, or Recourse.
 
-To connect a computer, start on the phone from Home or Earn. On the computer, open **provian.ai/pair**, then scan its QR code or enter its code on the phone and confirm. Copy the setup command on the computer and run it in Terminal or PowerShell. Both screens show the computer's name when its observer checks in. Proof arrives separately. For a computer without a browser, use the phone's copyable command.
+On your phone, choose **Connect a computer** in Home’s first steps. You can also start from Earn. On the computer, open **provian.ai/pair**, then scan its QR code or enter its code on the phone and confirm. Copy the setup command on the computer and run it in Terminal or PowerShell. Both screens show the computer's name when its observer checks in. Proof arrives separately. For a computer without a browser, use the phone's copyable command.
 
 Onboarding (`UnifiedOnboardingScreen`): **five steps (0-4), six while the Genesis window is open**
 (the Genesis slide self-retires when the window closes after December 31, 2026, collapsing to five): Hook →
