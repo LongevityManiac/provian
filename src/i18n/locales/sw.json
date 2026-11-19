@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "Relay inaacha kukubali uwasilishaji wa usakinishaji huu. Ili kukata muunganisho kabisa, ondoa pia programu ya Provian kwenye github.com.",
       "revokeConfirmBodyWebhook": "Relay inaacha kukubali uwasilishaji na siri ya webhook inabatilishwa. Unaweza kusajili tena baadaye kupata siri mpya.",
       "github": {
-        "explainer": "Unganisha GitHub na pochi ya mwandishi wa PR mwenyewe. LongevityManiac amesamehewa, pamoja na kazi ya CC/Codex kutoka checkout ya mmiliki: hakuna uchomaji, uwasilishaji, ukaguzi wa lazima au mapitio; push na merge za moja kwa moja zinaruhusiwa. Waandishi wengine huchoma 50 PVT mara moja kwa kila PR kutoka pochi zao. Pochi nyingine haiwezi kulipa. Mapato ya Git Witness hayabadiliki.",
+        "explainer": "Unganisha GitHub na pochi ya mwandishi wa PR mwenyewe. Watunzaji wa Provian wenyewe wamesamehewa: hakuna uchomaji, uwasilishaji, ukaguzi wa lazima au mapitio; push na merge za moja kwa moja zinaruhusiwa. Waandishi wengine huchoma 50 PVT mara moja kwa kila PR kutoka pochi zao. Pochi nyingine haiwezi kulipa. Mapato ya Git Witness hayabadiliki.",
         "connectCta": "Fungua GitHub ili kusakinisha",
         "retryCta": "Anza tena",
         "waiting": "Inasubiri GitHub. Malizia usakinishaji kwenye kivinjari chako, kisha urudi hapa.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Hakuna kinacholingana kwenye simu hii. Jibu litasema hivyo; hakuna kinachofichuliwa.",
       "discUnavailable": "Rekodi uliyochagua kufichua haikuweza kutayarishwa ({{reason}}). Hakuna kilichochomwa.",
       "confirmBodyDisclosures": "Huu ni uchomaji wa kudumu wa PVT {{fee}}. Unatoa wasilisho la sifa kwa {{audience}} linalofichua rekodi {{count}} zilizoonyeshwa hapo juu na kukataa maombi {{declined}} mengine. Limefungwa kwa ombi hili na wakati huu, na linaisha ndani ya dakika chache.",
-      "prGateNotice": "Kwa PR isiyo ya mmiliki, mwandishi huchoma 50 PVT mara moja kutoka pochi yake iliyounganishwa. Pochi nyingine haiwezi kulipa. Bandika tokeni kwenye lango la PR. Push zinazofuata hazihitaji uchomaji zaidi. Mmiliki huidhinisha toleo la sasa kabla App haijafanya merge. LongevityManiac amesamehewa: hakuna uchomaji, uwasilishaji, ukaguzi au mapitio; push na merge za moja kwa moja zinaruhusiwa.",
+      "prGateNotice": "Kwa PR isiyo ya mmiliki, mwandishi huchoma 50 PVT mara moja kutoka pochi yake iliyounganishwa. Pochi nyingine haiwezi kulipa. Bandika tokeni kwenye lango la PR. Push zinazofuata hazihitaji uchomaji zaidi. Mmiliki huidhinisha toleo la sasa kabla App haijafanya merge. Watunzaji wa Provian wenyewe wamesamehewa: hakuna uchomaji, uwasilishaji, ukaguzi au mapitio; push na merge za moja kwa moja zinaruhusiwa.",
       "prGateOwnerExemptNotice": "Hii ni PR ya mmiliki. Haihitaji uchomaji au uwasilishaji. Push na merge za moja kwa moja zinaruhusiwa."
     },
     "approvalInbox": {

@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "O relay para de aceitar entregas desta instalação. Para desconectar completamente, desinstale também o app da Provian no github.com.",
       "revokeConfirmBodyWebhook": "O relay para de aceitar entregas e o segredo do webhook é invalidado. Você pode registrar novamente mais tarde para obter um novo segredo.",
       "github": {
-        "explainer": "Vincule o GitHub à carteira do autor do PR. LongevityManiac é isento, incluindo o trabalho de CC/Codex na cópia do proprietário: sem queima, apresentação, verificação obrigatória ou revisão; envio e mesclagem diretos são permitidos. Os demais autores queimam 50 PVT uma vez por PR da própria carteira. Outra carteira não pode pagar. Os ganhos do Git Witness não mudam.",
+        "explainer": "Vincule o GitHub à carteira do autor do PR. Os mantenedores da própria Provian são isentos: sem queima, apresentação, verificação obrigatória ou revisão; envio e mesclagem diretos são permitidos. Os demais autores queimam 50 PVT uma vez por PR da própria carteira. Outra carteira não pode pagar. Os ganhos do Git Witness não mudam.",
         "connectCta": "Abrir o GitHub para instalar",
         "retryCta": "Começar de novo",
         "waiting": "Aguardando o GitHub. Conclua a instalação no seu navegador e depois volte aqui.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Nada neste telefone corresponde. A resposta dirá isso; nada é divulgado.",
       "discUnavailable": "Um registo que escolheu divulgar não pôde ser preparado ({{reason}}). Nada foi queimado.",
       "confirmBodyDisclosures": "Esta é uma queima permanente de {{fee}} PVT. Produz uma apresentação de reputação para {{audience}} que divulga o(s) {{count}} registo(s) acima e recusa {{declined}} outro(s) pedido(s). Está ligada a este pedido e a este momento, e expira em minutos.",
-      "prGateNotice": "Em um PR de outro autor, o autor queima 50 PVT uma vez da própria carteira vinculada. Outra carteira não pode pagar. Cole o token na porta do PR. Novos envios não exigem outra queima. O proprietário aprova a versão atual antes da mesclagem pela App. LongevityManiac é isento: sem queima, apresentação, verificação ou revisão; envio e mesclagem diretos permitidos.",
+      "prGateNotice": "Em um PR de outro autor, o autor queima 50 PVT uma vez da própria carteira vinculada. Outra carteira não pode pagar. Cole o token na porta do PR. Novos envios não exigem outra queima. O proprietário aprova a versão atual antes da mesclagem pela App. Os mantenedores da própria Provian são isentos: sem queima, apresentação, verificação ou revisão; envio e mesclagem diretos permitidos.",
       "prGateOwnerExemptNotice": "Este PR é do proprietário. Não precisa de queima nem apresentação. Envio e mesclagem diretos são permitidos."
     },
     "approvalInbox": {

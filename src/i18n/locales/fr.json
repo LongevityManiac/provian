@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "Le relais cesse d'accepter les livraisons pour cette installation. Pour vous déconnecter complètement, désinstallez aussi l'app Provian sur github.com.",
       "revokeConfirmBodyWebhook": "Le relais cesse d'accepter les livraisons et le secret de webhook est invalidé. Vous pourrez vous enregistrer à nouveau plus tard pour obtenir un nouveau secret.",
       "github": {
-        "explainer": "Liez GitHub au portefeuille de l’auteur de la PR. LongevityManiac est exempté, y compris le travail de CC/Codex depuis sa copie : ni destruction, présentation, contrôle obligatoire ou revue ; envoi et fusion directs autorisés. Les autres auteurs détruisent 50 PVT une fois par PR depuis leur propre portefeuille. Un autre portefeuille ne peut pas payer. Les gains Git Witness restent inchangés.",
+        "explainer": "Liez GitHub au portefeuille de l’auteur de la PR. Les mainteneurs de Provian sont exemptés : ni destruction, présentation, contrôle obligatoire ou revue ; envoi et fusion directs autorisés. Les autres auteurs détruisent 50 PVT une fois par PR depuis leur propre portefeuille. Un autre portefeuille ne peut pas payer. Les gains Git Witness restent inchangés.",
         "connectCta": "Ouvrir GitHub pour installer",
         "retryCta": "Recommencer",
         "waiting": "En attente de GitHub : terminez l'installation dans votre navigateur, puis revenez ici.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Rien sur ce téléphone ne correspond. La réponse le dira : rien n’est divulgué.",
       "discUnavailable": "Un enregistrement que vous avez choisi de divulguer n’a pas pu être préparé ({{reason}}). Rien n’a été brûlé.",
       "confirmBodyDisclosures": "Ceci est une destruction définitive de {{fee}} PVT. Elle produit une présentation de réputation pour {{audience}} qui divulgue le(s) {{count}} enregistrement(s) ci-dessus et refuse {{declined}} autre(s) demande(s). Elle est liée à cette demande et à cet instant, et expire en quelques minutes.",
-      "prGateNotice": "Pour une PR externe au propriétaire, son auteur détruit 50 PVT une fois depuis son propre portefeuille lié. Aucun autre portefeuille ne peut payer. Collez le jeton dans la porte de la PR. Aucun nouvel envoi ne demande une autre destruction. Le propriétaire approuve la version actuelle avant la fusion par l’App. LongevityManiac est exempté : ni destruction, présentation, contrôle ou revue ; envoi et fusion directs autorisés.",
+      "prGateNotice": "Pour une PR externe au propriétaire, son auteur détruit 50 PVT une fois depuis son propre portefeuille lié. Aucun autre portefeuille ne peut payer. Collez le jeton dans la porte de la PR. Aucun nouvel envoi ne demande une autre destruction. Le propriétaire approuve la version actuelle avant la fusion par l’App. Les mainteneurs de Provian sont exemptés : ni destruction, présentation, contrôle ou revue ; envoi et fusion directs autorisés.",
       "prGateOwnerExemptNotice": "Cette PR appartient au propriétaire. Aucune destruction ni présentation requise. Envoi et fusion directs autorisés."
     },
     "approvalInbox": {

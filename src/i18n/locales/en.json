@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "The relay stops accepting deliveries for this installation. To fully disconnect, also uninstall the Provian app on github.com.",
       "revokeConfirmBodyWebhook": "The relay stops accepting deliveries and the webhook secret is invalidated. You can register again later for a new secret.",
       "github": {
-        "explainer": "Link GitHub to the wallet that belongs to the PR author. LongevityManiac is exempt, including CC/Codex work from the owner’s checkout: no burn, presentation, required gate check or review; direct push and merge are allowed. Other authors burn 50 PVT once per PR from their own wallet. Another wallet cannot pay. Git Witness earning is unchanged.",
+        "explainer": "Link GitHub to the wallet that belongs to the PR author. Provian’s own maintainers are exempt: no burn, presentation, required gate check or review; direct push and merge are allowed. Other authors burn 50 PVT once per PR from their own wallet. Another wallet cannot pay. Git Witness earning is unchanged.",
         "connectCta": "Open GitHub to install",
         "retryCta": "Start again",
         "waiting": "Waiting for GitHub — finish the install in your browser, then return here.",
@@ -3248,7 +3248,7 @@
       "discNoMatch": "Nothing on this phone matches. The answer will say so — nothing is disclosed.",
       "discUnavailable": "A record you chose to disclose could not be prepared ({{reason}}). Nothing has been burned.",
       "confirmBodyDisclosures": "This is a permanent {{fee}} PVT burn. It produces a reputation presentation for {{audience}} that discloses the {{count}} record(s) shown above and declines {{declined}} other request(s). It is bound to this request and this moment, and expires within minutes.",
-      "prGateNotice": "For a non-owner PR, its author burns 50 PVT once from their own linked wallet. Another wallet cannot pay. Paste the token back at the PR gate. Later pushes need no additional burn. The owner then approves the current head before the App merges. LongevityManiac is exempt: no burn, presentation, gate check or review; direct push and merge are allowed.",
+      "prGateNotice": "For a non-owner PR, its author burns 50 PVT once from their own linked wallet. Another wallet cannot pay. Paste the token back at the PR gate. Later pushes need no additional burn. The owner then approves the current head before the App merges. Provian’s own maintainers are exempt: no burn, presentation, gate check or review; direct push and merge are allowed.",
       "prGateOwnerExemptNotice": "This is an owner PR. No burn or presentation is needed. Direct push and merge are allowed."
     },
     "approvalInbox": {

@@ -85,7 +85,7 @@ const DOCS = [
     src: 'reference/Provian_Founding_Statement_v16.md',
     title: 'Founding Statement',
     group: 'why',
-    description: 'The thousand-year argument and the missing ownership layer: why the founder built Provian, with AI, and what it is for.',
+    description: 'The thousand-year argument and the missing ownership layer: why the founder built Provian, and what it is for.',
   },
 
   {
@@ -127,7 +127,7 @@ const DOCS = [
     src: 'CONTRIBUTING.md',
     title: 'Contributing to Provian',
     group: 'build',
-    description: 'LongevityManiac is exempt. Other PR authors present with 50 PVT from their own wallet, once per PR. Wallet setup, GitHub linking and exact human and agent calls.',
+    description: 'Provian’s own maintainers are exempt. Other PR authors present with 50 PVT from their own wallet, once per PR. Wallet setup, GitHub linking and exact human and agent calls.',
   },
 ]
 

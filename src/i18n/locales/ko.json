@@ -1274,7 +1274,7 @@
       "revokeConfirmBodyGithub": "릴레이가 이 설치의 전달을 더 이상 받지 않습니다. 완전히 연결을 끊으려면 github.com에서 Provian 앱도 제거하세요.",
       "revokeConfirmBodyWebhook": "릴레이가 전달을 더 이상 받지 않으며 웹훅 시크릿은 무효화됩니다. 나중에 다시 등록해 새 시크릿을 받을 수 있습니다.",
       "github": {
-        "explainer": "GitHub를 PR 작성자 본인의 지갑에 연결하세요. 소유자의 체크아웃에서 CC/Codex가 수행한 작업을 포함해 LongevityManiac은 면제됩니다. 소각, 증명 제시, 필수 검사나 리뷰 없이 직접 push 및 merge할 수 있습니다. 다른 작성자는 PR당 한 번 자신의 지갑에서 50 PVT를 소각합니다. 다른 지갑이 대신 낼 수 없습니다. Git Witness 수익은 그대로입니다.",
+        "explainer": "GitHub를 PR 작성자 본인의 지갑에 연결하세요. Provian의 자체 메인테이너는 면제됩니다. 소각, 증명 제시, 필수 검사나 리뷰 없이 직접 push 및 merge할 수 있습니다. 다른 작성자는 PR당 한 번 자신의 지갑에서 50 PVT를 소각합니다. 다른 지갑이 대신 낼 수 없습니다. Git Witness 수익은 그대로입니다.",
         "connectCta": "GitHub 열어 설치하기",
         "retryCta": "다시 시작",
         "waiting": "GitHub을 기다리는 중: 브라우저에서 설치를 마친 뒤 여기로 돌아오세요.",
@@ -3206,7 +3206,7 @@
       "discNoMatch": "이 휴대폰에 일치하는 기록이 없습니다. 답변에 그렇게 표시되며 아무것도 공개되지 않습니다.",
       "discUnavailable": "공개하기로 선택한 기록을 준비할 수 없습니다 ({{reason}}). 아무것도 소각되지 않았습니다.",
       "confirmBodyDisclosures": "이것은 {{fee}} PVT의 영구 소각입니다. {{audience}}에게 위에 표시된 {{count}}건의 기록을 공개하고 다른 {{declined}}건의 요청을 거절하는 평판 제시를 생성합니다. 이 요청과 이 순간에 묶이며 몇 분 안에 만료됩니다.",
-      "prGateNotice": "소유자가 아닌 작성자의 PR은 작성자가 연결된 본인의 지갑에서 한 번 50 PVT를 소각합니다. 다른 지갑이 대신 낼 수 없습니다. 토큰을 PR 게이트에 붙여 넣으세요. 이후 push에는 추가 소각이 없습니다. 소유자가 현재 버전을 승인한 뒤 App이 merge합니다. LongevityManiac은 소각, 제시, 검사와 리뷰가 면제되며 직접 push 및 merge할 수 있습니다.",
+      "prGateNotice": "소유자가 아닌 작성자의 PR은 작성자가 연결된 본인의 지갑에서 한 번 50 PVT를 소각합니다. 다른 지갑이 대신 낼 수 없습니다. 토큰을 PR 게이트에 붙여 넣으세요. 이후 push에는 추가 소각이 없습니다. 소유자가 현재 버전을 승인한 뒤 App이 merge합니다. Provian의 자체 메인테이너는 소각, 제시, 검사와 리뷰가 면제되며 직접 push 및 merge할 수 있습니다.",
       "prGateOwnerExemptNotice": "이것은 소유자의 PR입니다. 소각이나 증명 제시 없이 직접 push 및 merge할 수 있습니다."
     },
     "approvalInbox": {

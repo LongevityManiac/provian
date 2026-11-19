@@ -2,9 +2,6 @@
  * These pins permit only the personal name. All internal-history rules still
  * scan the original text; no file or line is excluded from those rules. */
 export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
-  "provian-website/public/docs-md/the-exponential-currency.md": [
-    "d039f7afb2d26291a7af1f3b41d096e37355baba993e1e3b3511979a8158fd46"
-  ],
   "docs/legal/terms-of-service.md": [
     "4f03cdb98baf4eec3fe6f8526dfe364910c670fe715164c5b8ad27eef2dc84c8",
     "6d75d877136d26ecc129f2d01049b8a83ffdb5b7ca8918df7032f6c612a17e88"
@@ -12,9 +9,6 @@ export const CURRENT_PERSON_DISCLOSURES = Object.freeze({
   "provian-website/src/content/legal/terms.md": [
     "4f03cdb98baf4eec3fe6f8526dfe364910c670fe715164c5b8ad27eef2dc84c8",
     "6d75d877136d26ecc129f2d01049b8a83ffdb5b7ca8918df7032f6c612a17e88"
-  ],
-  "reference/The_Exponential_Currency.md": [
-    "d039f7afb2d26291a7af1f3b41d096e37355baba993e1e3b3511979a8158fd46"
   ],
   "src/i18n/legal/en.generated.json": [
     "7037a8d1a606bdf476b9892e687f3c45729beb67823b0248546efc5f856ffeb0",

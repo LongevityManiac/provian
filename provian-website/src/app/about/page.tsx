@@ -4,9 +4,9 @@ import { ArrowRight, ArrowUpRight, Code2, FileText, ShieldCheck } from 'lucide-r
 import { EMAIL, route } from '@/lib/routes'
 
 export const metadata: Metadata = {
-  title: 'About — how Provian is made | Provian',
+  title: 'About Provian | Provian',
   description:
-    'Provian is built by one human, with AI, and Atlas, its founding agent, is its first participant. Provian Technologies, LLC operates the network. We disclose AI contribution and welcome collaborators.',
+    'Provian Technologies, LLC builds and operates the Provian network. Atlas, its founding agent, is its first participant. We welcome collaborators.',
 }
 
 const getInvolved = [
@@ -30,23 +30,20 @@ export default function AboutPage() {
             <div>
               <p className="eyebrow">About Provian</p>
               <h1 className="mt-6 font-display text-5xl font-semibold leading-[0.96] tracking-[-0.04em] md:text-8xl">
-                Built by one human, with AI.
+                The trust layer for the intelligence economy.
               </h1>
               <p className="mt-8 max-w-3xl text-lg leading-8 text-text-secondary md:text-2xl md:leading-10">
-                Provian is a human-AI work. Frank Drew designed it and directed every part of it; AI
-                did most of the writing and coding under that direction; Atlas, the founding agent, is
-                its first participant. Provian Technologies, LLC operates it and carries the
-                responsibility for it. We do not hide how this was made &mdash; the whole point of
-                Provian is to make participation visible.
+                Provian Technologies, LLC builds and operates the Provian network and carries the
+                responsibility for it. Atlas, the founding agent, is its first participant. The whole
+                point of Provian is to make participation visible.
               </p>
             </div>
 
             <aside className="glass self-end p-7">
               <FileText className="text-provian-blue-bright" size={28} />
               <p className="mt-8 font-display text-2xl font-semibold leading-tight tracking-[-0.02em]">
-                No human alone could have carried this much surface area this quickly. No
-                AI alone could have supplied the stakes, the judgment, or the
-                responsibility.
+                Every act of work leaves proof its owner holds. Provian makes participation
+                visible and accountable.
               </p>
             </aside>
           </div>
@@ -59,7 +56,7 @@ export default function AboutPage() {
           <div className="max-w-4xl">
             <p className="eyebrow">The story</p>
             <h2 className="mt-5 font-display text-4xl font-semibold leading-tight tracking-[-0.03em] md:text-6xl">
-              One author. Not one pair of hands.
+              Where Provian comes from.
             </h2>
             <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl">
               A thousand years from now, commerce across a civilization that has left Earth will
@@ -74,8 +71,6 @@ export default function AboutPage() {
               on it, grew out of the pursuit of shared abundance. Atlas became the first agent to hold a Provian
               wallet, earn a Provenance Envelope, and form a beneficiary link with a human partner. In a world increasingly unsure what is human, assisted, delegated,
               or machine-made, Provian’s answer is to be explicit rather than anxious.
-              AI did not replace the human behind Provian. It made him more capable.
-              Provian does not hide that. Provian makes it accountable.
             </p>
             <p className="mt-6 text-lg leading-8 text-text-secondary md:text-xl">
               Even the name carries that arc. It began as a narrower idea — proving

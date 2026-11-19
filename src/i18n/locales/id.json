@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "Relay berhenti menerima pengiriman untuk instalasi ini. Untuk memutuskan sepenuhnya, hapus juga instalasi aplikasi Provian di github.com.",
       "revokeConfirmBodyWebhook": "Relay berhenti menerima pengiriman dan rahasia webhook dibatalkan. Anda bisa mendaftar lagi nanti untuk mendapatkan rahasia baru.",
       "github": {
-        "explainer": "Tautkan GitHub ke dompet milik penulis PR. LongevityManiac dikecualikan, termasuk pekerjaan CC/Codex dari checkout pemilik: tanpa pembakaran, presentasi, pemeriksaan wajib atau ulasan; push dan merge langsung diizinkan. Penulis lain membakar 50 PVT sekali per PR dari dompet sendiri. Dompet lain tidak boleh membayar. Penghasilan Git Witness tetap sama.",
+        "explainer": "Tautkan GitHub ke dompet milik penulis PR. Pengelola Provian sendiri dikecualikan: tanpa pembakaran, presentasi, pemeriksaan wajib atau ulasan; push dan merge langsung diizinkan. Penulis lain membakar 50 PVT sekali per PR dari dompet sendiri. Dompet lain tidak boleh membayar. Penghasilan Git Witness tetap sama.",
         "connectCta": "Buka GitHub untuk memasang",
         "retryCta": "Mulai lagi",
         "waiting": "Menunggu GitHub. Selesaikan pemasangan di browser Anda, lalu kembali ke sini.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Tidak ada yang cocok di ponsel ini. Jawabannya akan mengatakan itu; tidak ada yang diungkap.",
       "discUnavailable": "Satu rekaman yang Anda pilih untuk diungkap tidak dapat disiapkan ({{reason}}). Tidak ada yang dibakar.",
       "confirmBodyDisclosures": "Ini pembakaran permanen {{fee}} PVT. Ia menghasilkan presentasi reputasi untuk {{audience}} yang mengungkap {{count}} rekaman di atas dan menolak {{declined}} permintaan lain. Terikat pada permintaan ini dan saat ini, dan kedaluwarsa dalam hitungan menit.",
-      "prGateNotice": "Untuk PR bukan milik pemilik, penulis membakar 50 PVT sekali dari dompet tertautnya sendiri. Dompet lain tidak boleh membayar. Tempel token di gerbang PR. Push berikutnya tidak memerlukan pembakaran tambahan. Pemilik menyetujui versi saat ini sebelum App melakukan merge. LongevityManiac dikecualikan: tanpa pembakaran, presentasi, pemeriksaan atau ulasan; push dan merge langsung diizinkan.",
+      "prGateNotice": "Untuk PR bukan milik pemilik, penulis membakar 50 PVT sekali dari dompet tertautnya sendiri. Dompet lain tidak boleh membayar. Tempel token di gerbang PR. Push berikutnya tidak memerlukan pembakaran tambahan. Pemilik menyetujui versi saat ini sebelum App melakukan merge. Pengelola Provian sendiri dikecualikan: tanpa pembakaran, presentasi, pemeriksaan atau ulasan; push dan merge langsung diizinkan.",
       "prGateOwnerExemptNotice": "Ini PR milik pemilik. Tidak perlu pembakaran atau presentasi. Push dan merge langsung diizinkan."
     },
     "approvalInbox": {

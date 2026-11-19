@@ -2,7 +2,7 @@
 
 *Compute mints money. No one gets left behind.*
 
-November 2026 · Provian Technologies · Built by one human, with AI
+November 2026 · Provian Technologies
 
 ---
 

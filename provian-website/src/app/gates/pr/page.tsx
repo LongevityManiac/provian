@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const API = 'https://api.provian.ai/v1/gates/github'
-const REPOS = ['provian', 'provian-reference-gate'] as const
+const REPOS = ['provian'] as const
 
 /** A presentation travels directly to the gate, never into a GitHub comment or browser storage. */
 export default function PullRequestGatePage() {
@@ -39,7 +39,7 @@ export default function PullRequestGatePage() {
       const status = await fetch(endpoint, { cache: 'no-store' })
       const state = await status.json()
       if (!status.ok) throw new Error(errorMessage(state.error))
-      if (state.exempt) { setCleared(true); setMessage('LongevityManiac is exempt. No burn, presentation, gate check or review is required; direct push and merge are allowed.'); return }
+      if (state.exempt) { setCleared(true); setMessage('Provian’s own maintainers are exempt. No burn, presentation, gate check or review is required; direct push and merge are allowed.'); return }
       setCleared(state.cleared === true)
       if (state.cleared) { setMessage('This PR is cleared. Later pushes and reopening require no additional burn.'); return }
       const res = await fetch(`${endpoint}/challenge${walletId.trim() ? `?wallet_id=${encodeURIComponent(walletId.trim())}` : ''}`, { cache: 'no-store' })
@@ -66,7 +66,7 @@ export default function PullRequestGatePage() {
   return <main className="mx-auto max-w-4xl px-6 py-16 text-text-primary md:py-24">
     <p className="eyebrow text-provian-blue-bright">provian.ai · live repository gate</p>
     <h1 className="mt-5 font-display text-4xl font-semibold md:text-6xl">One PR. One presentation.</h1>
-    <p className="mt-6 max-w-3xl text-lg leading-8 text-text-secondary">LongevityManiac is exempt: owner pushes and PRs, including CC/Codex work from the owner’s checkout, need no burn, presentation, required gate check or review. Direct push and merge are allowed. Every other PR requires a 50 PVT presentation from the actual author’s own linked wallet; another wallet cannot pay. Further pushes require no additional burn. Clearance only unlocks merge: the repository owner must approve the current head on GitHub before the App merges. Git Witness earnings are unchanged.</p>
+    <p className="mt-6 max-w-3xl text-lg leading-8 text-text-secondary">Provian’s own maintainers are exempt: their pushes and PRs need no burn, presentation, required gate check or review. Direct push and merge are allowed. Every other PR requires a 50 PVT presentation from the actual author’s own linked wallet; another wallet cannot pay. Further pushes require no additional burn. Clearance only unlocks merge: the repository owner must approve the current head on GitHub before the App merges. Git Witness earnings are unchanged.</p>
     <p className="mt-4 leading-7 text-text-secondary">Agents use the <Link className="text-provian-blue-bright underline" href="/library/contributing">SDK, MCP or CLI walkthrough</Link>. For a human contribution, get the signed challenge here, paste it into the app’s outside-gate presenter, verify provian.ai, burn 50 PVT and return the token below. <Link className="text-provian-blue-bright underline" href="/download">Get the app</Link> and link Connect → GitHub first.</p>
     <div className="mt-10 grid gap-5 rounded-2xl border border-white/10 bg-surface p-6">
       <label className="grid gap-2">Repository<select aria-label="Repository" value={repo} disabled={busy} onChange={(e) => { setRepo(e.target.value); reset() }} className="rounded-lg border border-white/20 bg-void p-3">

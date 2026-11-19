@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "Hihinto ang relay sa pagtanggap ng mga delivery para sa installation na ito. Para ganap na madiskonekta, i-uninstall din ang Provian app sa github.com.",
       "revokeConfirmBodyWebhook": "Hihinto ang relay sa pagtanggap ng mga delivery at mawawalang-bisa ang webhook secret. Maaari kang magrehistro ulit sa ibang pagkakataon para sa bagong secret.",
       "github": {
-        "explainer": "Iugnay ang GitHub sa sariling wallet ng may-akda ng PR. Libre sa gate si LongevityManiac, kasama ang CC/Codex na trabaho mula sa checkout ng may-ari: walang burn, presentasyon, kinakailangang check o review; puwedeng direktang push at merge. Ang ibang may-akda ay nagsusunog ng 50 PVT isang beses bawat PR mula sa sariling wallet. Hindi puwedeng ibang wallet ang magbayad. Hindi nagbabago ang kita sa Git Witness.",
+        "explainer": "Iugnay ang GitHub sa sariling wallet ng may-akda ng PR. Libre sa gate ang sariling mga maintainer ng Provian: walang burn, presentasyon, kinakailangang check o review; puwedeng direktang push at merge. Ang ibang may-akda ay nagsusunog ng 50 PVT isang beses bawat PR mula sa sariling wallet. Hindi puwedeng ibang wallet ang magbayad. Hindi nagbabago ang kita sa Git Witness.",
         "connectCta": "Buksan ang GitHub para mag-install",
         "retryCta": "Magsimula ulit",
         "waiting": "Naghihintay sa GitHub. Tapusin ang install sa iyong browser, pagkatapos ay bumalik dito.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Walang tumutugma sa teleponong ito. Sasabihin iyon ng sagot; walang isisiwalat.",
       "discUnavailable": "Hindi maihanda ang isang record na pinili mong isiwalat ({{reason}}). Walang nasunog.",
       "confirmBodyDisclosures": "Isa itong permanenteng pagsunog ng {{fee}} PVT. Gagawa ito ng reputation presentation para sa {{audience}} na nagsisiwalat ng {{count}} record na ipinakita sa itaas at tumatanggi sa {{declined}} iba pang kahilingan. Nakatali ito sa kahilingang ito at sa sandaling ito, at mag-e-expire sa loob ng ilang minuto.",
-      "prGateNotice": "Para sa PR na hindi sa may-ari, ang may-akda ay nagsusunog ng 50 PVT isang beses mula sa sariling naka-link na wallet. Hindi puwedeng ibang wallet ang magbayad. Idikit ang token sa PR gate. Walang dagdag na burn sa susunod na push. Inaaprubahan ng may-ari ang kasalukuyang bersiyon bago mag-merge ang App. Libre sa gate si LongevityManiac: walang burn, presentasyon, check o review; puwedeng direktang push at merge.",
+      "prGateNotice": "Para sa PR na hindi sa may-ari, ang may-akda ay nagsusunog ng 50 PVT isang beses mula sa sariling naka-link na wallet. Hindi puwedeng ibang wallet ang magbayad. Idikit ang token sa PR gate. Walang dagdag na burn sa susunod na push. Inaaprubahan ng may-ari ang kasalukuyang bersiyon bago mag-merge ang App. Libre sa gate ang sariling mga maintainer ng Provian: walang burn, presentasyon, check o review; puwedeng direktang push at merge.",
       "prGateOwnerExemptNotice": "PR ito ng may-ari. Hindi kailangan ang burn o presentasyon. Puwedeng direktang push at merge."
     },
     "approvalInbox": {

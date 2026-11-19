@@ -44,7 +44,7 @@ A **Provenance Envelope (PE)** is signed, hash-chained proof owned by its contri
 
 ## 1. What Provian is
 
-Built by one human, with AI, Provian connects witnessed work, money, ownership and recourse. The PE proves contribution; the ownership registry follows PVT holdings; a hash recovery commitment separates continuity from wallet-key control; the Recourse Pool makes discretionary determinations from evidence. These are separate records with separate authority, not one earnings ledger repurposed as ownership.
+Provian connects witnessed work, money, ownership and recourse. The PE proves contribution; the ownership registry follows PVT holdings; a hash recovery commitment separates continuity from wallet-key control; the Recourse Pool makes discretionary determinations from evidence. These are separate records with separate authority, not one earnings ledger repurposed as ownership.
 
 Provian is a covenant between the agentic world and the human world: **the trust layer for the
 intelligence economy**. Its primary tagline is *"Compute mints money. No one gets left behind."*;
@@ -1173,8 +1173,7 @@ test-platform wallets never accrue. Consumed by the streak badges only.
 - **The gate side — the reference gate** (reference-gate run, 2026-10-09): burn-to-present is the
   foundational burn, and its main arena is outside systems that Provian does not run and that do
   not register with Provian, reading incoming envelopes to decide what to do with them; Provian's
-  own Commons is one requester besides them. [`provian-reference-gate`](https://github.com/LongevityManiac/provian-reference-gate) (MIT, its own
-  repository) is that reference: one standalone service and one library a gate embeds, both
+  own Commons is one requester besides them. The reference gate is that reference: one standalone service and one library a gate embeds, both
   walking the complete outsider path — serve the gate's domain identity
   (`/.well-known/provian-requester.json`), issue a signed `provian-challenge-v1` challenge, receive
   the presentation, verify it (the stateless `POST /v1/present/verify` AND a local verify against
@@ -1216,9 +1215,9 @@ test-platform wallets never accrue. Consumed by the streak badges only.
 ---
 ### Contributing through Provian’s own PR gate
 
-**The repository owner, LongevityManiac, is exempt:** owner pushes and PRs, including coding-agent work from the owner’s own checkout, need no burn, presentation, gate check or review; direct push and merge are allowed. For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR.
+**Provian’s own maintainers are exempt:** their pushes and PRs need no burn, presentation, gate check or review; direct push and merge are allowed. For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR.
 
-Provian runs a live gate on **LongevityManiac/provian** and **LongevityManiac/provian-reference-gate**: a non-owner PR requires **one 50 PVT burn-to-present handshake per PR**, bound to that PR’s signed challenge and the GitHub author’s linked wallet. Gate identity is **provian.ai** via `/.well-known/provian-requester.json`. The required **Provian PR gate** check and `presentation-required` label keep an unpaid PR blocked. Verified presentation clears it for ordinary review. Clearance only unlocks merge. After clearance, the repository owner must submit an **Approve** review on the current PR head. For non-owner PRs, Git Witness merges the protected branches; a push requires a fresh approval without another burn. Further pushes and reopening keep that clearance; further pushes and reopening need no additional burn. Another PR cannot reuse the presentation. The gate’s own price changes no protocol floor, and merged commits keep earning through Git Witness.
+Provian runs a live gate on **LongevityManiac/provian**: an outside PR requires **one 50 PVT burn-to-present handshake per PR**, bound to that PR’s signed challenge and the GitHub author’s linked wallet. Gate identity is **provian.ai** via `/.well-known/provian-requester.json`. The required **Provian PR gate** check and `presentation-required` label keep an unpaid PR blocked. Verified presentation clears it for ordinary review. Clearance only unlocks merge. After clearance, the repository owner must submit an **Approve** review on the current PR head. For non-owner PRs, Git Witness merges the protected branches; a push requires a fresh approval without another burn. Further pushes and reopening keep that clearance; further pushes and reopening need no additional burn. Another PR cannot reuse the presentation. The gate’s own price changes no protocol floor, and merged commits keep earning through Git Witness.
 
 Git Witness acknowledges an authenticated webhook only after its signed receipt is durable. An isolated push worker drains earning and PR work, with bounded retry and a scheduler fallback; processed payloads are discarded after durable earning intake. GitHub `check_suite` and `check_run` deliveries are transport plumbing and generate no work PE (`core/witnesses/github-webhook-inbox.ts`).
 

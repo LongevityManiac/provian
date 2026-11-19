@@ -1274,7 +1274,7 @@
       "revokeConfirmBodyGithub": "中继将停止接受此安装的投递。要完全断开连接，请同时在 github.com 上卸载 Provian 应用。",
       "revokeConfirmBodyWebhook": "中继将停止接受投递，webhook 密钥也会随之失效。你可以稍后重新注册以获取新密钥。",
       "github": {
-        "explainer": "将 GitHub 关联到 PR 作者本人的钱包。LongevityManiac 免于门槛，包括 CC/Codex 从所有者检出目录提交的工作：无需销毁、出示凭证、必需检查或审核，可直接推送和合并。其他作者每个 PR 从自己的钱包销毁一次 50 PVT，其他钱包不能代付。Git Witness 收益保持不变。",
+        "explainer": "将 GitHub 关联到 PR 作者本人的钱包。Provian 自己的维护者免于门槛：无需销毁、出示凭证、必需检查或审核，可直接推送和合并。其他作者每个 PR 从自己的钱包销毁一次 50 PVT，其他钱包不能代付。Git Witness 收益保持不变。",
         "connectCta": "打开 GitHub 安装",
         "retryCta": "重新开始",
         "waiting": "正在等待 GitHub：请在浏览器中完成安装，然后回到这里。",
@@ -3206,7 +3206,7 @@
       "discNoMatch": "本手机上没有匹配的记录。回复会如此说明，不披露任何内容。",
       "discUnavailable": "您选择披露的一条记录无法准备（{{reason}}）。未销毁任何代币。",
       "confirmBodyDisclosures": "这是永久销毁 {{fee}} PVT。它将为 {{audience}} 生成一份声誉出示，披露上方所示的 {{count}} 条记录并拒绝其他 {{declined}} 项请求。它绑定于本次请求与此刻，并在几分钟内过期。",
-      "prGateNotice": "非所有者 PR 的作者从本人已关联的钱包销毁一次 50 PVT，不能由其他钱包代付。将令牌粘贴回 PR 门槛页面。后续推送无需再次销毁。所有者批准当前版本后，App 才会合并。LongevityManiac 免于门槛：无需销毁、出示凭证、检查或审核，可直接推送和合并。",
+      "prGateNotice": "非所有者 PR 的作者从本人已关联的钱包销毁一次 50 PVT，不能由其他钱包代付。将令牌粘贴回 PR 门槛页面。后续推送无需再次销毁。所有者批准当前版本后，App 才会合并。Provian 自己的维护者免于门槛：无需销毁、出示凭证、检查或审核，可直接推送和合并。",
       "prGateOwnerExemptNotice": "这是所有者的 PR，无需销毁或出示凭证，可直接推送和合并。"
     },
     "approvalInbox": {

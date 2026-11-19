@@ -1273,7 +1273,7 @@
       "revokeConfirmBodyGithub": "Relay sẽ ngừng nhận các lượt gửi từ bản cài đặt này. Để ngắt kết nối hoàn toàn, hãy gỡ cả ứng dụng Provian trên github.com.",
       "revokeConfirmBodyWebhook": "Relay sẽ ngừng nhận các lượt gửi và mã bí mật webhook bị vô hiệu hóa. Bạn có thể đăng ký lại sau để nhận mã mới.",
       "github": {
-        "explainer": "Liên kết GitHub với ví của chính tác giả PR. LongevityManiac được miễn, kể cả công việc CC/Codex từ bản checkout của chủ sở hữu: không đốt, trình bằng chứng, kiểm tra bắt buộc hay xét duyệt; được đẩy và hợp nhất trực tiếp. Tác giả khác đốt 50 PVT một lần cho mỗi PR từ ví của mình. Ví khác không được trả thay. Thu nhập Git Witness không đổi.",
+        "explainer": "Liên kết GitHub với ví của chính tác giả PR. Những người duy trì của chính Provian được miễn: không đốt, trình bằng chứng, kiểm tra bắt buộc hay xét duyệt; được đẩy và hợp nhất trực tiếp. Tác giả khác đốt 50 PVT một lần cho mỗi PR từ ví của mình. Ví khác không được trả thay. Thu nhập Git Witness không đổi.",
         "connectCta": "Mở GitHub để cài đặt",
         "retryCta": "Bắt đầu lại",
         "waiting": "Đang chờ GitHub: hoàn tất cài đặt trong trình duyệt của bạn, rồi quay lại đây.",
@@ -3205,7 +3205,7 @@
       "discNoMatch": "Không có gì trên điện thoại này khớp. Câu trả lời sẽ nói vậy; không có gì được tiết lộ.",
       "discUnavailable": "Một bản ghi bạn chọn tiết lộ không thể chuẩn bị được ({{reason}}). Chưa đốt gì cả.",
       "confirmBodyDisclosures": "Đây là lần đốt vĩnh viễn {{fee}} PVT. Nó tạo một bản trình bày uy tín cho {{audience}}, tiết lộ {{count}} bản ghi ở trên và từ chối {{declined}} yêu cầu khác. Nó gắn với yêu cầu này và thời điểm này, và hết hạn trong vài phút.",
-      "prGateNotice": "Với PR không phải của chủ sở hữu, tác giả đốt 50 PVT một lần từ ví đã liên kết của chính mình. Ví khác không được trả thay. Dán token vào cổng PR. Các lần đẩy tiếp theo không cần đốt thêm. Chủ sở hữu phê duyệt phiên bản hiện tại trước khi App hợp nhất. LongevityManiac được miễn: không đốt, trình bằng chứng, kiểm tra hay xét duyệt; được đẩy và hợp nhất trực tiếp.",
+      "prGateNotice": "Với PR không phải của chủ sở hữu, tác giả đốt 50 PVT một lần từ ví đã liên kết của chính mình. Ví khác không được trả thay. Dán token vào cổng PR. Các lần đẩy tiếp theo không cần đốt thêm. Chủ sở hữu phê duyệt phiên bản hiện tại trước khi App hợp nhất. Những người duy trì của chính Provian được miễn: không đốt, trình bằng chứng, kiểm tra hay xét duyệt; được đẩy và hợp nhất trực tiếp.",
       "prGateOwnerExemptNotice": "Đây là PR của chủ sở hữu. Không cần đốt hoặc trình bằng chứng. Được đẩy và hợp nhất trực tiếp."
     },
     "approvalInbox": {

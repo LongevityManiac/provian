@@ -555,14 +555,7 @@ export default function DevelopersPage() {
           deadline is enforced at verify.
         </p>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-text-secondary">
-          Start from the reference gate,{' '}
-          <a href="https://github.com/LongevityManiac/provian-reference-gate" target="_blank" rel="noopener noreferrer" className="text-provian-blue-bright transition-colors hover:text-text-primary">
-            provian-reference-gate
-          </a>
-          : a standalone service and a library that serve your domain identity, issue the signed
-          challenge, verify once and decide, with five worked examples (counterparty onboarding, a
-          payment rail, a repository merge, a mission-critical action on attested hardware, a sensitive
-          site asking for a specific credential). MIT. For the systems that will adopt it, see{' '}
+          For the systems that will adopt it, see{' '}
           <Link href={route.gates} className="text-provian-blue-bright transition-colors hover:text-text-primary">
             Gates
           </Link>

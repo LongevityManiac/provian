@@ -529,14 +529,14 @@ by default through `https://mainnet.base.org`, or your `rpcUrl`).
 A gate with no Provian account, API key, or wallet. It needs only
 `@provian/agent-sdk` and a domain it controls.
 
-**The reference gate** — [`provian-reference-gate`](https://github.com/LongevityManiac/provian-reference-gate) (MIT) — is this loop as a
+**The reference gate** is this loop as a
 standalone service and a library: it serves the gate's domain identity, issues the signed
 challenge, verifies the presentation (the stateless relay verify and the local verify, each
 presentation accepted once, chain checks on), evaluates the gate's own predicates in the grammar
 below, and decides; unknown or failed is blocked. Five worked examples — counterparty
 onboarding, a payment-rail commitment, a repository merge gate, a mission-critical action on
 attested hardware, a sensitive site asking for a specific credential — are complete decisions
-over a presentation, each showing adverse standing. Fork it. The sketch that follows is the same
+over a presentation, each showing adverse standing. The sketch that follows is the same
 path in one file.
 
 The reference gate's **optional admission log** is the operator's forensic record. When attached,
