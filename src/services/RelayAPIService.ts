@@ -3,6 +3,7 @@ import { readConfirmedProtocolBalance } from '../core/protocol/balance';
 import type { MembershipRequestPath } from '../core/recourse/membership-client';
 import i18next from 'i18next';
 import { ActionWallet } from '../core/security/ActionWallet';
+import { AppState } from 'react-native';
 import { withBiometricAction, assertBiometricAction, isBiometricActionValid, type BiometricAction } from '../core/security/biometricAction';
 import {sealPrivatePricing} from '../core/meter/privatePricing';
 import i18n from '../i18n';
@@ -73,6 +74,8 @@ export type ConnectionMode = 'cloud' | 'local';
  * timestamp window to force continuous secret rotation.
  */
 const RECOVERY_THROTTLE_MS = 60_000;
+/** How long a renewal proof pre-signed at unlock is kept. The relay accepts one for 5 minutes. */
+export const PRESIGNED_RENEWAL_LIFETIME_MS = 4 * 60_000;
 
 /** The registration-confirmed marker: the address AND the relay account that confirmed it. */
 export function humanWalletRegistrationMarker(address: string, userId: string | null): string {
@@ -808,7 +811,12 @@ class RelayAPIService {
      */
     private noCacheSeq: number = 0;
 
-    private constructor() {}
+    private constructor() {
+        // A pre-signed renewal never outlives the foreground it was signed for.
+        AppState?.addEventListener?.('change', (state) => {
+            if (state === 'background') this.discardSessionRenewal();
+        });
+    }
 
     static getInstance(): RelayAPIService {
         if (!RelayAPIService.instance) {
@@ -836,6 +844,8 @@ class RelayAPIService {
 
     // SECURITY FIX: C-1 - Store HMAC auth secret in SecureStore
     async setAuthSecret(secret: string, userId: string): Promise<void> {
+        // New credentials: nothing has rejected them yet.
+        this.relaySessionRejectedFlag = false;
         if (this.userId !== null && this.userId !== userId) {
             // Never carry one human's linked-agent display state into another
             // wallet identity on the same device.
@@ -1175,116 +1185,190 @@ class RelayAPIService {
         }
     }
 
-    private async doRecoverRelayCredentials(walletAddress: string, biometricAction?: BiometricAction): Promise<{ userId: string; authSecret: string; recovered: boolean }> {
-        const deviceId = await this.getDeviceId();
-        const backendUrl = await this.getBackendUrl();
-        const timestamp = Date.now();
-
+    /** Refuse a recovery within RECOVERY_THROTTLE_MS of the last successful one. */
+    private assertRecoveryNotThrottled(nowMs: number): void {
         // [Group 5 / M-3] Client-side throttle. If a successful recovery
         // happened less than RECOVERY_THROTTLE_MS ago, refuse and let the
         // caller surface a session error rather than re-issuing recoveries
         // in a tight loop. Defends against the H-1 amplification path
         // where a captured signature replayed by an attacker forces
         // continuous secret rotation.
-        const sinceLastRecovery = timestamp - this.lastRecoveryAt;
+        const sinceLastRecovery = nowMs - this.lastRecoveryAt;
         if (this.lastRecoveryAt > 0 && sinceLastRecovery < RECOVERY_THROTTLE_MS) {
             const remaining = RECOVERY_THROTTLE_MS - sinceLastRecovery;
             console.warn(`[RelayAPI] Recovery throttled, ${Math.ceil(remaining / 1000)}s remaining`);
             throw new RecoveryThrottledError(remaining);
         }
+    }
 
-        console.log('[RelayAPI] Recovering relay credentials for wallet:', walletAddress);
-
+    /**
+     * Sign the relay-recovery proof (the request body for /v1/users/recover) inside a live
+     * biometric action. Sends nothing. The relay accepts it for 5 minutes, once.
+     */
+    private async signRecoveryProof(walletAddress: string, biometricAction: BiometricAction, nowMs: number): Promise<string> {
+        assertBiometricAction(biometricAction);
+        const deviceId = await this.getDeviceId();
         // Sign with the BIP-39-derived EVM key (secp256k1). Not KeyManager,
         // which uses a separate P-256 Secure Enclave key that doesn't match
         // the wallet address and doesn't survive reinstall.
         const { default: SeedManager } = await import('../core/wallet/SeedManager');
         const { ethers } = await import('ethers');
+        // EIP-712 domain-separated recovery message. The earlier legacy
+        // personal_sign path was removed - it had no domain separator
+        // (no chainId, contract, or nonce) and was replayable by any captured
+        // WalletConnect signature of the same literal text. This message is
+        // bound to a Provian-specific EIP-712 domain so signatures captured
+        // in any other context cannot be replayed at /v1/users/recover.
+        const tsSeconds = Math.floor(nowMs / 1000);
+        // Domain, struct and purpose come from the ONE app definition
+        // (core/relay/recoveryDomain.ts), pinned to the relay's constants and
+        // shared with the WalletConnect reserved-message guard so no external
+        // dApp can obtain a signature over this struct.
+        const domain = { ...RELAY_RECOVERY_DOMAIN };
+        const types = { RelayRecovery: [...RELAY_RECOVERY_TYPES.RelayRecovery] };
+        const message = {
+            user: walletAddress,
+            timestamp: tsSeconds,
+            purpose: RELAY_RECOVERY_PURPOSE,
+        };
+        const mnemonic = await SeedManager.getMnemonic(biometricAction);
+        if (!mnemonic) throw new Error('recourse_seed_unavailable');
+        const { signHumanHashDigest } = await import('../core/recourse/human-hash-message');
+        let signature = await signHumanHashDigest(mnemonic, walletAddress,
+            ethers.TypedDataEncoder.hash(domain, types, message), biometricAction);
+        if (signature === null) {
+            const signer = new ActionWallet(await SeedManager.getEVMPrivateKey(biometricAction), biometricAction);
+            signature = await signer.signTypedData(domain, types, message);
+        }
+        return JSON.stringify({
+            wallet_address: walletAddress,
+            timestamp: tsSeconds,
+            signature,
+            device_id: deviceId,
+            eip712: { domain, types, message },
+        });
+    }
+
+    /** Send a signed recovery proof and store the credentials it returns. */
+    private async submitRecoveryProof(walletAddress: string, body: string, biometricAction?: BiometricAction): Promise<{ userId: string; authSecret: string; recovered: boolean }> {
+        const backendUrl = await this.getBackendUrl();
+        const response = await apiFetch(`${backendUrl}/v1/users/recover`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'Relay credential recovery failed');
+        }
+
+        const data = await response.json();
+        const { user_id, auth_secret, recovered } = data;
+
+        // Store credentials in SecureStore
+        await this.setAuthSecret(auth_secret, user_id);
+        console.log(`[RelayAPI] Relay credentials ${recovered ? 'recovered' : 'created'} for user:`, user_id);
+
+        // round-robin fairness: the relay DEFINITIVELY placed this device on the address's
+        // account (recovered, or owner-missing → a fresh account), so THIS account may now sign
+        // the registration address proof. Never written on any failure path above.
+        await this.recordAddressProofAuthorization({ address: walletAddress, userId: user_id });
+
+        // [Group 5 / M-3] Record successful recovery for the throttle.
+        // Only set on success, so a failed recovery does not start the
+        // throttle window.
+        this.lastRecoveryAt = Date.now();
+
+        // Register FCM token if available
+        try {
+            const fcmToken = await NotificationService.getPushToken();
+            if (fcmToken) {
+                await this.registerFCMToken(fcmToken, biometricAction);
+            }
+        } catch (err) {
+            console.warn('[RelayAPI] Failed to register FCM token after recovery:', err);
+        }
+
+        return { userId: user_id, authSecret: auth_secret, recovered };
+    }
+
+    private async doRecoverRelayCredentials(walletAddress: string, biometricAction?: BiometricAction): Promise<{ userId: string; authSecret: string; recovered: boolean }> {
+        const timestamp = Date.now();
+        this.assertRecoveryNotThrottled(timestamp);
+
+        console.log('[RelayAPI] Recovering relay credentials for wallet:', walletAddress);
 
         // [Group 1 / M-2] Establish a biometric session before touching seed
         // material. Recovery may run automatically on a 401 from the relay,
         // so a prompt here is the user's first signal that something is
         // re-authenticating. Anything that throws here aborts the recovery.
         return await withBiometricAction(translate('biometricPrompts.reconnectRelay', 'Reconnect to Provian relay'), async (biometricAction) => {
-            assertBiometricAction(biometricAction);
-
-            // EIP-712 domain-separated recovery message. The earlier legacy
-            // personal_sign path was removed - it had no domain separator
-            // (no chainId, contract, or nonce) and was replayable by any captured
-            // WalletConnect signature of the same literal text. This message is
-            // bound to a Provian-specific EIP-712 domain so signatures captured
-            // in any other context cannot be replayed at /v1/users/recover.
-            const tsSeconds = Math.floor(timestamp / 1000);
-            // Domain, struct and purpose come from the ONE app definition
-            // (core/relay/recoveryDomain.ts), pinned to the relay's constants and
-            // shared with the WalletConnect reserved-message guard so no external
-            // dApp can obtain a signature over this struct.
-            const domain = { ...RELAY_RECOVERY_DOMAIN };
-            const types = { RelayRecovery: [...RELAY_RECOVERY_TYPES.RelayRecovery] };
-            const message = {
-                user: walletAddress,
-                timestamp: tsSeconds,
-                purpose: RELAY_RECOVERY_PURPOSE,
-            };
-            const mnemonic = await SeedManager.getMnemonic(biometricAction);
-            if (!mnemonic) throw new Error('recourse_seed_unavailable');
-            const { signHumanHashDigest } = await import('../core/recourse/human-hash-message');
-            let signature = await signHumanHashDigest(mnemonic, walletAddress,
-                ethers.TypedDataEncoder.hash(domain, types, message), biometricAction);
-            if (signature === null) {
-                const signer = new ActionWallet(await SeedManager.getEVMPrivateKey(biometricAction), biometricAction);
-                signature = await signer.signTypedData(domain, types, message);
-            }
-
-            const body = JSON.stringify({
-                wallet_address: walletAddress,
-                timestamp: tsSeconds,
-                signature,
-                device_id: deviceId,
-                eip712: { domain, types, message },
-            });
-
-            const response = await apiFetch(`${backendUrl}/v1/users/recover`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body,
-            });
-
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.error || 'Relay credential recovery failed');
-            }
-
-            const data = await response.json();
-            const { user_id, auth_secret, recovered } = data;
-
-            // Store credentials in SecureStore
-            await this.setAuthSecret(auth_secret, user_id);
-            console.log(`[RelayAPI] Relay credentials ${recovered ? 'recovered' : 'created'} for user:`, user_id);
-
-            // round-robin fairness: the relay DEFINITIVELY placed this device on the address's
-            // account (recovered, or owner-missing → a fresh account), so THIS account may now sign
-            // the registration address proof. Never written on any failure path above.
-            await this.recordAddressProofAuthorization({ address: walletAddress, userId: user_id });
-
-            // [Group 5 / M-3] Record successful recovery for the throttle.
-            // Only set on success, so a failed recovery does not start the
-            // throttle window.
-            this.lastRecoveryAt = Date.now();
-
-            // Register FCM token if available
-            try {
-                const fcmToken = await NotificationService.getPushToken();
-                if (fcmToken) {
-                    await this.registerFCMToken(fcmToken, biometricAction);
-                }
-            } catch (err) {
-                console.warn('[RelayAPI] Failed to register FCM token after recovery:', err);
-            }
-
-            return { userId: user_id, authSecret: auth_secret, recovered };
-
+            const body = await this.signRecoveryProof(walletAddress, biometricAction, timestamp);
+            return this.submitRecoveryProof(walletAddress, body, biometricAction);
         }, biometricAction);
+    }
+
+    // -------------------------------------------------------------------------
+    // Pre-signed session renewal. The unlock signs a recovery proof inside its own approval and
+    // keeps it in memory only — never stored, logged or sent unless a 401 needs it — so a session
+    // found expired after the unlock renews with no second prompt and no wait at the unlock. It is
+    // used at most once, dropped after PRESIGNED_RENEWAL_LIFETIME_MS (the relay accepts 5 min) and
+    // dropped when the app goes to the background.
+    // -------------------------------------------------------------------------
+    private presignedRenewal: { address: string; body: string; usableUntilMs: number } | null = null;
+
+    /** Sign a renewal proof inside the unlock's approval. Sends nothing. */
+    async prepareSessionRenewal(walletAddress: string, biometricAction: BiometricAction): Promise<boolean> {
+        assertBiometricAction(biometricAction);
+        if (!(await this.isRegistered())) return false;
+        const nowMs = Date.now();
+        const body = await this.signRecoveryProof(walletAddress, biometricAction, nowMs);
+        this.presignedRenewal = { address: walletAddress.toLowerCase(), body, usableUntilMs: nowMs + PRESIGNED_RENEWAL_LIFETIME_MS };
+        return true;
+    }
+
+    discardSessionRenewal(): void {
+        this.presignedRenewal = null;
+    }
+
+    hasSessionRenewal(): boolean {
+        return this.presignedRenewal !== null && this.presignedRenewal.usableUntilMs > Date.now();
+    }
+
+    /**
+     * Renew the session with the pre-signed proof (no biometric action needed). Concurrent callers
+     * share one recovery. True when the session was renewed (by this call or one in flight).
+     */
+    async renewWithPresignedProof(walletAddress: string): Promise<boolean> {
+        const key = walletAddress.toLowerCase();
+        const current = this.recoveryInFlight;
+        if (current && current.address === key) {
+            return current.promise.then(() => true, () => false);
+        }
+        const proof = this.presignedRenewal;
+        if (!proof || proof.address !== key || proof.usableUntilMs <= Date.now()) return false;
+        this.presignedRenewal = null; // single use, whatever the outcome
+        try {
+            this.assertRecoveryNotThrottled(Date.now());
+        } catch {
+            return false;
+        }
+        const promise = (async () => {
+            if (current) await current.promise.catch(() => undefined);
+            return this.submitRecoveryProof(walletAddress, proof.body);
+        })();
+        const entry = { address: key, promise };
+        this.recoveryInFlight = entry;
+        try {
+            await promise;
+            return true;
+        } catch (err) {
+            console.warn('[RelayAPI] pre-signed renewal failed:', err instanceof Error ? err.message : String(err));
+            return false;
+        } finally {
+            if (this.recoveryInFlight === entry) this.recoveryInFlight = null;
+        }
     }
 
     /**
@@ -1379,8 +1463,41 @@ class RelayAPIService {
         await this.registerUser(biometricAction);
     }
 
-    // SECURITY FIX: C-1 - Generate fresh signed token per request
+    /**
+     * Whether the relay's latest answer to a signed request was 401 and it was not renewed. Set by
+     * a 401 that could not recover (no live biometric action to sign the renewal), cleared by any
+     * accepted request and by new credentials. The unlock reads it to renew only an expired session.
+     */
+    private relaySessionRejectedFlag = false;
+
+    relaySessionRejected(): boolean {
+        return this.relaySessionRejectedFlag;
+    }
+
+    /** When the relay last accepted a signed request from this session (0 = never). */
+    private lastAcceptedAtMs = 0;
+
+    /** Whether the relay accepted a signed request at or after `sinceMs` and has not rejected one since. */
+    sessionAcceptedSince(sinceMs: number): boolean {
+        return !this.relaySessionRejectedFlag && this.lastAcceptedAtMs >= sinceMs;
+    }
+
     private async makeAuthenticatedRequest(
+        endpoint: string,
+        options: RequestInit & { timeoutMs?: number; privateBodyBuilder?: (secret: string) => string } = {},
+        retryOnAuth: boolean = true, biometricAction?: BiometricAction
+    ): Promise<Response> {
+        const response = await this.makeAuthenticatedRequestOnce(endpoint, options, retryOnAuth, biometricAction);
+        if (response.status === 401) this.relaySessionRejectedFlag = true;
+        else if (response.ok) {
+            this.relaySessionRejectedFlag = false;
+            this.lastAcceptedAtMs = Date.now();
+        }
+        return response;
+    }
+
+    // SECURITY FIX: C-1 - Generate fresh signed token per request
+    private async makeAuthenticatedRequestOnce(
         endpoint: string,
         options: RequestInit & { timeoutMs?: number; privateBodyBuilder?: (secret: string) => string } = {},
         retryOnAuth: boolean = true, biometricAction?: BiometricAction
@@ -1473,6 +1590,10 @@ class RelayAPIService {
                     // Deduplicate concurrent recovery calls. All 401 handlers
                     // await the same promise to prevent thundering herd where
                     // each recovery rotates the auth secret and invalidates others.
+                    // No live approval here: renew with the proof the unlock pre-signed, if any.
+                    if (!isBiometricActionValid(biometricAction) && await this.renewWithPresignedProof(walletAddress)) {
+                        return this.makeAuthenticatedRequest(originalEndpoint, options, false, biometricAction);
+                    }
                     console.log('[RelayAPI] Got 401, recovering relay credentials via wallet signature');
                     assertBiometricAction(biometricAction);
                     await this.recoverRelayCredentials(walletAddress, biometricAction);

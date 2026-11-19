@@ -53,3 +53,73 @@ describe('relay session check at unlock', () => {
         expect(relay.getPVTAccrual).not.toHaveBeenCalled();
     });
 });
+
+import { readFileSync } from 'node:fs';
+import { prepareRenewalAtUnlock, renewRejectedSessionAfterUnlock, type UnlockRelay } from './phoneMeterRuntime';
+
+function fakeRelay(state: { rejected?: boolean; acceptedSince?: boolean; sign?: () => Promise<boolean> } = {}) {
+    const r = {
+        isRegistered: vi.fn(async () => true),
+        relaySessionRejected: vi.fn(() => state.rejected ?? false),
+        sessionAcceptedSince: vi.fn((_since: number) => state.acceptedSince ?? false),
+        prepareSessionRenewal: vi.fn((_a: string, _b: BiometricAction) => (state.sign ?? (async () => true))()),
+        renewWithPresignedProof: vi.fn(async (_a: string) => true),
+    } satisfies UnlockRelay;
+    return r;
+}
+
+describe('the unlock: no relay wait, renewal pre-signed when the session is not confirmed', () => {
+    it('a session the relay accepted since the lock screen appeared: nothing signed', async () => {
+        const r = fakeRelay({ acceptedSince: true });
+        await expect(prepareRenewalAtUnlock('0xabc', ACTION, r, 100)).resolves.toBe('healthy');
+        expect(r.sessionAcceptedSince).toHaveBeenCalledWith(100);
+        expect(r.prepareSessionRenewal).not.toHaveBeenCalled();
+    });
+
+    it('rejected or not answered yet: a proof is signed with the unlock\'s own action', async () => {
+        for (const state of [{ rejected: true }, {}]) {
+            const r = fakeRelay(state);
+            await expect(prepareRenewalAtUnlock('0xabc', ACTION, r, 100)).resolves.toBe('signed');
+            expect(r.prepareSessionRenewal).toHaveBeenCalledWith('0xabc', ACTION);
+        }
+    });
+
+    it('signing is bounded: a slow signature never holds the unlock past its bound', async () => {
+        const r = fakeRelay({ sign: () => new Promise<boolean>(() => undefined) });
+        const started = Date.now();
+        await expect(prepareRenewalAtUnlock('0xabc', ACTION, r, 100, 20)).resolves.toBe('skipped');
+        expect(Date.now() - started).toBeLessThan(1_000);
+    });
+
+    it('no address or no relay account: nothing to do', async () => {
+        const r = fakeRelay();
+        await expect(prepareRenewalAtUnlock(null, ACTION, r, 100)).resolves.toBe('skipped');
+        r.isRegistered.mockResolvedValue(false);
+        await expect(prepareRenewalAtUnlock('0xabc', ACTION, r, 100)).resolves.toBe('skipped');
+        expect(r.prepareSessionRenewal).not.toHaveBeenCalled();
+    });
+
+    it('after landing, a session the relay rejected renews with the proof; a healthy one is left alone', async () => {
+        const rejected = fakeRelay({ rejected: true });
+        await expect(renewRejectedSessionAfterUnlock('0xabc', rejected)).resolves.toBe(true);
+        expect(rejected.renewWithPresignedProof).toHaveBeenCalledWith('0xabc');
+        const healthy = fakeRelay();
+        await expect(renewRejectedSessionAfterUnlock('0xabc', healthy)).resolves.toBe(false);
+        expect(healthy.renewWithPresignedProof).not.toHaveBeenCalled();
+    });
+
+    it('wiring: the lock screen checks first; the unlock signs, lands, and awaits nothing after landing', () => {
+        const lock = readFileSync('src/screens/Security/WalletLockScreen.tsx', 'utf8');
+        const runtime = readFileSync('src/core/meter/phoneMeterRuntime.ts', 'utf8');
+        expect(lock).toMatch(/probeRelaySessionAtLock\(useWalletStore\.getState\(\)\.address\)/);
+        const sign = lock.indexOf('await prepareRenewalAtUnlock(');
+        const land = lock.indexOf('landAfterUnlock(navigation, seedUnreadable');
+        expect(sign).toBeGreaterThan(0);
+        expect(land).toBeGreaterThan(sign);
+        const afterLand = lock.slice(land, lock.indexOf('}, undefined);', land));
+        expect(afterLand).not.toMatch(/await /);
+        expect(afterLand).toMatch(/void renewRejectedSessionAfterUnlock\(wallet\)/);
+        const unlocked = runtime.slice(runtime.indexOf('export async function onWalletUnlocked'));
+        expect(unlocked).not.toMatch(/checkRelaySessionAtUnlock/);
+    });
+});

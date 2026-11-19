@@ -20,7 +20,7 @@ import { useBiometricLabel } from '../../core/security/biometricLabel';
 import { requireBiometric, BiometricNotAvailableError, BiometricAuthError, BiometricRateLimitError } from '../../core/security/requireBiometric';
 import SeedManager from '../../core/wallet/SeedManager';
 import WalletCreationService from '../../core/wallet/WalletCreationService';
-import { onWalletUnlocked } from '../../core/meter/phoneMeterRuntime';
+import { onWalletUnlocked, prepareRenewalAtUnlock, probeRelaySessionAtLock, renewRejectedSessionAfterUnlock } from '../../core/meter/phoneMeterRuntime';
 import { hasCloudBackup } from '../../core/recovery/cloud/CloudBackupV2';
 import { resolveBackupGate } from '../../core/recovery/cloud/backupRequirement';
 import { landAfterUnlock } from '../../navigation/afterUnlock';
@@ -92,7 +92,14 @@ const WalletLockScreen = ({ navigation }: any) => {
                 // Terms or a Privacy Policy changed since this install accepted them: review and accept first.
                 const termsGate = legalReviewRequired(useWalletStore.getState()) ? 'terms' as const : 'app' as const;
                 // A notification tapped while locked opens on top of the app, never raced by this reset.
+                // Unless the relay already accepted this session since the lock screen appeared, sign a
+                // renewal proof inside this approval (local signing, bounded; no relay request), so an
+                // expired session renews later with no second prompt. A seed that cannot be read cannot
+                // sign, so it is skipped then.
+                const wallet = seedUnreadable ? null : useWalletStore.getState().address;
+                await prepareRenewalAtUnlock(wallet, biometricAction);
                 landAfterUnlock(navigation, seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate, () => setAuthenticated(true));
+                void renewRejectedSessionAfterUnlock(wallet);
 
             }, undefined);
         } catch (err) {
@@ -129,6 +136,12 @@ const WalletLockScreen = ({ navigation }: any) => {
         onWalletUnlocked();
         landAfterUnlock(navigation, 'app', () => setAuthenticated(true));
     };
+
+    // While the person looks at the lock screen, check the relay session with no approval: an
+    // expired session is found before the unlock, so the unlock can renew it in its own approval.
+    useEffect(() => {
+        probeRelaySessionAtLock(useWalletStore.getState().address);
+    }, []);
 
     // Auto-trigger authentication on mount (skip on simulator)
     useEffect(() => {
