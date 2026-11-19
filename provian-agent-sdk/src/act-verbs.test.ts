@@ -625,13 +625,15 @@ describe('Commons verbs drive the relay write that performs the act', () => {
 describe('On-chain verbs', () => {
   it('balance reads PVT live on the pointer-resolved kernel through the Base RPC, ETH/USDC from the relay (no key)', async () => {
     const h = harness({ respond: (c) => (c.url.startsWith('https://mainnet.base.org')
-      ? { body: { jsonrpc: '2.0', id: 1, result: '0x' + (98n * 10n ** 18n).toString(16) } }
+      ? { body: (c.body as { method?: string }).method === 'eth_chainId'
+        ? { jsonrpc: '2.0', id: 1, result: '0x2105' }
+        : { jsonrpc: '2.0', id: 1, result: '0x' + (98n * 10n ** 18n).toString(16).padStart(64, '0') } }
       : defaultRespond(c)) });
     const r = await h.run('balance');
     // The relay's cached figure (99) is not the PVT shown: the chain's balanceOf (98) is.
     expect(r.json).toMatchObject({ address: ADDRESS, pvt: '98', pvt_source: 'chain', eth: '0.001', usdc: '0' });
     expect(h.calls.find((c) => c.path.endsWith('/balances'))?.url).toMatch(/\/balances\?token=0x[0-9a-f]{40}$/);
-    const rpc = h.calls.find((c) => c.url.startsWith('https://mainnet.base.org'));
+    const rpc = h.calls.find((c) => c.url.startsWith('https://mainnet.base.org') && (c.body as { method?: string }).method === 'eth_call');
     expect((rpc?.body as { params: [{ to: string }] }).params[0].to).toMatch(/^0x[0-9a-f]{40}$/);
     expect(h.keyUses()).toBe(0);
   });

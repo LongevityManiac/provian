@@ -94,7 +94,7 @@ describe('CommonsInstitutions.getBalances — live PVT read', () => {
   const STALE = { eth: '0.01', usdc: '3', chain: 'base', token_address: TOKEN, pvt: { status: 'live', address: TOKEN, balance: '1728.9512986704', available: true } };
   const LIVE_ATOMIC = 1723951298670400000000n; // 1723.9512986704 PVT
 
-  function liveBank(rpc: (body: { method: string; params: unknown[] }) => unknown) {
+  function liveBank(rpc: (body: { method: string; params: unknown[] }) => unknown, chainAnswer: (body: { method: string }) => unknown = () => ({ jsonrpc: '2.0', id: 1, result: '0x2105' })) {
     const relayCalls: string[] = [];
     const rpcBodies: { method: string; params: unknown[] }[] = [];
     const fetchImpl = async (url: string | URL | Request, init?: RequestInit): Promise<Response> => {
@@ -102,7 +102,7 @@ describe('CommonsInstitutions.getBalances — live PVT read', () => {
       if (u.startsWith(RPC)) {
         const body = JSON.parse(String(init?.body)) as { method: string; params: unknown[] };
         rpcBodies.push(body);
-        const answer = rpc(body);
+        const answer = body.method === 'eth_chainId' ? chainAnswer(body) : rpc(body);
         return { ok: true, status: 200, json: async () => answer } as Response;
       }
       relayCalls.push(u);
@@ -116,12 +116,12 @@ describe('CommonsInstitutions.getBalances — live PVT read', () => {
     const { institutions, rpcBodies } = liveBank(() => ({ jsonrpc: '2.0', id: 1, result: '0x' + LIVE_ATOMIC.toString(16).padStart(64, '0') }));
     const b = await institutions.getBalances({ rpcUrl: RPC, address: ADDRESS });
     expect(b).toMatchObject({ pvt: '1723.9512986704', pvtAvailable: true, pvtSource: 'chain', pvtAddress: TOKEN, eth: '0.01', usdc: '3' });
-    expect(rpcBodies).toHaveLength(1);
-    const call = rpcBodies[0].params[0] as { to: string; data: string };
+    expect(rpcBodies.map((b) => b.method)).toEqual(['eth_chainId', 'eth_call']);
+    const call = rpcBodies[1].params[0] as { to: string; data: string };
     expect(call.to).toBe(TOKEN);
     expect(call.to).not.toBe(PREDECESSOR.toLowerCase());
-    expect(call.data).toBe('0x70a08231' + ADDRESS.slice(2).padStart(64, '0'));
-    expect(rpcBodies[0].params[1]).toBe('latest');
+    expect(call.data.toLowerCase()).toBe(('0x70a08231' + ADDRESS.slice(2).padStart(64, '0')).toLowerCase());
+    expect(rpcBodies[1].params[1]).toBe('latest');
   });
 
   it('a failed chain read gives no PVT figure — never the relay\'s cached one', async () => {
@@ -132,10 +132,21 @@ describe('CommonsInstitutions.getBalances — live PVT read', () => {
   });
 
   it('without an address, reads it from the wallet\'s own record', async () => {
-    const { institutions, relayCalls, rpcBodies } = liveBank(() => ({ jsonrpc: '2.0', id: 1, result: '0x' + LIVE_ATOMIC.toString(16) }));
+    const { institutions, relayCalls, rpcBodies } = liveBank(() => ({ jsonrpc: '2.0', id: 1, result: '0x' + LIVE_ATOMIC.toString(16).padStart(64, '0') }));
     const b = await institutions.getBalances({ rpcUrl: RPC });
     expect(b.pvt).toBe('1723.9512986704');
     expect(relayCalls).toContain('https://relay.test/v1/agent/wallet/wallet_aw_test');
-    expect((rpcBodies[0].params[0] as { data: string }).data.endsWith(ADDRESS.slice(2))).toBe(true);
+    expect((rpcBodies[1].params[0] as { data: string }).data.toLowerCase().endsWith(ADDRESS.slice(2).toLowerCase())).toBe(true);
+  });
+
+  it('RED: an RPC on another chain, or an empty `0x` answer, gives no figure — never a confident zero', async () => {
+    const wrongChain = liveBank(() => ({ jsonrpc: '2.0', id: 1, result: '0x' + '0'.repeat(64) }), () => ({ jsonrpc: '2.0', id: 1, result: '0x14a34' }));
+    const a = await wrongChain.institutions.getBalances({ rpcUrl: RPC, address: ADDRESS });
+    expect(a).toMatchObject({ pvt: null, pvtAvailable: false, pvtSource: 'chain_unavailable' });
+    expect(a.pvtError).toMatch(/not Base mainnet/);
+    const empty = liveBank(() => ({ jsonrpc: '2.0', id: 1, result: '0x' }));
+    const e = await empty.institutions.getBalances({ rpcUrl: RPC, address: ADDRESS });
+    expect(e).toMatchObject({ pvt: null, pvtAvailable: false, pvtSource: 'chain_unavailable' });
+    expect(e.pvtError).toMatch(/no 32-byte answer/);
   });
 });

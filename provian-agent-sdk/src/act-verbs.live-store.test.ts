@@ -40,7 +40,7 @@ function harness(deps: Partial<ActDeps>, rpc?: (body: { method: string; params: 
     if (u.startsWith(RPC) && rpc) {
       const body = JSON.parse(String(init?.body)) as { method: string; params: unknown[] };
       rpcBodies.push(body);
-      const answer = rpc(body);
+      const answer = body.method === 'eth_chainId' ? { jsonrpc: '2.0', id: 1, result: '0x2105' } : rpc(body);
       return { ok: true, status: 200, json: async () => answer } as Response;
     }
     calls.push(u);
@@ -126,13 +126,13 @@ describe('the live PE store only', () => {
 describe('`balance` reads PVT live', () => {
   const LIVE_ATOMIC = 1723951298670400000000n;
   it('passes this agent\'s RPC and address: PVT is balanceOf on the pointer-resolved kernel, not the relay\'s cached figure', async () => {
-    const h = harness({}, () => ({ jsonrpc: '2.0', id: 1, result: '0x' + LIVE_ATOMIC.toString(16) }));
+    const h = harness({}, () => ({ jsonrpc: '2.0', id: 1, result: '0x' + LIVE_ATOMIC.toString(16).padStart(64, '0') }));
     const r = await h.run('balance');
     expect(r.code).toBe(0);
     const kernel = (await protocolRuntimeFixture.currentProtocolDeployment()).addresses.kernel.toLowerCase();
     expect(r.json).toMatchObject({ pvt: '1723.9512986704', pvt_source: 'chain', pvt_token: kernel });
-    expect(h.rpcBodies).toHaveLength(1);
-    expect((h.rpcBodies[0].params[0] as { to: string }).to).toBe(kernel);
+    expect(h.rpcBodies.map((b) => b.method)).toEqual(['eth_chainId', 'eth_call']);
+    expect((h.rpcBodies[1].params[0] as { to: string }).to).toBe(kernel);
   });
 
   it('a failed live read prints no PVT figure and says how to fix it', async () => {

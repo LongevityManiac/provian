@@ -171,6 +171,40 @@ import {
 } from './evm-escrow';
 import { BaseError, formatUnits, getAddress, isAddress, sha256, stringToBytes } from 'viem';
 import { getErc20Balance } from './x402-signer';
+
+/** Base mainnet's chain id (`eth_chainId` answers it as hex). */
+const BASE_CHAIN_ID_HEX = '0x2105';
+
+/**
+ * Read `balanceOf(address)` on the kernel through the caller's RPC, and only accept a sound answer:
+ * the RPC must be Base mainnet and the call must return one 32-byte word. An RPC on another chain
+ * (where no contract sits at the kernel address, so `eth_call` answers `0x`) or any malformed answer
+ * throws, so the caller shows no figure rather than a confident zero (Unknown = block).
+ */
+async function readLiveBasePvtBalance(rpcUrl: string, token: string, address: string, fetchFn: typeof fetch): Promise<bigint> {
+  const rpc = guardedFetcher(fetchFn);
+  const res = await rpc(rpcUrl, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_chainId', params: [] }),
+  });
+  const chain = (await res.json()) as { result?: unknown; error?: { message?: string } };
+  if (chain.error) throw new Error(`eth_chainId RPC error: ${chain.error.message ?? 'unknown'}`);
+  if (typeof chain.result !== 'string' || chain.result.toLowerCase() !== BASE_CHAIN_ID_HEX) {
+    throw new Error(`the RPC is not Base mainnet (eth_chainId ${String(chain.result)}); PVT lives on Base (chain 8453)`);
+  }
+  if (!/^0x[0-9a-fA-F]{40}$/.test(address) || !/^0x[0-9a-fA-F]{40}$/.test(token)) throw new Error('balanceOf: invalid address');
+  const data = '0x70a08231' + address.slice(2).toLowerCase().padStart(64, '0');
+  const call = await rpc(rpcUrl, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: token, data }, 'latest'] }),
+  });
+  const out = (await call.json()) as { result?: unknown; error?: { message?: string } };
+  if (out.error) throw new Error(`balanceOf RPC error: ${out.error.message ?? 'unknown'}`);
+  if (typeof out.result !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(out.result)) {
+    throw new Error(`balanceOf gave no 32-byte answer (${String(out.result)}): no PVT kernel answered at ${token}`);
+  }
+  return BigInt(out.result);
+}
 import { executeAgentSwap, type AgentSwapParams, type AgentSwapQuote, type AgentSwapResult, type AgentSwapToken } from './agent-swap';
 import { encodeWithdrawContribution, poolAddressForChain } from './evm-pool';
 import { joinCommons as joinCommonsCore } from './commons-join';
@@ -4084,7 +4118,7 @@ export class CommonsInstitutions {
     // wallet's own record names it.
     const chainPvt = live
       ? (live.address !== undefined ? Promise.resolve(live.address) : this.walletAddress())
-        .then((address) => getErc20Balance(live.rpcUrl, token, address, this.config.fetch ?? fetch))
+        .then((address) => readLiveBasePvtBalance(live.rpcUrl, token, address, this.config.fetch ?? fetch))
         .then(
         (atomic) => ({ ok: true as const, atomic }),
         (err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : String(err) }),
