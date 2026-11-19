@@ -211,7 +211,7 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
     <View>
       <PrimaryAction label={t('commons.post')} accessibilityLabel={t('commonsForum.compose.fab')}
         stockIcon="add-outline" onPress={compose} style={styles.compose} />
-      {showHello && <DestinationRow label={t('overhaul.sayHello')} icon="commons" onPress={() => {
+      {joined && showHello && <DestinationRow label={t('overhaul.sayHello')} icon="commons" onPress={() => {
         setShowHello(false);
         void AsyncStorage.setItem('provian.commons.hello', 'seen').catch(() => {});
         navigation.navigate('CommonsCompose', { channel: 'introductions' });

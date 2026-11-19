@@ -48,6 +48,7 @@ import type { PVTAccrual } from '../../services/RelayAPIService';
 import { ActionTouchable, actionStyles, DestinationRow } from '../../components/ScreenActions';
 import ParticipationCard from '../../components/ParticipationCard';
 import { AppMenu } from '../../components/AppMenu';
+import StatusBarBackground from '../../components/StatusBarBackground';
 import { useNavigation } from '@react-navigation/native';
 import type { AppParamList } from '../../navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -154,6 +155,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         },
     });
     const [refreshing, setRefreshing] = useState(false);
+    const [checkedConnections, setCheckedConnections] = useState(false);
 
     const updateInputs = useCallback((
         patch: Partial<SurfaceStatusInputs>,
@@ -221,9 +223,9 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                 })
                 .catch((error) => console.error('[EarnHub] Failed to refresh proven wallets:', error)),
             RelayAPIService.getPVTHistory(HISTORY_WINDOW)
-                .then((history) => updateInputs({
-                    recentActionTypes: (history?.entries ?? []).map((entry) => entry.actionType),
-                }, history ? { historyKnown: true } : {}))
+                .then((history) => {
+                    if (history) updateInputs({ recentActionTypes: history.entries.map(entry => entry.actionType) }, { historyKnown: true });
+                })
                 .catch((error) => console.error('[EarnHub] Failed to refresh history:', error)),
             getMobileChatConsent()
                 .then((chatConsent) => updateInputs({ chatConsent }, {}, { chatConsent: true }))
@@ -255,6 +257,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         ];
 
         await Promise.all(tasks);
+        setCheckedConnections(true);
     }, [commonsJoined, commonsMembershipStatus, refreshCommonsMembership, updateInputs]);
 
     useFocusEffect(
@@ -286,10 +289,13 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
     );
 
     const known = (surface: typeof CONNECTION_OPTIONS[number]) => isSurfaceConnectionKnown(surface, data.readiness);
-    const isConnected = (surface: typeof CONNECTION_OPTIONS[number]) => known(surface)
-        && (surface.id === 'agent_external_wallet'
-            ? data.statuses[surface.id].status === 'earning'
-            : data.statuses[surface.id].status !== 'setup');
+    const isConnected = (surface: typeof CONNECTION_OPTIONS[number]) => {
+        if (!known(surface)) return false;
+        if (surface.target?.kind === 'forge') return inputsRef.current.activeForgeInstallProviders.includes(surface.target.provider);
+        if (surface.id === 'commons') return inputsRef.current.commonsJoined;
+        if (surface.id === 'agent_external_wallet') return data.statuses[surface.id].status === 'earning';
+        return data.statuses[surface.id].status !== 'setup';
+    };
     const connected = CONNECTION_OPTIONS.filter(isConnected);
     const available = CONNECTION_OPTIONS.filter(surface => !isConnected(surface));
     const connectionStatusKnown = CONNECTION_OPTIONS.every(known);
@@ -304,13 +310,13 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         const icon = surface.id === 'desktop_daemon' ? 'computer'
             : surface.id === 'connected_agents' || surface.id === 'agent_external_wallet' ? 'agent'
             : surface.id === 'chat_capture' ? 'chat' : undefined;
-        const detail = !isKnown ? undefined : !active
-            ? t(`earn.surfaces.${surface.id}.tagline`)
-            : surface.id === 'agent_external_wallet'
-                ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: result.recentPECount })
-                : result.status === 'earning' && data.historyKnown
-                    ? `${t('earn.status.earning')} · ${t('earn.recentCount', { count: result.recentPECount })}`
-                    : t('earn.status.connected');
+        const statusLabel = active ? t('earn.status.connected')
+            : isKnown || checkedConnections ? t('overhaul.needsAttention') : t('common.loading');
+        const note = !isKnown ? checkedConnections ? t('overhaul.couldNotCheckConnection') : null
+            : !active ? t(`earn.surfaces.${surface.id}.tagline`)
+            : surface.id === 'agent_external_wallet' ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: result.recentPECount })
+            : result.status === 'earning' && data.historyKnown ? t('earn.recentCount', { count: result.recentPECount })
+            : null;
         const start = () => {
             if (active) return openSurface(surface.id);
             const target = surface.target;
@@ -320,13 +326,13 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             if (surface.id === 'connected_agents') return stack.navigate('ConnectAgent', { mode: 'agent' });
             openSurface(surface.id);
         };
-        return <DestinationRow key={surface.id} label={label} detail={detail} icon={icon}
+        return <DestinationRow key={surface.id} label={label} detail={note ? `${statusLabel} · ${note}` : statusLabel} icon={icon}
             stockIcon={icon ? undefined : surface.icon as keyof typeof Ionicons.glyphMap}
-            busy={!isKnown} onPress={isKnown && !surface.comingSoon ? start : undefined} />;
+            busy={!isKnown && !checkedConnections} onPress={isKnown && !surface.comingSoon ? start : undefined} />;
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
             <LinearGradient
                 colors={GRADIENTS.backgroundDiagonal}
                 style={StyleSheet.absoluteFill}
@@ -336,6 +342,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
+                contentInsetAdjustmentBehavior="never"
                 showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
             >
@@ -408,6 +415,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     {available.map(surface => renderConnection(surface, false))}
                 </View>}
             </ScrollView>
+            <StatusBarBackground />
         </SafeAreaView>
     );
 }

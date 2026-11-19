@@ -44,7 +44,7 @@ export function PublicStandingLine({ walletId, kind, standing, onPress }: Props)
     else if (stats) {
         fields.push(t('overhaul.recordCount', { number: number.format(stats.records) }));
         const promisesKept = stats.promisesKept ?? (legacyCount?.walletId === walletId ? legacyCount.count : undefined);
-        if (promisesKept !== undefined && promisesKept !== null) {
+        if (typeof promisesKept === 'number' && promisesKept > 0) {
             fields.push(t('overhaul.promisesKept', { count: promisesKept, number: number.format(promisesKept) }));
         }
         if (stats.penalties === 0) fields.push(t('overhaul.noPenalties'));

@@ -92,7 +92,7 @@ const ConsentScreen = ({ navigation, route }: any) => {
                                 checks[index] && styles.checkboxChecked,
                             ]}>
                                 {checks[index] && (
-                                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                                    <Ionicons name="checkmark" size={16} color={COLORS.onPrimary} />
                                 )}
                             </View>
                             <View style={styles.checkContent}>

@@ -22,7 +22,7 @@ import {
     ActivityIndicator,
     Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
@@ -36,7 +36,7 @@ import type { PVTHistoryEntry } from '../../services/RelayAPIService';
 import TransactionHistoryService from '../../core/history/TransactionHistoryService';
 import type { Transaction } from '../../core/history/TransactionHistoryService';
 import { useWalletStore } from '../../store/walletStore';
-import { getActionTypeDisplay, getActionTypeDescription } from '../../utils/actionTypeDisplay';
+import { getActionTypeDisplay, getActionTypeDescription, hasActionTypeDescription } from '../../utils/actionTypeDisplay';
 import { buildEarningChip } from '../../utils/peDisposition';
 import { DispositionChip } from '../../components/DispositionChip';
 import {
@@ -47,6 +47,7 @@ import {
     type PeTrustDetail,
 } from '../../utils/peTrustDetail';
 import BackButton from '../../components/BackButton';
+import StatusBarBackground from '../../components/StatusBarBackground';
 import { heldEnvelopeDetail, type EnvelopeDetailView } from '../../core/meter/envelopeDetailRecord';
 import { agentNameForRecord, loadAgentNameMaps } from '../../core/agents/agentNames';
 
@@ -85,7 +86,7 @@ function truncateHash(hash: string, chars = 12): string {
 
 interface DetailRowProps {
     label: string;
-    value: string;
+    value?: string | null;
     copyable?: boolean;
     valueColor?: string;
     /** Full underlying value to copy when `value` is a truncated display
@@ -97,6 +98,7 @@ interface DetailRowProps {
 
 function DetailRow({ label, value, copyable, valueColor, copyValue }: DetailRowProps) {
     const { t } = useTranslation();
+    if (!value?.trim()) return null;
     // I-U-11: previously this fired an Alert saying "Copied" without
     // actually writing to the clipboard - the Clipboard.setString call
     // was commented out. Wired to the real expo-clipboard API.
@@ -131,7 +133,6 @@ export default function EnvelopeDetailScreen({
 }: EnvelopeDetailScreenProps) {
     const { t, i18n } = useTranslation();
     const { envelopeId } = route.params;
-    const insets = useSafeAreaInsets();
     const walletAddress = useWalletStore((s) => s.address);
     const [envelope, setEnvelope] = useState<EnvelopeDetailView | null>(null);
     const [recordKind, setRecordKind] = useState<'v1' | 'v2' | 'projection'>('projection');
@@ -352,7 +353,7 @@ export default function EnvelopeDetailScreen({
 
     // derived display state.
     const action = getActionTypeDisplay(envelope.action_type);
-    const description = getActionTypeDescription(envelope.action_type);
+    const description = hasActionTypeDescription(envelope.action_type) ? getActionTypeDescription(envelope.action_type) : null;
     const aiMeta = envelope.ai_conversation_metadata;
     const corrMeta = envelope.corroboration_metadata;
     const commitSha = historyEntry?.commitSha ?? null;
@@ -365,29 +366,30 @@ export default function EnvelopeDetailScreen({
     const genesisGross = historyEntry?.exactGenesisReservedGrossPVT;
     const hasGenesisGross = typeof genesisGross === 'string' && genesisGross.length > 0
         && genesisGross !== '0.0' && genesisGross !== '0';
-    // An agent-era PE carries an agent identity or a real risk assessment. Compute
-    // and first-party wallet PEs (ai_conversation, coding_session, commit, send)
-    // do NOT — so the agent-era Risk/Agent sections stay hidden for them rather than
-    // rendering empty fields with a fabricated risk_score:0.
-    const isAgentEraPE = !!envelope.agent_id
-        || (envelope.risk_score ?? 0) > 0
-        || envelope.policy_decision === 'block';
+    const riskFactors = Object.entries(envelope.risk_evaluation?.factors ?? {}).filter(([, factor]) => factor);
+    const hasRiskAssessment = (!!envelope.agent_id || (envelope.risk_score ?? 0) > 0 || envelope.policy_decision === 'block')
+        && (!!envelope.risk_category || typeof envelope.risk_score === 'number'
+            || !!envelope.policy_decision || riskFactors.length > 0);
 
     // §2.2 derived state: "what it earned" (eligible PVT projection, else record-only)
     // and the input origins grouped by class in the ruling's order.
     const showTrust = trust !== null && hasTrustDetail(trust);
     const trustEarnedLabel = historyEntry?.currentSettlementProjectionPVT != null
         ? `~${historyEntry.currentSettlementProjectionPVT} PVT`
-        : earningChip?.disposition === 'record_only' ? t('trustLayer.peDetail.recordOnly') : t('common.unknown');
+        : earningChip?.disposition === 'record_only' ? t('trustLayer.peDetail.recordOnly') : null;
     const originGroups: { cls: OriginClass; origins: PeInputOriginView[] }[] = trust
         ? ORIGIN_CLASS_ORDER
             .map((cls) => ({ cls, origins: trust.inputOrigins.filter((o) => o.originClass === cls) }))
             .filter((g) => g.origins.length > 0)
         : [];
+    const hasTrustSummary = trust && (trust.witnessClass || trust.evidenceClass || trustEarnedLabel || trust.outputDigests.length > 0
+        || originGroups.length > 0 || trust.consumptionIndependentParties !== null || trust.supervisionRatioBps !== null
+        || trust.modelFamily || trust.environmentClass);
 
     return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + SPACING.s }]}>
+        <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}
+                contentInsetAdjustmentBehavior="never">
                 {/* Header */}
                 <View style={styles.header}>
                     <BackButton onPress={() => navigation.goBack()} style={{ marginBottom: SPACING.s }} />
@@ -439,7 +441,7 @@ export default function EnvelopeDetailScreen({
                             {typeof historyEntry.recordPointsAtomic === 'string' && (
                                 <DetailRow label={t('envelope.recordPoints')} value={historyEntry.recordPoints} />
                             )}
-                            <Text style={styles.earnNote}>{t('envelope.recordPointsNote')}</Text>
+                            {!!historyEntry.recordPoints?.trim() && <Text style={styles.earnNote}>{t('envelope.recordPointsNote')}</Text>}
                         </View>
                     </View>
                 )}
@@ -457,7 +459,7 @@ export default function EnvelopeDetailScreen({
                             </View>
                             <Text style={styles.sectionTitle}>{t('trustLayer.peDetail.sectionTitle')}</Text>
                         </View>
-                        <View style={styles.card}>
+                        {hasTrustSummary && <View style={styles.card}>
                             {trust.witnessClass && (
                                 <View style={styles.trustBadgeRow}>
                                     <Text style={styles.detailLabel}>{t('trustLayer.peDetail.witnessClass')}</Text>
@@ -476,26 +478,22 @@ export default function EnvelopeDetailScreen({
                             />
 
                             {/* Output digests — hashes only, never content. */}
-                            <Text style={styles.trustGroupTitle}>{t('trustLayer.peDetail.outputDigests')}</Text>
-                            {trust.outputDigests.length === 0 ? (
-                                <Text style={styles.earnNote}>{t('trustLayer.peDetail.outputDigestsEmpty')}</Text>
-                            ) : (
-                                trust.outputDigests.map((d, i) => (
+                            {trust.outputDigests.length > 0 && <>
+                                <Text style={styles.trustGroupTitle}>{t('trustLayer.peDetail.outputDigests')}</Text>
+                                {trust.outputDigests.map((d, i) => (
                                     <View key={`${d.hash}-${i}`} style={styles.trustLineRow}>
                                         {d.kind && <Text style={styles.trustKindTag}>{d.kind}</Text>}
                                         <Text style={styles.trustHash} numberOfLines={1} ellipsizeMode="middle" selectable>
                                             {d.hash}
                                         </Text>
                                     </View>
-                                ))
-                            )}
+                                ))}
+                            </>}
 
                             {/* Input origins, grouped by class; pe: shows the resolved handle. */}
-                            <Text style={styles.trustGroupTitle}>{t('trustLayer.peDetail.inputOrigins')}</Text>
-                            {originGroups.length === 0 ? (
-                                <Text style={styles.earnNote}>{t('trustLayer.peDetail.inputOriginsEmpty')}</Text>
-                            ) : (
-                                originGroups.map((g) => (
+                            {originGroups.length > 0 && <>
+                                <Text style={styles.trustGroupTitle}>{t('trustLayer.peDetail.inputOrigins')}</Text>
+                                {originGroups.map((g) => (
                                     <View key={g.cls} style={styles.originGroup}>
                                         <Text style={styles.originClassLabel}>{t(`trustLayer.originClass.${g.cls}`)}</Text>
                                         {g.origins.map((o, i) => (
@@ -511,8 +509,8 @@ export default function EnvelopeDetailScreen({
                                             </View>
                                         ))}
                                     </View>
-                                ))
-                            )}
+                                ))}
+                            </>}
 
                             {/* Consumption — reverse index; omitted entirely when absent. */}
                             {trust.consumptionIndependentParties !== null && (
@@ -537,7 +535,7 @@ export default function EnvelopeDetailScreen({
                             {trust.environmentClass && (
                                 <DetailRow label={t('trustLayer.peDetail.environmentClass')} value={trust.environmentClass} />
                             )}
-                        </View>
+                        </View>}
 
                         {/* Hardware attestation — its own card. Metadata only; never a serial. */}
                         {trust.hardwareWitness && (
@@ -668,7 +666,7 @@ export default function EnvelopeDetailScreen({
 
                 {/* Intent. Hidden for ai_conversation, whose intent_text is a
                     synthetic session key (the Conversation section covers it). */}
-                {!aiMeta && (
+                {!aiMeta && !!envelope.intent_text?.trim() && (
                     <View style={styles.section}>
                         <View style={styles.sectionTitleRow}>
                             <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(74, 142, 232, 0.14)' }]}>
@@ -678,7 +676,7 @@ export default function EnvelopeDetailScreen({
                         </View>
                         <View style={styles.card}>
                             <Text style={styles.intentText}>
-                                {envelope.intent_text || t('envelope.noDescription')}
+                                {envelope.intent_text}
                             </Text>
                         </View>
                     </View>
@@ -737,7 +735,7 @@ export default function EnvelopeDetailScreen({
                 {/* Risk Evaluation — agent-era PEs only. A compute or first-party
                     wallet PE has no meaningful risk assessment, so this section
                     stays hidden rather than rendering an empty risk_score:0. */}
-                {isAgentEraPE && (
+                {hasRiskAssessment && (
                 <View style={styles.section}>
                     <View style={styles.sectionTitleRow}>
                         <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(242, 85, 90, 0.14)' }]}>
@@ -746,23 +744,23 @@ export default function EnvelopeDetailScreen({
                         <Text style={styles.sectionTitle}>{t('envelope.riskAssessment')}</Text>
                     </View>
                     <View style={styles.card}>
-                        <View style={styles.riskHeader}>
+                        {envelope.risk_category && <View style={styles.riskHeader}>
                             <Text style={styles.riskLabel}>{t('envelope.riskLevel')}</Text>
                             <View style={[styles.riskBadge, { backgroundColor: `${riskColor}20` }]}>
                                 <Text style={[styles.riskBadgeText, { color: riskColor }]}>
-                                    {enumDisplayCopy(envelope.risk_category ?? 'unknown')}
+                                    {enumDisplayCopy(envelope.risk_category)}
                                 </Text>
                             </View>
-                        </View>
-                        <View style={styles.riskScoreContainer}>
+                        </View>}
+                        {typeof envelope.risk_score === 'number' && <View style={styles.riskScoreContainer}>
                             <Text style={styles.riskScoreLabel}>{t('envelope.score')}</Text>
                             <Text style={[styles.riskScore, { color: riskColor }]}>
                                 {envelope.risk_score}/100
                             </Text>
-                        </View>
+                        </View>}
                         <DetailRow
                             label={t('envelope.policyDecision')}
-                            value={enumDisplayCopy(envelope.policy_decision ?? 'unknown')}
+                            value={envelope.policy_decision ? enumDisplayCopy(envelope.policy_decision) : undefined}
                             valueColor={
                                 envelope.policy_decision === 'allow'
                                     ? '#4CC38A'
@@ -771,10 +769,10 @@ export default function EnvelopeDetailScreen({
                                     : '#E8A838'
                             }
                         />
-                        {envelope.risk_evaluation?.factors && (
+                        {riskFactors.length > 0 && (
                             <View style={styles.factorsContainer}>
                                 <Text style={styles.factorsTitle}>{t('envelope.riskFactors')}</Text>
-                                {Object.entries(envelope.risk_evaluation.factors).map(([key, factor]) =>
+                                {riskFactors.map(([key, factor]) =>
                                     factor ? (
                                         <View key={key} style={styles.factorRow}>
                                             <Text style={styles.factorName}>{key}</Text>
@@ -812,40 +810,30 @@ export default function EnvelopeDetailScreen({
                         />
                         <DetailRow
                             label={t('envelope.previousHash')}
-                            value={envelope.prev_envelope_hash ? truncateHash(envelope.prev_envelope_hash) : t('common.unknown')}
+                            value={envelope.prev_envelope_hash ? truncateHash(envelope.prev_envelope_hash) : undefined}
                             copyValue={envelope.prev_envelope_hash}
                             copyable={!!envelope.prev_envelope_hash}
                         />
-                        <DetailRow label={t('envelope.actorAddress')} value={envelope.actor_address || t('common.unknown')} copyable={!!envelope.actor_address} />
+                        <DetailRow label={t('envelope.actorAddress')} value={envelope.actor_address} copyable={!!envelope.actor_address} />
                         <DetailRow
                             label={t('envelope.chainId')}
-                            value={envelope.chain_id === undefined ? t('common.unknown') : String(envelope.chain_id)}
+                            value={envelope.chain_id == null ? undefined : String(envelope.chain_id)}
                         />
                         <DetailRow
                             label={t('envelope.deviceAttestation')}
-                            value={envelope.device_attestation_id ? truncateHash(envelope.device_attestation_id) : t('common.unknown')}
+                            value={envelope.device_attestation_id ? truncateHash(envelope.device_attestation_id) : undefined}
                             copyValue={envelope.device_attestation_id}
                             copyable={!!envelope.device_attestation_id}
                         />
-                        {recordKind === 'v1' && <View style={styles.signatureRow}>
+                        {recordKind === 'v1' && hasSignature && <View style={styles.signatureRow}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                 <Ionicons name="lock-closed" size={14} color="#9CA3AF" />
                                 <Text style={styles.signatureLabel}>{t('envelope.signature')}</Text>
                             </View>
-                            <View style={[
-                                styles.signatureBadge,
-                                hasSignature ? styles.signatureValid : styles.signatureInvalid,
-                            ]}>
-                                <Ionicons
-                                    name={hasSignature ? 'checkmark-circle' : 'alert-circle'}
-                                    size={12}
-                                    color={hasSignature ? '#4CC38A' : '#E8A838'}
-                                />
-                                <Text style={[
-                                    styles.signatureBadgeText,
-                                    { color: hasSignature ? '#4CC38A' : '#E8A838' },
-                                ]}>
-                                    {hasSignature ? t('envelope.signed') : t('envelope.unsigned')}
+                            <View style={[styles.signatureBadge, styles.signatureValid]}>
+                                <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
+                                <Text style={[styles.signatureBadgeText, { color: COLORS.success }]}>
+                                    {t('envelope.signed')}
                                 </Text>
                             </View>
                         </View>}
@@ -867,8 +855,8 @@ export default function EnvelopeDetailScreen({
                             <Text style={styles.sectionTitle}>{t('envelope.transactionSection')}</Text>
                         </View>
                         <View style={styles.card}>
-                            <DetailRow label={t('envelope.amountLabel')} value={envelope.amount ?? t('common.unknown')} />
-                            <DetailRow label={t('envelope.assetLabel')} value={envelope.asset_symbol ?? t('common.unknown')} />
+                            <DetailRow label={t('envelope.amountLabel')} value={envelope.amount} />
+                            <DetailRow label={t('envelope.assetLabel')} value={envelope.asset_symbol} />
                             {envelope.counterparty_address && (
                                 <DetailRow
                                     label={t('envelope.counterparty')}
@@ -914,7 +902,7 @@ export default function EnvelopeDetailScreen({
                         <Text style={styles.sectionTitle}>{t('envelope.whatIsThis')}</Text>
                     </View>
                     <View style={styles.card}>
-                        <Text style={styles.intentText}>{description}</Text>
+                        {description && <Text style={styles.intentText}>{description}</Text>}
                         <DestinationRow label={t('overhaul.howProof')} icon="proof"
                             onPress={() => navigation.navigate('BuildWithProvian')} />
                     </View>
@@ -977,13 +965,14 @@ export default function EnvelopeDetailScreen({
                     </Text>
                 </ActionTouchable>
             </ScrollView>
+            <StatusBarBackground />
             <InfoModal
                 visible={projectionInfoVisible}
                 onClose={() => setProjectionInfoVisible(false)}
                 title={t('pvtProjectionInfo.title')}
                 body={t('pvtProjectionInfo.body')}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 

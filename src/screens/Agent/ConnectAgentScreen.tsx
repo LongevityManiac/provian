@@ -998,7 +998,7 @@ const PathCard = ({
         activeOpacity={0.8}
     >
         <View style={[styles.pathIconBg, hero && styles.pathIconBgHero]}>
-            <Ionicons name={icon} size={24} color={hero ? '#FFFFFF' : COLORS.primary} />
+            <Ionicons name={icon} size={24} color={hero ? COLORS.onPrimary : COLORS.primary} />
         </View>
         <View style={styles.pathBody}>
             <Text style={[styles.pathTitle, styles.pathTitleSpacing]}>{title}</Text>

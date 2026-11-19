@@ -80,8 +80,6 @@ const INSTITUTION_METRICS: {
   color: string;
   format: (profile: CommonsProfileType, translate: (key: string, options?: Record<string, unknown>) => string) => string;
 }[] = [
-  { key: 'registry', labelKey: 'commons.registry', icon: 'people', color: '#4A8EE8', format: (p, translate) => translate('commons.peCount', { count: p.pe_count }) },
-  { key: 'court', labelKey: 'commons.court', icon: 'hammer', color: '#F2555A', format: (p, translate) => translate('commons.casesCount', { count: p.court_record.arbitrations_completed }) },
   { key: 'jobs', labelKey: 'commons.humanJobs', icon: 'briefcase', color: '#E8A838', format: (p, translate) => translate('commons.completedCount', { count: p.human_jobs_completed }) },
   { key: 'forum', labelKey: 'commons.forum', icon: 'megaphone', color: '#6BA3F0', format: (p, translate) => translate('commons.postsCount', { count: p.forum_post_count }) },
 ];

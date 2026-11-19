@@ -159,7 +159,7 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                 {renderAvatar()}
                 {editable && (
                     <View style={styles.editBadge}>
-                        <Ionicons name="pencil" size={12} color="#FFFFFF" />
+                        <Ionicons name="pencil" size={12} color={COLORS.onPrimary} />
                     </View>
                 )}
             </ActionTouchable>

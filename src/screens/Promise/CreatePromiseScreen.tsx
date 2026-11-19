@@ -1,4 +1,5 @@
 import { ActionTouchable, PrimaryAction, SecondaryAction } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
 import React, { useState } from 'react';
 import {
     View,
@@ -309,7 +310,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         activeOpacity={0.7}
                     >
                         <View style={styles.bigOptionIcon}>
-                            <Text style={styles.bigOptionEmoji}>📥</Text>
+                            <ProvianIcon name="receive" size={32} color={COLORS.primaryLight} />
                         </View>
                         <Text style={styles.bigOptionTitle}>{t('promise.theyOweMe')}</Text>
                         <Text style={styles.bigOptionExample}>{t('promise.theyOweMeExample')}</Text>
@@ -321,7 +322,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         activeOpacity={0.7}
                     >
                         <View style={styles.bigOptionIcon}>
-                            <Text style={styles.bigOptionEmoji}>📤</Text>
+                            <ProvianIcon name="send" size={32} color={COLORS.primaryLight} />
                         </View>
                         <Text style={styles.bigOptionTitle}>{t('promise.iOwe')}</Text>
                         <Text style={styles.bigOptionExample}>{t('promise.iOweExample')}</Text>
@@ -521,9 +522,6 @@ const styles = StyleSheet.create({
     },
     bigOptionIcon: {
         marginBottom: SPACING.m,
-    },
-    bigOptionEmoji: {
-        fontSize: 48,
     },
     bigOptionTitle: {
         fontSize: 20,

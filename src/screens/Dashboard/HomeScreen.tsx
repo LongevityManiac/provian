@@ -155,11 +155,6 @@ export default function HomeScreen() {
         void AsyncStorage.setItem(starterKey(address), 'dismissed').catch(() => {});
     };
 
-    const start = (action: () => void) => () => {
-        dismissStarter();
-        action();
-    };
-
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
@@ -226,14 +221,14 @@ export default function HomeScreen() {
                                 <Ionicons name="close" size={22} color={COLORS.textSecondary} />
                             </ActionPressable>
                         </View>
-                        <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={start(() => tab.navigate('ChatTab'))} />
-                        <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={start(() => stack.navigate('ComputerPairing'))} />
-                        <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={start(() => stack.navigate('ConnectAgent', { mode: 'agent' }))} />
+                        <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={() => tab.navigate('ChatTab')} />
+                        <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={() => stack.navigate('ComputerPairing')} />
+                        <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={() => stack.navigate('ConnectAgent', { mode: 'agent' })} />
                         <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
-                            onPress={start(() => stack.navigate('ForgeConnect', { provider: 'github' }))} />
-                        <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={start(() => tab.navigate('CommonsTab'))} />
-                        <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={start(() => stack.navigate('ProveOwnWallet'))} />
-                        <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={start(() => stack.navigate('Vision'))} />
+                            onPress={() => stack.navigate('ForgeConnect', { provider: 'github' })} />
+                        <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={() => tab.navigate('CommonsTab')} />
+                        <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={() => stack.navigate('ProveOwnWallet')} />
+                        <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={() => stack.navigate('Vision')} />
                     </View>
                 </View>}
 

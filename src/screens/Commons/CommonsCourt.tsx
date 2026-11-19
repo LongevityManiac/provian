@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNumber: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  stepNumber: { fontSize: 14, fontWeight: '700', color: COLORS.onPrimary },
   stepContent: { flex: 1 },
   stepTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   stepDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, lineHeight: 18 },
