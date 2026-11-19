@@ -115,6 +115,15 @@ describe('loadAttention', () => {
         expect((await loadAttention()).answered).toBe(false);
         getHumanJobEscrowFunding.mockResolvedValue(null);
         expect((await loadAttention()).answered).toBe(true);
+
+        getMyHumanJobs.mockResolvedValue({
+            posted: [{ ...base, job_id: 'p_disputed', poster_wallet_id: 'user_me', status: 'disputed', accepted_applicant_wallet_id: 'w_x', escrow_id: 'e3' }],
+            assigned: [], total: 1, has_more: false,
+        });
+        getJobDispute.mockRejectedValue(new Error('HTTP 503'));
+        expect((await loadAttention()).answered).toBe(false);
+        getJobDispute.mockResolvedValue(null);
+        expect((await loadAttention()).answered).toBe(true);
     });
 
     it('counts approvals + actionable presentations + recovery; EXCLUDES a challenged (agent-side) request', async () => {
