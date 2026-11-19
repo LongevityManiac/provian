@@ -3206,11 +3206,11 @@ class RelayAPIService {
      * GET /v1/wallet/approval-requests (wallet auth; Tier-3 — carries the text).
      * Returns [] on any failure so the inbox degrades to empty, never errors.
      */
-    async getWalletApprovalRequests(biometricAction?: BiometricAction): Promise<HumanApprovalRequest[]> {
+    async getWalletApprovalRequests(biometricAction?: BiometricAction, opts?: { throwOnError?: boolean }): Promise<HumanApprovalRequest[]> {
         try {
             const { endpoint, options } = this.noCacheGet('/v1/wallet/approval-requests');
             const response = await this.makeAuthenticatedRequest(endpoint, options, undefined, biometricAction);
-            if (!response.ok) return [];
+            if (!response.ok) { if (opts?.throwOnError) throw new Error(`HTTP ${response.status}`); return []; }
             const body = (await response.json().catch(() => ({}))) as { requests?: unknown };
             if (!Array.isArray(body.requests)) return [];
             const out: HumanApprovalRequest[] = [];
@@ -3235,6 +3235,7 @@ class RelayAPIService {
             return out;
         } catch (error) {
             console.warn('[RelayAPI] approval-requests read failed:', error);
+            if (opts?.throwOnError) throw error;
             return [];
         }
     }
@@ -3273,11 +3274,11 @@ class RelayAPIService {
      * §3f: remote presentation requests an agent addressed to THIS human.
      * GET /v1/wallet/presentation-requests (wallet auth). Returns [] on any failure.
      */
-    async getWalletPresentationRequests(biometricAction?: BiometricAction): Promise<HumanPresentationRequest[]> {
+    async getWalletPresentationRequests(biometricAction?: BiometricAction, opts?: { throwOnError?: boolean }): Promise<HumanPresentationRequest[]> {
         try {
             const { endpoint, options } = this.noCacheGet('/v1/wallet/presentation-requests');
             const response = await this.makeAuthenticatedRequest(endpoint, options, undefined, biometricAction);
-            if (!response.ok) return [];
+            if (!response.ok) { if (opts?.throwOnError) throw new Error(`HTTP ${response.status}`); return []; }
             const body = (await response.json().catch(() => ({}))) as { requests?: unknown };
             if (!Array.isArray(body.requests)) return [];
             const out: HumanPresentationRequest[] = [];
@@ -3308,6 +3309,7 @@ class RelayAPIService {
             return out;
         } catch (error) {
             console.warn('[RelayAPI] presentation-requests read failed:', error);
+            if (opts?.throwOnError) throw error;
             return [];
         }
     }
@@ -3411,11 +3413,11 @@ class RelayAPIService {
      * linked agents needing recovery/re-key, surfaced to THIS human.
      * GET /v1/wallet/agent-recovery-alerts (wallet auth). Returns [] on any failure.
      */
-    async getAgentRecoveryAlerts(biometricAction?: BiometricAction): Promise<AgentRecoveryAlert[]> {
+    async getAgentRecoveryAlerts(biometricAction?: BiometricAction, opts?: { throwOnError?: boolean }): Promise<AgentRecoveryAlert[]> {
         try {
             const { endpoint, options } = this.noCacheGet('/v1/wallet/agent-recovery-alerts');
             const response = await this.makeAuthenticatedRequest(endpoint, options, undefined, biometricAction);
-            if (!response.ok) return [];
+            if (!response.ok) { if (opts?.throwOnError) throw new Error(`HTTP ${response.status}`); return []; }
             const body = (await response.json().catch(() => ({}))) as { alerts?: unknown };
             if (!Array.isArray(body.alerts)) return [];
             const out: AgentRecoveryAlert[] = [];
@@ -3433,6 +3435,7 @@ class RelayAPIService {
             return out;
         } catch (error) {
             console.warn('[RelayAPI] agent-recovery-alerts read failed:', error);
+            if (opts?.throwOnError) throw error;
             return [];
         }
     }

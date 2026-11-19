@@ -96,3 +96,95 @@ describe('attentionLoadApplies — the bell shows only an answered count for the
         expect(attentionLoadApplies({ snapshot: answered, address: null }, '0xbbb')).toBe(false);
     });
 });
+
+import { AttentionCountController, type SequencedAttention } from './useAttentionCount';
+import { useWalletStore } from '../../store/walletStore';
+
+function controllerHarness(saved: Record<string, number> = {}) {
+    const loads: Array<{ resolve: (r: SequencedAttention) => void }> = [];
+    const counts: number[] = [];
+    let seq = 0;
+    const c = new AttentionCountController({
+        load: () => { const d = deferred<SequencedAttention>(); loads.push(d); return d.promise; },
+        readSaved: async (address) => (address !== null && address in saved ? saved[address] : null),
+        setCount: (n) => { counts.push(n); },
+    });
+    const answer = (i: number, count: number, address: string | null, answered = true) =>
+        loads[i].resolve({ snapshot: { ...snapshot(count), answered }, seq: ++seq, address });
+    return { c, loads, counts, answer, shown: () => counts.at(-1) };
+}
+const settle = () => new Promise<void>((r) => setTimeout(r, 0));
+
+describe('AttentionCountController — the bell for the wallet shown', () => {
+    it('opens on the saved count, then an answered load replaces it', async () => {
+        const h = controllerHarness({ A: 3 });
+        h.c.setAddress('A');
+        await settle();
+        expect(h.shown()).toBe(3);
+        h.c.refresh();
+        h.answer(0, 5, 'A');
+        await settle();
+        expect(h.shown()).toBe(5);
+    });
+
+    it('a failed load (answered: false) keeps the known count', async () => {
+        const h = controllerHarness({ A: 3 });
+        h.c.setAddress('A');
+        await settle();
+        h.c.refresh();
+        h.answer(0, 0, 'A', false);
+        await settle();
+        expect(h.shown()).toBe(3);
+    });
+
+    it('a wallet switch empties the bell, starts that wallet\'s own load, and ignores the old wallet\'s', async () => {
+        const h = controllerHarness({ B: 1 });
+        h.c.setAddress('A');
+        h.c.refresh();
+        expect(h.loads).toHaveLength(1);
+        h.c.setAddress('B');
+        expect(h.loads).toHaveLength(2); // the switch loads B itself
+        await settle();
+        expect(h.shown()).toBe(1);
+        h.answer(0, 9, 'A'); // A's load lands late
+        await settle();
+        expect(h.shown()).toBe(1);
+        h.answer(1, 2, 'B');
+        await settle();
+        expect(h.shown()).toBe(2);
+    });
+
+    it('a saved count arriving after a load answered never replaces it', async () => {
+        let releaseSaved!: (n: number | null) => void;
+        const counts: number[] = [];
+        const loads: Array<{ resolve: (r: SequencedAttention) => void }> = [];
+        const c = new AttentionCountController({
+            load: () => { const d = deferred<SequencedAttention>(); loads.push(d); return d.promise; },
+            readSaved: () => new Promise((r) => { releaseSaved = r; }),
+            setCount: (n) => { counts.push(n); },
+        });
+        c.setAddress('A');
+        c.refresh();
+        loads[0].resolve({ snapshot: snapshot(4), seq: 1, address: 'A' });
+        await settle();
+        releaseSaved(7);
+        await settle();
+        expect(counts.at(-1)).toBe(4);
+    });
+});
+
+describe('loadAttentionShared — a load in flight is shared only by the same wallet', () => {
+    beforeEach(() => loadAttention.mockReset());
+    it('after a wallet switch a new load starts instead of joining the old wallet\'s', async () => {
+        const first = deferred<AttentionSnapshot>();
+        loadAttention.mockReturnValueOnce(first.promise).mockResolvedValueOnce(snapshot(2));
+        useWalletStore.setState({ address: '0xaaa' });
+        const a = loadAttentionShared();
+        useWalletStore.setState({ address: '0xbbb' });
+        const b = loadAttentionShared();
+        expect(loadAttention).toHaveBeenCalledTimes(2);
+        first.resolve(snapshot(9));
+        expect((await a).count).toBe(9);
+        expect((await b).count).toBe(2);
+    });
+});

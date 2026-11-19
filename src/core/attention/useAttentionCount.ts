@@ -22,7 +22,7 @@ import { useWalletStore } from '../../store/walletStore';
 const POLL_MS = 30_000;
 
 /** A load's result with its start order (monotonic per process) and the wallet it was read for. */
-interface SequencedAttention {
+export interface SequencedAttention {
     readonly snapshot: AttentionSnapshot;
     readonly seq: number;
     readonly address: string | null;
@@ -87,46 +87,77 @@ export function loadAttentionShared(): Promise<AttentionSnapshot> {
     return loadAttentionSequenced().then((r) => r.snapshot);
 }
 
-export function useAttentionCount(): { count: number; refresh: () => void } {
-    const [count, setCount] = React.useState(0);
-    const mounted = React.useRef(true);
-    const accept = React.useRef(createNewestLoadGate()).current;
+/**
+ * The bell's count for the wallet now shown, outside React so its rules are testable:
+ * - a wallet switch empties the count, seeds that wallet's saved count and starts its own load;
+ * - only an answered load for the wallet now shown sets the count (a failed one keeps it);
+ * - an older load resolving late never overwrites a newer count;
+ * - the saved count never replaces a count read in this session.
+ */
+export class AttentionCountController {
+    private address: string | null = null;
+    private started = false;
+    private epoch = 0;
+    private loaded = false;
+    private active = true;
+    private readonly accept = createNewestLoadGate();
 
-    // Set once a load has answered here; the saved count never replaces a count read now.
-    const loaded = React.useRef(false);
-    const address = useWalletStore((state) => state.address);
-    const addressRef = React.useRef(address);
-    addressRef.current = address;
+    constructor(private readonly deps: {
+        readonly load: () => Promise<SequencedAttention>;
+        readonly readSaved: (address: string | null) => Promise<number | null>;
+        readonly setCount: (count: number) => void;
+    }) {}
 
-    const refresh = React.useCallback(() => {
-        void loadAttentionSequenced().then((r) => {
-            // Only an answered load for the wallet now shown; a failed one keeps the last count.
-            if (!mounted.current || !attentionLoadApplies(r, addressRef.current)) return;
-            // Newest load wins: an older round resolving late never overwrites a newer count.
-            if (!accept(r.seq)) return;
-            loaded.current = true;
-            setCount(r.snapshot.count);
+    setAddress(address: string | null): void {
+        if (this.started && sameWallet(address, this.address)) return;
+        const first = !this.started;
+        this.started = true;
+        this.address = address;
+        this.epoch += 1;
+        this.loaded = false;
+        this.deps.setCount(0); // never another wallet's count
+        const epoch = this.epoch;
+        void this.deps.readSaved(address).then((saved) => {
+            if (saved !== null && this.active && this.epoch === epoch && !this.loaded) this.deps.setCount(saved);
+        }, () => undefined);
+        // The first wallet is loaded by the mount; a switch loads its own.
+        if (!first) this.refresh();
+    }
+
+    refresh(): void {
+        void this.deps.load().then((r) => {
+            if (!this.active || !attentionLoadApplies(r, this.address)) return;
+            if (!this.accept(r.seq)) return;
+            this.loaded = true;
+            this.deps.setCount(r.snapshot.count);
         }, () => {
             // Degrade to the last known count.
         });
-    }, [accept]);
+    }
 
-    // A wallet switch empties the bell, seeds that wallet's saved count and loads it.
-    const firstAddress = React.useRef(true);
-    React.useEffect(() => {
-        loaded.current = false;
-        setCount(0); // never another wallet's count
-        let current = true;
-        void readWalletTop('attentionCount', address, isSavedCount).then((saved) => {
-            if (current && saved && !loaded.current) setCount(saved.value);
-        });
-        if (!firstAddress.current) refresh();
-        firstAddress.current = false;
-        return () => { current = false; };
-    }, [address, refresh]);
+    setActive(active: boolean): void {
+        this.active = active;
+    }
+}
+
+export function useAttentionCount(): { count: number; refresh: () => void } {
+    const [count, setCount] = React.useState(0);
+    const controller = React.useRef<AttentionCountController | null>(null);
+    controller.current ??= new AttentionCountController({
+        load: loadAttentionSequenced,
+        readSaved: async (wallet) => (await readWalletTop('attentionCount', wallet, isSavedCount))?.value ?? null,
+        setCount,
+    });
+    const address = useWalletStore((state) => state.address);
 
     React.useEffect(() => {
-        mounted.current = true;
+        controller.current!.setAddress(address ?? null);
+    }, [address]);
+
+    const refresh = React.useCallback(() => controller.current!.refresh(), []);
+
+    React.useEffect(() => {
+        controller.current!.setActive(true);
         refresh();
         const id = setInterval(refresh, POLL_MS);
         const unsubscribe = onAttentionRefresh(refresh);
@@ -134,7 +165,7 @@ export function useAttentionCount(): { count: number; refresh: () => void } {
             if (state === 'active') refresh();
         });
         return () => {
-            mounted.current = false;
+            controller.current!.setActive(false);
             clearInterval(id);
             unsubscribe();
             appStateSub.remove();

@@ -105,9 +105,9 @@ export interface AttentionSnapshot {
     readonly count: number;
     readonly counts: AttentionCounts;
     /**
-     * Whether the relay answered this load. Two of its authenticated reads report a failure as
-     * null (the others read a failure as an empty list), so a load where either failed — offline,
-     * an expired session — is not an answer: its count is not shown or saved over a known one.
+     * Whether every read that feeds the count answered. A load where any of them failed —
+     * offline, an expired session, one rate-limited route — undercounts, so its count is not
+     * shown or saved over a known one.
      */
     readonly answered: boolean;
 }
@@ -271,17 +271,30 @@ export function compareAttentionItems(
 export async function loadAttention(): Promise<AttentionSnapshot> {
     try {
         const now = Date.now();
+        // Every read that feeds the count must answer for the load to count as an answer: a read
+        // that fails is caught here and recorded, never taken as "nothing waiting".
+        let countReadFailed = false;
+        const counted = async <T,>(read: () => Promise<T> | T, fallback: T): Promise<T> => {
+            try {
+                return await read();
+            } catch {
+                countReadFailed = true;
+                return fallback;
+            }
+        };
+        const strict = { throwOnError: true } as const;
         const [approvals, presentations, recovery, threads, jobs, linkReqs, promises, consents, challenges, threadPresentations, names] = await Promise.all([
-            safely(() => RelayAPIService.getWalletApprovalRequests(), [] as HumanApprovalRequest[]),
-            safely(() => RelayAPIService.getWalletPresentationRequests(), [] as HumanPresentationRequest[]),
-            safely(() => RelayAPIService.getAgentRecoveryAlerts(), [] as AgentRecoveryAlert[]),
-            safely(() => unreadThreads().then((r) => r.threads), [] as ThreadDocument[]),
-            safely(() => loadJobAttention(), [] as { job: HumanJob; reason: JobAttentionReason }[]),
-            safely(() => RelayAPIService.getLinkRequests(), null as { link_requests: AgentLinkRequest[] } | null),
-            safely(() => RelayAPIService.listMyHumanPromises(), null as { promises: RelayHumanPromiseDocument[]; myAddress: string } | null),
-            safely(() => getPendingConsents().then((r) => r?.consents ?? []), [] as PublicationConsent[]),
-            safely(() => getMyChallenges().then((r) => r?.challenges ?? []), [] as CommonsChallenge[]),
-            safely(() => getPendingThreadPresentationRequests().then((r) => r?.requests ?? []), [] as ThreadPresentationRequest[]),
+            counted(() => RelayAPIService.getWalletApprovalRequests(undefined, strict), [] as HumanApprovalRequest[]),
+            counted(() => RelayAPIService.getWalletPresentationRequests(undefined, strict), [] as HumanPresentationRequest[]),
+            counted(() => RelayAPIService.getAgentRecoveryAlerts(undefined, strict), [] as AgentRecoveryAlert[]),
+            counted(() => unreadThreads().then((r) => r.threads), [] as ThreadDocument[]),
+            counted(() => loadJobAttention(), [] as { job: HumanJob; reason: JobAttentionReason }[]),
+            counted(() => RelayAPIService.getLinkRequests(), null as { link_requests: AgentLinkRequest[] } | null),
+            counted(() => RelayAPIService.listMyHumanPromises(), null as { promises: RelayHumanPromiseDocument[]; myAddress: string } | null),
+            counted(() => getPendingConsents().then((r) => r?.consents ?? []), [] as PublicationConsent[]),
+            counted(() => getMyChallenges().then((r) => r?.challenges ?? []), [] as CommonsChallenge[]),
+            counted(() => getPendingThreadPresentationRequests().then((r) => r?.requests ?? []), [] as ThreadPresentationRequest[]),
+            // Agent names only label items; a failure there changes no count.
             safely(() => loadAgentNameMap(), new Map() as AgentNameMap),
         ]);
         // Item 11: whether this human's ONE recovery key is on the relay. Read only when an agent
@@ -295,7 +308,8 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
         const liveApprovals = (Array.isArray(approvals) ? approvals : []).filter((a) => isLive(a.expires_at_ms, now));
         const livePresentations = (Array.isArray(presentations) ? presentations : [])
             .filter((p) => presentationNeedsHuman(p.status) && isLive(p.expires_at_ms, now));
-        const answered = linkReqs !== null && promises !== null;
+        // These two report a failure as null rather than throwing.
+        const answered = !countReadFailed && linkReqs !== null && promises !== null;
         const linkRequestList = linkReqs?.link_requests;
         const liveLinkRequests = (Array.isArray(linkRequestList) ? linkRequestList : [])
             .filter((r) => typeof r.expires_at === 'number' && r.expires_at > now);

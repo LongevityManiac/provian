@@ -15,9 +15,9 @@ const getHumanRecoveryAnchor = vi.fn();
 
 vi.mock('../../services/RelayAPIService', () => ({
     default: {
-        getWalletApprovalRequests: () => getWalletApprovalRequests(),
-        getWalletPresentationRequests: () => getWalletPresentationRequests(),
-        getAgentRecoveryAlerts: () => getAgentRecoveryAlerts(),
+        getWalletApprovalRequests: (...args: unknown[]) => getWalletApprovalRequests(...args),
+        getWalletPresentationRequests: (...args: unknown[]) => getWalletPresentationRequests(...args),
+        getAgentRecoveryAlerts: (...args: unknown[]) => getAgentRecoveryAlerts(...args),
         getLinkRequests: () => getLinkRequests(),
         listMyHumanPromises: () => listMyHumanPromises(),
         getLinkedAgentIdentities: () => getLinkedAgentIdentities(),
@@ -82,6 +82,20 @@ describe('loadAttention', () => {
         getLinkRequests.mockResolvedValue({ link_requests: [], count: 0 });
         listMyHumanPromises.mockRejectedValue(new Error('offline'));
         expect((await loadAttention()).answered).toBe(false);
+    });
+
+    it('one failed count read (the rest answering) is not an answer: it would undercount', async () => {
+        getWalletApprovalRequests.mockRejectedValue(new Error('HTTP 429'));
+        expect((await loadAttention()).answered).toBe(false);
+        // The relay getters are asked to report failure instead of answering [].
+        for (const read of [getWalletApprovalRequests, getWalletPresentationRequests, getAgentRecoveryAlerts]) {
+            expect(read).toHaveBeenCalledWith(undefined, { throwOnError: true });
+        }
+        getWalletApprovalRequests.mockResolvedValue([]);
+        unreadThreads.mockRejectedValue(new Error('HTTP 503'));
+        expect((await loadAttention()).answered).toBe(false);
+        unreadThreads.mockResolvedValue({ threads: [] });
+        expect((await loadAttention()).answered).toBe(true);
     });
 
     it('counts approvals + actionable presentations + recovery; EXCLUDES a challenged (agent-side) request', async () => {
