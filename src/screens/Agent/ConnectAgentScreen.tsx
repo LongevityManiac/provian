@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { useWalletStore } from '../../store/walletStore';
 /**
  * ConnectAgentScreen - the Connect hub : three connections, each with one
@@ -25,7 +26,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     ActivityIndicator,
     BackHandler,
@@ -659,7 +659,7 @@ const DetailsSection = ({
     const [open, setOpen] = useState(false);
     return (
         <View style={styles.detailsCard}>
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.detailsHeader}
                 onPress={() => setOpen((v) => !v)}
                 activeOpacity={0.7}
@@ -668,7 +668,7 @@ const DetailsSection = ({
             >
                 <Text style={[styles.detailsTitle, { color: themeColors.textPrimary }]}>{t('connectAgent.detailsTitle')}</Text>
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textMuted} />
-            </TouchableOpacity>
+            </ActionTouchable>
             {open ? <View style={styles.detailsBody}>{children}</View> : null}
         </View>
     );
@@ -681,7 +681,7 @@ const DetailsRow = ({
     const [open, setOpen] = useState(false);
     return (
         <View style={styles.detailsRow}>
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.detailsRowHeader}
                 onPress={() => setOpen((v) => !v)}
                 activeOpacity={0.7}
@@ -690,7 +690,7 @@ const DetailsRow = ({
             >
                 <Text style={[styles.detailsRowTitle, { color: themeColors.textPrimary }]}>{title}</Text>
                 <Ionicons name={open ? 'remove' : 'add'} size={18} color={COLORS.primary} />
-            </TouchableOpacity>
+            </ActionTouchable>
             {open ? <View style={styles.detailsRowBody}>{children}</View> : null}
         </View>
     );
@@ -790,15 +790,15 @@ const AgentPath = ({
     <>
         {state === 'idle' && (
             <View style={styles.centerBlock}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.requestCta, styles.getCommandCta]}
                     onPress={regenerate}
                     activeOpacity={0.8}
                     accessibilityRole="button"
                 >
-                    <Ionicons name="terminal-outline" size={16} color={COLORS.text} />
+                    <Ionicons name="terminal-outline" size={16} color={COLORS.onPrimary} />
                     <Text style={styles.requestCtaText}>{t('connectAgent.getCommandCta')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={[styles.muted, { marginTop: SPACING.s, textAlign: 'center' }]}>
                     {t('connectAgent.getCommandHint')}
                 </Text>
@@ -854,15 +854,15 @@ const AgentPath = ({
                             </Text>
                         </View>
                         <Text style={styles.noteBody}>{t('connectAgent.requestArrivedBody')}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.requestCta}
                             onPress={() => onReviewRequest(pendingRequest)}
                             activeOpacity={0.8}
                             accessibilityRole="button"
                         >
                             <Text style={styles.requestCtaText}>{t('overhaul.reviewLinkRequest')}</Text>
-                            <Ionicons name="arrow-forward" size={16} color={COLORS.text} />
-                        </TouchableOpacity>
+                            <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
+                        </ActionTouchable>
                     </View>
                 ) : existingAgentCount > 0 ? (
                     <View style={styles.waitingCard}>
@@ -874,14 +874,14 @@ const AgentPath = ({
                         </View>
                         <Text style={styles.noteBody}>{t('connectAgent.alreadyConnectedBody')}</Text>
                         {onViewRequests && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.waitingCta}
                                 onPress={onViewRequests}
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.waitingCtaText}>{t('connectAgent.alreadyConnectedCta')}</Text>
                                 <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
                 ) : (
@@ -894,14 +894,14 @@ const AgentPath = ({
                         </View>
                         <Text style={styles.noteBody}>{t('connectAgent.waitingBody')}</Text>
                         {onViewRequests && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.waitingCta}
                                 onPress={onViewRequests}
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.waitingCtaText}>{t('connectAgent.waitingCta')}</Text>
                                 <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
                 )}
@@ -916,7 +916,7 @@ const AgentPath = ({
                 {token && !isExpired && (<>
                 <View style={styles.codeCard}>
                     <Text style={styles.codeLabel}>{t('connectAgent.yourCode')}</Text>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.tokenRow}
                         onPress={() => copy(token.token, 'token')}
                         activeOpacity={0.7}
@@ -937,7 +937,7 @@ const AgentPath = ({
                             size={18}
                             color={copiedKey === 'token' ? (COLORS.success || '#4CC38A') : COLORS.primary}
                         />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <Text style={styles.codeHint}>{t('connectAgent.agentCodeHint')}</Text>
                 </View>
 
@@ -992,7 +992,7 @@ const PathCard = ({
     hero?: boolean;
     onPress: () => void;
 }): React.JSX.Element => (
-    <TouchableOpacity
+    <ActionTouchable
         style={[styles.pathCard, hero && styles.pathCardHero]}
         onPress={onPress}
         activeOpacity={0.8}
@@ -1005,7 +1005,7 @@ const PathCard = ({
             <Text style={styles.pathText}>{body}</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
-    </TouchableOpacity>
+    </ActionTouchable>
 );
 
 const CommandRow = ({
@@ -1017,14 +1017,14 @@ const CommandRow = ({
     copied: boolean;
     onCopy: () => void;
 }): React.JSX.Element => (
-    <TouchableOpacity style={styles.cmdRow} onPress={onCopy} activeOpacity={0.7}>
+    <ActionTouchable style={styles.cmdRow} onPress={onCopy} activeOpacity={0.7}>
         <Text style={styles.cmdText} numberOfLines={1} ellipsizeMode="middle">{cmd}</Text>
         <Ionicons
             name={copied ? 'checkmark-circle' : 'copy-outline'}
             size={16}
             color={copied ? (COLORS.success || '#4CC38A') : COLORS.primary}
         />
-    </TouchableOpacity>
+    </ActionTouchable>
 );
 
 // OS-aware command block: a macOS/Linux ↔ Windows toggle above the command, so
@@ -1051,7 +1051,7 @@ const OSCommandBlock = ({
     return (
         <>
             <View style={styles.osRow}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.osPill, os === 'unix' && styles.osPillActive]}
                     onPress={() => setOs('unix')}
                     activeOpacity={0.8}
@@ -1059,8 +1059,8 @@ const OSCommandBlock = ({
                     <Text style={[styles.osPillText, os === 'unix' && styles.osPillTextActive]}>
                         {t('connectAgent.osUnix')}
                     </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </ActionTouchable>
+                <ActionTouchable
                     style={[styles.osPill, os === 'windows' && styles.osPillActive]}
                     onPress={() => setOs('windows')}
                     activeOpacity={0.8}
@@ -1068,7 +1068,7 @@ const OSCommandBlock = ({
                     <Text style={[styles.osPillText, os === 'windows' && styles.osPillTextActive]}>
                         {t('connectAgent.osWindows')}
                     </Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
             <CommandRow cmd={cmd} copied={copiedKey === copyId} onCopy={() => copy(cmd, copyId)} />
             {os === 'windows' && (
@@ -1243,10 +1243,10 @@ const ErrorBlock = ({
         <Text style={[styles.muted, { textAlign: 'center' }]}>
             {message || t('connectAgent.errorBody')}
         </Text>
-        <TouchableOpacity style={styles.secondaryBtn} onPress={retry}>
+        <ActionTouchable style={styles.secondaryBtn} onPress={retry}>
             <Ionicons name="refresh" size={16} color={COLORS.primary} />
             <Text style={styles.secondaryBtnText}>{t('connectAgent.retry')}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     </View>
 );
 
@@ -1261,12 +1261,12 @@ const ExpiredBlock = ({
         <Text style={[styles.muted, { textAlign: 'center', marginBottom: SPACING.m }]}>
             {t('connectAgent.expired')}
         </Text>
-        <TouchableOpacity style={styles.primaryBtn} onPress={regenerate}>
+        <ActionTouchable style={styles.primaryBtn} onPress={regenerate}>
             <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
-                <Ionicons name="refresh" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                <Ionicons name="refresh" size={16} color={COLORS.onPrimary} style={{ marginRight: 6 }} />
                 <Text style={styles.primaryBtnText}>{t('connectAgent.regenerate')}</Text>
             </LinearGradient>
-        </TouchableOpacity>
+        </ActionTouchable>
     </View>
 );
 
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
         borderRadius: BORDER_RADIUS.m,
         backgroundColor: COLORS.primary,
     },
-    requestCtaText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
+    requestCtaText: { fontSize: 15, fontWeight: '700', color: COLORS.onPrimary },
     getCommandCta: { alignSelf: 'stretch', paddingHorizontal: SPACING.l },
 
     // Capture disclosure (informed consent) — shown before the connect command.
@@ -1579,7 +1579,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: SPACING.xl,
     },
-    primaryBtnText: { flexShrink: 1, color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+    primaryBtnText: { flexShrink: 1, color: COLORS.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
     secondaryBtn: {
         flexDirection: 'row',
         alignItems: 'center',

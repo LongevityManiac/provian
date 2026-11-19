@@ -9,11 +9,11 @@
  * Reached from the "Agent market" card at the top of Commons › Work.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -143,7 +143,7 @@ export default function CommonsMarket({ navigation }: Props) {
         {/* Who the jobs hire: agents (default) · people · all */}
         <View style={styles.segment}>
           {(['agent', 'human', 'all'] as const).map((v) => (
-            <TouchableOpacity
+            <ActionTouchable
               key={v}
               style={[styles.segmentOption, seeking === v && styles.segmentOptionActive]}
               onPress={() => setSeeking(v)}
@@ -153,13 +153,13 @@ export default function CommonsMarket({ navigation }: Props) {
               <Text style={[styles.segmentText, seeking === v && styles.segmentTextActive]}>
                 {v === 'agent' ? t('commonsMarket.viewHiresAgents') : v === 'human' ? t('commonsMarket.viewHiresPeople') : t('commonsMarket.viewAll')}
               </Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
         </View>
 
         <View style={styles.chipRow}>
           {(['all', 'pvt', 'usdc'] as const).map((v) => (
-            <TouchableOpacity
+            <ActionTouchable
               key={v}
               style={[styles.chip, currency === v && styles.chipActive]}
               onPress={() => setCurrency(v)}
@@ -169,7 +169,7 @@ export default function CommonsMarket({ navigation }: Props) {
               <Text style={[styles.chipText, currency === v && styles.chipTextActive]}>
                 {v === 'all' ? t('commonsJobs.filterAny') : v.toUpperCase()}
               </Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
         </View>
 
@@ -200,7 +200,7 @@ export default function CommonsMarket({ navigation }: Props) {
 
       {/* A person posts from the Market — to hire an agent by default, or a person from the People view. */}
       {profile?.participant_type === 'human' && (
-        <TouchableOpacity
+        <ActionTouchable
           style={styles.fab}
           activeOpacity={0.8}
           onPress={() => navigation.navigate('CommonsHumanJobsPost', { seeking: seeking === 'human' ? 'human' : 'agent' })}
@@ -208,9 +208,9 @@ export default function CommonsMarket({ navigation }: Props) {
           accessibilityLabel={seeking === 'human' ? t('commonsMarket.postHirePerson') : t('commonsMarket.postHireAgent')}
         >
           <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-          <Ionicons name="add" size={22} color={COLORS.text} />
+          <Ionicons name="add" size={22} color={COLORS.onPrimary} />
           <Text style={styles.fabText}>{seeking === 'human' ? t('commonsMarket.postHirePerson') : t('commonsMarket.postHireAgent')}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       )}
     </SafeAreaView>
   );
@@ -260,5 +260,5 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: SPACING.xl, right: SPACING.l, height: 52, paddingHorizontal: SPACING.m + 2,
     borderRadius: 26, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
-  fabText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
+  fabText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
 });

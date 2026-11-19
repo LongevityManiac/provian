@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../../components/ScreenActions';
 import { errorDisplayCopy } from '../../../i18n/displayCopy';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -100,10 +101,10 @@ const ExportMnemonicScreen = ({ navigation }: any) => {
                         </View>
 
                         {!revealed ? (
-                            <TouchableOpacity style={styles.revealButton} onPress={handleReveal}>
+                            <ActionTouchable style={styles.revealButton} onPress={handleReveal}>
                                 <Ionicons name="eye" size={22} color="#FFFFFF" />
                                 <Text style={styles.revealButtonText}>{t('exportMnemonic.revealPhrase')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ) : (
                             <View style={styles.keyContainer}>
                                 <Text style={styles.sectionLabel}>{t('exportMnemonic.bip39Label')}</Text>
@@ -116,12 +117,12 @@ const ExportMnemonicScreen = ({ navigation }: any) => {
                                     ))}
                                 </View>
 
-                                <TouchableOpacity style={styles.copyButton} onPress={handleCopyMnemonic}>
+                                <ActionTouchable style={styles.copyButton} onPress={handleCopyMnemonic}>
                                     <Ionicons name={copied ? 'checkmark-circle' : 'copy'} size={18} color={copied ? COLORS.success : COLORS.primary} />
                                     <Text style={[styles.copyButtonText, copied && { color: COLORS.success }]}>
                                         {copied ? t('exportMnemonic.copiedClears') : t('exportMnemonic.copyToClipboard')}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         )}
                     </>

@@ -13,7 +13,7 @@
  * Tabs JSX markers) and asserting the create navigation lives there — NOT only
  * inside renderEmpty (same strategy as PromiseSettlementGating.source.test.ts).
  *
- * RED control : delete the header "+" TouchableOpacity (leaving the
+ * RED control: delete the persistent button (leaving the
  * create entry only inside renderEmpty) and the "header carries the create
  * navigation" case goes red. Observed red on 2026-09-11, then restored.
  */
@@ -51,14 +51,10 @@ describe('PromiseListScreen — persistent create affordance (#2)', () => {
         expect(headerRegion(LIST)).toContain("navigation.navigate('ScanPromise')");
     });
 
-    it('keeps the empty-state "Make a Promise" CTA too', () => {
-        expect(renderEmptyBody(LIST)).toContain(CREATE_NAV);
-    });
-
-    it('the create entry is not confined to renderEmpty (>= 2 sites, one outside it)', () => {
+    it('offers one persistent filled create action in every list state', () => {
         const total = LIST.split(CREATE_NAV).length - 1;
-        expect(total).toBeGreaterThanOrEqual(2);
-        const outsideEmpty = LIST.replace(renderEmptyBody(LIST), '');
-        expect(outsideEmpty).toContain(CREATE_NAV);
+        expect(total).toBe(1);
+        expect(renderEmptyBody(LIST)).not.toContain(CREATE_NAV);
+        expect(headerRegion(LIST)).toMatch(/<PrimaryAction label=\{t\('promise.makePromise'\)\}[\s\S]+?CreatePromise/);
     });
 });

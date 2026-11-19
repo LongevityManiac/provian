@@ -4,8 +4,9 @@
  * funds can go only to the escrow's parties, and the contract's dispute-timeout refund. After
  * "I understand" it is never shown to that wallet again (see core/commons/escrowAdminAck).
  */
+import { ActionPressable, ActionTouchable } from '../ScreenActions';
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../constants/theme';
@@ -21,7 +22,7 @@ export function EscrowAdminAckSheet({ visible, onClose, onAcknowledge }: Props) 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+        <ActionPressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.iconWrap}>
@@ -30,17 +31,17 @@ export function EscrowAdminAckSheet({ visible, onClose, onAcknowledge }: Props) 
           <Text style={styles.title}>{t('escrowAdminAck.title')}</Text>
           <Text style={styles.body}>{t('escrowAdminAck.resolver')}</Text>
           <Text style={[styles.body, styles.paragraph]}>{t('escrowAdminAck.timeout')}</Text>
-          <TouchableOpacity
+          <ActionTouchable
             style={styles.primaryBtn}
             onPress={onAcknowledge}
             accessibilityRole="button"
             testID="escrow-admin-ack-confirm"
           >
             <Text style={styles.primaryText}>{t('escrowAdminAck.acknowledge')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={onClose} accessibilityRole="button">
+          </ActionTouchable>
+          <ActionTouchable style={styles.secondaryBtn} onPress={onClose} accessibilityRole="button">
             <Text style={styles.secondaryText}>{t('common.cancel')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     </Modal>
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
   body: { ...TYPE_SCALE.bodyLg, color: COLORS.chromeMuted },
   paragraph: { marginTop: SPACING.m },
   primaryBtn: { marginTop: SPACING.l, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.l, minHeight: 50, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { ...TYPE_SCALE.headingSm, color: COLORS.text },
+  primaryText: { ...TYPE_SCALE.headingSm, color: COLORS.onPrimary },
   secondaryBtn: { marginTop: SPACING.s, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   secondaryText: { ...TYPE_SCALE.bodyLg, color: COLORS.textSecondary },
 });

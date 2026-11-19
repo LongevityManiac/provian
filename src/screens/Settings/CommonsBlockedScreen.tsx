@@ -2,8 +2,9 @@
  * Blocked in the Commons — the authors this person blocked, hidden on this phone only. Unblocking
  * shows their posts, replies and profile again. Nothing here is sent anywhere.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useEffect } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
@@ -37,13 +38,13 @@ export default function CommonsBlockedScreen(): React.ReactElement {
                 renderItem={({ item }) => (
                     <View style={styles.row}>
                         <Text style={styles.name} numberOfLines={1}>{item.name ?? item.walletId}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.unblock}
                             onPress={() => { void useCommonsBlockStore.getState().unblock(item.walletId); }}
                             accessibilityRole="button"
                         >
                             <Text style={styles.unblockText}>{t('commonsSafety.unblock')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             />

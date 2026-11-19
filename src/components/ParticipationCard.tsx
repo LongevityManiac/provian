@@ -15,8 +15,9 @@
  * Rendered on Earn.
  */
 
+import { ActionTouchable } from './ScreenActions';
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS } from '../constants/theme';
@@ -80,7 +81,7 @@ const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: Pa
 
     return (
         <View style={styles.container}>
-        <TouchableOpacity
+        <ActionTouchable
             style={{ flex: 1 }}
             onPress={retry ?? onPress}
             activeOpacity={0.8}
@@ -164,7 +165,7 @@ const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: Pa
                     </View>
                 )}
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
         <InfoModal
             visible={infoVisible}
             onClose={() => setInfoVisible(false)}

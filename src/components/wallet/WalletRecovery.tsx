@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { ethers } from 'ethers';
 import TransactionService from '../../core/wallet/TransactionService';
@@ -49,9 +50,9 @@ export default function WalletRecovery({ openConnectedAppReview }: { openConnect
     if (!rows.length && !failed) return null;
     return <View style={{ padding: SPACING.m }}>
         <Text style={{ color: COLORS.warning }}>{t('walletRecovery.title')}</Text>
-        {failed && <TouchableOpacity onPress={() => void refresh()}><Text style={{ color: COLORS.warning }}>{t('walletRecovery.unavailable')}</Text></TouchableOpacity>}
-        {rows.map(saved => <TouchableOpacity key={saved.operationId} disabled={busy} onPress={() => recover(saved)} style={{ paddingVertical: SPACING.s }}>
+        {failed && <ActionTouchable onPress={() => void refresh()}><Text style={{ color: COLORS.warning }}>{t('walletRecovery.unavailable')}</Text></ActionTouchable>}
+        {rows.map(saved => <ActionTouchable key={saved.operationId} disabled={busy} onPress={() => recover(saved)} style={{ paddingVertical: SPACING.s }}>
             <Text style={{ color: COLORS.primary }}>{t('walletRecovery.recover')} · {saved.hash.slice(0, 12)}…</Text>
-        </TouchableOpacity>)}
+        </ActionTouchable>)}
     </View>;
 }

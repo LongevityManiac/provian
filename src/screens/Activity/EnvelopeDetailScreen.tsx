@@ -1,4 +1,4 @@
-import { DestinationRow } from '../../components/ScreenActions';
+import { ActionTouchable, DestinationRow } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import i18next from 'i18next';
@@ -19,7 +19,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
     Alert,
 } from 'react-native';
@@ -69,15 +68,13 @@ const RISK_COLORS: Record<RiskLevel, string> = {
     null_state: '#9CA3AF',
 };
 
-function formatDate(timestamp: number): string {
-    return new Date(timestamp).toLocaleString(undefined, {
-        weekday: 'short',
+function formatDate(timestamp: number, locale: string): string {
+    return new Date(timestamp).toLocaleString(locale, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit',
     });
 }
 
@@ -119,9 +116,9 @@ function DetailRow({ label, value, copyable, valueColor, copyValue }: DetailRowP
                     {value}
                 </Text>
                 {copyable && (
-                    <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
+                    <ActionTouchable onPress={handleCopy} style={styles.copyButton}>
                         <Ionicons name="copy" size={14} color="#9CA3AF" />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </View>
@@ -132,7 +129,7 @@ export default function EnvelopeDetailScreen({
     navigation,
     route,
 }: EnvelopeDetailScreenProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { envelopeId } = route.params;
     const insets = useSafeAreaInsets();
     const walletAddress = useWalletStore((s) => s.address);
@@ -343,9 +340,9 @@ export default function EnvelopeDetailScreen({
         return (
             <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{t('envelope.notFound')}</Text>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <ActionTouchable style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Text style={styles.backButtonText}>{t('common.goBack')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         );
     }
@@ -354,6 +351,7 @@ export default function EnvelopeDetailScreen({
     const hasSignature = !!envelope.signature;
 
     // derived display state.
+    const action = getActionTypeDisplay(envelope.action_type);
     const description = getActionTypeDescription(envelope.action_type);
     const aiMeta = envelope.ai_conversation_metadata;
     const corrMeta = envelope.corroboration_metadata;
@@ -394,29 +392,17 @@ export default function EnvelopeDetailScreen({
                 <View style={styles.header}>
                     <BackButton onPress={() => navigation.goBack()} style={{ marginBottom: SPACING.s }} />
                     <View style={styles.actionTypeRow}>
-                        <View style={[styles.actionTypeIconBg, { backgroundColor: `${getActionTypeDisplay(envelope.action_type).color}20` }]}>
+                        <View style={[styles.actionTypeIconBg, { backgroundColor: `${action.color}20` }]}>
                             <ProvianIcon name="proof" size={23} color={COLORS.primaryLight} />
                         </View>
                         <Text style={styles.actionType}>
-                            {getActionTypeDisplay(envelope.action_type).label.toUpperCase()}
+                            {action.label}
                         </Text>
                     </View>
-                    <Text style={styles.timestamp}>{formatDate(envelope.timestamp)}</Text>
-                </View>
-
-                {/* What is this? — a plain-language explanation per PE type. */}
-                <View style={styles.section}>
-                    <View style={styles.sectionTitleRow}>
-                        <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(74, 142, 232, 0.14)' }]}>
-                            <Ionicons name="help-circle" size={14} color="#4A8EE8" />
-                        </View>
-                        <Text style={styles.sectionTitle}>{t('envelope.whatIsThis')}</Text>
-                    </View>
-                    <View style={styles.card}>
-                        <Text style={styles.intentText}>{description}</Text>
-                        <DestinationRow label={t('overhaul.howProof')} icon="proof"
-                            onPress={() => navigation.navigate('BuildWithProvian')} />
-                    </View>
+                    <Text style={styles.timestamp}>{t('overhaul.witnessedOn', {
+                        action: action.label,
+                        date: formatDate(envelope.timestamp, i18n.language),
+                    })}</Text>
                 </View>
 
                 {/* Earning — mint disposition + eligible-only PVT + record
@@ -905,7 +891,7 @@ export default function EnvelopeDetailScreen({
                                 Tap navigates to TransactionDetail with the
                                 full Transaction object as a route param. */}
                             {matchedTransaction && (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.crossLinkButton}
                                     onPress={() => navigation.navigate('TransactionDetail', { transaction: matchedTransaction })}
                                     activeOpacity={0.7}
@@ -913,21 +899,36 @@ export default function EnvelopeDetailScreen({
                                     <Ionicons name="link" size={16} color={COLORS.primary} />
                                     <Text style={styles.crossLinkText}>{t('envelope.viewTransaction')}</Text>
                                     <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             )}
                         </View>
                     </View>
                 )}
 
+                {/* What is this? — a plain-language explanation per PE type. */}
+                <View style={styles.section}>
+                    <View style={styles.sectionTitleRow}>
+                        <View style={[styles.sectionIconBg, { backgroundColor: 'rgba(74, 142, 232, 0.14)' }]}>
+                            <Ionicons name="help-circle" size={14} color="#4A8EE8" />
+                        </View>
+                        <Text style={styles.sectionTitle}>{t('envelope.whatIsThis')}</Text>
+                    </View>
+                    <View style={styles.card}>
+                        <Text style={styles.intentText}>{description}</Text>
+                        <DestinationRow label={t('overhaul.howProof')} icon="proof"
+                            onPress={() => navigation.navigate('BuildWithProvian')} />
+                    </View>
+                </View>
+
                 {/* Raw Data Toggle */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.rawDataToggle}
                     onPress={() => setShowRawData(!showRawData)}
                 >
                     <Ionicons name={showRawData ? 'chevron-up' : 'chevron-down'} size={16} color="#4A8EE8" />
                     <Text style={styles.rawDataToggleText}>
                         {showRawData ? t('common.hide') : t('common.show')}{t('envelope.rawData')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {showRawData && (
                     <View style={styles.rawDataContainer}>
@@ -938,7 +939,7 @@ export default function EnvelopeDetailScreen({
                 )}
 
                 {/* Hide / Unhide */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.hideButton, envelope.hidden && styles.unhideButton]}
                     onPress={() => {
                         if (envelope.hidden) {
@@ -974,7 +975,7 @@ export default function EnvelopeDetailScreen({
                     <Text style={[styles.hideButtonText, envelope.hidden && { color: '#4A8EE8' }]}>
                         {envelope.hidden ? i18next.t('ui.envelopeDetail.unhide') : i18next.t('envelope.hideEntry')}
                     </Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
             <InfoModal
                 visible={projectionInfoVisible}
@@ -1027,7 +1028,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
     },
     backButtonText: {
-        color: COLORS.white,
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: '600',
     },

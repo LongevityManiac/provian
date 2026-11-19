@@ -1,9 +1,10 @@
+import { ActionTouchable, PrimaryAction, SecondaryAction } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
 import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Alert,
     ActivityIndicator,
 } from 'react-native';
@@ -277,12 +278,12 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                     <Text style={styles.permissionText}>
                         {t('promise.cameraRequiredMsg')}
                     </Text>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.permissionButton}
                         onPress={requestPermission}
                     >
                         <Text style={styles.permissionButtonText}>{t('promise.grantAccess')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -324,20 +325,10 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                         <Text style={styles.previewValue}>{creatorName}</Text>
                     </View>
 
-                    <TouchableOpacity
-                        style={styles.viewPromiseButton}
-                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })}
-                    >
-                        <Text style={styles.viewPromiseButtonText}>{t('promise.viewPromise')}</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#0B0E14" />
-                    </TouchableOpacity>
+                    <PrimaryAction label={t('promise.viewPromise')} icon="promises" style={styles.viewPromiseButton}
+                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })} />
 
-                    <TouchableOpacity
-                        style={styles.doneButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Text style={styles.doneButtonText}>{t('common.done')}</Text>
-                    </TouchableOpacity>
+                    <SecondaryAction label={t('common.done')} onPress={() => navigation.goBack()} />
                 </View>
             </SafeAreaView>
         );
@@ -353,14 +344,14 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                 />
 
                 <View style={styles.successCloseRow}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         onPress={() => navigation.goBack()}
                         style={styles.successCloseButton}
                         accessibilityRole="button"
                         accessibilityLabel={t('common.close')}
                     >
                         <Ionicons name="close" size={26} color={themeColors.textSecondary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 <View style={styles.successContent}>
@@ -386,12 +377,8 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                         {t('promise.theyllScan')}
                     </Text>
 
-                    <TouchableOpacity
-                        style={styles.viewPromiseButton}
-                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })}
-                    >
-                        <Text style={styles.viewPromiseButtonText}>{t('promise.viewPromise')}</Text>
-                    </TouchableOpacity>
+                    <PrimaryAction label={t('promise.viewPromise')} icon="promises" style={styles.viewPromiseButton}
+                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })} />
                 </View>
             </SafeAreaView>
         );
@@ -416,20 +403,10 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                         {t('promise.promiseNowActive')}
                     </Text>
 
-                    <TouchableOpacity
-                        style={styles.viewPromiseButton}
-                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })}
-                    >
-                        <Text style={styles.viewPromiseButtonText}>{t('promise.viewPromise')}</Text>
-                        <Ionicons name="arrow-forward" size={20} color="#0B0E14" />
-                    </TouchableOpacity>
+                    <PrimaryAction label={t('promise.viewPromise')} icon="promises" style={styles.viewPromiseButton}
+                        onPress={() => navigation.replace('PromiseDetail', { promiseId: acceptedPromiseId })} />
 
-                    <TouchableOpacity
-                        style={styles.doneButton}
-                        onPress={() => navigation.goBack()}
-                    >
-                        <Text style={styles.doneButtonText}>{t('common.done')}</Text>
-                    </TouchableOpacity>
+                    <SecondaryAction label={t('common.done')} onPress={() => navigation.goBack()} />
                 </View>
             </SafeAreaView>
         );
@@ -453,7 +430,7 @@ const ScanPromiseScreen = ({ navigation }: any) => {
 
                 <View style={styles.previewContent}>
                     <View style={styles.previewIcon}>
-                        <Ionicons name="heart" size={48} color="#E8A838" />
+                        <ProvianIcon name="promises" size={48} color={COLORS.primaryLight} />
                     </View>
 
                     <Text style={styles.previewTitle}>{t('promise.madeYouPromise', { name: creatorName })}</Text>
@@ -484,27 +461,21 @@ const ScanPromiseScreen = ({ navigation }: any) => {
                     </View>
 
                     <View style={styles.previewActions}>
-                        <TouchableOpacity
-                            style={styles.acceptButton}
-                            onPress={handleAccept}
-                        >
-                            <Ionicons name="checkmark-circle" size={20} color="#0B0E14" />
-                            <Text style={styles.acceptButtonText}>{t('promise.acceptPromise')}</Text>
-                        </TouchableOpacity>
+                        <PrimaryAction label={t('promise.acceptPromise')} stockIcon="checkmark-circle-outline" onPress={handleAccept} />
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.rejectButton}
                             onPress={handleReject}
                         >
                             <Ionicons name="close-circle" size={20} color={COLORS.error} />
                             <Text style={styles.rejectButtonText}>{t('common.reject')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
 
-                    <TouchableOpacity style={styles.scanAgainButton} onPress={handleScanAgain}>
+                    <ActionTouchable style={styles.scanAgainButton} onPress={handleScanAgain}>
                         <Ionicons name="qr-code" size={18} color="#4A8EE8" />
                         <Text style={styles.scanAgainText}>{t('promise.scanDifferent')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -582,6 +553,7 @@ const ScanPromiseScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
+    viewPromiseButton: { width: '100%', marginBottom: SPACING.s },
     container: {
         flex: 1,
         backgroundColor: '#0B0E14',
@@ -656,7 +628,7 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     permissionButtonText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontWeight: '700',
         fontSize: 16,
     },
@@ -809,25 +781,6 @@ const styles = StyleSheet.create({
         width: '100%',
         gap: SPACING.m,
     },
-    acceptButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACING.l,
-        borderRadius: 28,
-        gap: SPACING.s,
-        backgroundColor: '#E8A838',
-        shadowColor: '#E8A838',
-        shadowOpacity: 0.45,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 8,
-    },
-    acceptButtonText: {
-        color: '#0B0E14',
-        fontSize: 18,
-        fontWeight: '700',
-    },
     rejectButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -926,36 +879,6 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
         elevation: 5,
-    },
-    viewPromiseButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#E8A838',
-        paddingVertical: SPACING.l,
-        paddingHorizontal: SPACING.xxl,
-        borderRadius: 28,
-        gap: SPACING.s,
-        width: '100%',
-        shadowColor: '#E8A838',
-        shadowOpacity: 0.45,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 8,
-    },
-    viewPromiseButtonText: {
-        color: '#0B0E14',
-        fontSize: 18,
-        fontWeight: '700',
-    },
-    doneButton: {
-        paddingVertical: SPACING.m,
-        marginTop: SPACING.m,
-    },
-    doneButtonText: {
-        color: '#8B929E',
-        fontSize: 16,
-        fontWeight: '500',
     },
     // Offline acceptance screen
     offlineIcon: {

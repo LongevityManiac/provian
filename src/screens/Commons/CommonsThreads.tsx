@@ -3,8 +3,9 @@
  * anchored to a job, a want, an escrow, a dispute, or a profile. Every message is a Provenance
  * Envelope sealing only the content hash; the content is ciphertext the relay cannot read.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,9 +57,9 @@ export default function CommonsThreads({ navigation }: Props) {
       <View style={styles.header}>
         <BackButton onPress={() => navigation.goBack()} accessibilityLabel={t('common.back')} />
         <Text style={styles.headerTitle}>{t('commons.threadsTitle')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('CommonsNewMessage')} style={styles.compose} accessibilityRole="button" accessibilityLabel={t('commons.newMessageTitle')}>
+        <ActionTouchable onPress={() => navigation.navigate('CommonsNewMessage')} style={styles.compose} accessibilityRole="button" accessibilityLabel={t('commons.newMessageTitle')}>
           <Ionicons name="create-outline" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}>
         <View style={styles.explainer}>
@@ -76,7 +77,7 @@ export default function CommonsThreads({ navigation }: Props) {
           </View>
         ) : (
           threads.map((th) => (
-            <TouchableOpacity key={th.thread_id} style={[styles.row, th.unread && styles.rowUnread]} onPress={() => navigation.navigate('CommonsThread', { threadId: th.thread_id, counterpartyName: th.display_names?.[other(th)] ?? undefined })} activeOpacity={0.75}>
+            <ActionTouchable key={th.thread_id} style={[styles.row, th.unread && styles.rowUnread]} onPress={() => navigation.navigate('CommonsThread', { threadId: th.thread_id, counterpartyName: th.display_names?.[other(th)] ?? undefined })} activeOpacity={0.75}>
               <View style={[styles.rowIcon, { backgroundColor: th.parties[other(th)]?.kind === 'agent' ? COLORS.secondaryMuted : COLORS.primaryMuted }]}>
                 <Ionicons name={th.parties[other(th)]?.kind === 'agent' ? 'hardware-chip' : 'person'} size={18} color={th.parties[other(th)]?.kind === 'agent' ? COLORS.secondary : COLORS.primary} />
               </View>
@@ -88,7 +89,7 @@ export default function CommonsThreads({ navigation }: Props) {
               </View>
               {th.unread && <View style={styles.unreadDot} />}
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
+            </ActionTouchable>
           ))
         )}
       </ScrollView>

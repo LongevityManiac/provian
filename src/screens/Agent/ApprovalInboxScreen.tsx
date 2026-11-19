@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 /**
@@ -23,7 +24,13 @@ import { withBiometricAction, assertBiometricAction } from '../../core/security/
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    RefreshControl,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -194,7 +201,7 @@ export default function ApprovalInboxScreen(): React.ReactElement {
                                 )}
                                 <Text style={[styles.expiry, expired && styles.expired]}>{formatExpiry(req.expires_at_ms, t)}</Text>
                                 <View style={styles.actionRow}>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={[styles.approveBtn, (busy || expired) && styles.disabled]}
                                         onPress={() => confirm(req, 'approved')}
                                         disabled={busy || expired}
@@ -205,14 +212,14 @@ export default function ApprovalInboxScreen(): React.ReactElement {
                                                 <Text style={styles.approveBtnText}>{t('common.approve')}</Text>
                                             </>
                                         )}
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
+                                    </ActionTouchable>
+                                    <ActionTouchable
                                         style={[styles.rejectBtn, (busy || expired) && styles.disabled]}
                                         onPress={() => confirm(req, 'rejected')}
                                         disabled={busy || expired}
                                     >
                                         <Text style={styles.rejectBtnText}>{t('common.reject')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             </View>
                         );

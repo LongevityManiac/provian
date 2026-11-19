@@ -4,8 +4,9 @@
  * A failed load is never shown as an empty list: "nothing here yet" and "could not reach Provian"
  * are different facts, and a person (or a reviewer) must be able to tell them apart and retry.
  */
+import { ActionTouchable } from '../ScreenActions';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { BORDER_RADIUS, COLORS, SPACING } from '../../constants/theme';
@@ -17,9 +18,9 @@ export function LoadFailed({ onRetry }: { readonly onRetry: () => void }): React
             <Ionicons name="cloud-offline-outline" size={32} color={COLORS.textTertiary} />
             <Text style={styles.title}>{t('commons.loadFailedTitle')}</Text>
             <Text style={styles.body}>{t('commons.loadFailedBody')}</Text>
-            <TouchableOpacity style={styles.retry} onPress={onRetry} accessibilityRole="button">
+            <ActionTouchable style={styles.retry} onPress={onRetry} accessibilityRole="button">
                 <Text style={styles.retryText}>{t('common.tryAgain')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
         </View>
     );
 }

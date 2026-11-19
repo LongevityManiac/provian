@@ -23,6 +23,7 @@ interface CommonsProfile {
   identity_verification_level: string;
   attestation_tier_raw?: string;
   pe_count: number;
+  promises_kept?: number;
   promise_fulfillment_rate: number;
   court_record: {
     cases_as_plaintiff: number;
@@ -753,6 +754,22 @@ export async function readPublicBond(agentId: string): Promise<boolean | null> {
       return data.bond_active;
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+/** The public Passport exposes the settled count on relays predating the Commons field. */
+export async function readPublicAgentPromisesKept(walletId: string): Promise<number | null> {
+  try {
+    const response = await fetch(`${RELAY_URL}/v1/agents/${encodeURIComponent(walletId)}/record`);
+    if (!response.ok) return null;
+    const record: unknown = await response.json();
+    if (!record || typeof record !== 'object' || !('found' in record) || record.found !== true
+      || !('promises' in record) || !record.promises || typeof record.promises !== 'object'
+      || !('settled' in record.promises)) return null;
+    const settled = record.promises.settled;
+    return typeof settled === 'number' && Number.isSafeInteger(settled) && settled >= 0 ? settled : null;
   } catch {
     return null;
   }

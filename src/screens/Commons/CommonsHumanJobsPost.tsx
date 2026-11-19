@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction } from '../../core/security/biometricAction';
 /**
@@ -18,7 +19,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   Alert,
@@ -389,7 +389,7 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
             </View>
           )}
 
-          <TouchableOpacity
+          <ActionTouchable
             style={[styles.submit, submitting && styles.submitDisabled]}
             disabled={submitting}
             onPress={handleSubmit}
@@ -397,11 +397,11 @@ export default function CommonsHumanJobsPost({ navigation, route }: Props) {
           >
             <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
             {submitting ? (
-              <ActivityIndicator color={COLORS.text} />
+              <ActivityIndicator color={COLORS.onPrimary} />
             ) : (
               <Text style={styles.submitText}>{t('commonsHumanJobsPost.postJob')}</Text>
             )}
-          </TouchableOpacity>
+          </ActionTouchable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -440,14 +440,14 @@ function ChipPicker({ label, options, selected, onSelect, error }: ChipPickerPro
         {options.map((opt) => {
           const active = opt === selected;
           return (
-            <TouchableOpacity
+            <ActionTouchable
               key={opt}
               onPress={() => onSelect(opt)}
               style={[styles.chip, active && styles.chipActive]}
               activeOpacity={0.7}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{pretty(opt)}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           );
         })}
       </View>
@@ -473,7 +473,7 @@ function OptionPicker({ label, options, selected, onSelect, error }: OptionPicke
         {options.map((opt) => {
           const active = opt.value === selected;
           return (
-            <TouchableOpacity
+            <ActionTouchable
               key={opt.value}
               onPress={() => onSelect(opt.value)}
               style={[styles.chip, active && styles.chipActive]}
@@ -482,7 +482,7 @@ function OptionPicker({ label, options, selected, onSelect, error }: OptionPicke
               accessibilityState={{ selected: active }}
             >
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{opt.label}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           );
         })}
       </View>
@@ -642,5 +642,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitDisabled: { opacity: 0.6 },
-  submitText: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  submitText: { color: COLORS.onPrimary, fontSize: 16, fontWeight: '700' },
 });

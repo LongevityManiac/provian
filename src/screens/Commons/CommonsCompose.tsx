@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { currentSpeechWindowPrice } from '../../core/commons/openSpeechWindow';
 import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
 import type { BiometricAction } from '../../core/security/biometricAction';
@@ -15,7 +16,7 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  * through by itself when you return.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -171,19 +172,19 @@ export default function CommonsCompose({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={close} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('common.close')}>
+        <ActionTouchable onPress={close} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={t('common.close')}>
           <Ionicons name="close" size={26} color={COLORS.text} />
-        </TouchableOpacity>
+        </ActionTouchable>
         <Text style={styles.headerTitle} numberOfLines={1}>{isReply ? t('commonsForum.compose.replyTitle') : t('commonsForum.compose.title')}</Text>
-        <TouchableOpacity
+        <ActionTouchable
           style={[styles.postBtn, !canPost && styles.postBtnDisabled]}
           onPress={submit}
           disabled={!canPost}
           accessibilityRole="button"
           accessibilityState={{ disabled: !canPost }}
         >
-          {submitting ? <ActivityIndicator color={COLORS.text} size="small" /> : <Text style={styles.postText}>{postingPrice === null ? t('commons.post') : `${t('commons.post')} · ${postingPrice} PVT`}</Text>}
-        </TouchableOpacity>
+          {submitting ? <ActivityIndicator color={COLORS.onPrimary} size="small" /> : <Text style={styles.postText}>{postingPrice === null ? t('commons.post') : `${t('commons.post')} · ${postingPrice} PVT`}</Text>}
+        </ActionTouchable>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -195,16 +196,16 @@ export default function CommonsCompose({ navigation, route }: Props) {
                 {COMPOSE_TOPICS.map((c) => {
                   const active = c === channel;
                   return (
-                    <TouchableOpacity
+                    <ActionTouchable
                       key={c}
                       style={[styles.topic, active && styles.topicActive]}
                       onPress={() => switchTopic(c)}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: active }}
                     >
-                      <Ionicons name={topicIcon(c)} size={14} color={active ? COLORS.text : COLORS.textSecondary} />
+                      <Ionicons name={topicIcon(c)} size={14} color={active ? COLORS.onPrimary : COLORS.textSecondary} />
                       <Text style={[styles.topicText, active && styles.topicTextActive]}>{t(topicLabelKey(c))}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                   );
                 })}
               </ScrollView>
@@ -248,14 +249,14 @@ const styles = StyleSheet.create({
   headerTitle: { ...TYPE_SCALE.headingSm, color: COLORS.text, flex: 1 },
   postBtn: { backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.round, paddingHorizontal: SPACING.m, minHeight: 36, minWidth: 64, alignItems: 'center', justifyContent: 'center' },
   postBtnDisabled: { opacity: 0.45 },
-  postText: { ...TYPE_SCALE.bodyMd, color: COLORS.text, fontWeight: '600' },
+  postText: { ...TYPE_SCALE.bodyMd, color: COLORS.onPrimary, fontWeight: '600' },
   scroll: { padding: SPACING.m, paddingBottom: SPACING.xxl },
   label: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary, marginBottom: SPACING.xs },
   topics: { gap: SPACING.s, paddingBottom: SPACING.m },
   topic: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.m, minHeight: 36, borderRadius: BORDER_RADIUS.round, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   topicActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   topicText: { ...TYPE_SCALE.bodyMd, color: COLORS.textSecondary, fontWeight: '600' },
-  topicTextActive: { color: COLORS.text },
+  topicTextActive: { color: COLORS.onPrimary },
   titleInput: { ...GLASS.input, ...TYPE_SCALE.headingSm, color: COLORS.text, padding: SPACING.m, borderRadius: BORDER_RADIUS.m },
   bodyInput: { ...GLASS.input, ...TYPE_SCALE.bodyLg, color: COLORS.text, padding: SPACING.m, minHeight: 220, marginTop: SPACING.s, borderRadius: BORDER_RADIUS.m },
   counter: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary, alignSelf: 'flex-end', marginTop: 4 },

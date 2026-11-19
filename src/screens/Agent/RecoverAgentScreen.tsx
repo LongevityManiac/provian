@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 /**
@@ -23,7 +24,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     ActivityIndicator,
 } from 'react-native';
@@ -214,18 +214,18 @@ const RecoverAgentScreen = (): React.JSX.Element => {
                         </Text>
                         <Text style={[styles.muted, { textAlign: 'center' }]}>{error.action}</Text>
                         {canRekey && walletId && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.secondaryBtn}
                                 onPress={() => navigation.replace('RekeyAgent', { walletId, agentName })}
                             >
                                 <Ionicons name="key-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.secondaryBtnText}>{t('recoverAgent.rekeyInstead')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
-                        <TouchableOpacity style={styles.secondaryBtn} onPress={run}>
+                        <ActionTouchable style={styles.secondaryBtn} onPress={run}>
                             <Ionicons name="refresh" size={16} color={COLORS.primary} />
                             <Text style={styles.secondaryBtnText}>{t('recoverAgent.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -248,7 +248,7 @@ const RecoverAgentScreen = (): React.JSX.Element => {
                             </Text>
                             <Text style={styles.stepBody}>{t('recoverAgent.step1Body')}</Text>
 
-                            <TouchableOpacity style={styles.cmdBlock} onPress={onCopy} activeOpacity={0.7}>
+                            <ActionTouchable style={styles.cmdBlock} onPress={onCopy} activeOpacity={0.7}>
                                 <Text style={styles.cmdText} selectable>{restore.command}</Text>
                                 <View style={styles.copyRow}>
                                     <Ionicons
@@ -260,7 +260,7 @@ const RecoverAgentScreen = (): React.JSX.Element => {
                                         {copied ? t('recoverAgent.copied') : t('recoverAgent.copyCommand')}
                                     </Text>
                                 </View>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
 
                         <View style={styles.stepsCard}>
@@ -275,13 +275,13 @@ const RecoverAgentScreen = (): React.JSX.Element => {
                                     {keyRevealed ? restore.key : '•'.repeat(Math.min(restore.key.length, 48))}
                                 </Text>
                                 <View style={styles.keyActionRow}>
-                                    <TouchableOpacity style={styles.keyAction} onPress={() => setKeyRevealed((v) => !v)} activeOpacity={0.7}>
+                                    <ActionTouchable style={styles.keyAction} onPress={() => setKeyRevealed((v) => !v)} activeOpacity={0.7}>
                                         <Ionicons name={keyRevealed ? 'eye-off-outline' : 'eye-outline'} size={16} color={COLORS.primary} />
                                         <Text style={styles.copyText}>
                                             {keyRevealed ? t('recoverAgent.hideKey') : t('recoverAgent.revealKey')}
                                         </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.keyAction} onPress={onCopyKey} activeOpacity={0.7}>
+                                    </ActionTouchable>
+                                    <ActionTouchable style={styles.keyAction} onPress={onCopyKey} activeOpacity={0.7}>
                                         <Ionicons
                                             name={keyCopied ? 'checkmark-circle' : 'copy-outline'}
                                             size={16}
@@ -290,16 +290,16 @@ const RecoverAgentScreen = (): React.JSX.Element => {
                                         <Text style={styles.copyText}>
                                             {keyCopied ? t('recoverAgent.copied') : t('recoverAgent.copyKey')}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
+                        <ActionTouchable style={styles.primaryBtn} onPress={() => navigation.goBack()}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
                                 <Text style={styles.primaryBtnText}>{t('recoverAgent.done')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
             </ScrollView>
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: SPACING.xl,
     },
-    primaryBtnText: { flexShrink: 1, color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+    primaryBtnText: { flexShrink: 1, color: COLORS.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
     secondaryBtn: {
         flexDirection: 'row',
         alignItems: 'center',

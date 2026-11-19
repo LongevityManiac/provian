@@ -125,13 +125,13 @@ function realPVTIconBlock(): string {
     return extractBlock(readSource(TOKEN_ICON_PATH), 'const PVTIcon = (', '\n);', 'PVTIcon');
 }
 
-/** Slice the PVT wallet-card treatment out of DashboardScreen.tsx. */
+/** Slice the PVT wallet-row treatment out of DashboardScreen.tsx. */
 function realPvtCardBlock(): string {
     return extractBlock(
         readSource(DASHBOARD_PATH),
-        'const isPvtCard = asset.isPVT === true;',
-        '<View style={styles.assetHeader}>',
-        'isPvtCard',
+        '    pvtBalance: {',
+        '// Recent Activity',
+        'PVT asset balance',
     );
 }
 
@@ -251,13 +251,14 @@ describe('TokenIcon.tsx — the PVT coin is drawn from theme tokens only', () =>
     });
 });
 
-describe('DashboardScreen.tsx — the PVT wallet card reads the same platinum tokens', () => {
-    it('the isPvtCard treatment uses COLORS.platinum tokens and no raw color literal', () => {
+describe('DashboardScreen.tsx — the PVT wallet row reads the same platinum token', () => {
+    it('uses platinum for the PVT balance and no raw color literal', () => {
         const block = realPvtCardBlock();
         expect(findColorLiterals(block)).toEqual([]);
         const refs = findPlatinumTokenRefs(block);
         expect(refs.length).toBeGreaterThan(0);
-        expect(refs).toEqual(expect.arrayContaining(['platinum', 'platinumMuted']));
+        expect(refs).toEqual(['platinum']);
+        expect(readSource(DASHBOARD_PATH)).toContain('asset.isPVT && styles.pvtBalance');
         expect(block).not.toMatch(/COLORS\.(secondary|chrome)\b/);
     });
 });

@@ -1,9 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     TextInput,
     Alert,
@@ -152,7 +152,7 @@ const ContactsScreen = ({ navigation }: any) => {
     };
 
     const renderContactCard = (contact: Contact, showAddButton = false) => (
-        <TouchableOpacity
+        <ActionTouchable
             key={contact.id}
             style={styles.contactCard}
             onPress={() => contact.name ? handleViewContact(contact) : undefined}
@@ -197,7 +197,7 @@ const ContactsScreen = ({ navigation }: any) => {
 
             <View style={styles.contactActions}>
                 {contact.name && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.actionButton}
                         onPress={() => handleToggleFavorite(contact)}
                     >
@@ -206,24 +206,24 @@ const ContactsScreen = ({ navigation }: any) => {
                             size={20}
                             color={contact.isFavorite ? '#E8A838' : '#8B929E'}
                         />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
                 {showAddButton && !contact.name && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[styles.actionButton, styles.addActionButton]}
                         onPress={() => handleAddRecentToContacts(contact)}
                     >
                         <Ionicons name="person-add" size={18} color="#4A8EE8" />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.actionButton, styles.sendActionButton]}
                     onPress={() => handleSendToContact(contact)}
                 >
                     <Ionicons name="arrow-up" size={18} color="#4A8EE8" />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const chainOptions: { value: ChainType; label: string }[] = [
@@ -241,14 +241,14 @@ const ContactsScreen = ({ navigation }: any) => {
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerTitle}>{t('contacts.title')}</Text>
-                <TouchableOpacity style={styles.headerAction} onPress={() => {
+                <ActionTouchable style={styles.headerAction} onPress={() => {
                     setNewContactName('');
                     setNewContactAddress('');
                     setNewContactChain('evm');
                     setShowAddModal(true);
                 }}>
                     <Ionicons name="add" size={24} color="#4A8EE8" />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             <ScrollView
@@ -295,13 +295,13 @@ const ContactsScreen = ({ navigation }: any) => {
                             <Text style={styles.emptySubtext}>
                                 {t('contacts.addToSendFaster')}
                             </Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.emptyButton}
                                 onPress={() => setShowAddModal(true)}
                             >
-                                <Ionicons name="add" size={20} color="white" />
+                                <Ionicons name="add" size={20} color={COLORS.onPrimary} />
                                 <Text style={styles.emptyButtonText}>{t('contacts.add')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     )}
                 </View>
@@ -316,15 +316,15 @@ const ContactsScreen = ({ navigation }: any) => {
             >
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
-                        <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                        <ActionTouchable onPress={() => setShowAddModal(false)}>
                             <Text style={styles.modalCancel}>{t('common.cancel')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                         <Text style={styles.modalTitle}>{t('contacts.add')}</Text>
-                        <TouchableOpacity onPress={handleSaveNewContact} disabled={saving}>
+                        <ActionTouchable onPress={handleSaveNewContact} disabled={saving}>
                             <Text style={[styles.modalSave, saving && styles.modalSaveDisabled]}>
                                 {saving ? t('common.saving') : t('common.save')}
                             </Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
 
                     <ScrollView style={styles.modalContent}>
@@ -363,7 +363,7 @@ const ContactsScreen = ({ navigation }: any) => {
                             <Text style={styles.inputLabel}>{t('contacts.networkLabel')}</Text>
                             <View style={styles.chainSelector}>
                                 {chainOptions.map(option => (
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         key={option.value}
                                         style={[
                                             styles.chainOption,
@@ -377,7 +377,7 @@ const ContactsScreen = ({ navigation }: any) => {
                                         ]}>
                                             {option.label}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 ))}
                             </View>
                         </View>
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     emptyButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     // Modal styles
     modalContainer: {

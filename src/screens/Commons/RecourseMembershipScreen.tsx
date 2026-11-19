@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -64,8 +65,8 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
     catch { if (active.current) setError(true); }
     finally { if (active.current) { setBusy(false); setUri(''); } }
   };
-  const button = (label: string, press: () => void, disabled = busy || loading) => <TouchableOpacity accessibilityRole="button"
-    onPress={press} disabled={disabled} style={[styles.button, disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
+  const button = (label: string, press: () => void, disabled = busy || loading) => <ActionTouchable accessibilityRole="button"
+    onPress={press} disabled={disabled} style={[styles.button, disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
   const connect = async () => {
     if (!view || !selected) return;
     const challenge = selected, transition = view;
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 23 }, address: { color: COLORS.text, fontSize: 12, lineHeight: 20 },
   card: { padding: SPACING.l, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.l, gap: SPACING.m },
   button: { padding: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, disabled: { opacity: 0.5 },
+  buttonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' }, disabled: { opacity: 0.5 },
   input: { color: COLORS.text, borderWidth: 1, borderColor: COLORS.textSecondary, borderRadius: BORDER_RADIUS.m, padding: SPACING.m },
   qr: { padding: SPACING.m, backgroundColor: '#FFFFFF', alignSelf: 'center' },
 });

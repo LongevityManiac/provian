@@ -5,8 +5,9 @@
  * harness change), that line is offered too. Each line copies on tap.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
@@ -39,7 +40,7 @@ const AgentCaptureHealthHint = ({ reason, reported, compact }: AgentCaptureHealt
     const line = (label: string, cmd: string): React.JSX.Element => (
         <View key={cmd}>
             <Text style={[styles.label, compact && styles.compactText]}>{label}</Text>
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.cmdRow}
                 onPress={() => void copy(cmd)}
                 activeOpacity={0.7}
@@ -52,7 +53,7 @@ const AgentCaptureHealthHint = ({ reason, reported, compact }: AgentCaptureHealt
                     size={14}
                     color={copied === cmd ? COLORS.success : COLORS.primary}
                 />
-            </TouchableOpacity>
+            </ActionTouchable>
         </View>
     );
 

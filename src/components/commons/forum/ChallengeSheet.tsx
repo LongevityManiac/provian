@@ -1,3 +1,4 @@
+import { ActionPressable, ActionTouchable } from '../../ScreenActions';
 import { errorDisplayCopy } from '../../../i18n/displayCopy';
 /**
  * ChallengeSheet (§5) — "Question this post" ask the author to prove one thing about their
@@ -10,7 +11,7 @@ import { errorDisplayCopy } from '../../../i18n/displayCopy';
  * can close this sheet, open the talking-pass sheet, and reopen this one — prefilled — on return.
  */
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS, TYPE_SCALE } from '../../../constants/theme';
@@ -91,13 +92,13 @@ export default function ChallengeSheet({ postId, authorName, initial, onClose, o
   return (
     <Modal visible={postId !== null} animationType="slide" transparent onRequestClose={onClose} onDismiss={onDismiss}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={styles.backdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
+        <ActionPressable style={styles.backdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
         <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.title}>{t('commonsForum.challenge.title')}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.close} accessibilityRole="button" accessibilityLabel={t('common.close')}>
+            <ActionTouchable onPress={onClose} style={styles.close} accessibilityRole="button" accessibilityLabel={t('common.close')}>
               <Ionicons name="close" size={24} color={COLORS.text} />
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
             <Text style={styles.intro}>{t('commonsForum.challenge.intro', { name: authorName })}</Text>
@@ -105,9 +106,9 @@ export default function ChallengeSheet({ postId, authorName, initial, onClose, o
               <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.platinumDeep} />
               <Text style={styles.stakeText}>{t('commonsForum.challenge.stake', { pvt })}</Text>
             </View>
-            <TouchableOpacity onPress={() => setShowWhat(true)} style={styles.link} accessibilityRole="button">
+            <ActionTouchable onPress={() => setShowWhat(true)} style={styles.link} accessibilityRole="button">
               <Text style={styles.linkText}>{t('commons.challengeWhatTitle')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
 
             <PredicatePicker draft={draft} onChange={setDraft} lead={t('commonsForum.picker.leadChallenge', { name: authorName })} />
 
@@ -123,9 +124,9 @@ export default function ChallengeSheet({ postId, authorName, initial, onClose, o
               textAlignVertical="top"
             />
 
-            <TouchableOpacity style={[styles.submit, busy && styles.disabled]} onPress={submit} disabled={busy} accessibilityRole="button">
-              {busy ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.submitText}>{t('commonsForum.challenge.submit', { pvt })}</Text>}
-            </TouchableOpacity>
+            <ActionTouchable style={[styles.submit, busy && styles.disabled]} onPress={submit} disabled={busy} accessibilityRole="button">
+              {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.submitText}>{t('commonsForum.challenge.submit', { pvt })}</Text>}
+            </ActionTouchable>
           </ScrollView>
         </View>
         <InfoModal visible={showWhat} onClose={() => setShowWhat(false)} title={t('commons.challengeWhatTitle')} body={t('commons.challengeWhatBody', { pvt })} />
@@ -158,6 +159,6 @@ const styles = StyleSheet.create({
   label: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary, marginTop: SPACING.m, marginBottom: 4 },
   reason: { ...GLASS.input, minHeight: 72, padding: SPACING.m, color: COLORS.text, fontSize: 15 },
   submit: { marginTop: SPACING.l, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.l, minHeight: 50, alignItems: 'center', justifyContent: 'center' },
-  submitText: { ...TYPE_SCALE.headingSm, color: COLORS.text },
+  submitText: { ...TYPE_SCALE.headingSm, color: COLORS.onPrimary },
   disabled: { opacity: 0.5 },
 });

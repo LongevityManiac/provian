@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { clearHomeBalanceVerification, prepareHomeBalanceVerification } from '../../core/protocol/homeBalanceVerification';
 import { isTestnet } from '../../core/shared/environment';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
@@ -8,7 +9,6 @@ import {
     Text,
     Image,
     StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -198,7 +198,7 @@ const WalletLockScreen = ({ navigation }: any) => {
                     {isAuthenticating ? (
                         <ActivityIndicator size="large" color={COLORS.primary} />
                     ) : (
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.unlockButton}
                             onPress={authenticate}
                             activeOpacity={0.7}
@@ -207,27 +207,27 @@ const WalletLockScreen = ({ navigation }: any) => {
                                 <Ionicons name="finger-print" size={40} color={COLORS.primary} />
                             </View>
                             <Text style={styles.unlockText}>{t('walletLock.unlockWith', { method: bio.label })}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     )}
 
                     {error && (
                         <View style={styles.errorContainer}>
                             <Text style={styles.errorText}>{errorDisplayCopy(error)}</Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.tryAgainButton}
                                 onPress={authenticate}
                             >
                                 <Text style={styles.tryAgainText}>{t('walletLock.tryAgain')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                             {/* N-2: When biometric is unavailable, offer seed phrase recovery
                                 as an escape hatch instead of leaving the user locked out. */}
                             {biometricUnavailable && (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.recoveryButton}
                                     onPress={() => navigation.navigate('RecoveryStart')}
                                 >
                                     <Text style={styles.recoveryText}>{t('walletLock.recoverWithSeed')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             )}
                         </View>
                     )}
@@ -238,7 +238,7 @@ const WalletLockScreen = ({ navigation }: any) => {
 
                 {/* SECURITY FIX: E-1 - Simulator bypass requires __DEV__ guard */}
                 {__DEV__ && isSimulator && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.skipButton}
                         onPress={handleSkipForTesting}
                     >
@@ -246,7 +246,7 @@ const WalletLockScreen = ({ navigation }: any) => {
                             <Ionicons name="bug" size={16} color={COLORS.warning} />
                             <Text style={styles.skipText}>Skip for Simulator Testing</Text>
                         </View>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </SafeAreaView>
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     tryAgainText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: '600',
     },

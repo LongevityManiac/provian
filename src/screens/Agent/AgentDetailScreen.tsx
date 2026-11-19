@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 import i18next from 'i18next';
@@ -29,7 +30,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     Alert,
     RefreshControl,
 } from 'react-native';
@@ -162,7 +162,7 @@ function BondStatusBadge({ agentId, navigation }: { agentId: string; navigation:
 
     return (
         <View style={styles.card}>
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.cardHeader}
                 onPress={() => navigation.navigate('BondManagement', { agentId })}
                 accessibilityRole="button"
@@ -182,8 +182,8 @@ function BondStatusBadge({ agentId, navigation }: { agentId: string; navigation:
                     size={18}
                     color={COLORS.textSecondary}
                 />
-            </TouchableOpacity>
-            <TouchableOpacity
+            </ActionTouchable>
+            <ActionTouchable
                 style={styles.inlineLinkRow}
                 onPress={() => navigation.navigate('BondClaims', { agentId })}
                 accessibilityRole="button"
@@ -193,7 +193,7 @@ function BondStatusBadge({ agentId, navigation }: { agentId: string; navigation:
                 <Ionicons name="document-text-outline" size={14} color={COLORS.primary} />
                 <Text style={styles.inlineLinkText}>{t('bondManagement.claimsTitle')}</Text>
                 <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} />
-            </TouchableOpacity>
+            </ActionTouchable>
         </View>
     );
 }
@@ -410,9 +410,9 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
         return (
             <SafeAreaView style={styles.errorContainer}>
                 <Text style={styles.errorText}>{i18next.t('ui.agentDetail.notFound')}</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <ActionTouchable onPress={() => navigation.goBack()}>
                     <Text style={styles.errorBack}>{ICONS.back} {t('common.goBack')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </SafeAreaView>
         );
     }
@@ -459,7 +459,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.navTitle} numberOfLines={1}>{agent.displayName}</Text>
                 {walletInfo ? (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.navAction}
                         onPress={() => setRenameOpen(true)}
                         accessibilityRole="button"
@@ -467,7 +467,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                         <Ionicons name="create-outline" size={20} color={COLORS.text} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 ) : (
                     <View style={styles.navSpacer} />
                 )}
@@ -527,7 +527,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                 {/* talk to your agent directly — an end-to-end encrypted Commons thread.
                     Free: a beneficiary link is an open relationship, so no speech window is needed. */}
                 {walletInfo && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[styles.card, { flexDirection: 'row', alignItems: 'center' }]}
                         activeOpacity={0.7}
                         onPress={() => navigation.navigate('CommonsThread', { counterparty: walletInfo.wallet_id, counterpartyName: agent.displayName })}
@@ -540,7 +540,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             <Text style={styles.workingMeta}>{t('commons.messageLinkedSub')}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
 
                 {/* item 4: how this agent answers Commons mail — anyone, or ask me first. */}
@@ -563,7 +563,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             <Text style={[styles.walletStat, { marginTop: SPACING.s, fontSize: 11, color: COLORS.textMuted }]}>
                                 {walletInfo.platform} · EVM (Base / Arbitrum / Optimism)
                             </Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 onPress={() => copyToClipboard(walletInfo.address, t('ui.agentDetail.evmAddress'))}
                                 activeOpacity={0.7}
                                 style={styles.addressRow}
@@ -572,11 +572,11 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                                     {walletInfo.address}
                                 </Text>
                                 <Ionicons name="copy-outline" size={16} color={COLORS.primary} style={{ marginLeft: 8 }} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                             {(() => {
                                 const sol = solanaAddress || walletInfo.solana_address || null;
                                 return sol ? (
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         onPress={() => copyToClipboard(sol, t('ui.agentDetail.solanaAddress'))}
                                         activeOpacity={0.7}
                                         style={styles.addressRow}
@@ -585,7 +585,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                                             SOL: {sol}
                                         </Text>
                                         <Ionicons name="copy-outline" size={16} color={COLORS.primary} style={{ marginLeft: 8 }} />
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 ) : (
                                     <Text style={styles.addressHint}>
                                         {i18next.t('ui.agentDetail.solanaHint')}</Text>
@@ -603,7 +603,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             {/* External-wallet link status : the linked human
                                 links a third-party wallet to this agent in-app — both rows open
                                 the Link-a-wallet flow, which also lists the linked addresses. */}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 onPress={() => navigation.navigate('LinkExternalWallet', {
                                     walletId: walletInfo.wallet_id,
                                     agentName: agent.displayName,
@@ -628,11 +628,11 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                                         : t('agentHub.externalNotLinkedRow')}
                                 </Text>
                                 <Ionicons name="chevron-forward" size={14} color={COLORS.textMuted} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                         {/* Wallet actions: recover the wallet. */}
                         <View style={styles.walletActions}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.walletActionButton}
                                 accessibilityRole="button"
                                 accessibilityLabel={t('agentHub.recoverAgentAccessibility')}
@@ -644,11 +644,11 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             >
                                 <Ionicons name="key-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.walletActionText}>{t('recoverAgent.title')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                             {/* Direct re-key entry : reachable straight from the agent's screen,
                                 not only after a failed recovery. Refused with a clear message when a
                                 re-key is already in flight / within its post-re-key cooldown. */}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.walletActionButton}
                                 accessibilityRole="button"
                                 accessibilityLabel={t('rekeyAgent.title')}
@@ -672,12 +672,12 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             >
                                 <Ionicons name="sync-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.walletActionText}>{t('rekeyAgent.title')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                         {/* link a third-party wallet; set up card spending
                             through Stripe Link (Provian never holds the card). */}
                         <View style={styles.walletActions}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.walletActionButton}
                                 accessibilityRole="button"
                                 accessibilityLabel={t('agentHub.linkWalletCta')}
@@ -689,8 +689,8 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             >
                                 <Ionicons name="wallet-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.walletActionText}>{t('agentHub.linkWalletCta')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </ActionTouchable>
+                            <ActionTouchable
                                 style={styles.walletActionButton}
                                 accessibilityRole="button"
                                 accessibilityLabel={t('agentHub.cardSpendingCta')}
@@ -702,7 +702,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             >
                                 <Ionicons name="card-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.walletActionText}>{t('agentHub.cardSpendingCta')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                 )}
@@ -766,7 +766,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                             <Text style={[styles.cardTitle, { marginLeft: SPACING.s }]}>{t('agentDetail.endLinkTitle')}</Text>
                         </View>
                         <Text style={styles.approveHint}>{t('agentDetail.endLinkHint', { agent: agent.displayName })}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.endLinkBtn, endingLink && styles.approveBtnDisabled]}
                             onPress={confirmEndLink}
                             disabled={endingLink}
@@ -775,7 +775,7 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                         >
                             <Ionicons name="unlink-outline" size={18} color={COLORS.error} />
                             <Text style={styles.endLinkBtnText}>{endingLink ? t('agentDetail.endLinkWorking') : t('agentDetail.endLinkButton')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -790,13 +790,13 @@ export default function AgentDetailScreen({ navigation, route }: AgentDetailScre
                         Deliberately styled unlike the inbox's platinum "Approve" (outline + ribbon)
                         so the two are never confused. */}
                     <View style={styles.approveRow}>
-                        <TouchableOpacity style={[styles.endorseBtn, approving && styles.approveBtnDisabled]} onPress={() => void approveLatest('approved')} disabled={approving}>
+                        <ActionTouchable style={[styles.endorseBtn, approving && styles.approveBtnDisabled]} onPress={() => void approveLatest('approved')} disabled={approving}>
                             <Ionicons name="ribbon-outline" size={18} color={COLORS.platinum} />
                             <Text style={styles.endorseBtnText}>{activity.length > 0 ? t('agentDetail.endorseLatest') : t('agentDetail.endorse')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.rejectBtn, approving && styles.approveBtnDisabled]} onPress={() => void approveLatest('rejected')} disabled={approving}>
+                        </ActionTouchable>
+                        <ActionTouchable style={[styles.rejectBtn, approving && styles.approveBtnDisabled]} onPress={() => void approveLatest('rejected')} disabled={approving}>
                             <Text style={styles.rejectBtnText}>{t('agentDetail.dispute')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <Text style={styles.approveHint}>
                         {activity.length > 0

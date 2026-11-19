@@ -1,10 +1,10 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     Alert,
     Platform,
@@ -120,7 +120,7 @@ const BiometricSettingsScreen = ({ navigation }: any) => {
 
                 {/* Test Button */}
                 {biometricEnabled && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.testButton}
                         onPress={handleTestBiometric}
                         disabled={testing}
@@ -129,7 +129,7 @@ const BiometricSettingsScreen = ({ navigation }: any) => {
                         <Text style={styles.testButtonText}>
                             {testing ? t('biometric.testing') : t('biometric.testBiometric', { type: biometricType })}
                         </Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </ScrollView>
         </SafeAreaView>

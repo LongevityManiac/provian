@@ -1,7 +1,8 @@
+import { ActionTouchable } from './ScreenActions';
 import { withTranslation, type WithTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import React, { Component, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/theme';
@@ -57,9 +58,9 @@ class ErrorBoundary extends Component<Props, State> {
                         <Text style={styles.subtitle}>
                             {i18next.t('ui.errorBoundary.body')}</Text>
 
-                        <TouchableOpacity style={styles.button} onPress={this.handleRestart}>
+                        <ActionTouchable style={styles.button} onPress={this.handleRestart}>
                             <Text style={styles.buttonText}>{i18next.t('common.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         {__DEV__ && this.state.error && (
                             <ScrollView style={styles.errorDetails}>
@@ -75,7 +76,7 @@ class ErrorBoundary extends Component<Props, State> {
                             </ScrollView>
                         )}
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.supportLink}
                             onPress={() => {
                                 // In a full implementation, this would open email
@@ -84,7 +85,7 @@ class ErrorBoundary extends Component<Props, State> {
                         >
                             <Text style={styles.supportText}>
                                 {i18next.t('legal.support_contact')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </SafeAreaView>
             );

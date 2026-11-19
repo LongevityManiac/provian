@@ -1,7 +1,8 @@
+import { ActionTouchable } from './ScreenActions';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/theme';
 import { TransactionWarning } from '../core/protection/UserProtectionManager';
@@ -109,7 +110,7 @@ const WarningScreen: React.FC<WarningScreenProps> = ({ warning, onGoBack, onProc
 
                 {/* Acknowledgment Checkbox for high/critical warnings */}
                 {warning.canProceed && needsCheckbox && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.checkboxRow}
                         onPress={() => setAcknowledged(!acknowledged)}
                         activeOpacity={0.7}
@@ -119,23 +120,23 @@ const WarningScreen: React.FC<WarningScreenProps> = ({ warning, onGoBack, onProc
                         </View>
                         <Text style={styles.checkboxLabel}>
                             {i18next.t('ui.warning.acknowledge')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </ScrollView>
 
             {/* Action Buttons */}
             <View style={styles.footer}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.button, styles.buttonPrimary]}
                     onPress={onGoBack}
                 >
                     <Ionicons name="arrow-back" size={20} color="#0B0E14" />
                     <Text style={styles.buttonText}>
                         {i18next.t('common.goBack')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {warning.canProceed && onProceed && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[
                             styles.button,
                             styles.buttonDanger,
@@ -151,7 +152,7 @@ const WarningScreen: React.FC<WarningScreenProps> = ({ warning, onGoBack, onProc
                         ]}>
                             {needsCheckbox && !acknowledged ? i18next.t('ui.warning.acknowledgeFirst') : i18next.t('ui.warning.acceptRisk')}
                         </Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </View>

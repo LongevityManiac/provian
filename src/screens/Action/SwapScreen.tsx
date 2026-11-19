@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, FlatList, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator, Modal, FlatList, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
@@ -133,9 +134,9 @@ const SwapScreen = ({ navigation }: any) => {
                     <Text style={{ color: COLORS.textSecondary, fontSize: 16, marginTop: SPACING.m, textAlign: 'center' }}>
                         {t('swap.noAssets')}
                     </Text>
-                    <TouchableOpacity style={{ marginTop: SPACING.l }} onPress={() => navigation.goBack()}>
+                    <ActionTouchable style={{ marginTop: SPACING.l }} onPress={() => navigation.goBack()}>
                         <Text style={{ color: COLORS.primary, fontSize: 16 }}>{t('common.goBack')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -549,7 +550,7 @@ const SwapScreen = ({ navigation }: any) => {
     };
 
     const renderAssetItem = ({ item }: { item: Asset }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.assetItem}
             onPress={() => selectAsset(item)}
         >
@@ -567,7 +568,7 @@ const SwapScreen = ({ navigation }: any) => {
                 <Text style={styles.assetBalance}>{item.balance}</Text>
                 <Text style={styles.assetValue}>{formatUsd(assetUsdValue(item))}</Text>
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     // [#9] Derive a real price-impact figure from the USD values we already
@@ -674,9 +675,9 @@ const SwapScreen = ({ navigation }: any) => {
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} color={themeColors.textPrimary} />
                 <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{t('swap.title')}</Text>
-                <TouchableOpacity style={styles.headerAction} onPress={() => navigation.navigate('TransactionHistory')}>
+                <ActionTouchable style={styles.headerAction} onPress={() => navigation.navigate('TransactionHistory')}>
                     <Ionicons name="time-outline" size={24} color={themeColors.textPrimary} />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             <KeyboardAvoidingView
@@ -701,9 +702,9 @@ const SwapScreen = ({ navigation }: any) => {
                 <View style={[styles.swapCard, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]}>
                     <View style={styles.cardHeader}>
                         <Text style={[styles.label, { color: themeColors.textSecondary }]}>{t('swap.from')}</Text>
-                        <TouchableOpacity onPress={handleMaxPress} disabled={loading}>
+                        <ActionTouchable onPress={handleMaxPress} disabled={loading}>
                             <Text style={[styles.maxButton, { color: themeColors.accent }]}>{t('common.max')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <View style={styles.row}>
                         <TextInput
@@ -715,7 +716,7 @@ const SwapScreen = ({ navigation }: any) => {
                             onChangeText={(v) => { if (!submittingRef.current) setAmount(v); }}
                             editable={isSwapSupported && !loading}
                         />
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.assetBadge, { backgroundColor: themeColors.chipBackground, borderColor: themeColors.border }]}
                             onPress={() => openSelector('from')}
                             disabled={loading}
@@ -725,7 +726,7 @@ const SwapScreen = ({ navigation }: any) => {
                                 <Text style={[styles.assetChainText, { color: themeColors.textSecondary }]}>{fromAsset.chain}</Text>
                             </View>
                             <Ionicons name="chevron-down" size={16} color={themeColors.accent} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <View style={styles.cardFooter}>
                         <Text style={[styles.usdValue, { color: themeColors.textSecondary }]}>
@@ -734,22 +735,22 @@ const SwapScreen = ({ navigation }: any) => {
                         <Text style={[styles.balanceText, { color: themeColors.textSecondary }]}>{t('swap.balanceLabel', { balance: fromAsset.balance })}</Text>
                     </View>
                     {quoteError && !quoteLoading && (
-                        <TouchableOpacity
+                        <ActionTouchable
                             onPress={() => { if (submittingRef.current) return; setQuoteError(null); const cur = amount; setAmount(''); setTimeout(() => setAmount(cur), 0); }}
                             disabled={loading}
                             style={styles.quoteErrorBanner}
                         >
                             <Ionicons name="alert-circle" size={16} color={COLORS.error} />
                             <Text style={styles.quoteErrorText}>{quoteError}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     )}
                 </View>
 
                 {/* Swap Button */}
                 <View style={styles.divider}>
-                    <TouchableOpacity style={[styles.swapIconCircle, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]} onPress={handleSwapAssets} disabled={loading}>
+                    <ActionTouchable style={[styles.swapIconCircle, { backgroundColor: themeColors.cardBackground, borderColor: themeColors.border }]} onPress={handleSwapAssets} disabled={loading}>
                         <Ionicons name="swap-vertical" size={24} color={themeColors.accent} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 {/* To Card */}
@@ -763,7 +764,7 @@ const SwapScreen = ({ navigation }: any) => {
                                 {quote ? quote.netToAmount : '0.00'}
                             </Text>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.assetBadge, { backgroundColor: themeColors.chipBackground, borderColor: themeColors.border }]}
                             onPress={() => openSelector('to')}
                             disabled={loading}
@@ -773,7 +774,7 @@ const SwapScreen = ({ navigation }: any) => {
                                 <Text style={[styles.assetChainText, { color: themeColors.textSecondary }]}>{toAsset.chain}</Text>
                             </View>
                             <Ionicons name="chevron-down" size={16} color={themeColors.accent} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <View style={styles.cardFooter}>
                         <Text style={[styles.usdValue, { color: themeColors.textSecondary }]}>
@@ -797,7 +798,7 @@ const SwapScreen = ({ navigation }: any) => {
                 )}
 
                 {/* Swap Button */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.swapButton, { backgroundColor: themeColors.primary }, (!quote || loading || !isSwapSupported || solShort) && styles.swapButtonDisabled]}
                     onPress={() => { Keyboard.dismiss(); handleReview(); }}
                     disabled={!quote || loading || !isSwapSupported || solShort}
@@ -809,7 +810,7 @@ const SwapScreen = ({ navigation }: any) => {
                             {!isSwapSupported ? t('swap.notAvailable') : solShort ? t('swap.notEnoughSol') : quote ? t('swap.review') : t('swap.enterAmount')}
                         </Text>
                     )}
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
             </KeyboardAvoidingView>
 
@@ -824,9 +825,9 @@ const SwapScreen = ({ navigation }: any) => {
                 <View style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>{t('swap.review')}</Text>
-                        <TouchableOpacity onPress={closeReview} disabled={loading} testID="swap-review-close">
+                        <ActionTouchable onPress={closeReview} disabled={loading} testID="swap-review-close">
                             <Ionicons name="close" size={24} color={COLORS.text} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <ScrollView contentContainerStyle={styles.reviewContent} showsVerticalScrollIndicator={false}>
                         {quote && (
@@ -856,7 +857,7 @@ const SwapScreen = ({ navigation }: any) => {
                                 <Text style={[styles.reviewNote, { color: themeColors.textSecondary }]}>{t('swap.reviewNote')}</Text>
                             </>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.swapButton, styles.reviewConfirmButton, { backgroundColor: themeColors.primary }, loading && styles.swapButtonDisabled]}
                             onPress={handleConfirm}
                             disabled={loading}
@@ -867,10 +868,10 @@ const SwapScreen = ({ navigation }: any) => {
                             ) : (
                                 <Text style={styles.buttonText}>{t('swap.confirmSwap')}</Text>
                             )}
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.reviewCancelButton} onPress={closeReview} disabled={loading}>
+                        </ActionTouchable>
+                        <ActionTouchable style={styles.reviewCancelButton} onPress={closeReview} disabled={loading}>
                             <Text style={[styles.reviewCancelText, { color: themeColors.textSecondary }]}>{t('common.cancel')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </ScrollView>
                 </View>
             </Modal>
@@ -885,9 +886,9 @@ const SwapScreen = ({ navigation }: any) => {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>{t('swap.selectToken')}</Text>
-                        <TouchableOpacity onPress={() => setSelectorVisible(false)}>
+                        <ActionTouchable onPress={() => setSelectorVisible(false)}>
                             <Ionicons name="close" size={24} color={COLORS.text} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <FlatList
                         data={selectingFor === 'to' ? swapDestinationAssets(assets) : assets}
@@ -1067,7 +1068,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0,
     },
     buttonText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 18,
         fontWeight: 'bold',
     },

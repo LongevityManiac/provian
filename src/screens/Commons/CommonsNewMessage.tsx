@@ -3,8 +3,9 @@
  * write to (your linked agents first, then a Directory search) and open the direct thread with them.
  * Sending, the message key and the speech window are the thread screen's, unchanged.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,13 +60,13 @@ export default function CommonsNewMessage({ navigation }: Props) {
   const open = (r: ComposeRecipient) => navigation.replace('CommonsThread', { counterparty: r.walletId, counterpartyName: r.name });
 
   const row = (r: ComposeRecipient) => (
-    <TouchableOpacity key={r.walletId} style={styles.row} onPress={() => open(r)} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={r.name}>
+    <ActionTouchable key={r.walletId} style={styles.row} onPress={() => open(r)} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel={r.name}>
       <View style={[styles.rowIcon, { backgroundColor: r.kind === 'agent' ? COLORS.secondaryMuted : COLORS.primaryMuted }]}>
         <Ionicons name={r.kind === 'agent' ? 'hardware-chip' : 'person'} size={18} color={r.kind === 'agent' ? COLORS.secondary : COLORS.primary} />
       </View>
       <Text style={styles.rowTitle} numberOfLines={1}>{r.name}</Text>
       <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-    </TouchableOpacity>
+    </ActionTouchable>
   );
 
   return (

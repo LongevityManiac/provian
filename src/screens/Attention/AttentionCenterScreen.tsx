@@ -8,7 +8,12 @@ import { loadAttentionShared } from '../../core/attention/useAttentionCount';
  */
 import React, { useCallback, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +26,7 @@ import type { AppParamList } from '../../navigation/types';
 import { type AttentionItem, type AttentionSnapshot } from '../../core/attention/attention';
 import type { AgentRecoveryAlert } from '../../services/RelayAPIService';
 import BackButton from '../../components/BackButton';
-import { actionStyles, DestinationRow } from '../../components/ScreenActions';
+import { ActionTouchable, actionStyles, DestinationRow } from '../../components/ScreenActions';
 import { publishHumanRecoveryAnchor } from '../../core/agents/humanRecoveryAnchor';
 
 function reasonLabel(reason: AgentRecoveryAlert['reason'], t: (k: string) => string): string {
@@ -245,7 +250,7 @@ function AttentionContent({ embedded = false }: { embedded?: boolean }): React.R
                     snap.items.map((item) => {
                         const meta = rowMeta(item);
                         return (
-                            <TouchableOpacity key={item.id} style={styles.row} onPress={() => openItem(item)} activeOpacity={0.75}>
+                            <ActionTouchable key={item.id} style={styles.row} onPress={() => openItem(item)} activeOpacity={0.75}>
                                 <View style={[styles.rowIcon, { backgroundColor: `${meta.tint}22` }]}>
                                     <Ionicons name={meta.icon} size={20} color={meta.tint} />
                                 </View>
@@ -254,7 +259,7 @@ function AttentionContent({ embedded = false }: { embedded?: boolean }): React.R
                                     <Text style={styles.rowSubtitle} numberOfLines={2}>{meta.subtitle}</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         );
                     })
                 )}

@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
@@ -15,7 +16,7 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  * - A pre- relay returns direct replies only; they render as one level.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -289,9 +290,9 @@ export default function CommonsForumPost({ navigation, route }: Props) {
       return (
         <View style={styles.postBlock}>
           <Text style={styles.emptyTitle}>{t('commonsSafety.blockedHidden')}</Text>
-          <TouchableOpacity style={styles.retry} onPress={() => { void useCommonsBlockStore.getState().unblock(post.author_wallet_id); }} accessibilityRole="button">
+          <ActionTouchable style={styles.retry} onPress={() => { void useCommonsBlockStore.getState().unblock(post.author_wallet_id); }} accessibilityRole="button">
             <Text style={styles.retryText}>{t('commonsSafety.unblock')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       );
     }
@@ -301,10 +302,10 @@ export default function CommonsForumPost({ navigation, route }: Props) {
     return (
       <View>
         {rootPost && (
-          <TouchableOpacity style={styles.rootLink} onPress={() => navigation.push('CommonsForumPost', { postId: rootPost.post_id, channel: rootPost.channel, focusCommentId: post.post_id })} accessibilityRole="button">
+          <ActionTouchable style={styles.rootLink} onPress={() => navigation.push('CommonsForumPost', { postId: rootPost.post_id, channel: rootPost.channel, focusCommentId: post.post_id })} accessibilityRole="button">
             <Ionicons name="return-up-back-outline" size={16} color={COLORS.primaryLight} />
             <Text style={styles.rootLinkText} numberOfLines={1}>{t('commonsForum.thread.viewWhole', { title: rootPost.title || rootPost.content })}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         )}
         <View style={styles.postBlock}>
           <AuthorLine post={post} onAuthor={() => writes.viewProfile(post)} />
@@ -331,24 +332,24 @@ export default function CommonsForumPost({ navigation, route }: Props) {
               <Text style={styles.footerText}>{commentLabel}</Text>
             </View>
             <View style={{ flex: 1 }} />
-            <TouchableOpacity style={styles.footerBtn} onPress={() => openMenu(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
+            <ActionTouchable style={styles.footerBtn} onPress={() => openMenu(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
               <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>
         </View>
 
         {anchorId && (
-          <TouchableOpacity style={styles.partial} onPress={() => setAnchorId(null)} accessibilityRole="button">
+          <ActionTouchable style={styles.partial} onPress={() => setAnchorId(null)} accessibilityRole="button">
             <Text style={styles.partialText}>{t('commonsForum.thread.partial')}</Text>
             <Text style={styles.partialCta}>{t('commonsForum.thread.showAll')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         )}
         <View style={styles.sortRow}>
           <Text style={styles.sortLabel}>{t('commonsForum.thread.sortBy')}</Text>
           {(['best', 'new'] as CommentSort[]).map((s) => (
-            <TouchableOpacity key={s} style={[styles.sortBtn, sort === s && styles.sortBtnActive]} onPress={() => setSort(s)} accessibilityRole="tab" accessibilityState={{ selected: sort === s }}>
+            <ActionTouchable key={s} style={[styles.sortBtn, sort === s && styles.sortBtnActive]} onPress={() => setSort(s)} accessibilityRole="tab" accessibilityState={{ selected: sort === s }}>
               <Text style={[styles.sortText, sort === s && styles.sortTextActive]}>{t(`commonsForum.thread.sort.${s}`)}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
         </View>
       </View>
@@ -378,9 +379,9 @@ export default function CommonsForumPost({ navigation, route }: Props) {
           <Ionicons name={failed ? 'cloud-offline-outline' : 'alert-circle-outline'} size={40} color={COLORS.textTertiary} />
           <Text style={styles.emptyTitle}>{failed ? t('commonsForum.thread.loadFailed') : t('commonsForum.thread.notFound')}</Text>
           {failed && (
-            <TouchableOpacity style={styles.retry} onPress={() => { setLoading(true); void load(); }} accessibilityRole="button">
+            <ActionTouchable style={styles.retry} onPress={() => { setLoading(true); void load(); }} accessibilityRole="button">
               <Text style={styles.retryText}>{t('common.tryAgain')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           )}
         </View>
       ) : (
@@ -416,9 +417,9 @@ export default function CommonsForumPost({ navigation, route }: Props) {
               {replyTo && (
                 <View style={styles.replyChip}>
                   <Text style={styles.replyChipText} numberOfLines={1}>{t('commonsForum.thread.replyingTo', { name: authorName(replyTo) })}</Text>
-                  <TouchableOpacity onPress={() => setReplyTo(null)} style={styles.replyChipX} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.cancelReply')}>
+                  <ActionTouchable onPress={() => setReplyTo(null)} style={styles.replyChipX} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.cancelReply')}>
                     <Ionicons name="close" size={16} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
+                  </ActionTouchable>
                 </View>
               )}
               <View style={styles.composerRow}>
@@ -433,15 +434,15 @@ export default function CommonsForumPost({ navigation, route }: Props) {
                   multiline
                   accessibilityLabel={t('commonsForum.thread.addComment')}
                 />
-                <TouchableOpacity
+                <ActionTouchable
                   style={[styles.send, (!text.trim() || sending) && styles.sendDisabled]}
                   onPress={() => void sendReply()}
                   disabled={!text.trim() || sending}
                   accessibilityRole="button"
                   accessibilityLabel={t('commonsForum.thread.send')}
                 >
-                  {sending ? <ActivityIndicator size="small" color={COLORS.text} /> : <Ionicons name="arrow-up" size={20} color={COLORS.text} />}
-                </TouchableOpacity>
+                  {sending ? <ActivityIndicator size="small" color={COLORS.onPrimary} /> : <Ionicons name="arrow-up" size={20} color={COLORS.onPrimary} />}
+                </ActionTouchable>
               </View>
             </View>
         </KeyboardAvoidingView>

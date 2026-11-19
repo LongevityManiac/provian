@@ -1,3 +1,5 @@
+import { ActionTouchable } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
 import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { projectPublicStanding } from '../../core/commons/publicHeaders';
 import TalkingPassPill from '../../components/commons/TalkingPassPill';
@@ -23,7 +25,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -35,7 +36,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS, GRADIENTS, SHADOWS } from '../../constants/theme';
-import { shortAddress } from '../../utils/shortAddress';
 import useCommonsStore from '../../store/commonsStore';
 import * as CommonsService from '../../core/commons/CommonsService';
 import type { CommonsProfile as CommonsProfileType, ProfileVouch, MyVouch } from '../../core/commons/CommonsService';
@@ -66,14 +66,6 @@ interface Props {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const REGISTRY_ACCENT = '#4A8EE8';
-
-const ATTESTATION_CONFIG: Record<string, { color: string; labelKey: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  hardware: { color: COLORS.success, labelKey: 'commons.hardwareAttested', icon: 'hardware-chip' },
-  corroborated: { color: COLORS.successLight, labelKey: 'commons.corroborated', icon: 'shield-checkmark' },
-  software_verified: { color: COLORS.primary, labelKey: 'commons.softwareVerified', icon: 'code-slash' },
-  software: { color: COLORS.warning, labelKey: 'commons.software', icon: 'desktop' },
-  self_reported: { color: COLORS.textTertiary, labelKey: 'commons.selfReported', icon: 'person' },
-};
 
 const STATUS_CONFIG: Record<string, { color: string; labelKey: string }> = {
   active: { color: COLORS.success, labelKey: 'commons.active' },
@@ -310,15 +302,14 @@ export default function CommonsProfile({ navigation, route }: Props) {
         <View style={styles.emptyState}>
           <Ionicons name="eye-off-outline" size={48} color={COLORS.textTertiary} />
           <Text style={styles.emptyTitle}>{t('commonsSafety.blockedHidden')}</Text>
-          <TouchableOpacity style={[styles.actionButton, styles.safetyButton]} onPress={() => { void useCommonsBlockStore.getState().unblock(walletId); }} accessibilityRole="button">
+          <ActionTouchable style={[styles.actionButton, styles.safetyButton]} onPress={() => { void useCommonsBlockStore.getState().unblock(walletId); }} accessibilityRole="button">
             <Text style={styles.actionText}>{t('commonsSafety.unblock')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </SafeAreaView>
     );
   }
 
-  const attest = ATTESTATION_CONFIG[profile.attestation_tier] ?? ATTESTATION_CONFIG.self_reported;
   const status = STATUS_CONFIG[profile.status] ?? STATUS_CONFIG.active;
 
   return (
@@ -335,9 +326,9 @@ export default function CommonsProfile({ navigation, route }: Props) {
         <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.headerTitle}>{t('commons.profileTitle')}</Text>
         {isOwnProfile && !editing && (
-          <TouchableOpacity onPress={() => setEditing(true)} style={styles.editHeaderButton}>
+          <ActionTouchable onPress={() => setEditing(true)} style={styles.editHeaderButton}>
             <Ionicons name="create" size={20} color={REGISTRY_ACCENT} />
-          </TouchableOpacity>
+          </ActionTouchable>
         )}
         {!isOwnProfile && <View style={styles.headerSpacer} />}
       </View>
@@ -352,9 +343,9 @@ export default function CommonsProfile({ navigation, route }: Props) {
         <View style={styles.heroCard}>
           <View style={styles.heroTop}>
             {/* Avatar */}
-            <View style={[styles.avatar, { borderColor: attest.color }]}>
+            <View style={styles.avatar}>
               {profile.participant_type === 'agent' ? (
-                <Ionicons name="hardware-chip" size={32} color={COLORS.secondary} />
+                <ProvianIcon name="agent" size={32} color={COLORS.primaryLight} />
               ) : (
                 <Text style={styles.avatarText}>{getInitials(profile.display_name)}</Text>
               )}
@@ -373,16 +364,8 @@ export default function CommonsProfile({ navigation, route }: Props) {
               ) : (
                 <Text style={styles.heroName}>{profile.display_name}</Text>
               )}
-              <Text style={styles.heroAddress}>
-                ({shortAddress((profile as unknown as { address?: string }).address ?? profile.wallet_id)})
-              </Text>
-
+              <PublicStandingLine walletId={profile.wallet_id} kind={profile.participant_type} standing={projectPublicStanding(profile)} />
               <View style={styles.typeRow}>
-                <View style={[styles.typeBadge, profile.participant_type === 'agent' ? styles.agentBadge : styles.humanBadge]}>
-                  <Text style={[styles.typeText, { color: profile.participant_type === 'agent' ? COLORS.secondary : COLORS.success }]}>
-                    {profile.participant_type === 'agent' ? t('commons.agentBadge') : t('commons.humanBadge')}
-                  </Text>
-                </View>
                 <View style={[styles.statusBadge, { backgroundColor: `${status.color}20` }]}>
                   <View style={[styles.statusDot, { backgroundColor: status.color }]} />
                   <Text style={[styles.statusLabel, { color: status.color }]}>{t(status.labelKey)}</Text>
@@ -391,17 +374,12 @@ export default function CommonsProfile({ navigation, route }: Props) {
             </View>
           </View>
 
-          {/* Attestation */}
-          <View style={[styles.attestBanner, { backgroundColor: `${attest.color}15` }]}>
-            <Ionicons name={attest.icon} size={16} color={attest.color} />
-            <Text style={[styles.attestText, { color: attest.color }]}>{t(attest.labelKey)}</Text>
-            {['hardware_partial', 'hardware_tpm', 'hardware_full', 'hardware'].includes(profile.attestation_tier_raw ?? profile.attestation_tier) && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="shield-checkmark" size={12} color={COLORS.success} />
-                <Text style={styles.verifiedText}>{t('commons.hardwareBackedDevice')}</Text>
-              </View>
-            )}
-          </View>
+          {['hardware_partial', 'hardware_tpm', 'hardware_full', 'hardware'].includes(profile.attestation_tier_raw ?? profile.attestation_tier) && (
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="shield-checkmark" size={14} color={COLORS.success} />
+              <Text style={styles.verifiedText}>{t('commons.hardwareBackedDevice')}</Text>
+            </View>
+          )}
 
           {/* Bio */}
           {editing ? (
@@ -417,7 +395,6 @@ export default function CommonsProfile({ navigation, route }: Props) {
             <Text style={styles.bioText}>{profile.bio}</Text>
           ) : null}
 
-          <PublicStandingLine walletId={profile.wallet_id} kind={profile.participant_type} standing={projectPublicStanding(profile)} />
           {publicBond?.walletId === profile.wallet_id && <Text style={styles.joinDate}>
             {t(publicBond.active ? 'overhaul.activeBond' : 'overhaul.noActiveBond')}
           </Text>}
@@ -429,25 +406,25 @@ export default function CommonsProfile({ navigation, route }: Props) {
           <View style={styles.actionRow}>
             {isOwnProfile ? (
               <>
-                <TouchableOpacity style={[styles.actionButton, styles.actionPrimary]} onPress={() => setEditing(true)} accessibilityRole="button">
-                  <Ionicons name="create-outline" size={18} color="#FFFFFF" />
+                <ActionTouchable style={[styles.actionButton, styles.actionPrimary]} onPress={() => setEditing(true)} accessibilityRole="button">
+                  <Ionicons name="create-outline" size={18} color={COLORS.onPrimary} />
                   <Text style={styles.actionPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.editProfile')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
                 <TalkingPassPill />
               </>
             ) : walletId ? (
               <>
                 {/* message this wallet directly — an end-to-end encrypted thread. Free with an
                     open relationship; otherwise the first message uses your talking pass. */}
-                <TouchableOpacity
+                <ActionTouchable
                   style={[styles.actionButton, styles.actionPrimary]}
                   onPress={() => navigation.navigate('CommonsThread', { counterparty: walletId, counterpartyName: profile.display_name })}
                   accessibilityRole="button"
                   accessibilityLabel={t('commons.messageAgent', { name: profile.display_name })}
                 >
-                  <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
+                  <Ionicons name="chatbubbles-outline" size={18} color={COLORS.onPrimary} />
                   <Text style={styles.actionPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.message')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
                 {/* vouch (a person, for a person or an agent) — never on your own linked agents. */}
                 {ownProfile?.participant_type === 'human' && linkedAgents !== null
                   && canShowVouch({ viewerId: ownProfile.wallet_id, targetId: walletId, linkedAgents }) && (
@@ -457,7 +434,7 @@ export default function CommonsProfile({ navigation, route }: Props) {
                       <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commons.vouched')}</Text>
                     </View>
                   ) : (
-                    <TouchableOpacity
+                    <ActionTouchable
                       style={[styles.actionButton, vouching && { opacity: 0.6 }]}
                       onPress={handleVouch}
                       disabled={vouching}
@@ -466,7 +443,7 @@ export default function CommonsProfile({ navigation, route }: Props) {
                     >
                       {vouching ? <ActivityIndicator size="small" color={COLORS.text} /> : <Ionicons name="hand-left-outline" size={18} color={COLORS.text} />}
                       <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('overhaul.vouchPrice', { pvt: VOUCH_BURN_PVT })}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                   )
                 )}
               </>
@@ -477,45 +454,24 @@ export default function CommonsProfile({ navigation, route }: Props) {
         {/* Report to Provian and Block: free and private, on every profile but your own. */}
         {!editing && !isOwnProfile && walletId && (
           <View style={styles.actionRow}>
-            <TouchableOpacity
+            <ActionTouchable
               style={styles.actionButton}
               onPress={() => { void openReportToProvian(t, { kind: 'profile', walletId, name: profile.display_name ?? null }); }}
               accessibilityRole="button"
             >
               <Ionicons name="mail-unread-outline" size={18} color={COLORS.text} />
               <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsSafety.report')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </ActionTouchable>
+            <ActionTouchable
               style={styles.actionButton}
               onPress={() => confirmBlock(t, walletId, profile.display_name ?? null)}
               accessibilityRole="button"
             >
               <Ionicons name="eye-off-outline" size={18} color={COLORS.text} />
               <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsSafety.blockShort')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>
         )}
-
-        {/* ─── Tier 1 Metrics ────────────────────────────────────────── */}
-        <Text style={styles.sectionTitle}>{t('commons.metrics')}</Text>
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricValue}>{profile.pe_count}</Text>
-            <Text style={styles.metricLabel}>{t('commons.totalPEs')}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricValue}>
-              {profile.promise_fulfillment_rate > 0
-                ? `${Math.round(profile.promise_fulfillment_rate * 100)}%`
-                : '--'}
-            </Text>
-            <Text style={styles.metricLabel}>{t('commons.fulfillment')}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricValue}>{profile.published_pe_count}</Text>
-            <Text style={styles.metricLabel}>{t('commons.publishedLabel')}</Text>
-          </View>
-        </View>
 
         {/* Court Record — only when there is one (a wall of zeros tells a newcomer nothing). */}
         {(profile.court_record.cases_as_arbitrator + profile.court_record.wins + profile.court_record.losses + profile.court_record.slashing_events) > 0 && (
@@ -669,7 +625,7 @@ export default function CommonsProfile({ navigation, route }: Props) {
         {/* ─── Actions ───────────────────────────────────────────────── */}
         {editing && (
           <View style={styles.editActions}>
-            <TouchableOpacity
+            <ActionTouchable
               style={styles.cancelButton}
               onPress={() => {
                 setEditing(false);
@@ -679,18 +635,18 @@ export default function CommonsProfile({ navigation, route }: Props) {
               }}
             >
               <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </ActionTouchable>
+            <ActionTouchable
               style={[styles.saveButton, saving && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color={COLORS.text} />
+                <ActivityIndicator size="small" color={COLORS.onPrimary} />
               ) : (
                 <Text style={styles.saveButtonText}>{t('common.save')}</Text>
               )}
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>
         )}
 
@@ -710,7 +666,7 @@ const styles = StyleSheet.create({
   actionPrimary: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   actionText: { color: COLORS.text, fontSize: 14, fontWeight: '600', flexShrink: 1, textAlign: 'center' },
   actionDone: { borderColor: COLORS.success },
-  actionPrimaryText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', flexShrink: 1, textAlign: 'center' },
+  actionPrimaryText: { color: COLORS.onPrimary, fontSize: 14, fontWeight: '600', flexShrink: 1, textAlign: 'center' },
   scrollView: { flex: 1 },
   scrollContent: { padding: SPACING.l, paddingBottom: SPACING.xxxl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -812,26 +768,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.s,
   },
   bioInput: { minHeight: 80, textAlignVertical: 'top' },
-
-  // Metrics Grid
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.s,
-  },
-  metricCard: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    backgroundColor: 'rgba(18,21,26,0.70)',
-    borderRadius: 18,
-    padding: SPACING.m,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(200,205,214,0.08)',
-    ...SHADOWS.card,
-  },
-  metricValue: { fontSize: 22, fontWeight: '700', color: COLORS.text },
-  metricLabel: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
 
   // Court Record
   recordCard: {
@@ -954,7 +890,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { fontSize: 15, color: COLORS.text, fontWeight: '600' },
+  saveButtonText: { fontSize: 15, color: COLORS.onPrimary, fontWeight: '600' },
 
 
   // Empty

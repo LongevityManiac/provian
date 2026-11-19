@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * Request & verify a presentation — the human REQUESTER leg of burn-to-present.
@@ -23,7 +24,14 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Share, ActivityIndicator, Alert,
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    ScrollView,
+    Share,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -369,7 +377,7 @@ export default function PresentationRequesterScreen(): React.ReactElement {
         return (
             <SafeAreaView style={styles.safe} edges={['top']}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => setScanning(false)}><Ionicons name="close" size={26} color={COLORS.text} /></TouchableOpacity>
+                    <ActionTouchable onPress={() => setScanning(false)}><Ionicons name="close" size={26} color={COLORS.text} /></ActionTouchable>
                     <Text style={styles.headerTitle}>{t('trustLayer.requester.scanTitle')}</Text>
                     <View style={{ width: 26 }} />
                 </View>
@@ -381,9 +389,9 @@ export default function PresentationRequesterScreen(): React.ReactElement {
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <ActionTouchable onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                     <Ionicons name="chevron-back" size={26} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={styles.headerTitle}>{t('trustLayer.requester.title')}</Text>
                 <View style={{ width: 26 }} />
             </View>
@@ -415,9 +423,9 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                     <View style={styles.hsBlock}>
                         <View style={styles.rowBetween}>
                             <Text style={styles.section}>{t('trustLayer.requester.relationshipTitle')}</Text>
-                            <TouchableOpacity onPress={checkHandshake} disabled={hsLoading}>
+                            <ActionTouchable onPress={checkHandshake} disabled={hsLoading}>
                                 <Text style={styles.scanLink}>{hsLoading ? '…' : hsState ? t('trustLayer.requester.refresh') : t('trustLayer.requester.check')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                         {hsState ? (
                             <View style={[styles.resultCard, { borderColor: hsState.state === 'live' ? COLORS.platinumMuted : COLORS.errorMuted, marginTop: SPACING.s }]}>
@@ -475,16 +483,16 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                                                 </View>
                                             )}
                                         </View>
-                                        <TouchableOpacity onPress={() => removeDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></TouchableOpacity>
+                                        <ActionTouchable onPress={() => removeDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></ActionTouchable>
                                     </View>
                                 );
                             }
                             return (
                                 <View key={i} style={[styles.predRow, !ok && styles.predRowBad]}>
                                     <TextInput style={[styles.input, styles.predField]} value={d.field} onChangeText={(v) => updateDraft(i, { field: v })} autoCapitalize="none" autoCorrect={false} placeholder={t('trustLayer.requester.fieldPlaceholder')} placeholderTextColor={COLORS.textMuted} />
-                                    <TouchableOpacity style={styles.opBtn} onPress={() => cycleOp(i)}><Text style={styles.opText}>{OP_LABEL[d.op]}</Text></TouchableOpacity>
+                                    <ActionTouchable style={styles.opBtn} onPress={() => cycleOp(i)}><Text style={styles.opText}>{OP_LABEL[d.op]}</Text></ActionTouchable>
                                     <TextInput style={[styles.input, styles.predValue]} value={d.value} onChangeText={(v) => updateDraft(i, { value: v })} keyboardType={d.op === 'in' ? 'default' : 'numeric'} placeholder={d.op === 'in' ? '1, 2' : '0'} placeholderTextColor={COLORS.textMuted} />
-                                    <TouchableOpacity onPress={() => removeDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></TouchableOpacity>
+                                    <ActionTouchable onPress={() => removeDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></ActionTouchable>
                                 </View>
                             );
                         })}
@@ -492,13 +500,13 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                         {/* The plain-language menu — tap to add. Only shows checks not already chosen. */}
                         <View style={styles.presetWrap}>
                             {PREDICATE_PRESETS.filter((p) => !drafts.some((d) => d.field === p.field)).map((p) => (
-                                <TouchableOpacity key={p.key} style={styles.presetBtn} onPress={() => addPreset(p)}>
+                                <ActionTouchable key={p.key} style={styles.presetBtn} onPress={() => addPreset(p)}>
                                     <Ionicons name="add-circle-outline" size={18} color={COLORS.platinum} />
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.presetLabel}>{t(p.label)}</Text>
                                         <Text style={styles.presetHelp}>{t(p.help)}</Text>
                                     </View>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             ))}
                         </View>
 
@@ -506,15 +514,15 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                         {showAdvanced || drafts.some((d) => !d.label) ? (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: SPACING.s }}>
                                 {SUGGESTED_FIELDS.map((f) => (
-                                    <TouchableOpacity key={f} style={styles.chip} onPress={() => addPreset({ key: f, label: '', help: '', field: f, op: 'gte', value: '' })}>
+                                    <ActionTouchable key={f} style={styles.chip} onPress={() => addPreset({ key: f, label: '', help: '', field: f, op: 'gte', value: '' })}>
                                         <Text style={styles.chipText}>{f}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 ))}
                             </ScrollView>
                         ) : null}
-                        <TouchableOpacity onPress={addDraft} style={{ marginTop: SPACING.m }}>
+                        <ActionTouchable onPress={addDraft} style={{ marginTop: SPACING.m }}>
                             <Text style={styles.scanLink}>{t('trustLayer.requester.advancedCustom')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -529,7 +537,7 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                                 <View key={`dd-${i}`} style={[styles.discDraft, !ok && styles.predRowBad]}>
                                     <View style={styles.rowBetween}>
                                         <Text style={styles.cardTitle}>{d.kind === 'pe' ? t('trustLayer.requester.discKindPe') : t('trustLayer.requester.discKindWitness')}</Text>
-                                        <TouchableOpacity onPress={() => removeDiscDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></TouchableOpacity>
+                                        <ActionTouchable onPress={() => removeDiscDraft(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}><Ionicons name="close-circle" size={20} color={COLORS.textMuted} /></ActionTouchable>
                                     </View>
                                     {d.kind === 'pe' && (
                                         <TextInput style={[styles.input, styles.predField]} value={d.digest} onChangeText={(v) => updateDiscDraft(i, { digest: v })} autoCapitalize="none" autoCorrect={false} placeholder={t('trustLayer.requester.discDigestPlaceholder')} placeholderTextColor={COLORS.textMuted} />
@@ -548,9 +556,9 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                                         {DISCLOSURE_CONTENT_ELECTIONS.map((c) => {
                                             const on = d.content.includes(c);
                                             return (
-                                                <TouchableOpacity key={c} style={[styles.chip, on && styles.chipOn]} onPress={() => toggleDiscContent(i, c)}>
+                                                <ActionTouchable key={c} style={[styles.chip, on && styles.chipOn]} onPress={() => toggleDiscContent(i, c)}>
                                                     <Text style={[styles.chipText, on && { color: COLORS.platinum }]}>{t(CONTENT_LABEL[c])}</Text>
-                                                </TouchableOpacity>
+                                                </ActionTouchable>
                                             );
                                         })}
                                     </View>
@@ -558,14 +566,14 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                             );
                         })}
                         <View style={styles.presetWrap}>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => addDiscDraft('pe')}>
+                            <ActionTouchable style={styles.presetBtn} onPress={() => addDiscDraft('pe')}>
                                 <Ionicons name="add-circle-outline" size={18} color={COLORS.platinum} />
                                 <View style={{ flex: 1 }}><Text style={styles.presetLabel}>{t('trustLayer.requester.discAddPe')}</Text><Text style={styles.presetHelp}>{t('trustLayer.requester.discAddPeHelp')}</Text></View>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.presetBtn} onPress={() => addDiscDraft('witness')}>
+                            </ActionTouchable>
+                            <ActionTouchable style={styles.presetBtn} onPress={() => addDiscDraft('witness')}>
                                 <Ionicons name="add-circle-outline" size={18} color={COLORS.platinum} />
                                 <View style={{ flex: 1 }}><Text style={styles.presetLabel}>{t('trustLayer.requester.discAddWitness')}</Text><Text style={styles.presetHelp}>{t('trustLayer.requester.discAddWitnessHelp')}</Text></View>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                 )}
@@ -594,28 +602,28 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                             </View>
                         )}
                         <Text style={styles.qrCaption}>{t('trustLayer.requester.qrCaption')}</Text>
-                        <TouchableOpacity style={styles.secondaryBtn} onPress={shareChallenge}>
+                        <ActionTouchable style={styles.secondaryBtn} onPress={shareChallenge}>
                             <Ionicons name="share-outline" size={16} color={COLORS.platinum} />
                             <Text style={styles.secondaryBtnText}>{t('trustLayer.requester.sendRequest')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { setEnvelope(null); setIssuedPredicates([]); setIssuedDisclosures([]); setResult(null); }}><Text style={styles.again}>{t('trustLayer.requester.newRequest')}</Text></TouchableOpacity>
+                        </ActionTouchable>
+                        <ActionTouchable onPress={() => { setEnvelope(null); setIssuedPredicates([]); setIssuedDisclosures([]); setResult(null); }}><Text style={styles.again}>{t('trustLayer.requester.newRequest')}</Text></ActionTouchable>
                     </View>
                 ) : (
-                    <TouchableOpacity style={[styles.primaryBtn, (!draftsValid || !discValid || issuing) && styles.disabled]} onPress={() => void issueChallenge()} disabled={!draftsValid || !discValid || issuing}>
+                    <ActionTouchable style={[styles.primaryBtn, (!draftsValid || !discValid || issuing) && styles.disabled]} onPress={() => void issueChallenge()} disabled={!draftsValid || !discValid || issuing}>
                         {issuing ? <ActivityIndicator color={COLORS.black} /> : <Text style={styles.primaryBtnText}>{t('trustLayer.requester.createRequest')}</Text>}
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
 
                 {/* STEP 2 — verify */}
                 <Text style={styles.section}>{t('trustLayer.requester.step2')}</Text>
                 <View style={styles.rowBetween}>
                     <Text style={styles.inputLabel}>{t('trustLayer.requester.tokenLabel')}</Text>
-                    <TouchableOpacity onPress={onScanToken}><Text style={styles.scanLink}>{t('trustLayer.requester.scan')}</Text></TouchableOpacity>
+                    <ActionTouchable onPress={onScanToken}><Text style={styles.scanLink}>{t('trustLayer.requester.scan')}</Text></ActionTouchable>
                 </View>
                 <TextInput style={[styles.input, styles.tokenInput]} value={token} onChangeText={setToken} placeholder={t('trustLayer.requester.tokenPlaceholder')} placeholderTextColor={COLORS.textMuted} autoCapitalize="none" multiline />
-                <TouchableOpacity style={[styles.primaryBtn, (!envelope || verifying) && styles.disabled]} onPress={doVerify} disabled={!envelope || verifying}>
+                <ActionTouchable style={[styles.primaryBtn, (!envelope || verifying) && styles.disabled]} onPress={doVerify} disabled={!envelope || verifying}>
                     {verifying ? <ActivityIndicator color={COLORS.black} /> : <Text style={styles.primaryBtnText}>{t('trustLayer.requester.verifyBtn')}</Text>}
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {result && (
                     <View style={[styles.resultCard, { borderColor: result.valid ? COLORS.platinumMuted : COLORS.errorMuted }]}>

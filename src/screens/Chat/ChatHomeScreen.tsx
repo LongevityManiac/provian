@@ -11,14 +11,13 @@
  * See design notes docs/PHASE_2C_DESIGN_NOTES.md §5.M6.
  */
 
-import { PrimaryAction } from '../../components/ScreenActions';
+import { ActionTouchable, PrimaryAction } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import React, { useCallback, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     StatusBar,
     ActivityIndicator,
@@ -176,7 +175,7 @@ const ChatHomeScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                 >
                     {providers.map(({ entry, presentation }) => (
-                        <TouchableOpacity
+                        <ActionTouchable
                             key={presentation.id}
                             style={styles.card}
                             activeOpacity={0.85}
@@ -207,7 +206,7 @@ const ChatHomeScreen: React.FC = () => {
                                 size={20}
                                 color={COLORS.textTertiary}
                             />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     ))}
                 </ScrollView>
             </SafeAreaView>

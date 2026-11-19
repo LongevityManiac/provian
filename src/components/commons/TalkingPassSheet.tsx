@@ -11,8 +11,9 @@
  * "Start talking" closes the sheet FIRST and only then navigates to HumanPresentment, so the sheet
  * can never sit on top of the burn screen.
  */
+import { ActionPressable, ActionTouchable } from '../ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +49,7 @@ export function TalkingPassSheet({ visible, audience, onStart, onClose, onDismis
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+        <ActionPressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.iconWrap}>
@@ -56,12 +57,12 @@ export function TalkingPassSheet({ visible, audience, onStart, onClose, onDismis
           </View>
           <Text style={styles.title}>{t('overhaul.confirmCommonsAction')}</Text>
           <Text style={styles.body}>{t(isCommons ? 'overhaul.commonsPrice' : 'overhaul.commonsPriceIfNeeded', { pvt })}</Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={onStart} accessibilityRole="button">
+          <ActionTouchable style={styles.primaryBtn} onPress={onStart} accessibilityRole="button">
             <Text style={styles.primaryText}>{t('common.continue')} · {pvt} PVT</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={onClose} accessibilityRole="button">
+          </ActionTouchable>
+          <ActionTouchable style={styles.secondaryBtn} onPress={onClose} accessibilityRole="button">
             <Text style={styles.secondaryText}>{t('commonsForum.pass.notNow')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     </Modal>
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   howLink: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: SPACING.m, alignSelf: 'flex-start', minHeight: 32 },
   howText: { ...TYPE_SCALE.bodyMd, color: COLORS.primaryLight, fontWeight: '600' },
   primaryBtn: { marginTop: SPACING.l, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.l, minHeight: 50, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { ...TYPE_SCALE.headingSm, color: COLORS.text },
+  primaryText: { ...TYPE_SCALE.headingSm, color: COLORS.onPrimary },
   secondaryBtn: { marginTop: SPACING.s, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   secondaryText: { ...TYPE_SCALE.bodyLg, color: COLORS.textSecondary },
 });

@@ -16,9 +16,15 @@
  * Metadata only: flat numeric facts, no content, no identifiers beyond the
  * vocabulary itself.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    RefreshControl,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -148,9 +154,9 @@ export default function OwnProfileScreen(): React.ReactElement {
                 {loadError ? (
                     <View style={styles.center}>
                         <Text style={styles.errorText}>{t('trustLayer.ownProfile.loadError')}</Text>
-                        <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); void load().finally(() => setLoading(false)); }}>
+                        <ActionTouchable style={styles.retryBtn} onPress={() => { setLoading(true); void load().finally(() => setLoading(false)); }}>
                             <Text style={styles.retryText}>{t('common.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 ) : groups.length === 0 ? (
                     <Text style={styles.empty}>{t('trustLayer.ownProfile.empty')}</Text>
@@ -174,14 +180,14 @@ export default function OwnProfileScreen(): React.ReactElement {
 
                 {/* Present this reputation to a counterparty (burn-to-present). */}
                 {!loadError && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.presentBtn}
                         onPress={() => navigation.navigate('HumanPresentment' as never)}
                         activeOpacity={0.8}
                     >
                         <Ionicons name="shield-checkmark" size={18} color={COLORS.black} />
                         <Text style={styles.presentBtnText}>{t('trustLayer.ownProfile.presentCta')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -191,9 +197,9 @@ export default function OwnProfileScreen(): React.ReactElement {
 function Header({ t, onBack }: { t: (k: string) => string; onBack: () => void }): React.ReactElement {
     return (
         <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <ActionTouchable onPress={onBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                 <Ionicons name="chevron-back" size={26} color={COLORS.text} />
-            </TouchableOpacity>
+            </ActionTouchable>
             <Text style={styles.headerTitle}>{t('trustLayer.ownProfile.title')}</Text>
             <View style={{ width: 26 }} />
         </View>

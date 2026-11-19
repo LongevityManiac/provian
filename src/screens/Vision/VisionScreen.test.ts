@@ -25,6 +25,7 @@ function screen(owner: boolean, open = true, code = source) {
     };
     const native = Object.fromEntries(['View', 'Text', 'ScrollView', 'Image', 'TouchableOpacity', 'ActivityIndicator'].map((k) => [k, k]));
     const imports: Record<string, unknown> = {
+        '../../components/ScreenActions': { ActionTouchable: native.TouchableOpacity },
         react,
         'react-native': { ...native, StyleSheet: { create: (s: unknown) => s }, Platform: { OS: 'ios' }, Share: { share }, Linking: { openURL }, Alert: { alert: vi.fn() } },
         'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },

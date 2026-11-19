@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 /**
@@ -21,7 +22,6 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    TouchableOpacity,
     RefreshControl,
     ActivityIndicator,
     ScrollView,
@@ -157,7 +157,7 @@ function EnvelopeItem({ envelope, onPress, agentName }: EnvelopeItemProps) {
     const isHidden = envelope.hidden === true;
 
     return (
-        <TouchableOpacity
+        <ActionTouchable
             style={[
                 styles.envelopeItem,
                 isEmergency && styles.emergencyItem,
@@ -212,7 +212,7 @@ function EnvelopeItem({ envelope, onPress, agentName }: EnvelopeItemProps) {
                 )}
             </View>
             <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -229,7 +229,7 @@ function PromiseItem({ promise, onPress }: PromiseItemProps) {
     const statusLabel = i18next.t(PROMISE_STATUS_LABELS[promise.status] || 'common.unknown');
 
     return (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.envelopeItem}
             onPress={() => onPress(promise)}
             activeOpacity={0.7}
@@ -255,7 +255,7 @@ function PromiseItem({ promise, onPress }: PromiseItemProps) {
                 </View>
             </View>
             <Text style={styles.arrow}>›</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -571,18 +571,18 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
         if (!showFirstPEBanner) return null;
         return (
             <View style={styles.firstPEBanner}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.firstPEDismiss}
                     onPress={dismissFirstPEBanner}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                     <Ionicons name="close" size={16} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={styles.firstPEBannerText}>
                     {i18next.t('ui.activityLog.firstProof')}</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Vision')} activeOpacity={0.7}>
+                <ActionTouchable onPress={() => navigation.navigate('Vision')} activeOpacity={0.7}>
                     <Text style={styles.firstPEBannerLink}>{i18next.t('ui.activityLog.learnMore')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         );
     };
@@ -593,7 +593,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
             data={unifiedFeed}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.envelopeItem}
                     onPress={item.onPress}
                     activeOpacity={0.7}
@@ -609,7 +609,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                         <Text style={styles.intentText} numberOfLines={1}>{item.subtitle}</Text>
                     </View>
                     <Text style={styles.arrow}>›</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             )}
             refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
@@ -694,7 +694,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                             .filter(a => !loadedMonths.has(a.monthKey))
                             .slice(0, 6)
                             .map((archive) => (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     key={archive.monthKey}
                                     style={styles.archiveItem}
                                     onPress={() => loadMonthArchive(archive.monthKey)}
@@ -706,7 +706,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                                         {i18next.t('ui.activityLog.actions', { count: archive.peCount })}
                                     </Text>
                                     <Text style={styles.archiveArrow}>{'>'}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             ))}
                         {availableArchives.filter(a => !loadedMonths.has(a.monthKey)).length > 6 && (
                             <Text style={styles.archiveMore}>
@@ -741,7 +741,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerTitle}>{i18next.t('ui.activityLog.title')}</Text>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.hiddenToggle, showHidden && styles.hiddenToggleActive]}
                     onPress={() => setShowHidden(!showHidden)}
                 >
@@ -750,7 +750,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                         size={18}
                         color={showHidden ? COLORS.primary : COLORS.textSecondary}
                     />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             {/* Filter Pills */}
@@ -761,7 +761,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                 contentContainerStyle={styles.filterContainer}
             >
                 {ACTIVITY_FILTERS.map((f) => (
-                    <TouchableOpacity
+                    <ActionTouchable
                         key={f.key}
                         style={[styles.filterTab, filter === f.key && styles.filterTabActive]}
                         onPress={() => setFilter(f.key)}
@@ -780,7 +780,7 @@ export default function ActivityLogScreen({ navigation }: ActivityLogScreenProps
                         >
                             {i18next.t(f.label)}
                         </Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 ))}
             </ScrollView>
 

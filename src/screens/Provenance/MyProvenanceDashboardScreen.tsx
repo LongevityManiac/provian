@@ -19,6 +19,7 @@
  * 6. Phase Roadmap
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
@@ -27,7 +28,6 @@ import {
     StyleSheet,
     ScrollView,
     RefreshControl,
-    TouchableOpacity,
     Animated,
     ActivityIndicator,
     Clipboard,
@@ -502,7 +502,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
             currentSettlementProjectionPVT: entry.currentSettlementProjectionPVT,
         });
         return (
-            <TouchableOpacity
+            <ActionTouchable
                 key={entry.peId}
                 style={[styles.historyItem, entry.hidden && styles.historyItemHidden]}
                 onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: entry.peId })}
@@ -533,15 +533,15 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                             </Text>
                         </View>
                         <DispositionChip chip={chip} />
-                        <TouchableOpacity
+                        <ActionTouchable
                             onPress={() => handleCopyHash(entry.hash)}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Text style={styles.historyHash}>{entry.hash.slice(0, 8)}...</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </ActionTouchable>
         );
     };
 
@@ -560,7 +560,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
         const newest = group.primary;
         const confirmed = disposition === 'minted' || disposition === 'earning';
         return (
-            <TouchableOpacity
+            <ActionTouchable
                 key={`commit:${group.commitSha}`}
                 style={styles.historyItem}
                 onPress={() => navigation.navigate('EnvelopeDetail', { envelopeId: newest.peId })}
@@ -582,15 +582,15 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                             <Text style={styles.commitCountText}>{t('ui.provenance.witnessed', { count: group.items.length })}</Text>
                         </View>
                         <DispositionChip chip={chip} />
-                        <TouchableOpacity
+                        <ActionTouchable
                             onPress={() => handleCopyHash(group.commitSha)}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Text style={styles.historyHash}>{shortSha(group.commitSha)}...</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
-            </TouchableOpacity>
+            </ActionTouchable>
         );
     };
 
@@ -620,9 +620,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         />
                     )}
                     <View style={{ flex: 1 }} />
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                    <ActionTouchable onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
                 <View style={styles.emptyState}>
                     <Image
@@ -658,9 +658,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         />
                     )}
                     <View style={{ flex: 1 }} />
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                    <ActionTouchable onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
                 <View style={styles.skeletonContainer}>
                     <ActivityIndicator size="small" color={COLORS.primary} style={{ marginBottom: SPACING.m }} />
@@ -696,9 +696,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         />
                     )}
                     <View style={{ flex: 1 }} />
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                    <ActionTouchable onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
                 <View style={styles.emptyState}>
                     <Image
@@ -709,12 +709,12 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                     <Text style={styles.emptyTitle}>{t('provenanceDashboard.recordStartsHere')}</Text>
                     <Text style={styles.emptySubtitle}>{t('provenanceDashboard.recordStartsHereMsg')}</Text>
                     {!promisesOnboardingComplete && (
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.emptyCTASecondary}
                             onPress={() => navigation.navigate('PromiseList')}
                         >
                             <Text style={styles.emptyCTASecondaryText}>{t('provenanceDashboard.setUpPromises')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     )}
                 </View>
             </SafeAreaView>
@@ -742,9 +742,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                     />
                 )}
                 <View style={{ flex: 1 }} />
-                <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                <ActionTouchable onPress={() => navigation.navigate('Settings')}>
                     <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             <ScrollView
@@ -779,9 +779,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                 {!accrualLoading && accrualError && (
                     <View style={styles.inlineLoadState}>
                         <Text style={styles.inlineLoadText}>{t('provenanceDashboard.loadRecordErrorTitle')}</Text>
-                        <TouchableOpacity onPress={loadAccrual}>
+                        <ActionTouchable onPress={loadAccrual}>
                             <Text style={styles.inlineRetryText}>{t('common.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
                 {accrual && (
@@ -863,7 +863,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
 
                 {/* Trust Layer §2.3: the actor's own reputation vocabulary — the
                     live read a counterparty would see in a presentation. */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.reputationRow}
                     onPress={() => navigation.navigate('OwnProfile')}
                     activeOpacity={0.7}
@@ -874,7 +874,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         <Text style={styles.reputationSubtitle}>{t('trustLayer.ownProfile.entryDesc')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {/* cutover reconciliation product truth: the Genesis view is a legacy RECORD ONLY.
                     The backend v3 projection deleted the ladder/pool/window/next
@@ -954,7 +954,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
 
                 {/* Why This Matters - consolidated card */}
                 <View style={{ marginTop: SPACING.m, marginBottom: SPACING.m }}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={{
                             backgroundColor: 'rgba(255, 140, 0, 0.08)',
                             borderRadius: 14,
@@ -974,14 +974,14 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                             <Text style={{ color: COLORS.textSecondary, fontSize: 12, marginTop: 2 }}>{t('provenanceDashboard.whyMattersDesc')}</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color="#E8A838" />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 {/* Section 3: PE History */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeaderRow}>
                         <Text style={styles.sectionTitle}>{t('provenanceDashboard.recentHistory')}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.hiddenToggle, showHidden && styles.hiddenToggleActive]}
                             onPress={() => setShowHidden(!showHidden)}
                         >
@@ -990,7 +990,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                                 size={16}
                                 color={showHidden ? COLORS.primary : COLORS.textSecondary}
                             />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <PeCustodyCard compact />
 
@@ -1001,9 +1001,9 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                     ) : historyError ? (
                         <View style={styles.historyEmpty}>
                             <Text style={styles.historyEmptyText}>{t('dashboard.participationLoadError')}</Text>
-                            <TouchableOpacity onPress={() => loadHistory(0)}>
+                            <ActionTouchable onPress={() => loadHistory(0)}>
                                 <Text style={styles.inlineRetryText}>{t('common.tryAgain')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     ) : history.length === 0 ? (
                         <View style={styles.historyEmpty}>
@@ -1019,7 +1019,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
 
                             {/* Load More */}
                             {historyHasMore && (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.loadMoreButton}
                                     onPress={handleLoadMore}
                                     disabled={loadingMore}
@@ -1031,7 +1031,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                                             {t('provenanceDashboard.loadMore', { count: historyTotal - history.length })}
                                         </Text>
                                     )}
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             )}
                         </>
                     )}
@@ -1080,7 +1080,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         <View style={styles.sectionHeaderRow}>
                             <Text style={styles.sectionTitle}>{t('provenanceDashboard.leaderboard')}</Text>
                             <View style={styles.leaderboardToggle}>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={[
                                         styles.togglePill,
                                         leaderboardPeriod === 'all' && styles.togglePillActive,
@@ -1091,8 +1091,8 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                                         styles.togglePillText,
                                         leaderboardPeriod === 'all' && styles.togglePillTextActive,
                                     ]}>{t('provenanceDashboard.allTime')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={[
                                         styles.togglePill,
                                         leaderboardPeriod === 'week' && styles.togglePillActive,
@@ -1103,7 +1103,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                                         styles.togglePillText,
                                         leaderboardPeriod === 'week' && styles.togglePillTextActive,
                                     ]}>{t('provenanceDashboard.thisWeek')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         </View>
 
@@ -1190,7 +1190,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                 </View>
 
                 {/* Activity Log */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.proofTrailRow}
                     onPress={() => navigation.navigate('ActivityLog')}
                     activeOpacity={0.7}
@@ -1201,7 +1201,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                         <Text style={styles.proofTrailSubtitle}>{t('provenanceDashboard.proofTrailDesc')}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
             <InfoModal
                 visible={projectionInfoVisible}

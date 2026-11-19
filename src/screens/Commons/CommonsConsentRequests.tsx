@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * CommonsConsentRequests — P4-10 response surface for pending publication
@@ -14,7 +15,6 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -137,7 +137,7 @@ export default function CommonsConsentRequests({ navigation }: Props) {
           </View>
         </View>
 
-        <TouchableOpacity
+        <ActionTouchable
           onPress={() => setDetailsFor(detailsFor === consent.consent_id ? null : consent.consent_id)}
           accessibilityRole="button"
           style={styles.detailsToggle}
@@ -146,7 +146,7 @@ export default function CommonsConsentRequests({ navigation }: Props) {
             {detailsFor === consent.consent_id ? t('commonsHome.hideDetails') : t('commonsHome.showDetails')}
           </Text>
           <Ionicons name={detailsFor === consent.consent_id ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.textSecondary} />
-        </TouchableOpacity>
+        </ActionTouchable>
         {detailsFor === consent.consent_id && (
           <>
             <Text style={styles.peLabel}>{t('commons.consent.peLabel')}</Text>
@@ -171,15 +171,15 @@ export default function CommonsConsentRequests({ navigation }: Props) {
         </Text>
 
         <View style={styles.actions}>
-          <TouchableOpacity
+          <ActionTouchable
             style={[styles.denyButton, isResponding && styles.buttonDisabled]}
             onPress={() => confirmDeny(consent)}
             disabled={isResponding}
           >
             <Ionicons name="close-circle-outline" size={18} color={COLORS.error} />
             <Text style={styles.denyText}>{t('commons.consent.deny')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </ActionTouchable>
+          <ActionTouchable
             style={[styles.approveButton, isResponding && styles.buttonDisabled]}
             onPress={() => respond(consent, 'approved')}
             disabled={isResponding}
@@ -192,7 +192,7 @@ export default function CommonsConsentRequests({ navigation }: Props) {
                 <Text style={styles.approveText}>{t('commons.consent.approve')}</Text>
               </>
             )}
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     );

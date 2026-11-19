@@ -1,3 +1,4 @@
+import { ActionPressable, ActionTouchable } from './ScreenActions';
 import { errorDisplayCopy } from '../i18n/displayCopy';
 /**
  * RenameAgentSheet (item 5) — the human names (or renames) a linked agent. One small bottom sheet
@@ -12,8 +13,15 @@ import { errorDisplayCopy } from '../i18n/displayCopy';
  */
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator, BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput,
-    TouchableOpacity, View,
+    ActivityIndicator,
+    BackHandler,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -87,7 +95,7 @@ export default function RenameAgentSheet({ visible, agentWalletId, currentName, 
 
     const content = (
             <KeyboardAvoidingView style={styles.overlay} behavior={keyboardAvoidingBehavior(Platform.OS)}>
-                <Pressable
+                <ActionPressable
                     style={styles.backdrop}
                     onPress={saving ? undefined : onClose}
                     accessibilityRole="button"
@@ -116,19 +124,19 @@ export default function RenameAgentSheet({ visible, agentWalletId, currentName, 
                         accessibilityLabel={t('agentName.placeholder')}
                     />
                     {error ? <Text style={styles.error}>{errorDisplayCopy(error)}</Text> : null}
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[styles.primaryBtn, saving && styles.disabled]}
                         disabled={saving}
                         onPress={() => { void save(); }}
                         accessibilityRole="button"
                     >
-                        {saving ? <ActivityIndicator color={COLORS.text} /> : (
+                        {saving ? <ActivityIndicator color={COLORS.onPrimary} /> : (
                             <Text style={styles.primaryText}>{t('agentName.save')}</Text>
                         )}
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.secondaryBtn} onPress={onClose} disabled={saving} accessibilityRole="button">
+                    </ActionTouchable>
+                    <ActionTouchable style={styles.secondaryBtn} onPress={onClose} disabled={saving} accessibilityRole="button">
                         <Text style={styles.secondaryText}>{t('agentName.cancel')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </KeyboardAvoidingView>
     );
@@ -183,7 +191,7 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.m,
     },
     disabled: { opacity: 0.5 },
-    primaryText: { fontSize: 16, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
+    primaryText: { fontSize: 16, fontWeight: '700', color: COLORS.onPrimary, textAlign: 'center' },
     secondaryBtn: { marginTop: SPACING.s, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     secondaryText: { fontSize: 16, color: COLORS.textSecondary },
 });

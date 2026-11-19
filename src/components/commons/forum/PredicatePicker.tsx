@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../ScreenActions';
 import { errorDisplayCopy } from '../../../i18n/displayCopy';
 /**
  * PredicatePicker (§5) — "what should they prove?" in plain sentences. Each sentence maps
@@ -6,7 +7,7 @@ import { errorDisplayCopy } from '../../../i18n/displayCopy';
  * parent holds the draft and turns it into a predicate with `predicateFromDraft`.
  */
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS, TYPE_SCALE } from '../../../constants/theme';
@@ -47,7 +48,7 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
         const n = selected ? draft.nText : String(c.defaultN);
         return (
           <View key={c.id} style={[styles.option, selected && styles.optionSelected]}>
-            <TouchableOpacity
+            <ActionTouchable
               style={styles.optionRow}
               onPress={() => onChange(selectGuidedClaim(draft, c.id))}
               accessibilityRole="radio"
@@ -55,12 +56,12 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
             >
               <Ionicons name={selected ? 'radio-button-on' : 'radio-button-off'} size={20} color={selected ? COLORS.primary : COLORS.textTertiary} />
               <Text style={styles.optionText}>{t(`commonsForum.claim.${c.id}`, { n: n || '…', count: Number(n) || 0 })}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
             {selected && c.fixedN === undefined && (
               <View style={styles.stepper}>
-                <TouchableOpacity style={styles.stepBtn} onPress={() => step(-1)} accessibilityRole="button" accessibilityLabel={t('commonsForum.picker.less')}>
+                <ActionTouchable style={styles.stepBtn} onPress={() => step(-1)} accessibilityRole="button" accessibilityLabel={t('commonsForum.picker.less')}>
                   <Ionicons name="remove" size={18} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <TextInput
                   style={styles.stepInput}
                   value={draft.nText}
@@ -69,9 +70,9 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
                   maxLength={7}
                   accessibilityLabel={t('commonsForum.picker.number')}
                 />
-                <TouchableOpacity style={styles.stepBtn} onPress={() => step(1)} accessibilityRole="button" accessibilityLabel={t('commonsForum.picker.more')}>
+                <ActionTouchable style={styles.stepBtn} onPress={() => step(1)} accessibilityRole="button" accessibilityLabel={t('commonsForum.picker.more')}>
                   <Ionicons name="add" size={18} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
               </View>
             )}
           </View>
@@ -92,7 +93,7 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
           />
           <View style={styles.opRow}>
             {PREDICATE_OPS.map((op) => (
-              <TouchableOpacity
+              <ActionTouchable
                 key={op}
                 style={[styles.opBtn, draft.op === op && styles.opBtnActive]}
                 onPress={() => onChange({ ...draft, op })}
@@ -101,7 +102,7 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
                 accessibilityLabel={op}
               >
                 <Text style={[styles.opText, draft.op === op && styles.opTextActive]}>{OP_SYMBOL[op] ?? op}</Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             ))}
           </View>
           <Text style={styles.label}>{t('commonsForum.picker.threshold')}</Text>
@@ -117,14 +118,14 @@ export default function PredicatePicker({ draft, onChange, lead }: Props) {
 
       {error && <Text style={styles.error}>{errorDisplayCopy(error)}</Text>}
 
-      <TouchableOpacity
+      <ActionTouchable
         style={styles.toggle}
         onPress={() => onChange({ ...draft, mode: draft.mode === 'guided' ? 'advanced' : 'guided' })}
         accessibilityRole="button"
       >
         <Ionicons name={draft.mode === 'guided' ? 'options-outline' : 'list-outline'} size={16} color={COLORS.primaryLight} />
         <Text style={styles.toggleText}>{draft.mode === 'guided' ? t('commonsForum.picker.advanced') : t('commonsForum.picker.simple')}</Text>
-      </TouchableOpacity>
+      </ActionTouchable>
     </View>
   );
 }
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
   opBtn: { minWidth: 44, minHeight: 40, borderRadius: BORDER_RADIUS.m, backgroundColor: COLORS.surfaceHighlight, alignItems: 'center', justifyContent: 'center' },
   opBtnActive: { backgroundColor: COLORS.primary },
   opText: { color: COLORS.textSecondary, fontSize: 16, fontWeight: '600' },
-  opTextActive: { color: COLORS.text },
+  opTextActive: { color: COLORS.onPrimary },
   hint: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary, marginTop: SPACING.xs },
   error: { ...TYPE_SCALE.bodySm, color: COLORS.error, marginTop: SPACING.s },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, minHeight: 44, alignSelf: 'flex-start' },

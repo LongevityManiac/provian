@@ -7,8 +7,9 @@
  * ending says plainly what happened; a purchase the relay has not yet confirmed stays on the phone
  * and is sent again (`core/store/storePurchase.ts`).
  */
+import { ActionTouchable } from './ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BORDER_RADIUS, COLORS, SPACING } from '../constants/theme';
 import relayService, { type ArchiveView } from '../services/RelayAPIService';
@@ -165,9 +166,9 @@ function Row({ label, value }: { label: string; value: string }): React.ReactEle
 
 function Button({ label, onPress, primary = false }: { label: string; onPress: () => void; primary?: boolean }): React.ReactElement {
     return (
-        <TouchableOpacity style={[styles.button, primary ? styles.buttonPrimary : styles.buttonSecondary]} onPress={onPress} accessibilityRole="button">
+        <ActionTouchable style={[styles.button, primary ? styles.buttonPrimary : styles.buttonSecondary]} onPress={onPress} accessibilityRole="button">
             <Text style={[styles.buttonText, primary ? styles.buttonTextPrimary : null]}>{label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -188,7 +189,7 @@ const styles = StyleSheet.create({
     buttonPrimary: { backgroundColor: COLORS.primary },
     buttonSecondary: { borderWidth: 1, borderColor: COLORS.borderLight },
     buttonText: { fontSize: 15, fontWeight: '600', color: COLORS.text },
-    buttonTextPrimary: { color: COLORS.white },
+    buttonTextPrimary: { color: COLORS.onPrimary },
 });
 
 export default ArchiveStorePurchaseSheet;

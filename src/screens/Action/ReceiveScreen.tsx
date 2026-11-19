@@ -2,12 +2,12 @@
  * ReceiveScreen - Multi-chain receive addresses + QR codes
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Share,
     ScrollView,
 } from 'react-native';
@@ -116,9 +116,9 @@ const ReceiveScreen = ({ navigation }: any) => {
             />
 
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <ActionTouchable onPress={() => navigation.goBack()}>
                     <Ionicons name="close" size={24} color={themeColors.textPrimary} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{t('receiveScreen.headerTitle')}</Text>
                 <View style={{ width: 24 }} />
             </View>
@@ -133,7 +133,7 @@ const ReceiveScreen = ({ navigation }: any) => {
                         {(['evm', 'solana'] as ChainKey[]).map((key) => {
                             const active = selectedChain === key;
                             return (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     key={key}
                                     style={[
                                         styles.chainPill,
@@ -146,7 +146,7 @@ const ReceiveScreen = ({ navigation }: any) => {
                                     <Text style={[styles.chainPillText, { color: active ? themeColors.textPrimary : themeColors.textSecondary }]}>
                                         {CHAIN_CONFIG[key].label}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             );
                         })}
                     </View>
@@ -177,7 +177,7 @@ const ReceiveScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.addressCard} onPress={handleCopy} activeOpacity={0.7}>
+                <ActionTouchable style={styles.addressCard} onPress={handleCopy} activeOpacity={0.7}>
                     <Text style={[styles.addressLabel, { color: themeColors.textSecondary }]}>
                         {t('receiveScreen.yourAddress', { chain: CHAIN_CONFIG[selectedChain].label })}
                     </Text>
@@ -194,7 +194,7 @@ const ReceiveScreen = ({ navigation }: any) => {
                             {copied ? t('receiveScreen.copied') : t('receiveScreen.tapToCopy')}
                         </Text>
                     </View>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {addressError ? (
                     <View style={[styles.infoCard, { borderColor: 'rgba(255,80,80,0.35)' }]}>
@@ -212,12 +212,12 @@ const ReceiveScreen = ({ navigation }: any) => {
                     </Text>
                 </View>
 
-                <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
+                <ActionTouchable style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
                     <LinearGradient colors={GRADIENTS.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.shareGradient}>
-                        <Ionicons name="share-outline" size={20} color="white" />
+                        <Ionicons name="share-outline" size={20} color={COLORS.onPrimary} />
                         <Text style={styles.shareText}>{t('receiveScreen.shareAddress')}</Text>
                     </LinearGradient>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
         </SafeAreaView>
     );
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
     },
     shareText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: '700',
     },

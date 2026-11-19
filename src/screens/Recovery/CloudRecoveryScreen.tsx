@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { type BiometricAction } from '../../core/security/biometricAction';
 import { withBiometricOrFallback } from '../../core/security/biometricOrFallback';
@@ -27,7 +28,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
     TextInput,
     Platform,
@@ -667,7 +667,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                 {state === 'choose_backup' && (
                     <View style={styles.optionsContainer}>
                         {backups.map((entry) => (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 key={entry.key}
                                 style={styles.backupChoice}
                                 onPress={() => {
@@ -688,7 +688,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                                         : t('cloudRecovery.earlierBackupLabel')}
                                 </Text>
                                 <Ionicons name="chevron-forward" size={18} color="#8B929E" />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ))}
                     </View>
                 )}
@@ -723,7 +723,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                                 </Text>
                             </View>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[
                                 styles.primaryButton,
                                 (pin.length < MIN_PIN_LENGTH || lockoutRemainingMs > 0) && styles.buttonDisabled,
@@ -738,15 +738,15 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                             >
                                 <Text style={styles.buttonText}>{t('cloudRecovery.decryptBackup')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                         {backups.length > 1 && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.secondaryButton}
                                 onPress={() => { setPin(''); setError(null); setState('choose_backup'); }}
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.secondaryButtonText}>{t('cloudRecovery.chooseAnotherBackup')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
                 )}
@@ -783,7 +783,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                                 <Text style={styles.errorText}>{confirmError}</Text>
                             </View>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[
                                 styles.overwriteDangerButton,
                                 confirmText !== REQUIRED_CONFIRMATION_PHRASE && styles.buttonDisabled,
@@ -793,8 +793,8 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                             activeOpacity={0.8}
                         >
                             <Text style={styles.overwriteDangerButtonText}>{t('recovery.replaceWallet')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.overwriteCancelButton}
                             onPress={() => {
                                 setPendingPayload(null);
@@ -806,7 +806,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                             activeOpacity={0.8}
                         >
                             <Text style={styles.overwriteCancelButtonText}>{t('recovery.cancelKeepCurrentWallet')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -818,7 +818,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                     backup stays in the person's cloud; the relay holds no PEs). */}
                 {state === 'restore_retry' && (
                     <View style={styles.optionsContainer}>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.primaryButton, restoringHistory && styles.buttonDisabled]}
                             onPress={handleRetryHistoryRestore}
                             disabled={restoringHistory}
@@ -826,23 +826,23 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                         >
                             <LinearGradient colors={GRADIENTS.primary} style={styles.buttonGradient}>
                                 {restoringHistory ? (
-                                    <ActivityIndicator color="white" size="small" />
+                                    <ActivityIndicator color={COLORS.onPrimary} size="small" />
                                 ) : (
                                     <>
-                                        <Ionicons name="finger-print" size={20} color="white" style={{ marginRight: 8 }} />
+                                        <Ionicons name="finger-print" size={20} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
                                         <Text style={styles.buttonText}>{t('recovery.historyRestoreRetry')}</Text>
                                     </>
                                 )}
                             </LinearGradient>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.secondaryButton}
                             onPress={handleSkipHistoryRestore}
                             disabled={restoringHistory}
                             activeOpacity={0.7}
                         >
                             <Text style={styles.secondaryButtonText}>{t('recovery.historyRestoreSkip')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -860,29 +860,29 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                                 <Text style={styles.errorText}>{errorDisplayCopy(error)}</Text>
                             </View>
                         )}
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleSignIn} activeOpacity={0.8}>
+                        <ActionTouchable style={styles.primaryButton} onPress={handleSignIn} activeOpacity={0.8}>
                             <LinearGradient
                                 colors={GRADIENTS.primary}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}
                             >
-                                <Ionicons name="logo-google" size={20} color="white" style={{ marginRight: 8 }} />
+                                <Ionicons name="logo-google" size={20} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
                                 <Text style={styles.buttonText}>{t('recovery.signInGoogle')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleImportPhrase} activeOpacity={0.8}>
+                        <ActionTouchable style={styles.primaryButton} onPress={handleImportPhrase} activeOpacity={0.8}>
                             <LinearGradient
                                 colors={GRADIENTS.primary}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}
                             >
-                                <Ionicons name="key" size={20} color="white" style={{ marginRight: 8 }} />
+                                <Ionicons name="key" size={20} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
                                 <Text style={styles.buttonText}>{t('cloudRecovery.importRecoveryPhrase')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -894,11 +894,11 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                         <SuccessRow label={t('cloudRecovery.chainsLabel', { chains: payload.chain_ids.join(', ') })} />
                         <SuccessRow label={t('cloudRecovery.createdLabel', { date: new Date(payload.created_at).toLocaleDateString() })} />
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleContinue} activeOpacity={0.8}>
+                        <ActionTouchable style={styles.primaryButton} onPress={handleContinue} activeOpacity={0.8}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.buttonGradient}>
                                 <Text style={styles.buttonText}>{t('cloudRecovery.continueRecovery')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         <Text style={styles.recoveryNote}>
                             {t('cloudRecovery.recoveryNote')}
@@ -918,7 +918,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                          * the item or doesn't.
                          */}
                         {Platform.OS === 'android' && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.primaryButton}
                                 onPress={() => { setState('checking'); checkForBackup(); }}
                                 activeOpacity={0.8}
@@ -929,27 +929,27 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
                                     end={{ x: 1, y: 0 }}
                                     style={styles.buttonGradient}
                                 >
-                                    <Ionicons name="refresh" size={20} color="white" style={{ marginRight: 8 }} />
+                                    <Ionicons name="refresh" size={20} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
                                     <Text style={styles.buttonText}>{t('connectAgent.retry')}</Text>
                                 </LinearGradient>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
 
-                        <TouchableOpacity style={styles.primaryButton} onPress={handleImportPhrase} activeOpacity={0.8}>
+                        <ActionTouchable style={styles.primaryButton} onPress={handleImportPhrase} activeOpacity={0.8}>
                             <LinearGradient
                                 colors={GRADIENTS.primary}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}
                             >
-                                <Ionicons name="key" size={20} color="white" style={{ marginRight: 8 }} />
+                                <Ionicons name="key" size={20} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
                                 <Text style={styles.buttonText}>{t('cloudRecovery.importRecoveryPhrase')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
-                        <TouchableOpacity style={styles.secondaryButton} onPress={handleCreateNew} activeOpacity={0.7}>
+                        <ActionTouchable style={styles.secondaryButton} onPress={handleCreateNew} activeOpacity={0.7}>
                             <Text style={styles.secondaryButtonText}>{t('cloudRecovery.createNewWallet')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             </KeyboardSafeScrollView>
@@ -1084,7 +1084,7 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     backupChoice: {
         flexDirection: 'row',

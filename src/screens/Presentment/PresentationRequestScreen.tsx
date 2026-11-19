@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * PresentationRequestScreen (§3f) — the REMOTE agent↔human presentation channel, human side.
@@ -20,7 +21,12 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -213,17 +219,17 @@ export default function PresentationRequestScreen(): React.ReactElement {
                                 {PRESETS.map((p) => {
                                     const on = selected.has(p.key);
                                     return (
-                                        <TouchableOpacity key={p.key} style={[styles.presetRow, on && styles.presetRowOn]} onPress={() => toggle(p.key)} activeOpacity={0.7}>
+                                        <ActionTouchable key={p.key} style={[styles.presetRow, on && styles.presetRowOn]} onPress={() => toggle(p.key)} activeOpacity={0.7}>
                                             <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? COLORS.primary : COLORS.textMuted} />
                                             <Text style={styles.presetLabel}>{t(p.label)}</Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     );
                                 })}
-                                <TouchableOpacity style={[styles.primaryBtn, busy && styles.disabled]} onPress={compose} disabled={busy}>
+                                <ActionTouchable style={[styles.primaryBtn, busy && styles.disabled]} onPress={compose} disabled={busy}>
                                     <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
-                                        {busy ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>{t('presentationRequest.composeButton')}</Text>}
+                                        {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.primaryBtnText}>{t('presentationRequest.composeButton')}</Text>}
                                     </LinearGradient>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         )}
 
@@ -246,11 +252,11 @@ export default function PresentationRequestScreen(): React.ReactElement {
                         {request.status === 'presented' && !verdict && (
                             <>
                                 <Text style={styles.sectionTitle}>{t('presentationRequest.readyToVerify')}</Text>
-                                <TouchableOpacity style={[styles.primaryBtn, busy && styles.disabled]} onPress={verify} disabled={busy}>
+                                <ActionTouchable style={[styles.primaryBtn, busy && styles.disabled]} onPress={verify} disabled={busy}>
                                     <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
-                                        {busy ? <ActivityIndicator color="#FFF" /> : <Text style={styles.primaryBtnText}>{t('presentationRequest.verifyButton')}</Text>}
+                                        {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.primaryBtnText}>{t('presentationRequest.verifyButton')}</Text>}
                                     </LinearGradient>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         )}
 
@@ -291,7 +297,7 @@ const styles = StyleSheet.create({
     presetLabel: { color: COLORS.text, fontSize: 14, flex: 1, minWidth: 0 },
     primaryBtn: { borderRadius: 24, overflow: 'hidden', marginTop: SPACING.l },
     primaryBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: SPACING.xl },
-    primaryBtnText: { flexShrink: 1, color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+    primaryBtnText: { flexShrink: 1, color: COLORS.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
     disabled: { opacity: 0.5 },
     waitCard: { alignItems: 'center', gap: SPACING.m, paddingVertical: SPACING.xl },
     waitHint: { color: COLORS.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 17, opacity: 0.8, paddingHorizontal: SPACING.l },

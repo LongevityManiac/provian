@@ -8,12 +8,12 @@
  * review mode (route param `review`): accepting records the current versions and opens the app.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -81,7 +81,7 @@ const ConsentScreen = ({ navigation, route }: any) => {
                 <View style={styles.checklistCard}>
                     <Text style={styles.sectionHeader}>{t('consentScreen.acknowledgementsHeader')}</Text>
                     {items.map((item, index) => (
-                        <TouchableOpacity
+                        <ActionTouchable
                             key={index}
                             style={styles.checkRow}
                             onPress={() => toggle(index)}
@@ -105,12 +105,12 @@ const ConsentScreen = ({ navigation, route }: any) => {
                                 </View>
                                 <Text style={styles.checkLabel}>{item}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     ))}
 
                     {/* Constitution and Terms links */}
                     <View style={styles.linksContainer}>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.termsLink}
                             onPress={() => navigation.navigate('NetworkConstitution')}
                             activeOpacity={0.7}
@@ -118,8 +118,8 @@ const ConsentScreen = ({ navigation, route }: any) => {
                             <Ionicons name="document-text-outline" size={16} color="#4A8EE8" />
                             <Text style={styles.termsLinkText}>{t('consentScreen.linkConstitution')}</Text>
                             <Ionicons name="open-outline" size={14} color="#4A8EE8" style={styles.termsLinkChevron} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.termsLink}
                             onPress={() => navigation.navigate('TermsOfService')}
                             activeOpacity={0.7}
@@ -127,8 +127,8 @@ const ConsentScreen = ({ navigation, route }: any) => {
                             <Ionicons name="reader-outline" size={16} color="#4A8EE8" />
                             <Text style={styles.termsLinkText}>{t('consentScreen.linkTerms')}</Text>
                             <Ionicons name="open-outline" size={14} color="#4A8EE8" style={styles.termsLinkChevron} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.termsLink}
                             onPress={() => navigation.navigate('PrivacyPolicy')}
                             activeOpacity={0.7}
@@ -136,14 +136,14 @@ const ConsentScreen = ({ navigation, route }: any) => {
                             <Ionicons name="lock-closed-outline" size={16} color="#4A8EE8" />
                             <Text style={styles.termsLinkText}>{t('consentScreen.linkPrivacy')}</Text>
                             <Ionicons name="open-outline" size={14} color="#4A8EE8" style={styles.termsLinkChevron} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
             </ScrollView>
 
             {/* Fixed CTA */}
             <View style={styles.footer}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.ctaButton, !allChecked && styles.ctaDisabled]}
                     onPress={() => {
                         // Persist acceptance of the legal service terms. The
@@ -179,7 +179,7 @@ const ConsentScreen = ({ navigation, route }: any) => {
                             style={{ marginLeft: 8 }}
                         />
                     </LinearGradient>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         </SafeAreaView>
     );

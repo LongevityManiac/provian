@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
 import * as Application from 'expo-application';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, GRADIENTS } from '../../constants/theme';
@@ -14,7 +15,7 @@ const LegalScreen = ({ navigation }: any) => {
     const { colors: themeColors } = useTheme();
 
     const LegalItem = ({ icon, title, description, onPress }: any) => (
-        <TouchableOpacity style={styles.legalCard} onPress={onPress}>
+        <ActionTouchable style={styles.legalCard} onPress={onPress}>
             <View style={styles.legalLeft}>
                 <View style={styles.iconContainer}>
                     <Ionicons name={icon} size={20} color={COLORS.chromeMuted} />
@@ -25,7 +26,7 @@ const LegalScreen = ({ navigation }: any) => {
                 </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     return (

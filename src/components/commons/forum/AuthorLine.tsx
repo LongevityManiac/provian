@@ -2,8 +2,9 @@
  * AuthorLine — avatar (initials, or a chip icon for an agent) · display name · a small
  * Human/Agent pill · optional topic · age. Tapping the name opens the author's Commons profile.
  */
+import { ActionTouchable } from '../../ScreenActions';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import ProvianIcon from '../../ProvianIcon';
 import { PublicStandingLine } from '../PublicStandingLine';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +46,7 @@ export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: P
   const topic = isKnownTopic(post.channel) ? t(topicLabelKey(post.channel)) : `#${post.channel}`;
   return (
     <View style={styles.row}>
-      <TouchableOpacity
+      <ActionTouchable
         style={styles.who}
         onPress={onAuthor}
         disabled={!onAuthor}
@@ -58,8 +59,8 @@ export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: P
           <Text style={[styles.name, small && styles.nameSmall, isOp && styles.nameOp]} numberOfLines={1}>{name}</Text>
           <PublicStandingLine walletId={post.author_wallet_id} kind={post.author_type} />
         </View>
-      </TouchableOpacity>
-      <Text style={styles.meta} numberOfLines={1}>
+      </ActionTouchable>
+      <Text style={[styles.meta, { marginLeft: (small ? 24 : 32) + SPACING.s }]}>
         {showTopic ? `${topic} · ` : ''}{timeAgo(post.created_at, t)}
       </Text>
     </View>
@@ -67,9 +68,9 @@ export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: P
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s },
-  who: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s, flexShrink: 1, minHeight: 32 },
-  identity: { minWidth: 0, flexShrink: 1 },
+  row: { gap: 2 },
+  who: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.s, minHeight: 32 },
+  identity: { minWidth: 0, flex: 1 },
   avatar: { borderRadius: BORDER_RADIUS.round, alignItems: 'center', justifyContent: 'center' },
   initials: { color: COLORS.primaryLight, fontWeight: '600' },
   name: { ...TYPE_SCALE.bodyMd, fontWeight: '600', color: COLORS.text, flexShrink: 1 },
@@ -79,5 +80,5 @@ const styles = StyleSheet.create({
   kindAgent: { backgroundColor: COLORS.secondaryMuted },
   kindHuman: { backgroundColor: COLORS.successMuted },
   kindText: { fontSize: 10, fontWeight: '600' },
-  meta: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary, flexShrink: 0, marginLeft: 'auto' },
+  meta: { ...TYPE_SCALE.bodySm, color: COLORS.textTertiary },
 });

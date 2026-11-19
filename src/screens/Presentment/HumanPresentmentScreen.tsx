@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { ActionWallet } from '../../core/security/ActionWallet';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
@@ -39,7 +40,15 @@ import * as Crypto from 'expo-crypto';
 import { bytesToHex } from '@noble/hashes/utils';
 import * as CommonsService from '../../core/commons/CommonsService';
 import {
-    View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Share, Switch,
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Share,
+    Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -694,7 +703,7 @@ export default function HumanPresentmentScreen(): React.ReactElement {
         return (
             <SafeAreaView style={styles.safe} edges={['top']}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => setScanning(false)}><Ionicons name="close" size={26} color={COLORS.text} /></TouchableOpacity>
+                    <ActionTouchable onPress={() => setScanning(false)}><Ionicons name="close" size={26} color={COLORS.text} /></ActionTouchable>
                     <Text style={styles.headerTitle}>{t('trustLayer.presenter.scanTitle')}</Text>
                     <View style={{ width: 26 }} />
                 </View>
@@ -706,9 +715,9 @@ export default function HumanPresentmentScreen(): React.ReactElement {
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <ActionTouchable onPress={() => navigation.goBack()} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                     <Ionicons name="chevron-back" size={26} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={styles.headerTitle}>
                     {commonsAct?.kind === 'vouch' ? t('commons.vouch')
                         : commonsAct?.kind === 'hire' ? t('commonsJobs.hirePresentHeader')
@@ -762,26 +771,26 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                             <Text style={styles.proofRow}>{t('trustLayer.presenter.tooLargeForQr')}</Text>
                         )}
                         <Text style={styles.tokenText} selectable numberOfLines={4}>{token}</Text>
-                        <TouchableOpacity style={styles.shareBtn} onPress={shareToken}>
+                        <ActionTouchable style={styles.shareBtn} onPress={shareToken}>
                             <Ionicons name="share-outline" size={18} color={COLORS.black} />
                             <Text style={styles.shareBtnText}>{t('trustLayer.presenter.shareToken')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { setToken(null); }}>
+                        </ActionTouchable>
+                        <ActionTouchable onPress={() => { setToken(null); }}>
                             <Text style={styles.again}>{t('trustLayer.presenter.presentAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 ) : (
                     <>
                         {!compact && (<>
                         <View style={styles.requestLinks}>
-                            <TouchableOpacity onPress={onScan} disabled={busy} style={styles.requestLink} accessibilityRole="button">
+                            <ActionTouchable onPress={onScan} disabled={busy} style={styles.requestLink} accessibilityRole="button">
                                 <Ionicons name="qr-code-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.scanLink}>{t('trustLayer.presenter.scanQr')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setPasteOpen((v) => !v)} disabled={busy} style={styles.requestLink} accessibilityRole="button">
+                            </ActionTouchable>
+                            <ActionTouchable onPress={() => setPasteOpen((v) => !v)} disabled={busy} style={styles.requestLink} accessibilityRole="button">
                                 <Ionicons name="clipboard-outline" size={16} color={COLORS.primary} />
                                 <Text style={styles.scanLink}>{t('trustLayer.presenter.pasteLink')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                         <Text style={styles.inputLabel}>{t('trustLayer.presenter.audienceLabel')}</Text>
                         {/* a digital (non-QR) request — a signed challenge sent by chat, email or an agent — is pasted here. */}
@@ -793,9 +802,9 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                                     placeholder={t('trustLayer.presenter.pastePlaceholder')} placeholderTextColor={COLORS.textMuted}
                                     autoCapitalize="none" autoCorrect={false} multiline editable={!busy}
                                 />
-                                <TouchableOpacity style={[styles.pasteBtn, pasteText.trim().length === 0 && styles.burnBtnDisabled]} onPress={applyPasted} disabled={pasteText.trim().length === 0 || busy}>
+                                <ActionTouchable style={[styles.pasteBtn, pasteText.trim().length === 0 && styles.burnBtnDisabled]} onPress={applyPasted} disabled={pasteText.trim().length === 0 || busy}>
                                     <Text style={styles.pasteBtnText}>{t('trustLayer.presenter.pasteUse')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         )}
                         {/* A loaded request is fixed — editing its fields would present to something it didn't ask. */}
@@ -804,19 +813,19 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                         <Text style={styles.inputLabel}>{t('trustLayer.presenter.challengeLabel')}</Text>
                         <TextInput style={styles.input} value={challenge} onChangeText={setChallenge} placeholder={t('trustLayer.presenter.challengePlaceholder')} placeholderTextColor={COLORS.textMuted} autoCapitalize="none" editable={!busy && envelope === null} />
                         {envelope !== null && (
-                            <TouchableOpacity onPress={clearRequest} disabled={busy} style={{ marginTop: SPACING.s }}>
+                            <ActionTouchable onPress={clearRequest} disabled={busy} style={{ marginTop: SPACING.s }}>
                                 <Text style={styles.scanLink}>{t('trustLayer.presenter.clearRequest')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
 
                         {/* Tier picker (§2.6: both tiers on the mobile presenter; a hire or a vouch offers reputation only). */}
                         {tierOptions.length > 1 && (
                         <View style={styles.tierRow}>
                             {tierOptions.map((tr) => (
-                                <TouchableOpacity key={tr} style={[styles.tierBtn, tier === tr && styles.tierBtnActive]} onPress={() => setTier(tr)} disabled={busy}>
+                                <ActionTouchable key={tr} style={[styles.tierBtn, tier === tr && styles.tierBtnActive]} onPress={() => setTier(tr)} disabled={busy}>
                                     <Text style={[styles.tierBtnText, tier === tr && styles.tierBtnTextActive]}>{tr === 'reputation' ? t('trustLayer.presenter.tierReputation') : t('trustLayer.presenter.tierPeFacts')}</Text>
                                     <Text style={[styles.tierFee, tier === tr && styles.tierBtnTextActive]}>{t('trustLayer.presenter.feeBurn', { fee: TIER_FEE_PVT[tr] })}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             ))}
                         </View>
                         )}
@@ -903,7 +912,7 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                                     const cands = discCandidates.get(i);
                                     return (
                                         <View key={`disc-${i}`} style={styles.previewBlock}>
-                                            <TouchableOpacity style={styles.discRow} onPress={() => toggleDisclosure(i)} accessibilityRole="switch" accessibilityState={{ checked: on }}>
+                                            <ActionTouchable style={styles.discRow} onPress={() => toggleDisclosure(i)} accessibilityRole="switch" accessibilityState={{ checked: on }}>
                                                 <View style={styles.discLeft}>
                                                     <Text style={styles.predText}>{describeDisclosureRequest(t, req)}</Text>
                                                     {describeDisclosureExtras(t, req).map((line, j) => <Text key={j} style={styles.discField}>{line}</Text>)}
@@ -913,7 +922,7 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                                                     <Text style={[styles.discState, on && { color: COLORS.platinum }]}>{on ? t('trustLayer.presenter.discOn') : t('trustLayer.presenter.discOff')}</Text>
                                                     <Ionicons name={on ? 'toggle' : 'toggle-outline'} size={28} color={on ? COLORS.platinum : COLORS.textMuted} />
                                                 </View>
-                                            </TouchableOpacity>
+                                            </ActionTouchable>
                                             {on && (
                                                 cands === undefined ? <ActivityIndicator color={COLORS.platinum} />
                                                 : cands.length === 0 ? <Text style={styles.previewHint}>{t('trustLayer.presenter.discNoMatch')}</Text>
@@ -942,9 +951,9 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                             <View style={styles.disclosureCard}>
                                 <View style={styles.rowBetween}>
                                     <Text style={styles.howTitle}>{t('trustLayer.presenter.discloseTitle')}</Text>
-                                    <TouchableOpacity onPress={() => setShowDisclosure((v) => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                                    <ActionTouchable onPress={() => setShowDisclosure((v) => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                                         <Text style={styles.scanLink}>{showDisclosure ? t('trustLayer.presenter.hide') : t('trustLayer.presenter.review')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                                 <Text style={styles.disclosureHint}>{t('trustLayer.presenter.disclosureHint', { summary: disclosureSummary })}</Text>
                                 {/* Standing is always present and never withheld — so the DEFAULT
@@ -1009,13 +1018,13 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                                         ? getActionTypeDisplay(r.actionType).label
                                         : t('trustLayer.presenter.peArchivedRow', { day: r.archivedDay ?? '' });
                                     return (
-                                        <TouchableOpacity key={r.peId} style={styles.peRow} onPress={() => togglePe(r.peId)}>
+                                        <ActionTouchable key={r.peId} style={styles.peRow} onPress={() => togglePe(r.peId)}>
                                             <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? COLORS.platinum : COLORS.textMuted} />
                                             <View style={{ flex: 1, marginLeft: SPACING.s }}>
                                                 <Text style={styles.discField}>{label}</Text>
                                                 <Text style={styles.discState}>{new Date(r.timestamp).toLocaleString()} · {r.peId.slice(0, 14)}…</Text>
                                             </View>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     );
                                 })}
                                 <Text style={styles.discState}>{t('trustLayer.presenter.selectedCount', { n: chosenPes.size })}</Text>
@@ -1034,9 +1043,9 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                             </Text>
                         )}
 
-                        <TouchableOpacity style={[styles.burnBtn, !ready && styles.burnBtnDisabled]} onPress={confirm} disabled={!ready}>
+                        <ActionTouchable style={[styles.burnBtn, !ready && styles.burnBtnDisabled]} onPress={confirm} disabled={!ready}>
                             {busy ? <ActivityIndicator color={COLORS.black} /> : <Text style={styles.burnBtnText}>{savedBurn ? (selfChallenge ? t('trustLayer.presenter.btnTalkSaved') : t('trustLayer.presenter.btnPresentSaved')) : selfChallenge ? t('trustLayer.presenter.btnTalk', { fee }) : t('trustLayer.presenter.btnPresent', { fee })}</Text>}
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
             </ScrollView>

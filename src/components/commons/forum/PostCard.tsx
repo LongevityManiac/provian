@@ -3,8 +3,9 @@
  * and a footer with ▲ score ▼, 💬 N comments, and ⋯. Tapping anywhere else opens the post.
  * A reported post collapses to "Hidden — reported by the community · Show".
  */
+import { ActionTouchable } from '../../ScreenActions';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS, TYPE_SCALE } from '../../../constants/theme';
@@ -44,9 +45,9 @@ function PostCardInner({ post, onOpen, onVote, onMore, onAuthor, showTopic }: Pr
       <View style={[styles.card, styles.hiddenCard]}>
         <Ionicons name="eye-off-outline" size={16} color={COLORS.textTertiary} />
         <Text style={styles.hiddenText} numberOfLines={2}>{t('commonsForum.hidden.label')}</Text>
-        <TouchableOpacity onPress={() => setReveal(true)} style={styles.showBtn} accessibilityRole="button">
+        <ActionTouchable onPress={() => setReveal(true)} style={styles.showBtn} accessibilityRole="button">
           <Text style={styles.showText}>{t('commonsForum.hidden.show')}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
     );
   }
@@ -56,7 +57,7 @@ function PostCardInner({ post, onOpen, onVote, onMore, onAuthor, showTopic }: Pr
     ? t('commonsForum.card.comments', { count: post.comment_count })
     : t('commonsForum.card.commentsUnknown');
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={() => onOpen(post)} accessibilityRole="button" accessibilityHint={t('commonsForum.a11y.openPost')}>
+    <ActionTouchable style={styles.card} activeOpacity={0.8} onPress={() => onOpen(post)} accessibilityRole="button" accessibilityHint={t('commonsForum.a11y.openPost')}>
       <AuthorLine post={post} onAuthor={() => onAuthor(post)} showTopic={showTopic} />
       {post.is_pinned && (
         <View style={styles.pinned}>
@@ -69,16 +70,16 @@ function PostCardInner({ post, onOpen, onVote, onMore, onAuthor, showTopic }: Pr
       {chip && <View style={styles.chipRow}><ChallengeChipView chip={chip} /></View>}
       <View style={styles.footer}>
         <VoteControl post={post} onVote={onVote} compact />
-        <TouchableOpacity style={styles.footerBtn} onPress={() => onOpen(post)} accessibilityRole="button" accessibilityLabel={comments}>
+        <ActionTouchable style={styles.footerBtn} onPress={() => onOpen(post)} accessibilityRole="button" accessibilityLabel={comments}>
           <Ionicons name="chatbubble-outline" size={17} color={COLORS.textSecondary} />
           <Text style={styles.footerText}>{comments}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity style={styles.moreBtn} onPress={() => onMore(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
+        <ActionTouchable style={styles.moreBtn} onPress={() => onMore(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
           <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
-    </TouchableOpacity>
+    </ActionTouchable>
   );
 }
 

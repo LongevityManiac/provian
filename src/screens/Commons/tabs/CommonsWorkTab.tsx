@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SPACING } from '../../../constants/theme';
-import { DestinationRow } from '../../../components/ScreenActions';
+import { ChoiceChip, PrimaryAction } from '../../../components/ScreenActions';
 import CommonsHumanJobs from '../CommonsHumanJobs';
 import CommonsWants from '../CommonsWants';
 
@@ -24,9 +24,9 @@ export default function CommonsWorkTab({ navigation }: Props) {
 
   const header = (
     <View style={styles.actions}>
-      <DestinationRow label={t('overhaul.findWork')} stockIcon="briefcase-outline" onPress={() => setView('jobs')} />
-      <DestinationRow label={t('overhaul.getHelp')} stockIcon="add-circle-outline" onPress={getHelp} />
-      {view === 'jobs' && <DestinationRow label={t('overhaul.asks')} stockIcon="chatbubble-outline" onPress={() => setView('asks')} />}
+      <ChoiceChip label={t('overhaul.findWork')} selected={view === 'jobs'} onPress={() => setView('jobs')} />
+      <ChoiceChip label={t('overhaul.asks')} selected={view === 'asks'} onPress={() => setView('asks')} />
+      <PrimaryAction label={t('overhaul.getHelp')} stockIcon="add-outline" onPress={getHelp} style={styles.action} />
     </View>
   );
 
@@ -41,5 +41,6 @@ export default function CommonsWorkTab({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  actions: { paddingHorizontal: SPACING.xs },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: SPACING.xs, paddingHorizontal: SPACING.l, paddingVertical: SPACING.xs },
+  action: { marginLeft: 'auto', paddingHorizontal: SPACING.s, paddingVertical: SPACING.s },
 });

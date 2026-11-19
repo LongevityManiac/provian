@@ -20,7 +20,8 @@ describe('"Your Agents" card', () => {
     it('Earn only enables the agent connector after its connection status is known', () => {
         const src = readFileSync(resolve(__dirname, '../Earn/EarnHubScreen.tsx'), 'utf8');
         expect(src).toContain("getLinkedAgentIdentities({ throwOnError: true })");
-        expect(src).toContain('disabled={loading}');
+        expect(src).toContain('const isKnown = known(surface);');
+        expect(src).toContain('onPress={isKnown && !surface.comingSoon ? start : undefined}');
         expect(src).toContain("navigation.navigate('AgentHub')");
     });
 });

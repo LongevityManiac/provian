@@ -1,3 +1,4 @@
+import { ActionTouchable } from './ScreenActions';
 import { ActionWallet } from '../core/security/ActionWallet';
 import { withBiometricAction } from '../core/security/biometricAction';
 /**
@@ -12,7 +13,7 @@ import { withBiometricAction } from '../core/security/biometricAction';
  * signed authorization has expired, and survives the app closing (`archivePurchase.ts`).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { BORDER_RADIUS, COLORS, SPACING } from '../constants/theme';
@@ -234,10 +235,10 @@ export function ArchivePurchaseSheet({ visible, onClose, onSwap }: ArchivePurcha
     const busy = step.kind === 'checking' || step.kind === 'paying';
 
     const txLink = (hash: string | null): React.ReactElement | null => hash === null ? null : (
-        <TouchableOpacity onPress={() => { void Linking.openURL(baseTxUrl(hash)); }} accessibilityRole="link" style={styles.txRow}>
+        <ActionTouchable onPress={() => { void Linking.openURL(baseTxUrl(hash)); }} accessibilityRole="link" style={styles.txRow}>
             <Text style={styles.rowLabel}>{t('peArchive.txLabel')}</Text>
             <Text style={styles.link}>{shortHash(hash)} · {t('peArchive.viewTx')} ↗</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const body = (): React.ReactElement => {
@@ -367,9 +368,9 @@ function Stage({ label, done = false }: { label: string; done?: boolean }): Reac
 
 function Button({ label, onPress, primary = false }: { label: string; onPress: () => void; primary?: boolean }): React.ReactElement {
     return (
-        <TouchableOpacity style={[styles.button, primary ? styles.buttonPrimary : styles.buttonSecondary]} onPress={onPress} accessibilityRole="button">
+        <ActionTouchable style={[styles.button, primary ? styles.buttonPrimary : styles.buttonSecondary]} onPress={onPress} accessibilityRole="button">
             <Text style={[styles.buttonText, primary ? styles.buttonTextPrimary : null]}>{label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
     buttonPrimary: { backgroundColor: COLORS.primary },
     buttonSecondary: { borderWidth: 1, borderColor: COLORS.borderLight },
     buttonText: { fontSize: 15, fontWeight: '600', color: COLORS.text },
-    buttonTextPrimary: { color: COLORS.white },
+    buttonTextPrimary: { color: COLORS.onPrimary },
 });
 
 export default ArchivePurchaseSheet;

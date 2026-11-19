@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { withBiometricAction } from '../../core/security/biometricAction';
 /**
  * ForgeContributorsScreen - the owner-side Contributors surface for ONE
@@ -31,7 +32,6 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -240,7 +240,7 @@ export default function ForgeContributorsScreen({
                             keyboardType="email-address"
                         />
                         {inputError && <Text style={styles.inputError}>{inputError}</Text>}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.ctaBtn, submitting && styles.ctaBtnDisabled]}
                             onPress={handleAdd}
                             disabled={submitting}
@@ -248,15 +248,15 @@ export default function ForgeContributorsScreen({
                         >
                             <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
                                 {submitting ? (
-                                    <ActivityIndicator size="small" color="#FFF" />
+                                    <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                 ) : (
                                     <>
                                         <Text style={styles.ctaText}>{t('earn.forge.contributors.addCta')}</Text>
-                                        <Ionicons name="terminal-outline" size={16} color="#FFF" />
+                                        <Ionicons name="terminal-outline" size={16} color={COLORS.onPrimary} />
                                     </>
                                 )}
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -280,7 +280,7 @@ export default function ForgeContributorsScreen({
                         <View style={styles.commandValueRow}>
                             <Text style={styles.commandValue} selectable>{handoff.command}</Text>
                         </View>
-                        <TouchableOpacity style={styles.copyBtn} onPress={handleCopy} activeOpacity={0.85}>
+                        <ActionTouchable style={styles.copyBtn} onPress={handleCopy} activeOpacity={0.85}>
                             <Ionicons
                                 name={copied ? 'checkmark-outline' : 'copy-outline'}
                                 size={16}
@@ -289,7 +289,7 @@ export default function ForgeContributorsScreen({
                             <Text style={[styles.copyBtnText, copied && { color: COLORS.success }]}>
                                 {copied ? t('earn.forge.contributors.copied') : t('earn.forge.contributors.copyCommand')}
                             </Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                         <Text style={styles.mintNote}>{t('earn.forge.contributors.mintNote')}</Text>
                     </View>
                 )}
@@ -323,13 +323,13 @@ export default function ForgeContributorsScreen({
                                         </Text>
                                     </View>
                                     {d.revocable && (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             onPress={() => handleRevoke(mapping)}
                                             style={styles.revokeBtn}
                                             activeOpacity={0.8}
                                         >
                                             <Text style={styles.revokeBtnText}>{t('earn.forge.contributors.revoke')}</Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     )}
                                 </View>
                             );
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingVertical: 14,
     },
-    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '600' },
+    ctaText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
     infoCard: {
         flexDirection: 'row',
         alignItems: 'flex-start',

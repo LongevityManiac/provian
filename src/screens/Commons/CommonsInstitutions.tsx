@@ -8,11 +8,11 @@
  * Escrows with a test or display-hidden fixture agent are excluded relay-side.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,

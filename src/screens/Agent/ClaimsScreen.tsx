@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 /**
  * ClaimsScreen: File and track claims against agent performance bonds.
@@ -12,7 +13,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
     Alert,
 } from 'react-native';
@@ -103,7 +103,7 @@ export default function ClaimsScreen({ navigation, route }: BondClaimsScreenProp
                         </View>
                     ) : (
                         claims.map((claim) => (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 key={claim.claim_id}
                                 style={styles.card}
                                 onPress={async () => {
@@ -148,7 +148,7 @@ export default function ClaimsScreen({ navigation, route }: BondClaimsScreenProp
                                         {t('claims.awaitingAdjudication')}
                                     </Text>
                                 )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ))
                     )}
 

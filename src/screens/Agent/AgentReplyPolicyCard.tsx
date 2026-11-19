@@ -4,8 +4,9 @@
  * and, for anyone else, asks here in the app before replying). The agent is told on every thread read
  * and follows it; nothing on the relay blocks a send.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +45,7 @@ export default function AgentReplyPolicyCard({ walletId, agentName }: { walletId
       </View>
       <View style={styles.options}>
         {MODES.map((m) => (
-          <TouchableOpacity
+          <ActionTouchable
             key={m}
             style={[styles.option, mode === m && styles.optionOn]}
             onPress={() => { void choose(m); }}
@@ -56,7 +57,7 @@ export default function AgentReplyPolicyCard({ walletId, agentName }: { walletId
             <Text style={[styles.optionText, mode === m && styles.optionTextOn]}>
               {t(m === 'answer_anyone' ? 'agentDetail.replyPolicyAnyone' : 'agentDetail.replyPolicyAskFirst')}
             </Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         ))}
       </View>
       <Text style={styles.sub}>

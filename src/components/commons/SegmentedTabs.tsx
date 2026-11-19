@@ -2,8 +2,9 @@
  * SegmentedTabs — the Commons top tab strip. Equal-width segments, one selected, an
  * optional count badge per segment. Pure presentation; the parent owns the selected key.
  */
+import { ActionTouchable } from '../ScreenActions';
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS } from '../../constants/theme';
 
@@ -26,7 +27,7 @@ export default function SegmentedTabs<K extends string>({ tabs, selected, onSele
       {tabs.map((tab) => {
         const active = tab.key === selected;
         return (
-          <TouchableOpacity
+          <ActionTouchable
             key={tab.key}
             style={[styles.segment, active && styles.segmentActive]}
             onPress={() => onSelect(tab.key)}
@@ -35,14 +36,14 @@ export default function SegmentedTabs<K extends string>({ tabs, selected, onSele
             accessibilityState={{ selected: active }}
             accessibilityLabel={tab.badge ? `${tab.label}, ${tab.badge}` : tab.label}
           >
-            <Ionicons name={tab.icon} size={16} color={active ? COLORS.text : COLORS.textSecondary} />
+            <Ionicons name={tab.icon} size={16} color={active ? COLORS.onPrimary : COLORS.textSecondary} />
             <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>{tab.label}</Text>
             {tab.badge ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{tab.badge > 99 ? '99+' : tab.badge}</Text>
               </View>
             ) : null}
-          </TouchableOpacity>
+          </ActionTouchable>
         );
       })}
     </View>
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   },
   segmentActive: { backgroundColor: COLORS.primary },
   label: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
-  labelActive: { color: COLORS.text },
+  labelActive: { color: COLORS.onPrimary },
   badge: {
     minWidth: 18,
     height: 18,

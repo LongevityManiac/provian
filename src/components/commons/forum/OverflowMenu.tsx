@@ -4,8 +4,9 @@
  * free), and Flag publicly (a signed Commons write). The chosen action runs only after the sheet is fully closed,
  * so an action that opens another sheet (a challenge) or navigates never fights this Modal.
  */
+import { ActionPressable, ActionTouchable } from '../../ScreenActions';
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../../constants/theme';
@@ -60,18 +61,18 @@ export default function OverflowMenu({ visible, authorName, isMine, onClose, onS
   return (
     <Modal visible={open} animationType="slide" transparent onRequestClose={onClose} onDismiss={onDismiss}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+        <ActionPressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           {items.map((a) => (
-            <TouchableOpacity key={a} style={styles.item} onPress={() => choose(a)} accessibilityRole="button">
+            <ActionTouchable key={a} style={styles.item} onPress={() => choose(a)} accessibilityRole="button">
               <Ionicons name={ICONS[a]} size={22} color={a === 'report' ? COLORS.error : COLORS.chromeMuted} />
               <Text style={[styles.itemText, a === 'report' && { color: COLORS.error }]} numberOfLines={1}>{label(a)}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
-          <TouchableOpacity style={[styles.item, styles.cancel]} onPress={onClose} accessibilityRole="button">
+          <ActionTouchable style={[styles.item, styles.cancel]} onPress={onClose} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     </Modal>

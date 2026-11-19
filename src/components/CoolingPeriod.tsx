@@ -1,5 +1,6 @@
+import { ActionTouchable } from './ScreenActions';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/theme';
 
@@ -104,21 +105,21 @@ const CoolingPeriod: React.FC<CoolingPeriodProps> = ({
                             Are you being rushed or pressured to do this?
                         </Text>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.rushButton, styles.rushButtonNo]}
                             onPress={() => setIsBeingRushed(false)}
                         >
                             <Ionicons name="checkmark-circle" size={24} color="#4CC38A" />
                             <Text style={styles.rushButtonText}>No, I'm doing this on my own timeline</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.rushButton, styles.rushButtonYes]}
                             onPress={() => setIsBeingRushed(true)}
                         >
                             <Ionicons name="warning" size={24} color={COLORS.error} />
                             <Text style={styles.rushButtonText}>Yes, someone told me I need to do this NOW</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -134,25 +135,25 @@ const CoolingPeriod: React.FC<CoolingPeriodProps> = ({
                         <Text style={styles.blockedAdvice}>
                             Legitimate services NEVER pressure you to act immediately. Take a break, do research, and only proceed when YOU decide it's right.
                         </Text>
-                        <TouchableOpacity style={styles.supportButton} onPress={onCancel}>
+                        <ActionTouchable style={styles.supportButton} onPress={onCancel}>
                             <Text style={styles.supportButtonText}>Get Help & Exit</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             </View>
 
             <View style={styles.footer}>
                 {remainingSeconds > 0 && (
-                    <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+                    <ActionTouchable style={styles.cancelButton} onPress={onCancel}>
                         <Text style={styles.cancelButtonText}>Cancel Transaction</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
 
                 {remainingSeconds === 0 && isBeingRushed === false && (
-                    <TouchableOpacity style={styles.proceedButton} onPress={handleProceed}>
+                    <ActionTouchable style={styles.proceedButton} onPress={handleProceed}>
                         <Ionicons name="arrow-forward" size={20} color="#0B0E14" />
                         <Text style={styles.proceedButtonText}>Continue</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </View>

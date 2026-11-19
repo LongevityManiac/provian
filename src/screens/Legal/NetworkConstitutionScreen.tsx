@@ -1,7 +1,8 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

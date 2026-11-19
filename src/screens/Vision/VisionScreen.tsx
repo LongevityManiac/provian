@@ -12,6 +12,7 @@
  * the same through the website's launch flip.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
 import {
     View,
@@ -19,7 +20,6 @@ import {
     StyleSheet,
     ScrollView,
     Image,
-    TouchableOpacity,
     Linking,
     Share,
     Alert,
@@ -116,12 +116,12 @@ const VisionScreen = () => {
     const canGoBack = navigation.canGoBack() && navigation.getState()?.type !== 'tab';
 
     const renderShare = (title: string, body: string) => (
-        <TouchableOpacity
+        <ActionTouchable
             onPress={() => shareSection(title, body)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
             <Ionicons name="share-outline" size={18} color={COLORS.textMuted} />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const genesisTitle = t('visionScreen.genesisTitle');
@@ -149,7 +149,7 @@ const VisionScreen = () => {
             <View style={s.sectionContent}>
                 <View style={s.sectionHeader}>
                     {compact ? (
-                        <TouchableOpacity
+                        <ActionTouchable
                             testID="vision-genesis-details-toggle"
                             style={s.genesisDetailsToggle}
                             onPress={() => setGenesisDetailsExpanded((expanded) => !expanded)}
@@ -159,7 +159,7 @@ const VisionScreen = () => {
                         >
                             <Text style={s.sectionTitle}>{genesisTitle}</Text>
                             <Ionicons name={genesisDetailsExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={GOLD} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     ) : <Text style={s.sectionTitle}>{genesisTitle}</Text>}
                     {renderShare(genesisTitle, genesisBody)}
                 </View>
@@ -170,14 +170,14 @@ const VisionScreen = () => {
                     </View>
                 )}
                 {(!compact || genesisDetailsExpanded) && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={s.filmLinkInline}
                         onPress={() => Linking.openURL(VISION_LINKS.genesisFilm)}
                         accessibilityRole="link"
                     >
                         <Ionicons name="play-circle-outline" size={18} color={GOLD} />
                         <Text style={[s.filmLinkText, { color: GOLD }]}>{t('visionScreen.genesisWatch')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </View>
@@ -219,14 +219,14 @@ const VisionScreen = () => {
                 </View>
                 <Text style={s.heroTitle}>{t('visionScreen.heroTitle')}</Text>
                 <Text style={s.heroSubtitle}>{t('visionScreen.heroSubtitle')}</Text>
-                <TouchableOpacity
+                <ActionTouchable
                     style={s.filmLink}
                     onPress={() => Linking.openURL(VISION_LINKS.toTheStarsFilm)}
                     accessibilityRole="link"
                 >
                     <Ionicons name="play-circle-outline" size={20} color={COLORS.primary} />
                     <Text style={s.filmLinkText}>{t('visionScreen.watchFilm')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {/* Full introduction is useful before a wallet exists. */}
                 {genesisOpen && !onboardingComplete && renderGenesis(false)}
@@ -256,14 +256,14 @@ const VisionScreen = () => {
                                 </View>
                                 <Text style={s.sectionBody}>{body}</Text>
                                 {film && (
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={s.filmLinkInline}
                                         onPress={() => Linking.openURL(film.url)}
                                         accessibilityRole="link"
                                     >
                                         <Ionicons name="play-circle-outline" size={18} color={COLORS.primary} />
                                         <Text style={s.filmLinkText}>{t(film.labelKey)}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 )}
                             </View>
                         </View>
@@ -313,39 +313,39 @@ const VisionScreen = () => {
                 {genesisOpen && onboardingComplete && renderGenesis(true)}
 
                 {/* ── SHARE THE VISION ── */}
-                <TouchableOpacity style={s.shareButton} onPress={shareVision} activeOpacity={0.7}>
+                <ActionTouchable style={s.shareButton} onPress={shareVision} activeOpacity={0.7}>
                     <Ionicons name="share-social-outline" size={20} color={COLORS.primary} />
                     <Text style={s.shareButtonText}>{t('visionScreen.shareButtonText')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {/* ── FOOTER ── */}
                 <View style={s.footerCard}>
-                    <TouchableOpacity style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.executiveSummary)}>
+                    <ActionTouchable style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.executiveSummary)}>
                         <Ionicons name="book-outline" size={18} color={COLORS.primary} />
                         <Text style={s.footerLinkText}>{t('visionScreen.readExecutiveSummary')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.thesis)}>
+                    </ActionTouchable>
+                    <ActionTouchable style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.thesis)}>
                         <Ionicons name="book-outline" size={18} color={COLORS.primary} />
                         <Text style={s.footerLinkText}>{t('visionScreen.readThesis')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.exponentialCurrency)}>
+                    </ActionTouchable>
+                    <ActionTouchable style={s.footerLink} onPress={() => Linking.openURL(VISION_LINKS.exponentialCurrency)}>
                         <Ionicons name="book-outline" size={18} color={COLORS.primary} />
                         <Text style={s.footerLinkText}>{t('visionScreen.readCurrency')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ActionTouchable>
+                    <ActionTouchable
                         style={s.footerLink}
                         onPress={() => Linking.openURL(VISION_LINKS.site)}
                     >
                         <Ionicons name="globe-outline" size={18} color={COLORS.primary} />
                         <Text style={s.footerLinkText}>{t('visionScreen.footerVisit')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ActionTouchable>
+                    <ActionTouchable
                         style={s.footerLink}
                         onPress={() => Linking.openURL('mailto:hello@provian.ai')}
                     >
                         <Ionicons name="mail-outline" size={18} color={COLORS.primary} />
                         <Text style={s.footerLinkText}>{t('visionScreen.footerContact')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <Text style={s.footerNote}>{t('visionScreen.footerNote')}</Text>
                 </View>
 

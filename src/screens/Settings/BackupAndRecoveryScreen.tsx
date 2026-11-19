@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
@@ -116,7 +117,7 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
         subtitle?: string;
         onPress: () => void;
     }) => (
-        <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.8}>
+        <ActionTouchable style={styles.actionCard} onPress={onPress} activeOpacity={0.8}>
             <View style={styles.actionLeft}>
                 <View style={[styles.categoryDot, { backgroundColor: dotColor }]} />
                 <View style={styles.iconContainer}>
@@ -128,7 +129,7 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
                 </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const handleBackup = () => navigation.navigate('CloudBackupConfirm', { fromSettings: true });

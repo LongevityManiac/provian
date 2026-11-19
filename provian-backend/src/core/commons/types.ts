@@ -174,6 +174,7 @@ export interface CommonsProfile {
   // Trust metrics (computed from PE history)
   /** Live visible-PE count (from pe_history, never a stored per-wallet tally). */
   pe_count: number;
+  promises_kept?: number;
   promise_fulfillment_rate: number;
   court_record: CourtRecord;
   commons_join_date: number;

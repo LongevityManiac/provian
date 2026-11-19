@@ -1,10 +1,10 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Alert,
     ActivityIndicator,
     ScrollView,
@@ -296,7 +296,7 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
                     </Text>
                 </View>
 
-                <TouchableOpacity
+                <ActionTouchable
                     style={[
                         styles.deleteButton,
                         isDeleting && styles.deleteButtonDisabled
@@ -315,7 +315,7 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
                             <Text style={styles.deleteButtonText}>{t('deleteData.headerTitle')}</Text>
                         </>
                     )}
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 <Text style={styles.footerText}>
                     {t('deleteData.cannotBeUndone')}

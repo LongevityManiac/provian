@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -81,8 +82,8 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
       await record(saved, shown, action);
     });
   };
-  const button = (label: string, fn: () => Promise<void>) => <TouchableOpacity accessibilityRole="button" disabled={busy}
-    onPress={() => { void run(fn); }} style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
+  const button = (label: string, fn: () => Promise<void>) => <ActionTouchable accessibilityRole="button" disabled={busy}
+    onPress={() => { void run(fn); }} style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
   const complete = held?.result?.status === 'complete', succeeded = complete && held.result?.status === 'complete' && held.result.outcome === 'succeeded';
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.transfer.title')}</Text></View>
@@ -108,9 +109,9 @@ export default function RecoveredTransferScreen({ navigation, route }: NativeSta
           {(!succeeded || recorded) ? button(t('recourse.transfer.new'), async () => { setReview(null); setHeld(null); setRecorded(false); setAmount(''); setRecipient(''); }) : null}
         </>}
       </View> : !held && tokens.length ? <View style={styles.card}>
-        <View style={styles.choices}>{tokens.map(item => <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: item.symbol === token }}
+        <View style={styles.choices}>{tokens.map(item => <ActionTouchable accessibilityRole="button" accessibilityState={{ selected: item.symbol === token }}
           disabled={busy} key={item.symbol} onPress={() => setToken(item.symbol)} style={[styles.choice, item.symbol === token && styles.selected]}>
-          <Text style={styles.body}>{item.symbol}</Text></TouchableOpacity>)}</View>
+          <Text style={styles.body}>{item.symbol}</Text></ActionTouchable>)}</View>
         <TextInput style={styles.input} value={recipient} onChangeText={setRecipient} editable={!busy} autoCapitalize="none" autoCorrect={false}
           placeholder={t('recourse.transfer.to')} placeholderTextColor={COLORS.textSecondary} accessibilityLabel={t('recourse.transfer.to')} />
         <TextInput style={styles.input} value={amount} onChangeText={setAmount} editable={!busy} keyboardType="decimal-pad"
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 23 }, small: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
   address: { color: COLORS.text, fontSize: 12, lineHeight: 20 }, card: { padding: SPACING.l, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.l, gap: SPACING.m },
   button: { padding: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }, disabled: { opacity: 0.5 },
+  buttonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' }, disabled: { opacity: 0.5 },
   input: { color: COLORS.text, padding: SPACING.m, borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.m },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.s }, choice: { padding: SPACING.s, borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.m },
   selected: { borderColor: COLORS.primary },

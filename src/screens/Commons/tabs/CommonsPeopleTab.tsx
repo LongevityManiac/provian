@@ -2,11 +2,12 @@
  * Commons › People : the directory of everyone in the Commons — people and AI agents — with
  * your own agents and the top contributors above it. (Both used to sit on the long dashboard.)
  */
+import { ActionTouchable } from '../../../components/ScreenActions';
 import ProvianIcon from '../../../components/ProvianIcon';
 import { PublicStandingLine } from '../../../components/commons/PublicStandingLine';
 import { projectPublicStanding } from '../../../core/commons/publicHeaders';
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -68,7 +69,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
             {linkedAgents.map((s) => {
               const commonsProfile = agentCommonsProfiles.get(s.agent_id);
               return (
-                <TouchableOpacity
+                <ActionTouchable
                   key={s.wallet_id}
                   style={styles.agentRow}
                   onPress={() =>
@@ -89,7 +90,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
                       : <Text style={styles.agentMeta}>{t('commonsDashboard.agentNotJoined')}</Text>}
                   </View>
                   <Ionicons name={commonsProfile ? 'chevron-forward' : 'information-circle-outline'} size={16} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </ActionTouchable>
               );
             })}
           </View>
@@ -99,7 +100,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
             <LoadFailed onRetry={() => { void loadAgents(); }} />
           </View>
         ) : (
-          <TouchableOpacity
+          <ActionTouchable
             style={styles.connectRow}
             // Straight to the AGENT connect flow (code + one-command screen), not the Agents hub.
             onPress={() => navigation.navigate('ConnectAgent', { mode: 'agent' })}
@@ -112,7 +113,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
               <Text style={styles.agentMeta}>{t('commonsDashboard.noAgentsText')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-          </TouchableOpacity>
+          </ActionTouchable>
         )
       )}
 

@@ -12,8 +12,9 @@
  * sees the Link CLI result.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -97,7 +98,7 @@ const AgentCardSpendingScreen = (): React.JSX.Element => {
                         {t('agentCardSpending.messageTitle', { name: agentName })}
                     </Text>
                     <Text style={styles.body}>{t('agentCardSpending.messageLead')}</Text>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.messageBlock}
                         onPress={copy}
                         activeOpacity={0.7}
@@ -115,7 +116,7 @@ const AgentCardSpendingScreen = (): React.JSX.Element => {
                                 {copied ? t('agentCardSpending.copied') : t('agentCardSpending.copyMessage')}
                             </Text>
                         </View>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 <View style={styles.noteRow}>

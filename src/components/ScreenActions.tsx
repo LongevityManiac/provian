@@ -1,55 +1,98 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View, type PressableProps, type StyleProp, type TouchableOpacityProps, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BORDER_RADIUS, COLORS, SPACING } from '../constants/theme';
 import ProvianIcon, { type ProvianIconName } from './ProvianIcon';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export function PrimaryAction({ label, onPress, disabled, style, icon }: {
-    label: string; onPress: () => void; disabled?: boolean; style?: StyleProp<ViewStyle>; icon?: ProvianIconName;
-}) {
+export const ActionPressable = React.forwardRef<React.ComponentRef<typeof Pressable>, PressableProps>(function ActionPressable(props, ref) {
+    return <Pressable accessibilityRole={props.onPress ? 'button' : undefined} {...props} ref={ref} />;
+});
+
+export const ActionTouchable = React.forwardRef<React.ComponentRef<typeof TouchableOpacity>, TouchableOpacityProps>(function ActionTouchable(props, ref) {
+    return <TouchableOpacity accessibilityRole={props.onPress ? 'button' : undefined} activeOpacity={0.75} {...props} ref={ref} />;
+});
+
+interface ButtonProps {
+    label: string;
+    onPress: () => void;
+    disabled?: boolean;
+    busy?: boolean;
+    style?: StyleProp<ViewStyle>;
+    icon?: ProvianIconName;
+    stockIcon?: Ionicon;
+    accessibilityLabel?: string;
+    testID?: string;
+}
+
+function Button({ label, onPress, disabled, busy, style, icon, stockIcon, accessibilityLabel, testID, filled }: ButtonProps & { filled: boolean }) {
+    const foreground = filled ? COLORS.onPrimary : COLORS.primaryLight;
     return (
-        <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled}
-            onPress={onPress} style={({ pressed }) => [styles.primary, (pressed || disabled) && styles.dimmed, style]}>
-            {icon && <ProvianIcon name={icon} size={22} color={COLORS.background} />}
-            <Text style={styles.primaryLabel}>{label}</Text>
-        </Pressable>
+        <ActionPressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} testID={testID}
+            accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy}
+            onPress={onPress} style={({ pressed }) => [styles.button, filled ? styles.primary : styles.secondary, (pressed || disabled) && styles.dimmed, style]}>
+            {busy ? <ActivityIndicator size="small" color={foreground} /> : <>
+                {icon && <ProvianIcon name={icon} size={22} color={foreground} />}
+                {stockIcon && <Ionicons name={stockIcon} size={20} color={foreground} />}
+            </>}
+            <Text style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+        </ActionPressable>
     );
 }
 
-export function DestinationRow({ label, detail, icon, stockIcon, onPress, chevron = true }: {
+export function PrimaryAction(props: ButtonProps) { return <Button {...props} filled />; }
+export function SecondaryAction(props: ButtonProps) { return <Button {...props} filled={false} />; }
+
+export function ChoiceChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+    return <ActionPressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}
+        style={[styles.chip, selected && styles.chipSelected]}>
+        <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{label}</Text>
+    </ActionPressable>;
+}
+
+export function DestinationRow({ label, detail, icon, stockIcon, onPress, chevron = true, leading, end, busy, testID }: {
     label: string; detail?: string; icon?: ProvianIconName; stockIcon?: Ionicon;
-    onPress?: () => void; chevron?: boolean;
+    onPress?: () => void; chevron?: boolean; leading?: React.ReactNode; end?: React.ReactNode; busy?: boolean; testID?: string;
 }) {
     const content = (
         <>
+            {leading}
             {icon && <ProvianIcon name={icon} size={26} color={COLORS.primaryLight} />}
             {stockIcon && <Ionicons name={stockIcon} size={22} color={COLORS.primaryLight} />}
             <View style={styles.rowText}>
                 <Text style={styles.rowTitle}>{label}</Text>
                 {detail ? <Text style={styles.detail}>{detail}</Text> : null}
             </View>
-            {onPress && chevron && <Ionicons name="chevron-forward" size={17} color={COLORS.textTertiary} />}
+            {end}
+            {busy ? <ActivityIndicator size="small" color={COLORS.textMuted} />
+                : onPress && chevron && <Ionicons name="chevron-forward" size={17} color={COLORS.textTertiary} />}
         </>
     );
     return onPress
-        ? <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.dimmed]}>{content}</Pressable>
-        : <View style={styles.row}>{content}</View>;
+        ? <ActionPressable accessibilityRole="button" testID={testID} onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.dimmed]}>{content}</ActionPressable>
+        : <View style={styles.row} testID={testID} accessibilityState={{ busy }}>{content}</View>;
 }
 
 export const actionStyles = StyleSheet.create({
+    onPrimary: { color: COLORS.onPrimary },
     money: { fontVariant: ['tabular-nums'] },
     sectionTitle: { color: COLORS.text, fontSize: 19, fontWeight: '700' },
     body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 22 },
 });
 
 const styles = StyleSheet.create({
-    primary: {
+    button: {
         minHeight: 48, borderRadius: BORDER_RADIUS.l, paddingVertical: SPACING.m, paddingHorizontal: SPACING.l,
-        backgroundColor: COLORS.primary, flexDirection: 'row', gap: SPACING.xs, justifyContent: 'center', alignItems: 'center',
+        flexDirection: 'row', gap: SPACING.xs, justifyContent: 'center', alignItems: 'center',
     },
-    primaryLabel: { color: COLORS.background, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+    primary: { backgroundColor: COLORS.primary },
+    secondary: { borderColor: COLORS.border, borderWidth: 1 },
+    buttonLabel: { flexShrink: 1, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+    chip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: SPACING.s + 2, borderRadius: BORDER_RADIUS.round },
+    chipSelected: { backgroundColor: COLORS.primaryMuted },
+    chipLabel: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
+    chipLabelSelected: { color: COLORS.primaryLight },
     dimmed: { opacity: 0.7 },
     row: {
         flexDirection: 'row', alignItems: 'center', minHeight: 54, paddingVertical: SPACING.s,

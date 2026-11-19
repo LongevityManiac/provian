@@ -33,12 +33,12 @@
  * English source is `src/i18n/locales/enOnboardingNarrative.ts`.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Animated,
     Dimensions,
     Image,
@@ -204,13 +204,13 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
                 {/* ──────────── Step 0: THE HOOK ──────────── */}
                 <StepShell index={0}>
                     <HeroImage source={HERO_IMAGES[0]} />
-                    <TouchableOpacity
+                    <ActionTouchable
                         onPress={() => navigation.navigate('Vision')}
                         style={styles.visionLink}
                         activeOpacity={0.7}
                     >
                         <Text style={styles.visionLinkText}>{t('agentHub.readFullVision')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <Text style={styles.headlineHero}>
                         {t('onboarding.unified.hookHeadline')}
                     </Text>
@@ -219,13 +219,13 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
                     </Text>
                     <StepFooter>
                         <CTAButton label={t('onboarding.unified.hookCta')} onPress={next} accent={STEP_ACCENTS[0]} />
-                        <TouchableOpacity
+                        <ActionTouchable
                             onPress={() => navigation.navigate('RecoveryStart')}
                             style={styles.recoverLink}
                             activeOpacity={0.7}
                         >
                             <Text style={styles.recoverLinkText}>{t('onboarding.alreadyHaveWallet')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </StepFooter>
                 </StepShell>
 
@@ -296,14 +296,14 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
                     <Text style={styles.genesisFinePrint}>{t('onboarding.unified.genesisFinePrint')}</Text>
                     {/* The Genesis film plays on the website (no video in the app), at a root
                         URL that stays the same through the site's launch flip. */}
-                    <TouchableOpacity
+                    <ActionTouchable
                         onPress={() => Linking.openURL(GENESIS_FILM_URL)}
                         style={styles.visionLink}
                         activeOpacity={0.7}
                         accessibilityRole="link"
                     >
                         <Text style={styles.visionLinkText}>{t('onboarding.unified.genesisFilmLink')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <StepFooter>
                         <CTAButton label={t('onboarding.unified.genesisCta')} onPress={next} accent={STEP_ACCENTS[3]} />
                     </StepFooter>
@@ -347,24 +347,24 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
                             <Text style={styles.accordLabel}>
                                 {t('onboarding.unified.walletLegalNote')}
                             </Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 onPress={() => navigation.navigate('TermsOfService')}
                                 style={{ marginTop: SPACING.s }}
                             >
                                 <Text style={styles.accordLink}>{t('onboarding.unified.termsLink')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </ActionTouchable>
+                            <ActionTouchable
                                 onPress={() => navigation.navigate('PrivacyPolicy')}
                                 style={{ marginTop: 4 }}
                             >
                                 <Text style={styles.accordLink}>{t('onboarding.readPrivacyPolicy')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </ActionTouchable>
+                            <ActionTouchable
                                 onPress={() => navigation.navigate('NetworkConstitution')}
                                 style={{ marginTop: 4 }}
                             >
                                 <Text style={styles.accordLink}>{t('onboarding.readConstitution')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                     <StepFooter>
@@ -433,7 +433,7 @@ const HeroImage = ({ source }: { source: ImageSourcePropType }) => (
 );
 
 const CTAButton = ({ label, onPress, accent, disabled }: { label: string; onPress: () => void; accent: string; disabled?: boolean }) => (
-    <TouchableOpacity
+    <ActionTouchable
         style={[styles.ctaButton, { shadowColor: accent }, disabled && { opacity: 0.4 }]}
         onPress={onPress}
         activeOpacity={0.8}
@@ -448,7 +448,7 @@ const CTAButton = ({ label, onPress, accent, disabled }: { label: string; onPres
             <Text style={styles.ctaText}>{label}</Text>
             <Ionicons name="arrow-forward" size={20} color="white" style={{ marginLeft: 8 }} />
         </LinearGradient>
-    </TouchableOpacity>
+    </ActionTouchable>
 );
 
 const ValuePill = ({ color, label }: { color: string; label: string }) => (

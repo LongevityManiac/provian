@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * StayInTheLoopScreen - optional, skippable community-email opt-in.
@@ -18,7 +19,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
     TextInput,
 } from 'react-native';
@@ -127,7 +127,7 @@ const StayInTheLoopScreen = ({ navigation, route }: any) => {
 
                         <Text style={styles.privacyNote}>{t('stayInTheLoop.privacyNote')}</Text>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.primaryButton, (submitting || email.trim().length === 0) && styles.buttonDisabled]}
                             onPress={handleSubscribe}
                             disabled={submitting || email.trim().length === 0}
@@ -135,17 +135,17 @@ const StayInTheLoopScreen = ({ navigation, route }: any) => {
                         >
                             <LinearGradient colors={GRADIENTS.primary} style={styles.buttonGradient}>
                                 {submitting ? (
-                                    <ActivityIndicator size="small" color="white" />
+                                    <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                 ) : (
                                     <Text style={styles.buttonText}>{t('stayInTheLoop.subscribeCta')}</Text>
                                 )}
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         {!fromSettings && (
-                            <TouchableOpacity style={styles.secondaryButton} onPress={proceed} disabled={submitting}>
+                            <ActionTouchable style={styles.secondaryButton} onPress={proceed} disabled={submitting}>
                                 <Text style={styles.secondaryButtonText}>{t('stayInTheLoop.skipCta')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </>
                 )}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     buttonDisabled: {
         opacity: 0.5,

@@ -1,15 +1,14 @@
 /**
  * publicHeaders — who posted a job, as the poster PUBLISHED it: display name, avatar, and
- * whether it is a person or an agent. Speech is speech : a job card's header renders only
- * profile-published fields — nothing from the presentation vocabulary, no scores, no standing.
+ * whether it is a person or an agent, with the public counts shown on the profile.
  *
  * One in-memory cache per app session so a board of 50 jobs by 10 posters costs 10 reads.
  */
-import { getAgentProfile } from './CommonsService';
+import { getAgentProfile, readPublicAgentPromisesKept } from './CommonsService';
 
 export interface PublicStanding {
   records: number;
-  keptRate: number | null;
+  promisesKept: number | null;
   penalties: number | null;
 }
 
@@ -22,6 +21,18 @@ export interface PublicHeader {
 }
 
 const cache = new Map<string, Promise<PublicHeader | null>>();
+const publicPromiseCounts = new Map<string, Promise<number | null>>();
+
+export function getPublicPromisesKept(walletId: string): Promise<number | null> {
+  const hit = publicPromiseCounts.get(walletId);
+  if (hit) return hit;
+  const read = readPublicAgentPromisesKept(walletId).then(count => {
+    if (count === null) publicPromiseCounts.delete(walletId);
+    return count;
+  });
+  publicPromiseCounts.set(walletId, read);
+  return read;
+}
 
 /** Pick ONLY the published header fields from a profile (never anything else it carries). */
 export function toPublicHeader(profile: { display_name?: unknown; avatar_url?: unknown; participant_type?: unknown }): PublicHeader | null {
@@ -36,17 +47,16 @@ export function toPublicHeader(profile: { display_name?: unknown; avatar_url?: u
 
 export function projectPublicStanding(profile: {
   pe_count?: number;
-  promise_fulfillment_rate?: number;
+  promises_kept?: number;
   court_record?: { slashing_events?: number };
 }): PublicStanding | undefined {
   const validCount = (value: unknown): value is number =>
     typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
   if (!validCount(profile.pe_count)) return undefined;
-  const rate = profile.promise_fulfillment_rate;
   const penalties = profile.court_record?.slashing_events;
   return {
     records: profile.pe_count,
-    keptRate: typeof rate === 'number' && rate >= 0 && rate <= 1 ? rate : null,
+    promisesKept: validCount(profile.promises_kept) ? profile.promises_kept : null,
     penalties: validCount(penalties) ? penalties : null,
   };
 }

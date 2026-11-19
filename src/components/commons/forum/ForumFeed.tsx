@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DestinationRow } from '../../ScreenActions';
+import { ActionTouchable, DestinationRow, PrimaryAction } from '../../ScreenActions';
 /**
  * ForumFeed (§2) — the Commons forum front page, Reddit-style. No header or back button of its
  * own: the Commons shell embeds it in its Feed tab, and the CommonsForum route wraps it in a header.
@@ -14,7 +14,7 @@ import { DestinationRow } from '../../ScreenActions';
  */
 import { useCommonsBlockStore, withoutBlocked } from '../../../store/commonsBlockStore';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -194,35 +194,37 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
     const active = c === channel;
     const label = c === 'all' ? t('commonsForum.topic.all') : t(topicLabelKey(c));
     return (
-      <TouchableOpacity
+      <ActionTouchable
         key={c}
         style={[styles.chip, active && styles.chipActive]}
         onPress={() => pickTopic(c)}
         accessibilityRole="tab"
         accessibilityState={{ selected: active }}
       >
-        {c !== 'all' && <Ionicons name={topicIcon(c)} size={14} color={active ? COLORS.text : COLORS.textSecondary} />}
+        {c !== 'all' && <Ionicons name={topicIcon(c)} size={14} color={active ? COLORS.onPrimary : COLORS.textSecondary} />}
         <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-      </TouchableOpacity>
+      </ActionTouchable>
     );
   };
 
   const header = (
     <View>
+      <PrimaryAction label={t('commons.post')} accessibilityLabel={t('commonsForum.compose.fab')}
+        stockIcon="add-outline" onPress={compose} style={styles.compose} />
       {showHello && <DestinationRow label={t('overhaul.sayHello')} icon="commons" onPress={() => {
         setShowHello(false);
         void AsyncStorage.setItem('provian.commons.hello', 'seen').catch(() => {});
         navigation.navigate('CommonsCompose', { channel: 'introductions' });
       }} />}
       {announcement && (
-        <TouchableOpacity style={styles.announcement} onPress={() => openPost(announcement)} accessibilityRole="button">
+        <ActionTouchable style={styles.announcement} onPress={() => openPost(announcement)} accessibilityRole="button">
           <View style={styles.annHead}>
             <Ionicons name="megaphone-outline" size={14} color={COLORS.warning} />
             <Text style={styles.annLabel}>{t('commonsForum.announcement.label')}</Text>
           </View>
           <Text style={styles.annTitle} numberOfLines={2}>{announcement.title || announcement.content}</Text>
           {announcement.title ? <Text style={styles.annBody} numberOfLines={2}>{announcement.content}</Text> : null}
-        </TouchableOpacity>
+        </ActionTouchable>
       )}
     </View>
   );
@@ -233,9 +235,9 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
     <View style={styles.center}>
       <Ionicons name="cloud-offline-outline" size={36} color={COLORS.textTertiary} />
       <Text style={styles.emptyTitle}>{t('commonsForum.feed.errorTitle')}</Text>
-      <TouchableOpacity style={styles.retry} onPress={() => void loadFirst('initial')} accessibilityRole="button">
+      <ActionTouchable style={styles.retry} onPress={() => void loadFirst('initial')} accessibilityRole="button">
         <Text style={styles.retryText}>{t('common.tryAgain')}</Text>
-      </TouchableOpacity>
+      </ActionTouchable>
     </View>
   ) : (
     <View style={styles.center}>
@@ -245,15 +247,14 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
     </View>
   );
 
-  // Room for the floating tab bar (embedded) and the compose button, so the last card is reachable.
-  const bottomPad = (embedded ? TAB_BAR_CLEARANCE : 0) + (joined ? 56 + SPACING.xl : SPACING.l);
+  const bottomPad = (embedded ? TAB_BAR_CLEARANCE : 0) + SPACING.l;
 
   return (
     <View style={styles.container}>
       <View style={styles.controls}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
           {topicChips.map(renderChip)}
-          <TouchableOpacity
+          <ActionTouchable
             style={[styles.chip, (showMore || moreSelected) && styles.chipOutline]}
             onPress={() => setShowMore((v) => !v)}
             accessibilityRole="button"
@@ -261,7 +262,7 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
           >
             <Text style={styles.chipText}>{t('commonsForum.topic.more')}</Text>
             <Ionicons name={showMore || moreSelected ? 'chevron-up' : 'chevron-down'} size={14} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+          </ActionTouchable>
         </ScrollView>
         {(showMore || moreSelected) && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
@@ -270,7 +271,7 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
         )}
         <View style={styles.sortRow}>
           {(['hot', 'new', 'top'] as FeedSort[]).map((s) => (
-            <TouchableOpacity
+            <ActionTouchable
               key={s}
               style={[styles.sortBtn, sort === s && styles.sortBtnActive]}
               onPress={() => setSort(s)}
@@ -283,12 +284,12 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
                 color={sort === s ? COLORS.primaryLight : COLORS.textSecondary}
               />
               <Text style={[styles.sortText, sort === s && styles.sortTextActive]}>{t(`commonsForum.sort.${s}`)}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
           {sort === 'top' && (
             <View style={styles.windowRow}>
               {(['day', 'week', 'all'] as FeedWindow[]).map((w) => (
-                <TouchableOpacity
+                <ActionTouchable
                   key={w}
                   style={[styles.windowBtn, timeWindow === w && styles.windowBtnActive]}
                   onPress={() => setTimeWindow(w)}
@@ -296,7 +297,7 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
                   accessibilityState={{ selected: timeWindow === w }}
                 >
                   <Text style={[styles.windowText, timeWindow === w && styles.sortTextActive]}>{t(`commonsForum.window.${w}`)}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
               ))}
             </View>
           )}
@@ -321,16 +322,6 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
         initialNumToRender={8}
         windowSize={9}
       />
-
-      <TouchableOpacity
-          style={[styles.fab, { bottom: embedded ? TAB_BAR_CLEARANCE + SPACING.m : SPACING.xl, width: undefined, paddingHorizontal: SPACING.m }]}
-          onPress={compose}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={t('commonsForum.compose.fab')}
-        >
-          <Text style={{ color: COLORS.background, fontWeight: '700' }}>{t('commons.post')}</Text>
-        </TouchableOpacity>
 
       <OverflowMenu
         visible={menuOpen}
@@ -361,7 +352,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipOutline: { borderColor: COLORS.borderFocus },
   chipText: { ...TYPE_SCALE.bodyMd, color: COLORS.textSecondary, fontWeight: '600' },
-  chipTextActive: { color: COLORS.text },
+  chipTextActive: { color: COLORS.onPrimary },
   sortRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.m, paddingBottom: SPACING.s, gap: SPACING.xs, flexWrap: 'wrap' },
   sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: SPACING.s + 2, minHeight: 36, borderRadius: BORDER_RADIUS.round },
   sortBtnActive: { backgroundColor: COLORS.primaryMuted },
@@ -385,19 +376,5 @@ const styles = StyleSheet.create({
   emptyBody: { ...TYPE_SCALE.bodyMd, color: COLORS.textSecondary, textAlign: 'center', paddingHorizontal: SPACING.l },
   retry: { marginTop: SPACING.s, paddingHorizontal: SPACING.l, minHeight: 44, justifyContent: 'center', borderRadius: BORDER_RADIUS.round, backgroundColor: COLORS.primaryMuted },
   retryText: { ...TYPE_SCALE.bodyMd, color: COLORS.primaryLight, fontWeight: '600' },
-  fab: {
-    position: 'absolute',
-    right: SPACING.l,
-    width: 56,
-    height: 56,
-    borderRadius: BORDER_RADIUS.round,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
+  compose: { alignSelf: 'flex-start', marginBottom: SPACING.s },
 });

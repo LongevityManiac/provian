@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * The person's PE Archive (PE Archive human-path run, 2026-10-07): what they paid for and what it
@@ -7,7 +8,7 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  * Buying happens in `ArchivePurchaseSheet`.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -176,14 +177,14 @@ export default function ArchiveScreen(): React.ReactElement {
                                     {check.result.ok ? `✓ ${t('peArchive.intact', { count: check.result.peCount })}` : t('peArchive.notIntact', { reason: check.result.reason })}
                                 </Text>
                             )}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.smallButton, check?.kind === 'pulling' || !d.confirmed || d.rejectedReason !== null ? styles.disabled : null]}
                                 disabled={check?.kind === 'pulling' || d.partShas.length === 0 || !d.confirmed || d.rejectedReason !== null}
                                 onPress={() => { void pullBack(d); }}
                                 accessibilityRole="button"
                             >
                                 <Text style={styles.smallButtonText}>{check?.kind === 'pulling' ? t('peArchive.pulling') : t('peArchive.pullBack')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     );
                 })}
@@ -253,9 +254,9 @@ export default function ArchiveScreen(): React.ReactElement {
                                 </Text>
                             </View>
                             {p.chargeTxHash !== null && (
-                                <TouchableOpacity onPress={() => { void Linking.openURL(baseTxUrl(p.chargeTxHash as string)); }} accessibilityRole="link">
+                                <ActionTouchable onPress={() => { void Linking.openURL(baseTxUrl(p.chargeTxHash as string)); }} accessibilityRole="link">
                                     <Text style={styles.link}>{shortHash(p.chargeTxHash)} · {t('peArchive.viewTx')} ↗</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             )}
                         </View>
                     ))}
@@ -292,17 +293,17 @@ export default function ArchiveScreen(): React.ReactElement {
 
 function PrimaryButton({ label, onPress }: { label: string; onPress: () => void }): React.ReactElement {
     return (
-        <TouchableOpacity style={styles.primary} onPress={onPress} accessibilityRole="button">
+        <ActionTouchable style={styles.primary} onPress={onPress} accessibilityRole="button">
             <Text style={styles.primaryText}>{label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
 function SecondaryButton({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }): React.ReactElement {
     return (
-        <TouchableOpacity style={[styles.secondary, disabled ? styles.disabled : null]} onPress={onPress} disabled={disabled} accessibilityRole="button">
+        <ActionTouchable style={[styles.secondary, disabled ? styles.disabled : null]} onPress={onPress} disabled={disabled} accessibilityRole="button">
             <Text style={styles.secondaryText}>{label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     chipOk: { color: COLORS.success, borderColor: COLORS.success },
     actions: { flexDirection: 'row', marginTop: SPACING.s },
     primary: { marginTop: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, paddingVertical: SPACING.m, alignItems: 'center' },
-    primaryText: { color: COLORS.white, fontWeight: '600', fontSize: 15 },
+    primaryText: { color: COLORS.onPrimary, fontWeight: '600', fontSize: 15 },
     secondary: { flex: 1, marginTop: SPACING.s, marginRight: SPACING.s, borderWidth: 1, borderColor: COLORS.borderLight, borderRadius: BORDER_RADIUS.m, paddingVertical: SPACING.s, alignItems: 'center' },
     secondaryText: { color: COLORS.text, fontWeight: '600', fontSize: 13 },
     smallButton: { alignSelf: 'flex-start', marginTop: SPACING.s, borderWidth: 1, borderColor: COLORS.borderLight, borderRadius: BORDER_RADIUS.m, paddingHorizontal: SPACING.m, paddingVertical: SPACING.xs },

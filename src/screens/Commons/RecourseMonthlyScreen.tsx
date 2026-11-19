@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -45,16 +46,16 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
           {view.membershipState==='available'?<Text style={styles.body}>{view.unpaidAtomic==='0'?t('recourse.standing.current','Your recorded obligations are up to date.'):
             !view.enrolled?t('recourse.outstanding',{amount:pvtAmount(view.unpaidAtomic)}):t('recourse.standing.pendingAmount','{{amount}} PVT is awaiting automatic collection. Keep enough PVT in your wallet.',{amount:pvtAmount(view.unpaidAtomic)})}</Text>:null}
           <Text style={styles.body}>{t('recourse.graceSummary')}</Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'resume'})}><Text style={styles.buttonText}>{t('recourse.flow.title')}</Text></TouchableOpacity>
+          <ActionTouchable accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'resume'})}><Text style={styles.buttonText}>{t('recourse.flow.title')}</Text></ActionTouchable>
         </View>
-        {view.membershipState==='available'&&!view.enrolled?<TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'join'})}>
+        {view.membershipState==='available'&&!view.enrolled?<ActionTouchable accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'join'})}>
           <Text style={styles.buttonText}>{t('recourse.join')}</Text>
-        </TouchableOpacity>:null}
+        </ActionTouchable>:null}
         {view.membershipState==='available'&&view.enrolled&&changed?<View style={styles.card}>
           <Text style={styles.body}>{t('recourse.standing.increase','The current rule requires a new approval. No higher amount can be debited under your previous approval.')}</Text>
-          <TouchableOpacity accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'renew'})}>
+          <ActionTouchable accessibilityRole="button" style={styles.button} onPress={()=>navigation.navigate('RecourseMembership',{kind:'renew'})}>
             <Text style={styles.buttonText}>{t('recourse.standing.review','Review new amounts')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>:null}
         <Text style={styles.body}>{t('recourse.standing.leave','Leaving ends future debits. Contributions already made are nonrefundable; allocated restorations remain withdrawable.')}</Text>
       </>:null}
@@ -64,4 +65,4 @@ export default function RecourseMonthlyScreen({navigation}:NativeStackScreenProp
 const styles=StyleSheet.create({screen:{flex:1,backgroundColor:COLORS.background},header:{flexDirection:'row',alignItems:'center',gap:SPACING.m,padding:SPACING.m},
   content:{padding:SPACING.m,gap:SPACING.l},title:{fontSize:22,fontWeight:'600',color:COLORS.text},body:{fontSize:15,lineHeight:23,color:COLORS.textSecondary},
   card:{padding:SPACING.l,borderRadius:BORDER_RADIUS.l,backgroundColor:COLORS.surface,gap:SPACING.m},button:{padding:SPACING.m,borderRadius:BORDER_RADIUS.m,backgroundColor:COLORS.primary},
-  buttonText:{color:'#FFFFFF',fontSize:15,fontWeight:'600',textAlign:'center'}});
+  buttonText:{color:COLORS.onPrimary,fontSize:15,fontWeight:'600',textAlign:'center'}});

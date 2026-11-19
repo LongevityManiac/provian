@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * ChatWebViewScreen: WebView wrapper for a single AI provider.
@@ -41,7 +42,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ActivityIndicator,
     BackHandler,
     Platform,
@@ -228,14 +228,14 @@ const ChatWebViewScreen: React.FC = () => {
             <SafeAreaView style={styles.errorRoot}>
                 <StatusBar barStyle="light-content" />
                 <View style={styles.errorHeader}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         onPress={close}
                         hitSlop={12}
                         accessibilityRole="button"
                         accessibilityLabel={t('chatWebView.close')}
                     >
                         <Ionicons name="close" size={24} color={COLORS.text} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
                 <View style={styles.errorBody}>
                     <Text style={styles.errorTitle}>{t('chatWebView.providerNotFound')}</Text>
@@ -273,7 +273,7 @@ const ChatWebViewScreen: React.FC = () => {
         <SafeAreaView style={styles.root} edges={['top']}>
             <StatusBar barStyle="light-content" />
             <View style={styles.header}>
-                <TouchableOpacity
+                <ActionTouchable
                     onPress={close}
                     hitSlop={12}
                     accessibilityRole="button"
@@ -281,7 +281,7 @@ const ChatWebViewScreen: React.FC = () => {
                     style={styles.closeButton}
                 >
                     <Ionicons name="close" size={24} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={styles.title} numberOfLines={1}>
                     {providerTitle(entry.provider)}
                 </Text>
@@ -330,7 +330,7 @@ const ChatWebViewScreen: React.FC = () => {
                             color={COLORS.warning}
                         />
                         <Text style={styles.errorBannerText}>{errorDisplayCopy(errorMessage)}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.retryButton}
                             onPress={() => {
                                 setErrorMessage(null);
@@ -338,7 +338,7 @@ const ChatWebViewScreen: React.FC = () => {
                             }}
                         >
                             <Text style={styles.retryText}>{t('chatWebView.retry')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             </View>
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     retryText: {
-        color: COLORS.white,
+        color: COLORS.onPrimary,
         fontWeight: '600',
     },
     errorRoot: {

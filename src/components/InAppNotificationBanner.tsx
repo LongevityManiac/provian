@@ -1,7 +1,8 @@
+import { ActionTouchable } from './ScreenActions';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -109,7 +110,7 @@ const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = ({
                 },
             ]}
         >
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.banner}
                 onPress={handlePress}
                 activeOpacity={0.9}
@@ -125,10 +126,10 @@ const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = ({
                         {notification.body}
                     </Text>
                 </View>
-                <TouchableOpacity style={styles.closeButton} onPress={dismissBanner}>
+                <ActionTouchable style={styles.closeButton} onPress={dismissBanner}>
                     <Ionicons name="close" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-            </TouchableOpacity>
+                </ActionTouchable>
+            </ActionTouchable>
             <Text style={styles.tapHint}>{i18next.t('ui.notifications.tapToReview')}</Text>
         </Animated.View>
     );

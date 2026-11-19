@@ -1,9 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     TextInput,
     KeyboardAvoidingView,
     Platform,
@@ -129,7 +129,7 @@ const ProfileEditScreen = ({ navigation }: any) => {
                         {/* Save Button */}
                         <View style={styles.spacer} />
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[
                                 styles.saveButton,
                                 (!hasChanges || isSaving) && styles.saveButtonDisabled
@@ -151,7 +151,7 @@ const ProfileEditScreen = ({ navigation }: any) => {
                                     {isSaving ? t('common.saving') : t('profile.saveChanges')}
                                 </Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         {/* Privacy Note */}
                         <View style={styles.privacyNote}>

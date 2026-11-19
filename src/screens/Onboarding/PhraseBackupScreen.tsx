@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * PhraseBackupScreen — back up the wallet by writing down its recovery phrase.
@@ -11,7 +12,7 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  * `useSensitiveDisplay` (screen capture blocked, auto-hidden, wiped on blur).
  */
 import React, { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -155,9 +156,9 @@ export default function PhraseBackupScreen({ navigation, route }: Props): React.
                         ))}
                         {error !== null && <Text style={styles.error}>{errorDisplayCopy(error)}</Text>}
                         <Primary label={t('phraseBackup.confirm')} busy={busy} onPress={() => { void confirm(); }} />
-                        <TouchableOpacity style={styles.secondary} onPress={() => { setError(null); void showPhrase(); }} accessibilityRole="button">
+                        <ActionTouchable style={styles.secondary} onPress={() => { setError(null); void showPhrase(); }} accessibilityRole="button">
                             <Text style={styles.secondaryText}>{t('phraseBackup.showAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
 
@@ -175,11 +176,11 @@ export default function PhraseBackupScreen({ navigation, route }: Props): React.
 
 function Primary({ label, onPress, busy }: { label: string; onPress: () => void; busy: boolean }): React.ReactElement {
     return (
-        <TouchableOpacity style={[styles.primary, busy && styles.disabled]} onPress={onPress} disabled={busy} accessibilityRole="button">
+        <ActionTouchable style={[styles.primary, busy && styles.disabled]} onPress={onPress} disabled={busy} accessibilityRole="button">
             <LinearGradient colors={GRADIENTS.primary} style={styles.primaryInner}>
-                {busy ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.primaryText}>{label}</Text>}
+                {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.primaryText}>{label}</Text>}
             </LinearGradient>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     input: { borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.m, paddingHorizontal: SPACING.m, paddingVertical: SPACING.s, fontSize: 16, color: COLORS.text, backgroundColor: COLORS.surface },
     primary: { marginTop: SPACING.m, borderRadius: BORDER_RADIUS.m, overflow: 'hidden' },
     primaryInner: { paddingVertical: SPACING.m, alignItems: 'center' },
-    primaryText: { fontSize: 16, fontWeight: '700', color: COLORS.white },
+    primaryText: { fontSize: 16, fontWeight: '700', color: COLORS.onPrimary },
     disabled: { opacity: 0.6 },
     secondary: { marginTop: SPACING.m, paddingVertical: SPACING.s, alignItems: 'center' },
     secondaryText: { fontSize: 14, color: COLORS.textSecondary },

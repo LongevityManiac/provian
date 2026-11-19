@@ -1,5 +1,6 @@
+import { ActionTouchable } from './ScreenActions';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../constants/theme';
 
@@ -53,7 +54,7 @@ const UnderstandingTest: React.FC<UnderstandingTestProps> = ({
                 <Text style={styles.statementText}>{statement}</Text>
             </View>
 
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.whyLink}
                 onPress={() => setShowWhyInfo(!showWhyInfo)}
             >
@@ -63,7 +64,7 @@ const UnderstandingTest: React.FC<UnderstandingTestProps> = ({
                     color="#9CA3AF"
                 />
                 <Text style={styles.whyLinkText}>Why am I seeing this?</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
 
             {showWhyInfo && (
                 <View style={styles.whyInfoBox}>
@@ -74,7 +75,7 @@ const UnderstandingTest: React.FC<UnderstandingTestProps> = ({
             )}
 
             <View style={styles.buttonsContainer}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[
                         styles.answerButton,
                         styles.trueButton,
@@ -101,9 +102,9 @@ const UnderstandingTest: React.FC<UnderstandingTestProps> = ({
                     ]}>
                         I understand
                     </Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
-                <TouchableOpacity
+                <ActionTouchable
                     style={[
                         styles.answerButton,
                         styles.falseButton,
@@ -130,7 +131,7 @@ const UnderstandingTest: React.FC<UnderstandingTestProps> = ({
                     ]}>
                         This isn't right
                     </Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             {hasSubmitted && (

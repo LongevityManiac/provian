@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * CommonsDashboard — the Commons tab.
@@ -17,7 +18,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Modal,
   TextInput,
@@ -155,12 +155,12 @@ export default function CommonsDashboard({ navigation, route }: Props) {
 
         </View>
         {canAnnounce && (
-          <TouchableOpacity style={styles.iconButton} onPress={() => setShowComposer(true)} accessibilityRole="button" accessibilityLabel={t('commonsDashboard.postAnnouncement')}>
+          <ActionTouchable style={styles.iconButton} onPress={() => setShowComposer(true)} accessibilityRole="button" accessibilityLabel={t('commonsDashboard.postAnnouncement')}>
             <Ionicons name="megaphone-outline" size={22} color={COLORS.primary} />
-          </TouchableOpacity>
+          </ActionTouchable>
         )}
-        <TouchableOpacity
-          style={styles.iconButton}
+        <ActionTouchable
+          style={profile ? styles.iconButton : styles.profileLink}
           onPress={() => (profile
             ? navigation.navigate('CommonsProfile', { walletId: profile.wallet_id })
             : navigation.navigate('CommonsOnboarding'))}
@@ -172,15 +172,15 @@ export default function CommonsDashboard({ navigation, route }: Props) {
               <Text style={styles.avatarText}>{initials(profile.display_name)}</Text>
             </View>
           ) : (
-            <Text style={styles.aboutLink}>{t('commonsDashboard.createProfile')}</Text>
+            <Text style={styles.aboutLink} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>{t('commonsDashboard.createProfile')}</Text>
           )}
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
 
-      <TouchableOpacity style={styles.howLink} accessibilityRole="button" onPress={() => navigation.navigate('CommonsHowItWorks')}>
+      <ActionTouchable style={styles.howLink} accessibilityRole="button" onPress={() => navigation.navigate('CommonsHowItWorks')}>
         <Text style={styles.aboutLink}>{t('overhaul.commonsHow')}</Text>
         <Ionicons name="chevron-forward" color={COLORS.primaryLight} size={15} />
-      </TouchableOpacity>
+      </ActionTouchable>
       <SegmentedTabs tabs={tabs} selected={tab} onSelect={selectTab} />
 
       <View style={styles.body}>
@@ -198,9 +198,9 @@ export default function CommonsDashboard({ navigation, route }: Props) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('commonsDashboard.modalTitle')}</Text>
-              <TouchableOpacity onPress={() => setShowComposer(false)} accessibilityRole="button" accessibilityLabel={t('common.cancel')}>
+              <ActionTouchable onPress={() => setShowComposer(false)} accessibilityRole="button" accessibilityLabel={t('common.cancel')}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
-              </TouchableOpacity>
+              </ActionTouchable>
             </View>
             <Text style={styles.modalHint}>{t('commonsDashboard.modalHint')}</Text>
             <TextInput
@@ -219,17 +219,17 @@ export default function CommonsDashboard({ navigation, route }: Props) {
               multiline
               textAlignVertical="top"
             />
-            <TouchableOpacity
+            <ActionTouchable
               style={[styles.announceSubmit, (!announceBody.trim() || announcing) && { opacity: 0.5 }]}
               onPress={submitAnnouncement}
               disabled={!announceBody.trim() || announcing}
             >
               {announcing ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={COLORS.onPrimary} />
               ) : (
                 <Text style={styles.announceSubmitText}>{t('commonsDashboard.postBroadcast')}</Text>
               )}
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>
         </View>
       </Modal>
@@ -258,6 +258,7 @@ const styles = StyleSheet.create({
   titleBlock: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: SPACING.s, flexWrap: 'wrap', paddingLeft: SPACING.xs },
   headerTitle: { fontSize: 24, fontWeight: '600', color: COLORS.text, letterSpacing: -0.3 },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  profileLink: { minHeight: 44, maxWidth: '58%', flexShrink: 1, paddingHorizontal: SPACING.s, justifyContent: 'center' },
   avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.primaryMuted, borderWidth: 1, borderColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: COLORS.text, fontSize: 13, fontWeight: '700' },
   body: { flex: 1 },
@@ -277,5 +278,5 @@ const styles = StyleSheet.create({
   announceInputTitle: { ...GLASS.input, padding: SPACING.m, color: COLORS.text, fontSize: 15, marginBottom: SPACING.s },
   announceInputBody: { ...GLASS.input, padding: SPACING.m, color: COLORS.text, fontSize: 14, minHeight: 120, marginBottom: SPACING.m },
   announceSubmit: { backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.round, paddingVertical: SPACING.m, alignItems: 'center' },
-  announceSubmitText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  announceSubmitText: { fontSize: 16, fontWeight: '600', color: COLORS.onPrimary },
 });

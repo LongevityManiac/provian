@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../ScreenActions';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../../constants/theme';
 import { ProvenanceEnvelope, PromiseStatus } from '../../core/provenance/types';
@@ -45,7 +46,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ envelope, status, onPress
     }
 
     return (
-        <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+        <ActionTouchable style={styles.card} onPress={onPress} activeOpacity={0.8}>
             <View style={[styles.iconContainer, { backgroundColor: `${iconColor}18` }]}>
                 <Ionicons
                     name={iconName}
@@ -70,7 +71,7 @@ const AgreementCard: React.FC<AgreementCardProps> = ({ envelope, status, onPress
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 };
 

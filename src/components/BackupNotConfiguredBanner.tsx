@@ -1,3 +1,4 @@
+import { ActionTouchable } from './ScreenActions';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 /**
@@ -19,7 +20,7 @@ import i18next from 'i18next';
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -62,7 +63,7 @@ const BackupNotConfiguredBanner: React.FC<Props> = ({ onPress }) => {
   if (!isSkipped || dismissedThisSession) return null;
 
   return (
-    <TouchableOpacity
+    <ActionTouchable
       style={styles.container}
       onPress={onPress}
       activeOpacity={0.8}
@@ -77,7 +78,7 @@ const BackupNotConfiguredBanner: React.FC<Props> = ({ onPress }) => {
         <Text style={styles.subtitle}>
           {i18next.t('ui.backupBanner.body')}</Text>
       </View>
-      <TouchableOpacity
+      <ActionTouchable
         style={styles.dismiss}
         onPress={(e) => {
           e.stopPropagation();
@@ -88,8 +89,8 @@ const BackupNotConfiguredBanner: React.FC<Props> = ({ onPress }) => {
         accessibilityLabel={i18next.t('ui.backupBanner.dismiss')}
       >
         <Ionicons name="close" size={18} color="#8B929E" />
-      </TouchableOpacity>
-    </TouchableOpacity>
+      </ActionTouchable>
+    </ActionTouchable>
   );
 };
 

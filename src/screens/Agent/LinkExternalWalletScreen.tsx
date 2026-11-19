@@ -1,4 +1,4 @@
-import { DestinationRow, PrimaryAction } from '../../components/ScreenActions';
+import { ActionTouchable, DestinationRow, PrimaryAction } from '../../components/ScreenActions';
 /**
  * LinkExternalWalletScreen — the linked human links a third-party wallet to
  * one of their agents.
@@ -29,7 +29,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     ActivityIndicator,
     TextInput,
@@ -445,7 +444,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                     <Text style={styles.label}>{t('linkExternalWallet.wcOpenLabel')}</Text>
                                     <View style={styles.walletGrid}>
                                         {EXTERNAL_WALLET_APPS.map((app) => (
-                                            <TouchableOpacity
+                                            <ActionTouchable
                                                 key={app.id}
                                                 style={styles.walletChip}
                                                 onPress={() => {
@@ -456,9 +455,9 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                                 accessibilityRole="button"
                                             >
                                                 <Text style={styles.walletChipText}>{app.label}</Text>
-                                            </TouchableOpacity>
+                                            </ActionTouchable>
                                         ))}
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             style={styles.walletChip}
                                             onPress={() => {
                                                 setWcApp(null);
@@ -468,9 +467,9 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                             accessibilityRole="button"
                                         >
                                             <Text style={styles.walletChipText}>{t('linkExternalWallet.wcOtherWallet')}</Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     </View>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.linkBtn}
                                         onPress={() => copy(wcUri, 'wcUri')}
                                         activeOpacity={0.7}
@@ -486,7 +485,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                                 ? t('linkExternalWallet.copied')
                                                 : t('linkExternalWallet.wcCopyLink')}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                     {!showQr && <DestinationRow label={t('overhaul.scanWithAnotherDevice')} icon="scan" onPress={() => setShowQr(true)} />}
                                     {showQr && (
                                         <View style={styles.qrWrap}>
@@ -497,7 +496,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 </>
                             )}
                             {wcPhase === 'signing' && wcApp && (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.linkBtn}
                                     onPress={() => void openWalletApp(wcApp.open)}
                                     activeOpacity={0.7}
@@ -507,9 +506,9 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                     <Text style={styles.linkBtnText}>
                                         {t('linkExternalWallet.wcReopen', { wallet: wcApp.label })}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             )}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.linkBtn}
                                 onPress={() => void resetWc()}
                                 activeOpacity={0.7}
@@ -519,7 +518,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 <Text style={[styles.linkBtnText, { color: COLORS.textSecondary }]}>
                                     {t('linkExternalWallet.cancel')}
                                 </Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </>
                     )}
                 </View>
@@ -549,7 +548,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                     />
 
                     {!challenge ? (
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.secondaryBtn, (pasteBusy || !addressInput.trim()) && styles.disabled]}
                             onPress={getMessage}
                             disabled={pasteBusy || !addressInput.trim()}
@@ -561,11 +560,11 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                             ) : (
                                 <Text style={styles.secondaryBtnText}>{t('linkExternalWallet.getMessage')}</Text>
                             )}
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     ) : (
                         <>
                             <Text style={styles.label}>{t('linkExternalWallet.messageLabel')}</Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.messageBlock}
                                 onPress={() => copy(challenge.message, 'message')}
                                 activeOpacity={0.7}
@@ -585,7 +584,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                             : t('linkExternalWallet.copyMessage')}
                                     </Text>
                                 </View>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                             <Text style={styles.fine}>{t('linkExternalWallet.messageExpires')}</Text>
 
                             <Text style={styles.label}>{t('linkExternalWallet.signatureLabel')}</Text>
@@ -605,18 +604,18 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                             {challenge.memberConsentMessageHex && <>
                                 <Text style={styles.label}>{t('recourse.memberBindingConsent')}</Text>
                                 <Text style={styles.fine}>{t('recourse.memberBindingBytes')}</Text>
-                                <TouchableOpacity style={styles.messageBlock}
+                                <ActionTouchable style={styles.messageBlock}
                                     onPress={() => copy(challenge.memberConsentMessageHex!, 'member-message')}
                                     accessibilityRole="button" accessibilityLabel={t('linkExternalWallet.copyMessage')}>
                                     <Text style={styles.messageText} selectable>{challenge.memberConsentMessageHex}</Text>
                                     <Text style={styles.linkBtnText}>{t(copiedKey === 'member-message' ? 'linkExternalWallet.copied' : 'linkExternalWallet.copyMessage')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                                 <TextInput style={[styles.input, styles.signatureInput]} value={memberSignatureInput}
                                     onChangeText={setMemberSignatureInput} editable={!pasteBusy} placeholder="0x…"
                                     placeholderTextColor={COLORS.textMuted} autoCapitalize="none" autoCorrect={false}
                                     spellCheck={false} multiline accessibilityLabel={t('recourse.memberBindingSignature')} />
                             </>}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.primaryBtn, (pasteBusy || !signatureInput.trim() || (challenge.memberConsentMessageHex && !memberSignatureInput.trim())) && styles.disabled]}
                                 onPress={verifyPasted}
                                 disabled={pasteBusy || !signatureInput.trim() || Boolean(challenge.memberConsentMessageHex && !memberSignatureInput.trim())}
@@ -625,13 +624,13 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                             >
                                 <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
                                     {pasteBusy ? (
-                                        <ActivityIndicator size="small" color="#FFF" />
+                                        <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                     ) : (
                                         <Text style={styles.primaryBtnText}>{t('linkExternalWallet.verify')}</Text>
                                     )}
                                 </LinearGradient>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </ActionTouchable>
+                            <ActionTouchable
                                 style={styles.linkBtn}
                                 onPress={() => {
                                     setChallenge(null);
@@ -645,7 +644,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 <Text style={[styles.linkBtnText, { color: COLORS.textSecondary }]}>
                                     {t('linkExternalWallet.changeAddress')}
                                 </Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </>
                     )}
                 </View>
@@ -661,7 +660,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                         <Text style={styles.body}>{t('linkExternalWallet.linkedNone')}</Text>
                     ) : (
                         linked.map((row) => (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 key={row.address}
                                 style={styles.linkedRow}
                                 onPress={() => copy(row.address, `linked:${row.address}`)}
@@ -683,7 +682,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                     size={16}
                                     color={copiedKey === `linked:${row.address}` ? COLORS.success : COLORS.primary}
                                 />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ))
                     )}
                 </View>
@@ -816,7 +815,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: SPACING.l,
     },
-    primaryBtnText: { flexShrink: 1, color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+    primaryBtnText: { flexShrink: 1, color: COLORS.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
     secondaryBtn: {
         marginTop: SPACING.m,
         alignItems: 'center',

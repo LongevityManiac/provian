@@ -8,13 +8,13 @@
  * - Explicit unconfigured PVT9 status
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
     Image,
 } from 'react-native';
@@ -109,9 +109,9 @@ const PVTDetailScreen = ({ navigation }: PVTDetailScreenProps) => {
                 ) : !accrual ? (
                     <View style={styles.loadingContainer}>
                         <Text style={{ color: COLORS.textSecondary }}>{t('provenanceDashboard.loadRecordErrorTitle')}</Text>
-                        <TouchableOpacity onPress={() => setRetryToken((value) => value + 1)}>
+                        <ActionTouchable onPress={() => setRetryToken((value) => value + 1)}>
                             <Text style={{ color: COLORS.primary, marginTop: SPACING.m }}>{t('common.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 ) : (
                     <>

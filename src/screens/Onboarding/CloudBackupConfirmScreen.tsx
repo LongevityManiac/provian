@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * CloudBackupConfirmScreen - Mandatory backup-password setup for encrypted cloud backup.
@@ -35,10 +36,11 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Platform,
     ActivityIndicator,
-    TextInput, Alert } from 'react-native';
+    TextInput,
+    Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -208,7 +210,7 @@ const CloudBackupConfirmScreen = ({ navigation, route }: any) => {
 
             <Text style={styles.hint}>{hintText}</Text>
 
-            <TouchableOpacity
+            <ActionTouchable
                 style={[styles.primaryButton, pin.length < MIN_PASSWORD_LENGTH && styles.buttonDisabled]}
                 onPress={handleEnterPinNext}
                 disabled={pin.length < MIN_PASSWORD_LENGTH}
@@ -217,18 +219,18 @@ const CloudBackupConfirmScreen = ({ navigation, route }: any) => {
                 <LinearGradient colors={GRADIENTS.primary} style={styles.buttonGradient}>
                     <Text style={styles.buttonText}>{t('cloudBackupConfirm.buttonContinue')}</Text>
                 </LinearGradient>
-            </TouchableOpacity>
+            </ActionTouchable>
 
             {/* Offered to everyone, always: iOS cannot tell an app whether iCloud Keychain is on (a
                 synced keychain write succeeds either way), so the phone never decides for the person. */}
             <Text style={[styles.hint, styles.fallbackHint]}>{t('cloudBackupConfirm.phraseFallbackHint', { cloudName })}</Text>
-            <TouchableOpacity
+            <ActionTouchable
                 style={[styles.secondaryButton, styles.fallbackButton]}
                 onPress={() => navigation.navigate('PhraseBackup', { fromSettings, requiredBeforeApp })}
                 accessibilityRole="button"
             >
                 <Text style={styles.secondaryButtonText}>{t('cloudBackupConfirm.usePhraseInstead')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
         </>
     );
 
@@ -256,7 +258,7 @@ const CloudBackupConfirmScreen = ({ navigation, route }: any) => {
                 autoFocus
             />
 
-            <TouchableOpacity
+            <ActionTouchable
                 style={[styles.primaryButton, confirmPin.length < MIN_PASSWORD_LENGTH && styles.buttonDisabled]}
                 onPress={handleConfirmPinNext}
                 disabled={confirmPin.length < MIN_PASSWORD_LENGTH}
@@ -265,11 +267,11 @@ const CloudBackupConfirmScreen = ({ navigation, route }: any) => {
                 <LinearGradient colors={GRADIENTS.primary} style={styles.buttonGradient}>
                     <Text style={styles.buttonText}>{t('cloudBackupConfirm.buttonCreateBackup')}</Text>
                 </LinearGradient>
-            </TouchableOpacity>
+            </ActionTouchable>
 
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleBackToEnterPin}>
+            <ActionTouchable style={styles.secondaryButton} onPress={handleBackToEnterPin}>
                 <Text style={styles.secondaryButtonText}>{t('cloudBackupConfirm.buttonChangePassword')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
         </>
     );
 
@@ -427,7 +429,7 @@ const styles = StyleSheet.create({
     buttonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     buttonDisabled: {
         opacity: 0.5,

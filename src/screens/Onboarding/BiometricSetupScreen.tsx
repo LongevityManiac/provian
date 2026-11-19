@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
 /**
@@ -22,7 +23,6 @@ import {
     ActivityIndicator,
     Platform,
     Alert,
-    TouchableOpacity,
     ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -468,9 +468,9 @@ const BiometricSetupScreen = ({ navigation, route }: any) => {
                     <View style={styles.errorContainer}>
                         <Ionicons name="alert-circle" size={20} color={COLORS.error} style={{ marginBottom: SPACING.s }} />
                         <Text style={styles.errorText}>{errorDisplayCopy(error)}</Text>
-                        <TouchableOpacity onPress={handleRetry}>
+                        <ActionTouchable onPress={handleRetry}>
                             <Text style={styles.retryLink}>{t('biometricSetup.retryLink')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -485,7 +485,7 @@ const BiometricSetupScreen = ({ navigation, route }: any) => {
                             {t('biometricSetup.conflictSubtext')}
                         </Text>
 
-                        <TouchableOpacity style={styles.restoreButton} onPress={handleRestore} activeOpacity={0.8}>
+                        <ActionTouchable style={styles.restoreButton} onPress={handleRestore} activeOpacity={0.8}>
                             <LinearGradient
                                 colors={GRADIENTS.primary}
                                 start={{ x: 0, y: 0 }}
@@ -493,11 +493,11 @@ const BiometricSetupScreen = ({ navigation, route }: any) => {
                                 style={styles.restoreButtonGradient}
                             >
                                 <Text style={styles.restoreButtonText}>{t('biometricSetup.restoreButton')}</Text>
-                                <Ionicons name="arrow-forward" size={18} color="white" />
+                                <Ionicons name="arrow-forward" size={18} color={COLORS.onPrimary} />
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.deleteButton}
                             onPress={handleDeleteAndRetry}
                             disabled={isDeletingKey}
@@ -511,7 +511,7 @@ const BiometricSetupScreen = ({ navigation, route }: any) => {
                                     <Text style={styles.deleteWarning}>{t('biometricSetup.deleteWarning')}</Text>
                                 </>
                             )}
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
     restoreButtonText: {
         fontSize: 15,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     deleteButton: {
         paddingVertical: 12,

@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 /**
  * AgentHubScreen - Agents & devices list
@@ -20,7 +21,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     RefreshControl,
     ActivityIndicator,
 } from 'react-native';
@@ -273,9 +273,9 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                             {subtitleText}
                         </Text>
                     </View>
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                    <ActionTouchable onPress={() => navigation.navigate('Settings')}>
                         <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 {/* Item 3: labelled counts — each says what it counts and matches its list below.
@@ -310,7 +310,7 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                         <Text style={styles.sectionTitle}>{t('agentHub.linkRequestsTitle')}</Text>
                         <Text style={styles.sectionCaption}>{t('agentHub.linkRequestsSubtitle')}</Text>
                         {linkRequests.map((req) => (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 key={req.request_id}
                                 style={styles.pendingCard}
                                 onPress={() => navigation.navigate('LinkAccept', {
@@ -327,7 +327,7 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                                     <Text style={styles.pendingPurpose}>{t('agentHub.linkRequestAuthorize')}</Text>
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ))}
                     </View>
                 )}
@@ -337,12 +337,12 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                     <View style={styles.sectionHeader}>
                         <Text style={[styles.sectionTitle, !hasAnyConnection && { textAlign: 'center', flex: 1 }]}>{t('agentHub.linkedAgentsTitle')}</Text>
                         {hasAnyConnection && (
-                            <TouchableOpacity style={styles.addButton} onPress={handleConnectAgent}>
+                            <ActionTouchable style={styles.addButton} onPress={handleConnectAgent}>
                                 <View style={styles.addButtonRow}>
                                     <Ionicons name="add" size={16} color={COLORS.primary} />
                                     <Text style={styles.addButtonText}>{t('agentHub.connectBtn')}</Text>
                                 </View>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
 
@@ -357,21 +357,21 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                             <Text style={styles.emptySubtitle}>
                                 {t('agentHub.noAgentsDesc')}
                             </Text>
-                            <TouchableOpacity style={styles.connectButton} onPress={handleConnectAgent}>
+                            <ActionTouchable style={styles.connectButton} onPress={handleConnectAgent}>
                                 <LinearGradient colors={GRADIENTS.primary} style={styles.connectButtonGradient}>
                                     <Text style={styles.connectButtonText}>{t('agentHub.connectToolOrAgent')}</Text>
                                 </LinearGradient>
-                            </TouchableOpacity>
+                            </ActionTouchable>
 
                             {!x402CardDismissed && (
                                 <View style={styles.x402Card}>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.x402Dismiss}
                                         onPress={dismissX402Card}
                                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                     >
                                         <Ionicons name="close" size={16} color={COLORS.textMuted} />
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                     <View style={styles.x402TitleRow}>
                                         <Ionicons name="swap-horizontal-outline" size={20} color="#6BA3F0" style={{ marginRight: SPACING.s }} />
                                         <Text style={styles.x402Title} numberOfLines={1} adjustsFontSizeToFit>{t('agentHub.agenticEconomy')}</Text>
@@ -379,9 +379,9 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                                     <Text style={styles.x402Body}>
                                         {t('agentHub.agenticEconomyDesc')}
                                     </Text>
-                                    <TouchableOpacity onPress={() => navigation.navigate('Vision')} activeOpacity={0.7}>
+                                    <ActionTouchable onPress={() => navigation.navigate('Vision')} activeOpacity={0.7}>
                                         <Text style={styles.x402Link}>{t('agentHub.readFullVision')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             )}
                         </View>
@@ -447,7 +447,7 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                                 const workingColor = working.tone === 'live' ? COLORS.success : working.tone === 'stale' ? COLORS.error : COLORS.warning;
                                 return (
                                 <View key={session.id} style={styles.agentCardContainer}>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.agentCard}
                                         onPress={() => handleAgentPress(session.agent_id)}
                                     >
@@ -515,15 +515,15 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                                         </View>
                                         {hasWallet && (
                                             <View style={styles.agentActions}>
-                                                <TouchableOpacity
+                                                <ActionTouchable
                                                     style={styles.settingsButton}
                                                     accessibilityRole="button"
                                                     accessibilityLabel={t('agentName.renameAccessibility', { name: session.agent_name })}
                                                     onPress={() => openRename(session.agent_wallet_id, session.agent_name)}
                                                 >
                                                     <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
+                                                </ActionTouchable>
+                                                <ActionTouchable
                                                     style={styles.settingsButton}
                                                     accessibilityLabel={t('agentHub.recoverAgentAccessibility')}
                                                     onPress={() => navigation.navigate('RecoverAgent', {
@@ -532,10 +532,10 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                                                     })}
                                                 >
                                                     <Ionicons name="key-outline" size={20} color={COLORS.textSecondary} />
-                                                </TouchableOpacity>
+                                                </ActionTouchable>
                                             </View>
                                         )}
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                                 );
                             })}
@@ -586,7 +586,7 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                 )}
 
                 {loaded && !hasAnyConnection && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.devicesPrompt}
                         onPress={handleConnectAgent}
                         activeOpacity={0.7}
@@ -596,11 +596,11 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                             {t('agentHub.registerDevicePrompt')}
                         </Text>
                         <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
 
                 {/* Commons Ecosystem */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.commonsLink}
                     onPress={() => navigation.navigate('CommonsDashboard')}
                     activeOpacity={0.7}
@@ -613,7 +613,7 @@ export default function AgentHubScreen({ navigation }: AgentHubScreenProps) {
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </View>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
             <RenameAgentSheet
                 visible={renaming !== null}
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     },
     connectButtonText: {
         textAlign: 'center',
-        color: '#FFFFFF',
+        color: COLORS.onPrimary,
         fontWeight: '600',
         fontSize: 16,
     },

@@ -1,10 +1,10 @@
+import { ActionTouchable } from './ScreenActions';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 import {
     Modal,
     View,
     Text,
-    TouchableOpacity,
     ScrollView,
     StyleSheet,
     GestureResponderEvent,
@@ -39,7 +39,7 @@ export const InfoModal: React.FC<InfoModalProps> = ({ visible, onClose, title, b
             transparent={true}
             onRequestClose={onClose}
         >
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.overlay}
                 activeOpacity={1}
                 onPress={onClose}
@@ -47,18 +47,18 @@ export const InfoModal: React.FC<InfoModalProps> = ({ visible, onClose, title, b
                 accessibilityLabel={t('common.close')}
             >
                 {/* Inner press is swallowed so tapping the sheet does not close it. */}
-                <TouchableOpacity style={styles.sheet} activeOpacity={1} onPress={() => {}}>
+                <ActionTouchable style={styles.sheet} activeOpacity={1} onPress={() => {}}>
                     <View style={styles.header}>
                         <Text style={styles.title}>{title}</Text>
-                        <TouchableOpacity onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                        <ActionTouchable onPress={onClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                             <Ionicons name="close" size={24} color={COLORS.text} />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     <ScrollView contentContainerStyle={styles.bodyContainer}>
                         <Text style={styles.body}>{body}</Text>
                     </ScrollView>
-                </TouchableOpacity>
-            </TouchableOpacity>
+                </ActionTouchable>
+            </ActionTouchable>
         </Modal>
     );
 };
@@ -87,7 +87,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
         onPress();
     };
     return (
-        <TouchableOpacity
+        <ActionTouchable
             onPress={handlePress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
@@ -95,7 +95,7 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
             style={styles.infoButton}
         >
             <Ionicons name="information-circle-outline" size={size} color={color} />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 };
 

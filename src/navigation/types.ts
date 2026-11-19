@@ -199,7 +199,7 @@ export type AppParamList = {
 // =============================================================================
 
 export type TabParamList = {
-    WalletTab: undefined;
+    WalletTab: { starterRequest?: number } | undefined;
     AgentsTab: undefined;
     CommonsTab: { tab?: 'feed' | 'work' | 'people' | 'inbox' } | undefined;
     PromisesTab: undefined;

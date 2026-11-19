@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
@@ -79,7 +80,7 @@ const LockdownScreen = ({ navigation }: any) => {
                 <View style={styles.actionContainer}>
                     <Text style={styles.warningText}>{t('lockdown.warning')}</Text>
 
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[styles.toggleButton, { backgroundColor: isLockdownActive ? COLORS.success : COLORS.error }]}
                         onPress={toggleLockdown}
                         disabled={processing}
@@ -87,7 +88,7 @@ const LockdownScreen = ({ navigation }: any) => {
                         <Text style={styles.buttonText}>
                             {isLockdownActive ? t('lockdown.deactivate') : t('lockdown.activate')}
                         </Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </View>
         </SafeAreaView>

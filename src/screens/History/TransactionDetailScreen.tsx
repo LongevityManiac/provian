@@ -1,10 +1,10 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     Linking,
     Alert,
@@ -86,7 +86,7 @@ const TransactionDetailScreen = ({ navigation, route }: TransactionDetailScreenP
          *  of a plain "Copied" toast. */
         caution?: boolean;
     }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.detailRow}
             onPress={copyable ? () => copyToClipboard(value, label, caution) : onPress}
             disabled={!copyable && !onPress}
@@ -105,7 +105,7 @@ const TransactionDetailScreen = ({ navigation, route }: TransactionDetailScreenP
                     <Ionicons name="copy" size={16} color="#9CA3AF" style={{ marginLeft: 8 }} />
                 )}
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     return (
@@ -119,9 +119,9 @@ const TransactionDetailScreen = ({ navigation, route }: TransactionDetailScreenP
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} color={themeColors.textPrimary} />
                 <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{t('transactionDetail.title')}</Text>
-                <TouchableOpacity style={styles.headerAction} onPress={openExplorer}>
+                <ActionTouchable style={styles.headerAction} onPress={openExplorer}>
                     <Ionicons name="open" size={24} color="#4A8EE8" />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -253,23 +253,23 @@ const TransactionDetailScreen = ({ navigation, route }: TransactionDetailScreenP
                         )}
 
                         {transaction.provenanceEnvelopeId && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.peButton}
                                 onPress={() => navigation.navigate('PEViewer', { envelopeId: transaction.provenanceEnvelopeId! })}
                             >
                                 <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
                                 <Text style={styles.peButtonText}>{t('transactionDetail.viewPE')}</Text>
                                 <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
                 )}
 
                 {/* View on Explorer Button */}
-                <TouchableOpacity style={styles.explorerButton} onPress={openExplorer}>
+                <ActionTouchable style={styles.explorerButton} onPress={openExplorer}>
                     <Ionicons name="globe" size={20} color={COLORS.chromeMuted} />
                     <Text style={styles.explorerButtonText}>{t('transactionDetail.viewExplorer')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
         </SafeAreaView>
     );

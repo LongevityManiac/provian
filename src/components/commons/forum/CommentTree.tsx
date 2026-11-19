@@ -6,8 +6,9 @@
  * in a FlatList. Replies indent up to three levels with thin guide lines; tapping a guide line
  * collapses that branch ("N more replies"); deeper replies sit behind "Continue this thread →".
  */
+import { ActionTouchable } from '../../ScreenActions';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../../constants/theme';
@@ -38,7 +39,7 @@ function Guides({ ancestors, onToggle }: { ancestors: string[]; onToggle: (id: s
   return (
     <>
       {ancestors.map((id) => (
-        <TouchableOpacity
+        <ActionTouchable
           key={id}
           style={styles.guide}
           onPress={() => onToggle(id)}
@@ -46,7 +47,7 @@ function Guides({ ancestors, onToggle }: { ancestors: string[]; onToggle: (id: s
           accessibilityLabel={t('commonsForum.thread.collapse')}
         >
           <View style={styles.guideLine} />
-        </TouchableOpacity>
+        </ActionTouchable>
       ))}
     </>
   );
@@ -60,10 +61,10 @@ function CommentRowInner({ row, opWalletId, highlightId, onVote, onReply, onMore
     return (
       <View style={styles.row}>
         <Guides ancestors={row.ancestors} onToggle={onToggle} />
-        <TouchableOpacity style={styles.continue} onPress={() => onContinue(row.parentId)} accessibilityRole="button">
+        <ActionTouchable style={styles.continue} onPress={() => onContinue(row.parentId)} accessibilityRole="button">
           <Text style={styles.continueText}>{t('commonsForum.thread.continue', { count: row.count })}</Text>
           <Ionicons name="arrow-forward" size={14} color={COLORS.primaryLight} />
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
     );
   }
@@ -75,12 +76,12 @@ function CommentRowInner({ row, opWalletId, highlightId, onVote, onReply, onMore
     return (
       <View style={styles.row}>
         <Guides ancestors={row.ancestors} onToggle={onToggle} />
-        <TouchableOpacity style={styles.collapsed} onPress={() => onToggle(c.post_id)} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.expand')}>
+        <ActionTouchable style={styles.collapsed} onPress={() => onToggle(c.post_id)} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.expand')}>
           <Ionicons name="add-circle-outline" size={16} color={COLORS.textTertiary} />
           <Text style={styles.collapsedText} numberOfLines={1}>
             {authorName(c)} · {row.node.descendantCount > 0 ? t('commonsForum.thread.moreReplies', { count: row.node.descendantCount }) : t('commonsForum.thread.collapsed')}
           </Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
     );
   }
@@ -92,9 +93,9 @@ function CommentRowInner({ row, opWalletId, highlightId, onVote, onReply, onMore
         <View style={[styles.body, styles.hidden]}>
           <Ionicons name="eye-off-outline" size={14} color={COLORS.textTertiary} />
           <Text style={styles.hiddenText}>{t('commonsForum.hidden.comment')}</Text>
-          <TouchableOpacity onPress={() => setReveal(true)} style={styles.showBtn} accessibilityRole="button">
+          <ActionTouchable onPress={() => setReveal(true)} style={styles.showBtn} accessibilityRole="button">
             <Text style={styles.showText}>{t('commonsForum.hidden.show')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     );
@@ -108,21 +109,21 @@ function CommentRowInner({ row, opWalletId, highlightId, onVote, onReply, onMore
           <View style={{ flex: 1 }}>
             <AuthorLine post={c} onAuthor={() => onAuthor(c)} small isOp={!!opWalletId && c.author_wallet_id === opWalletId} />
           </View>
-          <TouchableOpacity onPress={() => onToggle(c.post_id)} style={styles.collapseBtn} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.collapse')}>
+          <ActionTouchable onPress={() => onToggle(c.post_id)} style={styles.collapseBtn} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.collapse')}>
             <Ionicons name="remove-circle-outline" size={18} color={COLORS.textTertiary} />
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
         <Text style={styles.text} selectable>{c.content}</Text>
         <View style={styles.actions}>
           <VoteControl post={c} onVote={onVote} compact />
-          <TouchableOpacity style={styles.action} onPress={() => onReply(c)} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.replyTo', { name: authorName(c) })}>
+          <ActionTouchable style={styles.action} onPress={() => onReply(c)} accessibilityRole="button" accessibilityLabel={t('commonsForum.thread.replyTo', { name: authorName(c) })}>
             <Ionicons name="arrow-undo-outline" size={16} color={COLORS.textSecondary} />
             <Text style={styles.actionText}>{t('commons.reply')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
           <View style={{ flex: 1 }} />
-          <TouchableOpacity style={styles.more} onPress={() => onMore(c)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
+          <ActionTouchable style={styles.more} onPress={() => onMore(c)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
             <Ionicons name="ellipsis-horizontal" size={18} color={COLORS.textSecondary} />
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </View>
     </View>

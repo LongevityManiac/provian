@@ -39,6 +39,7 @@ export const COLORS = {
 
     // Primary - Shield Blue (from logo's blue edges)
     primary: '#4A8EE8',         // Shield Blue - primary actions
+    onPrimary: '#0B0E14',       // Deep navy text and icons on shield blue
     primaryLight: '#6BA3F0',    // Arc Blue - hover states, links
     primaryMuted: 'rgba(74, 142, 232, 0.15)',
     primaryGlow: 'rgba(74, 142, 232, 0.40)',

@@ -9,8 +9,9 @@
  * this screen is the education layer above them.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
@@ -331,7 +332,7 @@ export default function EarnSurfaceDetailScreen({
                                 <Text style={styles.instructionBody}>
                                     {t('earn.surfaces.agent_external_wallet.instructionBody')}
                                 </Text>
-                                <TouchableOpacity style={styles.commandRow} onPress={copyInstruction} activeOpacity={0.8}>
+                                <ActionTouchable style={styles.commandRow} onPress={copyInstruction} activeOpacity={0.8}>
                                     <Text style={styles.commandText} numberOfLines={3}>
                                         {t('earn.surfaces.agent_external_wallet.instructionCommand')}
                                     </Text>
@@ -340,7 +341,7 @@ export default function EarnSurfaceDetailScreen({
                                         size={16}
                                         color={copied ? '#4CC38A' : COLORS.primary}
                                     />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                                 <View style={styles.instructionStatusRow}>
                                     <Ionicons
                                         name={
@@ -460,7 +461,7 @@ export default function EarnSurfaceDetailScreen({
                                 </View>
                             )}
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[
                                 styles.ctaBtn,
                                 statusRequiredBeforeCTA && styles.ctaDisabled,
@@ -480,9 +481,9 @@ export default function EarnSurfaceDetailScreen({
                                             { defaultValue: t(`earn.surfaces.${surface.id}.cta`) },
                                         )}
                                 </Text>
-                                <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                                <Ionicons name="arrow-forward" size={16} color={COLORS.onPrimary} />
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
             </ScrollView>
@@ -647,7 +648,7 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingVertical: 14,
     },
-    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '600' },
+    ctaText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
     ctaDisabled: {
         opacity: 0.55,
         backgroundColor: 'rgba(156,163,175,0.10)',

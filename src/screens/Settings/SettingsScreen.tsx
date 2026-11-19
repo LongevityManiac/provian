@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import i18next from 'i18next';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Linking, Image, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, Alert, Linking, Image, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -411,7 +412,7 @@ const SettingsScreen = ({ navigation }: any) => {
         /** A long action is running: a spinner instead of the chevron, and no second tap. */
         busy?: boolean;
     }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.menuItem}
             onPress={onPress}
             disabled={disabled || busy === true || (value !== undefined && !onPress)}
@@ -438,7 +439,7 @@ const SettingsScreen = ({ navigation }: any) => {
             ) : (
                 <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
             )}
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     return (

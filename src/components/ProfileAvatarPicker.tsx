@@ -1,3 +1,4 @@
+import { ActionTouchable } from './ScreenActions';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import React, { useState } from 'react';
@@ -5,7 +6,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Modal,
     Image,
     ScrollView,
@@ -151,7 +151,7 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
 
     return (
         <>
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.avatarContainer}
                 onPress={() => editable && setModalVisible(true)}
                 disabled={!editable}
@@ -162,7 +162,7 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                         <Ionicons name="pencil" size={12} color="#FFFFFF" />
                     </View>
                 )}
-            </TouchableOpacity>
+            </ActionTouchable>
 
             <Modal
                 visible={modalVisible}
@@ -175,14 +175,14 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>
                                 {i18next.t('ui.avatar.title')}</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
+                            <ActionTouchable onPress={() => setModalVisible(false)}>
                                 <Ionicons name="close" size={24} color={COLORS.text} />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
 
                         {/* Tabs */}
                         <View style={styles.tabContainer}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[
                                     styles.tab,
                                     activeTab === 'emoji' && styles.tabActive,
@@ -194,8 +194,8 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                                     { color: activeTab === 'emoji' ? '#4A8EE8' : '#9CA3AF' }
                                 ]}>
                                     {i18next.t('ui.avatar.emoji')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </ActionTouchable>
+                            <ActionTouchable
                                 style={[
                                     styles.tab,
                                     activeTab === 'photo' && styles.tabActive,
@@ -207,7 +207,7 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                                     { color: activeTab === 'photo' ? '#4A8EE8' : '#9CA3AF' }
                                 ]}>
                                     {i18next.t('ui.avatar.photo')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
 
                         {/* Tab Content */}
@@ -215,7 +215,7 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                             {activeTab === 'emoji' && (
                                 <View style={styles.emojiGrid}>
                                     {EMOJI_OPTIONS.map((emoji, index) => (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             key={index}
                                             style={[
                                                 styles.emojiOption,
@@ -224,20 +224,20 @@ const ProfileAvatarPicker: React.FC<ProfileAvatarPickerProps> = ({
                                             onPress={() => handleSelectEmoji(emoji)}
                                         >
                                             <Text style={styles.emojiOptionText}>{emoji}</Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     ))}
                                 </View>
                             )}
 
                             {activeTab === 'photo' && (
                                 <View style={styles.photoSection}>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.photoButton}
                                         onPress={handlePickPhoto}
                                     >
                                         <Ionicons name="image" size={24} color="#0B0E14" />
                                         <Text style={styles.photoButtonText}>{i18next.t('ui.avatar.chooseLibrary')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                     <Text style={styles.photoHint}>
                                         {i18next.t('ui.avatar.squareHint')}</Text>
                                 </View>

@@ -1,9 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     RefreshControl,
     Alert,
@@ -180,7 +180,7 @@ const DeviceManagementScreen = ({ navigation, route }: Props) => {
 
         return (
             <View key={device.device_id} style={[styles.deviceCard, isRevoked && styles.deviceCardRevoked]}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.deviceRow}
                     onPress={() => toggleExpanded(device.device_id)}
                     onLongPress={() => {
@@ -225,7 +225,7 @@ const DeviceManagementScreen = ({ navigation, route }: Props) => {
                         size={16}
                         color="#9CA3AF"
                     />
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {isExpanded && (
                     <View style={styles.expandedSection}>
@@ -250,20 +250,20 @@ const DeviceManagementScreen = ({ navigation, route }: Props) => {
 
                         {!isRevoked && (
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.actionBtn}
                                     onPress={() => handleRename(device)}
                                 >
                                     <Ionicons name="pencil-outline" size={16} color="#4A8EE8" />
                                     <Text style={styles.actionBtnText}>{t('devices.rename')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={[styles.actionBtn, styles.actionBtnDanger]}
                                     onPress={() => handleRevoke(device)}
                                 >
                                     <Ionicons name="close-circle-outline" size={16} color="#F2555A" />
                                     <Text style={[styles.actionBtnText, styles.actionBtnTextDanger]}>{t('devices.revoke')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         )}
                     </View>
@@ -358,13 +358,13 @@ const DeviceManagementScreen = ({ navigation, route }: Props) => {
                                 }}
                             />
                             <View style={styles.modalActions}>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={[styles.actionBtn, { flex: 1 }]}
                                     onPress={() => setRenameModal(null)}
                                 >
                                     <Text style={styles.actionBtnText}>{t('common.cancel')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={[styles.actionBtn, { flex: 1 }]}
                                     onPress={() => {
                                         const target = renameModal?.device;
@@ -373,7 +373,7 @@ const DeviceManagementScreen = ({ navigation, route }: Props) => {
                                     }}
                                 >
                                     <Text style={styles.actionBtnText}>{t('common.save')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         </View>
                     </View>

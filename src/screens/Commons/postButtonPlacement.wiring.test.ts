@@ -18,7 +18,7 @@ function fabGuards(src: string): string[] {
   while (at >= 0) {
     if (!src.slice(at, at + 12).startsWith('styles.fabT')) {
       const before = src.slice(Math.max(0, at - 400), at);
-      const m = [...before.matchAll(/\{([^{}]*?)\s*&&\s*\(\s*<TouchableOpacity/g)].pop();
+      const m = [...before.matchAll(/\{([^{}]*?)\s*&&\s*\(\s*<ActionTouchable/g)].pop();
       guards.push(m ? m[1].trim() : '');
     }
     at = src.indexOf('styles.fab', at + 1);
@@ -48,7 +48,7 @@ describe('Commons post buttons never float over a tab list', () => {
 
   it('the detector catches the pre-fix floating button (in-suite control)', () => {
     const old = `{profile?.participant_type === 'human' && (
-        <TouchableOpacity
+        <ActionTouchable
           style={[styles.fab, embedded && { bottom: 112 }]}`;
     expect(violations(old)).toEqual(["floating button renders in a tab: {profile?.participant_type === 'human' && …}"]);
     expect(violations('no button here')).toEqual(['no floating button found (detector population empty)']);

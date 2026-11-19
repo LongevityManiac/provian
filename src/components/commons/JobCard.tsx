@@ -6,8 +6,9 @@
  * The poster header renders only profile-published fields (display name, avatar, person/agent) —
  * speech is speech: nothing from the presentation vocabulary is shown on a card.
  */
+import { ActionTouchable } from '../ScreenActions';
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -52,7 +53,7 @@ export function PosterHeader({ walletId, size = 28 }: { walletId: string; size?:
   const name = header?.display_name ?? t('commonsJobs.posterUnknown');
   const initials = name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
   return (
-    <TouchableOpacity style={styles.posterRow} accessibilityRole="button"
+    <ActionTouchable style={styles.posterRow} accessibilityRole="button"
       onPress={() => navigation.navigate('CommonsProfile', { walletId })}>
       <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
         {header?.avatar_url ? (
@@ -67,7 +68,7 @@ export function PosterHeader({ walletId, size = 28 }: { walletId: string; size?:
         <Text style={styles.posterName} numberOfLines={1}>{name}</Text>
         <PublicStandingLine walletId={walletId} kind={header?.participant_type} standing={header?.standing} />
       </View>
-    </TouchableOpacity>
+    </ActionTouchable>
   );
 }
 
@@ -88,7 +89,7 @@ export default function JobCard({ job, featuredRank, viewer, onOpen, onApply, ap
   const eligibility = applyEligibility(job, viewer);
 
   return (
-    <TouchableOpacity
+    <ActionTouchable
       style={[styles.card, featuredRank !== null && styles.cardFeatured]}
       onPress={() => onOpen(job)}
       activeOpacity={0.85}
@@ -131,14 +132,14 @@ export default function JobCard({ job, featuredRank, viewer, onOpen, onApply, ap
           <Text style={styles.metaMuted}>· {timeAgo(job.posted_at, t)}</Text>
         </View>
         {(eligibility.canApply || (eligibility.reason === 'not_member' && seeking === 'human' && job.status === 'open')) ? (
-          <TouchableOpacity style={styles.applyButton} onPress={() => onApply(job)} disabled={applying} activeOpacity={0.7} accessibilityRole="button">
-            {applying ? <ActivityIndicator size="small" color={COLORS.text} /> : (
+          <ActionTouchable style={styles.applyButton} onPress={() => onApply(job)} disabled={applying} activeOpacity={0.7} accessibilityRole="button">
+            {applying ? <ActivityIndicator size="small" color={COLORS.onPrimary} /> : (
               <>
-                <Ionicons name="hand-right" size={14} color={COLORS.text} />
-                <Text style={styles.applyText}>{t('commonsHumanJobs.apply')}</Text>
+                <Ionicons name="hand-right" size={14} color={COLORS.onPrimary} />
+                <Text style={[styles.applyText, { color: COLORS.onPrimary }]}>{t('commonsHumanJobs.apply')}</Text>
               </>
             )}
-          </TouchableOpacity>
+          </ActionTouchable>
         ) : isParty ? (
           <View style={styles.openPill}>
             <Ionicons name="settings-outline" size={14} color={COLORS.text} />
@@ -148,7 +149,7 @@ export default function JobCard({ job, featuredRank, viewer, onOpen, onApply, ap
           <Text style={styles.blocked}>{applyBlockText(eligibility.reason, t)}</Text>
         )}
       </View>
-    </TouchableOpacity>
+    </ActionTouchable>
   );
 }
 

@@ -1,10 +1,10 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     FlatList,
     RefreshControl,
     ActivityIndicator,
@@ -176,18 +176,18 @@ const TransactionHistoryScreen = ({ navigation }: any) => {
         selected: boolean;
         onPress: () => void;
     }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={[styles.filterChip, selected && styles.filterChipSelected]}
             onPress={onPress}
         >
             <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
                 {label}
             </Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const renderTransaction = ({ item }: { item: Transaction }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.transactionItem}
             onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
         >
@@ -259,7 +259,7 @@ const TransactionHistoryScreen = ({ navigation }: any) => {
             </View>
 
             <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const renderEmpty = () => (
@@ -290,13 +290,13 @@ const TransactionHistoryScreen = ({ navigation }: any) => {
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} color={themeColors.textPrimary} />
                 <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{t('transactionHistory.title')}</Text>
-                <TouchableOpacity style={styles.headerAction} onPress={() => setShowUnverified(v => !v)}>
+                <ActionTouchable style={styles.headerAction} onPress={() => setShowUnverified(v => !v)}>
                     <Ionicons
                         name={showUnverified ? 'eye' : 'eye-off'}
                         size={22}
                         color={showUnverified ? COLORS.warning : themeColors.textPrimary}
                     />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
 
             {/* Chain Filters */}

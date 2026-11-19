@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { clearPendingAgentSetup } from './ConnectAgentScreen';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction } from '../../core/security/biometricAction';
@@ -8,7 +9,6 @@ import {
     TextInput,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
@@ -262,12 +262,12 @@ export default function LinkAcceptScreen({ route, navigation }: Props) {
                 <View style={styles.centerState}>
                     <Text style={styles.errorTitle}>{t('linkAccept.errorTitle')}</Text>
                     <Text style={styles.errorText}>{error || t('linkAccept.errorInviteNotFound')}</Text>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.errorButton}
                         onPress={() => navigation.goBack()}
                     >
                         <Text style={styles.errorButtonText}>{t('linkAccept.goBack')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -337,19 +337,19 @@ export default function LinkAcceptScreen({ route, navigation }: Props) {
             {error ? <Text style={styles.inlineError}>{errorDisplayCopy(error)}</Text> : null}
 
             <View style={styles.actions}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.button, styles.acceptButton, busy && styles.buttonDisabled]}
                     onPress={handleAccept}
                     disabled={busy}
                 >
                     {accepting ? (
-                        <ActivityIndicator size="small" color={COLORS.text} />
+                        <ActivityIndicator size="small" color={COLORS.onPrimary} />
                     ) : (
                         <Text style={styles.acceptButtonText}>{t('linkAccept.acceptButton')}</Text>
                     )}
-                </TouchableOpacity>
+                </ActionTouchable>
 
-                <TouchableOpacity
+                <ActionTouchable
                     style={[styles.button, styles.declineButton, busy && styles.buttonDisabled]}
                     onPress={handleDecline}
                     disabled={busy}
@@ -359,7 +359,7 @@ export default function LinkAcceptScreen({ route, navigation }: Props) {
                     ) : (
                         <Text style={styles.declineButtonText}>{t('linkAccept.declineButton')}</Text>
                     )}
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
             </ScrollView>
             </KeyboardAvoidingView>
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
     errorButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: COLORS.text,
+        color: COLORS.onPrimary,
         textAlign: 'center',
     },
     header: {
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     acceptButtonText: {
         fontSize: 17,
         fontWeight: '600',
-        color: COLORS.text,
+        color: COLORS.onPrimary,
         textAlign: 'center',
     },
     declineButton: {

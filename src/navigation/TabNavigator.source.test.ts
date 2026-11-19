@@ -106,8 +106,8 @@ describe('FloatingTabBar - touch target (negative control included)', () => {
     });
 
     it('each tab cell is a Pressable, so the whole cell is the target', () => {
-        expect(SRC).toContain('<Pressable');
-        expect(SRC).toMatch(/<Pressable[^>]*?\n\s*style=\{tabStyles\.tab\}/s);
+        expect(SRC).toContain('<ActionPressable');
+        expect(SRC).toMatch(/<ActionPressable[^>]*?\n\s*style=\{tabStyles\.tab\}/s);
         expect(SRC).toMatch(/onPress=\{onPress\}/);
     });
 

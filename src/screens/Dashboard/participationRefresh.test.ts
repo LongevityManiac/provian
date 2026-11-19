@@ -42,7 +42,7 @@ describe('Earn participation card', () => {
     });
     it('the card retries on error while successful records still open the chain', () => {
         const retryOf = new Function('isLoadError', 'onRetry', `return ${initializer(card, 'retry')};`) as (failed: boolean, retry: unknown) => unknown;
-        const element = nodes(card).find(n => ts.isJsxOpeningElement(n) && n.tagName.getText(card) === 'TouchableOpacity') as ts.JsxOpeningElement;
+        const element = nodes(card).find(n => ts.isJsxOpeningElement(n) && n.tagName.getText(card) === 'ActionTouchable') as ts.JsxOpeningElement;
         const attr = element.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(card) === 'onPress') as ts.JsxAttribute;
         if (!attr.initializer || !ts.isJsxExpression(attr.initializer) || !attr.initializer.expression) throw new Error('Missing card press handler');
         const pressOf = new Function('retry', 'onPress', `return ${attr.initializer.expression.getText(card)};`) as (retry: unknown, onPress: unknown) => () => void;

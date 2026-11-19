@@ -7,11 +7,11 @@
  * flows and via the `/v1/bonds/` API, not here.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,

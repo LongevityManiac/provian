@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -157,11 +158,11 @@ const BuyCryptoScreen = ({ navigation }: BuyCryptoScreenProps) => {
                         <Text style={styles.description}>
                             {t('buyCrypto.fundsReceivedDescription', { amount: receivedAmount })}
                         </Text>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                        <ActionTouchable style={styles.actionButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.actionButtonGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                                 <Text style={styles.actionButtonText}>{t('buyCrypto.done')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
             </SafeAreaView>
@@ -196,12 +197,12 @@ const BuyCryptoScreen = ({ navigation }: BuyCryptoScreenProps) => {
                                 ? t('buyCrypto.lookingDescription')
                                 : t('buyCrypto.processingDescription')}
                         </Text>
-                        <TouchableOpacity style={styles.actionButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
+                        <ActionTouchable style={styles.actionButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.actionButtonGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                                <Ionicons name="wallet-outline" size={20} color="#FFFFFF" />
+                                <Ionicons name="wallet-outline" size={20} color={COLORS.onPrimary} />
                                 <Text style={styles.actionButtonText}>{t('buyCrypto.goToWallet')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
             </SafeAreaView>
@@ -234,7 +235,7 @@ const BuyCryptoScreen = ({ navigation }: BuyCryptoScreenProps) => {
 
                         {errorMsg && <Text style={styles.inlineError}>{errorMsg}</Text>}
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.actionButton}
                             onPress={startBuy}
                             activeOpacity={0.7}
@@ -247,20 +248,20 @@ const BuyCryptoScreen = ({ navigation }: BuyCryptoScreenProps) => {
                                 end={{ x: 1, y: 1 }}
                             >
                                 {phase === 'starting' ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                    <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                 ) : (
-                                    <Ionicons name="flash" size={20} color="#FFFFFF" />
+                                    <Ionicons name="flash" size={20} color={COLORS.onPrimary} />
                                 )}
                                 <Text style={styles.actionButtonText}>
                                     {phase === 'starting' ? t('buyCrypto.openingCoinbase') : errorMsg ? t('buyCrypto.tryAgain') : t('buyCrypto.buyUsdc')}
                                 </Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
                 {/* Receive fallback - always works, no provider needed */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.receiveRow}
                     onPress={() => navigation.navigate('Receive')}
                     activeOpacity={0.7}
@@ -274,7 +275,7 @@ const BuyCryptoScreen = ({ navigation }: BuyCryptoScreenProps) => {
                         </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color="#8B929E" />
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         </SafeAreaView>
     );
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
     actionButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#FFFFFF',
+        color: COLORS.onPrimary,
     },
     receiveRow: {
         flexDirection: 'row',

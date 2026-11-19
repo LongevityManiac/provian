@@ -1,10 +1,10 @@
+import { ActionTouchable, PrimaryAction } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     Alert,
     ActivityIndicator,
@@ -473,13 +473,13 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                     <Text style={styles.eventComment}>{event.comment}</Text>
                 )}
                 {event.provenanceEnvelopeId && (
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.peLink}
                         onPress={() => navigation.navigate('PEViewer', { envelopeId: event.provenanceEnvelopeId })}
                     >
                         <Ionicons name="shield-checkmark" size={12} color="#4A8EE8" />
                         <Text style={styles.peLinkText}>{t('promise.viewAuditTrail')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
             </View>
         </View>
@@ -511,9 +511,9 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                         <Ionicons name="alert-circle" size={48} color={COLORS.error} />
                     </View>
                     <Text style={styles.errorText}>{t('promise.notFound')}</Text>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <ActionTouchable onPress={() => navigation.goBack()}>
                         <Text style={styles.backLink}>{t('common.goBack')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -540,12 +540,12 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerTitle}>{t('promise.detailTitle')}</Text>
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.headerButton}
                     onPress={() => setShowQR(true)}
                 >
-                    <Ionicons name="qr-code" size={20} color="#E8A838" />
-                </TouchableOpacity>
+                    <Ionicons name="qr-code" size={20} color={COLORS.primaryLight} />
+                </ActionTouchable>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -628,30 +628,30 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 <Text style={styles.acceptPrompt}>
                                     {t('promise.acceptPromptBody', { who: promise.who })}
                                 </Text>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.fulfillButton}
                                     onPress={handleAccept}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="checkmark-circle" size={20} color="#0B0E14" />
                                     <Text style={styles.fulfillButtonText}>{t('promise.accept')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={handleDecline}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="close-circle" size={20} color={COLORS.error} />
                                     <Text style={styles.brokenButtonText}>{t('promise.decline')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={handleCounter}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="swap-horizontal" size={20} color={COLORS.primary} />
                                     <Text style={styles.brokenButtonText}>{t('promise.counter')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         ) : counterView?.kind === 'awaiting_terms' ? (
                             // The other party countered; their terms reach this phone only
@@ -663,14 +663,14 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                         {t('promise.counterAwaitingTermsBody', { who: promise.who })}
                                     </Text>
                                 </View>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={() => handleDeclineCounter(false)}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="close-circle" size={20} color={COLORS.error} />
                                     <Text style={styles.brokenButtonText}>{t('promise.decline')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         ) : counterView?.kind === 'answer' ? (
                             // The other party's counter, its terms shown above: accept, counter, decline.
@@ -678,30 +678,30 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 <Text style={styles.acceptPrompt}>
                                     {t('promise.counterAnswerPrompt', { who: promise.who })}
                                 </Text>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.fulfillButton}
                                     onPress={handleAcceptCounter}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="checkmark-circle" size={20} color="#0B0E14" />
                                     <Text style={styles.fulfillButtonText}>{t('promise.accept')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={handleCounter}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="swap-horizontal" size={20} color={COLORS.primary} />
                                     <Text style={styles.brokenButtonText}>{t('promise.counter')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={() => handleDeclineCounter(false)}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="close-circle" size={20} color={COLORS.error} />
                                     <Text style={styles.brokenButtonText}>{t('promise.decline')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         ) : counterView?.kind === 'mine' ? (
                             // This device countered: share the counter's link, or withdraw it.
@@ -712,22 +712,22 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                         {t('promise.counterWaitingAnswer', { who: promise.who })}
                                     </Text>
                                 </View>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.fulfillButton}
                                     onPress={() => { void handleShareCounter(); }}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="share-outline" size={20} color="#0B0E14" />
                                     <Text style={styles.fulfillButtonText}>{t('promise.shareCounter')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={() => handleDeclineCounter(true)}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="close-circle" size={20} color={COLORS.error} />
                                     <Text style={styles.brokenButtonText}>{t('promise.withdrawCounter')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         ) : promise.status === 'pending' ? (
                             // P4-11: the creator viewing their OWN still-pending
@@ -742,14 +742,14 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 </Text>
                             </View>
                         ) : promise.closeoutInitiatedByCounterparty ? (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.fulfillButton}
                                 onPress={handleAgreeCloseout}
                                 disabled={actionLoading}
                             >
                                 <Ionicons name="checkmark-done-circle" size={20} color="#0B0E14" />
                                 <Text style={styles.fulfillButtonText}>{t('promise.closeoutAgreeButton')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         ) : promise.closeoutInitiatedByMe ? (
                             <View style={styles.waitingNote}>
                                 <Ionicons name="time-outline" size={18} color="#E8A838" />
@@ -758,14 +758,14 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 </Text>
                             </View>
                         ) : (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.fulfillButton}
                                 onPress={handleFulfill}
                                 disabled={actionLoading}
                             >
                                 <Ionicons name="checkmark-circle" size={20} color="white" />
                                 <Text style={styles.fulfillButtonText}>{t('promise.markFulfilled')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
 
                         {/* P4-11: settlement actions (Dispute / Mark Broken) are
@@ -775,33 +775,33 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                             (creator) above instead. */}
                         {promise.status === 'accepted' && (
                             <>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.disputeButton}
                                     onPress={() => setShowDisputeModal(true)}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="alert-circle" size={20} color="#E8A838" />
                                     <Text style={styles.disputeButtonText}>{t('promise.dispute')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
 
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.brokenButton}
                                     onPress={handleBroken}
                                     disabled={actionLoading}
                                 >
                                     <Ionicons name="close-circle" size={20} color={COLORS.error} />
                                     <Text style={styles.brokenButtonText}>{t('promise.markBroken')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         )}
                     </View>
                 )}
 
                 {/* Delete Option */}
-                <TouchableOpacity style={styles.deleteRow} onPress={handleDelete}>
+                <ActionTouchable style={styles.deleteRow} onPress={handleDelete}>
                     <Ionicons name="trash" size={18} color={COLORS.error} />
                     <Text style={styles.deleteRowText}>{t('promise.deletePromise')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
 
             {/* QR Modal */}
@@ -819,12 +819,12 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 />
                             </View>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.closeButton}
                             onPress={() => setShowQR(false)}
                         >
                             <Text style={styles.closeButtonText}>{t('common.close')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </View>
             </Modal>
@@ -848,7 +848,7 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                             textAlignVertical="top"
                         />
                         <View style={styles.disputeButtons}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.disputeCancelButton}
                                 onPress={() => {
                                     setShowDisputeModal(false);
@@ -856,18 +856,9 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                                 }}
                             >
                                 <Text style={styles.disputeCancelText}>{t('common.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.disputeSubmitButton}
-                                onPress={handleDispute}
-                                disabled={actionLoading}
-                            >
-                                {actionLoading ? (
-                                    <ActivityIndicator color="white" size="small" />
-                                ) : (
-                                    <Text style={styles.disputeSubmitText}>{t('promise.submitDispute')}</Text>
-                                )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
+                            <PrimaryAction label={t('promise.submitDispute')} onPress={handleDispute}
+                                busy={actionLoading} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
@@ -894,23 +885,14 @@ const PromiseDetailScreen = ({ navigation, route }: any) => {
                             onChangeText={setCounterOwe}
                         />
                         <View style={styles.disputeButtons}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.disputeCancelButton}
                                 onPress={() => setShowCounterModal(false)}
                             >
                                 <Text style={styles.disputeCancelText}>{t('common.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.disputeSubmitButton}
-                                onPress={submitCounter}
-                                disabled={actionLoading}
-                            >
-                                {actionLoading ? (
-                                    <ActivityIndicator color="white" size="small" />
-                                ) : (
-                                    <Text style={styles.disputeSubmitText}>{t('promise.counterSubmit')}</Text>
-                                )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
+                            <PrimaryAction label={t('promise.counterSubmit')} onPress={submitCounter}
+                                busy={actionLoading} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
@@ -1327,22 +1309,6 @@ const styles = StyleSheet.create({
     disputeCancelText: {
         color: COLORS.chromeMuted,
         fontWeight: '600',
-    },
-    disputeSubmitButton: {
-        flex: 1,
-        padding: SPACING.m,
-        borderRadius: 28,
-        alignItems: 'center',
-        backgroundColor: '#E8A838',
-        shadowColor: '#E8A838',
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 5,
-    },
-    disputeSubmitText: {
-        color: '#0B0E14',
-        fontWeight: '700',
     },
 });
 

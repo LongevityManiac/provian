@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import i18next from 'i18next';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -5,7 +6,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     TextInput,
     Alert,
     Modal,
@@ -750,9 +750,9 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
 
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <ActionTouchable onPress={() => navigation.goBack()}>
                     <Ionicons name="close" size={24} color={COLORS.text} />
-                </TouchableOpacity>
+                </ActionTouchable>
                 <Text style={styles.headerTitle}>{t('walletConnect.headerTitle')}</Text>
                 <View style={{ width: 24 }} />
             </View>
@@ -765,10 +765,10 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                         <Text style={styles.cardTitle}>{t('walletConnect.connectToDapp')}</Text>
                     </View>
 
-                    <TouchableOpacity style={styles.scanButton} onPress={openScanner} activeOpacity={0.85}>
-                        <Ionicons name="qr-code-outline" size={20} color="#FFFFFF" />
+                    <ActionTouchable style={styles.scanButton} onPress={openScanner} activeOpacity={0.85}>
+                        <Ionicons name="qr-code-outline" size={20} color={COLORS.onPrimary} />
                         <Text style={styles.scanButtonText}>{t('walletConnect.scan')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
 
                     <View style={styles.orRow}>
                         <View style={styles.orLine} />
@@ -798,7 +798,7 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                         </View>
                     )}
 
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[
                             styles.connectButton,
                             (screenState === 'connecting' || !uri.trim()) && styles.buttonDisabled,
@@ -807,11 +807,11 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                         disabled={screenState === 'connecting' || !uri.trim()}
                     >
                         {screenState === 'connecting' ? (
-                            <ActivityIndicator color="#FFF" size="small" />
+                            <ActivityIndicator color={COLORS.onPrimary} size="small" />
                         ) : (
                             <Text style={styles.connectButtonText}>{t('walletConnect.connect')}</Text>
                         )}
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
 
                 {/* Active Sessions */}
@@ -845,12 +845,12 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                                         {session.peerMeta.url}
                                     </Text>
                                 </View>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.disconnectButton}
                                     onPress={() => handleDisconnect(session.topic, session.peerMeta.name)}
                                 >
                                     <Ionicons name="close-circle-outline" size={22} color={COLORS.error} />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         ))
                     )}
@@ -917,25 +917,25 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                         </View>
 
                         <View style={styles.modalActions}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.modalButton, styles.rejectButton]}
                                 onPress={handleRejectSession}
                                 disabled={processing}
                             >
                                 <Text style={styles.rejectText}>{t('common.reject')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
 
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.modalButton, styles.approveButton]}
                                 onPress={handleApproveSession}
                                 disabled={processing}
                             >
                                 {processing ? (
-                                    <ActivityIndicator color="#FFF" size="small" />
+                                    <ActivityIndicator color={COLORS.onPrimary} size="small" />
                                 ) : (
                                     <Text style={styles.approveText}>{t('common.approve')}</Text>
                                 )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                 </View>
@@ -1022,25 +1022,25 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                         {renderGovernanceBanner()}
 
                         <View style={styles.modalActions}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.modalButton, styles.rejectButton]}
                                 onPress={handleRejectRequest}
                                 disabled={processing}
                             >
                                 <Text style={styles.rejectText}>{t('common.reject')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
 
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.modalButton, styles.approveButton, approveDisabled && styles.buttonDisabled]}
                                 onPress={handleApproveRequest}
                                 disabled={approveDisabled}
                             >
                                 {processing ? (
-                                    <ActivityIndicator color="#FFF" size="small" />
+                                    <ActivityIndicator color={COLORS.onPrimary} size="small" />
                                 ) : (
                                     <Text style={styles.approveText}>{approveLabel()}</Text>
                                 )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                 </View>
@@ -1057,12 +1057,12 @@ const WalletConnectScreen = ({ navigation }: { navigation: { goBack: () => void 
                     />
                     <SafeAreaView style={styles.scannerOverlay}>
                         <View style={styles.scannerHeader}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.scannerClose}
                                 onPress={() => setShowScanner(false)}
                             >
                                 <Ionicons name="close" size={26} color="#FFFFFF" />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                             <Text style={styles.scannerTitle}>{t('walletConnect.scan')}</Text>
                             <View style={{ width: 26 }} />
                         </View>
@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     connectButtonText: {
-        color: '#FFFFFF',
+        color: COLORS.onPrimary,
         fontWeight: 'bold',
         fontSize: 16,
     },
@@ -1323,7 +1323,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
     },
     approveText: {
-        color: '#FFFFFF',
+        color: COLORS.onPrimary,
         fontWeight: 'bold',
         fontSize: 15,
     },
@@ -1535,7 +1535,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     scanButtonText: {
-        color: '#FFFFFF',
+        color: COLORS.onPrimary,
         fontWeight: 'bold',
         fontSize: 16,
     },

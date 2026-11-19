@@ -7,8 +7,9 @@
  * one-line version for the Abundance dashboard.
  */
 
+import { ActionTouchable } from './ScreenActions';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants/theme';
 import { getPhoneMeter, backUpMyPes, restoreMyPes } from '../core/meter/phoneMeterRuntime';
@@ -139,12 +140,12 @@ export function PeCustodyCard({ compact = false }: { compact?: boolean }): React
             )}
             <Text style={styles.note}>{t('peCustody.keepNote')}</Text>
             <View style={styles.actions}>
-                <TouchableOpacity style={styles.button} onPress={backUpNow} disabled={busy !== null} accessibilityRole="button">
+                <ActionTouchable style={styles.button} onPress={backUpNow} disabled={busy !== null} accessibilityRole="button">
                     {busy === 'backup' ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>{t('peCustody.backupNow')}</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={restore} disabled={busy !== null} accessibilityRole="button">
+                </ActionTouchable>
+                <ActionTouchable style={[styles.button, styles.buttonSecondary]} onPress={restore} disabled={busy !== null} accessibilityRole="button">
                     {busy === 'restore' ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.buttonText}>{t('peCustody.restore')}</Text>}
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         </View>
     );

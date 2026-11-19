@@ -5,8 +5,9 @@
  * which the Commons shell also embeds in its Feed tab. All forum behavior lives in
  * src/components/commons/forum/.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';

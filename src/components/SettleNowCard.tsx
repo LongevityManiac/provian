@@ -1,3 +1,4 @@
+import { ActionTouchable } from './ScreenActions';
 import { ActionWallet } from '../core/security/ActionWallet';
 import { withBiometricAction, assertBiometricAction } from '../core/security/biometricAction';
 /**
@@ -13,7 +14,7 @@ import { withBiometricAction, assertBiometricAction } from '../core/security/bio
  */
 
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants/theme';
 import relayService, { type PayoutQuote, type PayoutRequestView } from '../services/RelayAPIService';
@@ -155,12 +156,12 @@ export function SettleNowCard(): React.ReactElement {
                         <Text style={styles.status}>{t('settleNow.ready', { count: phase.quote.readyClaims })}</Text>
                     )}
                     <View style={styles.actions}>
-                        <TouchableOpacity style={styles.button} onPress={() => { void pay(phase.quote); }} accessibilityRole="button">
+                        <ActionTouchable style={styles.button} onPress={() => { void pay(phase.quote); }} accessibilityRole="button">
                             <Text style={styles.buttonText}>{t('settleNow.confirm')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => setPhase({ kind: 'idle' })} accessibilityRole="button">
+                        </ActionTouchable>
+                        <ActionTouchable style={[styles.button, styles.buttonSecondary]} onPress={() => setPhase({ kind: 'idle' })} accessibilityRole="button">
                             <Text style={styles.buttonText}>{t('settleNow.cancel')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </>
             )}
@@ -172,7 +173,7 @@ export function SettleNowCard(): React.ReactElement {
                     )}
                     {phase.savedSettleNow > 0 && <Text style={styles.status}>{t('storeBuy.settleSavedNote')}</Text>}
                     <View style={styles.actions}>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.button}
                             onPress={() => { void (phase.savedSettleNow > 0 ? spendSaved() : buyFromStore()); }}
                             accessibilityRole="button"
@@ -182,10 +183,10 @@ export function SettleNowCard(): React.ReactElement {
                                     ? t('storeBuy.settleUseSaved')
                                     : phase.price === null ? t('storeBuy.settleConfirmNoPrice') : t('storeBuy.settleConfirm', { price: phase.price })}
                             </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => setPhase({ kind: 'idle' })} accessibilityRole="button">
+                        </ActionTouchable>
+                        <ActionTouchable style={[styles.button, styles.buttonSecondary]} onPress={() => setPhase({ kind: 'idle' })} accessibilityRole="button">
                             <Text style={styles.buttonText}>{t('settleNow.cancel')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 </>
             )}
@@ -201,9 +202,9 @@ export function SettleNowCard(): React.ReactElement {
                     </Text>
                     {phase.request.state !== 'settled' && phase.request.state !== 'charge_failed' && (
                         <View style={styles.actions}>
-                            <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => { void advance(phase.request); }} accessibilityRole="button">
+                            <ActionTouchable style={[styles.button, styles.buttonSecondary]} onPress={() => { void advance(phase.request); }} accessibilityRole="button">
                                 <Text style={styles.buttonText}>{t('settleNow.checkAgain')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     )}
                 </>
@@ -211,9 +212,9 @@ export function SettleNowCard(): React.ReactElement {
 
             {(phase.kind === 'idle' || phase.kind === 'message') && (
                 <View style={styles.actions}>
-                    <TouchableOpacity style={styles.button} onPress={() => { void check(); }} accessibilityRole="button">
+                    <ActionTouchable style={styles.button} onPress={() => { void check(); }} accessibilityRole="button">
                         <Text style={styles.buttonText}>{store === null ? t('settleNow.button') : t('storeBuy.settleButton')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             )}
         </View>

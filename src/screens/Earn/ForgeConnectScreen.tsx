@@ -22,6 +22,7 @@
  * variants - the phone has no DeviceKey identity.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -31,7 +32,6 @@ import {
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -356,7 +356,7 @@ export default function ForgeConnectScreen({
                                 />
                                 <Text style={styles.inputHelp}>{t(`earn.forge.${provider}.inputHelp`)}</Text>
                                 {inputError && <Text style={styles.inputError}>{inputError}</Text>}
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={[styles.ctaBtn, submitting && styles.ctaBtnDisabled]}
                                     onPress={handleBegin}
                                     disabled={submitting}
@@ -364,15 +364,15 @@ export default function ForgeConnectScreen({
                                 >
                                     <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
                                         {submitting ? (
-                                            <ActivityIndicator size="small" color="#FFF" />
+                                            <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                         ) : (
                                             <>
                                                 <Text style={styles.ctaText}>{t('earn.forge.beginCta')}</Text>
-                                                <Ionicons name="key-outline" size={16} color="#FFF" />
+                                                <Ionicons name="key-outline" size={16} color={COLORS.onPrimary} />
                                             </>
                                         )}
                                     </LinearGradient>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         ) : (
                             <View style={styles.formCard}>
@@ -384,7 +384,7 @@ export default function ForgeConnectScreen({
                                     </Text>
                                 </View>
                                 <Text style={styles.installMeta}>{pendingKey.keyFingerprint}</Text>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.copyBtn}
                                     onPress={handleCopyKey}
                                     activeOpacity={0.85}
@@ -397,7 +397,7 @@ export default function ForgeConnectScreen({
                                     <Text style={[styles.copyBtnText, keyCopied && { color: COLORS.success }]}>
                                         {keyCopied ? t('earn.forge.copied') : t('earn.forge.copyKey')}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                                 <Text style={styles.inputLabel}>{t(`earn.forge.${provider}.pathLabel`)}</Text>
                                 <TextInput
                                     style={styles.input}
@@ -413,7 +413,7 @@ export default function ForgeConnectScreen({
                                 />
                                 <Text style={styles.inputHelp}>{t(`earn.forge.${provider}.pathHelp`)}</Text>
                                 {inputError && <Text style={styles.inputError}>{inputError}</Text>}
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={[styles.ctaBtn, submitting && styles.ctaBtnDisabled]}
                                     onPress={handleVerify}
                                     disabled={submitting}
@@ -421,18 +421,18 @@ export default function ForgeConnectScreen({
                                 >
                                     <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
                                         {submitting ? (
-                                            <ActivityIndicator size="small" color="#FFF" />
+                                            <ActivityIndicator size="small" color={COLORS.onPrimary} />
                                         ) : (
                                             <>
                                                 <Text style={styles.ctaText}>{t('earn.forge.registerCta')}</Text>
-                                                <Ionicons name="link-outline" size={16} color="#FFF" />
+                                                <Ionicons name="link-outline" size={16} color={COLORS.onPrimary} />
                                             </>
                                         )}
                                     </LinearGradient>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={handleStartOver} activeOpacity={0.8}>
+                                </ActionTouchable>
+                                <ActionTouchable onPress={handleStartOver} activeOpacity={0.8}>
                                     <Text style={styles.inputHelp}>{t('earn.forge.startOver')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         )}
 
@@ -448,7 +448,7 @@ export default function ForgeConnectScreen({
                                         {issuedSecret.secret}
                                     </Text>
                                 </View>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.copyBtn}
                                     onPress={handleCopySecret}
                                     activeOpacity={0.85}
@@ -461,7 +461,7 @@ export default function ForgeConnectScreen({
                                     <Text style={[styles.copyBtnText, secretCopied && { color: COLORS.success }]}>
                                         {secretCopied ? t('earn.forge.copied') : t('earn.forge.copySecret')}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                                 <Text style={styles.setupTitle}>{t('earn.forge.setupTitle')}</Text>
                                 <Text style={styles.setupText}>{issuedSecret.setup}</Text>
                                 <Text style={styles.inputHelp}>{t('earn.forge.removeKeyAfter')}</Text>
@@ -503,19 +503,19 @@ export default function ForgeConnectScreen({
                                             <Text style={styles.inputError}>{t('earn.forge.needsProof')}</Text>
                                         )}
                                     </View>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         onPress={() => handleRevoke(install.installation_id)}
                                         style={styles.revokeBtn}
                                         activeOpacity={0.8}
                                     >
                                         <Text style={styles.revokeBtnText}>{t('earn.forge.revoke')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                                 {/* Contributors is its own full-width action row (was a cramped pill
                                     next to Revoke): person-add icon + destination label + the
                                     "Add a contributor" subtitle + chevron make the add flow a clear
                                     tap target. Reuses existing i18n keys — no new strings. */}
-                                <TouchableOpacity
+                                <ActionTouchable
                                     onPress={() => navigation.navigate('ForgeContributors', {
                                         provider,
                                         installationId: install.installation_id,
@@ -530,7 +530,7 @@ export default function ForgeConnectScreen({
                                         <Text style={styles.contributorsRowSub}>{t('earn.forge.contributors.addTitle')}</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         ))}
                         {revokedInstalls.map((install) => (
@@ -586,12 +586,12 @@ const GitHubIdentityLink = ({ t }: { t: (key: string) => string }): React.JSX.El
         {phase === 'completed' ? <Text style={styles.infoCardText}>{t('earn.forge.github.identityComplete')}</Text> : <>
             {session && phase === 'waiting' && <Text selectable style={styles.waitingText}>{t('earn.forge.github.identityCode')} {session.code}</Text>}
             {phase === 'error' && <Text style={styles.inputError}>{t('earn.forge.genericError')}</Text>}
-            <TouchableOpacity style={styles.ctaBtn} onPress={start} disabled={phase === 'starting' || phase === 'waiting'}>
+            <ActionTouchable style={styles.ctaBtn} onPress={start} disabled={phase === 'starting' || phase === 'waiting'}>
                 <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
                     <Text style={styles.ctaText}>{t('earn.forge.github.identityCta')}</Text>
-                    {phase === 'starting' && <ActivityIndicator size="small" color="#FFF" />}
+                    {phase === 'starting' && <ActivityIndicator size="small" color={COLORS.onPrimary} />}
                 </LinearGradient>
-            </TouchableOpacity>
+            </ActionTouchable>
         </>}
     </View>;
 };
@@ -631,7 +631,7 @@ const GitHubHandoff = ({ phase, onConnect, t }: GitHubHandoffProps): React.JSX.E
                 <Text style={styles.inputError}>{t('earn.forge.github.expired')}</Text>
             )}
             {phase === 'error' && <Text style={styles.inputError}>{t('earn.forge.genericError')}</Text>}
-            <TouchableOpacity
+            <ActionTouchable
                 style={[styles.ctaBtn, phase === 'starting' && styles.ctaBtnDisabled]}
                 onPress={onConnect}
                 disabled={phase === 'starting'}
@@ -639,7 +639,7 @@ const GitHubHandoff = ({ phase, onConnect, t }: GitHubHandoffProps): React.JSX.E
             >
                 <LinearGradient colors={GRADIENTS.primary} style={styles.ctaGradient}>
                     {phase === 'starting' ? (
-                        <ActivityIndicator size="small" color="#FFF" />
+                        <ActivityIndicator size="small" color={COLORS.onPrimary} />
                     ) : (
                         <>
                             <Text style={styles.ctaText}>
@@ -647,11 +647,11 @@ const GitHubHandoff = ({ phase, onConnect, t }: GitHubHandoffProps): React.JSX.E
                                     ? t('earn.forge.github.retryCta')
                                     : t('earn.forge.github.connectCta')}
                             </Text>
-                            <Ionicons name="open-outline" size={16} color="#FFF" />
+                            <Ionicons name="open-outline" size={16} color={COLORS.onPrimary} />
                         </>
                     )}
                 </LinearGradient>
-            </TouchableOpacity>
+            </ActionTouchable>
         </View>
     );
 };
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
         gap: 8,
         paddingVertical: 14,
     },
-    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '600' },
+    ctaText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
 
     waitingRow: {
         flexDirection: 'row',

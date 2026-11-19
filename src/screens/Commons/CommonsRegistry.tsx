@@ -6,6 +6,7 @@
  * Tap card to navigate to CommonsProfile.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { projectPublicStanding } from '../../core/commons/publicHeaders';
@@ -14,7 +15,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -25,7 +25,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS, GRADIENTS, SHADOWS } from '../../constants/theme';
-import { shortAddress } from '../../utils/shortAddress';
 import * as CommonsService from '../../core/commons/CommonsService';
 import type { CommonsProfile } from '../../core/commons/CommonsService';
 import { useTranslation } from 'react-i18next';
@@ -67,14 +66,6 @@ const SORT_OPTIONS: { key: SortOption; labelKey: string }[] = [
   { key: 'recent', labelKey: 'commons.recent' },
 ];
 
-const ATTESTATION_COLORS: Record<string, string> = {
-  hardware: COLORS.success,
-  corroborated: COLORS.successLight,
-  software: COLORS.warning,
-  software_verified: COLORS.primary,
-  self_reported: '#9CA3AF',
-};
-
 /**
  * The registry's verification mark shows only the verification actually performed: a
  * hardware-backed device tier. `identity_verification_level` is set for every profile at
@@ -90,21 +81,6 @@ const HARDWARE_BACKED_TIERS: ReadonlySet<string> = new Set([
 
 function isHardwareBackedTier(profile: Pick<CommonsProfile, 'attestation_tier' | 'attestation_tier_raw'>): boolean {
   return HARDWARE_BACKED_TIERS.has(profile.attestation_tier_raw ?? profile.attestation_tier);
-}
-
-const ATTESTATION_LABEL_KEYS: Record<string, string> = {
-  hardware: 'commons.hardwareAttested',
-  corroborated: 'commons.corroborated',
-  software: 'commons.software',
-  software_verified: 'commons.softwareVerified',
-  self_reported: 'commons.selfReported',
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatNumber(val: number): string {
-  if (val >= 1000) return `${(val / 1000).toFixed(1)}k`;
-  return String(val);
 }
 
 function getInitials(name: string): string {
@@ -182,9 +158,8 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
     : visibleProfiles;
 
   const renderProfileCard = (profile: CommonsProfile) => {
-    const attestColor = ATTESTATION_COLORS[profile.attestation_tier] ?? '#9CA3AF';
     return (
-      <TouchableOpacity
+      <ActionTouchable
         key={profile.wallet_id}
         style={styles.card}
         activeOpacity={0.7}
@@ -192,7 +167,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
       >
         <View style={styles.cardHeader}>
           {/* Avatar */}
-          <View style={[styles.avatar, { borderColor: attestColor }]}>
+          <View style={[styles.avatar, { borderColor: isHardwareBackedTier(profile) ? COLORS.success : COLORS.border }]}>
             {profile.avatar_url ? (
               <Text style={styles.avatarText}>{getInitials(profile.display_name)}</Text>
             ) : profile.participant_type === 'agent' ? (
@@ -208,51 +183,16 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
               <Text style={styles.cardName} numberOfLines={1}>
                 {profile.display_name}
               </Text>
-              <Text style={styles.cardAddress} numberOfLines={1}>
-                ({shortAddress((profile as unknown as { address?: string }).address ?? profile.wallet_id)})
-              </Text>
             </View>
             <PublicStandingLine walletId={profile.wallet_id} kind={profile.participant_type}
               standing={projectPublicStanding(profile)} />
 
-            {/* Attestation Badge */}
-            <View style={styles.attestRow}>
-              <View style={[styles.attestDot, { backgroundColor: attestColor }]} />
-              <Text style={[styles.attestLabel, { color: attestColor }]}>
-                {ATTESTATION_LABEL_KEYS[profile.attestation_tier] ? t(ATTESTATION_LABEL_KEYS[profile.attestation_tier]) : profile.attestation_tier.replace('_', ' ')}
-              </Text>
-              {isHardwareBackedTier(profile) && (
-                <Ionicons
-                  name="shield-checkmark"
-                  size={12}
-                  color={COLORS.success}
-                  style={{ marginLeft: 4 }}
-                  accessibilityLabel={t('commons.hardwareBackedDevice')}
-                />
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Metrics Row */}
-        <View style={styles.metricsRow}>
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>{formatNumber(profile.pe_count)}</Text>
-            <Text style={styles.metricLabel}>{t('commons.pesLabel', { count: profile.pe_count })}</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>
-              {profile.promise_fulfillment_rate > 0
-                ? `${Math.round(profile.promise_fulfillment_rate * 100)}%`
-                : '--'}
-            </Text>
-            <Text style={styles.metricLabel}>{t('commons.fulfillLabel')}</Text>
-          </View>
-          <View style={styles.metricDivider} />
-          <View style={styles.metric}>
-            <Text style={styles.metricValue}>{profile.published_pe_count}</Text>
-            <Text style={styles.metricLabel}>{t('commons.publishedLabel')}</Text>
+            {isHardwareBackedTier(profile) && (
+              <View style={styles.attestRow}>
+                <Ionicons name="shield-checkmark" size={12} color={COLORS.success} />
+                <Text style={styles.attestLabel}>{t('commons.hardwareBackedDevice')}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -266,7 +206,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
             ))}
           </View>
         )}
-      </TouchableOpacity>
+      </ActionTouchable>
     );
   };
 
@@ -311,17 +251,17 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <ActionTouchable onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-            </TouchableOpacity>
+            </ActionTouchable>
           )}
         </View>
-        <TouchableOpacity
+        <ActionTouchable
           style={[styles.filterToggle, showFilters && styles.filterToggleActive]}
           onPress={() => setShowFilters(!showFilters)}
         >
           <Ionicons name="options" size={20} color={showFilters ? REGISTRY_ACCENT : '#8B929E'} />
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
 
       {/* Filters Panel */}
@@ -331,7 +271,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
           <Text style={styles.filterLabel}>{t('commons.typeFilter')}</Text>
           <View style={styles.filterChips}>
             {PARTICIPANT_FILTERS.map(f => (
-              <TouchableOpacity
+              <ActionTouchable
                 key={f.key}
                 style={[styles.chip, participantFilter === f.key && styles.chipActive]}
                 onPress={() => setParticipantFilter(f.key)}
@@ -344,7 +284,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
                 <Text style={[styles.chipText, participantFilter === f.key && styles.chipTextActive]}>
                   {t(f.labelKey)}
                 </Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             ))}
           </View>
 
@@ -352,7 +292,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
           <Text style={styles.filterLabel}>{t('commons.sortBy')}</Text>
           <View style={styles.filterChips}>
             {SORT_OPTIONS.map(opt => (
-              <TouchableOpacity
+              <ActionTouchable
                 key={opt.key}
                 style={[styles.chip, sortBy === opt.key && styles.chipActive]}
                 onPress={() => setSortBy(opt.key)}
@@ -360,7 +300,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
                 <Text style={[styles.chipText, sortBy === opt.key && styles.chipTextActive]}>
                   {t(opt.labelKey)}
                 </Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             ))}
           </View>
         </View>
@@ -546,39 +486,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   avatarText: { fontSize: 16, fontWeight: '700', color: COLORS.primary },
-  cardInfo: { flex: 1 },
+  cardInfo: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s },
   cardName: { fontSize: 16, fontWeight: '600', color: COLORS.text, flexShrink: 1 },
-  cardAddress: { fontSize: 12, color: '#8B929E', fontFamily: 'Menlo', flexShrink: 0 },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(0, 229, 255, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: BORDER_RADIUS.s,
-  },
-  typeBadgeText: { fontSize: 10, fontWeight: '500', color: COLORS.secondary },
-
-  // Attestation
   attestRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
-  attestDot: { width: 6, height: 6, borderRadius: 3 },
-  attestLabel: { fontSize: 11, fontWeight: '500', textTransform: 'capitalize' },
-
-  // Metrics
-  metricsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: SPACING.m,
-    paddingTop: SPACING.m,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(200,205,214,0.08)',
-  },
-  metric: { flex: 1, alignItems: 'center' },
-  metricValue: { fontSize: 16, fontWeight: '700', color: COLORS.text },
-  metricLabel: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
-  metricDivider: { width: 1, height: 24, backgroundColor: 'rgba(200,205,214,0.08)' },
+  attestLabel: { color: COLORS.success, fontSize: 11, flexShrink: 1 },
 
   // Tags
   tagsRow: {

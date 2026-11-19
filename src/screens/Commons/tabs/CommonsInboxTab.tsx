@@ -1,12 +1,12 @@
 import { PublicStandingLine } from '../../../components/commons/PublicStandingLine';
-import { DestinationRow } from '../../../components/ScreenActions';
+import { ActionTouchable, DestinationRow, PrimaryAction } from '../../../components/ScreenActions';
 /**
  * Commons › Inbox : everything waiting on you in one list — messages, replies to your posts
  * and comments, and requests to publish a shared record. Filter chips narrow it; tapping opens the
  * conversation, the comment in its thread, or the request.
  */
 import React, { useCallback, useMemo, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -139,7 +139,7 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
       body = t('commonsHome.inboxRequestLine', { who: shortAddress(item.requesterId) });
     }
     return (
-      <TouchableOpacity
+      <ActionTouchable
         style={[styles.row, item.unread && styles.rowUnread]}
         onPress={() => open(item)}
         activeOpacity={0.75}
@@ -163,7 +163,7 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
           <Text style={styles.rowSub} numberOfLines={2}>{body}</Text>
         </View>
         {item.unread && <View style={styles.unreadDot} />}
-      </TouchableOpacity>
+      </ActionTouchable>
     );
   };
 
@@ -173,9 +173,7 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
         <Ionicons name="mail-outline" size={40} color={COLORS.textTertiary} />
         <Text style={styles.emptyTitle}>{t('commonsHome.inboxJoinTitle')}</Text>
         <Text style={styles.emptyText}>{t('commonsHome.inboxJoinBody')}</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('CommonsOnboarding')}>
-          <Text style={styles.primaryButtonText}>{t('commonsDashboard.createProfile')}</Text>
-        </TouchableOpacity>
+        <PrimaryAction label={t('commonsDashboard.createProfile')} onPress={() => navigation.navigate('CommonsOnboarding')} />
       </View>
     );
   }
@@ -188,18 +186,18 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
 
       ListHeaderComponent={
         <View>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('CommonsNewMessage')} accessibilityRole="button">
+          <ActionTouchable style={styles.primaryButton} onPress={() => navigation.navigate('CommonsNewMessage')} accessibilityRole="button">
             <Text style={styles.primaryButtonText}>{t('commons.newMessageTitle')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
           {loadError && <View style={styles.center} accessibilityRole="alert">
             <Text style={styles.emptyTitle}>{t('commonsHome.inboxLoadFailed')}</Text>
-            <TouchableOpacity onPress={onRefresh} accessibilityRole="button">
+            <ActionTouchable onPress={onRefresh} accessibilityRole="button">
               <Text style={styles.chipText}>{t('common.tryAgain')}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           </View>}
         <View style={styles.chips}>
           {FILTERS.map((f) => (
-            <TouchableOpacity
+            <ActionTouchable
               key={f.key}
               style={[styles.chip, filter === f.key && styles.chipActive]}
               onPress={() => setFilter(f.key)}
@@ -207,7 +205,7 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
               accessibilityState={{ selected: filter === f.key }}
             >
               <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>{t(f.labelKey)}</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
         </View>
         {(filter === 'all' || filter === 'requests') && <View>
@@ -261,5 +259,5 @@ const styles = StyleSheet.create({
   emptyTitle: { color: COLORS.text, fontSize: 16, fontWeight: '600', textAlign: 'center' },
   emptyText: { color: COLORS.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
   primaryButton: { marginTop: SPACING.m, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.round, paddingHorizontal: SPACING.l, minHeight: 44, justifyContent: 'center' },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  primaryButtonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
 });

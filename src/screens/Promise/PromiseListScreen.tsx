@@ -1,9 +1,11 @@
+import { ActionTouchable, DestinationRow, PrimaryAction, SecondaryAction } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
+import { AppMenu } from '../../components/AppMenu';
 import React, { useState, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     FlatList,
     RefreshControl,
     Modal,
@@ -197,7 +199,7 @@ const PromiseListScreen = ({ navigation, route }: any) => {
     };
 
     const renderPromise = ({ item }: { item: PromiseType }) => (
-        <TouchableOpacity
+        <ActionTouchable
             style={styles.promiseCard}
             onPress={() => navigation.navigate('PromiseDetail', { promiseId: item.id })}
             onLongPress={() => handleLongPress(item)}
@@ -253,7 +255,7 @@ const PromiseListScreen = ({ navigation, route }: any) => {
 
                 <Text style={styles.dateText}>{formatDate(item.updatedAt)}</Text>
             </View>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const renderEmpty = () => {
@@ -269,20 +271,15 @@ const PromiseListScreen = ({ navigation, route }: any) => {
             return (
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptySubtitle}>{t('promise.loadFailed')}</Text>
-                    <TouchableOpacity
-                        style={styles.createButton}
-                        onPress={() => { setLoadState('loading'); void loadPromises(); }}
-                        accessibilityRole="button"
-                    >
-                        <Text style={styles.createButtonText}>{t('common.tryAgain')}</Text>
-                    </TouchableOpacity>
+                    <SecondaryAction label={t('common.tryAgain')}
+                        onPress={() => { setLoadState('loading'); void loadPromises(); }} />
                 </View>
             );
         }
         return (
         <View style={styles.emptyContainer}>
             <View style={styles.emptyIconContainer}>
-                <Ionicons name="heart" size={48} color="#9CA3AF" />
+                <ProvianIcon name="promises" size={48} color={COLORS.textMuted} />
             </View>
             <Text style={styles.emptyTitle}>
                 {activeTab === 'active' ? t('promise.noActivePromises') : t('promise.noHistoryYet')}
@@ -292,21 +289,13 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                     ? t('promise.startPrompt')
                     : t('promise.historyPrompt')}
             </Text>
-            {activeTab === 'active' && (
-                <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={() => navigation.navigate('CreatePromise')}
-                >
-                    <Ionicons name="heart" size={18} color="#0B0E14" />
-                    <Text style={styles.createButtonText}>{t('promise.makePromise')}</Text>
-                </TouchableOpacity>
-            )}
+
         </View>
         );
     };
 
-    const TabButton = ({ tab, label, icon }: { tab: TabType; label: string; icon: IoniconsName }) => (
-        <TouchableOpacity
+    const TabButton = ({ tab, label }: { tab: TabType; label: string }) => (
+        <ActionTouchable
             style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
             onPress={() => {
                 if (tab === activeTab) return;
@@ -316,14 +305,8 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                 setActiveTab(tab);
             }}
         >
-            <Ionicons
-                name={icon}
-                size={16}
-                color={activeTab === tab ? '#0B0E14' : '#8B929E'}
-                style={{ marginRight: 6 }}
-            />
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     return (
@@ -337,34 +320,23 @@ const PromiseListScreen = ({ navigation, route }: any) => {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>{t('promise.listTitle')}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.s }}>
-                    {/* finding #2: a persistent create affordance. The
-                        renderEmpty "Make a Promise" button only shows when the
-                        active list is EMPTY, so once a wallet held any active
-                        promise there was no way to create another. This header
-                        "+" is always rendered (a wallet holds many promises). */}
-                    <TouchableOpacity
-                        style={styles.headerButton}
-                        onPress={() => navigation.navigate('CreatePromise')}
-                        accessibilityLabel={t('promise.makePromise')}
-                    >
-                        <Ionicons name="add" size={24} color="#E8A838" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.headerButton}
-                        onPress={() => navigation.navigate('ScanPromise')}
-                    >
-                        <Ionicons name="qr-code" size={20} color="#E8A838" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                        <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    <ActionTouchable style={styles.headerButton} accessibilityRole="button"
+                        accessibilityLabel={t('promise.scanTitle')} onPress={() => navigation.navigate('ScanPromise')}>
+                        <ProvianIcon name="scan" size={24} color={COLORS.primaryLight} />
+                    </ActionTouchable>
+                    <AppMenu />
                 </View>
+            </View>
+
+            <View style={styles.makePromise}>
+                <PrimaryAction label={t('promise.makePromise')} icon="promises"
+                    onPress={() => navigation.navigate('CreatePromise')} />
             </View>
 
             {/* Tabs */}
             <View style={styles.tabContainer}>
-                <TabButton tab="active" label={t("promise.active")} icon="heart" />
-                <TabButton tab="completed" label={t("promise.history")} icon="time" />
+                <TabButton tab="active" label={t("promise.active")} />
+                <TabButton tab="completed" label={t("promise.history")} />
             </View>
 
             {/* Stats Summary */}
@@ -392,18 +364,8 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={renderEmpty}
                 ListFooterComponent={promises.length > 0 ? (
-                    <TouchableOpacity
-                        style={styles.exportRow}
-                        onPress={() => navigation.navigate('ActivityLog')}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="download-outline" size={20} color={COLORS.primary} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.exportRowLabel}>{t('promise.exportAndHistory')}</Text>
-                            <Text style={styles.exportRowSubtitle}>{t('promise.exportAndHistoryDesc')}</Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-                    </TouchableOpacity>
+                    <DestinationRow label={t('promise.exportAndHistory')} detail={t('promise.exportAndHistoryDesc')}
+                        stockIcon="download-outline" onPress={() => navigation.navigate('ActivityLog')} />
                 ) : null}
                 refreshControl={
                     <RefreshControl
@@ -421,7 +383,7 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                 transparent
                 onRequestClose={() => setShowActionSheet(false)}
             >
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.actionSheetOverlay}
                     activeOpacity={1}
                     onPress={() => setShowActionSheet(false)}
@@ -437,32 +399,21 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                                     {t('promise.withPerson', { name: selectedPromise.who })}
                                 </Text>
 
-                                <TouchableOpacity
-                                    style={styles.fulfillActionButton}
-                                    onPress={handleFulfill}
-                                >
-                                    <Ionicons name="checkmark-circle" size={22} color="#0B0E14" />
-                                    <Text style={styles.fulfillActionText}>{t('promise.markFulfilled')}</Text>
-                                </TouchableOpacity>
+                                <PrimaryAction label={t('promise.markFulfilled')} stockIcon="checkmark-circle-outline"
+                                    onPress={handleFulfill} style={{ marginBottom: SPACING.s }} />
+                                <SecondaryAction label={t('promise.dispute')} stockIcon="alert-circle-outline"
+                                    onPress={handleOpenDispute} style={{ marginBottom: SPACING.s }} />
 
-                                <TouchableOpacity
-                                    style={styles.disputeActionButton}
-                                    onPress={handleOpenDispute}
-                                >
-                                    <Ionicons name="alert-circle" size={22} color="#E8A838" />
-                                    <Text style={styles.disputeActionText}>{t('promise.dispute')}</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.actionSheetCancelButton}
                                     onPress={() => setShowActionSheet(false)}
                                 >
                                     <Text style={styles.actionSheetCancelText}>{t('common.cancel')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </>
                         )}
                     </View>
-                </TouchableOpacity>
+                </ActionTouchable>
             </Modal>
 
             {/* Dispute Modal */}
@@ -492,7 +443,7 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                             textAlignVertical="top"
                         />
                         <View style={styles.disputeButtonRow}>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.disputeCancelButton}
                                 onPress={() => {
                                     setShowDisputeModal(false);
@@ -501,18 +452,9 @@ const PromiseListScreen = ({ navigation, route }: any) => {
                                 }}
                             >
                                 <Text style={styles.disputeCancelText}>{t('common.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.disputeSubmitButton}
-                                onPress={handleSubmitDispute}
-                                disabled={actionLoading}
-                            >
-                                {actionLoading ? (
-                                    <ActivityIndicator color="#0B0E14" size="small" />
-                                ) : (
-                                    <Text style={styles.disputeSubmitText}>{t('promise.submitDispute')}</Text>
-                                )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
+                            <PrimaryAction label={t('promise.submitDispute')} onPress={handleSubmitDispute}
+                                busy={actionLoading} style={{ flex: 1 }} />
                         </View>
                     </View>
                 </View>
@@ -522,6 +464,7 @@ const PromiseListScreen = ({ navigation, route }: any) => {
 };
 
 const styles = StyleSheet.create({
+    makePromise: { paddingHorizontal: SPACING.l, marginBottom: SPACING.s },
     container: {
         flex: 1,
         backgroundColor: '#0B0E14',
@@ -567,7 +510,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
     },
     tabButtonActive: {
-        backgroundColor: '#E8A838',
+        backgroundColor: COLORS.primaryMuted,
         shadowColor: '#E8A838',
         shadowOpacity: 0.35,
         shadowRadius: 8,
@@ -580,7 +523,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     tabTextActive: {
-        color: '#0B0E14',
+        color: COLORS.primaryLight,
         fontWeight: '700',
     },
     statsContainer: {
@@ -621,27 +564,6 @@ const styles = StyleSheet.create({
     listContent: {
         padding: SPACING.m,
         paddingBottom: 120,
-    },
-    exportRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(17,24,39,0.9)',
-        padding: SPACING.l,
-        borderRadius: BORDER_RADIUS.l,
-        borderWidth: 1,
-        borderColor: 'rgba(200,205,214,0.08)',
-        marginTop: SPACING.l,
-        gap: SPACING.s,
-    },
-    exportRowLabel: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: COLORS.text,
-    },
-    exportRowSubtitle: {
-        fontSize: 12,
-        color: '#8B929E',
-        marginTop: 2,
     },
     promiseCard: {
         backgroundColor: 'rgba(17,24,39,0.85)',
@@ -752,25 +674,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.xl,
         marginBottom: SPACING.l,
     },
-    createButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#E8A838',
-        paddingHorizontal: SPACING.l,
-        paddingVertical: SPACING.m,
-        borderRadius: 28,
-        gap: SPACING.s,
-        shadowColor: '#E8A838',
-        shadowOpacity: 0.4,
-        shadowRadius: 14,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
-    },
-    createButtonText: {
-        color: '#0B0E14',
-        fontWeight: '700',
-        fontSize: 16,
-    },
     // Action Sheet Styles
     actionSheetOverlay: {
         flex: 1,
@@ -808,43 +711,6 @@ const styles = StyleSheet.create({
         color: '#8B929E',
         textAlign: 'center',
         marginBottom: SPACING.l,
-    },
-    fulfillActionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACING.m,
-        borderRadius: 28,
-        marginBottom: SPACING.s,
-        gap: SPACING.s,
-        backgroundColor: '#4CC38A',
-        shadowColor: '#4CC38A',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 4,
-    },
-    fulfillActionText: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#0B0E14',
-    },
-    disputeActionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACING.m,
-        borderRadius: 28,
-        marginBottom: SPACING.s,
-        gap: SPACING.s,
-        backgroundColor: 'rgba(255,179,0,0.15)',
-        borderWidth: 1,
-        borderColor: 'rgba(255,179,0,0.35)',
-    },
-    disputeActionText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#E8A838',
     },
     actionSheetCancelButton: {
         padding: SPACING.m,
@@ -911,22 +777,6 @@ const styles = StyleSheet.create({
     disputeCancelText: {
         color: COLORS.chromeMuted,
         fontWeight: '600',
-    },
-    disputeSubmitButton: {
-        flex: 1,
-        padding: SPACING.m,
-        borderRadius: 28,
-        alignItems: 'center',
-        backgroundColor: '#E8A838',
-        shadowColor: '#E8A838',
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 5,
-    },
-    disputeSubmitText: {
-        color: '#0B0E14',
-        fontWeight: '700',
     },
 });
 

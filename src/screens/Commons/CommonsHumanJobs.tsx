@@ -12,7 +12,6 @@ import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -32,6 +31,7 @@ import JobCard from '../../components/commons/JobCard';
 import { useJobApply } from './useJobApply';
 import BackButton from '../../components/BackButton';
 import { LoadFailed } from '../../components/commons/LoadFailed';
+import { ActionTouchable, ChoiceChip } from '../../components/ScreenActions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ const EMBEDDED_BOTTOM_CLEARANCE = 120;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const JOBS_ACCENT = '#E8A838';
+const JOBS_ACCENT = COLORS.primaryLight;
 
 const TABS: { key: Tab; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'available', labelKey: 'commonsHumanJobs.tabAvailable', icon: 'briefcase' },
@@ -110,14 +110,15 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
 
       const [jobsResult, categoriesResult, statsResult] = await Promise.all([
         CommonsService.browseHumanJobs(params),
-        CommonsService.getJobCategories(),
-        CommonsService.getHumanJobStats(),
+        embedded ? null : CommonsService.getJobCategories(),
+        embedded ? null : CommonsService.getHumanJobStats(),
       ]);
 
       setJobs(jobsResult.jobs);
       setFeatured(jobsResult.featured);
-      setCategories(categoriesResult.categories);
-      setStats(statsResult);
+      setLoading(false);
+      if (categoriesResult) setCategories(categoriesResult.categories);
+      if (statsResult) setStats(statsResult);
 
       // C7: "Mine" / "Completed" are the CALLER's jobs — posted + assigned — from the
       // authenticated, server-scoped /jobs/mine, NOT a global browse-by-status.
@@ -137,7 +138,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, profile?.wallet_id, hiringFilter, hiresFilter, currencyFilter]);
+  }, [embedded, selectedCategory, profile?.wallet_id, hiringFilter, hiresFilter, currencyFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -198,7 +199,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
     <View style={styles.filterGroup}>
       <Text style={styles.filterLabel}>{label}</Text>
       {options.map((o) => (
-        <TouchableOpacity
+        <ActionTouchable
           key={o.v}
           style={[styles.catChip, value === o.v && styles.catChipActive]}
           onPress={() => onSelect(o.v)}
@@ -206,18 +207,29 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           accessibilityState={{ selected: value === o.v }}
         >
           <Text style={[styles.catChipText, value === o.v && styles.catChipTextActive]}>{o.label}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       ))}
     </View>
   );
 
   // Tabs + filters: fixed above the list standalone, scrolled with it when embedded.
-  const controls = (
+  const controls = embedded ? (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.embeddedFilters}>
+      {([{ v: 'all', label: t('commons.all') }, { v: 'human', label: t('overhaul.hiringPeople') },
+        { v: 'agent', label: t('overhaul.hiringAgents') }] as const).map(({ v, label }) => (
+        <ChoiceChip key={v} label={label} selected={activeTab === 'available' && hiresFilter === v}
+          onPress={() => { setActiveTab('available'); setHiresFilter(v); }} />
+      ))}
+      {profile && TABS.filter(tab => tab.key !== 'available').map(tab => (
+        <ChoiceChip key={tab.key} label={t(tab.labelKey)} selected={activeTab === tab.key} onPress={() => setActiveTab(tab.key)} />
+      ))}
+    </ScrollView>
+  ) : (
     <>
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         {TABS.map(tab => (
-          <TouchableOpacity
+          <ActionTouchable
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
@@ -230,7 +242,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {t(tab.labelKey)}
             </Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         ))}
       </View>
 
@@ -242,11 +254,6 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           style={styles.categoriesScroll}
           contentContainerStyle={styles.categoriesContent}
         >
-          {embedded ? filterGroup('', hiresFilter, [
-            { v: 'all', label: t('commons.all') },
-            { v: 'human', label: t('overhaul.hiringPeople') },
-            { v: 'agent', label: t('overhaul.hiringAgents') },
-          ], setHiresFilter) : (<>
           {filterGroup(t('commonsJobs.filterHiring'), hiringFilter, [
             { v: 'all', label: t('commonsJobs.filterAnyone') },
             { v: 'human', label: t('commonsJobs.filterPeople') },
@@ -262,7 +269,6 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
             { v: 'pvt', label: 'PVT' },
             { v: 'usdc', label: 'USDC' },
           ], setCurrencyFilter)}
-          </>)}
         </ScrollView>
       )}
 
@@ -274,14 +280,14 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           style={styles.categoriesScroll}
           contentContainerStyle={styles.categoriesContent}
         >
-          <TouchableOpacity
+          <ActionTouchable
             style={[styles.catChip, !selectedCategory && styles.catChipActive]}
             onPress={() => setSelectedCategory(null)}
           >
             <Text style={[styles.catChipText, !selectedCategory && styles.catChipTextActive]}>{t('commonsHumanJobs.allCategories')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
           {categories.map(cat => (
-            <TouchableOpacity
+            <ActionTouchable
               key={cat.category}
               style={[styles.catChip, selectedCategory === cat.category && styles.catChipActive]}
               onPress={() => setSelectedCategory(selectedCategory === cat.category ? null : cat.category)}
@@ -291,7 +297,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
               >
                 {cat.category.replace(/_/g, ' ')} ({cat.count})
               </Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ))}
         </ScrollView>
       )}
@@ -300,10 +306,10 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
 
   const listBody = (
     <>
-      <View style={styles.banner}>
+      {!embedded && <View style={styles.banner}>
         <Ionicons name="eye-outline" size={18} color={COLORS.textSecondary} style={{ marginRight: 10, marginTop: 1 }} />
         <Text style={styles.bannerText}>{t('commonsJobs.boardBanner')}</Text>
-      </View>
+      </View>}
       {getActiveJobs().length === 0 && loadFailed ? (
         <LoadFailed onRetry={() => { void loadData(); }} />
       ) : getActiveJobs().length === 0 ? (
@@ -392,7 +398,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           post generates a PE) and handles the talking pass (428). Agents post through their own
           API key (POST /v1/commons/jobs/post). */}
       {profile?.participant_type === 'human' && !embedded && (
-        <TouchableOpacity
+        <ActionTouchable
           style={styles.fab}
           activeOpacity={0.8}
           onPress={() => navigation.navigate('CommonsHumanJobsPost')}
@@ -400,9 +406,9 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           accessibilityLabel={t('commonsHome.postJob')}
         >
           <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-          <Ionicons name="add" size={22} color={COLORS.text} />
+          <Ionicons name="add" size={22} color={COLORS.onPrimary} />
           <Text style={styles.fabText}>{t('commonsHome.postJob')}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       )}
     </Frame>
   );
@@ -460,13 +466,14 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.s,
   },
   tabActive: {
-    backgroundColor: 'rgba(255, 179, 0, 0.15)',
+    backgroundColor: COLORS.primaryMuted,
   },
   tabText: { fontSize: 12, color: '#8B929E', fontWeight: '500' },
-  tabTextActive: { color: '#E8A838', fontWeight: '600' },
+  tabTextActive: { color: COLORS.primaryLight, fontWeight: '600' },
 
   // Category Chips
   categoriesScroll: { maxHeight: 44, marginBottom: SPACING.s },
+  embeddedFilters: { paddingHorizontal: SPACING.l, gap: SPACING.xs, paddingBottom: SPACING.s },
   categoriesContent: { paddingHorizontal: SPACING.l, gap: SPACING.s },
   catChip: {
     paddingHorizontal: SPACING.m,
@@ -477,8 +484,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(200,205,214,0.08)',
   },
   catChipActive: {
-    borderColor: '#E8A838',
-    backgroundColor: 'rgba(255, 179, 0, 0.15)',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryMuted,
   },
   catChipText: { fontSize: 12, color: '#8B929E', textTransform: 'capitalize' },
   catChipTextActive: { color: COLORS.text, fontWeight: '600' },
@@ -496,7 +503,7 @@ const styles = StyleSheet.create({
   },
   bannerText: { color: COLORS.textSecondary, fontSize: 13, flex: 1, lineHeight: 18 },
 
-  fabText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
+  fabText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
 
   // FAB
   fab: {
@@ -522,7 +529,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xxxl,
+    paddingVertical: SPACING.l,
   },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: COLORS.text, marginTop: SPACING.m },
   emptySubtitle: { fontSize: 14, color: '#8B929E', marginTop: SPACING.xs, textAlign: 'center' },

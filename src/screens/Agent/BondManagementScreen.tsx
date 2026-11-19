@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 /**
  * BondManagementScreen: read-only status view for an agent's performance bond.
@@ -15,7 +16,6 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     Alert,
     ActivityIndicator,
 } from 'react-native';
@@ -177,7 +177,7 @@ export default function BondManagementScreen({ navigation, route }: BondManageme
                             </View>
 
                             {/* Claims Section - tap to review all claims filed against this bond */}
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.card}
                                 activeOpacity={0.7}
                                 onPress={() => navigation.navigate('BondClaims', { agentId })}
@@ -216,7 +216,7 @@ export default function BondManagementScreen({ navigation, route }: BondManageme
                                         </View>
                                     ))
                                 )}
-                            </TouchableOpacity>
+                            </ActionTouchable>
 
                             {/* Renewal History */}
                             {bondData.renewals.length > 0 && (

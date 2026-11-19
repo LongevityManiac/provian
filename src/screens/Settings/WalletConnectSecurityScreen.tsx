@@ -1,9 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     Switch,
     TextInput,
     ScrollView,
@@ -46,7 +46,7 @@ const WalletConnectSecurityScreen = ({ navigation }: { navigation: { goBack: () 
             {(['block', 'hard_confirm'] as const).map((opt) => {
                 const selected = value === opt;
                 return (
-                    <TouchableOpacity
+                    <ActionTouchable
                         key={opt}
                         style={[styles.segmentButton, selected && styles.segmentButtonActive]}
                         onPress={() => onChange(opt)}
@@ -55,7 +55,7 @@ const WalletConnectSecurityScreen = ({ navigation }: { navigation: { goBack: () 
                         <Text style={[styles.segmentText, selected && styles.segmentTextActive]}>
                             {opt === 'block' ? t('walletConnect.security.optionBlock') : t('walletConnect.security.optionHardConfirm')}
                         </Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 );
             })}
         </View>
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     },
     segmentButtonActive: { backgroundColor: COLORS.primary },
     segmentText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-    segmentTextActive: { color: '#FFFFFF' },
+    segmentTextActive: { color: COLORS.onPrimary },
     capRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.m },
     capInput: {
         minWidth: 100,

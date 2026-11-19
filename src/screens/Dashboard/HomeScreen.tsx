@@ -1,8 +1,8 @@
 import OnRampReconciler from '../../core/onramp/OnRampReconciler';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, AppState, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, Image, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { AppParamList, TabParamList } from '../../navigation/types';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { actionStyles, DestinationRow, PrimaryAction } from '../../components/ScreenActions';
+import { ActionPressable, actionStyles, DestinationRow, PrimaryAction } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import { AppMenu } from '../../components/AppMenu';
 import TokenIcon from '../../components/TokenIcon';
@@ -33,13 +33,10 @@ type StackNav = NativeStackNavigationProp<AppParamList>;
 type TabNav = BottomTabNavigationProp<TabParamList>;
 const starterKey = (wallet: string) => `provian.home.starter.${wallet.toLowerCase()}`;
 
-export async function resumeHomeStarter(wallet: string): Promise<void> {
-    await AsyncStorage.removeItem(starterKey(wallet));
-}
-
 export default function HomeScreen() {
     const { t } = useTranslation();
     const tab = useNavigation<TabNav>();
+    const route = useRoute<RouteProp<TabParamList, 'WalletTab'>>();
     const stack = tab.getParent<StackNav>()!;
     const address = useWalletStore(state => state.address);
     const lastPvt = useWalletStore(state => state.lastConfirmedPvt);
@@ -49,6 +46,9 @@ export default function HomeScreen() {
     const [money, setMoney] = useState<{ wallet: string; total: ReturnType<typeof portfolioTotal> } | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [starter, setStarter] = useState(false);
+    const [starterY, setStarterY] = useState<number>();
+    const scroll = useRef<ScrollView>(null);
+    const starterPreference = useRef(0);
     const [resumable, setResumable] = useState<'computer' | 'agent' | null>(null);
     const [proofs, setProofs] = useState<PVTHistoryEntry[]>([]);
     const [now, setNow] = useState(Date.now);
@@ -79,7 +79,6 @@ export default function HomeScreen() {
 
     const refreshBalance = useCallback(async () => {
         if (!address) return;
-        setRefreshing(true);
         try {
             const result = await BalanceService.fetchAllBalancesDetailed(address, undefined, true);
             if (useWalletStore.getState().address !== address) return;
@@ -87,7 +86,6 @@ export default function HomeScreen() {
                 wallet: address, total: portfolioTotal(result.assets),
             });
         } finally {
-            setRefreshing(false);
             setNow(Date.now());
         }
     }, [address]);
@@ -95,17 +93,39 @@ export default function HomeScreen() {
     const refreshContext = useCallback(async () => {
         if (!address) return;
         const meter = getPhoneMeter();
-        const [visited, recent, waiting, agentSetup] = await Promise.all([
-            AsyncStorage.getItem(starterKey(address)).catch(() => null),
+        const [recent, waiting, agentSetup] = await Promise.all([
             meter.start().then(() => localHistoryEntries(meter.store)).catch(() => []),
             getWaitingPairing(address).catch(() => null),
             hasPendingAgentSetup(address),
         ]);
         if (useWalletStore.getState().address !== address) return;
-        setStarter(visited !== 'dismissed');
         setProofs(recent.slice(0, 3));
         setResumable(waiting ? 'computer' : agentSetup ? 'agent' : null);
     }, [address]);
+
+    const starterRequest = route.params?.starterRequest;
+    useEffect(() => {
+        if (!address) return;
+        const preference = ++starterPreference.current;
+        let current = true;
+        void AsyncStorage.getItem(starterKey(address)).then(value => {
+            if (current && preference === starterPreference.current) setStarter(value !== 'dismissed');
+        }).catch(() => {});
+        return () => { current = false; };
+    }, [address]);
+
+    useEffect(() => {
+        if (!address || starterRequest === undefined) return;
+        starterPreference.current++;
+        setStarter(true);
+        void AsyncStorage.removeItem(starterKey(address)).catch(() => {});
+    }, [address, starterRequest]);
+
+    useEffect(() => {
+        if (starterRequest === undefined || !starter || starterY === undefined) return;
+        scroll.current?.scrollTo({ y: Math.max(0, starterY - SPACING.s), animated: true });
+        tab.setParams({ starterRequest: undefined });
+    }, [starter, starterY, starterRequest, tab]);
 
     useFocusEffect(useCallback(() => {
         void refreshBalance().catch(() => {});
@@ -129,7 +149,9 @@ export default function HomeScreen() {
     }, [address, refreshBalance, refreshContext]));
 
     const dismissStarter = () => {
+        starterPreference.current++;
         setStarter(false);
+        setStarterY(undefined);
         void AsyncStorage.setItem(starterKey(address), 'dismissed').catch(() => {});
     };
 
@@ -145,22 +167,25 @@ export default function HomeScreen() {
                     <Text style={styles.title}>{t('overhaul.home')}</Text>
                     {!!userName && <Text style={styles.muted} numberOfLines={1}>{userName}</Text>}
                 </View>
-                {locked && <Pressable onPress={() => stack.navigate('Lockdown')} accessibilityRole="button">
+                {locked && <ActionPressable onPress={() => stack.navigate('Lockdown')} accessibilityRole="button">
                     <Text style={styles.warning}>{t('dashboard.lockdownBadge')}</Text>
-                </Pressable>}
+                </ActionPressable>}
                 <AppMenu />
             </View>
-            <ScrollView contentContainerStyle={styles.content} refreshControl={
+            <ScrollView ref={scroll} contentContainerStyle={styles.content} refreshControl={
                 <RefreshControl refreshing={refreshing} tintColor={COLORS.primary}
-                    onRefresh={() => { void refreshBalance().catch(() => {}); void refreshContext(); }} />
+                    onRefresh={() => {
+                        setRefreshing(true);
+                        void Promise.allSettled([refreshBalance(), refreshContext()]).then(() => setRefreshing(false));
+                    }} />
             }>
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceTop}>
                         <Text style={styles.muted}>{t('overhaul.confirmedPvt')}</Text>
-                        <Pressable accessibilityRole="button" onPress={() => stack.navigate('Recourse')} style={styles.inline}>
+                        <ActionPressable accessibilityRole="button" onPress={() => stack.navigate('Recourse')} style={styles.inline}>
                             <Ionicons name="shield-checkmark-outline" size={17} color={COLORS.primaryLight} />
                             <Text style={styles.link}>{t('recourse.title')}</Text>
-                        </Pressable>
+                        </ActionPressable>
                     </View>
                     {pvt && lastPvt ? (
                         <>
@@ -173,7 +198,6 @@ export default function HomeScreen() {
                             </View>
                             <Text style={styles.muted} testID="home-balance-age">
                                 {t('overhaul.confirmedAgo', { age: timeAgo(lastPvt.confirmedAt, t, now) })}
-                                {pvtStatus === 'updating' ? ` · ${t('dashboard.participationUpdating')}` : ''}
                                 {pvtStatus === 'outdated' ? ` · ${t('dashboard.balanceOutdated')}` : ''}
                             </Text>
                         </>
@@ -185,22 +209,42 @@ export default function HomeScreen() {
                     {!!fiat && !!totalAgeLabel(fiat, t) && <Text style={styles.muted}>{totalAgeLabel(fiat, t)}</Text>}
                     <View style={styles.quickActions}>
                         <PrimaryAction icon="send" label={t('dashboard.send')} onPress={() => stack.navigate('Send')} style={styles.send} />
-                        <Pressable accessibilityRole="button" style={styles.receive} onPress={() => stack.navigate('Receive')}>
+                        <ActionPressable accessibilityRole="button" style={styles.receive} onPress={() => stack.navigate('Receive')}>
                             <ProvianIcon name="receive" size={22} color={COLORS.primaryLight} />
                             <Text style={styles.link}>{t('dashboard.receive')}</Text>
-                        </Pressable>
+                        </ActionPressable>
                     </View>
                     <DestinationRow label={t('overhaul.assetsAndHistory')} stockIcon="wallet-outline" onPress={() => stack.navigate('Dashboard')} />
                 </View>
+
+                {starter && <View style={styles.starter} onLayout={event => setStarterY(event.nativeEvent.layout.y)}>
+                    <Image source={require('../../../assets/images/vision-builders.png')} style={styles.photo} accessibilityIgnoresInvertColors />
+                    <View style={styles.starterBody}>
+                        <View style={styles.balanceTop}>
+                            <Text style={[actionStyles.sectionTitle, styles.starterTitle]}>{t('overhaul.firstTask')}</Text>
+                            <ActionPressable accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} onPress={dismissStarter}>
+                                <Ionicons name="close" size={22} color={COLORS.textSecondary} />
+                            </ActionPressable>
+                        </View>
+                        <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={start(() => tab.navigate('ChatTab'))} />
+                        <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={start(() => stack.navigate('ComputerPairing'))} />
+                        <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={start(() => stack.navigate('ConnectAgent', { mode: 'agent' }))} />
+                        <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
+                            onPress={start(() => stack.navigate('ForgeConnect', { provider: 'github' }))} />
+                        <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={start(() => tab.navigate('CommonsTab'))} />
+                        <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={start(() => stack.navigate('ProveOwnWallet'))} />
+                        <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={start(() => stack.navigate('Vision'))} />
+                    </View>
+                </View>}
 
                 <HomeAttentionRows />
 
                 {proofs.length > 0 && <View style={styles.section}>
                     <View style={styles.balanceTop}>
                         <Text style={actionStyles.sectionTitle}>{t('overhaul.recentWork')}</Text>
-                        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => tab.navigate('AgentsTab')}>
+                        <ActionPressable accessibilityRole="button" hitSlop={8} onPress={() => tab.navigate('AgentsTab')}>
                             <Text style={styles.link}>{t('dashboard.seeAll')}</Text>
-                        </Pressable>
+                        </ActionPressable>
                     </View>
                     {proofs.map(proof => <DestinationRow key={proof.peId} icon="proof"
                         label={getActionTypeDisplay(proof.actionType).label} detail={timeAgo(proof.timestamp, t, now)}
@@ -213,26 +257,6 @@ export default function HomeScreen() {
                         icon={resumable} onPress={() => resumable === 'computer'
                             ? stack.navigate('ComputerPairing')
                             : stack.navigate('ConnectAgent', { mode: 'agent' })} />
-                </View>}
-
-                {starter && <View style={styles.starter}>
-                    <Image source={require('../../../assets/images/vision-builders.png')} style={styles.photo} accessibilityIgnoresInvertColors />
-                    <View style={styles.starterBody}>
-                        <View style={styles.balanceTop}>
-                            <Text style={[actionStyles.sectionTitle, styles.starterTitle]}>{t('overhaul.firstTask')}</Text>
-                            <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} onPress={dismissStarter}>
-                                <Ionicons name="close" size={22} color={COLORS.textSecondary} />
-                            </Pressable>
-                        </View>
-                        <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={start(() => tab.navigate('ChatTab'))} />
-                        <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={start(() => stack.navigate('ComputerPairing'))} />
-                        <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={start(() => stack.navigate('ConnectAgent', { mode: 'agent' }))} />
-                        <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
-                            onPress={start(() => stack.navigate('ForgeConnect', { provider: 'github' }))} />
-                        <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={start(() => tab.navigate('CommonsTab'))} />
-                        <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={start(() => stack.navigate('ProveOwnWallet'))} />
-                        <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={start(() => stack.navigate('Vision'))} />
-                    </View>
                 </View>}
             </ScrollView>
         </SafeAreaView>

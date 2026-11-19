@@ -65,7 +65,7 @@ export const colors = {
     chipBackground: COLORS.surfaceHighlight,
     chipText: COLORS.textSecondary,
     chipSelected: COLORS.primary,
-    chipSelectedText: COLORS.white,
+    chipSelectedText: COLORS.onPrimary,
 
     // Legacy aliases
     cardBackground: 'rgba(17,24,39,0.85)',

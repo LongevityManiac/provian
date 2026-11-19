@@ -1,8 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
@@ -86,9 +87,9 @@ const PEViewerScreen = ({ navigation }: any) => {
                     <View style={styles.centerState}>
                         <Ionicons name="alert-circle" size={28} color={COLORS.error} />
                         <Text style={styles.centerStateText}>{errorDisplayCopy(error)}</Text>
-                        <TouchableOpacity onPress={loadEnvelopes} style={styles.retryButton}>
+                        <ActionTouchable onPress={loadEnvelopes} style={styles.retryButton}>
                             <Text style={styles.retryButtonText}>{i18next.t('chatWebView.retry')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 ) : envelopes.length === 0 ? (
                     <View style={styles.centerState}>
@@ -106,9 +107,9 @@ const PEViewerScreen = ({ navigation }: any) => {
                                         {pe.timestamp ? new Date(pe.timestamp).toLocaleString(i18next.resolvedLanguage) : '–'}
                                     </Text>
                                 </View>
-                                <TouchableOpacity onPress={() => handleShare(pe)}>
+                                <ActionTouchable onPress={() => handleShare(pe)}>
                                     <Ionicons name="share-outline" size={20} color={COLORS.primary} />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
 
                             <View style={styles.jsonContainer}>

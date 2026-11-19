@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
 /**
@@ -11,7 +12,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   Alert,
@@ -167,10 +167,10 @@ export default function CommonsOnboarding({ navigation }: Props) {
         <View style={styles.termsCard}>
           <Text style={styles.termsTitle}>{t('commonsTerms.title')}</Text>
           <Text style={styles.termsBody}>{t('commonsTerms.body')}</Text>
-          <TouchableOpacity onPress={() => { void Linking.openURL('https://provian.ai/terms'); }} accessibilityRole="link">
+          <ActionTouchable onPress={() => { void Linking.openURL('https://provian.ai/terms'); }} accessibilityRole="link">
             <Text style={styles.termsLink}>{t('commonsTerms.readFull')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </ActionTouchable>
+          <ActionTouchable
             style={styles.termsAgreeRow}
             onPress={() => setAgreedToTerms((v) => !v)}
             accessibilityRole="checkbox"
@@ -178,11 +178,11 @@ export default function CommonsOnboarding({ navigation }: Props) {
           >
             <Ionicons name={agreedToTerms ? 'checkbox' : 'square-outline'} size={22} color={agreedToTerms ? COLORS.primaryLight : COLORS.textSecondary} />
             <Text style={styles.termsAgreeText}>{t('commonsTerms.agree')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
 
         {/* Join Button */}
-        <TouchableOpacity
+        <ActionTouchable
           style={[styles.joinButton, (!displayName.trim() || !agreedToTerms) && styles.joinButtonDisabled]}
           onPress={handleJoin}
           disabled={loading || !displayName.trim() || !agreedToTerms}
@@ -203,7 +203,7 @@ export default function CommonsOnboarding({ navigation }: Props) {
               </>
             )}
           </LinearGradient>
-        </TouchableOpacity>
+        </ActionTouchable>
 
         {/* What the Commons is: the human's role, then the institutions it
             runs for agents. Kept distinct so a human isn't told they're

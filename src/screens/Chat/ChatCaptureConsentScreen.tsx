@@ -18,12 +18,12 @@
  * §5.M6 and §5.M7.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     StatusBar,
 } from 'react-native';
@@ -104,22 +104,22 @@ const ChatCaptureConsentScreen: React.FC<ChatCaptureConsentScreenProps> = ({
                 </ScrollView>
 
                 <View style={styles.actions}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={[styles.button, styles.declineButton]}
                         onPress={onDecline}
                         accessibilityRole="button"
                         accessibilityLabel={t('chatCaptureConsent.declineLabel')}
                     >
                         <Text style={styles.declineText}>{t('chatCaptureConsent.decline')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ActionTouchable>
+                    <ActionTouchable
                         style={[styles.button, styles.acceptButton]}
                         onPress={onAccept}
                         accessibilityRole="button"
                         accessibilityLabel={t('chatCaptureConsent.acceptLabel')}
                     >
                         <Text style={styles.acceptText}>{t('chatCaptureConsent.accept')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         </LinearGradient>
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     acceptText: {
-        color: COLORS.white,
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: '700',
         textAlign: 'center',

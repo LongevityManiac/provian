@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../../components/ScreenActions';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, SHADOWS } from '../../../constants/theme';
@@ -52,13 +53,13 @@ const ExitStrategyInfoScreen = ({ navigation }: any) => {
                             <Text style={styles.optionDesc}>
                                 {t('exitStrategyInfo.exportDesc')}
                             </Text>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={[styles.actionButton, { backgroundColor: 'rgba(251, 191, 36, 0.12)' }]}
                                 onPress={() => navigation.navigate('ExportMnemonic')}
                             >
                                 <Text style={[styles.actionButtonText, { color: '#F59E0B' }]}>{t('exitStrategyInfo.exportButton')}</Text>
                                 <Ionicons name="arrow-forward" size={14} color="#F59E0B" />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     </View>
                 </View>

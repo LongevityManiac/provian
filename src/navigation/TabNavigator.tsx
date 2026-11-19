@@ -1,5 +1,6 @@
+import { ActionPressable } from '../components/ScreenActions';
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -84,7 +85,7 @@ const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) =
                         };
 
                         return (
-                            <Pressable
+                            <ActionPressable
                                 key={route.key}
                                 style={tabStyles.tab}
                                 onPress={onPress}
@@ -112,7 +113,7 @@ const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) =
                                 >
                                     {label}
                                 </Text>
-                            </Pressable>
+                            </ActionPressable>
                         );
                     })}
                 </View>

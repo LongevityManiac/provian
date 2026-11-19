@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 /**
@@ -21,7 +22,6 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     ActivityIndicator,
     Alert,
@@ -197,11 +197,11 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                             <Ionicons name="key-outline" size={18} color="#E8A838" style={{ marginRight: SPACING.s }} />
                             <Text style={styles.warnText}>{t('rekeyAgent.explain')}</Text>
                         </View>
-                        <TouchableOpacity style={styles.primaryBtn} onPress={run}>
+                        <ActionTouchable style={styles.primaryBtn} onPress={run}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
                                 <Text style={styles.primaryBtnText}>{t('rekeyAgent.startButton')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
 
@@ -219,10 +219,10 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                         <Ionicons name="alert-circle-outline" size={40} color={COLORS.textMuted} />
                         <Text style={[styles.errorTitle, { color: themeColors.textPrimary }]}>{errorDisplayCopy(error.message)}</Text>
                         <Text style={[styles.muted, { textAlign: 'center' }]}>{error.action}</Text>
-                        <TouchableOpacity style={styles.secondaryBtn} onPress={run}>
+                        <ActionTouchable style={styles.secondaryBtn} onPress={run}>
                             <Ionicons name="refresh" size={16} color={COLORS.primary} />
                             <Text style={styles.secondaryBtnText}>{t('rekeyAgent.tryAgain')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -255,14 +255,14 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                             </View>
                         )}
                         {sweep && sweep.status === 'swept' && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.sweepTxLink}
                                 onPress={() => { void Linking.openURL(sweep.explorerUrl); }}
                                 activeOpacity={0.7}
                             >
                                 <Ionicons name="open-outline" size={14} color={COLORS.primary} />
                                 <Text style={styles.copyText}>{t('rekeyAgent.sweepViewTx')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
 
                         {/* Warning FIRST — before the payload is ever on screen. */}
@@ -277,7 +277,7 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                             </Text>
                             <Text style={styles.stepBody}>{t('rekeyAgent.step1Body')}</Text>
 
-                            <TouchableOpacity style={styles.cmdBlock} onPress={onCopy} activeOpacity={0.7}>
+                            <ActionTouchable style={styles.cmdBlock} onPress={onCopy} activeOpacity={0.7}>
                                 <Text style={styles.cmdText} selectable>{command}</Text>
                                 <View style={styles.copyRow}>
                                     <Ionicons
@@ -289,7 +289,7 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                                         {copied ? t('rekeyAgent.copied') : t('rekeyAgent.copyCommand')}
                                     </Text>
                                 </View>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
 
                         <View style={styles.stepsCard}>
@@ -303,13 +303,13 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                                     {payloadRevealed ? payload : '•'.repeat(48)}
                                 </Text>
                                 <View style={styles.keyActionRow}>
-                                    <TouchableOpacity style={styles.keyAction} onPress={() => setPayloadRevealed((v) => !v)} activeOpacity={0.7}>
+                                    <ActionTouchable style={styles.keyAction} onPress={() => setPayloadRevealed((v) => !v)} activeOpacity={0.7}>
                                         <Ionicons name={payloadRevealed ? 'eye-off-outline' : 'eye-outline'} size={16} color={COLORS.primary} />
                                         <Text style={styles.copyText}>
                                             {payloadRevealed ? t('rekeyAgent.hideKey') : t('rekeyAgent.revealKey')}
                                         </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.keyAction} onPress={onCopyPayload} activeOpacity={0.7}>
+                                    </ActionTouchable>
+                                    <ActionTouchable style={styles.keyAction} onPress={onCopyPayload} activeOpacity={0.7}>
                                         <Ionicons
                                             name={payloadCopied ? 'checkmark-circle' : 'copy-outline'}
                                             size={16}
@@ -318,16 +318,16 @@ const RekeyAgentScreen = (): React.JSX.Element => {
                                         <Text style={styles.copyText}>
                                             {payloadCopied ? t('rekeyAgent.copied') : t('rekeyAgent.copyKey')}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
+                        <ActionTouchable style={styles.primaryBtn} onPress={() => navigation.goBack()}>
                             <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
                                 <Text style={styles.primaryBtnText}>{t('rekeyAgent.doneButton')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
             </ScrollView>
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: SPACING.xl,
     },
-    primaryBtnText: { flexShrink: 1, color: '#FFF', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+    primaryBtnText: { flexShrink: 1, color: COLORS.onPrimary, fontSize: 15, fontWeight: '600', textAlign: 'center' },
     secondaryBtn: {
         flexDirection: 'row',
         alignItems: 'center',

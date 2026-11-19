@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
@@ -16,7 +17,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -136,13 +136,13 @@ export default function CommonsGovernance({ navigation }: Props) {
                 <Ionicons name="code-slash" size={12} color={COLORS.secondary} />
                 <Text style={styles.peTypeText}>{proposal.action_type}</Text>
               </View>
-              <TouchableOpacity
+              <ActionTouchable
                 style={styles.upvoteRow}
                 onPress={() => handleUpvote(proposal.proposal_id)}
               >
                 <Ionicons name="arrow-up" size={16} color={COLORS.primary} />
                 <Text style={styles.upvoteCount}>{proposal.upvotes}</Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             </View>
             {proposal.description ? (
               <Text style={styles.peDescription}>{proposal.description}</Text>
@@ -172,7 +172,7 @@ export default function CommonsGovernance({ navigation }: Props) {
         <Text style={styles.constitutionSubtitle}>
           {t('commonsGovernance.constitutionIntro')}
         </Text>
-        <TouchableOpacity
+        <ActionTouchable
           style={styles.constitutionButton}
           onPress={() => navigation.navigate('NetworkConstitution')}
           accessibilityRole="button"
@@ -181,7 +181,7 @@ export default function CommonsGovernance({ navigation }: Props) {
             {t('commonsGovernance.readConstitution', { defaultValue: 'Read the Network Constitution' })}
           </Text>
           <Ionicons name="arrow-forward" size={16} color={COLORS.background} />
-        </TouchableOpacity>
+        </ActionTouchable>
       </View>
     </>
   );
@@ -203,7 +203,7 @@ export default function CommonsGovernance({ navigation }: Props) {
       </View>
       <View style={styles.tabBar}>
         {TABS.map((tab) => (
-          <TouchableOpacity
+          <ActionTouchable
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
@@ -216,7 +216,7 @@ export default function CommonsGovernance({ navigation }: Props) {
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {t(tab.labelKey)}
             </Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         ))}
       </View>
       {loading ? (

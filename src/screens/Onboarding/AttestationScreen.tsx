@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, GRADIENTS } from '../../constants/theme';
@@ -163,7 +164,7 @@ const AttestationScreen = ({ navigation }: any) => {
                                 : t('onboarding.attestationTemporary')
                             }
                         </Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.retryButton}
                             onPress={() => {
                                 setStatus('verifying');
@@ -179,7 +180,7 @@ const AttestationScreen = ({ navigation }: any) => {
                             >
                                 <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
                             </LinearGradient>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                         {/* "Skip for now" is DEV-ONLY. This 'failed' state means an
                             exception was thrown during wallet setup (corrupted/duplicate
                             key or a transient error) - NOT that the device lacks hardware
@@ -189,7 +190,7 @@ const AttestationScreen = ({ navigation }: any) => {
                             are Try Again or going back to recreate the wallet
                             ("Unknown = Block, Not Warn"). */}
                         {__DEV__ && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.skipButton}
                                 onPress={() => {
                                     completeOnboarding('wallet');
@@ -197,7 +198,7 @@ const AttestationScreen = ({ navigation }: any) => {
                                 }}
                             >
                                 <Text style={styles.skipButtonText}>{t('onboarding.skipForNowDev')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                         {__DEV__ && <Text style={styles.devError}>{errorDisplayCopy(error)}</Text>}
                     </>
@@ -281,7 +282,7 @@ const styles = StyleSheet.create({
     retryButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
     skipButton: {
         marginTop: SPACING.m,

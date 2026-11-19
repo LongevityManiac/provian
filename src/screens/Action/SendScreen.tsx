@@ -1,7 +1,8 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ActivityIndicator, Alert, ScrollView, Modal, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as Clipboard from 'expo-clipboard';
@@ -930,9 +931,9 @@ const SendScreen = ({ navigation, route }: any) => {
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl }}>
                     <Ionicons name="wallet-outline" size={48} color={COLORS.textTertiary} />
                     <Text style={{ color: COLORS.textSecondary, fontSize: 16, marginTop: SPACING.m, textAlign: 'center' }}>{t('send.noAssetsAvailable')}</Text>
-                    <TouchableOpacity style={{ marginTop: SPACING.l }} onPress={() => navigation.goBack()}>
+                    <ActionTouchable style={{ marginTop: SPACING.l }} onPress={() => navigation.goBack()}>
                         <Text style={{ color: COLORS.primary, fontSize: 16 }}>{t('common.goBack')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -971,7 +972,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                         ? `${asset.symbol} (${asset.chain})`
                                         : asset.symbol;
                                     return (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             key={`${asset.symbol}-${asset.chain}`}
                                             style={[
                                                 styles.assetOption,
@@ -986,7 +987,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                                 isSelected && { color: themeColors.primary }
                                             ]}>{label}</Text>
                                             <Text style={[styles.assetOptionBalance, { color: themeColors.textSecondary }]}>{asset.balance}</Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     );
                                 })}
                             </ScrollView>
@@ -1004,7 +1005,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                     contentContainerStyle={styles.favoritesContainer}
                                 >
                                     {favorites.map((contact) => (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             key={contact.id}
                                             style={[
                                                 styles.favoriteChip,
@@ -1021,21 +1022,21 @@ const SendScreen = ({ navigation, route }: any) => {
                                             ]}>
                                                 {contact.name}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     ))}
                                 </ScrollView>
                             )}
 
                             {/* Address Book and Recent buttons */}
                             <View style={styles.contactButtonsRow}>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={[styles.contactButton, { backgroundColor: themeColors.chipBackground, borderColor: themeColors.border }]}
                                     onPress={handleOpenAddressBook}
                                 >
                                     <Ionicons name="book-outline" size={16} color={themeColors.accent} />
                                     <Text style={[styles.contactButtonText, { color: themeColors.accent }]}>{t('send.addressBook')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={[styles.contactButton, { backgroundColor: themeColors.chipBackground, borderColor: themeColors.border }]}
                                     onPress={() => setShowRecentDropdown(!showRecentDropdown)}
                                 >
@@ -1046,14 +1047,14 @@ const SendScreen = ({ navigation, route }: any) => {
                                         size={14}
                                         color={themeColors.accent}
                                     />
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
 
                             {/* Recent addresses dropdown */}
                             {showRecentDropdown && recentAddresses.length > 0 && (
                                 <View style={styles.recentDropdown}>
                                     {recentAddresses.map((addr) => (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             key={addr.id}
                                             style={styles.recentItem}
                                             onPress={() => handleSelectContact(addr)}
@@ -1068,7 +1069,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                                 </Text>
                                             </View>
                                             <Ionicons name="arrow-forward" size={16} color={COLORS.textSecondary} />
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     ))}
                                 </View>
                             )}
@@ -1082,7 +1083,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                             {recipientAddress.slice(0, 8)}...{recipientAddress.slice(-6)}
                                         </Text>
                                     </View>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.clearContactButton}
                                         onPress={() => {
                                             setRecipient('');
@@ -1090,7 +1091,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                         }}
                                     >
                                         <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             ) : (
                                 <View style={styles.addressInputRow}>
@@ -1110,13 +1111,13 @@ const SendScreen = ({ navigation, route }: any) => {
                                         autoCapitalize="none"
                                         autoCorrect={false}
                                     />
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.pasteButton}
                                         onPress={handlePasteFromClipboard}
                                     >
                                         <Ionicons name="clipboard-outline" size={18} color={COLORS.primary} />
                                         <Text style={styles.pasteButtonText}>{t('send.paste')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             )}
 
@@ -1124,7 +1125,7 @@ const SendScreen = ({ navigation, route }: any) => {
                             {contactSuggestions.length > 0 && !selectedContactName && (
                                 <View style={styles.suggestionsContainer}>
                                     {contactSuggestions.map((contact) => (
-                                        <TouchableOpacity
+                                        <ActionTouchable
                                             key={contact.id}
                                             style={styles.suggestionItem}
                                             onPress={() => handleSelectContact(contact)}
@@ -1134,7 +1135,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                             <Text style={styles.suggestionAddress}>
                                                 {contact.address.slice(0, 6)}...{contact.address.slice(-4)}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </ActionTouchable>
                                     ))}
                                 </View>
                             )}
@@ -1170,7 +1171,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                         const isCheapest = !isRecommended && index === 0;
 
                                         return (
-                                            <TouchableOpacity
+                                            <ActionTouchable
                                                 key={chainOption.chainId}
                                                 style={[
                                                     styles.chainGridItem,
@@ -1202,7 +1203,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                                 ]}>
                                                     {formatFeeEstimate(chainOption.feeEstimateUsd)}
                                                 </Text>
-                                            </TouchableOpacity>
+                                            </ActionTouchable>
                                         );
                                     })}
                                 </View>
@@ -1226,17 +1227,17 @@ const SendScreen = ({ navigation, route }: any) => {
                             )}
                         </View>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
                             onPress={handleContinue}
                             disabled={loading}
                         >
                             {loading ? (
-                                <ActivityIndicator color="white" />
+                                <ActivityIndicator color={COLORS.onPrimary} />
                             ) : (
                                 <Text style={styles.buttonText}>{t('common.continue')}</Text>
                             )}
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 )}
 
@@ -1361,19 +1362,19 @@ const SendScreen = ({ navigation, route }: any) => {
                             {policyResult.decision === 'block' ? (
                                 <View style={styles.blockedContainer}>
                                     <Text style={styles.blockedText}>{t('send.transactionBlockedByPolicy')}</Text>
-                                    <TouchableOpacity style={styles.buttonSecondary} onPress={() => setStep('input')}>
+                                    <ActionTouchable style={styles.buttonSecondary} onPress={() => setStep('input')}>
                                         <Text style={styles.buttonTextSecondary}>{t('send.editTransaction')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             ) : (
                                 <View style={styles.reviewButtons}>
-                                    <TouchableOpacity style={styles.buttonSecondary} onPress={() => setStep('input')}>
+                                    <ActionTouchable style={styles.buttonSecondary} onPress={() => setStep('input')}>
                                         <Text style={styles.buttonTextSecondary}>{t('send.edit')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.buttonPrimaryFlex} onPress={handleConfirm}>
-                                        <Ionicons name="finger-print" size={20} color="white" />
+                                    </ActionTouchable>
+                                    <ActionTouchable style={styles.buttonPrimaryFlex} onPress={handleConfirm}>
+                                        <Ionicons name="finger-print" size={20} color={COLORS.onPrimary} />
                                         <Text style={styles.buttonText}>{t('send.confirmSign')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             )}
                         </View>
@@ -1396,9 +1397,9 @@ const SendScreen = ({ navigation, route }: any) => {
                                 <Text style={styles.blockReasonText}>{blockReason}</Text>
                             </View>
                         )}
-                        <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.goBack()}>
+                        <ActionTouchable style={styles.buttonSecondary} onPress={() => navigation.goBack()}>
                             <Text style={styles.buttonTextSecondary}>{t('common.goBack')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
@@ -1431,13 +1432,13 @@ const SendScreen = ({ navigation, route }: any) => {
 
                         {/* Save contact prompt for new addresses */}
                         {recipientDisplay?.isNew && !showSaveContactPrompt && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.saveContactPromptButton}
                                 onPress={() => setShowSaveContactPrompt(true)}
                             >
                                 <Ionicons name="person-add-outline" size={20} color={COLORS.primary} />
                                 <Text style={styles.saveContactPromptText}>{t('send.saveThisAddress')}</Text>
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
 
                         {showSaveContactPrompt && (
@@ -1452,7 +1453,7 @@ const SendScreen = ({ navigation, route }: any) => {
                                     autoFocus
                                 />
                                 <View style={styles.saveContactButtons}>
-                                    <TouchableOpacity
+                                    <ActionTouchable
                                         style={styles.saveContactSkip}
                                         onPress={() => {
                                             setShowSaveContactPrompt(false);
@@ -1460,24 +1461,24 @@ const SendScreen = ({ navigation, route }: any) => {
                                         }}
                                     >
                                         <Text style={styles.saveContactSkipText}>{t('send.skip')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
+                                    </ActionTouchable>
+                                    <ActionTouchable
                                         style={styles.saveContactSave}
                                         onPress={handleSaveNewContact}
                                     >
-                                        <Ionicons name="checkmark" size={18} color="white" />
+                                        <Ionicons name="checkmark" size={18} color={COLORS.onPrimary} />
                                         <Text style={styles.saveContactSaveText}>{t('common.save')}</Text>
-                                    </TouchableOpacity>
+                                    </ActionTouchable>
                                 </View>
                             </View>
                         )}
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.buttonPrimary, { marginTop: SPACING.xl }]}
                             onPress={() => navigation.goBack()}
                         >
                             <Text style={styles.buttonText}>{t('common.done')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             </ScrollView>
@@ -1573,7 +1574,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(200,205,214,0.08)',
     },
     buttonText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -2267,7 +2268,7 @@ const styles = StyleSheet.create({
         elevation: 4,
     },
     saveContactSaveText: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 14,
         fontWeight: '600',
     },

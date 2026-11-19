@@ -8,8 +8,9 @@
  * holds a saved burn from an earlier bid that failed after burning (pendingBurns), the sheet offers
  * that amount first — bidding it spends the saved burn instead of burning again.
  */
+import { ActionPressable, ActionTouchable } from '../ScreenActions';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../constants/theme';
@@ -58,7 +59,7 @@ export function FeaturedBidSheet({ visible, busy, onClose, onConfirm }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={styles.backdrop} onPress={busy ? undefined : onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
+        <ActionPressable style={styles.backdrop} onPress={busy ? undefined : onClose} accessibilityRole="button" accessibilityLabel={t('common.close')} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.iconWrap}>
@@ -80,7 +81,7 @@ export function FeaturedBidSheet({ visible, busy, onClose, onConfirm }: Props) {
           />
           <Text style={[styles.hint, error ? styles.error : null]}>{error ?? t('commons.featureAmountMin', { pvt: min })}</Text>
           {saved && <Text style={styles.saved}>{t('commons.featureSavedBurn', { pvt: saved })}</Text>}
-          <TouchableOpacity
+          <ActionTouchable
             style={[styles.primaryBtn, (!parsed.ok || busy) && styles.disabled]}
             disabled={!parsed.ok || busy}
             onPress={() => { if (parsed.ok) onConfirm(parsed.pvt); }}
@@ -90,10 +91,10 @@ export function FeaturedBidSheet({ visible, busy, onClose, onConfirm }: Props) {
             {busy ? <ActivityIndicator color={COLORS.text} /> : (
               <Text style={styles.primaryText}>{t('commons.featureBurn', { pvt: parsed.ok ? parsed.pvt : min })}</Text>
             )}
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={onClose} disabled={busy} accessibilityRole="button">
+          </ActionTouchable>
+          <ActionTouchable style={styles.secondaryBtn} onPress={onClose} disabled={busy} accessibilityRole="button">
             <Text style={styles.secondaryText}>{t('common.cancel')}</Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         </View>
       </KeyboardAvoidingView>
     </Modal>

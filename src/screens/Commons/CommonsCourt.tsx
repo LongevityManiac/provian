@@ -6,11 +6,11 @@
  * Court statistics (verdicts, resolution rate, avg time).
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -273,7 +273,7 @@ export default function CommonsCourt({ navigation }: Props) {
         </View>
       ) : (
         arbitrators.map(arb => (
-          <TouchableOpacity
+          <ActionTouchable
             key={arb.wallet_id}
             style={styles.arbCard}
             activeOpacity={0.7}
@@ -304,7 +304,7 @@ export default function CommonsCourt({ navigation }: Props) {
                 <Text style={styles.arbStatLabel}>{t('commonsCourt.majority')}</Text>
               </View>
             )}
-          </TouchableOpacity>
+          </ActionTouchable>
         ))
       )}
     </>
@@ -403,7 +403,7 @@ export default function CommonsCourt({ navigation }: Props) {
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         {TABS.map(tab => (
-          <TouchableOpacity
+          <ActionTouchable
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
@@ -416,7 +416,7 @@ export default function CommonsCourt({ navigation }: Props) {
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {t(tab.labelKey)}
             </Text>
-          </TouchableOpacity>
+          </ActionTouchable>
         ))}
       </View>
 

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { BORDER_RADIUS, COLORS, SPACING } from '../../constants/theme';
-import { actionStyles, PrimaryAction } from '../ScreenActions';
+import { ActionPressable, actionStyles, PrimaryAction } from '../ScreenActions';
 import { useWalletStore } from '../../store/walletStore';
 import useCommonsStore from '../../store/commonsStore';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
@@ -119,7 +119,7 @@ export function CommonsWriteHost() {
     return (
         <Modal transparent visible={request !== null} animationType="slide" onRequestClose={close}>
             <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <Pressable style={StyleSheet.absoluteFillObject} onPress={close} accessibilityRole="button"
+                <ActionPressable style={StyleSheet.absoluteFillObject} onPress={close} accessibilityRole="button"
                     accessibilityLabel={t('common.cancel')} />
                 <ScrollView style={[styles.sheet, { paddingBottom: insets.bottom }]} contentContainerStyle={styles.content}
                     keyboardShouldPersistTaps="handled" accessibilityViewIsModal>
@@ -129,12 +129,12 @@ export function CommonsWriteHost() {
                             placeholder={t('commons.displayNameLabel')} placeholderTextColor={COLORS.textSecondary}
                             accessibilityLabel={t('commons.displayNameLabel')} />
                         <Text style={actionStyles.body}>{t('commonsTerms.body')}</Text>
-                        <Pressable onPress={() => { void Linking.openURL('https://provian.ai/terms'); }} accessibilityRole="link">
+                        <ActionPressable onPress={() => { void Linking.openURL('https://provian.ai/terms'); }} accessibilityRole="link">
                             <Text style={styles.link}>{t('commonsTerms.readFull')}</Text>
-                        </Pressable>
-                        <Pressable onPress={() => setAgreed(value => !value)} accessibilityRole="checkbox" accessibilityState={{ checked: agreed }}>
+                        </ActionPressable>
+                        <ActionPressable onPress={() => setAgreed(value => !value)} accessibilityRole="checkbox" accessibilityState={{ checked: agreed }}>
                             <Text style={styles.link}>{agreed ? '✓' : '□'} {t('commonsTerms.agree')}</Text>
-                        </Pressable>
+                        </ActionPressable>
                     </>}
                     {price !== null && <Text style={actionStyles.body}>
                         {t(request?.conditional ? 'overhaul.commonsPriceIfNeeded' : 'overhaul.commonsPrice', { pvt: price })}

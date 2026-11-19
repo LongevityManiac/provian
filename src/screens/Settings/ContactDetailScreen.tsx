@@ -1,9 +1,9 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     ScrollView,
     TextInput,
     Alert,
@@ -142,7 +142,7 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <View style={styles.headerActions}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.headerButton}
                         onPress={handleToggleFavorite}
                     >
@@ -151,13 +151,13 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                             size={24}
                             color={contact.isFavorite ? '#E8A838' : '#8B929E'}
                         />
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ActionTouchable>
+                    <ActionTouchable
                         style={styles.headerButton}
                         onPress={handleDeleteContact}
                     >
                         <Ionicons name="trash" size={24} color="#F2555A" />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </View>
 
@@ -180,7 +180,7 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                                 selectTextOnFocus
                             />
                             <View style={styles.editNameActions}>
-                                <TouchableOpacity
+                                <ActionTouchable
                                     style={styles.editNameButton}
                                     onPress={() => {
                                         setEditedName(contact.name);
@@ -188,23 +188,23 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                                     }}
                                 >
                                     <Text style={styles.editNameCancel}>{t('common.cancel')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </ActionTouchable>
+                                <ActionTouchable
                                     style={[styles.editNameButton, styles.editNameSaveButton]}
                                     onPress={handleSaveName}
                                 >
                                     <Text style={styles.editNameSave}>{t('common.save')}</Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             </View>
                         </View>
                     ) : (
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.nameContainer}
                             onPress={() => setIsEditingName(true)}
                         >
                             <Text style={styles.profileName}>{contact.name}</Text>
                             <Ionicons name="pencil" size={16} color="#8B929E" />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     )}
                 </View>
 
@@ -219,12 +219,12 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                             </Text>
                             <Text style={styles.addressText}>{formatAddress(contact.address)}</Text>
                         </View>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.copyButton}
                             onPress={() => handleCopyAddress(contact.address)}
                         >
                             <Ionicons name="copy-outline" size={20} color="#4A8EE8" />
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
 
                     {/* Additional addresses */}
@@ -236,12 +236,12 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                                 </Text>
                                 <Text style={styles.addressText}>{formatAddress(addr.address)}</Text>
                             </View>
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={styles.copyButton}
                                 onPress={() => handleCopyAddress(addr.address)}
                             >
                                 <Ionicons name="copy-outline" size={20} color="#4A8EE8" />
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         </View>
                     ))}
                 </View>
@@ -287,10 +287,10 @@ const ContactDetailScreen = ({ navigation, route }: ContactDetailScreenProps) =>
                 )}
 
                 {/* Send Button */}
-                <TouchableOpacity style={styles.sendButton} onPress={handleSendMoney}>
-                    <Ionicons name="arrow-up" size={20} color="white" />
+                <ActionTouchable style={styles.sendButton} onPress={handleSendMoney}>
+                    <Ionicons name="arrow-up" size={20} color={COLORS.onPrimary} />
                     <Text style={styles.sendButtonText}>{t('contactDetail.sendMoney')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     editNameSave: {
-        color: 'white',
+        color: COLORS.onPrimary,
         fontSize: 14,
         fontWeight: '600',
     },
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     sendButtonText: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: 'white',
+        color: COLORS.onPrimary,
     },
 });
 

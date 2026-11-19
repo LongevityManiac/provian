@@ -9,8 +9,9 @@
  * result. The money terms stay pinned on the device (`core/meter/archivePayment.ts`).
  */
 
+import { ActionTouchable } from './ScreenActions';
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -73,15 +74,15 @@ export function ArchiveCard(): React.ReactElement {
 
             {!paid && (
                 <>
-                    <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('PeArchive', { buy: true })} accessibilityRole="button">
+                    <ActionTouchable style={styles.button} onPress={() => navigation.navigate('PeArchive', { buy: true })} accessibilityRole="button">
                         <Text style={styles.buttonText}>{paidCopy(t, 'peArchive.turnOn', store)}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <Text style={styles.hint}>{paidCopy(t, 'peArchive.confirmComing', store)}</Text>
                 </>
             )}
-            <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={() => navigation.navigate('PeArchive', undefined)} accessibilityRole="button">
+            <ActionTouchable style={[styles.button, styles.buttonSecondary]} onPress={() => navigation.navigate('PeArchive', undefined)} accessibilityRole="button">
                 <Text style={styles.buttonText}>{t('peArchive.open')} ›</Text>
-            </TouchableOpacity>
+            </ActionTouchable>
         </View>
     );
 }

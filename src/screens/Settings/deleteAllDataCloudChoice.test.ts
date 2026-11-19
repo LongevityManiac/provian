@@ -78,6 +78,7 @@ function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['delete
     class BiometricAuthError extends Error {}
     const useWalletStore = Object.assign(() => ({ resetOnboarding: vi.fn() }), { getState: () => ({ address: '0xabc' }) });
     const imports: Record<string, unknown> = {
+        '../../components/ScreenActions': { ActionTouchable: native.TouchableOpacity },
         '../../i18n/displayCopy': { errorDisplayCopy: (value: string) => value },
         react,
         'react-native': { ...native, StyleSheet: { create: (s: unknown) => s, absoluteFill: {} }, Alert: { alert } },

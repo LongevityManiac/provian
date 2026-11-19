@@ -8,8 +8,9 @@
 //   - "require approval for all" → no backing logic existed
 // This screen is now just a hub of action cards pointing to the canonical
 // homes plus Agent Authorization / Recovery / Lockdown entrypoints.
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Platform, View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -93,7 +94,7 @@ const SecuritySettingsScreen = ({ navigation }: any) => {
         subtitle: string;
         onPress: () => void;
     }) => (
-        <TouchableOpacity style={styles.actionCard} onPress={onPress}>
+        <ActionTouchable style={styles.actionCard} onPress={onPress}>
             <View style={styles.actionLeft}>
                 <View style={[styles.categoryDot, { backgroundColor: dotColor }]} />
                 <View style={styles.iconContainer}>
@@ -105,7 +106,7 @@ const SecuritySettingsScreen = ({ navigation }: any) => {
                 </View>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     return (
@@ -144,9 +145,9 @@ const SecuritySettingsScreen = ({ navigation }: any) => {
                             <Text style={styles.nudgeTitle}>{t('settings.attestationRecalculated')}</Text>
                         </View>
                         <Text style={styles.nudgeBody}>{t('settings.attestationRecalculatedMsg')}</Text>
-                        <TouchableOpacity style={styles.nudgeDismiss} onPress={onDismissTierNudge}>
+                        <ActionTouchable style={styles.nudgeDismiss} onPress={onDismissTierNudge}>
                             <Text style={styles.nudgeDismissText}>{t('settings.gotIt')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { BORDER_RADIUS, COLORS, SPACING } from '../constants/theme';
 import type { AppParamList } from '../navigation/types';
-import { DestinationRow } from './ScreenActions';
+import { ActionPressable, DestinationRow } from './ScreenActions';
 
 export function AppMenu() {
     const { t } = useTranslation();
@@ -18,13 +18,13 @@ export function AppMenu() {
     };
     return (
         <>
-            <Pressable accessibilityRole="button" accessibilityLabel={t('overhaul.menu')}
+            <ActionPressable accessibilityRole="button" accessibilityLabel={t('overhaul.menu')}
                 onPress={() => setOpen(true)} style={styles.button}>
                 <Ionicons name="menu-outline" size={26} color={COLORS.text} />
-            </Pressable>
+            </ActionPressable>
             <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
                 <View style={styles.overlay}>
-                    <Pressable style={StyleSheet.absoluteFillObject} accessibilityRole="button"
+                    <ActionPressable style={StyleSheet.absoluteFillObject} accessibilityRole="button"
                         accessibilityLabel={t('common.close')} onPress={() => setOpen(false)} />
                     <View style={styles.menu} accessibilityViewIsModal>
                         <DestinationRow label={t('nav.vision')} stockIcon="compass-outline" onPress={() => select('Vision')} />

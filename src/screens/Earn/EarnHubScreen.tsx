@@ -18,9 +18,7 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    TouchableOpacity,
     RefreshControl,
-    ActivityIndicator,
     AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,17 +28,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, GRADIENTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import {
-    EARN_GROUP_ORDER,
     EARNING_SURFACES,
     getSurface,
     isSurfaceConnectionKnown,
     resolveAllSurfaceStatuses,
     shouldManageConnectedAgents,
-    surfacesByGroup,
-    type EarnGroup,
-    type EarningSurface,
     type EarningSurfaceId,
-    type SurfaceStatus,
     type SurfaceStatusInputs,
     type SurfaceStatusResult,
     type SurfaceConnectionReadiness,
@@ -52,11 +45,9 @@ import { useWalletStore } from '../../store/walletStore';
 import { isSavedAccrual, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
 import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
 import type { PVTAccrual } from '../../services/RelayAPIService';
-import { actionStyles, DestinationRow } from '../../components/ScreenActions';
-import ProvianIcon from '../../components/ProvianIcon';
+import { ActionTouchable, actionStyles, DestinationRow } from '../../components/ScreenActions';
 import ParticipationCard from '../../components/ParticipationCard';
 import { AppMenu } from '../../components/AppMenu';
-import { resumeHomeStarter } from '../Dashboard/HomeScreen';
 import { useNavigation } from '@react-navigation/native';
 import type { AppParamList } from '../../navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -65,13 +56,7 @@ import useCommonsStore from '../../store/commonsStore';
 /** Window of recent PE history used for per-surface activity. */
 const HISTORY_WINDOW = 200;
 
-// Shortcuts share the full catalog's readiness checks and management routing.
-// The complete phone, computer, service and agent groups remain below.
-const QUICK_CONNECTIONS: readonly { surfaceId: EarningSurfaceId; labelKey: string }[] = [
-    { surfaceId: 'desktop_daemon', labelKey: 'earn.groups.computer' },
-    { surfaceId: 'connected_agents', labelKey: 'earn.groups.agents' },
-    { surfaceId: 'own_external_wallet', labelKey: 'earn.surfaces.own_external_wallet.title' },
-];
+const CONNECTION_OPTIONS = EARNING_SURFACES.filter(({ id }) => id !== 'promises' && id !== 'wallet_activity');
 
 interface EarnHubNavigation {
     navigate: (screen: string, params?: Record<string, unknown>) => void;
@@ -83,9 +68,6 @@ interface EarnHubScreenProps {
 
 interface HubData {
     statuses: Record<EarningSurfaceId, SurfaceStatusResult>;
-    weeklyPEs: number | null;
-    linkedAgentCount: number;
-    activeDeviceCount: number;
     pendingLinkCount: number;
     /** §2.1: agents awaiting THIS human's approval of a described action. */
     pendingApprovalCount: number;
@@ -111,18 +93,11 @@ const EMPTY_INPUTS: SurfaceStatusInputs = {
     recentActionTypes: [],
 };
 
-const STATUS_STYLE: Record<SurfaceStatus, { color: string; bg: string }> = {
-    earning: { color: '#4CC38A', bg: 'rgba(76,195,138,0.14)' },
-    connected: { color: '#6BA3F0', bg: 'rgba(107,163,240,0.14)' },
-    setup: { color: '#E8A838', bg: 'rgba(232,168,56,0.14)' },
-};
-
 export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React.JSX.Element {
     const { t } = useTranslation();
     const address = useWalletStore(state => state.address);
     const stack = useNavigation<NativeStackNavigationProp<AppParamList>>();
     const [participation, setParticipation] = useState<WalletTopShown<PVTAccrual>>(initialWalletTop);
-    const [pvtRefreshing, setPvtRefreshing] = useState(false);
     const participationLoader = useRef<WalletTopLoader<PVTAccrual> | null>(null);
     participationLoader.current ??= new WalletTopLoader<PVTAccrual>({
         read: () => RelayAPIService.getPVTAccrual(),
@@ -131,7 +106,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             return saved ? { value: saved.value as PVTAccrual, savedAtMs: saved.savedAtMs } : null;
         },
         save: (wallet, value) => saveWalletTop('accrual', wallet, value),
-        onChange: (shown, busy) => { setParticipation(shown); setPvtRefreshing(busy); },
+        onChange: setParticipation,
     });
     const loadParticipation = useCallback(() => participationLoader.current!.load(), []);
     React.useEffect(() => {
@@ -166,9 +141,6 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
     const inputsRef = useRef<SurfaceStatusInputs>(initialInputs);
     const [data, setData] = useState<HubData>({
         statuses: resolveAllSurfaceStatuses(initialInputs),
-        weeklyPEs: null,
-        linkedAgentCount: cachedIdentities?.length ?? 0,
-        activeDeviceCount: 0,
         pendingLinkCount: 0,
         pendingApprovalCount: 0,
         historyKnown: false,
@@ -206,7 +178,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                 updateInputs({
                     linkedAgentCount: linked_agents.length,
                     anyLinkedAgentLive: anyLinkedAgentLive(linked_agents),
-                }, { linkedAgentCount: linked_agents.length }, { linkedAgents: true });
+                }, {}, { linkedAgents: true });
                 return RelayAPIService.getLinkedAgents({ throwOnError: true });
             })
             .then(({ linked_agents }) => {
@@ -216,7 +188,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                         (agent) => agent.external_address_linked === true,
                     ).length,
                     anyLinkedAgentLive: anyLinkedAgentLive(linked_agents),
-                }, { linkedAgentCount: linked_agents.length }, { linkedAgents: true });
+                }, {}, { linkedAgents: true });
             })
             .catch((error) => {
                 console.error('[EarnHub] Failed to refresh linked agents:', error);
@@ -231,7 +203,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     const activeDevices = devices.filter((device) => device.status === 'active');
                     updateInputs(
                         { activeDeviceCount: activeDevices.length },
-                        { activeDeviceCount: activeDevices.length },
+                        {},
                         { devices: true },
                     );
                 })
@@ -248,9 +220,6 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     if (rows !== null) updateInputs({ ownExternalWalletCount: rows.length }, {}, { ownExternalWallets: true });
                 })
                 .catch((error) => console.error('[EarnHub] Failed to refresh proven wallets:', error)),
-            RelayAPIService.getPVTAccrual()
-                .then((accrual) => setData((prev) => ({ ...prev, weeklyPEs: accrual?.weeklyPEs ?? null })))
-                .catch((error) => console.error('[EarnHub] Failed to refresh accrual:', error)),
             RelayAPIService.getPVTHistory(HISTORY_WINDOW)
                 .then((history) => updateInputs({
                     recentActionTypes: (history?.entries ?? []).map((entry) => entry.actionType),
@@ -316,21 +285,45 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         [data.readiness, data.statuses, navigation]
     );
 
-    // Coming-soon connectors have no in-app connect flow yet, so they are not
-    // counted toward "surfaces active" (numerator or denominator).
-    const liveSurfaces = EARNING_SURFACES.filter((s) => !s.comingSoon);
-    const allStatusesKnown = liveSurfaces.every((surface) =>
-        isSurfaceConnectionKnown(surface, data.readiness));
-    const activeCount = allStatusesKnown
-        ? liveSurfaces.filter((s) => data.statuses[s.id].status !== 'setup').length
-        : null;
-    const { activeDeviceCount, linkedAgentCount, activeForgeInstallProviders, ownExternalWalletCount } = inputsRef.current;
-    const hasConnection = activeDeviceCount > 0 || linkedAgentCount > 0
-        || activeForgeInstallProviders.length > 0 || ownExternalWalletCount > 0;
-    const connectionStatusKnown = data.readiness.devices && data.readiness.linkedAgents
-        && data.readiness.forgeInstalls && data.readiness.ownExternalWallets;
+    const known = (surface: typeof CONNECTION_OPTIONS[number]) => isSurfaceConnectionKnown(surface, data.readiness);
+    const isConnected = (surface: typeof CONNECTION_OPTIONS[number]) => known(surface)
+        && (surface.id === 'agent_external_wallet'
+            ? data.statuses[surface.id].status === 'earning'
+            : data.statuses[surface.id].status !== 'setup');
+    const connected = CONNECTION_OPTIONS.filter(isConnected);
+    const available = CONNECTION_OPTIONS.filter(surface => !isConnected(surface));
+    const connectionStatusKnown = CONNECTION_OPTIONS.every(known);
+    const hasConnection = connected.some(surface => surface.id !== 'commons');
     const connectPrompt = hasConnection ? 'overhaul.connectNext'
         : connectionStatusKnown ? 'overhaul.connectFirst' : 'overhaul.connections';
+
+    const renderConnection = (surface: typeof CONNECTION_OPTIONS[number], active: boolean) => {
+        const result = data.statuses[surface.id];
+        const isKnown = known(surface);
+        const label = surface.id === 'github' && !active ? t('overhaul.connectGitHub') : t(`earn.surfaces.${surface.id}.title`);
+        const icon = surface.id === 'desktop_daemon' ? 'computer'
+            : surface.id === 'connected_agents' || surface.id === 'agent_external_wallet' ? 'agent'
+            : surface.id === 'chat_capture' ? 'chat' : undefined;
+        const detail = !isKnown ? undefined : !active
+            ? t(`earn.surfaces.${surface.id}.tagline`)
+            : surface.id === 'agent_external_wallet'
+                ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: result.recentPECount })
+                : result.status === 'earning' && data.historyKnown
+                    ? `${t('earn.status.earning')} · ${t('earn.recentCount', { count: result.recentPECount })}`
+                    : t('earn.status.connected');
+        const start = () => {
+            if (active) return openSurface(surface.id);
+            const target = surface.target;
+            if (target?.kind === 'forge') return stack.navigate('ForgeConnect', { provider: target.provider });
+            if (surface.id === 'own_external_wallet') return stack.navigate('ProveOwnWallet');
+            if (surface.id === 'desktop_daemon') return stack.navigate('ComputerPairing');
+            if (surface.id === 'connected_agents') return stack.navigate('ConnectAgent', { mode: 'agent' });
+            openSurface(surface.id);
+        };
+        return <DestinationRow key={surface.id} label={label} detail={detail} icon={icon}
+            stockIcon={icon ? undefined : surface.icon as keyof typeof Ionicons.glyphMap}
+            busy={!isKnown} onPress={isKnown && !surface.comingSoon ? start : undefined} />;
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -344,7 +337,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing || pvtRefreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
             >
                 <View style={styles.header}>
                     <View style={styles.headerText}>
@@ -361,16 +354,12 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     onRetry={loadParticipation}
                     onPress={() => navigation.navigate('MyProvenance')}
                 />
-                <DestinationRow label={t('overhaul.proofsAndEarnings')} icon="proof"
-                    onPress={() => navigation.navigate('MyProvenance')} />
-                <DestinationRow label={t('overhaul.firstTask')} icon="home"
-                    onPress={() => { void resumeHomeStarter(address).then(() => stack.navigate('MainTabs', { screen: 'WalletTab' })); }} />
 
                 {/* Agents that connected with your code and are waiting to be linked.
                     Pinned above the stats so the beneficiary link is one glance away. */}
                 {data.pendingLinkCount > 0 && (
                     <View style={styles.safetyRow}>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.pendingChip}
                             onPress={() => navigation.navigate('AgentHub')}
                             activeOpacity={0.8}
@@ -379,14 +368,14 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                             <Text style={styles.pendingChipText}>
                                 {t('agentHub.linkRequestsTitle')}
                             </Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
                 {/* §2.1: agents asking THIS human to approve a described action. */}
                 {data.pendingApprovalCount > 0 && (
                     <View style={styles.safetyRow}>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.approvalChip}
                             onPress={() => navigation.navigate('ApprovalInbox')}
                             activeOpacity={0.8}
@@ -395,191 +384,33 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                             <Text style={styles.approvalChipText}>
                                 {t('trustLayer.approvalInbox.pendingChip', { count: data.pendingApprovalCount })}
                             </Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
 
-                <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
-                <View style={styles.quickConnections}>
-                    {QUICK_CONNECTIONS.map(({ surfaceId, labelKey }) => {
-                        const surface = getSurface(surfaceId);
-                        const walletShortcut = surfaceId === 'own_external_wallet';
-                        const loading = !walletShortcut && !isSurfaceConnectionKnown(surface, data.readiness);
-                        return (
-                            <TouchableOpacity
-                                key={surfaceId}
-                                testID={`earn-shortcut-${surfaceId}`}
-                                style={styles.quickConnection}
-                                onPress={() => walletShortcut ? stack.navigate('ProveOwnWallet') : openSurface(surfaceId)}
-                                disabled={loading}
-                                accessibilityRole="button"
-                                accessibilityLabel={t(labelKey)}
-                                accessibilityState={{ disabled: loading, busy: loading }}
-                                activeOpacity={0.8}
-                            >
-                                {surfaceId === 'desktop_daemon' || surfaceId === 'connected_agents'
-                                    ? <ProvianIcon name={surfaceId === 'desktop_daemon' ? 'computer' : 'agent'} color={COLORS.primaryLight} />
-                                    : <Ionicons name={surface.icon as keyof typeof Ionicons.glyphMap} size={20} color={COLORS.primary} />}
-                                <Text style={styles.quickConnectionText}>{t(labelKey)}</Text>
-                                {loading
-                                    ? <ActivityIndicator size="small" color={COLORS.textMuted} />
-                                    : <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />}
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-                <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
-                    onPress={() => stack.navigate('ForgeConnect', { provider: 'github' })} />
+                {connected.length > 0 && <View style={styles.section}>
+                    <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('earn.status.connected')}</Text>
+                    {connected.map(surface => renderConnection(surface, true))}
+                </View>}
 
-                <Text style={styles.quickConnectionText}>{t('earn.batchCadence')}</Text>
-                <Text style={styles.quickConnectionText}>{t('earn.settlementCadence')}</Text>
-
-                {/* Stats */}
-                <View style={styles.statsRow}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>{t('earn.surfacesActive')}</Text>
-                        <Text style={styles.statValue}>
-                            {activeCount ?? '–'}
-                            <Text style={styles.statValueMuted}> / {liveSurfaces.length}</Text>
-                        </Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>{t('earn.pesThisWeek')}</Text>
-                        <Text style={styles.statValue}>{data.weeklyPEs ?? '–'}</Text>
-                    </View>
+                <View style={styles.section}>
+                    <DestinationRow label={t('overhaul.proofsAndEarnings')} icon="proof"
+                        detail={participation.value?.weeklyPEs === undefined ? undefined
+                            : t('earn.recentCount', { count: participation.value.weeklyPEs })}
+                        onPress={() => navigation.navigate('MyProvenance')} />
+                    <Text style={actionStyles.body}>{t('overhaul.standardSettlement')}</Text>
+                    <DestinationRow label={t('overhaul.resumeFirstAction')} icon="home"
+                        onPress={() => stack.navigate('MainTabs', { screen: 'WalletTab', params: { starterRequest: Date.now() } })} />
                 </View>
 
-                {/* Surface groups */}
-                {EARN_GROUP_ORDER.map((group) => (
-                    <SurfaceGroup
-                        key={group}
-                        group={group}
-                        statuses={data.statuses}
-                        readiness={data.readiness}
-                        historyKnown={data.historyKnown}
-                        onPress={openSurface}
-                        t={t}
-                    />
-                ))}
+                {available.length > 0 && <View style={styles.section}>
+                    <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
+                    {available.map(surface => renderConnection(surface, false))}
+                </View>}
             </ScrollView>
         </SafeAreaView>
     );
 }
-
-// ─── Group + card components ────────────────────────────────────────────
-
-interface SurfaceGroupProps {
-    group: EarnGroup;
-    statuses: Record<EarningSurfaceId, SurfaceStatusResult>;
-    readiness: SurfaceConnectionReadiness;
-    historyKnown: boolean;
-    onPress: (surfaceId: EarningSurfaceId) => void;
-    t: (key: string, opts?: Record<string, unknown>) => string;
-}
-
-const SurfaceGroup = ({ group, statuses, readiness, historyKnown, onPress, t }: SurfaceGroupProps): React.JSX.Element => (
-    <View style={styles.group}>
-        <Text style={styles.groupTitle}>{t(`earn.groups.${group}`)}</Text>
-        <Text style={styles.groupHint}>{t(`earn.groupHints.${group}`)}</Text>
-        {surfacesByGroup(group).map((surface) => (
-            <SurfaceCard
-                key={surface.id}
-                surface={surface}
-                result={statuses[surface.id]}
-                loading={!isSurfaceConnectionKnown(surface, readiness)}
-                historyKnown={historyKnown}
-                onPress={() => onPress(surface.id)}
-                t={t}
-            />
-        ))}
-    </View>
-);
-
-interface SurfaceCardProps {
-    surface: EarningSurface;
-    result: SurfaceStatusResult;
-    loading: boolean;
-    historyKnown: boolean;
-    onPress: () => void;
-    t: (key: string, opts?: Record<string, unknown>) => string;
-}
-
-const SurfaceCard = ({ surface, result, loading, historyKnown, onPress, t }: SurfaceCardProps): React.JSX.Element => {
-    const chip = STATUS_STYLE[result.status];
-    // For the agent's-own-wallet surface, 'connected' means only the
-    // prerequisite is met (a linked agent that COULD link a wallet) — no wallet
-    // is linked yet, so the chip reads "Ready" rather than a misleading
-    // "Connected" beside "Ready — tell your agent to link".
-    const chipLabelKey = surface.id === 'agent_external_wallet' && result.status === 'connected'
-        ? 'earn.status.ready'
-        : `earn.status.${result.status}`;
-    // Ladder reads consistently across cards: Set up -> tagline; Connected ->
-    // "no recent activity yet"; Earning -> the recent count. So a Connected card
-    // no longer looks like a different species from the one card that is Earning.
-    // The agent_external_wallet surface's activity is the AGENT's own on-chain
-    // movement, not the operator's recent PE history, so the generic
-    // "N PEs recently" / "No recent activity" ladder would misread — its
-    // recentPECount is "how many linked agents have a wallet linked".
-    const subtitle = loading
-        ? t('common.loading')
-        : surface.comingSoon
-        ? t(`earn.surfaces.${surface.id}.tagline`)
-        : surface.id === 'own_external_wallet'
-          ? result.recentPECount > 0
-              ? t('earn.surfaces.own_external_wallet.cardProven', { count: result.recentPECount })
-              : t('earn.surfaces.own_external_wallet.tagline')
-        : surface.id === 'agent_external_wallet'
-          ? result.status === 'earning'
-              ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: result.recentPECount })
-              : result.status === 'connected'
-                ? t('earn.surfaces.agent_external_wallet.cardReady')
-                : t('earn.surfaces.agent_external_wallet.tagline')
-          : result.status === 'earning'
-            ? t('earn.recentCount', { count: result.recentPECount })
-            : result.status === 'connected' && historyKnown
-              ? t('earn.noRecent')
-              : t(`earn.surfaces.${surface.id}.tagline`);
-
-    return (
-        <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8} disabled={loading}>
-            <View style={styles.cardIconBg}>
-                <Ionicons
-                    name={surface.icon as keyof typeof Ionicons.glyphMap}
-                    size={20}
-                    color={COLORS.primary}
-                />
-            </View>
-            {/* The status chip sits UNDER the title (not beside it), so at 320pt the title
-                keeps the card's width and a long translation never pushes the chip off-card. */}
-            <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{t(`earn.surfaces.${surface.id}.title`)}</Text>
-                <Text style={styles.cardSubtitle} numberOfLines={2}>
-                    {subtitle}
-                </Text>
-                {loading ? (
-                    <View style={styles.statusChip}>
-                        <ActivityIndicator size="small" color={COLORS.textMuted} />
-                    </View>
-                ) : surface.comingSoon ? (
-                    <View style={[styles.statusChip, styles.comingSoonChip]}>
-                        <Text style={[styles.statusChipText, styles.comingSoonChipText]}>
-                            {t('earn.status.comingSoon')}
-                        </Text>
-                    </View>
-                ) : (
-                    <View style={[styles.statusChip, { backgroundColor: chip.bg }]}>
-                        <Text style={[styles.statusChipText, { color: chip.color }]}>
-                            {t(chipLabelKey)}
-                        </Text>
-                    </View>
-                )}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-        </TouchableOpacity>
-    );
-};
-
-// ─── Styles ─────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: COLORS.background },
@@ -592,13 +423,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     headerText: { flex: 1, minWidth: 0 },
-    settingsButton: {
-        width: 40,
-        height: 40,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginLeft: SPACING.s,
-    },
     title: { fontSize: 28, fontWeight: '700', color: COLORS.text },
     subtitle: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4, lineHeight: 20 },
 
@@ -630,78 +454,5 @@ const styles = StyleSheet.create({
     },
     approvalChipText: { flexShrink: 1, fontSize: 13, fontWeight: '600', color: COLORS.platinum },
 
-    quickConnections: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.s, marginBottom: SPACING.m },
-    quickConnection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flexGrow: 1,
-        flexBasis: 150,
-        minHeight: 56,
-        gap: SPACING.s,
-        padding: SPACING.m,
-        borderRadius: BORDER_RADIUS.m,
-        borderWidth: 1,
-        borderColor: COLORS.borderLight,
-        backgroundColor: COLORS.surface,
-    },
-    quickConnectionText: { flex: 1, fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLORS.text },
-
-    statsRow: { flexDirection: 'row', gap: SPACING.s, marginBottom: SPACING.l },
-    statCard: {
-        flex: 1,
-        backgroundColor: 'rgba(17,24,39,0.85)',
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(200,205,214,0.10)',
-        borderTopColor: 'rgba(200,205,214,0.18)',
-        padding: SPACING.m,
-    },
-    statLabel: { fontSize: 11, color: COLORS.textMuted, marginBottom: 4 },
-    statValue: { fontSize: 20, fontWeight: '700', color: COLORS.text },
-    statValueMuted: { fontSize: 14, fontWeight: '600', color: COLORS.textMuted },
-
-    group: { marginBottom: SPACING.l },
-    groupTitle: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: COLORS.textMuted,
-        letterSpacing: 1.2,
-        textTransform: 'uppercase',
-    },
-    groupHint: { fontSize: 12, color: COLORS.textMuted, marginTop: 2, marginBottom: SPACING.s },
-
-    card: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: SPACING.m,
-        backgroundColor: 'rgba(17,24,39,0.85)',
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(200,205,214,0.10)',
-        borderTopColor: 'rgba(200,205,214,0.18)',
-        padding: SPACING.m,
-        marginBottom: SPACING.s,
-    },
-    cardIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(74,142,232,0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    cardBody: { flex: 1, minWidth: 0 },
-    cardTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
-    cardSubtitle: { fontSize: 12, color: COLORS.textSecondary },
-    statusChip: {
-        alignSelf: 'flex-start',
-        maxWidth: '100%',
-        marginTop: SPACING.xs,
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: BORDER_RADIUS.m,
-    },
-    statusChipText: { fontSize: 11, fontWeight: '700' },
-    comingSoonChip: { backgroundColor: 'rgba(156,163,175,0.14)' },
-    comingSoonChipText: { color: '#9CA3AF' },
+    section: { marginTop: SPACING.l },
 });

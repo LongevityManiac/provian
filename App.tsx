@@ -1,7 +1,8 @@
+import { ActionTouchable } from './src/components/ScreenActions';
 import 'react-native-get-random-values';
 import 'react-native-gesture-handler';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainerRef } from '@react-navigation/native';
@@ -317,7 +318,7 @@ export default function App() {
             <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 16 }} />
           ) : (
             <>
-              <TouchableOpacity
+              <ActionTouchable
                 style={styles.primaryButton}
                 onPress={handleRetryInit}
                 disabled={retryInFlight}
@@ -325,15 +326,15 @@ export default function App() {
                 accessibilityLabel={translate('appInit.retryInitialization', 'Retry initialization')}
               >
                 <Text style={styles.primaryButtonText}>{translate('appInit.retry', 'Retry')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </ActionTouchable>
+              <ActionTouchable
                 style={styles.secondaryButton}
                 onPress={handleContinueDegraded}
                 accessibilityRole="button"
                 accessibilityLabel={translate('appInit.continueLimitedMode', 'Continue in limited mode')}
               >
                 <Text style={styles.secondaryButtonText}>{translate('appInit.continueLimitedMode', 'Continue in limited mode')}</Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             </>
           )}
         </View>

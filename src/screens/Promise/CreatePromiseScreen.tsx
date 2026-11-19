@@ -1,9 +1,9 @@
+import { ActionTouchable, PrimaryAction, SecondaryAction } from '../../components/ScreenActions';
 import React, { useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity,
     TextInput,
     ScrollView,
     Alert,
@@ -209,13 +209,13 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                 />
 
                 <View style={styles.header}>
-                    <TouchableOpacity
+                    <ActionTouchable
                         onPress={() => navigation.goBack()}
                         accessibilityRole="button"
                         accessibilityLabel={t('common.done')}
                     >
                         <Ionicons name="close" size={24} color={themeColors.textPrimary} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <Text style={[styles.headerTitle, { color: themeColors.textPrimary }]}>{t('promise.created')}</Text>
                     <View style={{ width: 24 }} />
                 </View>
@@ -250,10 +250,8 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.shareButton} onPress={handleSharePromise}>
-                        <Ionicons name="share-outline" size={20} color="white" />
-                        <Text style={styles.shareButtonTextPrimary}>{t('promise.shareLink')}</Text>
-                    </TouchableOpacity>
+                    <PrimaryAction label={t('promise.shareLink')} stockIcon="share-outline"
+                        onPress={handleSharePromise} style={styles.shareButton} />
 
                     {/* Promise Summary - Two sided */}
                     <View style={styles.summaryCard}>
@@ -277,16 +275,11 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         )}
                     </View>
 
-                    <TouchableOpacity
-                        style={styles.doneButton}
-                        onPress={handleDone}
-                    >
-                        <Text style={styles.doneButtonText}>{t('common.done')}</Text>
-                    </TouchableOpacity>
+                    <SecondaryAction label={t('common.done')} onPress={handleDone} />
 
-                    <TouchableOpacity style={styles.createAnotherButton} onPress={resetForm}>
+                    <ActionTouchable style={styles.createAnotherButton} onPress={resetForm}>
                         <Text style={styles.createAnotherButtonText}>{t('promise.createAnother')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </ScrollView>
             </SafeAreaView>
         );
@@ -310,7 +303,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                 <View style={styles.chooseContent}>
                     <Text style={styles.chooseTitle}>{t('promise.whatKind')}</Text>
 
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.bigOptionCard}
                         onPress={() => handleSelectDirection('owed_to_me')}
                         activeOpacity={0.7}
@@ -320,9 +313,9 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         </View>
                         <Text style={styles.bigOptionTitle}>{t('promise.theyOweMe')}</Text>
                         <Text style={styles.bigOptionExample}>{t('promise.theyOweMeExample')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
 
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.bigOptionCard}
                         onPress={() => handleSelectDirection('i_owe')}
                         activeOpacity={0.7}
@@ -332,7 +325,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         </View>
                         <Text style={styles.bigOptionTitle}>{t('promise.iOwe')}</Text>
                         <Text style={styles.bigOptionExample}>{t('promise.iOweExample')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </SafeAreaView>
         );
@@ -425,7 +418,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                 <Text style={styles.fieldLabel}>
                     {isTheyOweMe ? t('promise.whenShouldTheyPay') : t('promise.whenWillYouPay')}
                 </Text>
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.dueDateToggle}
                     onPress={() => setHasDueDate(!hasDueDate)}
                 >
@@ -435,11 +428,11 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                         color={hasDueDate ? COLORS.primary : COLORS.textSecondary}
                     />
                     <Text style={styles.dueDateToggleText}>{t('promise.setDate')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {hasDueDate && (
                     <>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.datePickerButton}
                             onPress={() => setShowDatePicker(!showDatePicker)}
                             activeOpacity={0.7}
@@ -451,7 +444,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                                 size={20}
                                 color={COLORS.textSecondary}
                             />
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         {showDatePicker && (
                             <View style={styles.datePickerContainer}>
@@ -476,21 +469,7 @@ const CreatePromiseScreen = ({ navigation }: any) => {
                     </Text>
                 </View>
 
-                {/* Create Button */}
-                <TouchableOpacity
-                    style={[styles.createButton, { backgroundColor: themeColors.primary }, loading && styles.createButtonDisabled]}
-                    onPress={handleCreate}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="white" />
-                    ) : (
-                        <>
-                            <Ionicons name="heart" size={20} color="white" />
-                            <Text style={styles.createButtonText}>{t('promise.createPromise')}</Text>
-                        </>
-                    )}
-                </TouchableOpacity>
+                <PrimaryAction label={t('promise.createPromise')} icon="promises" onPress={handleCreate} busy={loading} />
 
                 {/* Simple footer */}
                 <Text style={styles.footerText}>
@@ -656,24 +635,6 @@ const styles = StyleSheet.create({
         color: '#8B929E',
         lineHeight: 20,
     },
-    createButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: SPACING.l,
-        borderRadius: 28,
-        marginTop: SPACING.xl,
-        gap: SPACING.s,
-        backgroundColor: '#E8A838',
-    },
-    createButtonDisabled: {
-        opacity: 0.6,
-    },
-    createButtonText: {
-        color: '#0B0E14',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
     footerText: {
         fontSize: 14,
         color: '#8B929E',
@@ -689,23 +650,7 @@ const styles = StyleSheet.create({
     successIconContainer: {
         marginBottom: SPACING.l,
     },
-    shareButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: SPACING.s,
-        backgroundColor: '#E8A838',
-        paddingHorizontal: SPACING.xl,
-        paddingVertical: SPACING.m,
-        borderRadius: 28,
-        marginBottom: SPACING.l,
-        width: '100%',
-    },
-    shareButtonTextPrimary: {
-        color: '#0B0E14',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
+    shareButton: { marginBottom: SPACING.l, width: '100%' },
     qrTitle: {
         fontSize: 22,
         fontWeight: 'bold',
@@ -762,17 +707,6 @@ const styles = StyleSheet.create({
     },
     exchangeArrow: {
         paddingHorizontal: SPACING.xs,
-    },
-    doneButton: {
-        backgroundColor: '#E8A838',
-        paddingVertical: SPACING.l,
-        paddingHorizontal: SPACING.xxl,
-        borderRadius: 28,
-    },
-    doneButtonText: {
-        color: '#0B0E14',
-        fontSize: 16,
-        fontWeight: 'bold',
     },
     createAnotherButton: {
         paddingVertical: SPACING.m,

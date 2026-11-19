@@ -1,3 +1,4 @@
+import { ActionTouchable, ActionPressable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
 /**
@@ -7,7 +8,7 @@ import { withBiometricAction, type BiometricAction } from '../../core/security/b
  * the want closes). Reaching a poster is a thread anchored to the want.
  */
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView, Keyboard, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Alert, Modal, TextInput, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -248,19 +249,19 @@ export default function CommonsWants({ navigation, embedded = false, header }: P
                     <Text style={styles.draftText} numberOfLines={2}>{d.text}</Text>
                     <Text style={styles.meta}>{draftIsUncertain(d) ? t('commons.threadDraftUncertain') : d.failedAt ? t('commons.threadDraftNotSent') : t('commons.threadDraftWaiting')}</Text>
                     {d.failedAt || draftIsUncertain(d) ? (
-                      <TouchableOpacity style={styles.actionBtn} onPress={() => reach(w, d)} disabled={busy} accessibilityRole="button">
+                      <ActionTouchable style={styles.actionBtn} onPress={() => reach(w, d)} disabled={busy} accessibilityRole="button">
                         <Ionicons name="send" size={14} color={COLORS.primary} /><Text style={styles.actionText}>{t('commons.threadDraftSendNow')}</Text>
-                      </TouchableOpacity>
+                      </ActionTouchable>
                     ) : null}
                   </View>
                 );
               })()}
               <View style={styles.actions}>
                 {mine ? (
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => feature(w)} disabled={busy}><Ionicons name="star-outline" size={14} color={COLORS.warning} /><Text style={styles.actionText}>{t('overhaul.boost')}</Text></TouchableOpacity>
+                  <ActionTouchable style={styles.actionBtn} onPress={() => feature(w)} disabled={busy}><Ionicons name="star-outline" size={14} color={COLORS.warning} /><Text style={styles.actionText}>{t('overhaul.boost')}</Text></ActionTouchable>
                 ) : wantDrafts.has(w.want_id) ? null : (
                   // One kept answer per want: while it waits, the card shows it instead of Reach.
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => reach(w)} disabled={busy}><Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} /><Text style={styles.actionText}>{t('commons.wantReach')}</Text></TouchableOpacity>
+                  <ActionTouchable style={styles.actionBtn} onPress={() => reach(w)} disabled={busy}><Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} /><Text style={styles.actionText}>{t('commons.wantReach')}</Text></ActionTouchable>
                 )}
               </View>
             </View>
@@ -269,46 +270,46 @@ export default function CommonsWants({ navigation, embedded = false, header }: P
         </View>
       </ScrollView>
       {profile && !embedded && (
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setShowPost(true)} accessibilityRole="button" accessibilityLabel={t('commonsHome.postRequest')}>
+        <ActionTouchable style={styles.fab} activeOpacity={0.8} onPress={() => setShowPost(true)} accessibilityRole="button" accessibilityLabel={t('commonsHome.postRequest')}>
           <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-          <Ionicons name="add" size={22} color={COLORS.text} />
+          <Ionicons name="add" size={22} color={COLORS.onPrimary} />
           <Text style={styles.fabText}>{t('commonsHome.postRequest')}</Text>
-        </TouchableOpacity>
+        </ActionTouchable>
       )}
       <FeaturedBidSheet visible={bidWant !== null} busy={busy} onClose={() => setBidWant(null)} onConfirm={(pvt) => { void placeBid(pvt); }} />
       <Modal visible={showPost} animationType="slide" transparent>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
+          <ActionPressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
           <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('commons.wantPostTitle')}</Text>
-              <TouchableOpacity onPress={() => setShowPost(false)}><Ionicons name="close" size={24} color={COLORS.text} /></TouchableOpacity>
+              <ActionTouchable onPress={() => setShowPost(false)}><Ionicons name="close" size={24} color={COLORS.text} /></ActionTouchable>
             </View>
             <Text style={styles.modalHint}>{t('commons.wantPostHint')}</Text>
             <TextInput style={styles.modalInput} placeholder={t('commons.wantOutcomePlaceholder')} placeholderTextColor={COLORS.textTertiary} value={outcome} onChangeText={setOutcome} multiline />
             <TextInput style={styles.modalInput} placeholder={t('commons.wantCapsPlaceholder')} placeholderTextColor={COLORS.textTertiary} value={caps} onChangeText={setCaps} autoCapitalize="none" />
             <TextInput style={styles.modalInput} placeholder={t('commons.wantBudgetPlaceholder')} placeholderTextColor={COLORS.textTertiary} value={budget} onChangeText={setBudget} keyboardType="decimal-pad" testID="want-budget" />
             {!budgetParse.ok && <Text style={styles.fieldError}>{t('commons.wantBudgetInvalid')}</Text>}
-            <TouchableOpacity style={[styles.submitButton, (busy || !outcome.trim() || !caps.trim() || !budgetParse.ok) && styles.disabled]} onPress={submitWant} disabled={busy || !outcome.trim() || !caps.trim() || !budgetParse.ok}>
-              {busy ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.submitButtonText}>{t('commons.wantPostSubmit')}</Text>}
-            </TouchableOpacity>
+            <ActionTouchable style={[styles.submitButton, (busy || !outcome.trim() || !caps.trim() || !budgetParse.ok) && styles.disabled]} onPress={submitWant} disabled={busy || !outcome.trim() || !caps.trim() || !budgetParse.ok}>
+              {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.submitButtonText}>{t('commons.wantPostSubmit')}</Text>}
+            </ActionTouchable>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
       <Modal visible={reachWant !== null} animationType="slide" transparent onRequestClose={() => setReachWant(null)}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
+          <ActionPressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
           <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('commons.wantReachTitle')}</Text>
-              <TouchableOpacity onPress={() => setReachWant(null)} accessibilityRole="button" accessibilityLabel={t('common.cancel')}><Ionicons name="close" size={24} color={COLORS.text} /></TouchableOpacity>
+              <ActionTouchable onPress={() => setReachWant(null)} accessibilityRole="button" accessibilityLabel={t('common.cancel')}><Ionicons name="close" size={24} color={COLORS.text} /></ActionTouchable>
             </View>
             {reachWant && <Text style={styles.reachQuote} numberOfLines={3}>{reachWant.outcome}</Text>}
             <Text style={styles.modalHint}>{t('commons.wantReachBody')}</Text>
             <TextInput style={[styles.modalInput, { minHeight: 110 }]} placeholder={t('commonsHome.reachPlaceholder')} placeholderTextColor={COLORS.textTertiary} value={reachText} onChangeText={setReachText} multiline textAlignVertical="top" autoFocus />
-            <TouchableOpacity style={[styles.submitButton, (busy || !reachText.trim()) && styles.disabled]} onPress={sendReach} disabled={busy || !reachText.trim()}>
-              {busy ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.submitButtonText}>{t('commonsHome.reachSend')}</Text>}
-            </TouchableOpacity>
+            <ActionTouchable style={[styles.submitButton, (busy || !reachText.trim()) && styles.disabled]} onPress={sendReach} disabled={busy || !reachText.trim()}>
+              {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.submitButtonText}>{t('commonsHome.reachSend')}</Text>}
+            </ActionTouchable>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   draftText: { color: COLORS.text, fontSize: 13 },
   actionText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
   fab: { position: 'absolute', right: SPACING.l, bottom: SPACING.xl, height: 52, paddingHorizontal: SPACING.m + 2, borderRadius: 26, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  fabText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
+  fabText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
   reachQuote: { color: COLORS.text, fontSize: 14, fontStyle: 'italic', lineHeight: 20, borderLeftWidth: 2, borderLeftColor: COLORS.primary, paddingLeft: SPACING.s },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalBackdrop: { flex: 1 },
@@ -351,6 +352,6 @@ const styles = StyleSheet.create({
   modalInput: { backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.m, padding: SPACING.m, color: COLORS.text, fontSize: 15 },
   fieldError: { color: COLORS.error, fontSize: 13, marginTop: -SPACING.xs },
   submitButton: { marginTop: SPACING.s, backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.m, padding: SPACING.m, alignItems: 'center' },
-  submitButtonText: { color: COLORS.text, fontSize: 15, fontWeight: '600' },
+  submitButtonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
   disabled: { opacity: 0.5 },
 });

@@ -1,10 +1,11 @@
 import { AppMenu } from '../../components/AppMenu';
+import { ActionTouchable, actionStyles, DestinationRow, PrimaryAction } from '../../components/ScreenActions';
 import BackButton from '../../components/BackButton';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, AppState, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, Animated, AppState, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -150,18 +151,6 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
     const fiatTotal = portfolioTotal(walletAssets);
     const fiatTotalAge = totalAgeLabel(fiatTotal, t);
 
-    // Chain accent colors for the asset card's left rail
-    const getChainColor = (chain: string): string => {
-        const chainColors: Record<string, string> = {
-            Ethereum: '#627EEA',
-            Base: '#0052FF',
-            Arbitrum: '#28A0F0',
-            Optimism: '#FF0420',
-            Solana: '#14F195',
-        };
-        return chainColors[chain] || COLORS.primary;
-    };
-
     // N-4: Real queue sync - warn user that queued txs require re-signing since
     // we can't persist signed raw transactions (private key would need to be
     // held in memory). Clearing the queue is the correct behavior because the
@@ -203,7 +192,7 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                     <View style={{ flexShrink: 1 }}>
                         <Text accessibilityRole="header" style={[styles.assetTitle, { color: themeColors.textPrimary }]}>{t('overhaul.assetsAndHistory')}</Text>
                         {userName ? <Text style={[styles.username, { color: themeColors.textPrimary }]} numberOfLines={1}>{userName}</Text> : !!address && (
-                            <TouchableOpacity
+                            <ActionTouchable
                                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}
                                 onPress={async () => {
                                     await Clipboard.setStringAsync(address);
@@ -221,20 +210,20 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                                     {addressCopied ? t('dashboard.copied') : `${address.slice(0, 6)}...${address.slice(-4)}`}
                                 </Text>
                                 {!addressCopied && <Ionicons name="copy-outline" size={14} color={COLORS.textMuted} />}
-                            </TouchableOpacity>
+                            </ActionTouchable>
                         )}
                     </View>
                 </View>
                 <View style={styles.headerRight}>
                     {isLockdownActive && (
-                        <TouchableOpacity onPress={() => navigation.navigate('Lockdown')}>
+                        <ActionTouchable onPress={() => navigation.navigate('Lockdown')}>
                             <View style={[styles.statusBadge, { backgroundColor: COLORS.error }]}>
                                 <Text style={styles.statusText}>{t('dashboard.lockdownBadge')}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     )}
                     {/* attention bell: one tap to everything needing action, badge-counted. */}
-                    <TouchableOpacity
+                    <ActionTouchable
                         style={styles.bellBtn}
                         onPress={() => navigation.navigate('AttentionCenter')}
                         accessibilityRole="button"
@@ -246,10 +235,10 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                                 <Text style={styles.bellBadgeText}>{attentionCount > 9 ? '9+' : attentionCount}</Text>
                             </View>
                         )}
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('ProfileEdit')}>
+                    </ActionTouchable>
+                    <ActionTouchable style={styles.profileBtn} onPress={() => navigation.navigate('ProfileEdit')}>
                         <Ionicons name="person" size={20} color={COLORS.text} />
-                    </TouchableOpacity>
+                    </ActionTouchable>
                     <AppMenu />
                 </View>
             </View>
@@ -274,10 +263,10 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
 
                 {/* Sync Button */}
                 {!isOffline && transactionQueue.length > 0 && (
-                    <TouchableOpacity style={styles.syncButton} onPress={handleSync}>
+                    <ActionTouchable style={styles.syncButton} onPress={handleSync}>
                         <Ionicons name="sync" size={20} color="white" />
                         <Text style={styles.syncText}>{t('offline.sync', { count: transactionQueue.length })}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 )}
 
 
@@ -310,122 +299,32 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                     </View>
                 </View>
 
-                {/* 5. Quick Actions grid */}
-                <View style={styles.quickActionsGrid}>
-                    <TouchableOpacity style={styles.quickActionCell} onPress={() => navigation.navigate('Send')} activeOpacity={0.7}>
-                        <View style={styles.quickActionIcon}>
-                            <Ionicons name="arrow-up" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[styles.quickActionCellLabel, { color: themeColors.textPrimary }]}>{t('dashboard.send')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.quickActionCell} onPress={() => navigation.navigate('Receive')} activeOpacity={0.7}>
-                        <View style={styles.quickActionIcon}>
-                            <Ionicons name="arrow-down" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[styles.quickActionCellLabel, { color: themeColors.textPrimary }]}>{t('dashboard.receive')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.quickActionCell} onPress={() => navigation.navigate('Swap')} activeOpacity={0.7}>
-                        <View style={styles.quickActionIcon}>
-                            <Ionicons name="swap-horizontal" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[styles.quickActionCellLabel, { color: themeColors.textPrimary }]}>{t('dashboard.swap')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.quickActionCell} onPress={() => navigation.navigate('WalletConnect')} activeOpacity={0.7}>
-                        <View style={styles.quickActionIcon}>
-                            <Ionicons name="scan" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[styles.quickActionCellLabel, { color: themeColors.textPrimary }]}>{t('walletConnect.connect')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.quickActionCell} onPress={() => navigation.navigate('BuyCrypto')} activeOpacity={0.7}>
-                        <View style={styles.quickActionIcon}>
-                            <Ionicons name="card-outline" size={20} color={COLORS.primary} />
-                        </View>
-                        <Text style={[styles.quickActionCellLabel, { color: themeColors.textPrimary }]}>{t('dashboard.buy')}</Text>
-                    </TouchableOpacity>
-                    {/* Empty third column keeps the second row on the 3-column grid under space-between. */}
-                    <View style={styles.quickActionSpacer} />
+                <View style={styles.assetActions}>
+                    <PrimaryAction label={t('dashboard.send')} icon="send" onPress={() => navigation.navigate('Send')} />
+                    <DestinationRow label={t('dashboard.receive')} icon="receive" onPress={() => navigation.navigate('Receive')} />
+                    <DestinationRow label={t('dashboard.swap')} stockIcon="swap-horizontal-outline" onPress={() => navigation.navigate('Swap')} />
+                    <DestinationRow label={t('walletConnect.connect')} icon="scan" onPress={() => navigation.navigate('WalletConnect')} />
+                    <DestinationRow label={t('dashboard.buy')} stockIcon="card-outline" onPress={() => navigation.navigate('BuyCrypto')} />
                 </View>
-
-                {/* [F19] DEV "Test Agent Transaction" button removed — it was the
-                    only route that constructed Send with isAgentInitiated, driving an
-                    agent-attributed on-chain send through first-party TransactionService
-                    that bypassed evaluateCryptoTransaction and the shelved-crypto guard. */}
 
                 {/* 7. Assets section */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>{t('dashboard.assets')}</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.assetList}>
-                        {/* PVT9 now renders as a real, sendable asset card inside the
-                            walletAssets loop below, fed by the relay balance
-                            reader. The former informational "not deployed" tile is gone. */}
-                        {walletAssets.length === 0 && !isLoadingBalances && (
-                            <View style={{ padding: SPACING.xl, alignItems: 'center' }}>
-                                <Ionicons name="wallet-outline" size={40} color={themeColors.textMuted} />
-                                <Text style={{ color: themeColors.textSecondary, marginTop: SPACING.m, fontSize: 15, textAlign: 'center' }}>{t('dashboard.noOtherAssets')}</Text>
-                            </View>
-                        )}
-                        {walletAssets.map((asset) => {
-                            // Composite key: the same symbol (ETH, USDC, WETH) appears
-                            // on multiple chains, so keying by symbol alone collides
-                            // and triggers React's "two children with the same key"
-                            // warning. chain:symbol is stable and unique per row.
-                            //
-                            // PVT is the value token: it leads the row (sorted first
-                            // above) and wears the PLATINUM asset treatment — elevated
-                            // surface, platinum left-rail, thicker accent — so it reads
-                            // as the asset's proof mark, not just another ERC-20. The
-                            // tokens are the same COLORS.platinum* the coin (PVTIcon)
-                            // draws: PLATINUM OWNS THE ASSET (theme.ts header rule).
-                            const isPvtCard = asset.isPVT === true;
-                            return (
-                            <View key={`${asset.chain}:${asset.symbol}`} style={[styles.assetCard, {
-                                backgroundColor: isPvtCard ? COLORS.surfaceHighlight : themeColors.cardBackground,
-                                borderColor: isPvtCard ? COLORS.platinumMuted : themeColors.border,
-                            }]}>
-                                {/* Accent rail is an inset bar, not a thick left border: a wide
-                                    left border on a rounded card renders as a crescent. */}
-                                <View style={[styles.assetRail, {
-                                    backgroundColor: isPvtCard ? COLORS.platinum : getChainColor(asset.chain),
-                                    width: isPvtCard ? 4 : 3,
-                                }]} />
-                                <View style={styles.assetHeader}>
-                                    <TokenIcon
-                                        symbol={asset.symbol}
-                                        size={36}
-                                        chain={asset.chain}
-                                        showChainBadge={true}
-                                        style={styles.assetIcon}
-                                    />
-                                    <View>
-                                        <Text style={[styles.assetSymbol, { color: themeColors.textPrimary }]}>{asset.symbol}</Text>
-                                        <Text style={[styles.assetChain, { color: themeColors.textSecondary }]}>{asset.chain}</Text>
-                                    </View>
-                                </View>
-                                <Text style={[styles.assetBalance, { color: isPvtCard ? COLORS.platinum : themeColors.textPrimary }]}>{displayBalance(asset.balance)}</Text>
-                                {asset.isPVT ? (
-                                    // PVT has no USD price oracle — show the token name
-                                    // instead of a misleading "$0.00" fiat value.
-                                    <Text style={[styles.assetValue, { color: themeColors.textSecondary }]}>
-                                        {t('dashboard.pvtTokenName')}
-                                        {pvtBalanceStatus === 'updating' ? ` · ${t('dashboard.pvtUpdating')}`
-                                            : pvtBalanceStatus === 'outdated' ? ` · ${t('dashboard.balanceOutdated')}` : ''}
-                                    </Text>
-                                ) : (
-                                    <Text style={[styles.assetValue, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                                        {formatUsd(assetUsdValue(asset))}
-                                        {(assetUsdValue(asset) ?? 0) > 0 && priceAgeLabel(asset, t) ? ` · ${priceAgeLabel(asset, t)}` : ''}
-                                    </Text>
-                                )}
-                                {asset.isStablecoin && (
-                                    <View style={styles.stableBadge}>
-                                        <Ionicons name="shield-checkmark" size={12} color={COLORS.success} />
-                                        <Text style={styles.stableText}>{t('dashboard.stable')}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            );
-                        })}
-                    </ScrollView>
+                    {walletAssets.length === 0 && !isLoadingBalances && (
+                        <DestinationRow label={t('dashboard.noOtherAssets')} stockIcon="wallet-outline" />
+                    )}
+                    {walletAssets.map((asset) => {
+                        const detail = asset.isPVT
+                            ? [asset.chain, pvtBalanceStatus === 'updating' ? t('dashboard.pvtUpdating')
+                                : pvtBalanceStatus === 'outdated' ? t('dashboard.balanceOutdated') : null]
+                            : [asset.chain, formatUsd(assetUsdValue(asset)), priceAgeLabel(asset, t)];
+                        return <DestinationRow key={`${asset.chain}:${asset.symbol}`}
+                            label={asset.symbol} detail={detail.filter(Boolean).join(' · ')}
+                            leading={<TokenIcon symbol={asset.symbol} size={33} chain={asset.chain} showChainBadge />}
+                            end={<Text style={[styles.assetBalance, actionStyles.money, asset.isPVT && styles.pvtBalance]}>
+                                {displayBalance(asset.balance)}
+                            </Text>} />;
+                    })}
 
                 </View>
 
@@ -439,9 +338,9 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>{t('dashboard.recentActivity')}</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
+                        <ActionTouchable onPress={() => navigation.navigate('TransactionHistory')}>
                             <Text style={[styles.seeAll, { color: themeColors.primary }]}>{t('dashboard.seeAll')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                     {/*
                       Approval-scan status banner: honest signal that the
@@ -519,7 +418,7 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                                             ? 'swap-horizontal'
                                             : 'checkmark-circle-outline';
                             return (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     key={tx.id}
                                     style={[styles.historyItem, {
                                         backgroundColor: themeColors.cardBackground,
@@ -539,14 +438,14 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                                 <Text style={[styles.historyTitle, { color: themeColors.textPrimary }]}>{title}</Text>
                                         <Text style={[styles.historyDate, { color: themeColors.textMuted }]} numberOfLines={1}>{subtitle}</Text>
                                     </View>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             );
                         })
                     )}
                 </View>
 
                 {/* 9. Settings Row */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.settingsRow}
                     onPress={() => navigation.navigate('Settings')}
                     activeOpacity={0.7}
@@ -555,7 +454,7 @@ const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'D
                     <Text style={styles.settingsRowText}>{t('dashboard.settingsSecurity')}</Text>
                     <View style={{ flex: 1 }} />
                     <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </ActionTouchable>
             </ScrollView>
         </SafeAreaView>
     );
@@ -567,6 +466,7 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.background,
     },
+    assetActions: { marginBottom: SPACING.l },
     scrollContent: {
         padding: SPACING.m,
         paddingBottom: 120,
@@ -833,39 +733,6 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     // Quick Actions - horizontal pill strip
-    quickActionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginBottom: SPACING.xl,
-        rowGap: SPACING.s,
-    },
-    quickActionSpacer: {
-        width: '31.5%',
-    },
-    quickActionCell: {
-        width: '31.5%',
-        alignItems: 'center',
-        paddingVertical: 14,
-        borderRadius: 18,
-        backgroundColor: 'rgba(17,24,39,0.85)',
-        borderWidth: 1,
-        borderColor: 'rgba(200,205,214,0.10)',
-        borderTopColor: 'rgba(200,205,214,0.18)',
-    },
-    quickActionIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(74,142,232,0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 8,
-    },
-    quickActionCellLabel: {
-        fontSize: 12,
-        fontWeight: '600',
-    },
 
     // DEV button
     devButton: {
@@ -918,78 +785,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 13,
     },
-    assetList: {
-        flexGrow: 0,
-        marginHorizontal: -SPACING.m,
-        paddingHorizontal: SPACING.m,
-    },
-    assetCard: {
-        backgroundColor: 'rgba(17,24,39,0.85)',
-        padding: SPACING.m,
-        borderRadius: 20,
-        marginRight: SPACING.m,
-        minWidth: 200,
-        maxWidth: 280,
-        // [Layout fix] Ensure asset cards in the horizontal scroller hold
-        // their min/max width regardless of parent flex constraints.
-        flexShrink: 0,
-        borderWidth: 1,
-        borderColor: 'rgba(200,205,214,0.10)',
-        borderTopColor: 'rgba(200,205,214,0.18)',
-        ...SHADOWS.small,
-    },
-    assetRail: {
-        position: 'absolute',
-        left: 0,
-        top: SPACING.m,
-        bottom: SPACING.m,
-        borderTopRightRadius: 2,
-        borderBottomRightRadius: 2,
-    },
-    assetHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.m,
-    },
-    assetIcon: {
-        marginRight: SPACING.s,
-    },
-    assetSymbol: {
-        color: COLORS.text,
-        fontWeight: 'bold',
-        fontSize: 15,
-    },
-    assetChain: {
-        color: COLORS.textSecondary,
-        fontSize: 11,
-    },
-    assetBalance: {
-        fontVariant: ['tabular-nums'],
-        color: COLORS.text,
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 2,
-    },
-    assetValue: {
-        color: COLORS.textSecondary,
-        fontSize: 13,
-    },
-    stableBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: SPACING.s,
-        backgroundColor: COLORS.successMuted,
-        paddingHorizontal: 6,
-        paddingVertical: 4,
-        borderRadius: 6,
-        alignSelf: 'flex-start',
-    },
-    stableText: {
-        color: COLORS.success,
-        fontSize: 10,
-        marginLeft: 4,
-        fontWeight: 'bold',
-    },
+    assetBalance: { color: COLORS.text, fontSize: 17, fontWeight: '700', flexShrink: 1 },
+    pvtBalance: { color: COLORS.platinum },
+
     // Recent Activity
     historyItem: {
         flexDirection: 'row',

@@ -1,5 +1,6 @@
+import { ActionTouchable } from './ScreenActions';
 import React from 'react';
-import { TouchableOpacity, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, BORDER_RADIUS } from '../constants/theme';
@@ -24,7 +25,7 @@ export default function BackButton({
 }): React.JSX.Element {
     const { t } = useTranslation();
     return (
-        <TouchableOpacity
+        <ActionTouchable
             style={[styles.button, style]}
             onPress={onPress}
             activeOpacity={0.7}
@@ -33,7 +34,7 @@ export default function BackButton({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
             <Ionicons name="arrow-back" size={22} color={color} />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 }
 

@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { type BiometricAction } from '../../core/security/biometricAction';
 import { withBiometricOrFallback } from '../../core/security/biometricOrFallback';
@@ -8,7 +9,6 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity,
     Alert,
     ActivityIndicator,
     StyleSheet,
@@ -450,29 +450,29 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                         </View>
                         <Text style={styles.restoreRetryTitle}>{t('recovery.historyRestoreTitle')}</Text>
                         <Text style={styles.subtitle}>{t('recovery.historyRestoreBody')}</Text>
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.restoreButton, historyRestore === 'restoring' && styles.restoreButtonDisabled]}
                             onPress={handleRetryHistory}
                             disabled={historyRestore === 'restoring'}
                             activeOpacity={0.8}
                         >
                             {historyRestore === 'restoring' ? (
-                                <ActivityIndicator color={COLORS.white} size="small" />
+                                <ActivityIndicator color={COLORS.onPrimary} size="small" />
                             ) : (
                                 <>
-                                    <Ionicons name="finger-print" size={20} color={COLORS.white} />
+                                    <Ionicons name="finger-print" size={20} color={COLORS.onPrimary} />
                                     <Text style={styles.restoreButtonText}>{t('recovery.historyRestoreRetry')}</Text>
                                 </>
                             )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.overwriteCancelButton}
                             onPress={handleSkipHistory}
                             disabled={historyRestore === 'restoring'}
                             activeOpacity={0.8}
                         >
                             <Text style={styles.overwriteCancelButtonText}>{t('recovery.historyRestoreSkip')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 ) : overwriteState.kind === 'idle' ? (
                     <>
@@ -484,7 +484,7 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
 
                         <View style={styles.toggleRow}>
                             {WORD_COUNTS.map((count) => (
-                                <TouchableOpacity
+                                <ActionTouchable
                                     key={count}
                                     style={[
                                         styles.toggleButton,
@@ -501,18 +501,18 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                                     >
                                         {t('importRecovery.wordCount', { count })}
                                     </Text>
-                                </TouchableOpacity>
+                                </ActionTouchable>
                             ))}
                         </View>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={styles.pasteButton}
                             onPress={handlePasteFromClipboard}
                             disabled={loading}
                         >
                             <Ionicons name="clipboard-outline" size={16} color={COLORS.primaryLight} />
                             <Text style={styles.pasteText}>{t('importRecovery.pasteClipboard')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
 
                         <View style={styles.grid}>{rows}</View>
 
@@ -523,20 +523,20 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                             </Text>
                         </View>
 
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[styles.restoreButton, (!allFilled || loading) && styles.restoreButtonDisabled]}
                             onPress={handleRestore}
                             disabled={!allFilled || loading}
                             activeOpacity={0.8}
                         >
                             {loading ? (
-                                <ActivityIndicator color={COLORS.white} size="small" />
+                                <ActivityIndicator color={COLORS.onPrimary} size="small" />
                             ) : (
                                 <>
                                     <Ionicons
                                         name="download-outline"
                                         size={20}
-                                        color={allFilled ? COLORS.white : COLORS.textTertiary}
+                                        color={allFilled ? COLORS.onPrimary : COLORS.textTertiary}
                                     />
                                     <Text
                                         style={[
@@ -548,7 +548,7 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                                     </Text>
                                 </>
                             )}
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </>
                 ) : (
                     // B-1 sibling fix (2026-05-12): destructive-action gate.
@@ -583,7 +583,7 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                                 <Text style={styles.errorText}>{confirmError}</Text>
                             </View>
                         )}
-                        <TouchableOpacity
+                        <ActionTouchable
                             style={[
                                 styles.overwriteDangerButton,
                                 (confirmText !== REQUIRED_CONFIRMATION_PHRASE ||
@@ -601,15 +601,15 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
                             ) : (
                                 <Text style={styles.overwriteDangerButtonText}>{t('recovery.replaceWallet')}</Text>
                             )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </ActionTouchable>
+                        <ActionTouchable
                             style={styles.overwriteCancelButton}
                             onPress={handleCancelOverwrite}
                             disabled={overwriteState.kind === 'applying'}
                             activeOpacity={0.8}
                         >
                             <Text style={styles.overwriteCancelButtonText}>{t('recovery.cancelKeepCurrentWallet')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                     </View>
                 )}
             </ScrollView>
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
         color: COLORS.textSecondary,
     },
     toggleTextActive: {
-        color: COLORS.white,
+        color: COLORS.onPrimary,
     },
     pasteButton: {
         flexDirection: 'row',
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
     restoreButtonText: {
         fontSize: 16,
         fontWeight: '600',
-        color: COLORS.white,
+        color: COLORS.onPrimary,
         marginLeft: SPACING.s,
     },
     restoreButtonTextDisabled: {

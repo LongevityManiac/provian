@@ -24,6 +24,7 @@ import {
 } from './types';
 import { computeWalletAttestationTier } from './wallet-reads';
 import { countVisibleAgentPEs } from '../agent-wallet/agent-pe-activity';
+import { readActorPeTotals } from '../meter/owner-reads';
 import { isTestPlatformWallet } from '../pvt/genesis-award-state-machine';
 import { isHiddenPrelaunchTest } from './public-visibility';
 import { isHiddenAccount, loadHiddenAccounts } from './hidden-accounts';
@@ -682,7 +683,7 @@ export async function getProfile(
       walletDoc.exists && typeof walletDoc.data()?.agent_id === 'string'
         ? (walletDoc.data()!.agent_id as string)
         : null;
-    profile.pe_count = await countVisibleAgentPEs(deps.db, agentId ?? walletId);
+    Object.assign(profile, await liveRecordCounts(deps, agentId ?? walletId));
   } catch (err) {
     console.warn('[Commons] live pe_count refresh failed; using stored snapshot', err);
   }
@@ -698,16 +699,21 @@ export async function getProfile(
  * getProfile does (agent → agent_id, human → walletId). Display-only: a read
  * failure keeps the stored snapshot.
  */
-async function livePeCount(deps: CommonsDeps, profile: CommonsProfile): Promise<number> {
+async function liveRecordCounts(deps: CommonsDeps, actorId: string): Promise<{ pe_count: number; promises_kept: number }> {
+  const totals = await readActorPeTotals(deps.db, [actorId]);
+  return { pe_count: totals.peCount, promises_kept: totals.byType.promise_fulfilled ?? 0 };
+}
+
+async function withLiveRecordCounts(deps: CommonsDeps, profile: CommonsProfile): Promise<CommonsProfile> {
   try {
     const walletDoc = await deps.db.collection('agent_wallets').doc(profile.wallet_id).get();
     const agentId =
       walletDoc.exists && typeof walletDoc.data()?.agent_id === 'string'
         ? (walletDoc.data()!.agent_id as string)
         : null;
-    return await countVisibleAgentPEs(deps.db, agentId ?? profile.wallet_id);
+    return { ...profile, ...await liveRecordCounts(deps, agentId ?? profile.wallet_id) };
   } catch {
-    return profile.pe_count;
+    return profile;
   }
 }
 
@@ -717,8 +723,7 @@ async function withLivePeCounts(deps: CommonsDeps, profiles: CommonsProfile[]): 
   const out: CommonsProfile[] = [];
   for (let i = 0; i < profiles.length; i += LIVE_COUNT_CONCURRENCY) {
     const chunk = profiles.slice(i, i + LIVE_COUNT_CONCURRENCY);
-    const counts = await Promise.all(chunk.map((p) => livePeCount(deps, p)));
-    chunk.forEach((p, j) => out.push({ ...p, pe_count: counts[j] }));
+    out.push(...await Promise.all(chunk.map((p) => withLiveRecordCounts(deps, p))));
   }
   return out;
 }

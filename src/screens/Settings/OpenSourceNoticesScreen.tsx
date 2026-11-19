@@ -5,8 +5,9 @@
  * generated at build time (scripts/generate-oss-notices.mjs); a stale list fails
  * `npm run check:copy`.
  */
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, type ListRenderItem } from 'react-native';
+import { View, Text, StyleSheet, FlatList, type ListRenderItem } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +30,7 @@ const OpenSourceNoticesScreen = ({ navigation }: { navigation: { goBack: () => v
         const text = expanded ? noticeText(item) : null;
         const lineKey = expanded ? noticeLineKey(item) : null;
         return (
-            <TouchableOpacity
+            <ActionTouchable
                 style={styles.card}
                 onPress={() => setOpen(expanded ? null : key)}
                 activeOpacity={0.7}
@@ -49,7 +50,7 @@ const OpenSourceNoticesScreen = ({ navigation }: { navigation: { goBack: () => v
                 {expanded && lineKey !== null && (
                     <Text style={styles.licenseText}>{t(lineKey, { license: item.license })}</Text>
                 )}
-            </TouchableOpacity>
+            </ActionTouchable>
         );
     }, [open, t]);
 

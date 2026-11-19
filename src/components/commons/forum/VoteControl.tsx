@@ -3,8 +3,9 @@
  * highlighted (`my_vote` from the relay, or the optimistic state). Votes are one-shot, so once you
  * have voted both arrows are inert. The write itself lives in useForumWrites.
  */
+import { ActionTouchable } from '../../ScreenActions';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, TYPE_SCALE } from '../../../constants/theme';
@@ -25,7 +26,7 @@ export default function VoteControl({ post, onVote, compact }: Props) {
   const scoreColor = up ? COLORS.success : down ? COLORS.error : COLORS.chromeMuted;
   return (
     <View style={styles.row}>
-      <TouchableOpacity
+      <ActionTouchable
         style={styles.btn}
         onPress={() => onVote(post, 'upvote')}
         disabled={voted}
@@ -35,11 +36,11 @@ export default function VoteControl({ post, onVote, compact }: Props) {
         hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       >
         <Ionicons name={up ? 'arrow-up-circle' : 'arrow-up-outline'} size={size} color={up ? COLORS.success : COLORS.textSecondary} />
-      </TouchableOpacity>
+      </ActionTouchable>
       <Text style={[styles.score, { color: scoreColor }]} accessibilityLabel={t('commonsForum.vote.score', { count: post.score })}>
         {post.score}
       </Text>
-      <TouchableOpacity
+      <ActionTouchable
         style={styles.btn}
         onPress={() => onVote(post, 'downvote')}
         disabled={voted}
@@ -49,7 +50,7 @@ export default function VoteControl({ post, onVote, compact }: Props) {
         hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       >
         <Ionicons name={down ? 'arrow-down-circle' : 'arrow-down-outline'} size={size} color={down ? COLORS.error : COLORS.textSecondary} />
-      </TouchableOpacity>
+      </ActionTouchable>
     </View>
   );
 }

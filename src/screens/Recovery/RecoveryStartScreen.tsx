@@ -6,8 +6,9 @@
  *   2. Recovery Phrase (fallback): Manual 12/24 word seed entry. Offline escape hatch when cloud backup is unavailable or the user prefers seed-only recovery.
  */
 
+import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,7 +68,7 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                 </Text>
 
                 {/* Option 1: Cloud Recovery */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.optionCard}
                     onPress={handleCloudRecovery}
                     activeOpacity={0.7}
@@ -87,10 +88,10 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                     <View style={styles.recommendedBadge}>
                         <Text style={styles.recommendedText}>{t('recoveryStart.recommendedBadge')}</Text>
                     </View>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {/* Option 2: Recovery Phrase */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.optionCard}
                     onPress={handleSeedPhraseRecovery}
                     activeOpacity={0.7}
@@ -107,16 +108,16 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
                     </View>
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {/* Help link */}
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.helpLink}
                     onPress={() => navigation.navigate('HelpSupport')}
                     activeOpacity={0.7}
                 >
                     <Text style={styles.helpText}>{t('recoveryStart.helpLink')}</Text>
-                </TouchableOpacity>
+                </ActionTouchable>
             </View>
         </SafeAreaView>
     );

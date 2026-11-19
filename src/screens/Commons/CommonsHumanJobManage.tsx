@@ -1,3 +1,4 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
@@ -28,7 +29,6 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -626,7 +626,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
             {isPoster ? t('commonsHumanJobManage.roleNotePoster') : isWorker ? t('commonsHumanJobManage.roleNoteWorker') : t('commonsHumanJobManage.roleNoteNone')}
           </Text>
           {counterpartWallet ? (
-            <TouchableOpacity
+            <ActionTouchable
               style={styles.messageLink}
               onPress={() => openJobThread(counterpartWallet)}
               accessibilityRole="button"
@@ -635,7 +635,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
               <Text style={styles.messageLinkText}>
                 {isPoster ? t('commonsHome.messageWorker') : t('commonsHome.messagePoster')}
               </Text>
-            </TouchableOpacity>
+            </ActionTouchable>
           ) : null}
         </View>
 
@@ -677,7 +677,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
             ) : (
               applicants.map((app) => (
                 <View key={app.application_id} style={styles.applicantCard}>
-                  <TouchableOpacity
+                  <ActionTouchable
                     style={{ flex: 1 }}
                     onPress={() => navigation.navigate('CommonsProfile', { walletId: app.applicant_wallet_id })}
                     accessibilityRole="button"
@@ -699,24 +699,24 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
                         “{app.cover_note}”
                       </Text>
                     ) : null}
-                  </TouchableOpacity>
+                  </ActionTouchable>
                   <View style={styles.applicantActions}>
-                    <TouchableOpacity
+                    <ActionTouchable
                       style={styles.iconButton}
                       onPress={() => openJobThread(app.applicant_wallet_id, app.applicant?.display_name)}
                       accessibilityRole="button"
                       accessibilityLabel={t('commonsJobs.messageApplicant')}
                     >
                       <Ionicons name="chatbubbles-outline" size={18} color={COLORS.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </ActionTouchable>
+                    <ActionTouchable
                       style={[styles.smallButton, busy && styles.buttonDisabled]}
                       disabled={busy}
                       onPress={() => handleAccept(app.applicant_wallet_id, app.applicant?.display_name)}
                       activeOpacity={0.8}
                     >
                       <Text style={styles.smallButtonText}>{t('commonsHumanJobManage.accept')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                   </View>
                 </View>
               ))
@@ -886,14 +886,14 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
                   <Text style={styles.sectionSubTitle}>{t('commonsHumanJobManage.rateOtherPerson')}</Text>
                   <View style={styles.starRow}>
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <TouchableOpacity key={star} onPress={() => setRatingValue(star)} activeOpacity={0.7}>
+                      <ActionTouchable key={star} onPress={() => setRatingValue(star)} activeOpacity={0.7}>
                         <Ionicons
                           name={star <= ratingValue ? 'star' : 'star-outline'}
                           size={28}
                           color={ACCENT}
                           style={{ marginRight: SPACING.xs }}
                         />
-                      </TouchableOpacity>
+                      </ActionTouchable>
                     ))}
                   </View>
                   <TextInput
@@ -917,7 +917,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
       <EscrowAdminAckSheet visible={showEscrowAck} onClose={() => setShowEscrowAck(false)} onAcknowledge={() => { void acknowledgeEscrowAdmin(); }} />
       <Modal visible={disputeOpen} transparent animationType="slide" onRequestClose={() => setDisputeOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheetOverlay}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setDisputeOpen(false)} />
+          <ActionTouchable style={{ flex: 1 }} activeOpacity={1} onPress={() => setDisputeOpen(false)} />
           <View style={styles.sheet}>
             <Text style={styles.sheetTitle}>{t('commonsJobs.disputeTitle')}</Text>
             <Text style={styles.muted}>{t('commonsJobs.disputeSheetBody', { date: formatDate(escrow?.auto_release_at) })}</Text>
@@ -940,17 +940,17 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
               style={styles.input}
             />
             <View style={styles.sheetButtons}>
-              <TouchableOpacity style={styles.sheetCancel} onPress={() => setDisputeOpen(false)} accessibilityRole="button">
+              <ActionTouchable style={styles.sheetCancel} onPress={() => setDisputeOpen(false)} accessibilityRole="button">
                 <Text style={styles.sheetCancelText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </ActionTouchable>
+              <ActionTouchable
                 style={[styles.sheetConfirm, !disputeReason.trim() && styles.buttonDisabled]}
                 disabled={!disputeReason.trim()}
                 onPress={() => { void submitDispute(); }}
                 accessibilityRole="button"
               >
                 <Text style={styles.sheetConfirmText}>{t('commonsJobs.disputeConfirm')}</Text>
-              </TouchableOpacity>
+              </ActionTouchable>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -984,7 +984,7 @@ function Header({ navigation }: { navigation: Props['navigation'] }) {
 
 function PrimaryButton({ label, onPress, busy }: { label: string; onPress: () => void; busy: boolean }) {
   return (
-    <TouchableOpacity
+    <ActionTouchable
       style={[styles.primaryButton, busy && styles.buttonDisabled]}
       disabled={busy}
       onPress={onPress}
@@ -992,14 +992,14 @@ function PrimaryButton({ label, onPress, busy }: { label: string; onPress: () =>
       accessibilityRole="button"
     >
       <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-      {busy ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.primaryButtonText}>{label}</Text>}
-    </TouchableOpacity>
+      {busy ? <ActivityIndicator color={COLORS.onPrimary} /> : <Text style={styles.primaryButtonText}>{label}</Text>}
+    </ActionTouchable>
   );
 }
 
 function SecondaryButton({ label, onPress, busy, icon }: { label: string; onPress: () => void; busy: boolean; icon: keyof typeof Ionicons.glyphMap }) {
   return (
-    <TouchableOpacity
+    <ActionTouchable
       style={[styles.secondaryButton, busy && styles.buttonDisabled]}
       disabled={busy}
       onPress={onPress}
@@ -1008,7 +1008,7 @@ function SecondaryButton({ label, onPress, busy, icon }: { label: string; onPres
     >
       <Ionicons name={icon} size={16} color={COLORS.text} />
       <Text style={styles.secondaryButtonText}>{label}</Text>
-    </TouchableOpacity>
+    </ActionTouchable>
   );
 }
 
@@ -1138,7 +1138,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: SPACING.m,
   },
-  primaryButtonText: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  primaryButtonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '700' },
   secondaryButton: {
     height: 44,
     borderRadius: BORDER_RADIUS.l,

@@ -1,3 +1,4 @@
+import { ActionTouchable, ActionPressable } from '../../components/ScreenActions';
 import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
 import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
@@ -15,7 +16,7 @@ import { type BiometricAction } from '../../core/security/biometricAction';
  * `threadMessageView`. Nothing in a message attachment can make this screen say "verified".
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, Platform, ActivityIndicator, Alert, Modal, Pressable, AppState, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, KeyboardAvoidingView, Keyboard, Platform, ActivityIndicator, Alert, Modal, AppState, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -412,15 +413,15 @@ export default function CommonsThread({ navigation, route }: Props) {
           }}>
           {loadError && <View accessibilityRole="alert">
             <Text style={styles.warn}>{t('commons.threadLoadFailed')}</Text>
-            <TouchableOpacity onPress={refresh} accessibilityRole="button"><Text style={styles.bubbleRetry}>{t('common.tryAgain')}</Text></TouchableOpacity>
+            <ActionTouchable onPress={refresh} accessibilityRole="button"><Text style={styles.bubbleRetry}>{t('common.tryAgain')}</Text></ActionTouchable>
           </View>}
           {loading || resolving ? <ActivityIndicator color={COLORS.primary} /> : (
             <>
               <Text style={styles.lock}>{t('commons.threadLockNote')}</Text>
               {thread && <Text style={styles.lock}>{t(olderAvailable ? 'commons.threadRecentPage' : 'commons.threadAllHistory')}</Text>}
-              {olderAvailable && <TouchableOpacity onPress={() => { void load(true); }} disabled={loadingOlder} accessibilityRole="button">
+              {olderAvailable && <ActionTouchable onPress={() => { void load(true); }} disabled={loadingOlder} accessibilityRole="button">
                 {loadingOlder ? <ActivityIndicator color={COLORS.primary} /> : <Text style={styles.bubbleRetry}>{t('commons.threadLoadOlder')}</Text>}
-              </TouchableOpacity>}
+              </ActionTouchable>}
               {!threadId && <Text style={styles.lock}>{t('commons.threadNewDirect', { name: counterpartyName ?? (otherId ? shortAddress(otherId) : '') })}</Text>}
               {messages.map((m) => {
                 const mine = m.author_id === myId;
@@ -430,10 +431,10 @@ export default function CommonsThread({ navigation, route }: Props) {
                     {body.kind === 'text' ? <Text style={styles.bubbleText}>{body.text}</Text>
                       : body.kind === 'other_key' ? <Text style={styles.bubbleMuted}>{t('commons.threadUndecryptable')}</Text>
                       : body.kind === 'cant_unlock' ? (
-                        <TouchableOpacity onPress={() => { void load(); }} accessibilityRole="button" accessibilityLabel={t('commons.threadUnlockRetry')}>
+                        <ActionTouchable onPress={() => { void load(); }} accessibilityRole="button" accessibilityLabel={t('commons.threadUnlockRetry')}>
                           <Text style={styles.bubbleMuted}>{t('commons.threadCantUnlock')}</Text>
                           <Text style={styles.bubbleRetry}>{t('commons.threadUnlockRetry')}</Text>
-                        </TouchableOpacity>
+                        </ActionTouchable>
                       ) : null}
                     {renderAttachment(m)}
                     <Text style={styles.bubbleMeta}>{new Date(m.created_at).toLocaleString()}{m.minted_under_window ? ` · ${t('commons.threadMinted')}` : ''}</Text>
@@ -447,10 +448,10 @@ export default function CommonsThread({ navigation, route }: Props) {
                     {draftIsUncertain(d) ? t('commons.threadDraftUncertain') : d.failedAt ? t('commons.threadDraftNotSent') : ownAgent ? t('commons.threadDraftWaitingOwnAgent', { name: otherName }) : t('commons.threadDraftWaiting')}
                   </Text>
                   {d.failedAt || draftIsUncertain(d) ? (
-                    <TouchableOpacity style={styles.attachBtn} onPress={() => { void sendDraftNow(d); }} disabled={sending} accessibilityRole="button">
-                      <Ionicons name="send" size={14} color={COLORS.text} />
+                    <ActionTouchable style={styles.attachBtn} onPress={() => { void sendDraftNow(d); }} disabled={sending} accessibilityRole="button">
+                      <Ionicons name="send" size={14} color={COLORS.onPrimary} />
                       <Text style={styles.attachBtnText}>{t('commons.threadDraftSendNow')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                   ) : null}
                 </View>
               ))}
@@ -460,9 +461,9 @@ export default function CommonsThread({ navigation, route }: Props) {
         {keyMissing && drafts.length === 0 && <Text style={styles.warn}>{t(keyMissingCopyKeys(ownAgent !== null).body, { name: otherName })}</Text>}
         <View style={styles.composer}>
           <TextInput style={styles.input} placeholder={t('commons.threadPlaceholder')} placeholderTextColor={COLORS.textTertiary} value={text} onChangeText={setText} multiline editable={!sending} />
-          <TouchableOpacity style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]} onPress={send} disabled={!text.trim() || sending}>
-            {sending ? <ActivityIndicator color={COLORS.text} size="small" /> : <Ionicons name="send" size={18} color={COLORS.text} />}
-          </TouchableOpacity>
+          <ActionTouchable style={[styles.sendBtn, (!text.trim() || sending) && styles.sendBtnDisabled]} onPress={send} disabled={!text.trim() || sending}>
+            {sending ? <ActivityIndicator color={COLORS.onPrimary} size="small" /> : <Ionicons name="send" size={18} color={COLORS.onPrimary} />}
+          </ActionTouchable>
         </View>
       </KeyboardAvoidingView>
 
@@ -491,7 +492,7 @@ const styles = StyleSheet.create({
   attachLine: { color: COLORS.textSecondary, fontSize: 12, fontFamily: 'monospace' },
   attachHash: { color: COLORS.textTertiary, fontSize: 10, fontFamily: 'monospace' },
   attachBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.s, paddingHorizontal: SPACING.m, paddingVertical: 6, marginTop: 4 },
-  attachBtnText: { color: COLORS.text, fontSize: 12, fontWeight: '600' },
+  attachBtnText: { color: COLORS.onPrimary, fontSize: 12, fontWeight: '600' },
   warn: { color: COLORS.warning, fontSize: 12, paddingHorizontal: SPACING.l, paddingBottom: SPACING.xs },
   composer: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.s, padding: SPACING.m, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: COLORS.border },
   input: { flex: 1, minHeight: 40, maxHeight: 120, backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.m, paddingHorizontal: SPACING.m, paddingVertical: 10, color: COLORS.text, fontSize: 15 },

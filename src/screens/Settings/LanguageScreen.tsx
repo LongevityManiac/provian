@@ -1,6 +1,7 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import NotificationService from '../../services/NotificationService';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
@@ -66,7 +67,7 @@ const LanguageScreen = ({ navigation }: any) => {
                 <Text style={styles.sectionHeader}>{t('language.availableLanguages')}</Text>
 
                 {LANGUAGES.map((language) => (
-                    <TouchableOpacity
+                    <ActionTouchable
                         key={language.code}
                         style={[
                             styles.languageCard,
@@ -81,7 +82,7 @@ const LanguageScreen = ({ navigation }: any) => {
                         {selectedLanguage === language.code && (
                             <Ionicons name="checkmark-circle" size={24} color="#4A8EE8" />
                         )}
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 ))}
             </ScrollView>
         </SafeAreaView>

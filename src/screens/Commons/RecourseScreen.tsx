@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -72,9 +73,9 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     finally { if (sequence === loadSequence.current) setLoading(false); }
   }, []);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
-  const button = (label: string, onPress: () => void) => <TouchableOpacity accessibilityRole="button"
+  const button = (label: string, onPress: () => void) => <ActionTouchable accessibilityRole="button"
     disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
-    <Text style={styles.buttonText}>{label}</Text></TouchableOpacity>;
+    <Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
   const bindPrimary = async () => {
     if (busy || loading) return;
     setBusy(true); setError(false);
@@ -204,8 +205,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <TextInput accessibilityLabel={t('recourse.allocationRequest')} placeholder={t('recourse.allocationRequest')}
           value={allocationRequest} onChangeText={setAllocationRequest} autoCapitalize="none" autoCorrect={false} editable={!busy}
           style={styles.input} placeholderTextColor={COLORS.textSecondary} />
-        <TouchableOpacity accessibilityRole="button" disabled={busy} onPress={() => { void withdraw(allocationRequest); }}
-          style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation')}</Text></TouchableOpacity>
+        <ActionTouchable accessibilityRole="button" disabled={busy} onPress={() => { void withdraw(allocationRequest); }}
+          style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation')}</Text></ActionTouchable>
       </View>
       {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
     </ScrollView>
@@ -218,21 +219,21 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           {state ? <>
           <Text style={styles.small}>{t('recourse.transferPicker.explanation', 'Choose the transfer you did not make. The app supplies its transaction details and prepares recovery to a new wallet address. Review the transfer before authorizing your restoration request.')}</Text>
           <Text style={styles.body}>{t('recourse.selectRestorationWallet', 'Select the wallet that lost PVT')}</Text>
-          {state.addresses.filter(row => row.confirmed).map(row => <TouchableOpacity key={row.address}
+          {state.addresses.filter(row => row.confirmed).map(row => <ActionTouchable key={row.address}
             accessibilityRole="radio" accessibilityState={{ checked: transferAccount === row.address }}
             disabled={busy || loading} onPress={() => setSelectedHistoryAddress(row.address)} style={styles.button}>
             <Text style={styles.buttonText}>{transferAccount === row.address ? '● ' : '○ '}{row.address}</Text>
-          </TouchableOpacity>)}
+          </ActionTouchable>)}
           {transfersLoading ? <ActivityIndicator accessibilityLabel={t('recourse.transferPicker.loading', 'Loading your transfers')} color={COLORS.primary} /> : null}
           {transfersError ? <Text style={styles.body}>{t('recourse.transferPicker.unavailable', 'We could not load your transfers. Refresh and try again.')}</Text> : null}
           {!transfersLoading && !transfersError && transfers.length === 0 ? <Text style={styles.body}>{t('recourse.transferPicker.empty', 'No outgoing PVT transfers appear in this part of your history.')}</Text> : null}
-          {transfers.map(transfer => <TouchableOpacity key={`${transfer.transactionHash}:${transfer.to}`} accessibilityRole="radio"
+          {transfers.map(transfer => <ActionTouchable key={`${transfer.transactionHash}:${transfer.to}`} accessibilityRole="radio"
             accessibilityState={{ checked: selectedTransfer === transfer }} disabled={busy} onPress={() => setSelectedTransfer(transfer)}
             style={[styles.transfer, selectedTransfer === transfer && styles.selectedTransfer]}>
             <Text style={styles.body}>{transfer.amount} PVT</Text>
             <Text style={styles.small}>{new Date(transfer.timestamp).toLocaleString()}</Text>
             <Text style={styles.address}>{t('recourse.transferPicker.to', 'To {{address}}', { address: transfer.to })}</Text>
-          </TouchableOpacity>)}
+          </ActionTouchable>)}
           {historyMore ? button(t('recourse.transferPicker.older', 'Show older transfers'), () => { if (!transfersLoading) setHistoryPage(page => page + 1); }) : null}
           {selectedTransfer ? <View style={styles.request}>
             <Text style={styles.section}>{t('recourse.transferPicker.review', 'Report this transfer')}</Text>
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
   address: { color: COLORS.text, fontSize: 12, lineHeight: 20 },
   input: { color: COLORS.text, borderColor: COLORS.textSecondary, borderWidth: 1, borderRadius: BORDER_RADIUS.m, padding: SPACING.m },
   button: { backgroundColor: COLORS.primary, padding: SPACING.m, borderRadius: BORDER_RADIUS.m, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  buttonText: { color: COLORS.onPrimary, fontSize: 15, fontWeight: '600' },
   transfer: { padding: SPACING.m, borderRadius: BORDER_RADIUS.m, borderWidth: 1, borderColor: COLORS.textSecondary, gap: SPACING.s },
   selectedTransfer: { borderColor: COLORS.primary, borderWidth: 2 },
   disabled: { opacity: 0.5 }, request: { gap: SPACING.s, paddingVertical: SPACING.s },

@@ -1,5 +1,6 @@
+import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
@@ -102,7 +103,7 @@ const HelpSupportScreen = ({ navigation }: any) => {
     };
 
     const SupportItem = ({ icon, title, description, onPress, iconColor }: any) => (
-        <TouchableOpacity style={styles.supportCard} onPress={onPress}>
+        <ActionTouchable style={styles.supportCard} onPress={onPress}>
             <View style={[styles.iconContainer, { backgroundColor: iconColor ? `${iconColor}12` : 'rgba(74,142,232,0.08)' }]}>
                 <Ionicons name={icon} size={24} color={iconColor || '#4A8EE8'} />
             </View>
@@ -111,7 +112,7 @@ const HelpSupportScreen = ({ navigation }: any) => {
                 <Text style={styles.supportDescription}>{description}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-        </TouchableOpacity>
+        </ActionTouchable>
     );
 
     const FAQCategoryCard = ({ category }: { category: FAQCategory }) => {
@@ -119,7 +120,7 @@ const HelpSupportScreen = ({ navigation }: any) => {
 
         return (
             <View style={styles.faqCategoryCard}>
-                <TouchableOpacity
+                <ActionTouchable
                     style={styles.faqCategoryHeader}
                     onPress={() => setExpandedCategory(isExpanded ? null : category.title)}
                 >
@@ -132,7 +133,7 @@ const HelpSupportScreen = ({ navigation }: any) => {
                         size={20}
                         color="#9CA3AF"
                     />
-                </TouchableOpacity>
+                </ActionTouchable>
 
                 {isExpanded && (
                     <View style={styles.faqItemsContainer}>
@@ -234,9 +235,9 @@ const HelpSupportScreen = ({ navigation }: any) => {
                     <Text style={styles.footerText}>
                         {t('help.cantFind')}
                     </Text>
-                    <TouchableOpacity onPress={handleContactSupport}>
+                    <ActionTouchable onPress={handleContactSupport}>
                         <Text style={styles.footerLink}>{t('help.contactUsAt')}</Text>
-                    </TouchableOpacity>
+                    </ActionTouchable>
                 </View>
             </ScrollView>
         </SafeAreaView>
