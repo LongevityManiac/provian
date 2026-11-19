@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 const API = 'https://api.provian.ai/v1/gates/github'
-const REPOS = ['provian'] as const
+const REPOS = ['provian', 'provian-reference-gate'] as const
 
 /** A presentation travels directly to the gate, never into a GitHub comment or browser storage. */
 export default function PullRequestGatePage() {

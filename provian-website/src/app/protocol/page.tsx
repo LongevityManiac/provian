@@ -25,6 +25,7 @@ const REPO = 'https://github.com/LongevityManiac/provian'
 const SPEC = `${route.library}/pe-protocol-spec`
 const BUILD_A_PE = `${REPO}/tree/master/examples/build-a-pe`
 const SENSOR_GATEWAY = `${REPO}/tree/master/examples/sensor-gateway`
+const REFERENCE_GATE = 'https://github.com/LongevityManiac/provian-reference-gate'
 const SCHEMA_URL = 'https://api.provian.ai/v1/schema/pe'
 
 const SUBSTRATES: { work: string; witness: string; how: string }[] = [
@@ -249,6 +250,9 @@ export default function ProtocolPage() {
               <Ext href="https://www.npmjs.com/package/@provian/cli">CLI</Ext>,{' '}
               <Ext href="https://www.npmjs.com/package/@provian/mcp">MCP server</Ext> and{' '}
               <Ext href={`${REPO}/tree/master/contracts`}>contracts</Ext>, MIT.
+            </li>
+            <li className="rounded-lg border border-white/10 bg-black/25 px-5 py-4">
+              The <Ext href={REFERENCE_GATE}>reference gate</Ext>, MIT.
             </li>
             <li className="rounded-lg border border-white/10 bg-black/25 px-5 py-4">
               Worked examples: <Ext href={BUILD_A_PE}>build-a-pe</Ext>,{' '}

@@ -8,7 +8,7 @@ is open. Unmarked questions appear only here.
 
 ---
 
-Provian was built by one human, with AI. Compute mints money; a voluntary ownership registry and recovery commitment help separate ownership from control of a wallet key. The Recourse Pool lets members share loss risk under discretionary determinations.
+Compute mints money; a voluntary ownership registry and recovery commitment help separate ownership from control of a wallet key. The Recourse Pool lets members share loss risk under discretionary determinations.
 
 ## Getting Started <!-- app:gettingStarted -->
 

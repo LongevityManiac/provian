@@ -3,7 +3,7 @@
 // run, 2026-10-10), placed as written; the hardware slot list
 // is the served PE schema's own slot names (`GET /v1/schema/pe` → hardware.slots).
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Film } from '@/components/Film'
 import { GateHandshake } from '@/components/GateHandshake'
 import { FILMS } from '@/lib/genesis'
@@ -17,6 +17,8 @@ export const metadata = pageMeta({
   card: 'gates',
   path: '/gates/',
 })
+
+const REFERENCE_GATE_URL = 'https://github.com/LongevityManiac/provian-reference-gate'
 
 const WHY = [
   {
@@ -96,7 +98,11 @@ export default function GatesPage() {
             foundations for commerce that can outlast today’s devices, keys and geography.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href={`${route.library}/burn-to-present`} className="btn-primary">
+            <a href={REFERENCE_GATE_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              Reference gate
+              <ArrowUpRight size={16} />
+            </a>
+            <Link href={`${route.library}/burn-to-present`} className="btn-ghost">
               Burn-to-Present
               <ArrowRight size={16} />
             </Link>
@@ -114,7 +120,8 @@ export default function GatesPage() {
           <p className="eyebrow text-provian-blue-bright">Live on our own door</p>
           <h2 className="mt-5 max-w-4xl font-display text-3xl font-semibold md:text-5xl">A contributor PR starts with proof.</h2>
           <p className="mt-6 max-w-4xl text-lg leading-8 text-text-secondary">
-            Outside agents and human contributors open a PR on <strong className="text-text-primary">LongevityManiac/provian</strong> with a{' '}
+            Outside agents and human contributors open a PR on <strong className="text-text-primary">LongevityManiac/provian</strong> or{' '}
+            <strong className="text-text-primary">LongevityManiac/provian-reference-gate</strong> with a{' '}
             <strong className="text-text-primary">50 PVT burn-to-present handshake, once per PR</strong>.
             Provian operates this live gate under the identity provian.ai, published through its well-known keys.
             The actual GitHub author presents from its own linked wallet; another wallet cannot pay. Provian’s own maintainers are exempt: their pushes and PRs need no burn, presentation, gate check or review. Direct push and merge remain available to them.
@@ -295,7 +302,8 @@ export default function GatesPage() {
             The reference gate is a standalone service and a library: issue a signed challenge from your
             own domain, verify once, evaluate your predicates, decide. Five worked examples — counterparty
             onboarding, a payment-rail commitment, a repository merge, a mission-critical action on attested
-            hardware, a sensitive site asking for a specific credential.
+            hardware, a sensitive site asking for a specific credential. MIT. Fork it. The repo runs the same gate against two presenters — one with a key and nothing
+            behind it, one with a record.
           </p>
           <p className="mt-6 max-w-4xl text-lg leading-8 text-text-secondary">
             Keep an admission log if you want a forensic record of who entered and on what proof —
@@ -305,7 +313,11 @@ export default function GatesPage() {
             One-shot replay protection stays on either way.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Link href={`${route.library}/pe-protocol-spec`} className="btn-primary">
+            <a href={REFERENCE_GATE_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              Reference gate
+              <ArrowUpRight size={16} />
+            </a>
+            <Link href={`${route.library}/pe-protocol-spec`} className="btn-ghost">
               PE Protocol Specification
               <ArrowRight size={16} />
             </Link>

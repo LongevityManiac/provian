@@ -2370,7 +2370,8 @@ test-platform wallets never accrue. Consumed by the streak badges only.
 - **The gate side — the reference gate** (reference-gate run, 2026-10-09): burn-to-present is the
   foundational burn, and its main arena is outside systems that Provian does not run and that do
   not register with Provian, reading incoming envelopes to decide what to do with them; Provian's
-  own Commons is one requester besides them. The reference gate is that reference: one standalone service and one library a gate embeds, both
+  own Commons is one requester besides them. [`provian-reference-gate`](https://github.com/LongevityManiac/provian-reference-gate) (MIT, its own
+  repository) is that reference: one standalone service and one library a gate embeds, both
   walking the complete outsider path — serve the gate's domain identity
   (`/.well-known/provian-requester.json`), issue a signed `provian-challenge-v1` challenge, receive
   the presentation, verify it (the stateless `POST /v1/present/verify` AND a local verify against
@@ -2414,7 +2415,7 @@ test-platform wallets never accrue. Consumed by the streak badges only.
 
 **Provian’s own maintainers are exempt:** their pushes and PRs need no burn, presentation, gate check or review; direct push and merge are allowed. For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR.
 
-Provian runs a live gate on **LongevityManiac/provian**: an outside PR requires **one 50 PVT burn-to-present handshake per PR**, bound to that PR’s signed challenge and the GitHub author’s linked wallet. Gate identity is **provian.ai** via `/.well-known/provian-requester.json`. The required **Provian PR gate** check and `presentation-required` label keep an unpaid PR blocked. Verified presentation clears it for ordinary review. Clearance only unlocks merge. After clearance, the repository owner must submit an **Approve** review on the current PR head. For non-owner PRs, Git Witness merges the protected branches; a push requires a fresh approval without another burn. Further pushes and reopening keep that clearance; further pushes and reopening need no additional burn. Another PR cannot reuse the presentation. The gate’s own price changes no protocol floor, and merged commits keep earning through Git Witness.
+Provian runs a live gate on **LongevityManiac/provian** and **LongevityManiac/provian-reference-gate**: an outside PR requires **one 50 PVT burn-to-present handshake per PR**, bound to that PR’s signed challenge and the GitHub author’s linked wallet. Gate identity is **provian.ai** via `/.well-known/provian-requester.json`. The required **Provian PR gate** check and `presentation-required` label keep an unpaid PR blocked. Verified presentation clears it for ordinary review. Clearance only unlocks merge. After clearance, the repository owner must submit an **Approve** review on the current PR head. For non-owner PRs, Git Witness merges the protected branches; a push requires a fresh approval without another burn. Further pushes and reopening keep that clearance; further pushes and reopening need no additional burn. Another PR cannot reuse the presentation. The gate’s own price changes no protocol floor, and merged commits keep earning through Git Witness.
 
 Git Witness acknowledges an authenticated webhook only after its signed receipt is durable. An isolated push worker drains earning and PR work, with bounded retry and a scheduler fallback; processed payloads are discarded after durable earning intake. GitHub `check_suite` and `check_run` deliveries are transport plumbing and generate no work PE (`core/witnesses/github-webhook-inbox.ts`).
 
@@ -6073,14 +6074,14 @@ by default through `https://mainnet.base.org`, or your `rpcUrl`).
 A gate with no Provian account, API key, or wallet. It needs only
 `@provian/agent-sdk` and a domain it controls.
 
-**The reference gate** is this loop as a
+**The reference gate** — [`provian-reference-gate`](https://github.com/LongevityManiac/provian-reference-gate) (MIT) — is this loop as a
 standalone service and a library: it serves the gate's domain identity, issues the signed
 challenge, verifies the presentation (the stateless relay verify and the local verify, each
 presentation accepted once, chain checks on), evaluates the gate's own predicates in the grammar
 below, and decides; unknown or failed is blocked. Five worked examples — counterparty
 onboarding, a payment-rail commitment, a repository merge gate, a mission-critical action on
 attested hardware, a sensitive site asking for a specific credential — are complete decisions
-over a presentation, each showing adverse standing. The sketch that follows is the same
+over a presentation, each showing adverse standing. Fork it. The sketch that follows is the same
 path in one file.
 
 The reference gate's **optional admission log** is the operator's forensic record. When attached,
@@ -6305,7 +6306,7 @@ between signing a sentence and staking on it.
 
 **Provian’s own maintainers are exempt:** their pushes and PRs need no burn, presentation, gate check or review; direct push and merge are allowed.
 
-For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR. Opening a contributor pull request on **LongevityManiac/provian** requires a **50 PVT burn-to-present handshake, once per PR**. Provian operates this live gate on its own door. The gate’s identity is **provian.ai**, published at [its well-known key document](https://provian.ai/.well-known/provian-requester.json).
+For every other PR, **the actual GitHub author presents from its own verified wallet**. A human author uses that human’s wallet in the app; an agent author uses that agent’s wallet through the SDK, MCP or CLI. Another wallet cannot sponsor or pay for the PR. Opening a contributor pull request on **LongevityManiac/provian** or **LongevityManiac/provian-reference-gate** requires a **50 PVT burn-to-present handshake, once per PR**. Provian operates this live gate on its own door. The gate’s identity is **provian.ai**, published at [its well-known key document](https://provian.ai/.well-known/provian-requester.json).
 
 An opened or reopened PR receives the **Provian PR gate** check, the `presentation-required` label and one instructions comment. The check stays unsuccessful until the PR author presents against that PR’s signed challenge with at least 50 PVT burned. A verified presentation clears the PR for ordinary review. Clearance only unlocks merge. After clearance, the repository owner must submit an **Approve** review on the current PR head. For non-owner PRs, Git Witness merges the protected branches; a push requires a fresh approval without another burn. Further pushes and reopening a cleared PR require no additional burn. A presentation for another PR is refused. A burn is destroyed PVT; the gate receives no payment. This is this gate’s configured price; protocol floors and other gates’ prices are unchanged. **Git Witness earning is unchanged: merged commits keep earning.**
 
@@ -6342,7 +6343,7 @@ An opened or reopened PR receives the **Provian PR gate** check, the `presentati
      -H 'Content-Type: application/json' --data-binary @-
    ```
 
-   If the GitHub account has multiple linked wallets, add `?wallet_id=<wallet-id>` to the challenge URL to select the presenting wallet. The CLI verifies the signed requester and addressed wallet **before burning**. If the gate says finality is pending, retry the final POST with the **same token** after Base finality; do not burn again. If the CLI reports a broadcast burn handle after interruption, resume with its `--burn-tx` and `--burn-amount-atomic` flags. A cleared PR’s challenge endpoint returns `pr_already_cleared`, preventing another burn.
+   Replace `provian` with `provian-reference-gate` for the other repository. If the GitHub account has multiple linked wallets, add `?wallet_id=<wallet-id>` to the challenge URL to select the presenting wallet. The CLI verifies the signed requester and addressed wallet **before burning**. If the gate says finality is pending, retry the final POST with the **same token** after Base finality; do not burn again. If the CLI reports a broadcast burn handle after interruption, resume with its `--burn-tx` and `--burn-amount-atomic` flags. A cleared PR’s challenge endpoint returns `pr_already_cleared`, preventing another burn.
 
 The [SDK](https://github.com/LongevityManiac/provian/tree/master/provian-agent-sdk#prove-yourself-to-a-counterparty-burn-to-present) and [MCP](https://github.com/LongevityManiac/provian/tree/master/provian-mcp) presenter examples use the same gate and the same presentation primitive.
 
