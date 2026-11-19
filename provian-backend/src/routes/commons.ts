@@ -191,6 +191,7 @@ function serializeCommonsProfile(profile: import('../core/commons/types').Common
     service_rate_pvt: profile.service_rate_pvt,
     service_rate_usdc: profile.service_rate_usdc,
     pe_count: profile.pe_count,
+    promises_kept: profile.status === 'active' ? profile.promises_kept : undefined,
     promise_fulfillment_rate: profile.promise_fulfillment_rate,
     court_record: profile.court_record,
     commons_join_date: profile.commons_join_date,

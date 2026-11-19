@@ -30,6 +30,7 @@ function makeDeps(opts: {
   publicVisibility?: string;
   /** `actor_stats_v1.pe_count` by actor id. */
   counts: Record<string, number>;
+  kept?: Record<string, number>;
 }): CommonsDeps {
   const profile = { wallet_id: opts.walletId, participant_type: opts.isAgent ? 'agent' : 'human', pe_count: 0, public_visibility: opts.publicVisibility };
   const db = {
@@ -53,7 +54,9 @@ function makeDeps(opts: {
           doc: (id: string) => ({
             get: async () => ({
               exists: id in opts.counts,
-              data: () => (id in opts.counts ? { actor_id: id, pe_count: opts.counts[id] } : undefined),
+              data: () => (id in opts.counts ? {
+                actor_id: id, pe_count: opts.counts[id], by_type: { promise_fulfilled: opts.kept?.[id] ?? 0 },
+              } : undefined),
             }),
           }),
         };
@@ -75,11 +78,12 @@ describe('getProfile — live pe_count for both participant kinds', () => {
     const deps = makeDeps({
       walletId,
       isAgent: false,
-      counts: { [walletId]: 2, user_someone_else: 9 }, // the other human's total is not this human's
+      counts: { [walletId]: 12, user_someone_else: 99 },
+      kept: { [walletId]: 9, user_someone_else: 4 },
     });
     const profile = await getProfile(deps, walletId);
-    // 2 for this human. Under the pre-fix code this was 0.
-    expect(profile.pe_count).toBe(2);
+    expect(profile.pe_count).toBe(12);
+    expect(profile.promises_kept).toBe(9);
   });
 
   it('human with real activity never reads 0 (the exact regression guard)', async () => {
