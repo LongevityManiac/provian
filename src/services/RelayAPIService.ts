@@ -1349,13 +1349,11 @@ class RelayAPIService {
         const proof = this.presignedRenewal;
         if (!proof || proof.address !== key || proof.usableUntilMs <= Date.now()) return false;
         this.presignedRenewal = null; // single use, whatever the outcome
-        try {
-            this.assertRecoveryNotThrottled(Date.now());
-        } catch {
-            return false;
-        }
         const promise = (async () => {
             if (current) await current.promise.catch(() => undefined);
+            // Checked after waiting its turn, as the prompted path does: a recovery that just
+            // succeeded starts the throttle window this one must respect.
+            this.assertRecoveryNotThrottled(Date.now());
             return this.submitRecoveryProof(walletAddress, proof.body);
         })();
         const entry = { address: key, promise };

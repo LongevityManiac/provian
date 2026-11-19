@@ -77,6 +77,20 @@ describe('pre-signed session renewal', () => {
         expect(submit).toHaveBeenCalledTimes(1);
     });
 
+    it('respects the throttle after waiting on another wallet\'s recovery that just succeeded', async () => {
+        const { submit } = await primed();
+        let finish!: () => void;
+        service.recoveryInFlight = {
+            address: '0x00000000000000000000000000000000000000bb',
+            promise: new Promise((r) => { finish = () => { service.lastRecoveryAt = Date.now(); r({ userId: 'b', authSecret: 'x', recovered: true }); }; }),
+        };
+        const renewal = relayService.renewWithPresignedProof(ADDRESS);
+        finish();
+        await expect(renewal).resolves.toBe(false);
+        expect(submit).not.toHaveBeenCalled();
+        service.recoveryInFlight = null;
+    });
+
     it('never used for another wallet, after its lifetime, or once discarded', async () => {
         const { submit } = await primed();
         await expect(relayService.renewWithPresignedProof('0x00000000000000000000000000000000000000bb')).resolves.toBe(false);
