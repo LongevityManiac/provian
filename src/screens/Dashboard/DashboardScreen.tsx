@@ -1,11 +1,14 @@
 import { AppMenu } from '../../components/AppMenu';
+import BackButton from '../../components/BackButton';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, AppState, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { AppParamList } from '../../navigation/types';
 import { useTranslation } from 'react-i18next';
 // [F19] expo-device import removed with the DEV agent-send simulator button.
 import * as Clipboard from 'expo-clipboard';
@@ -26,7 +29,7 @@ import type { Transaction } from '../../core/history/TransactionHistoryService';
 import { displayBalance } from '../../utils/displayBalance';
 import { assetUsdValue, formatUsd, portfolioTotal, priceAgeLabel, totalAgeLabel } from '../../utils/fiatDisplay';
 
-const DashboardScreen = ({ navigation }: any) => {
+const DashboardScreen = ({ navigation }: NativeStackScreenProps<AppParamList, 'Dashboard'>) => {
     const {
         assets,
         lastConfirmedPvt,
@@ -41,15 +44,6 @@ const DashboardScreen = ({ navigation }: any) => {
     } = useWalletStore();
     const { t } = useTranslation();
     const { colors: themeColors } = useTheme();
-
-    // FIX: L-3 - Track whether this is the user's first visit to the dashboard
-    // so we can show "Welcome" instead of "Welcome back".
-    const [isFirstVisit, setIsFirstVisit] = React.useState(true);
-    React.useEffect(() => {
-        // After the first render, mark as returning user for subsequent focuses
-        const timer = setTimeout(() => setIsFirstVisit(false), 5000);
-        return () => clearTimeout(timer);
-    }, []);
 
     // / item 4: the attention bell — how many items need the human's action right now. The
     // SAME shared count as the Wallet-tab badge: loaded on mount, every 30 s, on app foreground, on
@@ -200,79 +194,67 @@ const DashboardScreen = ({ navigation }: any) => {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             />
-            <ScrollView contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={isLoadingBalances} onRefresh={() => { void refreshBalances(); }} tintColor={COLORS.primary} />}>
-                {/* 1. Header */}
-                <View style={styles.header}>
-                    <View style={styles.headerLeft}>
-                        <Image
-                            source={require('../../../assets/images/provian-logo.png')}
-                            style={{ width: 32, height: 32, marginRight: SPACING.s }}
-                            resizeMode="contain"
-                        />
-                        <View style={{ flexShrink: 1 }}>
-                            {(userName || address) ? (
-                                <>
-                                    <Text style={[styles.greeting, { color: themeColors.textSecondary }]}>{isFirstVisit ? t('dashboard.greetingFirst', { defaultValue: 'Welcome' }) : t('dashboard.greeting')}</Text>
-                                    {userName ? (
-                                        <Text style={[styles.username, { color: themeColors.textPrimary }]} numberOfLines={1}>{userName}</Text>
-                                    ) : (
-                                        <TouchableOpacity
-                                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}
-                                            onPress={async () => {
-                                                await Clipboard.setStringAsync(address);
-                                                setAddressCopied(true);
-                                                setTimeout(() => setAddressCopied(false), 1500);
-                                            }}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text
-                                                style={[styles.username, { color: themeColors.textPrimary, flexShrink: 1 }]}
-                                                numberOfLines={1}
-                                                adjustsFontSizeToFit
-                                                minimumFontScale={0.7}
-                                            >
-                                                {addressCopied ? t('dashboard.copied') : `${address.slice(0, 6)}...${address.slice(-4)}`}
-                                            </Text>
-                                            {!addressCopied && (
-                                                <Ionicons name="copy-outline" size={14} color={COLORS.textMuted} />
-                                            )}
-                                        </TouchableOpacity>
-                                    )}
-                                </>
-                            ) : (
-                                <Text style={[styles.username, { color: themeColors.textPrimary }]}>{isFirstVisit ? t('dashboard.greetingFirst', { defaultValue: 'Welcome' }) : t('dashboard.greeting')}</Text>
-                            )}
-                        </View>
-                    </View>
-                    <View style={styles.headerRight}>
-                        {isLockdownActive && (
-                            <TouchableOpacity onPress={() => navigation.navigate('Lockdown')}>
-                                <View style={[styles.statusBadge, { backgroundColor: COLORS.error }]}>
-                                    <Text style={styles.statusText}>{t('dashboard.lockdownBadge')}</Text>
-                                </View>
+            <View style={styles.header}>
+                <View style={styles.headerLeft}>
+                    <BackButton onPress={() => {
+                        if (navigation.canGoBack()) navigation.goBack();
+                        else navigation.navigate('MainTabs', { screen: 'WalletTab' });
+                    }} />
+                    <View style={{ flexShrink: 1 }}>
+                        <Text accessibilityRole="header" style={[styles.assetTitle, { color: themeColors.textPrimary }]}>{t('overhaul.assetsAndHistory')}</Text>
+                        {userName ? <Text style={[styles.username, { color: themeColors.textPrimary }]} numberOfLines={1}>{userName}</Text> : !!address && (
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}
+                                onPress={async () => {
+                                    await Clipboard.setStringAsync(address);
+                                    setAddressCopied(true);
+                                    setTimeout(() => setAddressCopied(false), 1500);
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Text
+                                    style={[styles.username, { color: themeColors.textPrimary, flexShrink: 1 }]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.7}
+                                >
+                                    {addressCopied ? t('dashboard.copied') : `${address.slice(0, 6)}...${address.slice(-4)}`}
+                                </Text>
+                                {!addressCopied && <Ionicons name="copy-outline" size={14} color={COLORS.textMuted} />}
                             </TouchableOpacity>
                         )}
-                        {/* attention bell: one tap to everything needing action, badge-counted. */}
-                        <TouchableOpacity
-                            style={styles.bellBtn}
-                            onPress={() => navigation.navigate('AttentionCenter')}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('attention.title')}
-                        >
-                            <Ionicons name="notifications-outline" size={22} color={COLORS.textSecondary} />
-                            {attentionCount > 0 && (
-                                <View style={styles.bellBadge}>
-                                    <Text style={styles.bellBadgeText}>{attentionCount > 9 ? '9+' : attentionCount}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('ProfileEdit')}>
-                            <Ionicons name="person" size={20} color={COLORS.text} />
-                        </TouchableOpacity>
-                        <AppMenu />
                     </View>
                 </View>
+                <View style={styles.headerRight}>
+                    {isLockdownActive && (
+                        <TouchableOpacity onPress={() => navigation.navigate('Lockdown')}>
+                            <View style={[styles.statusBadge, { backgroundColor: COLORS.error }]}>
+                                <Text style={styles.statusText}>{t('dashboard.lockdownBadge')}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    )}
+                    {/* attention bell: one tap to everything needing action, badge-counted. */}
+                    <TouchableOpacity
+                        style={styles.bellBtn}
+                        onPress={() => navigation.navigate('AttentionCenter')}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('attention.title')}
+                    >
+                        <Ionicons name="notifications-outline" size={22} color={COLORS.textSecondary} />
+                        {attentionCount > 0 && (
+                            <View style={styles.bellBadge}>
+                                <Text style={styles.bellBadgeText}>{attentionCount > 9 ? '9+' : attentionCount}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('ProfileEdit')}>
+                        <Ionicons name="person" size={20} color={COLORS.text} />
+                    </TouchableOpacity>
+                    <AppMenu />
+                </View>
+            </View>
+            <ScrollView contentContainerStyle={styles.scrollContent}
+                refreshControl={<RefreshControl refreshing={isLoadingBalances} onRefresh={() => { void refreshBalances(); }} tintColor={COLORS.primary} />}>
 
                 {/* Offline Banner */}
                 {isOffline && (
@@ -593,7 +575,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: SPACING.xl,
+        paddingHorizontal: SPACING.m,
+        marginBottom: SPACING.s,
         marginTop: SPACING.s,
     },
     headerLeft: {
@@ -601,17 +584,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexShrink: 1,
         marginRight: SPACING.s,
+        gap: SPACING.s,
     },
-    greeting: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        marginBottom: 4,
-        letterSpacing: 1.5,
+    assetTitle: {
+        fontSize: 16,
+        fontWeight: '700',
     },
     username: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: COLORS.text,
+        fontSize: 14,
+        color: COLORS.textSecondary,
     },
     headerRight: {
         flexDirection: 'row',

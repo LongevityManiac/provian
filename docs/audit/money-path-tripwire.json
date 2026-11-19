@@ -1315,6 +1315,8 @@
     "src/core/protocol/__test-helpers__/runtime.ts": "6a54470f6717895d01216726bf6011fe82587b069a5dc22b79fc3fb74c9a3405",
     "src/core/protocol/balance.ts": "d1b5a86de2ca677364596aebab6782ba4121a2f724413f2a248da6eb0744ce11",
     "src/core/protocol/builder-code.ts": "ec924d5d0ffc9eb3a65832fc40de322f97e96b106fb691471f2753cc01b76588",
+    "src/core/protocol/homeBalanceVerification.test.ts": "5d70472ad5ea237a90372da51a645f474eb26e08f7a4b4df8917400690c91581",
+    "src/core/protocol/homeBalanceVerification.ts": "3122afc3299ba3ab19607366263a4cefd7489d7dcf724699c3b37219ac0af35c",
     "src/core/protocol/pointer-pin.generated.ts": "3e7811885d7504612f05a92efcd269bd597af2fd9af24afc1ad643aafc24b6ec",
     "src/core/protocol/pointer.ts": "cf6bfab957735efccc59e6802987d8627e8a02c1e30b172dbc2e1c2ec2c4cf95",
     "src/core/protocol/proof.generated.ts": "b7369c8875333026c9b6db74bee51890bc93c6802caecd8547c5c7938ef1d1fe",
@@ -1410,7 +1412,7 @@
     "src/core/wallet/SeedManager.ts": "e62208811afd4f8706dc56e228effd00b814f8d8f06aee167067fdc976b6650d",
     "src/core/wallet/TransactionService.estimateFee.test.ts": "a73800a99feecac9854187ef392f54dbb7e9f841e657ea37792936fd6e4de732",
     "src/core/wallet/TransactionService.ts": "691d03fd81eb3be6fec4b92fa1ebd49f406a8505c7519e8f4dfd06e66aa5b2ef",
-    "src/services/RelayAPIService.ts": "cbc15642a29909a3e9fdbdbefc323c0f8046e8d67d2106d99fce98bea3bfe937",
+    "src/services/RelayAPIService.ts": "efeb873a32957640fa01e1ba7cafd094f8b35789decb59e62e409eaa86174bc3",
     "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "762ee820bf61b0a2d3dad480ac73b8705f99945a3cfc9d60126ca696c1fe44af"
   }
 }

@@ -52,7 +52,7 @@ import { useWalletStore } from '../../store/walletStore';
 import { isSavedAccrual, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
 import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
 import type { PVTAccrual } from '../../services/RelayAPIService';
-import { DestinationRow } from '../../components/ScreenActions';
+import { actionStyles, DestinationRow } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import ParticipationCard from '../../components/ParticipationCard';
 import { AppMenu } from '../../components/AppMenu';
@@ -226,7 +226,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
 
         const tasks: Promise<unknown>[] = [
             agentTask,
-            RelayAPIService.getRegisteredDevices()
+            RelayAPIService.getRegisteredDevicesOrThrow()
                 .then((devices) => {
                     const activeDevices = devices.filter((device) => device.status === 'active');
                     updateInputs(
@@ -236,21 +236,17 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     );
                 })
                 .catch((error) => console.error('[EarnHub] Failed to refresh devices:', error)),
-            RelayAPIService.listForgeInstalls()
+            RelayAPIService.listForgeInstallsOrThrow()
                 .then((forgeInstalls) => updateInputs({
                     activeForgeInstallProviders: forgeInstalls
                         .filter((install) => install.revoked_at === null)
                         .map((install) => install.provider),
                 }, {}, { forgeInstalls: true }))
                 .catch((error) => console.error('[EarnHub] Failed to refresh forge installs:', error)),
-            // A failed read still settles readiness (count unchanged): the card must
-            // never hold the person away from the proof flow, which re-reads the list.
             RelayAPIService.listOwnExternalAddresses()
-                .then((rows) => updateInputs(
-                    rows === null ? {} : { ownExternalWalletCount: rows.length },
-                    {},
-                    { ownExternalWallets: true },
-                ))
+                .then((rows) => {
+                    if (rows !== null) updateInputs({ ownExternalWalletCount: rows.length }, {}, { ownExternalWallets: true });
+                })
                 .catch((error) => console.error('[EarnHub] Failed to refresh proven wallets:', error)),
             RelayAPIService.getPVTAccrual()
                 .then((accrual) => setData((prev) => ({ ...prev, weeklyPEs: accrual?.weeklyPEs ?? null })))
@@ -328,6 +324,13 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
     const activeCount = allStatusesKnown
         ? liveSurfaces.filter((s) => data.statuses[s.id].status !== 'setup').length
         : null;
+    const { activeDeviceCount, linkedAgentCount, activeForgeInstallProviders, ownExternalWalletCount } = inputsRef.current;
+    const hasConnection = activeDeviceCount > 0 || linkedAgentCount > 0
+        || activeForgeInstallProviders.length > 0 || ownExternalWalletCount > 0;
+    const connectionStatusKnown = data.readiness.devices && data.readiness.linkedAgents
+        && data.readiness.forgeInstalls && data.readiness.ownExternalWallets;
+    const connectPrompt = hasConnection ? 'overhaul.connectNext'
+        : connectionStatusKnown ? 'overhaul.connectFirst' : 'overhaul.connections';
 
     return (
         <SafeAreaView style={styles.container}>
@@ -396,16 +399,18 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     </View>
                 )}
 
+                <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
                 <View style={styles.quickConnections}>
                     {QUICK_CONNECTIONS.map(({ surfaceId, labelKey }) => {
                         const surface = getSurface(surfaceId);
-                        const loading = !isSurfaceConnectionKnown(surface, data.readiness);
+                        const walletShortcut = surfaceId === 'own_external_wallet';
+                        const loading = !walletShortcut && !isSurfaceConnectionKnown(surface, data.readiness);
                         return (
                             <TouchableOpacity
                                 key={surfaceId}
                                 testID={`earn-shortcut-${surfaceId}`}
                                 style={styles.quickConnection}
-                                onPress={() => openSurface(surfaceId)}
+                                onPress={() => walletShortcut ? stack.navigate('ProveOwnWallet') : openSurface(surfaceId)}
                                 disabled={loading}
                                 accessibilityRole="button"
                                 accessibilityLabel={t(labelKey)}
@@ -423,6 +428,8 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                         );
                     })}
                 </View>
+                <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
+                    onPress={() => stack.navigate('ForgeConnect', { provider: 'github' })} />
 
                 <Text style={styles.quickConnectionText}>{t('earn.batchCadence')}</Text>
                 <Text style={styles.quickConnectionText}>{t('earn.settlementCadence')}</Text>

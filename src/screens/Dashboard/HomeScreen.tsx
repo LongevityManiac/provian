@@ -227,6 +227,8 @@ export default function HomeScreen() {
                         <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={start(() => tab.navigate('ChatTab'))} />
                         <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={start(() => stack.navigate('ComputerPairing'))} />
                         <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={start(() => stack.navigate('ConnectAgent', { mode: 'agent' }))} />
+                        <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
+                            onPress={start(() => stack.navigate('ForgeConnect', { provider: 'github' }))} />
                         <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={start(() => tab.navigate('CommonsTab'))} />
                         <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={start(() => stack.navigate('ProveOwnWallet'))} />
                         <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={start(() => stack.navigate('Vision'))} />

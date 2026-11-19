@@ -1969,13 +1969,18 @@ class RelayAPIService {
      */
     async listForgeInstalls(biometricAction?: BiometricAction): Promise<ForgeInstall[]> {
         try {
-            const response = await this.makeAuthenticatedRequest('/v1/witnesses/installs', undefined, undefined, biometricAction);
-            if (!response.ok) return [];
-            const data = (await response.json().catch(() => ({}))) as { installs?: ForgeInstall[] };
-            return Array.isArray(data.installs) ? data.installs : [];
+            return await this.listForgeInstallsOrThrow(biometricAction);
         } catch {
             return [];
         }
+    }
+
+    async listForgeInstallsOrThrow(biometricAction?: BiometricAction): Promise<ForgeInstall[]> {
+        const response = await this.makeAuthenticatedRequest('/v1/witnesses/installs', undefined, undefined, biometricAction);
+        if (!response.ok) throw new Error(`Connected code hosts request failed: HTTP ${response.status}`);
+        const data = await response.json() as { installs?: ForgeInstall[] };
+        if (!Array.isArray(data.installs)) throw new Error('Connected code hosts response is missing installs');
+        return data.installs;
     }
 
     /**
