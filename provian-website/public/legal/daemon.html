@@ -54,12 +54,12 @@ pre code { background:transparent; padding:0; }
 <p>Each agent model response that calls a tool, even one that errors, leaves one receipt; responses with no tool call do not mint. Each program has one witness: the session files it already writes, or the local proxy if it writes none, or OpenTelemetry if neither applies. An agent on its own machine with none of those, such as one living on its own computer in the cloud, has each command it runs witnessed from the operating system, one receipt per command. Changing model, provider or sign-in keeps the witness. A person’s own computer witnesses commits and desktop chat, not tool calls.</p>
 
 <p class="eyebrow">Setup</p>
-<h2>Two steps, one pairing.</h2>
-<p>Pairing starts on your phone. The app makes a one-time code; your computer proves it has it. No passwords, no accounts, no wallet keys on the computer.</p>
-<h3>01 · Generate your command in the app</h3>
-<p>In the Provian app: Connect → Your computer (or Earn tab → Your computer → Connect a computer). You get a one-time command with your setup token baked in (it expires shortly). Connecting more than one machine? Each computer needs its own command — generate a fresh one for each.</p>
+<h2>Connect your computer</h2>
+<p>Start in Provian on your phone. Your computer shows a code, and you confirm it on the phone.</p>
+<h3>01 · Confirm the code on your phone</h3>
+<p>Tap Connect my computer on your phone. Open provian.ai/pair on the computer, then scan its QR code or enter its code on the phone and confirm. For a computer without a browser, copy the setup command from the phone.</p>
 <h3>02 · Paste it into a terminal on that computer</h3>
-<p>Your token is already inside the command you copied, so there is nothing to fill in and nothing to install first. It sets up a Node.js runtime if you don't have one, registers the machine, installs the git commit hook, and starts the observer. Works on macOS and Linux; on Windows, use the PowerShell command shown in the app. Receipts start within minutes and appear in your Abundance tab.</p>
+<p>Copy the setup command from the pairing page and run it in Terminal on macOS or Linux, or PowerShell on Windows. The command starts the observer, and both screens show when the computer is connected. After your first proof arrives, open Earn to see it.</p>
 <pre><code>curl -sSL -H 'x-provian-token: …' &quot;https://api.provian.ai/v1/bootstrap/device&quot; | sh</code></pre>
 <h3>03 · Standing up an agent-owned device instead?</h3>
 <p>The agent runs invite-device --email &lt;addr&gt;, and whoever runs the machine gets a ready-to-run register-device --agent-token &lt;token&gt; by email, with no key or secret to paste. The receipts this machine produces then belong to the agent wallet. The setup link authorizes device registration only.</p>
