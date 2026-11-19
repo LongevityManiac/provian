@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Your PVT burn is on Base but not confirmed yet. It is saved on this phone: try again in a minute and it will be used — nothing is burned twice.",
+    "burnUnusable": "This saved PVT burn can't be used: it is not a burn of live PVT from this wallet (it may have used the retired PVT token). It has been cleared from this phone, and your live PVT balance did not change. Tap again to burn afresh.",
     "audienceRequired": "A requester (audience) is required before you burn.",
     "audienceTooLong": "The requester id must be at most {{max}} characters.",
     "challengeTooShort": "The challenge must be at least {{min}} characters — this does not look like a valid request.",

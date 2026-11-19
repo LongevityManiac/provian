@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('@react-native-async-storage/async-storage', () => ({ default: { getItem: vi.fn(), setItem: vi.fn() } }));
 
 import { obtainRecordedBurn, obtainBroadcastBurn, rememberRecordedBurn, markBurnConsumed, findPendingBurn, BurnStillFinalizingError, isBurnConsumedError, isRevertedBurnError,
-    isRevokedBurnError, isTransientRecordError, listPendingBurns, PHANTOM_BURN_AFTER_MS } from './pendingBurns';
+    isRevokedBurnError, isUnusableBurnError, isTransientRecordError, listPendingBurns, PHANTOM_BURN_AFTER_MS } from './pendingBurns';
 
 const ADDR = '0xAbC0000000000000000000000000000000000001';
 const AMT = '15000000000000000000';
@@ -129,6 +129,24 @@ describe('broadcast without waiting; the relay holds the record until the burn i
         // The consume-path refusal a SAVED, recorded burn meets after revocation.
         expect(isRevokedBurnError(new Error('this burn did not reach Base finality and was revoked (burn_revoked)'))).toBe(true);
         expect(isTransientRecordError(new Error('burn_revoked'))).toBe(false);
+    });
+
+    it('RED: a saved burn that mined with no live-PVT burn from this wallet (retired token) is forgotten, not retried', async () => {
+        const storage = memStorage();
+        const burn = vi.fn(async () => ({ txHash: '0xtx1', amountAtomic: AMT }));
+        const record = vi.fn(async () => { throw new Error('no_matching_pvt_burn_log'); });
+        await expect(obtainRecordedBurn({ address: ADDR, amountPvt: '15', amountAtomic: AMT }, { burn, record, storage, sleep: async () => {} })).rejects.toThrow(/can't be used/);
+        expect(record).toHaveBeenCalledTimes(1);
+        expect(await findPendingBurn(ADDR, AMT, storage)).toBeNull();
+        // the next tap burns afresh instead of resuming the unusable one
+        await obtainBroadcastBurn({ address: ADDR, amountPvt: '15', amountAtomic: AMT }, { burn, storage });
+        expect(burn).toHaveBeenCalledTimes(2);
+        expect(isUnusableBurnError(new Error('no_matching_pvt_burn_log'))).toBe(true);
+        expect(isUnusableBurnError(new Error('tx_from_mismatch'))).toBe(true);
+        // still-pending refusals stay saved and are retried
+        expect(isUnusableBurnError(new Error('tx_not_found'))).toBe(false);
+        expect(isUnusableBurnError(new Error('insufficient_confirmations: 0/12'))).toBe(false);
+        expect(isUnusableBurnError(new Error('rpc_error: timeout'))).toBe(false);
     });
 
     it('a client timeout during the relay hold (an aborted fetch) is transient', () => {

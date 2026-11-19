@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Sua queima de PVT está na Base, mas ainda não foi confirmada. Ela está salva neste telefone: tente de novo em um minuto e ela será usada; nada é queimado duas vezes.",
+    "burnUnusable": "Esta queima de PVT salva não pode ser usada: não é uma queima de PVT atual desta carteira (pode ter usado o token PVT aposentado). Ela foi removida deste telefone e seu saldo de PVT atual não mudou. Toque novamente para queimar de novo.",
     "audienceRequired": "É necessário um solicitante (audiência) antes de queimar.",
     "audienceTooLong": "O id do solicitante deve ter no máximo {{max}} caracteres.",
     "challengeTooShort": "O desafio deve ter pelo menos {{min}} caracteres; isto não parece um pedido válido.",

@@ -53,7 +53,7 @@ import { useWalletStore } from '../../store/walletStore';
 import SeedManager from '../../core/wallet/SeedManager';
 import TransactionService from '../../core/wallet/TransactionService';
 import RelayAPIService, { PresentationRefusedError } from '../../services/RelayAPIService';
-import { obtainBroadcastBurn, rememberRecordedBurn, markBurnConsumed, findPendingBurn, isBurnConsumedError, isRevertedBurnError, isRevokedBurnError, BurnStillFinalizingError, type BurnStage } from '../../core/presentation/pendingBurns';
+import { obtainBroadcastBurn, rememberRecordedBurn, markBurnConsumed, findPendingBurn, isBurnConsumedError, isUnusableBurnError, unusableBurnMessage, isRevertedBurnError, isRevokedBurnError, BurnStillFinalizingError, type BurnStage } from '../../core/presentation/pendingBurns';
 import { getActionTypeDisplay } from '../../utils/actionTypeDisplay';
 import {
     buildHumanPresentationRequest, validateRequesterBinding, evaluatePredicateLocally, burnIdForTx,
@@ -566,6 +566,15 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                 await markBurnConsumed(address, { txHash: operation.broadcast.txHash }).catch(() => undefined);
                 setSavedBurn(false);
                 Alert.alert(t('trustLayer.presenter.notCompletedTitle'), t('trustLayer.presenter.burnRevoked'));
+                return;
+            }
+            if (isUnusableBurnError(e)) {
+                // The saved burn mined but is not a live-PVT burn from this wallet (e.g. one made on the
+                // retired token by an older build). It can never be used: forget it, so the next tap burns afresh.
+                const unusable = operation.broadcast?.txHash ?? (await findPendingBurn(address, feeAtomic).catch(() => null))?.txHash;
+                if (unusable) await markBurnConsumed(address, { txHash: unusable }).catch(() => undefined);
+                setSavedBurn(false);
+                Alert.alert(t('trustLayer.presenter.notCompletedTitle'), unusableBurnMessage());
                 return;
             }
             if (isBurnConsumedError(e)) {

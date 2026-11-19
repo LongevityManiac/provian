@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Tu quema de PVT está en Base pero aún no se ha confirmado. Está guardada en este teléfono: inténtalo de nuevo en un minuto y se usará. Nada se quema dos veces.",
+    "burnUnusable": "Esta quema de PVT guardada no se puede usar: no es una quema de PVT vigente desde esta billetera (puede haber usado el token PVT retirado). Se ha borrado de este teléfono y tu saldo de PVT vigente no cambió. Toca de nuevo para quemar otra vez.",
     "audienceRequired": "Se necesita un solicitante (audiencia) antes de quemar.",
     "audienceTooLong": "El id del solicitante debe tener como máximo {{max}} caracteres.",
     "challengeTooShort": "El desafío debe tener al menos {{min}} caracteres. Esto no parece una solicitud válida.",

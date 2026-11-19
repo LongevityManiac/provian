@@ -79,6 +79,21 @@ export function isRevokedBurnError(err: unknown): boolean {
     return /\bburn_revoked\b|did not reach Base finality/i.test(m);
 }
 
+/**
+ * The relay's refusals that are final for THIS tx: it mined, but it carries no burn of live PVT
+ * from this wallet (for example a burn on the retired token, or a tx sent from another address).
+ * The receipt can never change, so the saved entry can never be used and is forgotten.
+ */
+export function isUnusableBurnError(err: unknown): boolean {
+    const m = err instanceof Error ? err.message : String(err ?? '');
+    return /\bno_matching_pvt_burn_log\b|\btx_from_mismatch\b|\btx_to_mismatch\b/.test(m);
+}
+
+/** The message shown when a saved burn turns out to be unusable (it has already been forgotten). */
+export function unusableBurnMessage(): string {
+    return translate('humanPresentation.burnUnusable', "This saved PVT burn can't be used: it is not a burn of live PVT from this wallet (it may have used the retired PVT token). It has been cleared from this phone, and your live PVT balance did not change. Tap again to burn afresh.");
+}
+
 /** The relay's "this burn already bought something" refusal. */
 export function isBurnConsumedError(err: unknown): boolean {
     const m = err instanceof Error ? err.message : String(err ?? '');
@@ -192,6 +207,10 @@ export async function obtainRecordedBurn(
             if (isRevokedBurnError(err)) {
                 await markBurnConsumed(opts.address, { txHash: entry.txHash }, storage);
                 throw new Error('This PVT burn did not confirm on Base, so it cannot be used. Try again.');
+            }
+            if (isUnusableBurnError(err)) {
+                await markBurnConsumed(opts.address, { txHash: entry.txHash }, storage);
+                throw new Error(unusableBurnMessage());
             }
             if (!isTransientRecordError(err)) throw err;
             if (now() >= deadline) throw new BurnStillFinalizingError(entry.txHash);

@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Votre destruction de PVT est sur Base mais n'est pas encore confirmée. Elle est enregistrée sur ce téléphone : réessayez dans une minute et elle sera utilisée ; rien n'est brûlé deux fois.",
+    "burnUnusable": "Cette destruction de PVT enregistrée ne peut pas être utilisée : ce n'est pas une destruction de PVT actuel depuis ce portefeuille (elle a peut-être utilisé l'ancien jeton PVT retiré). Elle a été effacée de ce téléphone et votre solde de PVT actuel n'a pas changé. Touchez à nouveau pour en effectuer une nouvelle.",
     "audienceRequired": "Un demandeur (audience) est requis avant de brûler.",
     "audienceTooLong": "L'identifiant du demandeur doit comporter au plus {{max}} caractères.",
     "challengeTooShort": "Le défi doit comporter au moins {{min}} caractères : cela ne ressemble pas à une demande valide.",

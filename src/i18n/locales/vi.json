@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Lần đốt PVT của bạn đã lên Base nhưng chưa được xác nhận. Nó được lưu trên điện thoại này: hãy thử lại sau một phút và nó sẽ được dùng; không có gì bị đốt hai lần.",
+    "burnUnusable": "Không thể dùng lượt đốt PVT đã lưu này: đây không phải là lượt đốt PVT hiện hành từ ví này (có thể đã dùng token PVT đã ngừng sử dụng). Lượt đốt đã được xóa khỏi điện thoại này và số dư PVT hiện hành của bạn không thay đổi. Chạm lại để đốt mới.",
     "audienceRequired": "Cần có bên yêu cầu (đối tượng nhận) trước khi bạn đốt.",
     "audienceTooLong": "Mã bên yêu cầu tối đa {{max}} ký tự.",
     "challengeTooShort": "Thử thách phải có ít nhất {{min}} ký tự; đây có vẻ không phải là một yêu cầu hợp lệ.",

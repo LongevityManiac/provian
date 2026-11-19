@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Pembakaran PVT Anda sudah ada di Base tetapi belum dikonfirmasi. Pembakaran itu tersimpan di ponsel ini: coba lagi dalam satu menit dan pembakaran itu yang akan dipakai; tidak ada yang dibakar dua kali.",
+    "burnUnusable": "Burn PVT tersimpan ini tidak dapat digunakan: ini bukan burn PVT aktif dari dompet ini (mungkin menggunakan token PVT yang sudah dipensiunkan). Burn ini telah dihapus dari ponsel ini, dan saldo PVT aktif Anda tidak berubah. Ketuk lagi untuk melakukan burn baru.",
     "audienceRequired": "Peminta (audiens) wajib diisi sebelum Anda membakar.",
     "audienceTooLong": "ID peminta paling banyak {{max}} karakter.",
     "challengeTooShort": "Tantangan harus paling sedikit {{min}} karakter; ini tidak tampak seperti permintaan yang valid.",

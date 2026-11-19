@@ -4734,6 +4734,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "你的 PVT 销毁已在 Base 上，但尚未确认。它已保存在这部手机上：一分钟后重试即会使用它，不会重复销毁。",
+    "burnUnusable": "这笔已保存的 PVT 销毁无法使用：它不是从此钱包销毁的现行 PVT（可能使用了已退役的 PVT 代币）。它已从此手机中清除，你的现行 PVT 余额没有变化。再次点按即可重新销毁。",
     "audienceRequired": "销毁之前需要指定请求方（受众）。",
     "audienceTooLong": "请求方 ID 最多 {{max}} 个字符。",
     "challengeTooShort": "挑战至少需要 {{min}} 个字符，这看起来不像有效的请求。",

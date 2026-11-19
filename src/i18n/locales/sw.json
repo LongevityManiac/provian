@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Uchomaji wako wa PVT uko kwenye Base lakini bado haujathibitishwa. Umehifadhiwa kwenye simu hii: jaribu tena baada ya dakika moja na utatumika; hakuna kinachochomwa mara mbili.",
+    "burnUnusable": "Uchomaji huu wa PVT uliohifadhiwa hauwezi kutumika: si uchomaji wa PVT hai kutoka pochi hii (huenda ulitumia tokeni ya PVT iliyostaafu). Umeondolewa kwenye simu hii, na salio lako la PVT hai halijabadilika. Gusa tena ili kuchoma upya.",
     "audienceRequired": "Mwombaji (hadhira) anahitajika kabla ya kuchoma.",
     "audienceTooLong": "Kitambulisho cha mwombaji kisizidi herufi {{max}}.",
     "challengeTooShort": "Changamoto lazima iwe na angalau herufi {{min}}; hili halionekani kama ombi halali.",

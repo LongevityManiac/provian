@@ -4733,6 +4733,7 @@
   },
   "humanPresentation": {
     "burnStillFinalizing": "Nasa Base na ang iyong PVT burn pero hindi pa nakukumpirma. Naka-save ito sa teleponong ito: subukang muli pagkalipas ng isang minuto at gagamitin ito; walang nabu-burn nang dalawang beses.",
+    "burnUnusable": "Hindi magagamit ang naka-save na PVT burn na ito: hindi ito burn ng kasalukuyang PVT mula sa wallet na ito (maaaring ginamit nito ang retiradong PVT token). Inalis na ito sa teleponong ito, at hindi nagbago ang iyong kasalukuyang PVT balance. Mag-tap muli para mag-burn ng bago.",
     "audienceRequired": "Kailangan ng humihiling (audience) bago ka mag-burn.",
     "audienceTooLong": "Hanggang {{max}} character lang ang id ng humihiling.",
     "challengeTooShort": "Dapat hindi bababa sa {{min}} character ang challenge; mukhang hindi ito valid na hiling.",
