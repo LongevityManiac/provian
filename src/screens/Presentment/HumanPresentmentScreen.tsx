@@ -63,6 +63,7 @@ import {
     parseChallengeEnvelope, verifyChallengeEnvelope, fetchRequesterKeysHttps, requesterDisplay,
     type ChallengeEnvelope, type ChallengeVerdict,
 } from '../../core/presentation/challengeEnvelope';
+import { presenterTierOptions } from '../../core/presentation/presenterTiers';
 import { presenterBurnDecision, type PresenterRefusal } from '../../core/presentation/presenterChallengeGate';
 import type { AppParamList } from '../../navigation/types';
 import { noteTalkingPassUsed } from '../../core/commons/talkingPassBus';
@@ -173,6 +174,10 @@ export default function HumanPresentmentScreen(): React.ReactElement {
     // handshake (to the applicant). Both bind on audience + window, so the caller passes selfChallenge.
     const commonsAct = deliverTo?.kind === 'vouch' || deliverTo?.kind === 'hire' ? deliverTo : null;
     const selfChallenge = route.params?.selfChallenge === true && commonsAct === null;
+    // A hire or a vouch is always at the reputation tier (a hire handshake takes the 15 PVT floor):
+    // no tier choice is offered for either.
+    const tierOptions = presenterTierOptions(commonsAct?.kind ?? null);
+    useEffect(() => { if (commonsAct !== null) setTier('reputation'); }, [commonsAct]);
     // The LIVE vocabulary (§2.5) — null until loaded; {} on a fresh actor.
     const [facts, setFacts] = useState<Record<string, number> | null>(null);
     const [standingPrefix, setStandingPrefix] = useState('standing.');
@@ -804,15 +809,17 @@ export default function HumanPresentmentScreen(): React.ReactElement {
                             </TouchableOpacity>
                         )}
 
-                        {/* Tier picker (§2.6: both tiers on the mobile presenter). */}
+                        {/* Tier picker (§2.6: both tiers on the mobile presenter; a hire or a vouch offers reputation only). */}
+                        {tierOptions.length > 1 && (
                         <View style={styles.tierRow}>
-                            {(['reputation', 'pe_fact'] as const).map((tr) => (
+                            {tierOptions.map((tr) => (
                                 <TouchableOpacity key={tr} style={[styles.tierBtn, tier === tr && styles.tierBtnActive]} onPress={() => setTier(tr)} disabled={busy}>
                                     <Text style={[styles.tierBtnText, tier === tr && styles.tierBtnTextActive]}>{tr === 'reputation' ? t('trustLayer.presenter.tierReputation') : t('trustLayer.presenter.tierPeFacts')}</Text>
                                     <Text style={[styles.tierFee, tier === tr && styles.tierBtnTextActive]}>{t('trustLayer.presenter.feeBurn', { fee: TIER_FEE_PVT[tr] })}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
+                        )}
                         </>)}
 
                         {/* WHO is asking — verified before any burn. */}
