@@ -222,10 +222,11 @@ export default function HomeScreen() {
                             </ActionPressable>
                         </View>
                         <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={() => tab.navigate('ChatTab')} />
-                        <DestinationRow label={t('overhaul.connectComputer')} icon="computer" onPress={() => stack.navigate('ComputerPairing')} />
+                        <DestinationRow label={t('connectAgent.deviceTitle')} detail={t('overhaul.connectComputerDetail')}
+                            icon="computer" onPress={() => stack.navigate('ComputerPairing')} />
+                        <DestinationRow label={t('overhaul.connectCodeHosting')} detail={t('overhaul.connectCodeHostingDetail')}
+                            stockIcon="git-branch-outline" onPress={() => stack.navigate('ConnectAgent', { mode: 'codeHost' })} />
                         <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={() => stack.navigate('ConnectAgent', { mode: 'agent' })} />
-                        <DestinationRow label={t('overhaul.connectGitHub')} stockIcon="logo-github"
-                            onPress={() => stack.navigate('ForgeConnect', { provider: 'github' })} />
                         <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={() => tab.navigate('CommonsTab')} />
                         <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={() => stack.navigate('ProveOwnWallet')} />
                         <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={() => stack.navigate('Vision')} />
