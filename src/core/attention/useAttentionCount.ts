@@ -21,32 +21,49 @@ import { useWalletStore } from '../../store/walletStore';
 
 const POLL_MS = 30_000;
 
-/** A load's result with its start order (monotonic per process). */
+/** A load's result with its start order (monotonic per process) and the wallet it was read for. */
 interface SequencedAttention {
     readonly snapshot: AttentionSnapshot;
     readonly seq: number;
+    readonly address: string | null;
 }
 
 let loadSeq = 0;
-let inFlight: { generation: number; run: Promise<SequencedAttention> } | null = null;
+let inFlight: { generation: number; address: string | null; run: Promise<SequencedAttention> } | null = null;
+
+const sameWallet = (a: string | null | undefined, b: string | null | undefined): boolean =>
+    (a ?? '').toLowerCase() === (b ?? '').toLowerCase();
 
 function loadAttentionSequenced(): Promise<SequencedAttention> {
     const generation = attentionRefreshGeneration();
-    if (inFlight && inFlight.generation >= generation) return inFlight.run;
+    const address = useWalletStore.getState().address ?? null;
+    // Join a load in flight only for the same wallet; a switch starts its own.
+    if (inFlight && inFlight.generation >= generation && sameWallet(inFlight.address, address)) return inFlight.run;
     const seq = ++loadSeq;
-    const address = useWalletStore.getState().address;
     const run = loadAttention().then((snapshot) => {
-        // The bell opens on this count next time, for this wallet only.
-        void saveWalletTop('attentionCount', address, snapshot.count);
-        return { snapshot, seq };
+        // The bell opens on this count next time, for this wallet only — and only a count the
+        // relay actually answered (a failed load reads as 0 and must never replace a known count).
+        if (snapshot.answered) void saveWalletTop('attentionCount', address, snapshot.count);
+        return { snapshot, seq, address };
     });
-    const entry = { generation, run };
+    const entry = { generation, address, run };
     inFlight = entry;
     void run.then(
         () => { if (inFlight === entry) inFlight = null; },
         () => { if (inFlight === entry) inFlight = null; },
     );
     return run;
+}
+
+/**
+ * Whether a finished load may set the bell for the wallet now shown: the relay must have answered
+ * (a failed load reads as 0) and the load must have been for this same wallet.
+ */
+export function attentionLoadApplies(
+    result: { readonly snapshot: Pick<AttentionSnapshot, 'answered'>; readonly address: string | null },
+    currentAddress: string | null | undefined,
+): boolean {
+    return result.snapshot.answered && sameWallet(result.address, currentAddress);
 }
 
 /**
@@ -78,7 +95,24 @@ export function useAttentionCount(): { count: number; refresh: () => void } {
     // Set once a load has answered here; the saved count never replaces a count read now.
     const loaded = React.useRef(false);
     const address = useWalletStore((state) => state.address);
+    const addressRef = React.useRef(address);
+    addressRef.current = address;
 
+    const refresh = React.useCallback(() => {
+        void loadAttentionSequenced().then((r) => {
+            // Only an answered load for the wallet now shown; a failed one keeps the last count.
+            if (!mounted.current || !attentionLoadApplies(r, addressRef.current)) return;
+            // Newest load wins: an older round resolving late never overwrites a newer count.
+            if (!accept(r.seq)) return;
+            loaded.current = true;
+            setCount(r.snapshot.count);
+        }, () => {
+            // Degrade to the last known count.
+        });
+    }, [accept]);
+
+    // A wallet switch empties the bell, seeds that wallet's saved count and loads it.
+    const firstAddress = React.useRef(true);
     React.useEffect(() => {
         loaded.current = false;
         setCount(0); // never another wallet's count
@@ -86,19 +120,10 @@ export function useAttentionCount(): { count: number; refresh: () => void } {
         void readWalletTop('attentionCount', address, isSavedCount).then((saved) => {
             if (current && saved && !loaded.current) setCount(saved.value);
         });
+        if (!firstAddress.current) refresh();
+        firstAddress.current = false;
         return () => { current = false; };
-    }, [address]);
-
-    const refresh = React.useCallback(() => {
-        void loadAttentionSequenced().then((r) => {
-            // Newest load wins: an older round resolving late never overwrites a newer count.
-            if (!mounted.current || !accept(r.seq)) return;
-            loaded.current = true;
-            setCount(r.snapshot.count);
-        }, () => {
-            // Degrade to the last known count.
-        });
-    }, [accept]);
+    }, [address, refresh]);
 
     React.useEffect(() => {
         mounted.current = true;

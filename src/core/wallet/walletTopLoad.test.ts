@@ -74,3 +74,119 @@ describe('readWithRetry', () => {
         expect(read).toHaveBeenCalledTimes(1);
     });
 });
+
+import { WalletTopLoader, walletTopNote, type WalletTopSaved } from './walletTopLoad';
+
+function deferred<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => { resolve = r; });
+    return { promise, resolve };
+}
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
+
+function harness(saved: Record<string, WalletTopSaved<V>> = {}) {
+    const reads: Array<{ resolve: (v: V | null) => void }> = [];
+    const savedReads: Record<string, ReturnType<typeof deferred<WalletTopSaved<V> | null>>> = {};
+    const writes: Array<[string, V]> = [];
+    const emits: Array<{ shown: WalletTopShown<V>; busy: boolean }> = [];
+    const loader = new WalletTopLoader<V>({
+        read: () => { const d = deferred<V | null>(); reads.push(d); return d.promise; },
+        readSaved: (address) => {
+            savedReads[address] = deferred<WalletTopSaved<V> | null>();
+            return savedReads[address].promise;
+        },
+        save: (address, value) => { writes.push([address, value]); },
+        onChange: (shown, busy) => { emits.push({ shown, busy }); },
+        delaysMs: [],
+        sleep: async () => undefined,
+        now: () => 999,
+    });
+    const releaseSaved = async (address: string) => { savedReads[address].resolve(saved[address] ?? null); await flush(); };
+    return { loader, reads, writes, emits, releaseSaved };
+}
+
+describe('WalletTopLoader', () => {
+    it('opens on the saved answer, then shows and saves the fresh one; the spinner ends', async () => {
+        const h = harness({ A: { value: { n: 1 }, savedAtMs: 100 } });
+        h.loader.setAddress('A');
+        const load = h.loader.load();
+        await h.releaseSaved('A');
+        expect(h.loader.state).toEqual({ value: { n: 1 }, savedAtMs: 100, phase: 'updating' });
+        h.reads[0].resolve({ n: 2 });
+        await load;
+        expect(h.loader.state).toEqual({ value: { n: 2 }, savedAtMs: 999, phase: 'fresh' });
+        expect(h.writes).toEqual([['A', { n: 2 }]]);
+        expect(h.emits.at(-1)?.busy).toBe(false);
+    });
+
+    it('a saved answer arriving after the fresh one never replaces it', async () => {
+        const h = harness({ A: { value: { n: 1 }, savedAtMs: 100 } });
+        h.loader.setAddress('A');
+        const load = h.loader.load();
+        h.reads[0].resolve({ n: 2 });
+        await load;
+        await h.releaseSaved('A');
+        expect(h.loader.state.value).toEqual({ n: 2 });
+    });
+
+    it('a read begun for one wallet changes nothing when it lands after a switch', async () => {
+        const h = harness({ B: { value: { n: 7 }, savedAtMs: 50 } });
+        h.loader.setAddress('A');
+        const loadA = h.loader.load();
+        h.loader.setAddress('B');
+        await h.releaseSaved('B');
+        h.reads[0].resolve({ n: 1 }); // A's answer, late
+        await loadA;
+        expect(h.loader.state).toEqual({ value: { n: 7 }, savedAtMs: 50, phase: 'updating' });
+        expect(h.writes).toEqual([]);
+    });
+
+    it('a saved answer for the previous wallet never seeds the new one', async () => {
+        const h = harness({ A: { value: { n: 1 }, savedAtMs: 100 } });
+        h.loader.setAddress('A');
+        h.loader.setAddress('B');
+        await h.releaseSaved('A');
+        expect(h.loader.state.value).toBeNull();
+    });
+
+    it('a failed read keeps the saved answer and saves nothing; with nothing saved it is the error', async () => {
+        const withSaved = harness({ A: { value: { n: 1 }, savedAtMs: 100 } });
+        withSaved.loader.setAddress('A');
+        await withSaved.releaseSaved('A');
+        const load = withSaved.loader.load();
+        withSaved.reads[0].resolve(null);
+        await load;
+        expect(withSaved.loader.state).toEqual({ value: { n: 1 }, savedAtMs: 100, phase: 'saved' });
+        expect(withSaved.writes).toEqual([]);
+
+        const empty = harness();
+        empty.loader.setAddress('A');
+        await empty.releaseSaved('A');
+        const load2 = empty.loader.load();
+        empty.reads[0].resolve(null);
+        await load2;
+        expect(empty.loader.state.phase).toBe('failed');
+        expect(empty.emits.at(-1)?.busy).toBe(false);
+    });
+
+    it('overlapping loads share one read', async () => {
+        const h = harness();
+        h.loader.setAddress('A');
+        const one = h.loader.load();
+        const two = h.loader.load();
+        expect(h.reads).toHaveLength(1);
+        h.reads[0].resolve({ n: 3 });
+        await Promise.all([one, two]);
+        const three = h.loader.load();
+        expect(h.reads).toHaveLength(2);
+        h.reads[1].resolve({ n: 4 });
+        await three;
+    });
+
+    it('the note: "Updating…" while refreshing a saved answer, "Updated <age>" after a failed refresh, none when fresh', () => {
+        const t = (key: string, o?: Record<string, unknown>) => (o ? `${key}:${String(o.age ?? o.count)}` : key);
+        expect(walletTopNote({ value: { n: 1 }, savedAtMs: 1, phase: 'updating' }, t, 'u', 'a')).toBe('u');
+        expect(walletTopNote({ value: { n: 1 }, savedAtMs: 1_000, phase: 'saved' }, t, 'u', 'a', 1_000 + 5 * 60_000)).toBe('a:commonsHome.minutesAgo:5');
+        expect(walletTopNote({ value: { n: 1 }, savedAtMs: 1, phase: 'fresh' }, t, 'u', 'a')).toBeUndefined();
+    });
+});

@@ -1,3 +1,5 @@
+import { timeAgo } from '../../utils/timeAgo';
+
 /**
  * How a relay-loaded value at the top of the Wallet screen is shown while it loads, refreshes and
  * fails. The rule: once the screen holds an answer (saved earlier or loaded now) it keeps showing
@@ -78,4 +80,107 @@ export async function readWithRetry<T>(
         if (attempt >= delays.length) return null;
         await sleep(delays[attempt]);
     }
+}
+
+export interface WalletTopSaved<T> {
+    readonly value: T;
+    readonly savedAtMs: number;
+}
+
+export interface WalletTopLoaderOptions<T> {
+    /** One relay read. `null` or a throw means the relay did not answer — never an empty answer. */
+    readonly read: () => Promise<T | null>;
+    readonly readSaved: (address: string) => Promise<WalletTopSaved<T> | null>;
+    readonly save: (address: string, value: T) => unknown;
+    readonly onChange: (shown: WalletTopShown<T>, busy: boolean) => void;
+    readonly delaysMs?: readonly number[];
+    readonly sleep?: (ms: number) => Promise<void>;
+    readonly now?: () => number;
+}
+
+/**
+ * One relay-loaded value at the top of the Wallet screen, for one wallet at a time.
+ *
+ * - `setAddress` switches wallets: the screen empties, the new wallet's saved answer seeds it, and
+ *   every read begun for the previous wallet is ignored when it lands.
+ * - `load` reads with retries. Overlapping calls share the read in flight; a read that lands after
+ *   a newer one began, or after a wallet switch, changes nothing.
+ * - A saved answer never replaces an answer read in this session.
+ */
+export class WalletTopLoader<T> {
+    private shown: WalletTopShown<T> = initialWalletTop<T>();
+    private address: string | null = null;
+    /** Bumped on every wallet switch. */
+    private epoch = 0;
+    /** Bumped on every read begun. */
+    private run = 0;
+    private inFlight: Promise<void> | null = null;
+
+    constructor(private readonly options: WalletTopLoaderOptions<T>) {}
+
+    get state(): WalletTopShown<T> {
+        return this.shown;
+    }
+
+    setAddress(address: string | null): void {
+        if (address === this.address) return;
+        this.address = address;
+        this.epoch += 1;
+        this.run += 1;
+        this.inFlight = null;
+        this.set(initialWalletTop<T>());
+        if (!address) return;
+        const epoch = this.epoch;
+        void this.options.readSaved(address).then(saved => {
+            if (saved && this.epoch === epoch) this.set(seedWalletTop(this.shown, saved.value, saved.savedAtMs));
+        }, () => undefined);
+    }
+
+    load(): Promise<void> {
+        if (this.inFlight) return this.inFlight;
+        const address = this.address;
+        if (!address) return Promise.resolve();
+        const epoch = this.epoch;
+        const run = ++this.run;
+        const current = () => this.epoch === epoch && this.run === run;
+        this.set(startWalletTop(this.shown), true);
+        const flight = (async () => {
+            const data = await readWithRetry(this.options.read, {
+                delaysMs: this.options.delaysMs,
+                sleep: this.options.sleep,
+                isCancelled: () => !current(),
+            });
+            if (!current()) return;
+            if (data !== null) {
+                this.set(succeedWalletTop(this.shown, data, (this.options.now ?? Date.now)()), false);
+                void this.options.save(address, data);
+            } else {
+                this.set(failWalletTop(this.shown), false);
+            }
+        })().finally(() => {
+            if (this.inFlight === flight) this.inFlight = null;
+        });
+        this.inFlight = flight;
+        return flight;
+    }
+
+    private set(shown: WalletTopShown<T>, busy: boolean = this.inFlight !== null): void {
+        this.shown = shown;
+        this.options.onChange(shown, busy);
+    }
+}
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** The quiet line under a shown answer: "Updating…" while it refreshes, "Updated <age>" after a failed refresh. */
+export function walletTopNote<T>(
+    shown: WalletTopShown<T>,
+    t: Translate,
+    updatingKey: string,
+    updatedAgoKey: string,
+    nowMs: number = Date.now(),
+): string | undefined {
+    if (shown.phase === 'updating') return t(updatingKey);
+    if (shown.phase === 'saved' && shown.savedAtMs !== null) return t(updatedAgoKey, { age: timeAgo(shown.savedAtMs, t, nowMs) });
+    return undefined;
 }

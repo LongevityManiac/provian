@@ -104,13 +104,19 @@ export interface AttentionSnapshot {
     readonly items: readonly AttentionItem[];
     readonly count: number;
     readonly counts: AttentionCounts;
+    /**
+     * Whether the relay answered this load. Two of its authenticated reads report a failure as
+     * null (the others read a failure as an empty list), so a load where either failed — offline,
+     * an expired session — is not an answer: its count is not shown or saved over a known one.
+     */
+    readonly answered: boolean;
 }
 
 const ZERO_COUNTS: AttentionCounts = {
     approvals: 0, presentations: 0, recovery: 0, threads: 0, jobs: 0, linkRequests: 0, promises: 0, consents: 0,
     challenges: 0, threadPresentations: 0,
 };
-const EMPTY: AttentionSnapshot = { items: [], count: 0, counts: ZERO_COUNTS };
+const EMPTY: AttentionSnapshot = { items: [], count: 0, counts: ZERO_COUNTS, answered: false };
 
 /**
  * Run one source so that NOTHING it does can fail the aggregate: a rejected promise, a synchronous
@@ -271,7 +277,7 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
             safely(() => RelayAPIService.getAgentRecoveryAlerts(), [] as AgentRecoveryAlert[]),
             safely(() => unreadThreads().then((r) => r.threads), [] as ThreadDocument[]),
             safely(() => loadJobAttention(), [] as { job: HumanJob; reason: JobAttentionReason }[]),
-            safely(() => RelayAPIService.getLinkRequests().then((r) => r?.link_requests ?? []), [] as AgentLinkRequest[]),
+            safely(() => RelayAPIService.getLinkRequests(), null as { link_requests: AgentLinkRequest[] } | null),
             safely(() => RelayAPIService.listMyHumanPromises(), null as { promises: RelayHumanPromiseDocument[]; myAddress: string } | null),
             safely(() => getPendingConsents().then((r) => r?.consents ?? []), [] as PublicationConsent[]),
             safely(() => getMyChallenges().then((r) => r?.challenges ?? []), [] as CommonsChallenge[]),
@@ -289,7 +295,9 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
         const liveApprovals = (Array.isArray(approvals) ? approvals : []).filter((a) => isLive(a.expires_at_ms, now));
         const livePresentations = (Array.isArray(presentations) ? presentations : [])
             .filter((p) => presentationNeedsHuman(p.status) && isLive(p.expires_at_ms, now));
-        const liveLinkRequests = (Array.isArray(linkReqs) ? linkReqs : [])
+        const answered = linkReqs !== null && promises !== null;
+        const linkRequestList = linkReqs?.link_requests;
+        const liveLinkRequests = (Array.isArray(linkRequestList) ? linkRequestList : [])
             .filter((r) => typeof r.expires_at === 'number' && r.expires_at > now);
         const myPromises: { promise: RelayHumanPromiseDocument; reason: PromiseAttentionReason }[] = [];
         if (promises && Array.isArray(promises.promises)) {
@@ -355,6 +363,7 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
         return {
             items,
             count: items.length,
+            answered,
             counts: {
                 approvals: liveApprovals.length,
                 presentations: livePresentations.length,

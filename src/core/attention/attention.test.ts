@@ -75,6 +75,15 @@ describe('loadAttention', () => {
         expect(snap.items).toEqual([]);
     });
 
+    it('an empty answer is answered; a failed load (either null-reporting read failing) is not', async () => {
+        expect((await loadAttention()).answered).toBe(true);
+        getLinkRequests.mockResolvedValue(null);
+        expect((await loadAttention())).toEqual(expect.objectContaining({ count: 0, answered: false }));
+        getLinkRequests.mockResolvedValue({ link_requests: [], count: 0 });
+        listMyHumanPromises.mockRejectedValue(new Error('offline'));
+        expect((await loadAttention()).answered).toBe(false);
+    });
+
     it('counts approvals + actionable presentations + recovery; EXCLUDES a challenged (agent-side) request', async () => {
         getWalletApprovalRequests.mockResolvedValue([{ request_id: 'apr_1', agent_wallet_id: 'aw', action_description: 'x', action_description_sha256: 'sha256:0', subject_pe_id: null, created_at_ms: 100, expires_at_ms: 0 }]);
         getWalletPresentationRequests.mockResolvedValue([

@@ -17,7 +17,7 @@ import { createNewestLoadGate, loadAttentionShared } from './useAttentionCount';
 import { requestAttentionRefresh } from './attentionRefresh';
 
 function snapshot(count: number): AttentionSnapshot {
-    return { items: [], count, counts: {} as AttentionSnapshot['counts'] };
+    return { items: [], count, counts: {} as AttentionSnapshot['counts'], answered: true };
 }
 
 function deferred<T>(): { promise: Promise<T>; resolve: (v: T) => void } {
@@ -78,5 +78,21 @@ describe('createNewestLoadGate — a late older load never overwrites a newer co
         expect(accept(1)).toBe(false); // RED control: the stale pre-mutation round is refused
         expect(accept(2)).toBe(true); // a shared round delivered to a second consumer path
         expect(accept(3)).toBe(true);
+    });
+});
+
+import { attentionLoadApplies } from './useAttentionCount';
+
+describe('attentionLoadApplies — the bell shows only an answered count for the wallet shown', () => {
+    const answered = { answered: true };
+    it('applies an answered load for the same wallet, in any letter case', () => {
+        expect(attentionLoadApplies({ snapshot: answered, address: '0xAbC' }, '0xabc')).toBe(true);
+    });
+    it('a failed load (read as 0) never sets or replaces the count', () => {
+        expect(attentionLoadApplies({ snapshot: { answered: false }, address: '0xabc' }, '0xabc')).toBe(false);
+    });
+    it('a load begun for another wallet never sets this wallet\'s bell', () => {
+        expect(attentionLoadApplies({ snapshot: answered, address: '0xaaa' }, '0xbbb')).toBe(false);
+        expect(attentionLoadApplies({ snapshot: answered, address: null }, '0xbbb')).toBe(false);
     });
 });

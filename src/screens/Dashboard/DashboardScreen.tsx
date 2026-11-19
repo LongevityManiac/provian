@@ -25,13 +25,9 @@ import ParticipationCard from '../../components/ParticipationCard';
 import relayService from '../../services/RelayAPIService';
 import type { PVTAccrual, LinkedAgent } from '../../services/RelayAPIService';
 import { deriveAgentStatus, type AgentStatusTone } from '../../core/agents/agentStatus';
-import { agentsLoadOnEnd, agentsLoadOnStart, yourAgentsCardMode, type AgentsLoad } from './yourAgentsCard';
+import { yourAgentsCardMode } from './yourAgentsCard';
 import { isSavedAccrual, isSavedAgentList, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
-import {
-    failWalletTop, initialWalletTop, readWithRetry, seedWalletTop, startWalletTop, succeedWalletTop,
-    type WalletTopShown,
-} from '../../core/wallet/walletTopLoad';
-import { timeAgo } from '../../utils/timeAgo';
+import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
 import { useAttentionCount } from '../../core/attention/useAttentionCount';
 import TransactionHistoryService, { isApprovalScanEnabled } from '../../core/history/TransactionHistoryService';
 import type { Transaction } from '../../core/history/TransactionHistoryService';
@@ -110,41 +106,27 @@ const DashboardScreen = ({ navigation }: any) => {
     const backgroundGradient = GRADIENTS.backgroundDiagonal;
     const cardGradient = GRADIENTS.balanceCardGlow;
 
-    // The participation card (the projected figure). It opens on the answer saved for this wallet
-    // and keeps showing an answer once it has one: a refresh is a quiet "Updating…" note, a
-    // refresh that finally failed is "Updated <age>". "Couldn't load" appears only when there is
-    // nothing to show — never a confident zero for a failed read (see walletTopLoad.ts).
+    // The participation card (the projected figure) and the Your Agents card. Each opens on the
+    // answer saved for this wallet and keeps showing an answer once it has one: a refresh is a quiet
+    // "Updating…" note, a refresh whose retries all failed is "Updated <age>". "Couldn't load"
+    // appears only when there is nothing to show — never a confident zero or an invented empty
+    // list for a failed read. Races (late reads, wallet switches) live in WalletTopLoader.
     const [participation, setParticipation] = useState<WalletTopShown<PVTAccrual>>(initialWalletTop);
     const [pvtRefreshing, setPvtRefreshing] = useState(false);
-    // Each load (and each wallet) gets a number; an older one finishing late changes nothing.
-    const participationRun = useRef(0);
-
+    const participationLoader = useRef<WalletTopLoader<PVTAccrual> | null>(null);
+    participationLoader.current ??= new WalletTopLoader<PVTAccrual>({
+        read: () => relayService.getPVTAccrual(),
+        readSaved: async (wallet) => {
+            const saved = await readWalletTop('accrual', wallet, isSavedAccrual);
+            return saved ? { value: saved.value as PVTAccrual, savedAtMs: saved.savedAtMs } : null;
+        },
+        save: (wallet, value) => saveWalletTop('accrual', wallet, value),
+        onChange: (shown, busy) => { setParticipation(shown); setPvtRefreshing(busy); },
+    });
+    const loadParticipation = useCallback(() => participationLoader.current!.load(), []);
     React.useEffect(() => {
-        participationRun.current += 1;
-        setParticipation(initialWalletTop());
-        let current = true;
-        void readWalletTop('accrual', address, isSavedAccrual).then(saved => {
-            if (current && saved) setParticipation(prev => seedWalletTop(prev, saved.value as PVTAccrual, saved.savedAtMs));
-        });
-        return () => { current = false; };
-    }, [address]);
-
-    const loadParticipation = useCallback(async () => {
-        const run = ++participationRun.current;
-        const wallet = address;
-        setPvtRefreshing(true);
-        setParticipation(startWalletTop);
-        const data = await readWithRetry(() => relayService.getPVTAccrual(), {
-            isCancelled: () => participationRun.current !== run,
-        });
-        if (participationRun.current !== run) return;
-        if (data) {
-            setParticipation(prev => succeedWalletTop(prev, data, Date.now()));
-            void saveWalletTop('accrual', wallet, data);
-        } else {
-            setParticipation(failWalletTop);
-        }
-        setPvtRefreshing(false);
+        participationLoader.current!.setAddress(address ?? null);
+        void participationLoader.current!.load();
     }, [address]);
 
     useFocusEffect(
@@ -152,11 +134,7 @@ const DashboardScreen = ({ navigation }: any) => {
             void loadParticipation();
         }, [loadParticipation])
     );
-    const participationNote = participation.phase === 'updating'
-        ? t('dashboard.participationUpdating')
-        : participation.phase === 'saved' && participation.savedAtMs !== null
-            ? t('dashboard.participationUpdatedAgo', { age: timeAgo(participation.savedAtMs, t) })
-            : undefined;
+    const participationNote = walletTopNote(participation, t, 'dashboard.participationUpdating', 'dashboard.participationUpdatedAgo');
 
     // Recent crypto transactions for the Wallet tab activity section.
     //
@@ -192,53 +170,28 @@ const DashboardScreen = ({ navigation }: any) => {
         }, [address, solanaAddress])
     );
 
-    // the human's linked agents, for the first-class "Your Agents" card
-    // (the one-tap path to see/manage an agent). liveness comes from the
-    // linked record's capture heartbeat — relay sessions no longer exist.
-    const [linkedAgents, setLinkedAgents] = useState<LinkedAgent[]>([]);
-    // Whether the list above is an answer yet: the card says "connect an agent" only after a
-    // load that returned none (yourAgentsCardMode).
-    const [agentsLoad, setAgentsLoad] = useState<AgentsLoad>('loading');
-
-    // Each load (and each wallet) gets a number; an older one finishing late changes nothing.
-    const agentsRun = useRef(0);
-    // Whether this wallet's list has been read from the relay in this session.
-    const agentsFresh = useRef(false);
-    // The saved list for this wallet shows at once; a list read in this session is never replaced by it.
+    // the human's linked agents, for the first-class "Your Agents" card (the one-tap path to
+    // see/manage an agent). Liveness comes from the linked record's capture heartbeat. The read
+    // throws on failure, so a failed read is never taken as "no agents" and never saved as one.
+    const [agents, setAgents] = useState<WalletTopShown<LinkedAgent[]>>(initialWalletTop);
+    const agentsLoader = useRef<WalletTopLoader<LinkedAgent[]> | null>(null);
+    agentsLoader.current ??= new WalletTopLoader<LinkedAgent[]>({
+        read: () => relayService.getLinkedAgents({ throwOnError: true }).then(({ linked_agents }) => linked_agents ?? []),
+        readSaved: async (wallet) => {
+            const saved = await readWalletTop('linkedAgents', wallet, isSavedAgentList);
+            return saved ? { value: saved.value as LinkedAgent[], savedAtMs: saved.savedAtMs } : null;
+        },
+        save: (wallet, value) => saveWalletTop('linkedAgents', wallet, value),
+        onChange: (shown) => setAgents(shown),
+    });
+    const loadLinkedAgents = useCallback(() => { void agentsLoader.current!.load(); }, []);
     React.useEffect(() => {
-        agentsRun.current += 1;
-        agentsFresh.current = false;
-        setLinkedAgents([]);
-        setAgentsLoad('loading');
-        let current = true;
-        void readWalletTop('linkedAgents', address, isSavedAgentList).then(saved => {
-            if (!current || !saved || agentsFresh.current) return;
-            setLinkedAgents(saved.value as LinkedAgent[]);
-            setAgentsLoad(prev => (prev === 'loading' || prev === 'failed' ? 'loaded' : prev));
-        });
-        return () => { current = false; };
+        agentsLoader.current!.setAddress(address ?? null);
+        void agentsLoader.current!.load();
     }, [address]);
-
-    const loadLinkedAgents = useCallback(() => {
-        const run = ++agentsRun.current;
-        const wallet = address;
-        setAgentsLoad(agentsLoadOnStart);
-        void readWithRetry(
-            () => relayService.getLinkedAgents().then(({ linked_agents }) => linked_agents ?? []),
-            { isCancelled: () => agentsRun.current !== run },
-        ).then(list => {
-            if (agentsRun.current !== run) return;
-            if (list) {
-                agentsFresh.current = true;
-                setLinkedAgents(list);
-                void saveWalletTop('linkedAgents', wallet, list);
-            }
-            setAgentsLoad((prev) => agentsLoadOnEnd(prev, list !== null));
-        });
-        return () => { if (agentsRun.current === run) agentsRun.current += 1; };
-    }, [address]);
-
     useFocusEffect(loadLinkedAgents);
+    const linkedAgents = agents.value ?? [];
+    const agentsNote = walletTopNote(agents, t, 'dashboard.participationUpdating', 'dashboard.participationUpdatedAgo');
 
     // Coming back to the app reloads what the top of this screen shows (only while it is in view).
     const reloadTopOnForeground = useRef<() => void>(() => undefined);
@@ -326,7 +279,7 @@ const DashboardScreen = ({ navigation }: any) => {
     // directly on the agent (AgentDetail if one, AgentHub if several). When no
     // agent is linked, it stays a discoverable "connect an agent" entry.
     const renderYourAgentsCard = () => {
-        const mode = yourAgentsCardMode(agentsLoad, linkedAgents.length);
+        const mode = yourAgentsCardMode(agents.phase, linkedAgents.length);
         if (mode === 'loading') {
             return (
                 <View style={styles.agentsCard} accessibilityRole="progressbar">
@@ -405,6 +358,7 @@ const DashboardScreen = ({ navigation }: any) => {
                     <Text style={[styles.agentsSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
                         {t('yourAgents.peCount', { count: primary.pe_count })}
                         {linkedAgents.length > 1 ? ` · ${t('yourAgents.andMore', { count: linkedAgents.length - 1 })}` : ''}
+                        {agentsNote ? ` · ${agentsNote}` : ''}
                     </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
