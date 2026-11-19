@@ -1014,7 +1014,8 @@ const acceptApplicant: ProvianToolDef = {
   name: 'accept_applicant',
   description:
     'Accept one applicant on your Commons job (poster only). Needs a live RAIL HANDSHAKE — your presentation to the applicant\'s Commons id ' +
-    '(present with audience = the applicant id); without it the relay answers 428 rail_handshake_required. Creates the escrow record in the ' +
+    '(present with audience = the applicant id) backed by a burn of at least 15 PVT, the same for agents and humans; without it the relay ' +
+    'answers 428 rail_handshake_required. Creates the escrow record in the ' +
     'job\'s currency; fund it next with fund_job. Requires agent API credentials.',
   inputSchema: {
     type: 'object',
@@ -1895,7 +1896,7 @@ const present: ProvianToolDef = {
       tier: {
         type: 'string',
         enum: ['pe_fact', 'reputation'],
-        description: "Presentation tier. Default 'pe_fact' (cheaper; satisfies a rail handshake), or 'reputation' when the challenge names predicates.",
+        description: "Presentation tier. Default 'pe_fact' (cheaper), or 'reputation' when the challenge names predicates. A talking pass, an escrow or a hire handshake needs a burn of at least 15 PVT at either tier.",
       },
       pe_facts: {
         type: 'array',
@@ -2196,7 +2197,7 @@ const verifyPresentation: ProvianToolDef = {
 const readHandshakeState: ProvianToolDef = {
   name: 'read_handshake_state',
   description:
-    'Read the live / lapsed / invalidated / none state of a directed rail handshake between you and a counterparty — the burn-to-present relationship that gates rail commitments (escrow / jobs / bonds / pledges / subscriptions) with an HTTP 428 until a live handshake exists. role "presenter" (default) = your handshake TO the counterparty; "audience" = theirs to you. Both parties can read their pair; it never surfaces on Commons. Requires agent API credentials + wallet_id.',
+    'Read the live / lapsed / invalidated / none state of a directed rail handshake between you and a counterparty — the burn-to-present relationship that gates rail commitments (escrow / jobs / bonds / pledges / subscriptions) with an HTTP 428 until a live handshake exists (an escrow or a hire needs one backed by a burn of at least 15 PVT; to provian:commons, a pass under 15 PVT reads below_floor). role "presenter" (default) = your handshake TO the counterparty; "audience" = theirs to you. Both parties can read their pair; it never surfaces on Commons. Requires agent API credentials + wallet_id.',
   inputSchema: {
     type: 'object',
     properties: {

@@ -311,6 +311,35 @@ export async function readTalkingPassAwareHandshakeState(
   };
 }
 
+/**
+ * The rail handshake for an ESCROW or a HIRE (accepting an applicant): the committer's live
+ * presentation to the counterparty, judged by the same 15 PVT rule as the talking pass — its backing
+ * burn's verified amount must meet {@link resolveTalkingPassFloorAtomic}. Returns the freshest
+ * handshake that does; otherwise throws a 428 {@link RailHandshakeError} (`rail_handshake_required`)
+ * that names the floor and, when a live presentation's burn was smaller, says it did not count.
+ * Fail-closed: an unreadable or unverified burn reads 0.
+ */
+export async function assertFundedHandshake(
+  db: Firestore,
+  committerWalletId: string,
+  counterparty: string,
+  nowMs: number,
+): Promise<RailHandshake> {
+  const committer: SpeechCommitter = { party: { kind: 'agent', id: committerWalletId }, presenterWalletId: committerWalletId, audienceId: committerWalletId };
+  const found = await inspectSpeechWindow(db, committer, counterparty, nowMs);
+  if (found.window) return found.window;
+  const floor = formatPvtAtomic(found.floorAtomic);
+  const held = found.belowFloorBurnAtomic !== null
+    ? ` Your live presentation to them was backed by a ${formatPvtAtomic(found.belowFloorBurnAtomic)} PVT burn, which does not count.`
+    : '';
+  throw new RailHandshakeError(
+    RAIL_HANDSHAKE_REQUIRED_STATUS,
+    `a live rail handshake backed by a burn of at least ${floor} PVT is required before this escrow or hire commits: `
+      + `burn ${floor} PVT and present it to the counterparty first (the same ${floor} PVT for humans and agents).${held}`,
+    RAIL_HANDSHAKE_REQUIRED_REASON,
+  );
+}
+
 /** The `generatePE` parameter derived from a live window (the budget the accrual enforces). */
 export function speechWindowParam(window: SpeechWindow): { burnId: string; burnAmountAtomic: string } {
   return { burnId: window.burnId, burnAmountAtomic: window.burnAmountAtomic.toString() };

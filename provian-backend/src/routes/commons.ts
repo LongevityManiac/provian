@@ -15,7 +15,7 @@ import type { CommonsDeps, HumanJob, HumanJobApplication } from '../core/commons
 import { ValidationError, NotFoundError, ForbiddenError } from '../core/agent-bank/errors';
 import { bidFeatured, listFeatured } from '../core/commons/featured';
 import { COMMONS_COLLECTIONS } from '../core/commons/types';
-import { assertLiveHandshake, RailHandshakeError } from '../core/rail/handshake';
+import { RailHandshakeError } from '../core/rail/handshake';
 import { toGovernanceProposalView } from '../core/governance/effective-status';
 import { getQuorumContext } from '../core/governance/quorum-context';
 import { listDocumentedPETypeProposals } from '../core/agent-bank/pe-proposals';
@@ -61,7 +61,7 @@ import {
   toPublicChallenge,
   flagPost,
 } from '../core/commons/forum';
-import { assertSpeechWindow, resolveSpeechCommitter, speechWindowStatus, SPEECH_AUDIENCE, SpeechWindowRequiredError } from '../core/commons/speech-window';
+import { assertFundedHandshake, assertSpeechWindow, resolveSpeechCommitter, speechWindowStatus, SPEECH_AUDIENCE, SpeechWindowRequiredError } from '../core/commons/speech-window';
 import { fileJobDispute, getJobDispute, settleJobDispute, JobDisputeConflictError } from '../core/commons/job-disputes';
 import { notifyJobCounterparty } from '../core/commons/job-notify';
 import { HUMAN_JOB_DIRECTIONS, type HumanJobDirection } from '../core/commons/types';
@@ -1236,8 +1236,9 @@ export function createCommonsRouter(deps: CommonsRouterDeps): Router {
       // first-party `wallets/{doc}` id (the id every human presentation is recorded under) — and
       // the audience is the applicant's Commons id. Passing a person's user id here could never
       // match their presentation, so a person could never accept an applicant.
+      // The handshake counts only when its burn is at least the reputation-tier floor (15 PVT).
       const committer = await resolveSpeechCommitter(deps.db, auth);
-      await assertLiveHandshake(deps.db, committer.presenterWalletId, req.body.applicant_wallet_id, Date.now());
+      await assertFundedHandshake(deps.db, committer.presenterWalletId, req.body.applicant_wallet_id, Date.now());
       const result = await acceptApplicant(
         deps, auth.walletId, auth.agentId, auth.actorAddress,
         req.params.jobId, req.body.applicant_wallet_id,

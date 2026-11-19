@@ -9,7 +9,9 @@
  */
 import { describe, it, expect } from '@jest/globals';
 import type { Firestore } from 'firebase-admin/firestore';
+import { RailHandshakeError } from '../rail/handshake';
 import {
+  assertFundedHandshake,
   SPEECH_AUDIENCE,
   SpeechWindowRequiredError,
   assertSpeechWindow,
@@ -234,5 +236,49 @@ describe('the handshake-state read judges a provian:commons pass by the talking-
   it('no presentation reads none, with the floor named', async () => {
     const db = createFakeFirestore();
     expect(await readTalkingPassAwareHandshakeState(db as unknown as Firestore, AGENT, SPEECH_AUDIENCE, NOW)).toMatchObject({ state: 'none', min_burn_pvt: '15' });
+  });
+});
+
+describe('escrow and hire handshakes take the same 15 PVT burn', () => {
+  const APPLICANT = 'wallet_aw_applicant';
+
+  it('RED: a live 5 PVT handshake to the counterparty does not let an escrow or hire commit — 428 names the 15 PVT floor', async () => {
+    const db = createFakeFirestore();
+    seedPresentation(db, AGENT, APPLICANT, NOW - DAY);
+    seedBurn(db, BURN, AGENT, FIVE_PVT);
+    const err = await assertFundedHandshake(db as unknown as Firestore, AGENT, APPLICANT, NOW).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RailHandshakeError);
+    expect((err as RailHandshakeError).status).toBe(428);
+    expect((err as RailHandshakeError).reason).toBe('rail_handshake_required');
+    expect((err as Error).message).toMatch(/at least 15 PVT is required before this escrow or hire commits/);
+    expect((err as Error).message).toMatch(/5 PVT burn, which does not count/);
+  });
+
+  it('a live 15 PVT handshake commits it (either tier); no handshake is refused without a below-floor note', async () => {
+    for (const tier of ['pe_fact', 'reputation'] as const) {
+      const db = createFakeFirestore();
+      seedPresentation(db, AGENT, APPLICANT, NOW - DAY, BURN, tier);
+      seedBurn(db, BURN, AGENT, FIFTEEN_PVT);
+      expect((await assertFundedHandshake(db as unknown as Firestore, AGENT, APPLICANT, NOW)).burnId).toBe(BURN);
+    }
+    const none = await assertFundedHandshake(createFakeFirestore() as unknown as Firestore, AGENT, APPLICANT, NOW).catch((e: unknown) => e);
+    expect((none as Error).message).not.toMatch(/does not count/);
+  });
+
+  it('the phone hire (a person presenting from the first-party wallet id, reputation tier, 15 PVT) still commits', async () => {
+    const db = createFakeFirestore();
+    db.store.set('wallets/wdoc_h', { user_id: 'user_h', type: 'human', address: `0x${'1'.repeat(40)}` });
+    seedPresentation(db, 'wdoc_h', APPLICANT, NOW - DAY, BURN, 'reputation');
+    seedBurn(db, BURN, 'wdoc_h', FIFTEEN_PVT);
+    const committer = await resolveSpeechCommitter(db as unknown as Firestore, { walletId: 'user_h', isAgent: false });
+    expect((await assertFundedHandshake(db as unknown as Firestore, committer.presenterWalletId, APPLICANT, NOW)).burnId).toBe(BURN);
+  });
+
+  it('the floor is read from policy: scheduled at 20, a 15 PVT handshake is refused', async () => {
+    const db = createFakeFirestore();
+    seedPresentation(db, AGENT, APPLICANT, NOW - DAY);
+    seedBurn(db, BURN, AGENT, FIFTEEN_PVT);
+    db.store.set('burn_floor_policy/presentation_reputation', { floor_atomic: (20n * 10n ** 18n).toString() });
+    await expect(assertFundedHandshake(db as unknown as Firestore, AGENT, APPLICANT, NOW)).rejects.toThrow(/at least 20 PVT/);
   });
 });

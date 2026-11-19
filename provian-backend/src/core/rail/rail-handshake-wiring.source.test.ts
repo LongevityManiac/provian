@@ -18,10 +18,10 @@ function read(rel: string): string {
 
 /** Each gated commitment site + the exact gate call it must contain. */
 const GATED: ReadonlyArray<{ label: string; file: string; call: string }> = [
-  { label: 'escrow /create (depositor → recipient)', file: 'routes/agent-escrow.ts', call: 'assertLiveHandshake(deps.db, body.depositor_wallet_id, body.recipient_wallet_id' },
+  { label: 'escrow /create (depositor → recipient)', file: 'routes/agent-escrow.ts', call: 'assertFundedHandshake(deps.db, body.depositor_wallet_id, body.recipient_wallet_id' },
   // the agent-only board folded into the Commons hiring board; its accept route answers
   // 410 (pinned below). The ONE hiring accept gates poster (presenter id) → applicant.
-  { label: 'commons-jobs accept (poster presenter → applicant)', file: 'routes/commons.ts', call: 'assertLiveHandshake(deps.db, committer.presenterWalletId, req.body.applicant_wallet_id' },
+  { label: 'commons-jobs accept (poster presenter → applicant)', file: 'routes/commons.ts', call: 'assertFundedHandshake(deps.db, committer.presenterWalletId, req.body.applicant_wallet_id' },
   // a person's vouch rides the same reputation gate (core module, not a route).
   { label: 'human vouch (person presenter → vouchee)', file: 'core/commons/burn-vouch.ts', call: "assertLiveHandshake(db, wallet.walletId, target.partyId, nowMs, 'reputation')" },
   { label: 'bonds /post (agent → commons)', file: 'routes/agent-bonds.ts', call: 'assertLiveHandshake(db, walletId, RAIL_COMMONS_AUDIENCE' },

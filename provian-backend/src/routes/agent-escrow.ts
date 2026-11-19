@@ -33,7 +33,8 @@ import type { AgentBankChain } from '../core/agent-bank/chain-registry';
 import { RateLimitError } from '../core/agent-bank/errors';
 import { enqueueAgentBankEvent, twoPartyTargeting } from '../core/agent-bank/event-outbox';
 import { makeAgentProvenanceUrl } from '../provenance-links';
-import { assertLiveHandshake, RailHandshakeError } from '../core/rail/handshake';
+import { RailHandshakeError } from '../core/rail/handshake';
+import { assertFundedHandshake } from '../core/commons/speech-window';
 
 function handleError(res: Response, error: unknown): void {
   if (error instanceof RailHandshakeError) {
@@ -102,9 +103,10 @@ export function createAgentEscrowRouter(deps: AgentBankDeps): Router {
       // mediated commitment. The depositor (the party seeking trust for the
       // action) must hold a live presentation to the recipient before the escrow
       // commits — one burn-backed handshake per relationship covers its actions
-      // in the window; no separate/stacked burn here. Raw PVT transfer is NOT
-      // gated (see core/rail/handshake.ts). Throws 428 if none is live.
-      await assertLiveHandshake(deps.db, body.depositor_wallet_id, body.recipient_wallet_id, Date.now());
+      // in the window; no separate/stacked burn here. The handshake counts only when its burn is
+      // at least the reputation-tier floor (15 PVT), as for the Commons talking pass. Raw PVT
+      // transfer is NOT gated (see core/rail/handshake.ts). Throws 428 if none is live.
+      await assertFundedHandshake(deps.db, body.depositor_wallet_id, body.recipient_wallet_id, Date.now());
 
       const escrow = await createEscrow(deps, body);
 
