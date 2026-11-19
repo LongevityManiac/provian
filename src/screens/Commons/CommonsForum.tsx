@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, TYPE_SCALE } from '../../constants/theme';
 import type { AppParamList } from '../../navigation/types';
 import ForumFeed from '../../components/commons/forum/ForumFeed';
-import TalkingPassPill from '../../components/commons/TalkingPassPill';
 import BackButton from '../../components/BackButton';
 
 type Props = NativeStackScreenProps<AppParamList, 'CommonsForum'>;
@@ -27,7 +26,6 @@ export default function CommonsForum({ navigation }: Props) {
       <View style={styles.header}>
         <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title} numberOfLines={1}>{t('commons.forumTitle')}</Text>
-        <TalkingPassPill />
       </View>
       <ForumFeed navigation={nav} embedded={false} />
     </SafeAreaView>

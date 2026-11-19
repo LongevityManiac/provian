@@ -1,12 +1,12 @@
+import { AppMenu } from '../../components/AppMenu';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { requireBiometric, BiometricNotAvailableError, BiometricAuthError } from '../../core/security/requireBiometric';
 // [F19] expo-device import removed with the DEV agent-send simulator button.
 import * as Clipboard from 'expo-clipboard';
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
@@ -20,14 +20,6 @@ import OnRampReconciler from '../../core/onramp/OnRampReconciler';
 import TokenIcon from '../../components/TokenIcon';
 import BackupNotConfiguredBanner from '../../components/BackupNotConfiguredBanner';
 import FilingRecordsLine from '../../components/FilingRecordsLine';
-import { useBiometricLabel } from '../../core/security/biometricLabel';
-import ParticipationCard from '../../components/ParticipationCard';
-import relayService from '../../services/RelayAPIService';
-import type { PVTAccrual, LinkedAgent } from '../../services/RelayAPIService';
-import { deriveAgentStatus, type AgentStatusTone } from '../../core/agents/agentStatus';
-import { yourAgentsCardMode } from './yourAgentsCard';
-import { isSavedAccrual, isSavedAgentList, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
-import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
 import { useAttentionCount } from '../../core/attention/useAttentionCount';
 import TransactionHistoryService, { isApprovalScanEnabled } from '../../core/history/TransactionHistoryService';
 import type { Transaction } from '../../core/history/TransactionHistoryService';
@@ -49,7 +41,6 @@ const DashboardScreen = ({ navigation }: any) => {
     } = useWalletStore();
     const { t } = useTranslation();
     const { colors: themeColors } = useTheme();
-    const bio = useBiometricLabel();
 
     // FIX: L-3 - Track whether this is the user's first visit to the dashboard
     // so we can show "Welcome" instead of "Welcome back".
@@ -106,36 +97,6 @@ const DashboardScreen = ({ navigation }: any) => {
     const backgroundGradient = GRADIENTS.backgroundDiagonal;
     const cardGradient = GRADIENTS.balanceCardGlow;
 
-    // The participation card (the projected figure) and the Your Agents card. Each opens on the
-    // answer saved for this wallet and keeps showing an answer once it has one: a refresh is a quiet
-    // "Updating…" note, a refresh whose retries all failed is "Updated <age>". "Couldn't load"
-    // appears only when there is nothing to show — never a confident zero or an invented empty
-    // list for a failed read. Races (late reads, wallet switches) live in WalletTopLoader.
-    const [participation, setParticipation] = useState<WalletTopShown<PVTAccrual>>(initialWalletTop);
-    const [pvtRefreshing, setPvtRefreshing] = useState(false);
-    const participationLoader = useRef<WalletTopLoader<PVTAccrual> | null>(null);
-    participationLoader.current ??= new WalletTopLoader<PVTAccrual>({
-        read: () => relayService.getPVTAccrual(),
-        readSaved: async (wallet) => {
-            const saved = await readWalletTop('accrual', wallet, isSavedAccrual);
-            return saved ? { value: saved.value as PVTAccrual, savedAtMs: saved.savedAtMs } : null;
-        },
-        save: (wallet, value) => saveWalletTop('accrual', wallet, value),
-        onChange: (shown, busy) => { setParticipation(shown); setPvtRefreshing(busy); },
-    });
-    const loadParticipation = useCallback(() => participationLoader.current!.load(), []);
-    React.useEffect(() => {
-        participationLoader.current!.setAddress(address ?? null);
-        void participationLoader.current!.load();
-    }, [address]);
-
-    useFocusEffect(
-        useCallback(() => {
-            void loadParticipation();
-        }, [loadParticipation])
-    );
-    const participationNote = walletTopNote(participation, t, 'dashboard.participationUpdating', 'dashboard.participationUpdatedAgo');
-
     // Recent crypto transactions for the Wallet tab activity section.
     //
     // [Wallet/Abundance split] The Wallet tab shows ON-CHAIN crypto activity
@@ -169,45 +130,6 @@ const DashboardScreen = ({ navigation }: any) => {
             })();
         }, [address, solanaAddress])
     );
-
-    // the human's linked agents, for the first-class "Your Agents" card (the one-tap path to
-    // see/manage an agent). Liveness comes from the linked record's capture heartbeat. The read
-    // throws on failure, so a failed read is never taken as "no agents" and never saved as one.
-    const [agents, setAgents] = useState<WalletTopShown<LinkedAgent[]>>(initialWalletTop);
-    const agentsLoader = useRef<WalletTopLoader<LinkedAgent[]> | null>(null);
-    agentsLoader.current ??= new WalletTopLoader<LinkedAgent[]>({
-        read: () => relayService.getLinkedAgents({ throwOnError: true }).then(({ linked_agents }) => linked_agents ?? []),
-        readSaved: async (wallet) => {
-            const saved = await readWalletTop('linkedAgents', wallet, isSavedAgentList);
-            return saved ? { value: saved.value as LinkedAgent[], savedAtMs: saved.savedAtMs } : null;
-        },
-        save: (wallet, value) => saveWalletTop('linkedAgents', wallet, value),
-        onChange: (shown) => setAgents(shown),
-    });
-    const loadLinkedAgents = useCallback(() => { void agentsLoader.current!.load(); }, []);
-    React.useEffect(() => {
-        agentsLoader.current!.setAddress(address ?? null);
-        void agentsLoader.current!.load();
-    }, [address]);
-    useFocusEffect(loadLinkedAgents);
-    const linkedAgents = agents.value ?? [];
-    const agentsNote = walletTopNote(agents, t, 'dashboard.participationUpdating', 'dashboard.participationUpdatedAgo');
-
-    // Coming back to the app reloads what the top of this screen shows (only while it is in view).
-    const reloadTopOnForeground = useRef<() => void>(() => undefined);
-    reloadTopOnForeground.current = () => {
-        if (!navigation.isFocused?.()) return;
-        void loadParticipation();
-        loadLinkedAgents();
-    };
-    React.useEffect(() => {
-        let previous = AppState.currentState;
-        const subscription = AppState.addEventListener('change', next => {
-            if (next === 'active' && previous !== 'active') reloadTopOnForeground.current();
-            previous = next;
-        });
-        return () => subscription.remove();
-    }, []);
 
     const [addressCopied, setAddressCopied] = useState(false);
 
@@ -270,103 +192,6 @@ const DashboardScreen = ({ navigation }: any) => {
 
     // [F19] handleTestAgentTransaction (DEV agent-send simulator) removed.
 
-    // a status tone → theme color, shared with the "Your Agents" card.
-    const agentToneColor = (tone: AgentStatusTone): string =>
-        tone === 'positive' ? COLORS.success : tone === 'warning' ? COLORS.warning : themeColors.textSecondary;
-
-    // the first-class "Your Agents" card — the ONE obvious tap from the
-    // Wallet home to see/manage an agent (the operator’s decided placement). Lands
-    // directly on the agent (AgentDetail if one, AgentHub if several). When no
-    // agent is linked, it stays a discoverable "connect an agent" entry.
-    const renderYourAgentsCard = () => {
-        const mode = yourAgentsCardMode(agents.phase, linkedAgents.length);
-        if (mode === 'loading') {
-            return (
-                <View style={styles.agentsCard} accessibilityRole="progressbar">
-                    <View style={styles.agentsIcon}>
-                        <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.title')}</Text>
-                    </View>
-                    <ActivityIndicator size="small" color={COLORS.primary} />
-                </View>
-            );
-        }
-        if (mode === 'failed') {
-            return (
-                <TouchableOpacity style={styles.agentsCard} onPress={() => { loadLinkedAgents(); }} activeOpacity={0.85} accessibilityRole="button">
-                    <View style={styles.agentsIcon}>
-                        <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.title')}</Text>
-                        <Text style={[styles.agentsSubtitle, { color: themeColors.textSecondary }]} numberOfLines={2}>{t('yourAgents.loadFailed')}</Text>
-                    </View>
-                    <Text style={[styles.agentsManage, { color: COLORS.primary }]}>{t('common.tryAgain')}</Text>
-                </TouchableOpacity>
-            );
-        }
-        if (mode === 'connect') {
-            return (
-                <TouchableOpacity
-                    style={styles.agentsCard}
-                    onPress={() => navigation.navigate('ConnectAgent', { mode: 'agent' })}
-                    activeOpacity={0.85}
-                >
-                    <View style={styles.agentsIcon}>
-                        <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.connectTitle')}</Text>
-                        <Text style={[styles.agentsSubtitle, { color: themeColors.textSecondary }]} numberOfLines={2}>{t('yourAgents.connectSubtitle')}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
-                </TouchableOpacity>
-            );
-        }
-
-        const primary = linkedAgents[0];
-        const status = deriveAgentStatus({ linked: primary });
-        const goToPrimary = () => {
-            if (linkedAgents.length > 1) {
-                navigation.navigate('AgentHub');
-            } else {
-                navigation.navigate('AgentDetail', { agentId: primary.agent_id });
-            }
-        };
-
-        return (
-            <TouchableOpacity style={styles.agentsCard} onPress={goToPrimary} activeOpacity={0.85}>
-                <View style={styles.agentsIcon}>
-                    <Ionicons name="hardware-chip" size={20} color={COLORS.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                    <View style={styles.agentsTitleRow}>
-                        <Text style={[styles.agentsTitle, { color: themeColors.textPrimary }]}>{t('yourAgents.title')}</Text>
-                        {linkedAgents.length > 1 && (
-                            <Text style={[styles.agentsManage, { color: COLORS.primary }]}>{t('yourAgents.manage')}</Text>
-                        )}
-                    </View>
-                    <View style={styles.agentsMetaRow}>
-                        <Text style={[styles.agentsName, { color: themeColors.textPrimary }]} numberOfLines={1}>
-                            {primary.display_name || primary.agent_id}
-                        </Text>
-                        <View style={[styles.agentsStatusDot, { backgroundColor: agentToneColor(status.tone) }]} />
-                        <Text style={[styles.agentsStatusText, { color: agentToneColor(status.tone) }]}>{t(status.labelKey)}</Text>
-                    </View>
-                    <Text style={[styles.agentsSubtitle, { color: themeColors.textSecondary }]} numberOfLines={1}>
-                        {t('yourAgents.peCount', { count: primary.pe_count })}
-                        {linkedAgents.length > 1 ? ` · ${t('yourAgents.andMore', { count: linkedAgents.length - 1 })}` : ''}
-                        {agentsNote ? ` · ${agentsNote}` : ''}
-                    </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
-            </TouchableOpacity>
-        );
-    };
-
-
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
             <LinearGradient
@@ -376,7 +201,7 @@ const DashboardScreen = ({ navigation }: any) => {
                 end={{ x: 1, y: 1 }}
             />
             <ScrollView contentContainerStyle={styles.scrollContent}
-                refreshControl={<RefreshControl refreshing={pvtRefreshing || isLoadingBalances} onRefresh={() => { void loadParticipation(); void refreshBalances(); }} tintColor={COLORS.primary} />}>
+                refreshControl={<RefreshControl refreshing={isLoadingBalances} onRefresh={() => { void refreshBalances(); }} tintColor={COLORS.primary} />}>
                 {/* 1. Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
@@ -445,9 +270,7 @@ const DashboardScreen = ({ navigation }: any) => {
                         <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('ProfileEdit')}>
                             <Ionicons name="person" size={20} color={COLORS.text} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                            <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                        </TouchableOpacity>
+                        <AppMenu />
                     </View>
                 </View>
 
@@ -475,19 +298,7 @@ const DashboardScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
 
-                {/* 2. Participation Card */}
-                <ParticipationCard
-                    pvtAccrual={participation.value}
-                    loadError={participation.phase === 'failed'}
-                    note={participationNote}
-                    onRetry={loadParticipation}
-                    onPress={() => navigation.navigate('MyProvenance')}
-                />
 
-                {/* 3. Agent Status Bar */}
-
-                {/* 3.5 Your Agents — first-class one-tap path to see/manage an agent */}
-                {renderYourAgentsCard()}
 
                 {/* 4. Balance Card */}
                 <View style={[
@@ -1025,6 +836,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     balanceAmount: {
+        fontVariant: ['tabular-nums'],
         fontSize: 48,
         fontWeight: 'bold',
         color: COLORS.text,
@@ -1171,6 +983,7 @@ const styles = StyleSheet.create({
         fontSize: 11,
     },
     assetBalance: {
+        fontVariant: ['tabular-nums'],
         color: COLORS.text,
         fontSize: 18,
         fontWeight: 'bold',

@@ -1,3 +1,7 @@
+import { CommonsWriteHost } from '../components/commons/CommonsWriteSheet';
+import BuildWithProvianScreen from '../screens/Vision/BuildWithProvianScreen';
+import ComputerPairingScreen from '../screens/Agent/ComputerPairingScreen';
+import CommonsHowItWorksScreen from '../screens/Commons/CommonsHowItWorksScreen';
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, Linking } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
@@ -427,6 +431,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 {/* Commons */}
                 <Stack.Screen name="CommonsOnboarding" component={CommonsOnboarding} />
                 <Stack.Screen name="CommonsDashboard" component={CommonsDashboard} />
+                <Stack.Screen name="CommonsHowItWorks" component={CommonsHowItWorksScreen} />
                 <Stack.Screen name="CommonsProfile" component={CommonsProfile} />
                 <Stack.Screen name="CommonsRegistry" component={CommonsRegistry} />
                 <Stack.Screen name="CommonsMarket" component={CommonsMarket} />
@@ -460,6 +465,8 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="Attestation" component={AttestationScreen} />
                 <Stack.Screen name="MainTabs" component={TabNavigator} />
                 <Stack.Screen name="Dashboard" component={DashboardScreen} />
+                <Stack.Screen name="BuildWithProvian" component={BuildWithProvianScreen} />
+                <Stack.Screen name="ComputerPairing" component={ComputerPairingScreen} />
                 <Stack.Screen name="Send" component={SendScreen} />
                 <Stack.Screen name="HumanPresentment" component={HumanPresentmentScreen} />
                 <Stack.Screen name="PresentationRequester" component={PresentationRequesterScreen} />
@@ -545,6 +552,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 </Stack.Navigator>
                 {/* the one talking-pass sheet, opened from any Commons screen. */}
                 <TalkingPassHost />
+                <CommonsWriteHost />
             </NavigationContainer>
         </ErrorBoundary>
     );

@@ -94,21 +94,21 @@ export interface DaemonStep {
 
 export const DAEMON_SETUP_SECTION = {
   eyebrow: 'Setup',
-  heading: 'Two steps, one pairing.',
-  lede: 'Pairing starts on your phone. The app makes a one-time code; your computer proves it has it. No passwords, no accounts, no wallet keys on the computer.',
+  heading: 'Connect your computer',
+  lede: 'Start in Provian on your phone. Your computer shows a code, and you confirm it on the phone.',
 } as const
 
 export const DAEMON_STEPS: readonly DaemonStep[] = [
   {
     n: '01',
-    title: 'Generate your command in the app',
-    body: 'In the Provian app: Connect → Your computer (or Earn tab → Your computer → Connect a computer). You get a one-time command with your setup token baked in (it expires shortly). Connecting more than one machine? Each computer needs its own command — generate a fresh one for each.',
+    title: 'Confirm the code on your phone',
+    body: 'Tap Connect my computer on your phone. Open provian.ai/pair on the computer, then scan its QR code or enter its code on the phone and confirm. For a computer without a browser, copy the setup command from the phone.',
     cmd: null,
   },
   {
     n: '02',
     title: 'Paste it into a terminal on that computer',
-    body: 'Your token is already inside the command you copied, so there is nothing to fill in and nothing to install first. It sets up a Node.js runtime if you don\'t have one, registers the machine, installs the git commit hook, and starts the observer. Works on macOS and Linux; on Windows, use the PowerShell command shown in the app. Receipts start within minutes and appear in your Abundance tab.',
+    body: 'Copy the setup command from the pairing page and run it in Terminal on macOS or Linux, or PowerShell on Windows. The command starts the observer, and both screens show when the computer is connected. After your first proof arrives, open Earn to see it.',
     cmd: 'curl -sSL -H \'x-provian-token: …\' "https://api.provian.ai/v1/bootstrap/device" | sh',
   },
   {

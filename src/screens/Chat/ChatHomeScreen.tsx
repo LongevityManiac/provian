@@ -11,6 +11,8 @@
  * See design notes docs/PHASE_2C_DESIGN_NOTES.md §5.M6.
  */
 
+import { PrimaryAction } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
 import React, { useCallback, useState } from 'react';
 import {
     View,
@@ -38,7 +40,6 @@ import {
     chatHomeGate,
     type MobileChatConsent,
 } from '../../core/capture/mobileChatConsent';
-import ChatCaptureConsentScreen from './ChatCaptureConsentScreen';
 
 interface ProviderPresentation {
     id: string;
@@ -114,17 +115,8 @@ const ChatHomeScreen: React.FC = () => {
 
     const handleAccept = useCallback(async () => {
         await setMobileChatConsent(true);
-        setConsent(true);
+        setConsent(await getMobileChatConsent());
     }, []);
-
-    const handleDecline = useCallback(async () => {
-        await setMobileChatConsent(false);
-        setConsent(false);
-    }, []);
-
-    const goToSettings = useCallback(() => {
-        navigation.navigate('Settings');
-    }, [navigation]);
 
     const gate = chatHomeGate(consent);
 
@@ -140,50 +132,18 @@ const ChatHomeScreen: React.FC = () => {
         );
     }
 
-    if (gate === 'decision') {
-        return (
-            <ChatCaptureConsentScreen
-                onAccept={handleAccept}
-                onDecline={handleDecline}
-            />
-        );
-    }
-
-    if (gate === 'declined') {
+    if (gate !== 'picker') {
         return (
             <LinearGradient colors={GRADIENTS.backgroundDiagonal} style={styles.root}>
                 <StatusBar barStyle="light-content" />
                 <SafeAreaView style={styles.safe} edges={['top']}>
                     <View style={styles.header}>
                         <Text style={styles.title}>{t('chatHome.title')}</Text>
-                        <Text style={styles.subtitle}>
-                            {t('chatHome.captureOff')}
-                        </Text>
                     </View>
                     <View style={styles.declinedBody}>
-                        <View style={styles.declinedIconWrap}>
-                            <Ionicons
-                                name="chatbubbles-outline"
-                                size={36}
-                                color={COLORS.textTertiary}
-                            />
-                        </View>
-                        <Text style={styles.declinedTitle}>
-                            {t('chatHome.declinedTitle')}
-                        </Text>
-                        <Text style={styles.declinedCopy}>
-                            {t('chatHome.declinedCopy')}
-                        </Text>
-                        <TouchableOpacity
-                            style={styles.declinedButton}
-                            onPress={goToSettings}
-                            accessibilityRole="button"
-                            accessibilityLabel={t('chatHome.enableInSettingsLabel')}
-                        >
-                            <Text style={styles.declinedButtonText}>
-                                {t('chatHome.enableInSettings')}
-                            </Text>
-                        </TouchableOpacity>
+                        <ProvianIcon name="chat" size={50} color={COLORS.primaryLight} />
+                        <Text style={styles.declinedCopy}>{t('overhaul.chatOff')}</Text>
+                        <PrimaryAction label={t('overhaul.enableChat')} onPress={() => { void handleAccept(); }} />
                     </View>
                 </SafeAreaView>
             </LinearGradient>

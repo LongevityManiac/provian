@@ -1,3 +1,5 @@
+import { DestinationRow } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
 import i18next from 'i18next';
 /**
@@ -393,11 +395,7 @@ export default function EnvelopeDetailScreen({
                     <BackButton onPress={() => navigation.goBack()} style={{ marginBottom: SPACING.s }} />
                     <View style={styles.actionTypeRow}>
                         <View style={[styles.actionTypeIconBg, { backgroundColor: `${getActionTypeDisplay(envelope.action_type).color}20` }]}>
-                            <Ionicons
-                                name={getActionTypeDisplay(envelope.action_type).icon as any}
-                                size={18}
-                                color={getActionTypeDisplay(envelope.action_type).color}
-                            />
+                            <ProvianIcon name="proof" size={23} color={COLORS.primaryLight} />
                         </View>
                         <Text style={styles.actionType}>
                             {getActionTypeDisplay(envelope.action_type).label.toUpperCase()}
@@ -416,6 +414,8 @@ export default function EnvelopeDetailScreen({
                     </View>
                     <View style={styles.card}>
                         <Text style={styles.intentText}>{description}</Text>
+                        <DestinationRow label={t('overhaul.howProof')} icon="proof"
+                            onPress={() => navigation.navigate('BuildWithProvian')} />
                     </View>
                 </View>
 

@@ -744,6 +744,20 @@ export interface BondClaimSummary {
   filed_at?: number;
 }
 
+export async function readPublicBond(agentId: string): Promise<boolean | null> {
+  try {
+    const response = await fetch(`${RELAY_URL}/v1/bonds/status/${encodeURIComponent(agentId)}`);
+    if (!response.ok) return null;
+    const data: unknown = await response.json();
+    if (data && typeof data === 'object' && 'bond_active' in data && typeof data.bond_active === 'boolean') {
+      return data.bond_active;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCommonsBondStats(biometricAction?: BiometricAction): Promise<{
   active_bond_count: number;
   recent_claim_count: number;

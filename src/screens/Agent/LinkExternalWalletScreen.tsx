@@ -1,3 +1,4 @@
+import { DestinationRow, PrimaryAction } from '../../components/ScreenActions';
 /**
  * LinkExternalWalletScreen — the linked human links a third-party wallet to
  * one of their agents.
@@ -139,7 +140,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
     const navigation = useNavigation<NativeStackNavigationProp<AppParamList>>();
     const { t: translate, i18n } = useTranslation();
     const { colors: themeColors } = useTheme();
-    const isPerson = mode.kind !== 'agent';
+    const isPerson = mode.kind === 'person';
     const walletId = mode.kind === 'agent' ? mode.walletId : '';
     const api = useMemo(
         () => proofApiFor(mode.kind === 'agent' ? { kind: 'agent', walletId } : { kind: mode.kind }),
@@ -166,6 +167,8 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
     const wcConfigured = isExternalWalletConnectConfigured();
     const [wcPhase, setWcPhase] = useState<WcPhase>('idle');
     const [wcUri, setWcUri] = useState<string | null>(null);
+    const [showQr, setShowQr] = useState(false);
+    const [showManual, setShowManual] = useState(false);
     const [wcApp, setWcAppState] = useState<ExternalWalletApp | null>(null);
     // The in-flight proposal reads the chosen app after the user picks it.
     const wcAppRef = useRef<ExternalWalletApp | null>(null);
@@ -391,44 +394,6 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                     </>
                 )}
 
-                {/* Linked wallets */}
-                <View style={styles.card}>
-                    <Text style={[styles.cardTitle, { color: themeColors.textPrimary }]}>
-                        {t('linkExternalWallet.linkedTitle')}
-                    </Text>
-                    {linked === null ? (
-                        <ActivityIndicator size="small" color={COLORS.primary} style={styles.loader} />
-                    ) : linked.length === 0 ? (
-                        <Text style={styles.body}>{t('linkExternalWallet.linkedNone')}</Text>
-                    ) : (
-                        linked.map((row) => (
-                            <TouchableOpacity
-                                key={row.address}
-                                style={styles.linkedRow}
-                                onPress={() => copy(row.address, `linked:${row.address}`)}
-                                activeOpacity={0.7}
-                                accessibilityRole="button"
-                                accessibilityLabel={row.address}
-                            >
-                                <Ionicons name="link" size={16} color={COLORS.success} />
-                                <View style={styles.linkedTextWrap}>
-                                    <Text style={styles.linkedAddress} numberOfLines={1} ellipsizeMode="middle">
-                                        {row.address}
-                                    </Text>
-                                    <Text style={styles.linkedSince}>
-                                        {t('linkExternalWallet.linkedSince', { date: dateFmt(row.provenAt) })}
-                                    </Text>
-                                </View>
-                                <Ionicons
-                                    name={copiedKey === `linked:${row.address}` ? 'checkmark-circle' : 'copy-outline'}
-                                    size={16}
-                                    color={copiedKey === `linked:${row.address}` ? COLORS.success : COLORS.primary}
-                                />
-                            </TouchableOpacity>
-                        ))
-                    )}
-                </View>
-
                 {success && (
                     <View style={styles.successCard}>
                         <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
@@ -437,7 +402,7 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                 {t('linkExternalWallet.successTitle')}
                             </Text>
                             <Text style={styles.body}>
-                                {t('linkExternalWallet.successBody', { address: shortAddress(success), name: agentName })}
+                                {t('linkExternalWallet.successBody', { address: success, name: agentName })}
                             </Text>
                         </View>
                     </View>
@@ -460,17 +425,14 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                     ) : !wcBusy ? (
                         <>
                             <Text style={styles.body}>{t('linkExternalWallet.wcBody')}</Text>
-                            <TouchableOpacity
-                                style={styles.primaryBtn}
-                                onPress={startWalletConnect}
-                                activeOpacity={0.8}
-                                accessibilityRole="button"
-                            >
-                                <LinearGradient colors={GRADIENTS.primary} style={styles.primaryBtnGradient}>
-                                    <Ionicons name="qr-code-outline" size={16} color="#FFF" />
-                                    <Text style={styles.primaryBtnText}>{t('linkExternalWallet.wcStart')}</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
+                            <PrimaryAction label={t('overhaul.openMyWallet')} onPress={() => {
+                                setShowQr(false);
+                                void startWalletConnect();
+                            }} />
+                            <DestinationRow label={t('overhaul.scanWithAnotherDevice')} icon="scan" onPress={() => {
+                                setShowQr(true);
+                                void startWalletConnect();
+                            }} />
                         </>
                     ) : (
                         <>
@@ -525,10 +487,13 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                                                 : t('linkExternalWallet.wcCopyLink')}
                                         </Text>
                                     </TouchableOpacity>
-                                    <Text style={styles.fine}>{t('linkExternalWallet.wcQrHint')}</Text>
-                                    <View style={styles.qrWrap}>
-                                        <QRCode value={wcUri} size={180} backgroundColor="white" color="#111827" />
-                                    </View>
+                                    {!showQr && <DestinationRow label={t('overhaul.scanWithAnotherDevice')} icon="scan" onPress={() => setShowQr(true)} />}
+                                    {showQr && (
+                                        <View style={styles.qrWrap}>
+                                            <Text style={styles.fine}>{t('linkExternalWallet.wcQrHint')}</Text>
+                                            <QRCode value={wcUri} size={180} backgroundColor="white" color="#111827" />
+                                        </View>
+                                    )}
                                 </>
                             )}
                             {wcPhase === 'signing' && wcApp && (
@@ -559,7 +524,10 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                     )}
                 </View>
 
+                <DestinationRow label={t('overhaul.signManually')} stockIcon="create-outline"
+                    onPress={() => setShowManual(open => !open)} />
                 {/* Channel 2: paste a signature */}
+                {showManual && (
                 <View style={styles.card}>
                     <Text style={[styles.cardTitle, { color: themeColors.textPrimary }]}>
                         {t('linkExternalWallet.pasteTitle')}
@@ -681,6 +649,45 @@ export const ExternalWalletProofFlow = ({ mode }: { mode: ExternalWalletProofMod
                         </>
                     )}
                 </View>
+                )}
+                {/* Linked wallets */}
+                <View style={styles.card}>
+                    <Text style={[styles.cardTitle, { color: themeColors.textPrimary }]}>
+                        {t('linkExternalWallet.linkedTitle')}
+                    </Text>
+                    {linked === null ? (
+                        <ActivityIndicator size="small" color={COLORS.primary} style={styles.loader} />
+                    ) : linked.length === 0 ? (
+                        <Text style={styles.body}>{t('linkExternalWallet.linkedNone')}</Text>
+                    ) : (
+                        linked.map((row) => (
+                            <TouchableOpacity
+                                key={row.address}
+                                style={styles.linkedRow}
+                                onPress={() => copy(row.address, `linked:${row.address}`)}
+                                activeOpacity={0.7}
+                                accessibilityRole="button"
+                                accessibilityLabel={row.address}
+                            >
+                                <Ionicons name="link" size={16} color={COLORS.success} />
+                                <View style={styles.linkedTextWrap}>
+                                    <Text style={styles.linkedAddress} numberOfLines={1} ellipsizeMode="middle">
+                                        {row.address}
+                                    </Text>
+                                    <Text style={styles.linkedSince}>
+                                        {t('linkExternalWallet.linkedSince', { date: dateFmt(row.provenAt) })}
+                                    </Text>
+                                </View>
+                                <Ionicons
+                                    name={copiedKey === `linked:${row.address}` ? 'checkmark-circle' : 'copy-outline'}
+                                    size={16}
+                                    color={copiedKey === `linked:${row.address}` ? COLORS.success : COLORS.primary}
+                                />
+                            </TouchableOpacity>
+                        ))
+                    )}
+                </View>
+
             </ScrollView>
         </SafeAreaView>
     );

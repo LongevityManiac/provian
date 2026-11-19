@@ -1,3 +1,6 @@
+import { useTalkingPass } from '../TalkingPassSheet';
+import type { BiometricAction } from '../../../core/security/biometricAction';
+import { confirmCommonsWrite } from '../CommonsWriteSheet';
 import { errorDisplayCopy } from '../../../i18n/displayCopy';
 /**
  * useForumWrites — the forum's small writes, shared by the feed and the post page:
@@ -15,12 +18,7 @@ import { useTranslation } from 'react-i18next';
 import * as CommonsService from '../../../core/commons/CommonsService';
 import { applyVote, isAlreadyVotedError, revertVote, type NormalizedForumPost } from '../../../core/commons/forumModel';
 import type { PendingSpeech } from '../../../core/commons/pendingSpeech';
-import { readTalkingPass } from '../../../core/commons/talkingPassBus';
-import { useTalkingPass, COMMONS_AUDIENCE } from '../TalkingPassSheet';
-import { fetchTalkingPassStatus } from '../TalkingPassPill';
-import type { ChallengeDraft } from './ChallengeSheet';
 import { authorName } from './AuthorLine';
-import { useAfterClose } from './useAfterClose';
 import { confirmBlock, openReportToProvian } from '../safetyActions';
 
 type Navigator = { navigate: (screen: string, params?: Record<string, unknown>) => void };
@@ -41,11 +39,6 @@ export function useForumWrites(opts: {
 }) {
   const { t } = useTranslation();
   const { navigation, joined, updatePost, executeMore } = opts;
-  // The challenge sheet target (and a draft to restore after the talking pass).
-  const [challengeTarget, setChallengeTarget] = useState<{ postId: string; authorName: string } | null>(null);
-  const [challengeInitial, setChallengeInitial] = useState<ChallengeDraft | null>(null);
-  const { afterClose, onDismiss: onChallengeDismiss } = useAfterClose();
-
   const askToJoin = useCallback((why: string) => {
     Alert.alert(t('commonsForum.join.title'), why, [
       { text: t('common.cancel'), style: 'cancel' },
@@ -53,9 +46,9 @@ export function useForumWrites(opts: {
     ]);
   }, [navigation, t]);
 
-  const sendVote = useCallback(async (postId: string, vote: 'upvote' | 'downvote') => {
+  const sendVote = useCallback(async (postId: string, vote: 'upvote' | 'downvote', action?: BiometricAction) => {
     try {
-      await CommonsService.voteOnPost(postId, vote);
+      await CommonsService.voteOnPost(postId, vote, action);
     } catch (err) {
       if (isAlreadyVotedError(err)) {
         // Already counted: show the voted state without counting it twice.
@@ -88,19 +81,6 @@ export function useForumWrites(opts: {
       updatePost(postId, (x) => ({ ...x, is_flagged: true }));
       return;
     }
-    if (p.kind === 'challenge' && postId) {
-      // Reopen the sheet, prefilled — never auto-file: filing burns a stake, so the person taps it.
-      // If they came back without opening the pass, drop it silently (a fresh 428).
-      const pass = await readTalkingPass(fetchTalkingPassStatus, { force: true });
-      if (pass.state === 'none') throw new CommonsService.CommonsError('talking pass required', 428, 'rail_handshake_required', COMMONS_AUDIENCE);
-      let restored: ChallengeDraft | null = null;
-      if (typeof p.payload.draft === 'string' && p.payload.draft) {
-        try { restored = JSON.parse(p.payload.draft) as ChallengeDraft; } catch { restored = null; }
-      }
-      setChallengeInitial(restored);
-      setChallengeTarget({ postId, authorName: typeof p.payload.authorName === 'string' ? p.payload.authorName : '' });
-      return;
-    }
     if (executeMore && (await executeMore(p))) return;
   }, [executeMore, sendVote, updatePost]);
 
@@ -110,19 +90,16 @@ export function useForumWrites(opts: {
     execute,
     onResumeFailed: (err) => Alert.alert(t('common.errorTitle'), errorDisplayCopy(errorText(err, t('commonsForum.error.generic')))),
   });
-  const { requirePass, passFirst } = talkingPass;
+  const { requirePass } = talkingPass;
 
   /** One tap: haptic, optimistic count, no confirmation. Votes are one-shot. */
   const vote = useCallback(async (post: NormalizedForumPost, dir: 'upvote' | 'downvote') => {
-    if (!joined) {
-      askToJoin(t('commonsForum.join.toVote'));
-      return;
-    }
     if (post.my_vote) return;
     void Haptics.selectionAsync().catch(() => undefined);
     updatePost(post.post_id, (p) => applyVote(p, dir));
     try {
-      await sendVote(post.post_id, dir);
+      const result = await confirmCommonsWrite(t('overhaul.vote'), action => sendVote(post.post_id, dir, action));
+      if (!result.completed) updatePost(post.post_id, p => revertVote(p, dir));
     } catch (err) {
       updatePost(post.post_id, (p) => revertVote(p, dir));
       if (requirePass(err, { kind: 'vote', payload: { postId: post.post_id, vote: dir } })) return;
@@ -170,53 +147,12 @@ export function useForumWrites(opts: {
   }, [t]);
 
   const messageAuthor = useCallback((post: NormalizedForumPost) => {
-    if (!joined) {
-      askToJoin(t('commonsForum.join.toMessage'));
-      return;
-    }
     navigation.navigate('CommonsThread', { counterparty: post.author_wallet_id, counterpartyName: post.author_display_name ?? undefined });
   }, [joined, askToJoin, navigation, t]);
-
-  /** "Question this post": check the pass first so no stake is burned before the pass exists. */
-  const question = useCallback(async (post: NormalizedForumPost) => {
-    if (!joined) {
-      askToJoin(t('commonsForum.join.toQuestion'));
-      return;
-    }
-    const name = authorName(post);
-    // Always a FRESH read before a stake decision: a cached 'none' from before the person opened a
-    // pass would send them to open (and burn for) a second one .
-    const pass = await readTalkingPass(fetchTalkingPassStatus, { force: true });
-    if (pass.state === 'none') {
-      passFirst({ kind: 'challenge', payload: { postId: post.post_id, authorName: name, draft: '' } });
-      return;
-    }
-    setChallengeInitial(null);
-    setChallengeTarget({ postId: post.post_id, authorName: name });
-  }, [joined, askToJoin, passFirst, t]);
-
-  const challenge = useMemo(() => ({
-    postId: challengeTarget?.postId ?? null,
-    authorName: challengeTarget?.authorName ?? '',
-    initial: challengeInitial,
-    onClose: () => setChallengeTarget(null),
-    onDismiss: onChallengeDismiss,
-    onFiled: (id: string) => {
-      setChallengeTarget(null);
-      updatePost(id, (p) => ({ ...p, challenge_count: p.challenge_count + 1 }));
-    },
-    onNeedsPass: (err: unknown, id: string, draft: ChallengeDraft) => {
-      const name = challengeTarget?.authorName ?? '';
-      setChallengeTarget(null);
-      afterClose(() => {
-        requirePass(err, { kind: 'challenge', payload: { postId: id, authorName: name, draft: JSON.stringify(draft) } });
-      });
-    },
-  }), [challengeTarget, challengeInitial, onChallengeDismiss, updatePost, afterClose, requirePass]);
 
   const viewProfile = useCallback((post: NormalizedForumPost) => {
     navigation.navigate('CommonsProfile', { walletId: post.author_wallet_id });
   }, [navigation]);
 
-  return { vote, report, reportToProvian, blockAuthor, question, challenge, messageAuthor, viewProfile, askToJoin, talkingPass };
+  return { vote, report, reportToProvian, blockAuthor, messageAuthor, viewProfile, askToJoin, talkingPass };
 }

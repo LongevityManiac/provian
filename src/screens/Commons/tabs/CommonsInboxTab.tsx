@@ -1,3 +1,5 @@
+import { PublicStandingLine } from '../../../components/commons/PublicStandingLine';
+import { DestinationRow } from '../../../components/ScreenActions';
 /**
  * Commons › Inbox : everything waiting on you in one list — messages, replies to your posts
  * and comments, and requests to publish a shared record. Filter chips narrow it; tapping opens the
@@ -31,7 +33,7 @@ const FILTERS: { key: InboxFilter; labelKey: string }[] = [
   { key: 'all', labelKey: 'commonsHome.inboxAll' },
   { key: 'messages', labelKey: 'commonsHome.inboxMessages' },
   { key: 'replies', labelKey: 'commonsHome.inboxReplies' },
-  { key: 'requests', labelKey: 'commonsHome.inboxRequests' },
+  { key: 'requests', labelKey: 'overhaul.needsYourOk' },
 ];
 
 export default function CommonsInboxTab({ navigation, active }: Props) {
@@ -41,6 +43,10 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
   const markRepliesSeen = useCommonsStore((s) => s.markRepliesSeen);
   const myId = profile?.wallet_id ?? null;
 
+  const [standing, setStanding] = useState<{
+    threads: CommonsService.ThreadPresentationRequest[];
+    challenges: CommonsService.CommonsChallenge[];
+  }>({ threads: [], challenges: [] });
   const [items, setItems] = useState<InboxItem[] | null>(null);
   const [filter, setFilter] = useState<InboxFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -52,11 +58,13 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
     if (loadingRef.current || !visibleRef.current) return;
     loadingRef.current = true;
     try {
-      const [threads, replyPage, consents, seenRaw] = await Promise.all([
+      const [threads, replyPage, consents, seenRaw, requests, challenges] = await Promise.all([
         CommonsService.listThreads().then((r) => r.threads),
         CommonsService.getMyReplies({ page_size: 50 }),
         CommonsService.getPendingConsents().then((r) => r.consents),
         AsyncStorage.getItem(REPLIES_SEEN_KEY),
+        CommonsService.getPendingThreadPresentationRequests().then(answer => answer.requests).catch(() => []),
+        CommonsService.getMyChallenges().then(answer => answer.challenges).catch(() => []),
       ]);
       const replies = [...replyPage.replies];
       let cursor = replyPage.next_cursor;
@@ -72,6 +80,12 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
       if (!visibleRef.current) return;
       setItems(buildInbox({ myId, threads, replies, consents, repliesSeenAt: Number(seenRaw) || 0 }));
       setLoadError(false);
+      const now = Date.now();
+      setStanding({
+        threads: requests.filter(request => request.thread_id && request.status === 'challenged'
+          && request.audience && request.challenge && request.expires_at_ms > now),
+        challenges: challenges.filter(challenge => challenge.status === 'open' && challenge.window_expires_at > now),
+      });
       const newestReply = replies.reduce((at, reply) => Math.max(at, reply.created_at), 0);
       if (newestReply > 0) await markRepliesSeen(newestReply);
       else void refreshNotifications();
@@ -140,6 +154,12 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
             <Text style={[styles.rowTitle, item.unread && styles.rowTitleUnread]} numberOfLines={1}>{title}</Text>
             <Text style={styles.rowTime}>{timeAgo(item.at, t)}</Text>
           </View>
+          {item.kind !== 'request' && <PublicStandingLine
+            walletId={item.kind === 'message' ? item.counterpartyId : item.authorId}
+            kind={item.kind === 'message' ? item.counterpartyKind : item.authorKind}
+            onPress={() => navigation.navigate('CommonsProfile', {
+              walletId: item.kind === 'message' ? item.counterpartyId : item.authorId,
+            })} />}
           <Text style={styles.rowSub} numberOfLines={2}>{body}</Text>
         </View>
         {item.unread && <View style={styles.unreadDot} />}
@@ -165,8 +185,7 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
       data={visible}
       keyExtractor={(i) => i.id}
       renderItem={renderItem}
-      contentContainerStyle={styles.list}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+
       ListHeaderComponent={
         <View>
           <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('CommonsNewMessage')} accessibilityRole="button">
@@ -191,6 +210,19 @@ export default function CommonsInboxTab({ navigation, active }: Props) {
             </TouchableOpacity>
           ))}
         </View>
+        {(filter === 'all' || filter === 'requests') && <View>
+          {standing.threads.map(request => <DestinationRow key={request.request_id}
+            icon="proof" label={t('commonsHome.showStanding')} onPress={() => navigation.navigate('HumanPresentment', {
+              audience: request.audience, challenge: request.challenge, predicates: request.predicates ?? [],
+              challengeEnvelope: request.challenge_envelope,
+              deliverTo: { kind: 'thread', threadId: request.thread_id, requestId: request.request_id },
+            })} />)}
+          {standing.challenges.map(request => <DestinationRow key={request.challenge_id}
+            icon="proof" label={t('commonsHome.showStanding')} onPress={() => navigation.navigate('HumanPresentment', {
+              audience: request.audience, challenge: request.challenge_nonce, predicates: [request.predicate],
+              deliverTo: { kind: 'challenge', challengeId: request.challenge_id },
+            })} />)}
+        </View>}
         </View>
       }
       ListEmptyComponent={

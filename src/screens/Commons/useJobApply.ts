@@ -1,5 +1,6 @@
+import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
-import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
+import { type BiometricAction } from '../../core/security/biometricAction';
 /**
  * useJobApply — applying to a Commons job from the app, shared by the board, the Market and
  * the job screen so the three can never drift.
@@ -65,7 +66,7 @@ export function useJobApply(params: {
 
   const confirmApply = useCallback(async (job: HumanJob, note: string) => {
     try {
-      return await withBiometricAction(t('commonsHumanJobs.biometricPromptApply'), async (biometricAction) => {
+      return await confirmCommonsWrite(t('commonsHumanJobs.apply'), async (biometricAction) => {
         setApplyingJobId(job.job_id);
         try {
           const message = await sealNote(job.poster_wallet_id, note, biometricAction);
@@ -73,10 +74,6 @@ export function useJobApply(params: {
           setAppliedJobIds((prev) => new Set([...prev, job.job_id]));
           Alert.alert(t('commonsHumanJobs.appliedTitle'), t('commonsHumanJobs.appliedMessage'));
           onApplied?.();
-        } catch (err) {
-          if (!offerSpeechWindow(err, navigation, t)) {
-            Alert.alert(t('commonsHumanJobs.errorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commonsHumanJobs.applyFailed')));
-          }
         } finally {
           setApplyingJobId(null);
         }
@@ -87,15 +84,12 @@ export function useJobApply(params: {
       } else if (err instanceof BiometricAuthError) {
         Alert.alert(t('commonsHumanJobs.confirmationNeededTitle'), t('commonsHumanJobs.confirmationNeededMessage'));
       }
+      else Alert.alert(t('commonsHumanJobs.errorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commonsHumanJobs.applyFailed')));
       return;
     }
   }, [navigation, onApplied, sealNote, t]);
 
   const startApply = useCallback((job: HumanJob) => {
-    if (!myWalletId) {
-      Alert.alert(t('commonsHumanJobs.joinRequiredTitle'), t('commonsHumanJobs.joinRequiredMessage'));
-      return;
-    }
     const pay = formatHumanJobCompensation(job);
     // iOS offers a note field (Alert.prompt); elsewhere the application goes without a note.
     // Gate on the PLATFORM, not on `typeof Alert.prompt`: Android defines Alert.prompt as a

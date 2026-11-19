@@ -7,11 +7,18 @@
  */
 import { getAgentProfile } from './CommonsService';
 
+export interface PublicStanding {
+  records: number;
+  keptRate: number | null;
+  penalties: number | null;
+}
+
 export interface PublicHeader {
   display_name: string;
   /** The relay's proxied avatar URL (never the registrant's raw host). */
   avatar_url?: string;
   participant_type: 'agent' | 'human';
+  standing?: PublicStanding;
 }
 
 const cache = new Map<string, Promise<PublicHeader | null>>();
@@ -27,11 +34,31 @@ export function toPublicHeader(profile: { display_name?: unknown; avatar_url?: u
   };
 }
 
+export function projectPublicStanding(profile: {
+  pe_count?: number;
+  promise_fulfillment_rate?: number;
+  court_record?: { slashing_events?: number };
+}): PublicStanding | undefined {
+  const validCount = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+  if (!validCount(profile.pe_count)) return undefined;
+  const rate = profile.promise_fulfillment_rate;
+  const penalties = profile.court_record?.slashing_events;
+  return {
+    records: profile.pe_count,
+    keptRate: typeof rate === 'number' && rate >= 0 && rate <= 1 ? rate : null,
+    penalties: validCount(penalties) ? penalties : null,
+  };
+}
+
 export function getPublicHeader(walletId: string): Promise<PublicHeader | null> {
   const hit = cache.get(walletId);
   if (hit) return hit;
   const p = getAgentProfile(walletId)
-    .then((profile) => toPublicHeader(profile))
+    .then((profile) => {
+      const header = toPublicHeader(profile);
+      return header ? { ...header, standing: projectPublicStanding(profile) } : null;
+    })
     .catch(() => {
       cache.delete(walletId); // a transient failure retries next time
       return null;

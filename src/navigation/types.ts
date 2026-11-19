@@ -20,11 +20,14 @@ import type { EarningSurfaceId, ForgeProvider } from '../core/earn/EarningSurfac
 export type AppParamList = {
     // Vision (accessible before and after onboarding)
     Vision: undefined;
+    BuildWithProvian: undefined;
+    ComputerPairing: undefined;
 
     // Onboarding
     Onboarding: undefined;
     // Commons
     CommonsOnboarding: undefined;
+    CommonsHowItWorks: undefined;
     CommonsDashboard: { tab?: 'feed' | 'work' | 'people' | 'inbox' } | undefined;
     CommonsProfile: { walletId?: string; editable?: boolean };
     CommonsRegistry: undefined;
@@ -118,7 +121,7 @@ export type AppParamList = {
     NetworkConstitution: undefined;
     BiometricSettings: undefined;
     ProfileEdit: undefined;
-    DeviceManagement: undefined;
+    DeviceManagement: { deviceId?: string } | undefined;
 
     // WalletConnect
     WalletConnect: undefined;
@@ -196,8 +199,6 @@ export type AppParamList = {
 // =============================================================================
 
 export type TabParamList = {
-    VisionTab: undefined;
-    AbundanceTab: undefined;
     WalletTab: undefined;
     AgentsTab: undefined;
     CommonsTab: { tab?: 'feed' | 'work' | 'people' | 'inbox' } | undefined;

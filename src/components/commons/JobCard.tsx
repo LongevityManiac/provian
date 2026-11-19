@@ -16,6 +16,11 @@ import type { HumanJob } from '../../core/commons/CommonsService';
 import { formatHumanJobCompensation } from '../../core/commons/humanJobFormat';
 import { applyEligibility, jobCurrencyOf, jobSeekingOf, type ApplyBlockReason, type JobPartyKind } from '../../core/commons/jobBoard';
 import { getPublicHeader, type PublicHeader } from '../../core/commons/publicHeaders';
+import { PublicStandingLine } from './PublicStandingLine';
+import ProvianIcon from '../ProvianIcon';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AppParamList } from '../../navigation/types';
 import { timeAgo } from '../../utils/timeAgo';
 
 const JOBS_ACCENT = '#E8A838';
@@ -37,6 +42,7 @@ export function applyBlockText(reason: ApplyBlockReason, t: TFunction): string {
 /** The poster, as they published themselves. */
 export function PosterHeader({ walletId, size = 28 }: { walletId: string; size?: number }) {
   const { t } = useTranslation();
+  const navigation = useNavigation<NativeStackNavigationProp<AppParamList>>();
   const [header, setHeader] = useState<PublicHeader | null>(null);
   useEffect(() => {
     let live = true;
@@ -46,23 +52,22 @@ export function PosterHeader({ walletId, size = 28 }: { walletId: string; size?:
   const name = header?.display_name ?? t('commonsJobs.posterUnknown');
   const initials = name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
   return (
-    <View style={styles.posterRow}>
+    <TouchableOpacity style={styles.posterRow} accessibilityRole="button"
+      onPress={() => navigation.navigate('CommonsProfile', { walletId })}>
       <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
         {header?.avatar_url ? (
           <Image source={{ uri: header.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2 }} />
         ) : header?.participant_type === 'agent' ? (
-          <Ionicons name="hardware-chip" size={size * 0.55} color={COLORS.secondary} />
+          <ProvianIcon name="agent" size={size * 0.72} color={COLORS.secondary} />
         ) : (
           <Text style={styles.avatarText}>{initials || '?'}</Text>
         )}
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.posterName} numberOfLines={1}>{name}</Text>
-        {header ? (
-          <Text style={styles.posterKind}>{header.participant_type === 'agent' ? t('commonsJobs.kindAgent') : t('commonsJobs.kindPerson')}</Text>
-        ) : null}
+        <PublicStandingLine walletId={walletId} kind={header?.participant_type} standing={header?.standing} />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -115,6 +120,7 @@ export default function JobCard({ job, featuredRank, viewer, onOpen, onApply, ap
         </View>
       </View>
 
+      <Text style={styles.posterKind}>{t('overhaul.paidWhenDone')}</Text>
       <Text style={styles.description} numberOfLines={3}>{job.description}</Text>
 
       <View style={styles.footer}>
@@ -124,7 +130,7 @@ export default function JobCard({ job, featuredRank, viewer, onOpen, onApply, ap
           <Text style={styles.metaMuted}>· {t('commonsHumanJobs.appliedCount', { count: job.applicant_count })}</Text>
           <Text style={styles.metaMuted}>· {timeAgo(job.posted_at, t)}</Text>
         </View>
-        {eligibility.canApply ? (
+        {(eligibility.canApply || (eligibility.reason === 'not_member' && seeking === 'human' && job.status === 'open')) ? (
           <TouchableOpacity style={styles.applyButton} onPress={() => onApply(job)} disabled={applying} activeOpacity={0.7} accessibilityRole="button">
             {applying ? <ActivityIndicator size="small" color={COLORS.text} /> : (
               <>

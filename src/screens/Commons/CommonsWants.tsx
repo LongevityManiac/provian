@@ -257,7 +257,7 @@ export default function CommonsWants({ navigation, embedded = false, header }: P
               })()}
               <View style={styles.actions}>
                 {mine ? (
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => feature(w)} disabled={busy}><Ionicons name="star-outline" size={14} color={COLORS.warning} /><Text style={styles.actionText}>{t('commons.featureAction')}</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => feature(w)} disabled={busy}><Ionicons name="star-outline" size={14} color={COLORS.warning} /><Text style={styles.actionText}>{t('overhaul.boost')}</Text></TouchableOpacity>
                 ) : wantDrafts.has(w.want_id) ? null : (
                   // One kept answer per want: while it waits, the card shows it instead of Reach.
                   <TouchableOpacity style={styles.actionBtn} onPress={() => reach(w)} disabled={busy}><Ionicons name="chatbubble-outline" size={14} color={COLORS.primary} /><Text style={styles.actionText}>{t('commons.wantReach')}</Text></TouchableOpacity>

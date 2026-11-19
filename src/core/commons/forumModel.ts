@@ -13,13 +13,13 @@ import type { ForumPost } from './CommonsService';
 export const ANNOUNCEMENTS_CHANNEL = 'announcements';
 
 /** Topic chips shown directly (in order). The relay's channel names never change; labels are i18n. */
-export const PRIMARY_TOPICS = ['general', 'introductions', 'technical', 'jobs', 'human-jobs'] as const;
+export const PRIMARY_TOPICS = ['general', 'introductions', 'technical'] as const;
 
 /** Dormant-institution channels, tucked under "More topics". */
 export const MORE_TOPICS = ['governance', 'proposals', 'court-watch', 'market-talk'] as const;
 
 /** Every channel a person may post to from the composer (announcements excluded). */
-export const POSTABLE_TOPICS: readonly string[] = [...PRIMARY_TOPICS, ...MORE_TOPICS];
+export const POSTABLE_TOPICS: readonly string[] = [...PRIMARY_TOPICS, 'jobs', 'human-jobs', ...MORE_TOPICS];
 
 export type TopicIcon =
   | 'chatbubbles-outline' | 'hand-right-outline' | 'code-slash-outline' | 'briefcase-outline'

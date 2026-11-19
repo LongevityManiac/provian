@@ -307,7 +307,7 @@ export default function ForgeConnectScreen({
             <View style={styles.header}>
                 <BackButton onPress={() => navigation.goBack()} />
                 <Text style={styles.headerTitle} numberOfLines={1}>
-                    {t(`earn.surfaces.${provider}.title`)}
+                    {provider === 'github' ? t('overhaul.connectGitHub') : t(`earn.surfaces.${provider}.title`)}
                 </Text>
                 <View style={{ width: 44 }} />
             </View>

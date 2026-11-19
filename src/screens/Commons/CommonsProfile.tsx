@@ -1,3 +1,6 @@
+import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
+import { projectPublicStanding } from '../../core/commons/publicHeaders';
+import TalkingPassPill from '../../components/commons/TalkingPassPill';
 import { badgeDisplayCopy } from '../../i18n/displayCopy';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction } from '../../core/security/biometricAction';
@@ -15,7 +18,7 @@ import { withBiometricAction } from '../../core/security/biometricAction';
  * (the relay refuses that pair too: 403 linked_pair_vouch_refused).
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -115,6 +118,16 @@ export default function CommonsProfile({ navigation, route }: Props) {
 
   const [profile, setProfile] = useState<CommonsProfileType | null>(null);
   const [publishedPEs, setPublishedPEs] = useState<unknown[]>([]);
+  const [publicBond, setPublicBond] = useState<{ walletId: string; active: boolean }>();
+  useEffect(() => {
+    if (!profile || profile.participant_type !== 'agent') return;
+    const walletId = profile.wallet_id;
+    let live = true;
+    void CommonsService.readPublicBond(walletId).then(result => {
+      if (live && result !== null) setPublicBond({ walletId, active: result });
+    });
+    return () => { live = false; };
+  }, [profile]);
   const [vouches, setVouches] = useState<ProfileVouch[]>([]);
   const [myVouches, setMyVouches] = useState<MyVouch[]>([]);
   const [linkedAgents, setLinkedAgents] = useState<LinkedAgentIds[] | null>(null);
@@ -404,6 +417,10 @@ export default function CommonsProfile({ navigation, route }: Props) {
             <Text style={styles.bioText}>{profile.bio}</Text>
           ) : null}
 
+          <PublicStandingLine walletId={profile.wallet_id} kind={profile.participant_type} standing={projectPublicStanding(profile)} />
+          {publicBond?.walletId === profile.wallet_id && <Text style={styles.joinDate}>
+            {t(publicBond.active ? 'overhaul.activeBond' : 'overhaul.noActiveBond')}
+          </Text>}
           <Text style={styles.joinDate}>{t('commons.joinedDate', { date: formatDate(profile.commons_join_date) })}</Text>
         </View>
 
@@ -416,13 +433,9 @@ export default function CommonsProfile({ navigation, route }: Props) {
                   <Ionicons name="create-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.actionPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.editProfile')}</Text>
                 </TouchableOpacity>
-                {/* Burn-to-present — PRESENTER role, on the user's OWN profile. */}
-                <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('HumanPresentment')} accessibilityRole="button" accessibilityHint={t('commonsHome.showStandingSub')}>
-                  <Ionicons name="ribbon-outline" size={18} color={COLORS.text} />
-                  <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.showStanding')}</Text>
-                </TouchableOpacity>
+                <TalkingPassPill />
               </>
-            ) : ownProfile && walletId ? (
+            ) : walletId ? (
               <>
                 {/* message this wallet directly — an end-to-end encrypted thread. Free with an
                     open relationship; otherwise the first message uses your talking pass. */}
@@ -435,19 +448,8 @@ export default function CommonsProfile({ navigation, route }: Props) {
                   <Ionicons name="chatbubbles-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.actionPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.message')}</Text>
                 </TouchableOpacity>
-                {/* Burn-to-present — REQUESTER role, anchored on a counterparty's profile. Starting
-                    from THEIR profile is the audience binding: they burn + present; you verify. */}
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => navigation.navigate('PresentationRequester', { counterparty: walletId })}
-                  accessibilityRole="button"
-                  accessibilityHint={t('commonsHome.askProofSub', { name: profile.display_name })}
-                >
-                  <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.text} />
-                  <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commonsHome.askProof')}</Text>
-                </TouchableOpacity>
                 {/* vouch (a person, for a person or an agent) — never on your own linked agents. */}
-                {ownProfile.participant_type === 'human' && linkedAgents !== null
+                {ownProfile?.participant_type === 'human' && linkedAgents !== null
                   && canShowVouch({ viewerId: ownProfile.wallet_id, targetId: walletId, linkedAgents }) && (
                   hasVouchedFor(myVouches, walletId) ? (
                     <View style={[styles.actionButton, styles.actionDone]} accessible accessibilityLabel={t('commons.vouched')}>
@@ -463,7 +465,7 @@ export default function CommonsProfile({ navigation, route }: Props) {
                       accessibilityLabel={t('commons.vouchFor', { name: profile.display_name })}
                     >
                       {vouching ? <ActivityIndicator size="small" color={COLORS.text} /> : <Ionicons name="hand-left-outline" size={18} color={COLORS.text} />}
-                      <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('commons.vouch')}</Text>
+                      <Text style={styles.actionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t('overhaul.vouchPrice', { pvt: VOUCH_BURN_PVT })}</Text>
                     </TouchableOpacity>
                   )
                 )}

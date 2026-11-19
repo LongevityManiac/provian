@@ -19,6 +19,7 @@
  * 6. Phase Roadmap
  */
 
+import ProvianIcon from '../../components/ProvianIcon';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View,
@@ -508,7 +509,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                 activeOpacity={0.7}
             >
                 <View style={styles.historyIcon}>
-                    <Text style={styles.historyIconText}>{display.emoji}</Text>
+                    <ProvianIcon name="proof" size={21} color={COLORS.primaryLight} />
                 </View>
                 <View style={styles.historyContent}>
                     <View style={styles.historyTopRow}>
@@ -566,7 +567,7 @@ export default function MyProvenanceDashboardScreen({ navigation }: MyProvenance
                 activeOpacity={0.7}
             >
                 <View style={styles.historyIcon}>
-                    <Text style={styles.historyIconText}>{getActionTypeDisplay('service:github_commit').emoji}</Text>
+                    <ProvianIcon name="proof" size={21} color={COLORS.primaryLight} />
                 </View>
                 <View style={styles.historyContent}>
                     <View style={styles.historyTopRow}>

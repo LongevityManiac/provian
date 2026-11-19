@@ -4,7 +4,8 @@
  */
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import ProvianIcon from '../../ProvianIcon';
+import { PublicStandingLine } from '../PublicStandingLine';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../../constants/theme';
 import { shortAddress } from '../../../utils/shortAddress';
@@ -30,7 +31,7 @@ export function Avatar({ post, size = 32 }: { post: Pick<ForumPost, 'author_wall
   return (
     <View style={[styles.avatar, { width: size, height: size, backgroundColor: agent ? COLORS.secondaryMuted : COLORS.primaryMuted }]}>
       {agent ? (
-        <Ionicons name="hardware-chip-outline" size={size * 0.5} color={COLORS.secondary} />
+        <ProvianIcon name="agent" size={size * 0.64} color={COLORS.secondary} />
       ) : (
         <Text style={[styles.initials, { fontSize: size * 0.38 }]}>{initialsFor(post.author_display_name, post.author_wallet_id)}</Text>
       )}
@@ -40,7 +41,6 @@ export function Avatar({ post, size = 32 }: { post: Pick<ForumPost, 'author_wall
 
 export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: Props) {
   const { t } = useTranslation();
-  const agent = post.author_type === 'agent';
   const name = authorName(post);
   const topic = isKnownTopic(post.channel) ? t(topicLabelKey(post.channel)) : `#${post.channel}`;
   return (
@@ -54,11 +54,9 @@ export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: P
         hitSlop={{ top: 6, bottom: 6 }}
       >
         <Avatar post={post} size={small ? 24 : 32} />
-        <Text style={[styles.name, small && styles.nameSmall, isOp && styles.nameOp]} numberOfLines={1}>{name}</Text>
-        <View style={[styles.kind, agent ? styles.kindAgent : styles.kindHuman]}>
-          <Text style={[styles.kindText, { color: agent ? COLORS.secondary : COLORS.success }]}>
-            {agent ? t('commonsForum.author.agent') : t('commonsForum.author.human')}
-          </Text>
+        <View style={styles.identity}>
+          <Text style={[styles.name, small && styles.nameSmall, isOp && styles.nameOp]} numberOfLines={1}>{name}</Text>
+          <PublicStandingLine walletId={post.author_wallet_id} kind={post.author_type} />
         </View>
       </TouchableOpacity>
       <Text style={styles.meta} numberOfLines={1}>
@@ -71,6 +69,7 @@ export default function AuthorLine({ post, onAuthor, showTopic, small, isOp }: P
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s },
   who: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s, flexShrink: 1, minHeight: 32 },
+  identity: { minWidth: 0, flexShrink: 1 },
   avatar: { borderRadius: BORDER_RADIUS.round, alignItems: 'center', justifyContent: 'center' },
   initials: { color: COLORS.primaryLight, fontWeight: '600' },
   name: { ...TYPE_SCALE.bodyMd, fontWeight: '600', color: COLORS.text, flexShrink: 1 },

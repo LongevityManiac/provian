@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DestinationRow } from '../../ScreenActions';
 /**
  * ForumFeed (§2) — the Commons forum front page, Reddit-style. No header or back button of its
  * own: the Commons shell embeds it in its Feed tab, and the CommonsForum route wraps it in a header.
@@ -32,7 +34,6 @@ import {
 import { loadFeedPage, loadLatestAnnouncement, type FeedDeps } from '../../../core/commons/forumFeedSource';
 import PostCard from './PostCard';
 import OverflowMenu, { type OverflowAction } from './OverflowMenu';
-import ChallengeSheet from './ChallengeSheet';
 import { authorName } from './AuthorLine';
 import { useForumWrites } from './useForumWrites';
 
@@ -67,6 +68,14 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
   const joined = useCommonsStore((s) => s.profile !== null);
   const myId = useCommonsStore((s) => s.profile?.wallet_id ?? null);
 
+  const [showHello, setShowHello] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem('provian.commons.hello').then(value => {
+      if (active) setShowHello(value !== 'seen');
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   const [channel, setChannel] = useState<string>('all');
   const [sort, setSort] = useState<FeedSort>('hot');
   const [timeWindow, setTimeWindow] = useState<FeedWindow>('week');
@@ -165,7 +174,6 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
     if (a === 'report') writes.report(p);
     else if (a === 'reportToProvian') writes.reportToProvian(p);
     else if (a === 'block') writes.blockAuthor(p);
-    else if (a === 'question') void writes.question(p);
     else if (a === 'message') writes.messageAuthor(p);
     else writes.viewProfile(p);
   }, [menuPost, writes]);
@@ -201,13 +209,11 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
 
   const header = (
     <View>
-      {!joined && (
-        <TouchableOpacity style={styles.joinBanner} onPress={() => navigation.navigate('CommonsOnboarding')} accessibilityRole="button">
-          <Ionicons name="people-outline" size={20} color={COLORS.primaryLight} />
-          <Text style={styles.joinText}>{t('commonsForum.join.banner')}</Text>
-          <Text style={styles.joinCta}>{t('commonsForum.join.cta')}</Text>
-        </TouchableOpacity>
-      )}
+      {showHello && <DestinationRow label={t('overhaul.sayHello')} icon="commons" onPress={() => {
+        setShowHello(false);
+        void AsyncStorage.setItem('provian.commons.hello', 'seen').catch(() => {});
+        navigation.navigate('CommonsCompose', { channel: 'introductions' });
+      }} />}
       {announcement && (
         <TouchableOpacity style={styles.announcement} onPress={() => openPost(announcement)} accessibilityRole="button">
           <View style={styles.annHead}>
@@ -316,27 +322,23 @@ export default function ForumFeed({ navigation, embedded = true }: Props) {
         windowSize={9}
       />
 
-      {joined && (
-        <TouchableOpacity
-          style={[styles.fab, { bottom: embedded ? TAB_BAR_CLEARANCE + SPACING.m : SPACING.xl }]}
+      <TouchableOpacity
+          style={[styles.fab, { bottom: embedded ? TAB_BAR_CLEARANCE + SPACING.m : SPACING.xl, width: undefined, paddingHorizontal: SPACING.m }]}
           onPress={compose}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel={t('commonsForum.compose.fab')}
         >
-          <Ionicons name="add" size={28} color={COLORS.text} />
+          <Text style={{ color: COLORS.background, fontWeight: '700' }}>{t('commons.post')}</Text>
         </TouchableOpacity>
-      )}
 
       <OverflowMenu
         visible={menuOpen}
         authorName={menuPost ? authorName(menuPost) : ''}
         isMine={!!menuPost && menuPost.author_wallet_id === myId}
-        canQuestion
         onClose={() => setMenuOpen(false)}
         onSelect={onMenuSelect}
       />
-      <ChallengeSheet {...writes.challenge} />
     </View>
   );
 }

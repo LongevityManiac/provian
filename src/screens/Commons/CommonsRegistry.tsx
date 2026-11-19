@@ -6,6 +6,9 @@
  * Tap card to navigate to CommonsProfile.
  */
 
+import ProvianIcon from '../../components/ProvianIcon';
+import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
+import { projectPublicStanding } from '../../core/commons/publicHeaders';
 import React, { useState, useCallback } from 'react';
 import {
   View,
@@ -60,7 +63,7 @@ const PARTICIPANT_FILTERS: { key: ParticipantFilter; labelKey: string; icon: key
 ];
 
 const SORT_OPTIONS: { key: SortOption; labelKey: string }[] = [
-  { key: 'pe_count', labelKey: 'commons.pesLabel' },
+  { key: 'pe_count', labelKey: 'commonsDashboard.leaderboardTitle' },
   { key: 'recent', labelKey: 'commons.recent' },
 ];
 
@@ -192,12 +195,10 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
           <View style={[styles.avatar, { borderColor: attestColor }]}>
             {profile.avatar_url ? (
               <Text style={styles.avatarText}>{getInitials(profile.display_name)}</Text>
+            ) : profile.participant_type === 'agent' ? (
+              <ProvianIcon name="agent" size={24} color={REGISTRY_ACCENT} />
             ) : (
-              <Ionicons
-                name={profile.participant_type === 'agent' ? 'hardware-chip' : 'person'}
-                size={24}
-                color={REGISTRY_ACCENT}
-              />
+              <Ionicons name="person-outline" size={24} color={REGISTRY_ACCENT} />
             )}
           </View>
 
@@ -210,19 +211,9 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
               <Text style={styles.cardAddress} numberOfLines={1}>
                 ({shortAddress((profile as unknown as { address?: string }).address ?? profile.wallet_id)})
               </Text>
-              {profile.participant_type === 'agent' && (
-                <View style={styles.typeBadge}>
-                  <Ionicons name="hardware-chip" size={10} color={COLORS.secondary} />
-                  <Text style={styles.typeBadgeText}>{t('commons.agentBadge')}</Text>
-                </View>
-              )}
-              {profile.participant_type === 'human' && (
-                <View style={[styles.typeBadge, { backgroundColor: 'rgba(0, 230, 118, 0.15)' }]}>
-                  <Ionicons name="person" size={10} color={COLORS.success} />
-                  <Text style={[styles.typeBadgeText, { color: COLORS.success }]}>{t('commons.humanBadge')}</Text>
-                </View>
-              )}
             </View>
+            <PublicStandingLine walletId={profile.wallet_id} kind={profile.participant_type}
+              standing={projectPublicStanding(profile)} />
 
             {/* Attestation Badge */}
             <View style={styles.attestRow}>
@@ -388,7 +379,6 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {!searchQuery.trim() && listHeader}
           {embedded && !searchQuery.trim() && (
             <Text style={styles.everyoneTitle}>{t('commonsHome.everyone', { count: total })}</Text>
           )}
@@ -416,6 +406,7 @@ export default function CommonsRegistry({ navigation, embedded = false, listHead
           ) : (
             filteredProfiles.map(renderProfileCard)
           )}
+          {!searchQuery.trim() && listHeader}
         </ScrollView>
       )}
     </Frame>

@@ -2,18 +2,19 @@
  * Commons › People : the directory of everyone in the Commons — people and AI agents — with
  * your own agents and the top contributors above it. (Both used to sit on the long dashboard.)
  */
+import ProvianIcon from '../../../components/ProvianIcon';
+import { PublicStandingLine } from '../../../components/commons/PublicStandingLine';
+import { projectPublicStanding } from '../../../core/commons/publicHeaders';
 import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS } from '../../../constants/theme';
-import { shortAddress } from '../../../utils/shortAddress';
-import RelayAPIService, { LinkedAgent, PVTLeaderboardEntry } from '../../../services/RelayAPIService';
+import RelayAPIService, { LinkedAgent } from '../../../services/RelayAPIService';
 import * as CommonsService from '../../../core/commons/CommonsService';
 import type { CommonsProfile as CommonsProfileType } from '../../../core/commons/CommonsService';
 import CommonsRegistry from '../CommonsRegistry';
-import { shouldShowLeaderboard } from '../../../utils/leaderboardVisibility';
 import { LoadFailed } from '../../../components/commons/LoadFailed';
 
 interface Props {
@@ -28,20 +29,6 @@ export default function CommonsPeopleTab({ navigation }: Props) {
   const [linkedAgents, setLinkedAgents] = useState<LinkedAgent[] | null>(null);
   const [agentsLoadFailed, setAgentsLoadFailed] = useState(false);
   const [agentCommonsProfiles, setAgentCommonsProfiles] = useState<Map<string, CommonsProfileType>>(new Map());
-  const [leaderboard, setLeaderboard] = useState<PVTLeaderboardEntry[]>([]);
-  const [userRank, setUserRank] = useState<number | undefined>(undefined);
-  const [userAddress, setUserAddress] = useState<string | undefined>(undefined);
-  const [leaderboardWindow, setLeaderboardWindow] = useState<'all' | 'week'>('all');
-
-  const loadLeaderboard = useCallback(async (window: 'all' | 'week') => {
-    const stats = await RelayAPIService.getPVTNetworkStats(window).catch(() => null);
-    if (!stats) return;
-    // Too few real participants to rank → no board (see leaderboardVisibility).
-    setLeaderboard(shouldShowLeaderboard(stats.activeWallets) ? (stats.leaderboard ?? []) : []);
-    setUserRank(stats.userRank);
-    setUserAddress(stats.userAddress);
-  }, []);
-
   const loadAgents = useCallback(async () => {
     const linkedData = await RelayAPIService.getLinkedAgents({ throwOnError: true }).catch((): null => null);
     if (!linkedData) {
@@ -69,8 +56,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
 
   useFocusEffect(useCallback(() => {
     void loadAgents();
-    void loadLeaderboard(leaderboardWindow);
-  }, [loadAgents, loadLeaderboard, leaderboardWindow]));
+  }, [loadAgents]));
 
   const header = (
     <View>
@@ -94,15 +80,13 @@ export default function CommonsPeopleTab({ navigation }: Props) {
                   accessibilityRole="button"
                 >
                   <View style={styles.agentIcon}>
-                    <Ionicons name="hardware-chip-outline" size={18} color={COLORS.primary} />
+                    <ProvianIcon name="agent" size={22} color={COLORS.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.agentName} numberOfLines={1}>{commonsProfile?.display_name || s.display_name || s.agent_id}</Text>
-                    <Text style={styles.agentMeta} numberOfLines={1}>
-                      {commonsProfile
-                        ? t('commonsDashboard.agentJoinedMeta', { count: s.pe_count })
-                        : t('commonsDashboard.agentNotJoined')}
-                    </Text>
+                    {commonsProfile
+                      ? <PublicStandingLine walletId={commonsProfile.wallet_id} kind="agent" standing={projectPublicStanding(commonsProfile)} />
+                      : <Text style={styles.agentMeta}>{t('commonsDashboard.agentNotJoined')}</Text>}
                   </View>
                   <Ionicons name={commonsProfile ? 'chevron-forward' : 'information-circle-outline'} size={16} color={COLORS.textMuted} />
                 </TouchableOpacity>
@@ -132,55 +116,7 @@ export default function CommonsPeopleTab({ navigation }: Props) {
         )
       )}
 
-      {/* Top contributors (record-count ranking; humans + agents) */}
-      {leaderboard.length > 0 && (
-        <View style={[styles.section, styles.card]}>
-          <View style={styles.lbHeader}>
-            <Text style={styles.lbTitle}>{t('commonsDashboard.leaderboardTitle')}</Text>
-            <View style={styles.windowToggle}>
-              {(['all', 'week'] as const).map((w) => (
-                <TouchableOpacity
-                  key={w}
-                  style={[styles.windowChip, leaderboardWindow === w && styles.windowChipActive]}
-                  onPress={() => setLeaderboardWindow(w)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: leaderboardWindow === w }}
-                >
-                  <Text style={[styles.windowChipText, leaderboardWindow === w && styles.windowChipTextActive]}>
-                    {w === 'all' ? t('commonsDashboard.windowAllTime') : t('commonsDashboard.windowThisWeek')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          {leaderboard.slice(0, 5).map((entry) => {
-            const isYou = !!userAddress && entry.address.toLowerCase() === userAddress.toLowerCase();
-            return (
-              <View key={entry.address} style={[styles.lbRow, isYou && styles.lbRowYou]}>
-                <Text style={styles.lbRank}>#{entry.rank}</Text>
-                <Ionicons
-                  name={entry.ownerType === 'agent' ? 'hardware-chip-outline' : 'person-outline'}
-                  size={14}
-                  color={entry.ownerType === 'agent' ? COLORS.secondary : COLORS.primary}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={styles.lbName} numberOfLines={1}>
-                  {entry.displayName || shortAddress(entry.address)}{isYou ? ` ${t('commonsDashboard.youSuffix')}` : ''}
-                </Text>
-                <Text style={styles.lbCount}>{t('commonsDashboard.peCount', { count: entry.peCount })}</Text>
-              </View>
-            );
-          })}
-          {userRank !== undefined && userRank > 5 && (
-            <View style={[styles.lbRow, styles.lbRowYou]}>
-              <Text style={styles.lbRank}>#{userRank}</Text>
-              <Ionicons name="person-outline" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
-              <Text style={styles.lbName} numberOfLines={1}>{t('commonsDashboard.you')}</Text>
-              <Text style={styles.lbCount}>—</Text>
-            </View>
-          )}
-        </View>
-      )}
+
     </View>
   );
 

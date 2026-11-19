@@ -1,3 +1,6 @@
+import { currentSpeechWindowPrice } from '../../core/commons/openSpeechWindow';
+import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
+import type { BiometricAction } from '../../core/security/biometricAction';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * CommonsCompose (§4) — the full-screen composer. A pushed screen, not a Modal, so the
@@ -13,18 +16,17 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS, TYPE_SCALE } from '../../constants/theme';
 import type { AppParamList } from '../../navigation/types';
-import useCommonsStore from '../../store/commonsStore';
 import * as CommonsService from '../../core/commons/CommonsService';
 import { POSTABLE_TOPICS, topicIcon, topicLabelKey } from '../../core/commons/forumModel';
 import { clearDraft, loadDraft, saveDraft, type PendingSpeech } from '../../core/commons/pendingSpeech';
 import { useTalkingPass } from '../../components/commons/TalkingPassSheet';
-import TalkingPassPill from '../../components/commons/TalkingPassPill';
 import { invalidateForumFeed } from '../../components/commons/forum/ForumFeed';
 
 type Props = NativeStackScreenProps<AppParamList, 'CommonsCompose'>;
@@ -49,7 +51,6 @@ function parseDraft(raw: string | null): Draft | null {
 
 export default function CommonsCompose({ navigation, route }: Props) {
   const { t } = useTranslation();
-  const joined = useCommonsStore((s) => s.profile !== null);
   const parentPostId = route.params?.parentPostId ?? null;
   const isReply = parentPostId !== null;
   const initialChannel = route.params?.channel && POSTABLE_TOPICS.includes(route.params.channel) ? route.params.channel : 'general';
@@ -105,9 +106,9 @@ export default function CommonsCompose({ navigation, route }: Props) {
     }
   }, [isReply, parentPostId, navigation]);
 
-  const send = useCallback(async (payload: { channel: string; title: string; content: string }): Promise<CommonsService.ForumPost> => {
-    if (isReply && parentPostId) return CommonsService.replyToPost(parentPostId, { content: payload.content });
-    return CommonsService.createForumPost({ channel: payload.channel, title: payload.title, content: payload.content });
+  const send = useCallback(async (payload: { channel: string; title: string; content: string }, action?: BiometricAction): Promise<CommonsService.ForumPost> => {
+    if (isReply && parentPostId) return CommonsService.replyToPost(parentPostId, { content: payload.content }, action);
+    return CommonsService.createForumPost({ channel: payload.channel, title: payload.title, content: payload.content }, action);
   }, [isReply, parentPostId]);
 
   const execute = useCallback(async (p: PendingSpeech) => {
@@ -133,23 +134,27 @@ export default function CommonsCompose({ navigation, route }: Props) {
     onResumeFailed: (err) => Alert.alert(t('common.errorTitle'), errorDisplayCopy(err instanceof Error && err.message ? err.message : t('commonsForum.error.post'))),
   });
 
+  const [postingPrice, setPostingPrice] = useState<number | null>(null);
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    void CommonsService.getSpeechWindowStatus().then(async state => {
+      const price = state.live ? null : await currentSpeechWindowPrice();
+      if (live) setPostingPrice(price);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []));
+
   const titleOk = isReply || title.trim().length > 0;
-  const canPost = joined && titleOk && body.trim().length > 0 && !submitting;
+  const canPost = titleOk && body.trim().length > 0 && !submitting;
 
   const submit = async () => {
-    if (!joined) {
-      Alert.alert(t('commonsForum.join.title'), t('commonsForum.join.toPost'), [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('commonsForum.join.cta'), onPress: () => navigation.navigate('CommonsOnboarding') },
-      ]);
-      return;
-    }
     if (!canPost) return;
     const payload = { channel, title: title.trim(), content: body.trim() };
     setSubmitting(true);
     try {
-      const created = await send(payload);
-      await finish(created, draftKey);
+      const result = await confirmCommonsWrite(t(isReply ? 'overhaul.reply' : 'commons.post'),
+        action => send(payload, action));
+      if (result.completed) await finish(result.value, draftKey);
     } catch (err) {
       const draft = JSON.stringify({ title, body });
       if (requirePass(err, { kind: isReply ? 'reply' : 'post', payload, draftKey, draft })) return;
@@ -168,7 +173,6 @@ export default function CommonsCompose({ navigation, route }: Props) {
           <Ionicons name="close" size={26} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{isReply ? t('commonsForum.compose.replyTitle') : t('commonsForum.compose.title')}</Text>
-        <TalkingPassPill />
         <TouchableOpacity
           style={[styles.postBtn, !canPost && styles.postBtnDisabled]}
           onPress={submit}
@@ -176,7 +180,7 @@ export default function CommonsCompose({ navigation, route }: Props) {
           accessibilityRole="button"
           accessibilityState={{ disabled: !canPost }}
         >
-          {submitting ? <ActivityIndicator color={COLORS.text} size="small" /> : <Text style={styles.postText}>{t('commons.post')}</Text>}
+          {submitting ? <ActivityIndicator color={COLORS.text} size="small" /> : <Text style={styles.postText}>{postingPrice === null ? t('commons.post') : `${t('commons.post')} · ${postingPrice} PVT`}</Text>}
         </TouchableOpacity>
       </View>
 

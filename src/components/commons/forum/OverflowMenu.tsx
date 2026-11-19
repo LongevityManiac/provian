@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../../constants/theme';
 import { useAfterClose } from './useAfterClose';
 
-export type OverflowAction = 'report' | 'question' | 'message' | 'profile' | 'reportToProvian' | 'block';
+export type OverflowAction = 'report' | 'message' | 'profile' | 'reportToProvian' | 'block';
 
 interface Props {
   visible: boolean;
@@ -19,22 +19,19 @@ interface Props {
   authorName: string;
   /** Your own post: no report / question / message. */
   isMine: boolean;
-  /** Offer "Question this post" (top-level posts only). */
-  canQuestion: boolean;
   onClose: () => void;
   onSelect: (action: OverflowAction) => void;
 }
 
 const ICONS: Record<OverflowAction, keyof typeof Ionicons.glyphMap> = {
   report: 'flag-outline',
-  question: 'help-circle-outline',
   message: 'mail-outline',
   profile: 'person-circle-outline',
   reportToProvian: 'mail-unread-outline',
   block: 'eye-off-outline',
 };
 
-export default function OverflowMenu({ visible, authorName, isMine, canQuestion, onClose, onSelect }: Props) {
+export default function OverflowMenu({ visible, authorName, isMine, onClose, onSelect }: Props) {
   const { t } = useTranslation();
   const { afterClose, onDismiss } = useAfterClose();
   const [open, setOpen] = useState(visible);
@@ -42,7 +39,7 @@ export default function OverflowMenu({ visible, authorName, isMine, canQuestion,
 
   const items: OverflowAction[] = isMine
     ? ['profile']
-    : [...(canQuestion ? (['question'] as OverflowAction[]) : []), 'message', 'profile', 'reportToProvian', 'block', 'report'];
+    : ['message', 'profile', 'reportToProvian', 'block', 'report'];
 
   const choose = (a: OverflowAction) => {
     setOpen(false);
@@ -55,7 +52,6 @@ export default function OverflowMenu({ visible, authorName, isMine, canQuestion,
       case 'report': return t('commonsForum.menu.flagPublic');
       case 'reportToProvian': return t('commonsSafety.report');
       case 'block': return t('commonsSafety.block', { name: authorName });
-      case 'question': return t('commonsForum.menu.question');
       case 'message': return t('commonsForum.menu.message', { name: authorName });
       case 'profile': return t('commonsForum.menu.profile');
     }

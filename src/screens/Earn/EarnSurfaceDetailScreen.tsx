@@ -199,7 +199,8 @@ export default function EarnSurfaceDetailScreen({
                     navigation.navigate('AgentHub');
                     break;
                 }
-                navigation.navigate('ConnectAgent', { mode: target.mode });
+                if (target.mode === 'device') navigation.navigate('ComputerPairing');
+                else navigation.navigate('ConnectAgent', { mode: 'agent' });
                 break;
             case 'forge':
                 navigation.navigate('ForgeConnect', { provider: target.provider });

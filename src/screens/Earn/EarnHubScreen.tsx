@@ -21,6 +21,7 @@ import {
     TouchableOpacity,
     RefreshControl,
     ActivityIndicator,
+    AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -47,6 +48,18 @@ import {
 import RelayAPIService from '../../services/RelayAPIService';
 import { getMobileChatConsent } from '../../core/capture/mobileChatConsent';
 import { anyLinkedAgentLive } from '../../utils/agentLiveness';
+import { useWalletStore } from '../../store/walletStore';
+import { isSavedAccrual, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
+import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
+import type { PVTAccrual } from '../../services/RelayAPIService';
+import { DestinationRow } from '../../components/ScreenActions';
+import ProvianIcon from '../../components/ProvianIcon';
+import ParticipationCard from '../../components/ParticipationCard';
+import { AppMenu } from '../../components/AppMenu';
+import { resumeHomeStarter } from '../Dashboard/HomeScreen';
+import { useNavigation } from '@react-navigation/native';
+import type { AppParamList } from '../../navigation/types';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import useCommonsStore from '../../store/commonsStore';
 
 /** Window of recent PE history used for per-surface activity. */
@@ -106,6 +119,40 @@ const STATUS_STYLE: Record<SurfaceStatus, { color: string; bg: string }> = {
 
 export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React.JSX.Element {
     const { t } = useTranslation();
+    const address = useWalletStore(state => state.address);
+    const stack = useNavigation<NativeStackNavigationProp<AppParamList>>();
+    const [participation, setParticipation] = useState<WalletTopShown<PVTAccrual>>(initialWalletTop);
+    const [pvtRefreshing, setPvtRefreshing] = useState(false);
+    const participationLoader = useRef<WalletTopLoader<PVTAccrual> | null>(null);
+    participationLoader.current ??= new WalletTopLoader<PVTAccrual>({
+        read: () => RelayAPIService.getPVTAccrual(),
+        readSaved: async (wallet) => {
+            const saved = await readWalletTop('accrual', wallet, isSavedAccrual);
+            return saved ? { value: saved.value as PVTAccrual, savedAtMs: saved.savedAtMs } : null;
+        },
+        save: (wallet, value) => saveWalletTop('accrual', wallet, value),
+        onChange: (shown, busy) => { setParticipation(shown); setPvtRefreshing(busy); },
+    });
+    const loadParticipation = useCallback(() => participationLoader.current!.load(), []);
+    React.useEffect(() => {
+        participationLoader.current!.setAddress(address ?? null);
+        void participationLoader.current!.load();
+    }, [address]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadParticipation();
+        }, [loadParticipation])
+    );
+    const participationNote = walletTopNote(participation, t, 'dashboard.participationUpdating', 'dashboard.participationUpdatedAgo');
+
+    useFocusEffect(useCallback(() => {
+        const sub = AppState.addEventListener('change', state => {
+            if (state === 'active') void loadParticipation();
+        });
+        return () => sub.remove();
+    }, [loadParticipation]));
+
     const commonsJoined = useCommonsStore((s) => s.isJoined);
     const commonsMembershipStatus = useCommonsStore((s) => s.membershipStatus);
     const refreshCommonsMembership = useCommonsStore((s) => s.refreshMembership);
@@ -253,15 +300,19 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await loadData();
+        await Promise.all([loadData(), loadParticipation()]);
         setRefreshing(false);
-    }, [loadData]);
+    }, [loadData, loadParticipation]);
 
     const openSurface = useCallback(
         (surfaceId: EarningSurfaceId) => {
             if (!isSurfaceConnectionKnown(getSurface(surfaceId), data.readiness)) return;
             if (shouldManageConnectedAgents(surfaceId, data.statuses[surfaceId].status)) {
                 navigation.navigate('AgentHub');
+                return;
+            }
+            if (surfaceId === 'desktop_daemon' && data.statuses[surfaceId].status === 'setup') {
+                navigation.navigate('ComputerPairing');
                 return;
             }
             navigation.navigate('EarnSurfaceDetail', { surfaceId });
@@ -290,22 +341,27 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+                refreshControl={<RefreshControl refreshing={refreshing || pvtRefreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
             >
                 <View style={styles.header}>
                     <View style={styles.headerText}>
                         <Text style={styles.title}>{t('earn.title')}</Text>
                         <Text style={styles.subtitle}>{t('earn.subtitle')}</Text>
                     </View>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('Settings')}
-                        style={styles.settingsButton}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('settings.title')}
-                    >
-                        <Ionicons name="settings-outline" size={22} color={COLORS.textSecondary} />
-                    </TouchableOpacity>
+                    <AppMenu />
                 </View>
+
+                <ParticipationCard
+                    pvtAccrual={participation.value}
+                    loadError={participation.phase === 'failed'}
+                    note={participationNote}
+                    onRetry={loadParticipation}
+                    onPress={() => navigation.navigate('MyProvenance')}
+                />
+                <DestinationRow label={t('overhaul.proofsAndEarnings')} icon="proof"
+                    onPress={() => navigation.navigate('MyProvenance')} />
+                <DestinationRow label={t('overhaul.firstTask')} icon="home"
+                    onPress={() => { void resumeHomeStarter(address).then(() => stack.navigate('MainTabs', { screen: 'WalletTab' })); }} />
 
                 {/* Agents that connected with your code and are waiting to be linked.
                     Pinned above the stats so the beneficiary link is one glance away. */}
@@ -356,7 +412,9 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                                 accessibilityState={{ disabled: loading, busy: loading }}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name={surface.icon as keyof typeof Ionicons.glyphMap} size={20} color={COLORS.primary} />
+                                {surfaceId === 'desktop_daemon' || surfaceId === 'connected_agents'
+                                    ? <ProvianIcon name={surfaceId === 'desktop_daemon' ? 'computer' : 'agent'} color={COLORS.primaryLight} />
+                                    : <Ionicons name={surface.icon as keyof typeof Ionicons.glyphMap} size={20} color={COLORS.primary} />}
                                 <Text style={styles.quickConnectionText}>{t(labelKey)}</Text>
                                 {loading
                                     ? <ActivityIndicator size="small" color={COLORS.textMuted} />

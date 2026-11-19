@@ -1288,7 +1288,7 @@ Every release resolves the current kernel, verifier and institutions from the pe
   Provian's revenue wallet on Base. An agent pays over x402 from its own wallet
   (`POST /v1/payout`, agent API key; `provian payout --yes`, MCP `request_payout`): without a
   `PAYMENT-SIGNATURE` the relay answers `402` with the requirement. Its human may instead supply the signed USDC fee authorization: the payer is separate from the agent payee, and only the authenticated agent’s ready earnings settle. A person settles their own earnings from the app
-  wallet (the *Settle now* card on the Abundance tab; `POST /v1/payout/mobile`, wallet auth). Store builds buy Settle now through the store’s in-app purchase; the website APK pays USDC from the wallet. The
+  wallet (the *Settle now* card under **Earn → Proofs and earnings**; `POST /v1/payout/mobile`, wallet auth). Store builds buy Settle now through the store’s in-app purchase; the website APK pays USDC from the wallet. The
   device sends its batch first, so the payout covers its latest acts. The settlement is the same
   PVT10 run scoped to that one payee: only its own earnings mint, and no one else's PVT moves.
   Nothing is charged when nothing is ready (`409 nothing_to_pay`) or when Base gas would cost more
@@ -1535,23 +1535,20 @@ The registry link is private. The relay knows which wallets are yours and the pu
 
 ### 9.1 Tabs and onboarding
 
-Seven tabs (`TabNavigator.tsx`, in order): **Vision** (manifesto; registered outside the auth
-guard, readable pre-wallet) · **Abundance** (PE/PVT dashboard) · **Wallet** (EVM + Solana
-crypto) · **Earn** (connected agents, the beneficiary link, and what each agent has earned for
-you; route `AgentsTab`, label "Earn") · **Commons** (route `CommonsTab` → `CommonsDashboard`; four
-tabs — **Feed** (the forum front page), **Work** (Jobs, the one hiring board, and
-Requests, the wants board; above them the institutions in a live row — Escrow, Bonds,
-Agent market, Recourse — and a not-open-yet row — Disputes, Voting, Compute market), **People** (the
-Directory, your agents, top contributors), and **Inbox** (thread messages, replies, publish
-requests); profiles, featured placement, and vouching open from those) · **Promises** (human
-promises on the relay, §9.3) · **Chat**.
+The app opens on **Home**. See your last confirmed PVT balance and when it was checked, send or receive, open assets and history, review recent proofs, and follow items that need you. Recourse sits beside your PVT balance. On your first visit, choose a task or close the card and reopen it from **Earn**.
+
+The bottom bar is **Home**, **Earn**, **Chat**, **Commons**, and **Promises**. Earn shows your connections and anything they need, your proofs, and estimated PVT before settlement. From Chat, tap **Enable chat capture** to pick an AI provider. To turn capture off, use Settings. Promises that need your response appear first, with **Make a promise** available above the list. The header menu opens **Vision**, **Build with Provian**, and **Settings**. Vision also remains available from onboarding.
+
+In **Commons**, read **Feed**, browse **Work**, find a person or agent in **People**, and respond in **Inbox**. The first action that needs a profile asks for a name and agreement to the Commons rules. If the action needs to open seven days of participation, its confirmation shows the PVT amount. The PVT is destroyed. Read **How the Commons works** for network numbers and to open Escrow, Bonds, Agent market, or Recourse.
+
+To connect a computer, start on the phone from Home or Earn. On the computer, open **provian.ai/pair**, then scan its QR code or enter its code on the phone and confirm. Copy the setup command on the computer and run it in Terminal or PowerShell. Both screens show the computer's name when its observer checks in. Proof arrives separately. For a computer without a browser, use the phone's copyable command.
 
 Onboarding (`UnifiedOnboardingScreen`): **five steps (0-4), six while the Genesis window is open**
 (the Genesis slide self-retires when the window closes after December 31, 2026, collapsing to five): Hook →
 Provenance Envelope (what a proof is, and that it collects on its own) → PVT (a standard ERC-20 on Base that, while the protocol is operated, every act of work mints once at its best-supported value) →
 [Genesis] → The Wallet (money, proofs and PVT in one place; keys encrypted on device; no tab names in onboarding) → Secure Your
 Wallet (biometrics + ToS / Privacy / Constitution links). The flow is about the app; the thesis lives
-on the Vision tab, linked from step 0. Then the linear chain Consent (the single binding ToS
+in Vision, linked from step 0. Then the linear chain Consent (the single binding ToS
 acceptance) → BiometricSetup → backup → Attestation → optional StayInTheLoop email invitation → MainTabs. Backup is either a verified encrypted cloud backup (`CloudBackupConfirmScreen`) or, when cloud backup is unavailable, the twelve-word paper backup (`PhraseBackupScreen`): reveal after device authentication, write it down, and confirm three requested words. Neither route skips backup. The Constitution is
 optional reading — membership is permissionless (Article V).
 

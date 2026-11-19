@@ -1,3 +1,4 @@
+import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
 import { ZeroHash } from 'ethers';
@@ -620,6 +621,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
             <Ionicons name={seeking === 'agent' ? 'hardware-chip-outline' : 'person-outline'} size={14} color={COLORS.textSecondary} style={{ marginLeft: SPACING.m }} />
             <Text style={styles.metaTextMuted}>{seeking === 'agent' ? t('commonsJobs.hiresAgent') : t('commonsJobs.hiresPerson')}</Text>
           </View>
+          <Text style={styles.muted}>{t('overhaul.paidWhenDone')}</Text>
           <Text style={styles.roleNote}>
             {isPoster ? t('commonsHumanJobManage.roleNotePoster') : isWorker ? t('commonsHumanJobManage.roleNoteWorker') : t('commonsHumanJobManage.roleNoteNone')}
           </Text>
@@ -640,7 +642,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
         {/* ── Not a party: apply, or why not ─────────────────────────── */}
         {!isParty && (
           <View style={styles.section}>
-            {eligibility.canApply ? (
+            {(eligibility.canApply || (eligibility.reason === 'not_member' && seeking === 'human' && job.status === 'open')) ? (
               <>
                 <Text style={styles.muted}>{t('commonsJobs.applyExplainer')}</Text>
                 <PrimaryButton label={t('commonsHumanJobs.apply')} onPress={() => startApply(job)} busy={applyingJobId === job.job_id} />
@@ -660,7 +662,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
                 ? t('commonsJobs.featuredNow', { rank: featuredRank })
                 : t('commonsJobs.featureExplainer', { pvt: FEATURED_BID_MIN_PVT })}
             </Text>
-            <SecondaryButton label={featuredRank !== null ? t('commonsJobs.featureRaise') : t('commons.featureAction')} onPress={handleFeature} busy={busy} icon="flame-outline" />
+            <SecondaryButton label={featuredRank !== null ? t('overhaul.boost') : t('overhaul.boost')} onPress={handleFeature} busy={busy} icon="flame-outline" />
           </View>
         )}
 
@@ -685,6 +687,7 @@ export default function CommonsHumanJobManage({ navigation, route }: Props) {
                       {app.applicant?.display_name || t('commonsHumanJobManage.anonymousParticipant')}
                       {'  '}<Ionicons name="chevron-forward" size={13} color={COLORS.textSecondary} />
                     </Text>
+                    <PublicStandingLine walletId={app.applicant_wallet_id} />
                     <Text style={styles.applicantMeta}>
                       {t('commonsHumanJobManage.applicantMeta', {
                         records: app.applicant?.pe_count ?? 0,

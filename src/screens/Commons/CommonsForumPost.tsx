@@ -1,3 +1,4 @@
+import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 /**
  * CommonsForumPost — one post with its threaded conversation underneath (§3).
@@ -21,7 +22,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS, TYPE_SCALE } from '../../constants/theme';
-import { shortAddress } from '../../utils/shortAddress';
 import useCommonsStore from '../../store/commonsStore';
 import { captureShownForumPosts } from '../../core/commons/commonsOutputSigning';
 import * as CommonsService from '../../core/commons/CommonsService';
@@ -41,8 +41,6 @@ import {
   type NormalizedForumPost,
 } from '../../core/commons/forumModel';
 import { toPostThread } from '../../core/commons/forumFeedSource';
-import { describePredicate } from '../../core/commons/predicatePicker';
-import { CHALLENGE_ANSWER_FEE_PVT } from '../../core/commons/speechGate';
 import type { PendingSpeech } from '../../core/commons/pendingSpeech';
 import type { AppParamList } from '../../navigation/types';
 import AuthorLine, { authorName } from '../../components/commons/forum/AuthorLine';
@@ -50,11 +48,9 @@ import VoteControl from '../../components/commons/forum/VoteControl';
 import { CommentRow } from '../../components/commons/forum/CommentTree';
 import OverflowMenu, { type OverflowAction } from '../../components/commons/forum/OverflowMenu';
 import { useCommonsBlockStore, withoutBlocked } from '../../store/commonsBlockStore';
-import ChallengeSheet from '../../components/commons/forum/ChallengeSheet';
 import { ChallengeChipView } from '../../components/commons/forum/PostCard';
 import { useForumWrites } from '../../components/commons/forum/useForumWrites';
 import { invalidateForumFeed } from '../../components/commons/forum/ForumFeed';
-import TalkingPassPill from '../../components/commons/TalkingPassPill';
 import BackButton from '../../components/BackButton';
 
 type Props = NativeStackScreenProps<AppParamList, 'CommonsForumPost'>;
@@ -77,10 +73,7 @@ export default function CommonsForumPost({ navigation, route }: Props) {
   const [rootPost, setRootPost] = useState<NormalizedForumPost | null>(null);
   const [comments, setComments] = useState<NormalizedForumPost[]>([]);
   const [legacy, setLegacy] = useState(false);
-  // challenge OUTCOMES (never the predicate) + the author's own open challenges to answer.
-  const [challenges, setChallenges] = useState<PublicChallengeOutcome[]>([]);
   const [outcomes, setOutcomes] = useState<{ open: number; answered: number; upheld: number } | undefined>(undefined);
-  const [myOpen, setMyOpen] = useState<Array<CommonsChallenge & { challengerName: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -113,20 +106,9 @@ export default function CommonsForumPost({ navigation, route }: Props) {
       setRootPost(th.root);
       setComments(th.comments);
       setLegacy(th.legacy);
-      setChallenges(detail.challenges ?? []);
       setOutcomes(detail.challenge_outcomes);
       setFailed(false);
-      if (myId && th.post.author_wallet_id === myId && (detail.challenges ?? []).some((c) => c.status === 'open')) {
-        const mine = await CommonsService.getMyChallenges().catch(() => ({ challenges: [] as CommonsChallenge[] }));
-        const open = mine.challenges.filter((c) => c.post_id === postId && c.status === 'open');
-        const named = await Promise.all(open.map(async (c) => {
-          const p = await CommonsService.getAgentProfile(c.challenger_wallet_id).catch(() => null);
-          return { ...c, challengerName: p?.display_name ?? shortAddress(c.challenger_wallet_id) };
-        }));
-        setMyOpen(named);
-      } else {
-        setMyOpen([]);
-      }
+
     } catch (err) {
       console.log('[CommonsForumPost] Load error:', err instanceof Error ? err.message : err);
       // A missing post is "not available", not a network failure worth retrying.
@@ -251,10 +233,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
   }, [navigation, post?.channel]);
 
   const startReply = useCallback((c: NormalizedForumPost) => {
-    if (!joined) {
-      writes.askToJoin(t('commonsForum.join.toReply'));
-      return;
-    }
     setReplyTo(c);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [joined, writes, t]);
@@ -270,7 +248,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
     if (a === 'report') writes.report(target);
     else if (a === 'reportToProvian') writes.reportToProvian(target);
     else if (a === 'block') writes.blockAuthor(target);
-    else if (a === 'question') void writes.question(target);
     else if (a === 'message') writes.messageAuthor(target);
     else writes.viewProfile(target);
   }, [menuTarget, writes]);
@@ -280,15 +257,12 @@ export default function CommonsForumPost({ navigation, route }: Props) {
   const sendReply = async () => {
     const content = text.trim();
     if (!content || sending || !post) return;
-    if (!joined) {
-      writes.askToJoin(t('commonsForum.join.toReply'));
-      return;
-    }
     const parentId = replyTo?.post_id ?? post.post_id;
     setSending(true);
     try {
-      const created = await CommonsService.replyToPost(parentId, { content });
-      addReply(created, parentId);
+      const result = await confirmCommonsWrite(t('overhaul.reply'), action => CommonsService.replyToPost(parentId, { content }, action));
+      if (!result.completed) return;
+      addReply(result.value, parentId);
       setText('');
       setReplyTo(null);
     } catch (err) {
@@ -296,27 +270,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
       Alert.alert(t('common.errorTitle'), errorDisplayCopy(err instanceof Error && err.message ? err.message : t('commonsForum.error.reply')));
     } finally {
       setSending(false);
-    }
-  };
-
-  // the author answers an open challenge by presenting against its predicate — the binding
-  // (audience + nonce) is read from the author's private list, then HumanPresentment burns,
-  // produces the token, and delivers it to the challenge (verify-at-submit).
-  const answerOpenChallenge = async () => {
-    try {
-      const mine = await CommonsService.getMyChallenges();
-      const open = mine.challenges.find((c) => c.post_id === postId && c.status === 'open');
-      if (!open) { Alert.alert(t('commons.challengeNoneOpenTitle'), t('commons.challengeNoneOpenBody')); return; }
-      Alert.alert(
-        t('commons.challengeAnswerTitle'),
-        t('commons.challengeAnswerBody', { predicate: describePredicate(open.predicate, t) }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('commons.challengeAnswerGo'), onPress: () => navigation.navigate('HumanPresentment', { audience: open.audience, challenge: open.challenge_nonce, predicates: [open.predicate], deliverTo: { kind: 'challenge', challengeId: open.challenge_id } }) },
-        ],
-      );
-    } catch (err) {
-      Alert.alert(t('common.errorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commons.challengeAnswerFailed')));
     }
   };
 
@@ -329,7 +282,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
   })();
 
   const isMine = !!post && post.author_wallet_id === myId;
-  const isTopLevel = !!post && !post.parent_post_id;
 
   const renderPostBlock = () => {
     if (!post) return null;
@@ -372,32 +324,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
           <Text style={styles.postBody} selectable>{post.content}</Text>
           {chip && <View style={{ flexDirection: 'row', marginTop: SPACING.s }}><ChallengeChipView chip={chip} /></View>}
 
-          {challenges.length > 0 && (
-            <View style={styles.challengeBox}>
-              <View style={styles.challengeHeaderRow}>
-                <Text style={styles.challengeTitle}>{t('commonsForum.challengeBox.title', { count: challenges.length })}</Text>
-              </View>
-              {challenges.map((c) => (
-                <Text key={c.challenge_id} style={[styles.challengeLine, c.status === 'upheld' && { color: COLORS.warning }, c.status === 'answered' && { color: COLORS.success }]}>
-                  {c.status === 'open' ? t('commons.challengeOpen') : c.resolution === 'predicate_true' ? t('commons.challengeAnswered') : c.resolution === 'predicate_false' ? t('commons.challengeUpheldFalse') : t('commons.challengeUpheldSilent')}
-                </Text>
-              ))}
-              {myOpen.map((c) => (
-                <View key={`mine-${c.challenge_id}`} style={styles.challengeDetail}>
-                  <Text style={styles.challengeDetailTitle}>{t('commons.challengeYouTitle', { who: c.challengerName })}</Text>
-                  <Text style={styles.challengeLine}>{t('commons.challengeYouClaim', { stake: pvtFromAtomic(c.stake_amount_atomic), claim: describePredicate(c.predicate, t) })}</Text>
-                  <Text style={styles.challengeLine}>{t('commons.challengeYouHow', { fee: CHALLENGE_ANSWER_FEE_PVT, deadline: new Date(c.window_expires_at).toLocaleDateString() })}</Text>
-                </View>
-              ))}
-              {isMine && challenges.some((c) => c.status === 'open') && (
-                <TouchableOpacity style={styles.answerBtn} onPress={() => void answerOpenChallenge()} accessibilityRole="button">
-                  <Ionicons name="ribbon-outline" size={16} color={COLORS.text} />
-                  <Text style={styles.answerBtnText}>{t('commons.challengeAnswerCta', { fee: CHALLENGE_ANSWER_FEE_PVT })}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
           <View style={styles.postFooter}>
             <VoteControl post={post} onVote={writes.vote} />
             <View style={styles.footerStat}>
@@ -405,11 +331,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
               <Text style={styles.footerText}>{commentLabel}</Text>
             </View>
             <View style={{ flex: 1 }} />
-            {!isMine && isTopLevel && (
-              <TouchableOpacity style={styles.footerBtn} onPress={() => void writes.question(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.menu.question')}>
-                <Ionicons name="help-circle-outline" size={20} color={COLORS.textSecondary} />
-              </TouchableOpacity>
-            )}
             <TouchableOpacity style={styles.footerBtn} onPress={() => openMenu(post)} accessibilityRole="button" accessibilityLabel={t('commonsForum.a11y.more')}>
               <Ionicons name="ellipsis-horizontal" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
@@ -447,7 +368,7 @@ export default function CommonsForumPost({ navigation, route }: Props) {
       <View style={styles.header}>
         <BackButton onPress={() => navigation.goBack()} accessibilityLabel={t('common.back')} />
         <Text style={styles.headerTitle} numberOfLines={1}>{topicLabel}</Text>
-        <TalkingPassPill />
+
       </View>
 
       {loading ? (
@@ -491,8 +412,7 @@ export default function CommonsForumPost({ navigation, route }: Props) {
             }}
           />
 
-          {joined ? (
-            <View style={styles.composer}>
+          <View style={styles.composer}>
               {replyTo && (
                 <View style={styles.replyChip}>
                   <Text style={styles.replyChipText} numberOfLines={1}>{t('commonsForum.thread.replyingTo', { name: authorName(replyTo) })}</Text>
@@ -524,12 +444,6 @@ export default function CommonsForumPost({ navigation, route }: Props) {
                 </TouchableOpacity>
               </View>
             </View>
-          ) : (
-            <TouchableOpacity style={[styles.composer, styles.joinBar]} onPress={() => navigation.navigate('CommonsOnboarding')} accessibilityRole="button">
-              <Text style={styles.joinText}>{t('commonsForum.join.banner')}</Text>
-              <Text style={styles.joinCta}>{t('commonsForum.join.cta')}</Text>
-            </TouchableOpacity>
-          )}
         </KeyboardAvoidingView>
       )}
 
@@ -537,11 +451,9 @@ export default function CommonsForumPost({ navigation, route }: Props) {
         visible={menuOpen}
         authorName={menuTarget ? authorName(menuTarget) : ''}
         isMine={!!menuTarget && menuTarget.author_wallet_id === myId}
-        canQuestion={!!menuTarget && !menuTarget.parent_post_id}
         onClose={() => setMenuOpen(false)}
         onSelect={onMenuSelect}
       />
-      <ChallengeSheet {...writes.challenge} />
     </SafeAreaView>
   );
 }

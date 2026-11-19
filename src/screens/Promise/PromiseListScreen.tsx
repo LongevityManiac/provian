@@ -52,6 +52,14 @@ const PromiseListScreen = ({ navigation, route }: any) => {
             const data = activeTab === 'active'
                 ? await PromiseService.getActivePromises()
                 : await PromiseService.getCompletedPromises();
+            if (activeTab === 'active') {
+                const needsMyAnswer = (promise: PromiseType): boolean =>
+                    promise.counterFromCounterparty === true
+                    || promise.closeoutInitiatedByCounterparty === true
+                    || ((promise.status === 'pending' || promise.status === 'offered')
+                        && promise.creatorAddress.toLowerCase() !== useWalletStore.getState().address.toLowerCase());
+                data.sort((left, right) => Number(needsMyAnswer(right)) - Number(needsMyAnswer(left)));
+            }
             setPromises(data);
             setLoadState('loaded');
         } catch (error) {

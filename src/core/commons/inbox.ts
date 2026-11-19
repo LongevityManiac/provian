@@ -140,7 +140,7 @@ export function buildInbox(input: BuildInboxInput): InboxItem[] {
       expiresAt: Number(c.expires_at) || 0,
     });
   }
-  return items.sort((a, b) => b.at - a.at || a.id.localeCompare(b.id));
+  return items.sort((a, b) => Number(b.unread) - Number(a.unread) || b.at - a.at || a.id.localeCompare(b.id));
 }
 
 export function filterInbox(items: InboxItem[], filter: InboxFilter): InboxItem[] {

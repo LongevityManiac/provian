@@ -302,6 +302,10 @@ export interface AgentPEActivity {
     beneficiary: AgentBeneficiary | null;
 }
 
+export type ComputerPairingStatus =
+    | { state: 'waiting_for_computer' }
+    | { state: 'connected'; name: string; deviceId: string; firstProof: boolean };
+
 export interface RegisteredDevice {
     device_id: string;
     device_name: string;
@@ -2434,6 +2438,28 @@ class RelayAPIService {
         } catch {
             return false;
         }
+    }
+
+    async confirmComputerPairing(code: string): Promise<void> {
+        const response = await this.makeAuthenticatedRequest('/v1/computer-pairing/confirm', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+        });
+        if (!response.ok) throw new Error('computer_pairing_confirm_failed');
+    }
+
+    async computerPairingStatus(code: string): Promise<ComputerPairingStatus | null> {
+        const response = await this.makeAuthenticatedRequest('/v1/computer-pairing/phone-status', {
+            method: 'POST',
+            body: JSON.stringify({ code }),
+        });
+        if (response.status === 404) return null;
+        if (!response.ok) throw new Error('computer_pairing_status_failed');
+        const result: ComputerPairingStatus = await response.json();
+        if (result.state === 'waiting_for_computer') return result;
+        if (result.state === 'connected' && typeof result.deviceId === 'string'
+            && typeof result.name === 'string' && typeof result.firstProof === 'boolean') return result;
+        throw new Error('computer_pairing_status_invalid');
     }
 
     /**

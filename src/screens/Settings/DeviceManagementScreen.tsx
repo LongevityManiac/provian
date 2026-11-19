@@ -66,14 +66,14 @@ function formatRelativeTime(timestamp: number | null, t: TFunction): string {
     return t('relativeTime.monthsAgo', { count: months });
 }
 
-const DeviceManagementScreen = ({ navigation }: Props) => {
+const DeviceManagementScreen = ({ navigation, route }: Props) => {
     const { t } = useTranslation();
     // The launch switch : the npm note is right before and after the flip.
     const launch = useLaunchState();
     const [devices, setDevices] = useState<RegisteredDevice[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
+    const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(route.params?.deviceId ?? null);
     // I-U-5: Alert.prompt is iOS-only. Use an in-app Modal for Android.
     const [renameModal, setRenameModal] = useState<{ device: RegisteredDevice } | null>(null);
     const [renameInput, setRenameInput] = useState('');
@@ -81,13 +81,16 @@ const DeviceManagementScreen = ({ navigation }: Props) => {
     const loadDevices = useCallback(async () => {
         try {
             const result = await RelayAPIService.getRegisteredDevices();
-            setDevices(result);
+            const selected = route.params?.deviceId;
+            const sorted = selected ? [...result].sort((left, right) =>
+                Number(right.device_id === selected) - Number(left.device_id === selected)) : result;
+            setDevices(sorted);
         } catch {
             // getRegisteredDevices already handles errors internally
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [route.params?.deviceId]);
 
     useEffect(() => {
         loadDevices();

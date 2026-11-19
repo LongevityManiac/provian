@@ -1,3 +1,4 @@
+import { clearPendingAgentSetup } from './ConnectAgentScreen';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import React, { useEffect, useRef, useState } from 'react';
@@ -156,10 +157,11 @@ export default function LinkAcceptScreen({ route, navigation }: Props) {
 
                     // Check for success field in response
                     if (result.success === true) {
+                        void clearPendingAgentSetup();
                         // The request is no longer waiting: clear it from the bell now.
                         requestAttentionRefresh();
                         Alert.alert(
-                            t('linkAccept.linkSuccessTitle'),
+                            t('overhaul.agentLinked'),
                             t('linkAccept.linkSuccessMessage', { name: result.agent_name || chosenName }),
                             [
                                 {

@@ -30,7 +30,6 @@ import type { HumanJob, FeaturedSlot } from '../../core/commons/CommonsService';
 import { featuredFirst, featuredRankOf } from '../../core/commons/jobBoard';
 import JobCard from '../../components/commons/JobCard';
 import { useJobApply } from './useJobApply';
-import { InlinePostButton } from '../../components/commons/InlinePostButton';
 import BackButton from '../../components/BackButton';
 import { LoadFailed } from '../../components/commons/LoadFailed';
 
@@ -243,6 +242,11 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           style={styles.categoriesScroll}
           contentContainerStyle={styles.categoriesContent}
         >
+          {embedded ? filterGroup('', hiresFilter, [
+            { v: 'all', label: t('commons.all') },
+            { v: 'human', label: t('overhaul.hiringPeople') },
+            { v: 'agent', label: t('overhaul.hiringAgents') },
+          ], setHiresFilter) : (<>
           {filterGroup(t('commonsJobs.filterHiring'), hiringFilter, [
             { v: 'all', label: t('commonsJobs.filterAnyone') },
             { v: 'human', label: t('commonsJobs.filterPeople') },
@@ -258,6 +262,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
             { v: 'pvt', label: 'PVT' },
             { v: 'usdc', label: 'USDC' },
           ], setCurrencyFilter)}
+          </>)}
         </ScrollView>
       )}
 
@@ -364,13 +369,7 @@ export default function CommonsHumanJobs({ navigation, embedded = false, header 
           {header}
           {controls}
           <View style={styles.embeddedList}>
-            {/* Inside the Commons tabs "Post a job" sits in the list, never floating over it. */}
-            {profile?.participant_type === 'human' && (
-              <InlinePostButton label={t('commonsHome.postJob')} onPress={() => navigation.navigate('CommonsHumanJobsPost')} testID="commons-post-job" />
-            )}
-            {loading ? (
-              <ActivityIndicator style={styles.embeddedLoading} size="large" color={JOBS_ACCENT} />
-            ) : listBody}
+            {loading ? <ActivityIndicator style={styles.embeddedLoading} size="large" color={JOBS_ACCENT} /> : listBody}
           </View>
         </ScrollView>
       ) : loading ? (

@@ -12,7 +12,7 @@
  * On a failed fetch (loadError) the card says so rather than rendering a
  * confidently-wrong zero.
  *
- * Rendered on the Wallet dashboard.
+ * Rendered on Earn.
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -107,6 +107,7 @@ const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: Pa
                         <Animated.Text
                             style={[
                                 styles.statValue,
+                                { fontVariant: ['tabular-nums'] },
                                 showsProjection ? styles.statValueMoney : styles.statValueRecord,
                                 { transform: [{ scale: pulseAnim }] },
                             ]}

@@ -31,14 +31,11 @@ import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, GLASS } from '../../constants/theme';
 import useCommonsStore from '../../store/commonsStore';
 import * as CommonsService from '../../core/commons/CommonsService';
-import type { FeedItem, InstitutionInfo } from '../../core/commons/CommonsService';
 import SegmentedTabs, { type SegmentedTab } from '../../components/commons/SegmentedTabs';
-import TalkingPassPill from '../../components/commons/TalkingPassPill';
 import ForumFeed from '../../components/commons/forum/ForumFeed';
 import CommonsWorkTab from './tabs/CommonsWorkTab';
 import CommonsPeopleTab from './tabs/CommonsPeopleTab';
 import CommonsInboxTab from './tabs/CommonsInboxTab';
-import CommonsAboutSheet from './tabs/CommonsAboutSheet';
 import BackButton from '../../components/BackButton';
 
 export type CommonsHomeTab = 'feed' | 'work' | 'people' | 'inbox';
@@ -65,19 +62,9 @@ export default function CommonsDashboard({ navigation, route }: Props) {
   const inboxUnread = useCommonsStore((s) => s.inboxUnread);
   const refreshMembership = useCommonsStore((s) => s.refreshMembership);
   const refreshNotifications = useCommonsStore((s) => s.refreshNotifications);
-  const fetchFeed = useCommonsStore((s) => s.fetchFeed);
-  const fetchInstitutions = useCommonsStore((s) => s.fetchInstitutions);
-  const fetchStats = useCommonsStore((s) => s.fetchStats);
-
   const [tab, setTab] = useState<CommonsHomeTab>('feed');
   // Tabs stay mounted once visited, so switching back keeps your place in the list.
   const [visited, setVisited] = useState<Set<CommonsHomeTab>>(() => new Set<CommonsHomeTab>(['feed']));
-  const [showAbout, setShowAbout] = useState(false);
-  const [institutions, setInstitutions] = useState<InstitutionInfo[]>([]);
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [stats, setStats] = useState<Record<string, unknown>>({});
-  const [aboutLoadFailed, setAboutLoadFailed] = useState(false);
-
   // Operator announcements (the composer is gated on the server-provided capability).
   const [canAnnounce, setCanAnnounce] = useState(false);
   const [showComposer, setShowComposer] = useState(false);
@@ -108,25 +95,6 @@ export default function CommonsDashboard({ navigation, route }: Props) {
         .catch(() => setCanAnnounce(false));
     }, [refreshMembership, refreshNotifications]),
   );
-
-  const loadAbout = async () => {
-    const [inst, feedItems, networkStats] = await Promise.all([
-      fetchInstitutions().catch(() => [] as InstitutionInfo[]),
-      fetchFeed().catch(() => [] as FeedItem[]),
-      fetchStats().catch(() => ({})),
-    ]);
-    setInstitutions(inst);
-    setFeed(feedItems);
-    setStats(networkStats);
-    // the store answers a failed fetch with an empty value, and a reachable relay never returns
-    // an empty institution catalog AND empty network stats AND an empty feed together.
-    setAboutLoadFailed(inst.length === 0 && feedItems.length === 0 && Object.keys(networkStats).length === 0);
-  };
-
-  const openAbout = async () => {
-    setShowAbout(true);
-    await loadAbout();
-  };
 
   const submitAnnouncement = async () => {
     if (!announceBody.trim()) return;
@@ -184,16 +152,13 @@ export default function CommonsDashboard({ navigation, route }: Props) {
         )}
         <View style={styles.titleBlock}>
           <Text style={styles.headerTitle}>{t('commonsDashboard.headerTitle')}</Text>
-          {profile && <TalkingPassPill />}
+
         </View>
         {canAnnounce && (
           <TouchableOpacity style={styles.iconButton} onPress={() => setShowComposer(true)} accessibilityRole="button" accessibilityLabel={t('commonsDashboard.postAnnouncement')}>
             <Ionicons name="megaphone-outline" size={22} color={COLORS.primary} />
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.iconButton} onPress={openAbout} accessibilityRole="button" accessibilityLabel={t('commonsHome.aboutTitle')}>
-          <Ionicons name="information-circle-outline" size={24} color={COLORS.textSecondary} />
-        </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => (profile
@@ -207,11 +172,15 @@ export default function CommonsDashboard({ navigation, route }: Props) {
               <Text style={styles.avatarText}>{initials(profile.display_name)}</Text>
             </View>
           ) : (
-            <Ionicons name="person-circle-outline" size={30} color={COLORS.text} />
+            <Text style={styles.aboutLink}>{t('commonsDashboard.createProfile')}</Text>
           )}
         </TouchableOpacity>
       </View>
 
+      <TouchableOpacity style={styles.howLink} accessibilityRole="button" onPress={() => navigation.navigate('CommonsHowItWorks')}>
+        <Text style={styles.aboutLink}>{t('overhaul.commonsHow')}</Text>
+        <Ionicons name="chevron-forward" color={COLORS.primaryLight} size={15} />
+      </TouchableOpacity>
       <SegmentedTabs tabs={tabs} selected={tab} onSelect={selectTab} />
 
       <View style={styles.body}>
@@ -222,7 +191,6 @@ export default function CommonsDashboard({ navigation, route }: Props) {
         ))}
       </View>
 
-      <CommonsAboutSheet visible={showAbout} onClose={() => setShowAbout(false)} stats={stats} institutions={institutions} feed={feed} loadFailed={aboutLoadFailed} onRetry={() => { void loadAbout(); }} />
 
       {/* Operator announcement composer */}
       <Modal visible={showComposer} animationType="slide" transparent onRequestClose={() => setShowComposer(false)}>
@@ -276,6 +244,8 @@ function initials(name: string | undefined): string {
 }
 
 const styles = StyleSheet.create({
+  howLink: { paddingHorizontal: SPACING.l, paddingBottom: SPACING.s, alignItems: 'center', flexDirection: 'row', gap: 5 },
+  aboutLink: { color: COLORS.primaryLight, fontSize: 14, fontWeight: '600' },
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',

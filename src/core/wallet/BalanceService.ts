@@ -103,7 +103,7 @@ class BalanceService {
     // [#31] Coalesce overlapping full-balance fetches per address so a slow
     // earlier call can't resolve after a faster later one and clobber the store
     // with stale data (last-write-wins race).
-    private inFlight: Map<string, Promise<{ assets: Asset[]; failedChainIds: number[] }>> = new Map();
+    private inFlight: Map<string, Promise<{ assets: Asset[]; failedChainIds: number[]; assetChainsConfirmed: boolean }>> = new Map();
 
     private constructor() {}
 
@@ -274,7 +274,7 @@ class BalanceService {
      */
     async fetchAllBalancesDetailed(
         address: string, biometricAction?: BiometricAction,
-    ): Promise<{ assets: Asset[]; failedChainIds: number[] }> {
+    ): Promise<{ assets: Asset[]; failedChainIds: number[]; assetChainsConfirmed: boolean }> {
         const existing = this.inFlight.get(address);
         if (existing) {
             return existing;
@@ -288,7 +288,7 @@ class BalanceService {
 
     private async doFetchAllBalances(
         address: string, biometricAction?: BiometricAction,
-    ): Promise<{ assets: Asset[]; failedChainIds: number[] }> {
+    ): Promise<{ assets: Asset[]; failedChainIds: number[]; assetChainsConfirmed: boolean }> {
         const env = isTestnet() ? 'testnet' : 'mainnet';
         console.log(`[BalanceService] Fetching balances (${env}) for ${address.slice(0, 8)}...`);
 
@@ -391,7 +391,7 @@ class BalanceService {
             `[BalanceService] Fetched ${merged.length} assets across ${env}` +
                 (failedChainIds.length ? ` (${failedChainIds.length} chain(s) failed)` : ''),
         );
-        return { assets: merged, failedChainIds };
+        return { assets: merged, failedChainIds, assetChainsConfirmed: !solana.failed && perChain.every(chain => !chain.failed) };
     }
 
     /**

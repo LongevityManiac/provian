@@ -1,5 +1,7 @@
+import { confirmCommonsWrite } from '../../components/commons/CommonsWriteSheet';
+import { PublicStandingLine } from '../../components/commons/PublicStandingLine';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
-import { withBiometricAction, type BiometricAction } from '../../core/security/biometricAction';
+import { type BiometricAction } from '../../core/security/biometricAction';
 /**
  * CommonsThread — one bilateral thread. Messages are end-to-end encrypted with the
  * seed-derived message key (threadCrypto); the relay holds ciphertext and seals only the hash in
@@ -24,6 +26,7 @@ import { COLORS, SPACING, BORDER_RADIUS, GRADIENTS } from '../../constants/theme
 import { shortAddress } from '../../utils/shortAddress';
 import useCommonsStore from '../../store/commonsStore';
 import * as CommonsService from '../../core/commons/CommonsService';
+import { describePredicate } from '../../core/commons/predicatePicker';
 import type { ThreadDocument, ThreadMessage, ThreadPresentationRequest } from '../../core/commons/CommonsService';
 import { viewThreadAttachment, viewThreadBody } from '../../core/commons/threadMessageView';
 import { getMessageKeyPair, sealThreadMessage, openThreadMessage, cachedMessageKeyPair } from '../../core/commons/threadCrypto';
@@ -36,8 +39,6 @@ import { captureShownOutput, readThreadPlaintext, signedThreadPlaintext } from '
 import { offerSpeechWindow } from '../../core/commons/speechGate';
 import { BiometricAuthError, BiometricNotAvailableError } from '../../core/security/requireBiometric';
 import SeedManager from '../../core/wallet/SeedManager';
-import PredicatePicker from '../../components/commons/forum/PredicatePicker';
-import { describePredicate, initialPredicateDraft, predicateFromDraft, type PredicateDraft } from '../../core/commons/predicatePicker';
 import type { AppParamList } from '../../navigation/types';
 import BackButton from '../../components/BackButton';
 import { requestAttentionRefresh } from '../../core/attention/attentionRefresh';
@@ -70,10 +71,7 @@ export default function CommonsThread({ navigation, route }: Props) {
   const [drafts, setDrafts] = useState<PendingThreadDraft[]>([]);
   const [ownAgent, setOwnAgent] = useState<{ name: string } | null>(null);
   // Request-presentation modal
-  const [showRequest, setShowRequest] = useState(false);
   // §5: plain sentences (PredicatePicker), the raw field/op/threshold form behind "Advanced".
-  const [predDraft, setPredDraft] = useState<PredicateDraft>(initialPredicateDraft());
-  const [requesting, setRequesting] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const visibleRef = useRef(false);
   const loadInFlight = useRef(false);
@@ -267,6 +265,7 @@ export default function CommonsThread({ navigation, route }: Props) {
   const refresh = async () => { setRefreshing(true); try { await load(); } finally { setRefreshing(false); } };
 
   const ensureKeys = useCallback(async (biometricAction?: BiometricAction): Promise<Record<string, string> | null> => {
+    const myId = useCommonsStore.getState().profile?.wallet_id;
     if (!myId || !otherId) return null;
     const kp = await getMessageKeyPair(undefined, biometricAction);
     const mine = await CommonsService.readMessageKey(myId, biometricAction);
@@ -288,7 +287,8 @@ export default function CommonsThread({ navigation, route }: Props) {
     let attempted = false;
     sendInFlight.current = true;
     try {
-      await withBiometricAction(t('commons.biometricPromptMessage'), async (biometricAction) => {
+      await confirmCommonsWrite(t('dashboard.send'), async (biometricAction) => {
+        const myId = useCommonsStore.getState().profile?.wallet_id;
 
         setSending(true);
         try {
@@ -325,15 +325,14 @@ export default function CommonsThread({ navigation, route }: Props) {
           setPlain((prev) => ({ ...prev, [r.message.message_id]: body }));
           if (!draft) setText('');
           outcome = 'sent';
-        } catch (err) {
-          outcome = sendFailureOutcome(err, attempted);
-          if (!offerSpeechWindow(err, navigation, t)) Alert.alert(t('common.errorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commons.threadSendFailed')));
         } finally {
           setSending(false);
         }
 
-      }, undefined);
+      }, { mayNeedSpeechWindow: !threadId, conditional: true });
     } catch (err) {
+      outcome = sendFailureOutcome(err, attempted);
+      if (offerSpeechWindow(err, navigation, t)) return outcome;
       if (err instanceof BiometricNotAvailableError || err instanceof BiometricAuthError) Alert.alert(t('commons.confirmationNeededTitle'), errorDisplayCopy(err.message));
     } finally {
       sendInFlight.current = false;
@@ -351,55 +350,15 @@ export default function CommonsThread({ navigation, route }: Props) {
     else await releasePendingDraft(claimed.id, outcome);
   };
 
-  const submitRequest = async () => {
-    const built = predicateFromDraft(predDraft);
-    if (!built.ok) {
-      Alert.alert(t('commonsForum.picker.invalidTitle'), t(`commonsForum.picker.error.${built.error}`));
-      return;
-    }
-    setRequesting(true);
-    try {
-      if (!threadId) return;
-      const r = await CommonsService.requestPresentationInThread(threadId, { tier: 'reputation', predicates: [built.predicate] });
-      setMessages((prev) => mergeThreadMessages(prev, [r.message]));
-      setRequests((prev) => ({ ...prev, [r.request.request_id]: r.request }));
-      setShowRequest(false);
-    } catch (err) {
-      Alert.alert(t('common.errorTitle'), errorDisplayCopy(err instanceof Error ? err.message : t('commons.threadRequestFailed')));
-    } finally {
-      setRequesting(false);
-    }
-  };
-
-  // + the binding (audience, challenge, predicates, signed envelope) comes from the
-  // relay-held request record, never from the message attachment.
-  const presentFor = (req: ThreadPresentationRequest) => {
-    if (!req.audience || !req.challenge) return;
-    navigation.navigate('HumanPresentment', {
-      audience: req.audience, challenge: req.challenge, predicates: req.predicates ?? [],
-      // the relay-signed challenge — the presenter screen verifies it before any burn and
-      // passes it to /present so the presentation binds the verified requester (v2).
-      ...(req.challenge_envelope !== undefined && req.challenge_envelope !== null ? { challengeEnvelope: req.challenge_envelope } : {}),
-      deliverTo: { kind: 'thread', threadId: threadId ?? '', requestId: req.request_id },
-    });
-  };
-
   const renderAttachment = (m: ThreadMessage) => {
     const view = viewThreadAttachment(m, requests, myId);
     if (!view) return null;
     if (view.kind === 'presentation_request') {
-      const req = view.request;
       return (
         <View style={styles.attach}>
           <Text style={styles.attachTitle}>{view.mine ? t('commons.threadYouAsked') : t('commons.threadTheyAsk')}</Text>
           {view.predicates.map((p, i) => <Text key={i} style={styles.attachLine}>{describePredicate(p, t)}</Text>)}
           {view.outcome !== null && <Text style={[styles.attachLine, { color: view.outcome === 'valid' ? COLORS.success : COLORS.error }]}>{view.outcome === 'valid' ? t('commons.threadVerdictValid') : t('commons.threadVerdictInvalid')}</Text>}
-          {view.canPresent && req && (
-            <TouchableOpacity style={styles.attachBtn} onPress={() => presentFor(req)}>
-              <Ionicons name="ribbon-outline" size={14} color={COLORS.text} />
-              <Text style={styles.attachBtnText}>{t('commons.threadPresent')}</Text>
-            </TouchableOpacity>
-          )}
         </View>
       );
     }
@@ -431,13 +390,8 @@ export default function CommonsThread({ navigation, route }: Props) {
         <BackButton onPress={() => navigation.goBack()} accessibilityLabel={t('common.back')} />
         <View style={{ flex: 1, marginLeft: SPACING.m }}>
           <Text style={styles.headerTitle} numberOfLines={1}>{otherName || t('commons.threadsTitle')}</Text>
-          {thread && <Text style={styles.headerSub} numberOfLines={1}>{t(`commons.anchor_${thread.anchor_kind}`)} · {shortAddress(thread.anchor_id)}</Text>}
+          {otherId && <PublicStandingLine walletId={otherId} onPress={() => navigation.navigate('CommonsProfile', { walletId: otherId })} />}
         </View>
-        {threadId ? (
-          <TouchableOpacity onPress={() => setShowRequest(true)} style={styles.backButton} accessibilityRole="button" accessibilityLabel={t('commons.threadAskToProve')}>
-            <Ionicons name="ribbon-outline" size={22} color={COLORS.primary} />
-          </TouchableOpacity>
-        ) : <View style={styles.backButton} />}
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}
@@ -513,22 +467,6 @@ export default function CommonsThread({ navigation, route }: Props) {
         </View>
       </KeyboardAvoidingView>
 
-      <Modal visible={showRequest} animationType="slide" transparent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <Pressable style={styles.modalBackdrop} onPress={Keyboard.dismiss} accessibilityLabel={t('common.done')} />
-          <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalScroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('commons.threadAskToProve')}</Text>
-              <TouchableOpacity onPress={() => setShowRequest(false)}><Ionicons name="close" size={24} color={COLORS.text} /></TouchableOpacity>
-            </View>
-            <Text style={styles.modalHint}>{t('commons.threadAskHint')}</Text>
-            <PredicatePicker draft={predDraft} onChange={setPredDraft} lead={t('commonsForum.picker.leadThread', { name: counterpartyName ?? (otherId ? shortAddress(otherId) : '') })} />
-            <TouchableOpacity style={[styles.submitButton, requesting && styles.sendBtnDisabled]} onPress={submitRequest} disabled={requesting}>
-              {requesting ? <ActivityIndicator color={COLORS.text} /> : <Text style={styles.submitButtonText}>{t('commons.threadAskSend')}</Text>}
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
     </SafeAreaView>
   );
 }

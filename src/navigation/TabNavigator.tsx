@@ -1,17 +1,15 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import ProvianIcon, { type ProvianIconName } from '../components/ProvianIcon';
 import { useTranslation } from 'react-i18next';
 import { COLORS, BORDER_RADIUS, SHADOWS, GLASS, SPACING } from '../constants/theme';
-import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import HomeScreen from '../screens/Dashboard/HomeScreen';
 import { EarnHubScreen } from '../screens/Earn';
-import { MyProvenanceDashboardScreen } from '../screens/Provenance';
 import PromiseListScreen from '../screens/Promise/PromiseListScreen';
 import { ChatHomeScreen } from '../screens/Chat';
-import VisionScreen from '../screens/Vision/VisionScreen';
 import CommonsDashboard from '../screens/Commons/CommonsDashboard';
 import type { TabParamList } from './types';
 import { useAttentionCount } from '../core/attention/useAttentionCount';
@@ -34,25 +32,15 @@ function useCommonsInboxCount(): number {
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-// These screens use the parent Stack navigator for navigation via useNavigation(),
-// so we cast them to satisfy the tab navigator's type constraints.
-const VisionTab = VisionScreen as unknown as React.ComponentType<Record<string, never>>;
-const AbundanceTab = MyProvenanceDashboardScreen as unknown as React.ComponentType<Record<string, never>>;
-const AgentsTab = EarnHubScreen as unknown as React.ComponentType<Record<string, never>>;
-const CommonsTab = CommonsDashboard as unknown as React.ComponentType<Record<string, never>>;
-const PromisesTab = PromiseListScreen as unknown as React.ComponentType<Record<string, never>>;
-const ChatTab = ChatHomeScreen as unknown as React.ComponentType<Record<string, never>>;
+const tabDetails: Record<keyof TabParamList, { label: string; icon: ProvianIconName }> = {
+    WalletTab: { label: 'overhaul.home', icon: 'home' },
+    AgentsTab: { label: 'nav.earn', icon: 'earn' },
+    ChatTab: { label: 'nav.chat', icon: 'chat' },
+    CommonsTab: { label: 'nav.commons', icon: 'commons' },
+    PromisesTab: { label: 'nav.promises', icon: 'promises' },
+};
 
-/**
- * Floating tab bar.
- *
- * The whole cell is the touch target — the press handler must never sit on the
- * Ionicons glyph itself, which is only ~22pt and leaves the rest of the cell
- * dead to the touch. Each cell also carries its own accessibility identity so
- * a screen reader announces "Wallet, tab, 3 of 7, selected" rather than an
- * unlabeled image.
- */
-const FloatingTabBar = ({ state, descriptors, navigation }: any) => {
+const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
     const { t } = useTranslation();
     // Respect the device's bottom safe area so the tab bar doesn't collide
     // with Android's gesture bar or iOS's home indicator. Fall back to a
@@ -80,11 +68,11 @@ const FloatingTabBar = ({ state, descriptors, navigation }: any) => {
         <View style={tabStyles.container} onLayout={(e) => setBarHeight(Math.round(e.nativeEvent.layout.height))}>
             <View style={tabStyles.bar}>
                 <View style={tabStyles.inner} accessibilityRole="tablist">
-                    {state.routes.map((route: any, index: number) => {
+                    {state.routes.map((route, index) => {
                         const { options } = descriptors[route.key];
                         const focused = state.index === index;
-                        const iconName = options.tabBarIconName as string;
-                        const label = t(options.tabBarLabelKey as string);
+                        const entry = tabDetails[route.name as keyof TabParamList];
+                        const label = t(entry.label);
                         const badge = typeof options.tabBarBadge === 'number' ? options.tabBarBadge : null;
 
                         const onPress = () => {
@@ -107,11 +95,7 @@ const FloatingTabBar = ({ state, descriptors, navigation }: any) => {
                                 testID={`tab-${route.name}`}
                             >
                                 <View style={[tabStyles.iconWrap, focused && tabStyles.iconWrapActive]}>
-                                    <Ionicons
-                                        name={iconName as any}
-                                        size={22}
-                                        color={focused ? COLORS.primary : COLORS.textTertiary}
-                                    />
+                                    <ProvianIcon name={entry.icon} size={26} selected={focused} />
                                     {badge != null && (
                                         <View style={tabStyles.badge}>
                                             <Text style={tabStyles.badgeText} numberOfLines={1}>
@@ -124,9 +108,6 @@ const FloatingTabBar = ({ state, descriptors, navigation }: any) => {
                                     style={[tabStyles.label, focused && tabStyles.labelActive]}
                                     numberOfLines={1}
                                     adjustsFontSizeToFit
-                                    // Tighter floor than before: with the smaller uniform base
-                                    // above, most labels never shrink, and this keeps any that
-                                    // do close in size to the rest instead of visibly tiny.
                                     minimumFontScale={0.85}
                                 >
                                     {label}
@@ -215,17 +196,9 @@ const tabStyles = StyleSheet.create({
     },
     label: {
         marginTop: 3,
-        // Sized so all SEVEN labels (Vision…Chat, incl. the added Commons tab)
-        // fit their cell WITHOUT per-label auto-shrink. `adjustsFontSizeToFit`
-        // scales each Text independently, so at fontSize 9 the longer labels
-        // (Abundance, Promises, Commons) shrank while short ones (Earn, Chat)
-        // stayed full size — reading as mismatched fonts across the bar. A
-        // smaller uniform base keeps every label at the same size on normal
-        // devices; the auto-shrink below is now only a safety net for very
-        // narrow screens and longer localized strings.
-        fontSize: 8,
+        fontSize: 12,
         fontWeight: '500',
-        lineHeight: 11,
+        lineHeight: 16,
         letterSpacing: -0.1,
         textAlign: 'center',
         color: COLORS.textTertiary,
@@ -252,88 +225,12 @@ const TabNavigator = () => {
                 tabBarStyle: { position: 'absolute' },
             }}
         >
-            <Tab.Screen
-                name="VisionTab"
-                component={VisionTab}
-                options={{
-                    tabBarLabelKey: 'nav.vision',
-                    tabBarIconName: 'compass-outline',
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="compass-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="AbundanceTab"
-                component={AbundanceTab}
-                options={{
-                    tabBarLabelKey: 'nav.abundance',
-                    tabBarIconName: 'sparkles-outline',
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="sparkles-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="WalletTab"
-                component={DashboardScreen}
-                options={{
-                    tabBarLabelKey: 'nav.wallet',
-                    tabBarIconName: 'wallet-outline',
-                    // surface the attention count on the tab bar so it is visible on app open
-                    // from any tab (the bell + attention center live on the Wallet screen).
-                    ...(attentionCount > 0 ? { tabBarBadge: attentionCount } : {}),
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="wallet-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="AgentsTab"
-                component={AgentsTab}
-                options={{
-                    tabBarLabelKey: 'nav.earn',
-                    tabBarIconName: 'trending-up-outline',
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="trending-up-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="CommonsTab"
-                component={CommonsTab}
-                options={{
-                    tabBarLabelKey: 'nav.commons',
-                    tabBarIconName: 'people-outline',
-                    // messages, replies to you, and publish requests waiting in the Commons Inbox.
-                    ...(commonsInboxCount > 0 ? { tabBarBadge: commonsInboxCount } : {}),
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="people-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="PromisesTab"
-                component={PromisesTab}
-                options={{
-                    tabBarLabelKey: 'nav.promises',
-                    tabBarIconName: 'heart-outline',
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="heart-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
-            <Tab.Screen
-                name="ChatTab"
-                component={ChatTab}
-                options={{
-                    tabBarLabelKey: 'nav.chat',
-                    tabBarIconName: 'chatbubbles-outline',
-                    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                        <Ionicons name="chatbubbles-outline" size={size} color={color} />
-                    ),
-                } as any}
-            />
+            <Tab.Screen name="WalletTab" component={HomeScreen} options={{ tabBarBadge: attentionCount || undefined }} />
+            <Tab.Screen name="AgentsTab" component={EarnHubScreen} />
+            <Tab.Screen name="ChatTab" component={ChatHomeScreen} />
+            <Tab.Screen name="CommonsTab" component={CommonsDashboard}
+                options={{ tabBarBadge: commonsInboxCount || undefined }} />
+            <Tab.Screen name="PromisesTab" component={PromiseListScreen} />
         </Tab.Navigator>
     );
 };

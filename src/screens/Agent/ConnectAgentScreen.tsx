@@ -1,3 +1,4 @@
+import { useWalletStore } from '../../store/walletStore';
 /**
  * ConnectAgentScreen - the Connect hub : three connections, each with one
  * simple instruction. On every screen the one thing the person must do is visible in the fewest
@@ -157,6 +158,17 @@ async function loadCachedToken(kind: 'agent' | 'device'): Promise<TokenState | n
     }
 }
 
+const agentSetupOwnerKey = 'provian.connect.agentSetupOwner';
+
+export async function hasPendingAgentSetup(wallet: string): Promise<boolean> {
+    const owner = await SecureStore.getItemAsync(agentSetupOwnerKey).catch(() => null);
+    return owner === wallet.toLowerCase() && !!(await loadCachedToken('agent'));
+}
+
+export async function clearPendingAgentSetup(): Promise<void> {
+    await SecureStore.deleteItemAsync(agentSetupOwnerKey).catch(() => {});
+}
+
 async function saveCachedToken(kind: 'agent' | 'device', token: TokenState): Promise<void> {
     try {
         await SecureStore.setItemAsync(TOKEN_CACHE_KEY[kind], JSON.stringify(token));
@@ -299,6 +311,8 @@ const ConnectAgentScreen = (): React.JSX.Element => {
             const next = await mintAgentConnectionToken();
             setAgentToken(next);
             void saveCachedToken('agent', next);
+            const wallet = useWalletStore.getState().address;
+            if (wallet) void SecureStore.setItemAsync(agentSetupOwnerKey, wallet.toLowerCase()).catch(() => {});
             setAgentState('ready');
         } catch (e) {
             setAgentErrorMsg(formatAgentOnboardingError(e));
@@ -454,7 +468,7 @@ const ConnectAgentScreen = (): React.JSX.Element => {
                             icon="laptop-outline"
                             title={t('connectAgent.devicePathTitle')}
                             body={t('connectAgent.devicePathBody')}
-                            onPress={() => openMode('device')}
+                            onPress={() => navigation.navigate('ComputerPairing')}
                         />
 
                         {/* A code host: GitHub, GitLab or Bitbucket — chosen on the next step. */}
@@ -474,7 +488,7 @@ const ConnectAgentScreen = (): React.JSX.Element => {
                         </Text>
                         <PathCard
                             icon="logo-github"
-                            title="GitHub"
+                            title={t('overhaul.connectGitHub')}
                             body={t('connectAgent.codeHostGithubBody')}
                             onPress={() => navigation.navigate('ForgeConnect', { provider: 'github' })}
                         />
@@ -822,40 +836,8 @@ const AgentPath = ({
                             {t('connectAgent.expiresIn', { time: countdown })}
                         </Text>
                     </View>
-                    <Text style={styles.leadLine}>{t('connectAgent.agentSendLine')}</Text>
+                    <Text style={styles.leadLine}>{t('overhaul.giveAgentInstruction')}</Text>
                 </View>
-
-                {/* The connection code, always shown with copy (it is the same one-time code that
-                    is inside the command): for an agent that cannot run commands and connects
-                    over MCP or the SDK instead. Independent of the launch switch. */}
-                <View style={styles.codeCard}>
-                    <Text style={styles.codeLabel}>{t('connectAgent.yourCode')}</Text>
-                    <TouchableOpacity
-                        style={styles.tokenRow}
-                        onPress={() => copy(token.token, 'token')}
-                        activeOpacity={0.7}
-                    >
-                        {/* the code never wraps (a lone trailing "K" on a narrow Android
-                            phone) — one line, shrinking to fit. */}
-                        <Text
-                            style={styles.tokenText}
-                            selectable
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.6}
-                        >
-                            {token.token}
-                        </Text>
-                        <Ionicons
-                            name={copiedKey === 'token' ? 'checkmark-circle' : 'copy-outline'}
-                            size={18}
-                            color={copiedKey === 'token' ? (COLORS.success || '#4CC38A') : COLORS.primary}
-                        />
-                    </TouchableOpacity>
-                    <Text style={styles.codeHint}>{t('connectAgent.agentCodeHint')}</Text>
-                </View>
-
-                <Text style={styles.hostedLine}>{t('connectAgent.agentHostedLine')}</Text>
 
                 {/* What-happens-next. Three shapes for the same closing card:
                     - A pending request: "{name} is asking to link" with a one-tap Review.
@@ -878,7 +860,7 @@ const AgentPath = ({
                             activeOpacity={0.8}
                             accessibilityRole="button"
                         >
-                            <Text style={styles.requestCtaText}>{t('connectAgent.requestArrivedCta')}</Text>
+                            <Text style={styles.requestCtaText}>{t('overhaul.reviewLinkRequest')}</Text>
                             <Ionicons name="arrow-forward" size={16} color={COLORS.text} />
                         </TouchableOpacity>
                     </View>
@@ -907,7 +889,7 @@ const AgentPath = ({
                         <View style={styles.recoveryNoteRow}>
                             <ActivityIndicator size="small" color={COLORS.primary} />
                             <Text style={[styles.noteTitle, styles.rowTitle, { color: themeColors.textPrimary }]}>
-                                {t('connectAgent.waitingTitle')}
+                                {t('overhaul.waitingAgent')}
                             </Text>
                         </View>
                         <Text style={styles.noteBody}>{t('connectAgent.waitingBody')}</Text>
@@ -931,6 +913,38 @@ const AgentPath = ({
             every state so a person can read them before minting a code; the recovery line
             needs the code's own answer, so it waits for one. */}
         <DetailsSection t={t} themeColors={themeColors}>
+                {token && !isExpired && (<>
+                <View style={styles.codeCard}>
+                    <Text style={styles.codeLabel}>{t('connectAgent.yourCode')}</Text>
+                    <TouchableOpacity
+                        style={styles.tokenRow}
+                        onPress={() => copy(token.token, 'token')}
+                        activeOpacity={0.7}
+                    >
+                        {/* the code never wraps (a lone trailing "K" on a narrow Android
+                            phone) — one line, shrinking to fit. */}
+                        <Text
+                            style={styles.tokenText}
+                            selectable
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.6}
+                        >
+                            {token.token}
+                        </Text>
+                        <Ionicons
+                            name={copiedKey === 'token' ? 'checkmark-circle' : 'copy-outline'}
+                            size={18}
+                            color={copiedKey === 'token' ? (COLORS.success || '#4CC38A') : COLORS.primary}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.codeHint}>{t('connectAgent.agentCodeHint')}</Text>
+                </View>
+
+                <Text style={styles.hostedLine}>{t('connectAgent.agentHostedLine')}</Text>
+                </>)}
+
+
             <DetailsRow title={t('connectAgent.agentSetupTitle')} themeColors={themeColors}>
                 <AgentSetupRows t={t} themeColors={themeColors} />
             </DetailsRow>

@@ -20,6 +20,7 @@ import type { AppParamList } from '../../navigation/types';
 import { loadAttention, type AttentionItem, type AttentionSnapshot } from '../../core/attention/attention';
 import type { AgentRecoveryAlert } from '../../services/RelayAPIService';
 import BackButton from '../../components/BackButton';
+import { actionStyles, DestinationRow } from '../../components/ScreenActions';
 import { publishHumanRecoveryAnchor } from '../../core/agents/humanRecoveryAnchor';
 
 function reasonLabel(reason: AgentRecoveryAlert['reason'], t: (k: string) => string): string {
@@ -34,6 +35,14 @@ function reasonLabel(reason: AgentRecoveryAlert['reason'], t: (k: string) => str
 interface RowMeta { icon: keyof typeof Ionicons.glyphMap; tint: string; title: string; subtitle: string; }
 
 export default function AttentionCenterScreen(): React.ReactElement {
+    return <AttentionContent />;
+}
+
+export function HomeAttentionRows(): React.ReactElement {
+    return <AttentionContent embedded />;
+}
+
+function AttentionContent({ embedded = false }: { embedded?: boolean }): React.ReactElement {
     const { t } = useTranslation();
     const navigation = useNavigation<NativeStackNavigationProp<AppParamList>>();
     const [snap, setSnap] = useState<AttentionSnapshot | null>(null);
@@ -195,6 +204,21 @@ export default function AttentionCenterScreen(): React.ReactElement {
             navigation.navigate('CommonsHumanJobManage', { jobId: item.job.job_id });
         }
     }, [navigation, load]);
+
+    if (embedded) {
+        const needsYou = snap?.items.filter(item => item.kind !== 'challenge') ?? [];
+        if (!needsYou.length) return <></>;
+        return (
+            <View>
+                <Text style={actionStyles.sectionTitle}>{t('overhaul.needsYou')}</Text>
+                {needsYou.map(item => {
+                    const row = rowMeta(item);
+                    return <DestinationRow key={`${item.kind}:${item.id}`} label={row.title} detail={row.subtitle}
+                        stockIcon={row.icon} onPress={() => openItem(item)} />;
+                })}
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>

@@ -183,7 +183,7 @@ npx @provian/agent-sdk@latest register-device
 ```
 
 This command will:
-1. Ask for your device token (from the Provian app: Connect → Your computer, the `x-provian-token` value in the command it shows — or paste that whole command instead, which runs this same setup)
+1. Ask for your device token (from the Provian app: Earn → Your computer → Copy a command for a computer without a browser, the `x-provian-token` value in the command it shows — or paste that whole command instead, which runs this same setup)
 2. Ask for a device name (defaults to your hostname)
 3. Register the device, write credentials to your shell profile, install the global git hook, and verify the round-trip works:
 
@@ -362,7 +362,7 @@ These compute/work types price on evidence: a body-bound device capture, a sover
 
 A PE is proof its contributor owns. Every act of work mints once at its best-supported value; internal status fields carry its settlement state. Jurisdiction may defer settlement. Circular costs, denials, no-ops, security and identity events, unknown-action fallbacks, and mint-once signals do not mint separately.
 
-Standard earnings settle on a schedule Provian sets, currently every 30 days per payee from their last standard settlement UTC date, at no charge; Genesis grants settle daily. Any payee can have its own earnings settled now for a flat $1 USDC service fee — the fee for running that payee's settlement, never a price for PVT, and the same whatever is owed. An agent pays it over x402 from its own wallet (`provian payout --yes`, MCP `request_payout`, or `POST /v1/payout`); a person uses "Settle now" on the app's Abundance tab. Only that payee's earnings mint, and nothing is charged when nothing is ready or when Base gas is above the fee.
+Standard earnings settle on a schedule Provian sets, currently every 30 days per payee from their last standard settlement UTC date, at no charge; Genesis grants settle daily. Any payee can have its own earnings settled now for a flat $1 USDC service fee — the fee for running that payee's settlement, never a price for PVT, and the same whatever is owed. An agent pays it over x402 from its own wallet (`provian payout --yes`, MCP `request_payout`, or `POST /v1/payout`); a person uses "Settle now" on **Earn → Proofs and earnings**. Only that payee's earnings mint, and nothing is charged when nothing is ready or when Base gas is above the fee.
 
 ---
 
