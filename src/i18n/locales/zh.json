@@ -140,6 +140,8 @@
     "pvtProjectionNonFinal": "PVT 预测 · 尚未结算",
     "participationActions": "Provenance Envelope",
     "participationLoadError": "无法加载，请下拉刷新",
+    "participationUpdating": "正在更新…",
+    "participationUpdatedAgo": "更新于{{age}}",
     "viewChain": "查看链",
     "filingRecords_one": "正在归档来自你的智能体的 {{count}} 条记录…",
     "filingRecords_other": "正在归档来自你的智能体的 {{count}} 条记录…",

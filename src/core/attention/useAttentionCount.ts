@@ -3,7 +3,8 @@
  * both show. It loads on mount, every 30 s, whenever the app returns to the foreground, and whenever
  * anything calls `requestAttentionRefresh()` (a received push, an item accepted/declined/resolved).
  * Concurrent consumers share one in-flight load, so the bell and the tab badge never disagree and
- * never double the relay traffic. Degrades to the last known count (0 before the first load).
+ * never double the relay traffic. Opens on the count saved for this wallet and degrades to the last
+ * known count (0 when nothing was ever saved).
  *
  * review 2 #8: a refresh REQUESTED after a mutation is answered by a load that begins after
  * it. An in-flight load is shared only when it began at the current refresh generation
@@ -15,6 +16,8 @@ import React from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { loadAttention, type AttentionSnapshot } from './attention';
 import { attentionRefreshGeneration, onAttentionRefresh } from './attentionRefresh';
+import { isSavedCount, readWalletTop, saveWalletTop } from '../wallet/walletTopCache';
+import { useWalletStore } from '../../store/walletStore';
 
 const POLL_MS = 30_000;
 
@@ -31,7 +34,12 @@ function loadAttentionSequenced(): Promise<SequencedAttention> {
     const generation = attentionRefreshGeneration();
     if (inFlight && inFlight.generation >= generation) return inFlight.run;
     const seq = ++loadSeq;
-    const run = loadAttention().then((snapshot) => ({ snapshot, seq }));
+    const address = useWalletStore.getState().address;
+    const run = loadAttention().then((snapshot) => {
+        // The bell opens on this count next time, for this wallet only.
+        void saveWalletTop('attentionCount', address, snapshot.count);
+        return { snapshot, seq };
+    });
     const entry = { generation, run };
     inFlight = entry;
     void run.then(
@@ -67,10 +75,25 @@ export function useAttentionCount(): { count: number; refresh: () => void } {
     const mounted = React.useRef(true);
     const accept = React.useRef(createNewestLoadGate()).current;
 
+    // Set once a load has answered here; the saved count never replaces a count read now.
+    const loaded = React.useRef(false);
+    const address = useWalletStore((state) => state.address);
+
+    React.useEffect(() => {
+        loaded.current = false;
+        setCount(0); // never another wallet's count
+        let current = true;
+        void readWalletTop('attentionCount', address, isSavedCount).then((saved) => {
+            if (current && saved && !loaded.current) setCount(saved.value);
+        });
+        return () => { current = false; };
+    }, [address]);
+
     const refresh = React.useCallback(() => {
         void loadAttentionSequenced().then((r) => {
             // Newest load wins: an older round resolving late never overwrites a newer count.
             if (!mounted.current || !accept(r.seq)) return;
+            loaded.current = true;
             setCount(r.snapshot.count);
         }, () => {
             // Degrade to the last known count.

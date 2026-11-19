@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "Proyeksi PVT · belum diselesaikan",
     "participationActions": "Provenance Envelope",
     "participationLoadError": "Tidak dapat memuat. Tarik untuk menyegarkan",
+    "participationUpdating": "Memperbarui…",
+    "participationUpdatedAgo": "Diperbarui {{age}}",
     "viewChain": "Lihat rantai",
     "filingRecords_one": "Menyimpan {{count}} catatan dari agen Anda…",
     "filingRecords_other": "Menyimpan {{count}} catatan dari agen Anda…",

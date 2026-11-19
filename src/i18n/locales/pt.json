@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "Projeção de PVT · ainda não liquidado",
     "participationActions": "Envelopes de Proveniência",
     "participationLoadError": "Não foi possível carregar. Puxe para atualizar",
+    "participationUpdating": "Atualizando…",
+    "participationUpdatedAgo": "Atualizado {{age}}",
     "viewChain": "Ver cadeia",
     "filingRecords_one": "Arquivando {{count}} registro dos seus agentes…",
     "filingRecords_other": "Arquivando {{count}} registros dos seus agentes…",

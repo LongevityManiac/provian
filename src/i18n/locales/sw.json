@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "Makadirio ya PVT · bado hayajalipwa",
     "participationActions": "Provenance Envelopes",
     "participationLoadError": "Imeshindwa kupakia. Vuta chini ili kuonyesha upya",
+    "participationUpdating": "Inasasisha…",
+    "participationUpdatedAgo": "Imesasishwa {{age}}",
     "viewChain": "Ona mnyororo",
     "filingRecords_one": "Inahifadhi rekodi {{count}} kutoka kwa mawakala wako…",
     "filingRecords_other": "Inahifadhi rekodi {{count}} kutoka kwa mawakala wako…",

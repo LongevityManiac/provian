@@ -3516,8 +3516,10 @@ class RelayAPIService {
         const userId = this.userId;
         // Four screens can mount/focus together on app open. Share one active
         // read for the SAME authenticated human, but do not retain an answer
-        // after it settles: pull-to-refresh must still reach the relay.
-        if (userId && this.pvtAccrualInFlight?.userId === userId) {
+        // after it settles: pull-to-refresh must still reach the relay. A read
+        // carrying a live biometric action (the unlock's session check) never joins
+        // one without it: only it can renew an expired session on a 401.
+        if (userId && !biometricAction && this.pvtAccrualInFlight?.userId === userId) {
             return this.pvtAccrualInFlight.promise;
         }
         const read = this.readPVTAccrual(userId, biometricAction);

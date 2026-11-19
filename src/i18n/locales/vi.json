@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "Dự kiến PVT · chưa quyết toán",
     "participationActions": "Provenance Envelope",
     "participationLoadError": "Không thể tải. Kéo xuống để làm mới",
+    "participationUpdating": "Đang cập nhật…",
+    "participationUpdatedAgo": "Đã cập nhật {{age}}",
     "viewChain": "Xem chuỗi",
     "filingRecords_one": "Đang lưu {{count}} bản ghi từ các tác tử của bạn…",
     "filingRecords_other": "Đang lưu {{count}} bản ghi từ các tác tử của bạn…",

@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "PVT अनुमान · अभी निपटा नहीं",
     "participationActions": "Provenance Envelopes",
     "participationLoadError": "लोड नहीं हो सका। रीफ़्रेश करने के लिए खींचें",
+    "participationUpdating": "अपडेट हो रहा है…",
+    "participationUpdatedAgo": "अपडेट किया गया: {{age}}",
     "viewChain": "शृंखला देखें",
     "filingRecords_one": "आपके एजेंटों का {{count}} रिकॉर्ड सहेजा जा रहा है…",
     "filingRecords_other": "आपके एजेंटों के {{count}} रिकॉर्ड सहेजे जा रहे हैं…",

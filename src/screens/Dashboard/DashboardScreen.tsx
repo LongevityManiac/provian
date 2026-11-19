@@ -1,7 +1,7 @@
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { isTestnet } from '../../core/shared/environment';
 import { enumDisplayCopy } from '../../i18n/displayCopy';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated, Image, AppState, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,6 +26,12 @@ import relayService from '../../services/RelayAPIService';
 import type { PVTAccrual, LinkedAgent } from '../../services/RelayAPIService';
 import { deriveAgentStatus, type AgentStatusTone } from '../../core/agents/agentStatus';
 import { agentsLoadOnEnd, agentsLoadOnStart, yourAgentsCardMode, type AgentsLoad } from './yourAgentsCard';
+import { isSavedAccrual, isSavedAgentList, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
+import {
+    failWalletTop, initialWalletTop, readWithRetry, seedWalletTop, startWalletTop, succeedWalletTop,
+    type WalletTopShown,
+} from '../../core/wallet/walletTopLoad';
+import { timeAgo } from '../../utils/timeAgo';
 import { useAttentionCount } from '../../core/attention/useAttentionCount';
 import TransactionHistoryService, { isApprovalScanEnabled } from '../../core/history/TransactionHistoryService';
 import type { Transaction } from '../../core/history/TransactionHistoryService';
@@ -104,35 +110,53 @@ const DashboardScreen = ({ navigation }: any) => {
     const backgroundGradient = GRADIENTS.backgroundDiagonal;
     const cardGradient = GRADIENTS.balanceCardGlow;
 
-    // Value-free record data for the participation card.
-    const [pvtAccrual, setPvtAccrual] = useState<PVTAccrual | null>(null);
-    // Distinguish "still loading" (null, no error) from "load failed" (error)
-    // from a real record. A failed fetch must NOT render as a confident zero —
-    // see the 2026-08-12 incident, where a rate-limit storm made every read fail
-    // and the card would have shown "0" as if the user had earned nothing.
-    const [pvtLoadError, setPvtLoadError] = useState(false);
+    // The participation card (the projected figure). It opens on the answer saved for this wallet
+    // and keeps showing an answer once it has one: a refresh is a quiet "Updating…" note, a
+    // refresh that finally failed is "Updated <age>". "Couldn't load" appears only when there is
+    // nothing to show — never a confident zero for a failed read (see walletTopLoad.ts).
+    const [participation, setParticipation] = useState<WalletTopShown<PVTAccrual>>(initialWalletTop);
     const [pvtRefreshing, setPvtRefreshing] = useState(false);
+    // Each load (and each wallet) gets a number; an older one finishing late changes nothing.
+    const participationRun = useRef(0);
+
+    React.useEffect(() => {
+        participationRun.current += 1;
+        setParticipation(initialWalletTop());
+        let current = true;
+        void readWalletTop('accrual', address, isSavedAccrual).then(saved => {
+            if (current && saved) setParticipation(prev => seedWalletTop(prev, saved.value as PVTAccrual, saved.savedAtMs));
+        });
+        return () => { current = false; };
+    }, [address]);
 
     const loadParticipation = useCallback(async () => {
+        const run = ++participationRun.current;
+        const wallet = address;
         setPvtRefreshing(true);
-        setPvtAccrual(null);
-        setPvtLoadError(false);
-        try {
-            const data = await relayService.getPVTAccrual();
-            setPvtAccrual(data);
-            setPvtLoadError(data === null);
-        } catch {
-            setPvtLoadError(true);
-        } finally {
-            setPvtRefreshing(false);
+        setParticipation(startWalletTop);
+        const data = await readWithRetry(() => relayService.getPVTAccrual(), {
+            isCancelled: () => participationRun.current !== run,
+        });
+        if (participationRun.current !== run) return;
+        if (data) {
+            setParticipation(prev => succeedWalletTop(prev, data, Date.now()));
+            void saveWalletTop('accrual', wallet, data);
+        } else {
+            setParticipation(failWalletTop);
         }
-    }, []);
+        setPvtRefreshing(false);
+    }, [address]);
 
     useFocusEffect(
         useCallback(() => {
             void loadParticipation();
         }, [loadParticipation])
     );
+    const participationNote = participation.phase === 'updating'
+        ? t('dashboard.participationUpdating')
+        : participation.phase === 'saved' && participation.savedAtMs !== null
+            ? t('dashboard.participationUpdatedAgo', { age: timeAgo(participation.savedAtMs, t) })
+            : undefined;
 
     // Recent crypto transactions for the Wallet tab activity section.
     //
@@ -176,23 +200,61 @@ const DashboardScreen = ({ navigation }: any) => {
     // load that returned none (yourAgentsCardMode).
     const [agentsLoad, setAgentsLoad] = useState<AgentsLoad>('loading');
 
+    // Each load (and each wallet) gets a number; an older one finishing late changes nothing.
+    const agentsRun = useRef(0);
+    // Whether this wallet's list has been read from the relay in this session.
+    const agentsFresh = useRef(false);
+    // The saved list for this wallet shows at once; a list read in this session is never replaced by it.
+    React.useEffect(() => {
+        agentsRun.current += 1;
+        agentsFresh.current = false;
+        setLinkedAgents([]);
+        setAgentsLoad('loading');
+        let current = true;
+        void readWalletTop('linkedAgents', address, isSavedAgentList).then(saved => {
+            if (!current || !saved || agentsFresh.current) return;
+            setLinkedAgents(saved.value as LinkedAgent[]);
+            setAgentsLoad(prev => (prev === 'loading' || prev === 'failed' ? 'loaded' : prev));
+        });
+        return () => { current = false; };
+    }, [address]);
+
     const loadLinkedAgents = useCallback(() => {
-        let cancelled = false;
+        const run = ++agentsRun.current;
+        const wallet = address;
         setAgentsLoad(agentsLoadOnStart);
-        relayService.getLinkedAgents()
-            .then(({ linked_agents }) => {
-                if (cancelled) return;
-                setLinkedAgents(linked_agents ?? []);
-                setAgentsLoad((prev) => agentsLoadOnEnd(prev, true));
-            })
-            .catch(() => {
-                if (cancelled) return;
-                setAgentsLoad((prev) => agentsLoadOnEnd(prev, false));
-            });
-        return () => { cancelled = true; };
-    }, []);
+        void readWithRetry(
+            () => relayService.getLinkedAgents().then(({ linked_agents }) => linked_agents ?? []),
+            { isCancelled: () => agentsRun.current !== run },
+        ).then(list => {
+            if (agentsRun.current !== run) return;
+            if (list) {
+                agentsFresh.current = true;
+                setLinkedAgents(list);
+                void saveWalletTop('linkedAgents', wallet, list);
+            }
+            setAgentsLoad((prev) => agentsLoadOnEnd(prev, list !== null));
+        });
+        return () => { if (agentsRun.current === run) agentsRun.current += 1; };
+    }, [address]);
 
     useFocusEffect(loadLinkedAgents);
+
+    // Coming back to the app reloads what the top of this screen shows (only while it is in view).
+    const reloadTopOnForeground = useRef<() => void>(() => undefined);
+    reloadTopOnForeground.current = () => {
+        if (!navigation.isFocused?.()) return;
+        void loadParticipation();
+        loadLinkedAgents();
+    };
+    React.useEffect(() => {
+        let previous = AppState.currentState;
+        const subscription = AppState.addEventListener('change', next => {
+            if (next === 'active' && previous !== 'active') reloadTopOnForeground.current();
+            previous = next;
+        });
+        return () => subscription.remove();
+    }, []);
 
     const [addressCopied, setAddressCopied] = useState(false);
 
@@ -461,8 +523,9 @@ const DashboardScreen = ({ navigation }: any) => {
 
                 {/* 2. Participation Card */}
                 <ParticipationCard
-                    pvtAccrual={pvtAccrual}
-                    loadError={pvtLoadError}
+                    pvtAccrual={participation.value}
+                    loadError={participation.phase === 'failed'}
+                    note={participationNote}
                     onRetry={loadParticipation}
                     onPress={() => navigation.navigate('MyProvenance')}
                 />

@@ -133,6 +133,35 @@ export async function ensureMessageKeyAtLaunch(options: { allowPrompt: boolean; 
     }
 }
 
+/** How long the unlock waits for the session check before letting the person in anyway. */
+export const UNLOCK_SESSION_CHECK_TIMEOUT_MS = 6_000;
+
+/**
+ * One participation read with the unlock's biometric action. On a 401 the relay request renews the
+ * session with that same action (no new prompt). Bounded so a slow relay never holds the unlock;
+ * never throws.
+ */
+export async function checkRelaySessionAtUnlock(
+    address: string | null,
+    biometricAction: BiometricAction,
+    timeoutMs: number = UNLOCK_SESSION_CHECK_TIMEOUT_MS,
+): Promise<void> {
+    if (!address) return;
+    try {
+        const relay = (await import('../../services/RelayAPIService')).default;
+        if (!(await relay.isRegistered())) return;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timedOut = new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), timeoutMs); });
+        const accrual = await Promise.race([relay.getPVTAccrual(biometricAction), timedOut]).finally(() => clearTimeout(timer));
+        if (accrual) {
+            const { saveWalletTop } = await import('../wallet/walletTopCache');
+            await saveWalletTop('accrual', address, accrual);
+        }
+    } catch (err) {
+        console.warn('[WalletLock] relay session check deferred', err instanceof Error ? err.message : String(err));
+    }
+}
+
 /** Initialize derived keys and publish them inside the unlock action, before it is revoked. */
 export async function onWalletUnlocked(biometricAction?: BiometricAction): Promise<void> {
     if (!biometricAction) return;
@@ -151,6 +180,10 @@ export async function onWalletUnlocked(biometricAction?: BiometricAction): Promi
     const { useWalletStore } = await import('../../store/walletStore');
     const address = useWalletStore.getState().address;
     if (address && !(await relay.isRegistered())) await relay.recoverRelayCredentials(address, biometricAction);
+    // Confirm the relay session inside this unlock's own approval: an expired session answers 401
+    // and is renewed here by the wallet signature, with no second prompt on the wallet screen. The
+    // answer is saved so the wallet screen opens on it.
+    await checkRelaySessionAtUnlock(address, biometricAction);
     await ensureMessageKeyAtLaunch({ allowPrompt: false, biometricAction }, biometricAction);
     await (await import('../chains/solana/solanaAddressProof')).ensureSolanaAddressProven(biometricAction);
     // Retry attestations whose Android signing window elapsed after a confirmed transaction.

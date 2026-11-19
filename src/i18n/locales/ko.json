@@ -140,6 +140,8 @@
     "pvtProjectionNonFinal": "PVT 예상치 · 아직 정산 안 됨",
     "participationActions": "Provenance Envelope",
     "participationLoadError": "불러올 수 없음: 아래로 당겨 새로고침",
+    "participationUpdating": "업데이트 중…",
+    "participationUpdatedAgo": "{{age}} 업데이트됨",
     "viewChain": "체인 보기",
     "filingRecords_one": "에이전트의 기록 {{count}}건을 보관하는 중…",
     "filingRecords_other": "에이전트의 기록 {{count}}건을 보관하는 중…",

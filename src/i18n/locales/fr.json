@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "Projection PVT · pas encore réglée",
     "participationActions": "Enveloppes de provenance",
     "participationLoadError": "Chargement impossible, tirez pour actualiser",
+    "participationUpdating": "Mise à jour…",
+    "participationUpdatedAgo": "Mis à jour {{age}}",
     "viewChain": "Voir la chaîne",
     "filingRecords_one": "Classement de {{count}} enregistrement de vos agents…",
     "filingRecords_other": "Classement de {{count}} enregistrements de vos agents…",

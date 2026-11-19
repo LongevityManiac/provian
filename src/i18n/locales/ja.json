@@ -140,6 +140,8 @@
     "pvtProjectionNonFinal": "PVT 見込み · 未決済",
     "participationActions": "Provenance Envelope",
     "participationLoadError": "読み込めませんでした。引っ張って更新",
+    "participationUpdating": "更新中…",
+    "participationUpdatedAgo": "{{age}}に更新",
     "viewChain": "チェーンを表示",
     "filingRecords_one": "エージェントの記録を{{count}}件保存しています…",
     "filingRecords_other": "エージェントの記録を{{count}}件保存しています…",

@@ -38,6 +38,29 @@ describe('personal accrual reads', () => {
         expect(request).toHaveBeenCalledTimes(2);
     });
 
+    it('a read carrying a biometric action never joins one without it, and later plain reads join it', async () => {
+        await relayService.setAuthSecret('secret-a', 'user-a');
+        let finishPlain!: (result: Response) => void;
+        let finishUnlock!: (result: Response) => void;
+        const request = vi.spyOn(service, 'makeAuthenticatedRequest')
+            .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishPlain = resolve; }))
+            .mockImplementationOnce(() => new Promise<Response>((resolve) => { finishUnlock = resolve; }));
+        const action = Object.freeze({ nativeId: null });
+
+        const plain = relayService.getPVTAccrual();
+        const unlock = relayService.getPVTAccrual(action);
+        // Its own request, carrying the action, so a 401 can renew the session.
+        expect(request).toHaveBeenCalledTimes(2);
+        expect(request.mock.calls[1][3]).toBe(action);
+        const joiner = relayService.getPVTAccrual();
+        expect(request).toHaveBeenCalledTimes(2);
+        finishPlain(response(1));
+        finishUnlock(response(2));
+        expect((await plain)?.totalPEs).toBe(1);
+        expect((await unlock)?.totalPEs).toBe(2);
+        expect((await joiner)?.totalPEs).toBe(2);
+    });
+
     it('does not return a previous human\'s response after an account switch', async () => {
         await relayService.setAuthSecret('secret-a', 'user-a');
         let finish!: (result: Response) => void;

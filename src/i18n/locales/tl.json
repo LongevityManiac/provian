@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "PVT projection · hindi pa na-settle",
     "participationActions": "Mga Provenance Envelope",
     "participationLoadError": "Hindi ma-load. Hilahin pababa para i-refresh",
+    "participationUpdating": "Ina-update…",
+    "participationUpdatedAgo": "Na-update {{age}}",
     "viewChain": "Tingnan ang chain",
     "filingRecords_one": "Itinatabi ang {{count}} talaan mula sa iyong mga agent…",
     "filingRecords_other": "Itinatabi ang {{count}} talaan mula sa iyong mga agent…",

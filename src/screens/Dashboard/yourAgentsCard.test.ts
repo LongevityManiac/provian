@@ -34,7 +34,7 @@ describe('"Your Agents" card', () => {
         // The connect entry is reached only in 'connect' mode — never by an empty list alone.
         expect(card).toMatch(/if \(mode === 'connect'\) \{/);
         expect(card).not.toMatch(/if \(linkedAgents\.length === 0\)/);
-        expect(src).toMatch(/setAgentsLoad\(\(prev\) => agentsLoadOnEnd\(prev, true\)\)/);
-        expect(src).toMatch(/setAgentsLoad\(\(prev\) => agentsLoadOnEnd\(prev, false\)\)/);
+        // One end-of-load call records both outcomes: an answered list, or a load whose retries all failed.
+        expect(src).toMatch(/setAgentsLoad\(\(prev\) => agentsLoadOnEnd\(prev, list !== null\)\)/);
     });
 });

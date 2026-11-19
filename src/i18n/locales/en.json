@@ -139,6 +139,8 @@
     "pvtProjectionNonFinal": "PVT projection · not yet settled",
     "participationActions": "Provenance Envelopes",
     "participationLoadError": "Couldn't load — pull down to refresh",
+    "participationUpdating": "Updating…",
+    "participationUpdatedAgo": "Updated {{age}}",
     "viewChain": "View Chain",
     "filingRecords_one": "Filing {{count}} record from your agents…",
     "filingRecords_other": "Filing {{count}} records from your agents…",

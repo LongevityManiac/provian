@@ -29,11 +29,13 @@ interface ParticipationCardProps {
      * from a genuine empty record. Renders a "couldn't load" state instead of a
      * confidently-wrong zero. */
     loadError?: boolean;
+    /** A quiet line while a shown answer refreshes ("Updating…") or after its refresh failed ("Updated 5m ago"). */
+    note?: string;
     onPress?: () => void;
     onRetry?: () => void;
 }
 
-const ParticipationCard = ({ pvtAccrual, loadError, onPress, onRetry }: ParticipationCardProps) => {
+const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: ParticipationCardProps) => {
     const { t } = useTranslation();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const [infoVisible, setInfoVisible] = useState(false);
@@ -150,7 +152,10 @@ const ParticipationCard = ({ pvtAccrual, loadError, onPress, onRetry }: Particip
                 per-envelope attestation tier is shown there, next to each PE
                 where it has context — not collapsed into a single most-recent
                 summary badge here, which misrepresented a mixed chain. */}
-            <View style={styles.bottomRow}>
+            <View style={[styles.bottomRow, note ? styles.bottomRowWithNote : null]}>
+                {note ? (
+                    <Text style={styles.noteText} numberOfLines={1} accessibilityLiveRegion="polite">{note}</Text>
+                ) : null}
                 {(retry || onPress) && (
                     <View style={styles.viewChainLink}>
                         <Text style={styles.viewChainText}>{retry ? t('common.tryAgain') : t('dashboard.viewChain')}</Text>
@@ -247,6 +252,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'flex-end',
         alignItems: 'center',
+    },
+    bottomRowWithNote: {
+        justifyContent: 'space-between',
+    },
+    noteText: {
+        flexShrink: 1,
+        marginRight: SPACING.s,
+        fontSize: 12,
+        color: COLORS.textTertiary,
     },
     viewChainLink: {
         flexDirection: 'row',
