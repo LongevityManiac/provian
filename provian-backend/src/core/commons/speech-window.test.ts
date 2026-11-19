@@ -224,13 +224,14 @@ describe('the handshake-state read judges a provian:commons pass by the talking-
     expect(live).toMatchObject({ state: 'live', burnId: BURN, min_burn_pvt: '15', expiresAt: NOW - DAY + 7 * DAY });
   });
 
-  it('a handshake to a wallet (a rail counterparty) keeps the plain rail state — escrow and jobs keep their tier floors', async () => {
+  it('RED: a 5 PVT handshake to a wallet (an escrow or hire counterparty) reads below_floor too; a 15 PVT one reads live', async () => {
     const db = createFakeFirestore();
     seedPresentation(db, AGENT, 'wallet_aw_other', NOW - DAY);
     seedBurn(db, BURN, AGENT, FIVE_PVT);
     const st = await readTalkingPassAwareHandshakeState(db as unknown as Firestore, AGENT, 'wallet_aw_other', NOW);
-    expect(st.state).toBe('live');
-    expect(st.min_burn_pvt).toBeUndefined();
+    expect(st).toMatchObject({ state: 'below_floor', min_burn_pvt: '15', below_floor_burn_pvt: '5' });
+    seedBurn(db, BURN, AGENT, FIFTEEN_PVT);
+    expect(await readTalkingPassAwareHandshakeState(db as unknown as Firestore, AGENT, 'wallet_aw_other', NOW)).toMatchObject({ state: 'live', burnId: BURN });
   });
 
   it('no presentation reads none, with the floor named', async () => {

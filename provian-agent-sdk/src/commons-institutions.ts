@@ -1275,11 +1275,14 @@ function pvtText(atomic: bigint): string {
  * floor (15 PVT), and the burn named or requested is smaller. Nothing was burned by this call.
  */
 export class TalkingPassBelowFloorError extends ProvianValidationError {
-  constructor(public readonly amountAtomic: bigint, public readonly floorAtomic: bigint) {
+  constructor(public readonly amountAtomic: bigint, public readonly floorAtomic: bigint, audience: string = SPEECH_AUDIENCE) {
     super(
-      `a Commons talking pass takes a burn of at least ${pvtText(floorAtomic)} PVT, for agents and humans alike; `
-      + `${pvtText(amountAtomic)} PVT is not enough and nothing was presented. Open the pass with \`provian speech-window --open\` `
-      + `(it burns ${pvtText(floorAtomic)} PVT)`,
+      audience === SPEECH_AUDIENCE
+        ? `a Commons talking pass takes a burn of at least ${pvtText(floorAtomic)} PVT, for agents and humans alike; `
+          + `${pvtText(amountAtomic)} PVT is not enough and nothing was presented. Open the pass with \`provian speech-window --open\` `
+          + `(it burns ${pvtText(floorAtomic)} PVT)`
+        : `a rail handshake (an escrow, a hire, a thread with a stranger) takes a burn of at least ${pvtText(floorAtomic)} PVT, `
+          + `for agents and humans alike; ${pvtText(amountAtomic)} PVT is not enough and nothing was burned or presented`,
     );
     this.name = 'TalkingPassBelowFloorError';
   }
@@ -4224,7 +4227,8 @@ export class CommonsInstitutions {
    * `audience` is the counterparty (a pairwise wallet id, or 'provian:commons').
    *
    * `burnId` comes from a prior {@link recordBurn} of a real on-chain PVT burn.
-   * `tier` defaults to 'pe_fact' (the cheaper handshake floor). The challenge is
+   * `tier` defaults to 'reputation' (it names no PE); either tier burns at least the 15 PVT floor
+   * every rail handshake takes (`burn` without an amount burns exactly that). The challenge is
    * self-generated (a rail handshake binds on audience + window, not challenge).
    */
   async ensureRailHandshake(params: {
@@ -4250,7 +4254,9 @@ export class CommonsInstitutions {
     const before = await this.readHandshakeState({ counterparty: params.counterparty, role: 'presenter' });
     if (before.state === 'live') return { state: before, presented: false };
 
-    const tier: PresentationTier = params.tier ?? 'pe_fact';
+    // Reputation by default: it names no PE. Every rail handshake (the talking pass, an escrow, a
+    // hire, a thread with a stranger) counts only with a burn of at least the 15 PVT floor.
+    const tier: PresentationTier = params.tier ?? 'reputation';
     const peFacts = params.peFacts ? structuredClone(params.peFacts) : undefined;
     if (tier === 'pe_fact' && (peFacts ?? []).length === 0) {
       throw new ProvianValidationError(
@@ -4258,12 +4264,17 @@ export class CommonsInstitutions {
       );
     }
     // The amount is settled BEFORE anything else runs: a burn the relay would refuse is never broadcast.
-    const amount = params.burn
-      ? (params.burn.amountAtomic != null ? BigInt(String(params.burn.amountAtomic)) : await this.presentationFloorAtomic(tier, params.counterparty))
-      : params.burnTx ? BigInt(String(params.burnTx.amountAtomic)) : null;
-    if (params.counterparty === SPEECH_AUDIENCE && amount !== null && !params.burnId) {
-      const passFloor = await this.talkingPassFloorAtomic();
-      if (amount < passFloor) throw new TalkingPassBelowFloorError(amount, passFloor);
+    const passFloor = await this.talkingPassFloorAtomic();
+    let amount: bigint | null = null;
+    if (params.burn) {
+      if (params.burn.amountAtomic != null) amount = BigInt(String(params.burn.amountAtomic));
+      else {
+        const tierFloor = await this.presentationFloorAtomic(tier);
+        amount = tierFloor > passFloor ? tierFloor : passFloor;
+      }
+    } else if (params.burnTx) amount = BigInt(String(params.burnTx.amountAtomic));
+    if (amount !== null && !params.burnId && amount < passFloor) {
+      throw new TalkingPassBelowFloorError(amount, passFloor, params.counterparty);
     }
     await this.preflightProofs(tier === 'pe_fact' ? peFacts : [], [], params.burn?.rpcUrl);
     const challenge = issuePresentationChallenge({ audience: params.counterparty, ttlSeconds: params.ttlSeconds }).challenge;

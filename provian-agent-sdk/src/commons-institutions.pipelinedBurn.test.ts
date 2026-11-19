@@ -292,3 +292,42 @@ describe('the Commons talking pass burns 15 PVT — agents like humans', () => {
     expect(await institutions.presentationFloorAtomic('pe_fact')).toBe(5n * 10n ** 18n);
   });
 });
+
+describe('an escrow or hire handshake burns 15 PVT too', () => {
+  const FLOORS = { floors: { pe_fact: { floor_atomic: '5000000000000000000' }, reputation: { floor_atomic: '15000000000000000000' } }, talking_pass: { audience: 'provian:commons', floor_atomic: '15000000000000000000', floor_pvt: '15' } };
+
+  it('ensureRailHandshake to an applicant burns 15 PVT at the reputation tier by default', async () => {
+    let state = 'none';
+    const { institutions, calls } = makeInstitutions({
+      [HANDSHAKE]: () => new Response(JSON.stringify({ state }), { status: 200 }),
+      [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
+      'GET /v1/present/floor': FLOORS,
+    });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_applicant', privateKeyHex: KEY, burn: { rpcUrl: RPC } });
+    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n }));
+    expect(posts(calls, '/present')[0].body).toMatchObject({ tier: 'reputation', audience: 'wallet_aw_applicant' });
+  });
+
+  it('a handshake the relay reads below_floor is re-presented at 15 PVT, not trusted', async () => {
+    let state = 'below_floor';
+    const { institutions } = makeInstitutions({
+      [HANDSHAKE]: () => new Response(JSON.stringify({ state }), { status: 200 }),
+      [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
+      'GET /v1/present/floor': FLOORS,
+    });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    const out = await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_applicant', privateKeyHex: KEY, burn: { rpcUrl: RPC } });
+    expect(burnSpy).toHaveBeenCalledTimes(1);
+    expect(out.presented).toBe(true);
+  });
+
+  it('RED: a 5 PVT amount for an applicant is refused before any burn, preflight or presentation', async () => {
+    const { institutions, calls } = makeInstitutions({ [HANDSHAKE]: { state: 'none' }, 'GET /v1/present/floor': FLOORS });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await expect(institutions.ensureRailHandshake({ counterparty: 'wallet_aw_applicant', privateKeyHex: KEY, burn: { rpcUrl: RPC, amountAtomic: 5n * 10n ** 18n } }))
+      .rejects.toThrow(/rail handshake .* at least 15 PVT/);
+    expect(burnSpy).not.toHaveBeenCalled();
+    expect(calls.some((c) => c.url.includes('/present/preflight'))).toBe(false);
+  });
+});

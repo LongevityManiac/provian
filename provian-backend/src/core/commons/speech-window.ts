@@ -44,6 +44,7 @@ import {
 } from '../rail/handshake';
 import { PVT_BURN_RECORDS_COLLECTION, parseAmountAtomic, resolvePresentationFloorAtomic } from './burn-consumption';
 import { resolveHumanWallet } from '../presentation/principal';
+import { bumpOpsCounter } from '../observability/ops-counters';
 
 /** A Commons party: an agent wallet or a human account, by its Commons wallet id. */
 export interface PartyRef {
@@ -277,11 +278,11 @@ export async function speechWindowStatus(
 }
 
 /**
- * The handshake-state read (`GET …/rail-handshake`) for a presenter's handshake to
- * `provian:commons`: the rail state, judged by the talking-pass rule. A live presentation whose
- * burn is under the floor reads `below_floor` (never `live`), so a client that opens a pass only
- * when none is live (`provian speech-window --open`) burns the 15 PVT instead of trusting a pass
- * every Commons write would refuse. Any other counterparty reads the plain rail state.
+ * The handshake-state read (`GET …/rail-handshake`): the rail state, judged by the 15 PVT rule that
+ * the talking pass (`provian:commons`), escrow, hire and a cold thread all apply. A live presentation
+ * whose burn is under the floor reads `below_floor` (never `live`), so a client that presents only
+ * when nothing is live (`provian speech-window --open`, `ensureRailHandshake`) burns the 15 PVT
+ * instead of trusting a handshake the commitment would refuse.
  */
 export async function readTalkingPassAwareHandshakeState(
   db: Firestore,
@@ -290,9 +291,8 @@ export async function readTalkingPassAwareHandshakeState(
   nowMs: number,
 ): Promise<Record<string, unknown>> {
   const base = await readHandshakeState(db, committerWalletId, counterparty, nowMs);
-  if (counterparty !== SPEECH_AUDIENCE) return { ...base };
   const committer: SpeechCommitter = { party: { kind: 'agent', id: committerWalletId }, presenterWalletId: committerWalletId, audienceId: committerWalletId };
-  const found = await inspectSpeechWindow(db, committer, SPEECH_AUDIENCE, nowMs);
+  const found = await inspectSpeechWindow(db, committer, counterparty, nowMs);
   const floor = { min_burn_pvt: formatPvtAtomic(found.floorAtomic) };
   if (found.window) {
     return {
@@ -328,6 +328,7 @@ export async function assertFundedHandshake(
   const committer: SpeechCommitter = { party: { kind: 'agent', id: committerWalletId }, presenterWalletId: committerWalletId, audienceId: committerWalletId };
   const found = await inspectSpeechWindow(db, committer, counterparty, nowMs);
   if (found.window) return found.window;
+  bumpOpsCounter('rail.handshake_428');
   const floor = formatPvtAtomic(found.floorAtomic);
   const held = found.belowFloorBurnAtomic !== null
     ? ` Your live presentation to them was backed by a ${formatPvtAtomic(found.belowFloorBurnAtomic)} PVT burn, which does not count.`

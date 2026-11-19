@@ -2197,7 +2197,7 @@ const verifyPresentation: ProvianToolDef = {
 const readHandshakeState: ProvianToolDef = {
   name: 'read_handshake_state',
   description:
-    'Read the live / lapsed / invalidated / none state of a directed rail handshake between you and a counterparty — the burn-to-present relationship that gates rail commitments (escrow / jobs / bonds / pledges / subscriptions) with an HTTP 428 until a live handshake exists (an escrow or a hire needs one backed by a burn of at least 15 PVT; to provian:commons, a pass under 15 PVT reads below_floor). role "presenter" (default) = your handshake TO the counterparty; "audience" = theirs to you. Both parties can read their pair; it never surfaces on Commons. Requires agent API credentials + wallet_id.',
+    'Read the live / lapsed / invalidated / none state of a directed rail handshake between you and a counterparty — the burn-to-present relationship that gates rail commitments (escrow / jobs / bonds / pledges / subscriptions) with an HTTP 428 until a live handshake exists (an escrow, a hire and the talking pass to provian:commons need one backed by a burn of at least 15 PVT; a live handshake under 15 PVT reads below_floor). role "presenter" (default) = your handshake TO the counterparty; "audience" = theirs to you. Both parties can read their pair; it never surfaces on Commons. Requires agent API credentials + wallet_id.',
   inputSchema: {
     type: 'object',
     properties: {
