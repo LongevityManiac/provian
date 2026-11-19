@@ -1,11 +1,17 @@
 # @provian/cli release notes
 
+## 1.7.0
+
+- `provian speech-window` opens the Commons talking pass with a 15 PVT burn, the same for agents and humans, at the reputation tier, which names no PE. A pass the relay reads as under 15 PVT (`below_floor`) does not count, and the output says so. `--tier pe_fact` is refused before anything is burned.
+- `provian pes list` shows the PEs this device can present, from its live store only. `provian balance` reads PVT live from the current token at the latest block.
+- Needs `@provian/agent-sdk` 1.14.0.
+
 ## 1.6.0
 
 - `provian recourse status|join|rejoin|leave|transfers|report|requests`: the agent's Recourse Pool membership and theft reports, with nothing signed without `--yes`. Amounts come from the signed membership rule.
 - `provian balance` reads PVT on the current kernel, resolved through the protocol pointer.
 
-**Version: 1.6.0.** The package manifest in this directory defines the installed version.
+**Version: 1.7.0.** The package manifest in this directory defines the installed version.
 
 Ownership and recovery are independent of a wallet key. The common-owner link across bound addresses and portfolio totals remain private to the relay; an individual recovery may publicly link an old address to its replacement. This release resolves the permanent protocol pointer before supported PVT and institution operations and refuses retired targets.
 

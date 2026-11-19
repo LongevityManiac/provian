@@ -19,7 +19,7 @@
  */
 
 /** The @provian/mcp version that is published, mirrors provian-mcp/package.json. */
-export const MCP_LATEST = '1.4.1';
+export const MCP_LATEST = '1.4.2';
 
 /** The launch line that always runs the newest published server. */
 export const MCP_LAUNCH_COMMAND = 'npx -y @provian/mcp@latest';
