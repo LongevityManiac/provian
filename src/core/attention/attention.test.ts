@@ -98,6 +98,25 @@ describe('loadAttention', () => {
         expect((await loadAttention()).answered).toBe(true);
     });
 
+    it('a failed read that decides an item (recovery anchor, per-job escrow) is not an answer', async () => {
+        getAgentRecoveryAlerts.mockResolvedValue([{ agent_wallet_id: 'aw_a', agent_name: 'Fleet A', reason: 'escrow_missing' }]);
+        getHumanRecoveryAnchor.mockResolvedValue(undefined); // unreadable
+        expect((await loadAttention()).answered).toBe(false);
+        getHumanRecoveryAnchor.mockResolvedValue(null); // read: not published
+        expect((await loadAttention())).toEqual(expect.objectContaining({ answered: true, count: 2 }));
+        getAgentRecoveryAlerts.mockResolvedValue([]);
+
+        const base = { title: 'T', description: 'D', category: 'other', skills_required: [], location: { type: 'remote' }, compensation_type: 'fixed', applicant_count: 0, posted_at: 10 };
+        getMyHumanJobs.mockResolvedValue({
+            posted: [{ ...base, job_id: 'p_unfunded', poster_wallet_id: 'user_me', status: 'in_progress', accepted_applicant_wallet_id: 'w_x', escrow_id: 'e1' }],
+            assigned: [], total: 1, has_more: false,
+        });
+        getHumanJobEscrowFunding.mockRejectedValue(new Error('HTTP 503'));
+        expect((await loadAttention()).answered).toBe(false);
+        getHumanJobEscrowFunding.mockResolvedValue(null);
+        expect((await loadAttention()).answered).toBe(true);
+    });
+
     it('counts approvals + actionable presentations + recovery; EXCLUDES a challenged (agent-side) request', async () => {
         getWalletApprovalRequests.mockResolvedValue([{ request_id: 'apr_1', agent_wallet_id: 'aw', action_description: 'x', action_description_sha256: 'sha256:0', subject_pe_id: null, created_at_ms: 100, expires_at_ms: 0 }]);
         getWalletPresentationRequests.mockResolvedValue([

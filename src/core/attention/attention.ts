@@ -136,7 +136,7 @@ async function safely<T>(read: () => Promise<T> | T, fallback: T): Promise<T> {
  * and one dispute read per disputed job (few by nature). Every read degrades: an unreadable escrow
  * adds no item (never a guessed "fund" / "deliver").
  */
-async function loadJobAttention(): Promise<{ job: HumanJob; reason: JobAttentionReason }[]> {
+async function loadJobAttention(onReadFailed: () => void = () => undefined): Promise<{ job: HumanJob; reason: JobAttentionReason }[]> {
     const mine = await getMyHumanJobs({ limit: 50 });
     const out: { job: HumanJob; reason: JobAttentionReason }[] = [];
     const disputed: HumanJob[] = [];
@@ -151,8 +151,9 @@ async function loadJobAttention(): Promise<{ job: HumanJob; reason: JobAttention
         if (job.status === 'in_progress' && job.escrow_id && !job.completion_pe_id) escrowChecks.push({ job, reason: 'deliver' });
     }
     const [views, escrows] = await Promise.all([
-        Promise.all(disputed.map((job) => getJobDispute(job.job_id).catch(() => null))),
-        Promise.all(escrowChecks.map(({ job }) => getHumanJobEscrowFunding(job.job_id).catch(() => null))),
+        // A failed per-job read drops that job's item, so it is reported: the load undercounts.
+        Promise.all(disputed.map((job) => getJobDispute(job.job_id).catch(() => { onReadFailed(); return null; }))),
+        Promise.all(escrowChecks.map(({ job }) => getHumanJobEscrowFunding(job.job_id).catch(() => { onReadFailed(); return null; }))),
     ]);
     disputed.forEach((job, i) => {
         if (payerCanClaimRefund(job, views[i], job.poster_wallet_id)) out.push({ job, reason: 'refund' });
@@ -288,7 +289,7 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
             counted(() => RelayAPIService.getWalletPresentationRequests(undefined, strict), [] as HumanPresentationRequest[]),
             counted(() => RelayAPIService.getAgentRecoveryAlerts(undefined, strict), [] as AgentRecoveryAlert[]),
             counted(() => unreadThreads().then((r) => r.threads), [] as ThreadDocument[]),
-            counted(() => loadJobAttention(), [] as { job: HumanJob; reason: JobAttentionReason }[]),
+            counted(() => loadJobAttention(() => { countReadFailed = true; }), [] as { job: HumanJob; reason: JobAttentionReason }[]),
             counted(() => RelayAPIService.getLinkRequests(), null as { link_requests: AgentLinkRequest[] } | null),
             counted(() => RelayAPIService.listMyHumanPromises(), null as { promises: RelayHumanPromiseDocument[]; myAddress: string } | null),
             counted(() => getPendingConsents().then((r) => r?.consents ?? []), [] as PublicationConsent[]),
@@ -304,6 +305,8 @@ export async function loadAttention(): Promise<AttentionSnapshot> {
         const anchor = anyEscrowMissing
             ? await safely(() => RelayAPIService.getHumanRecoveryAnchor(), undefined as string | null | undefined)
             : undefined;
+        // Unreadable (undefined) when it decides an item: the load cannot know the count.
+        if (anyEscrowMissing && anchor === undefined) countReadFailed = true;
 
         const liveApprovals = (Array.isArray(approvals) ? approvals : []).filter((a) => isLive(a.expires_at_ms, now));
         const livePresentations = (Array.isArray(presentations) ? presentations : [])
