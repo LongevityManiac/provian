@@ -5335,7 +5335,7 @@
     "connectNext": "다음으로 무엇을 연결할까요?",
     "chatWithAi": "AI와 대화하기",
     "connectComputer": "내 컴퓨터 연결",
-    "connectComputerDetail": "이 컴퓨터에서 하는 코딩과 AI 작업을 기록합니다.",
+    "connectComputerDetail": "내 컴퓨터에서 하는 코딩과 AI 작업을 기록합니다.",
     "connectCodeHosting": "코드 호스팅 계정 연결",
     "connectCodeHostingDetail": "GitHub, GitLab 또는 Bitbucket 저장소에서 한 작업을 기록합니다.",
     "linkMyAgent": "내 에이전트 연결",

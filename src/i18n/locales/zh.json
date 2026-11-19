@@ -5335,7 +5335,7 @@
     "connectNext": "接下来想连接什么？",
     "chatWithAi": "与 AI 聊天",
     "connectComputer": "连接我的电脑",
-    "connectComputerDetail": "记录在这台电脑上进行的编程和 AI 工作。",
+    "connectComputerDetail": "记录在你的电脑上进行的编程和 AI 工作。",
     "connectCodeHosting": "连接代码托管账号",
     "connectCodeHostingDetail": "记录在 GitHub、GitLab 或 Bitbucket 代码仓库中的工作。",
     "linkMyAgent": "关联我的智能体",
