@@ -166,7 +166,25 @@ export async function findLiveHandshake(
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>,
   requiredTier?: HandshakeTier,
 ): Promise<RailHandshake | null> {
-  if (!committerWalletId || !counterparty) return null;
+  const live = await findLiveHandshakes(db, committerWalletId, counterparty, nowMs, env, requiredTier);
+  return live[0] ?? null;
+}
+
+/**
+ * Every LIVE handshake for (committerWalletId → counterparty), freshest first — the same
+ * liveness rule as {@link findLiveHandshake} (which is the first of these). A caller that must
+ * judge each backing burn (the Commons talking pass reads each burn's verified amount) walks
+ * this list, so a fresher handshake that fails its test never hides an older one that passes.
+ */
+export async function findLiveHandshakes(
+  db: Pick<Firestore, 'collection'>,
+  committerWalletId: string,
+  counterparty: string,
+  nowMs: number,
+  env?: NodeJS.ProcessEnv | Record<string, string | undefined>,
+  requiredTier?: HandshakeTier,
+): Promise<RailHandshake[]> {
+  if (!committerWalletId || !counterparty) return [];
   const windowMs = resolveRailHandshakeConfig(env).windowMs;
   const [snap, floor] = await Promise.all([
     db
@@ -178,7 +196,7 @@ export async function findLiveHandshake(
   ]);
   const floorMs = floor?.invalidatedAfterMs ?? 0;
 
-  let best: RailHandshake | null = null;
+  const live: RailHandshake[] = [];
   for (const doc of snap.docs) {
     const d = doc.data() as Record<string, unknown>;
     const tier = readTier(d.tier);
@@ -187,8 +205,7 @@ export async function findLiveHandshake(
     if (establishedAt <= floorMs) continue; // invalidated by a presenter-side event
     const expiresAt = establishedAt + windowMs;
     if (expiresAt <= nowMs) continue; // lapsed — the parties must re-present
-    if (best && establishedAt <= best.establishedAt) continue;
-    best = {
+    live.push({
       committerWalletId,
       counterparty,
       burnId: typeof d.burn_id === 'string' ? d.burn_id : doc.id,
@@ -196,9 +213,13 @@ export async function findLiveHandshake(
       tier,
       establishedAt,
       expiresAt,
-    };
+    });
   }
-  return best;
+  // Freshest first; on a tie the first one read wins (the previous single-pick rule).
+  return live
+    .map((h, i) => ({ h, i }))
+    .sort((a, b) => b.h.establishedAt - a.h.establishedAt || a.i - b.i)
+    .map(({ h }) => h);
 }
 
 /** The state of a directed (committer → counterparty) handshake, for the

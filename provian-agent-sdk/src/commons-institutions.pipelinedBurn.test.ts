@@ -61,14 +61,14 @@ describe('ensureRailHandshake / ensureSpeechWindow — burn only when no handsha
     const { institutions, calls } = makeInstitutions({
       [HANDSHAKE]: () => new Response(JSON.stringify({ state }), { status: 200 }),
       [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
-      'GET /v1/present/floor': { floors: { pe_fact: { floor_atomic: '5000000000000000000' } } },
+      'GET /v1/present/floor': { floors: { reputation: { floor_atomic: '15000000000000000000' } } },
     });
     const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
-    const out = await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY, burn: { rpcUrl: RPC } });
+    const out = await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY, burn: { rpcUrl: RPC }, tier: 'reputation' });
     expect(burnSpy).toHaveBeenCalledTimes(1);
-    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 5n * 10n ** 18n, rpcUrl: RPC }));
+    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n, rpcUrl: RPC }));
     const [post] = posts(calls, '/present');
-    expect(post.body).toMatchObject({ burn_id: BURN_ID, burn: { tx_hash: BURN_TX, amount_atomic: '5000000000000000000', chain: 'base' }, audience: 'wallet_aw_other' });
+    expect(post.body).toMatchObject({ burn_id: BURN_ID, burn: { tx_hash: BURN_TX, amount_atomic: '15000000000000000000', chain: 'base' }, audience: 'wallet_aw_other' });
     expect(posts(calls, '/burn/record')).toHaveLength(0);
     expect(out).toMatchObject({ presented: true, burnId: BURN_ID, txHash: BURN_TX, state: { state: 'live' } });
   });
@@ -76,7 +76,7 @@ describe('ensureRailHandshake / ensureSpeechWindow — burn only when no handsha
   it('RED: no live handshake and no burn source → refused before anything is burned', async () => {
     const { institutions, calls } = makeInstitutions({ [HANDSHAKE]: { state: 'none' } });
     const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
-    await expect(institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY })).rejects.toThrow(/burnId|burnTx|burn:/);
+    await expect(institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY, tier: 'reputation' })).rejects.toThrow(/burnId|burnTx|burn:/);
     expect(burnSpy).not.toHaveBeenCalled();
     expect(posts(calls, '/present')).toHaveLength(0);
   });
@@ -170,14 +170,14 @@ describe('respondToChallenge — explicit `confirmations` keeps the record-then-
 // the broadcast surfaces the tx (BurnNotPresentedError), and presenting it again never re-burns.
 describe('a broadcast burn is never lost when its present fails', () => {
   const refusedAfterRecord = () => new Response(JSON.stringify({ error: 'presentation expired', reason: 'presentation_expired', burn_id: BURN_ID, burn_recorded: true }), { status: 400 });
-  const floor = { floors: { pe_fact: { floor_atomic: '5000000000000000000' } } };
+  const floor = { floors: { pe_fact: { floor_atomic: '5000000000000000000' }, reputation: { floor_atomic: '15000000000000000000' } } };
 
   it('RED: ensureRailHandshake({ burn }) whose present is refused throws BurnNotPresentedError carrying the tx', async () => {
     const { institutions } = makeInstitutions({ [HANDSHAKE]: { state: 'none' }, [PRESENT]: refusedAfterRecord, 'GET /v1/present/floor': floor });
     vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
-    const err = await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY, burn: { rpcUrl: RPC } }).catch((e: unknown) => e);
+    const err = await institutions.ensureRailHandshake({ counterparty: 'wallet_aw_other', privateKeyHex: KEY, burn: { rpcUrl: RPC }, tier: 'reputation' }).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(BurnNotPresentedError);
-    expect(err).toMatchObject({ code: 'BURN_NOT_PRESENTED', txHash: BURN_TX, burnId: BURN_ID, amountAtomic: '5000000000000000000', recorded: true });
+    expect(err).toMatchObject({ code: 'BURN_NOT_PRESENTED', txHash: BURN_TX, burnId: BURN_ID, amountAtomic: '15000000000000000000', recorded: true });
     expect((err as Error).message).toContain(BURN_TX);
   });
 
@@ -221,5 +221,74 @@ describe('a broadcast burn is never lost when its present fails', () => {
     const { institutions, calls } = makeInstitutions({ [PRESENT]: () => new Response(JSON.stringify({ error: 'On-chain PVT burn verification failed', reason: 'tx_failed' }), { status: 400 }) });
     await expect(institutions.present({ privateKeyHex: KEY, tier: 'pe_fact', burnTx: { txHash: BURN_TX, amountAtomic: '5' }, audience: 'wallet_aw_x', challenge: 'd'.repeat(64) })).rejects.toThrow();
     expect(posts(calls, '/present')).toHaveLength(1);
+  });
+});
+
+describe('the Commons talking pass burns 15 PVT — agents like humans', () => {
+  const FLOORS = { floors: { pe_fact: { floor_atomic: '5000000000000000000' }, reputation: { floor_atomic: '15000000000000000000' } }, talking_pass: { audience: 'provian:commons', floor_atomic: '15000000000000000000', floor_pvt: '15' } };
+
+  it('ensureSpeechWindow({ burn }) burns the talking-pass floor (15 PVT) at the reputation tier, naming no PE', async () => {
+    let state = 'none';
+    const { institutions, calls } = makeInstitutions({
+      [HANDSHAKE]: () => new Response(JSON.stringify({ state }), { status: 200 }),
+      [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
+      'GET /v1/present/floor': FLOORS,
+    });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    const order: string[] = [];
+    burnSpy.mockImplementation(async (p) => { order.push('burn'); return fakeSendBurn(p); });
+    const out = await institutions.ensureSpeechWindow({ privateKeyHex: KEY, burn: { rpcUrl: RPC }, beforeBurn: async () => { order.push('beforeBurn'); } });
+    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n }));
+    const [post] = posts(calls, '/present');
+    expect(post.body).toMatchObject({ tier: 'reputation', audience: 'provian:commons', burn: { amount_atomic: '15000000000000000000' } });
+    expect((post.body as { pe_facts?: unknown }).pe_facts).toBeUndefined();
+    expect(out).toMatchObject({ live: true, presented: true, burnAmountAtomic: '15000000000000000000' });
+    // The preflight ran before the meter flush hook, and the hook before the burn.
+    const preflightAt = calls.findIndex((c) => c.url.includes('/present/preflight'));
+    expect(preflightAt).toBeGreaterThanOrEqual(0);
+    expect(order).toEqual(['beforeBurn', 'burn']);
+  });
+
+  it('a pass the relay reads below_floor is not live: ensureSpeechWindow opens a new 15 PVT pass', async () => {
+    let state = 'below_floor';
+    const { institutions } = makeInstitutions({
+      [HANDSHAKE]: () => new Response(JSON.stringify({ state, min_burn_pvt: '15', below_floor_burn_pvt: '5' }), { status: 200 }),
+      [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
+      'GET /v1/present/floor': FLOORS,
+    });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    const out = await institutions.ensureSpeechWindow({ privateKeyHex: KEY, burn: { rpcUrl: RPC } });
+    expect(burnSpy).toHaveBeenCalledTimes(1);
+    expect(out.live).toBe(true);
+  });
+
+  it('RED: a 5 PVT talking pass is refused before any burn or presentation (an explicit amount, or a resumed burn tx)', async () => {
+    const { institutions, calls } = makeInstitutions({ [HANDSHAKE]: { state: 'none' }, [PRESENT]: presentOk, 'GET /v1/present/floor': FLOORS });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await expect(institutions.ensureSpeechWindow({ privateKeyHex: KEY, burn: { rpcUrl: RPC, amountAtomic: 5n * 10n ** 18n } })).rejects.toThrow(/at least 15 PVT/);
+    await expect(institutions.ensureSpeechWindow({ privateKeyHex: KEY, burnTx: { txHash: BURN_TX, amountAtomic: '5000000000000000000', chain: 'base' } })).rejects.toThrow(/at least 15 PVT/);
+    expect(burnSpy).not.toHaveBeenCalled();
+    expect(posts(calls, '/present')).toHaveLength(0);
+    expect(calls.some((c) => c.url.includes('/present/preflight'))).toBe(false);
+  });
+
+  it('RED: a pe_fact pass with no PE is refused in the SDK — no preflight, no burn (the old 400 after minutes)', async () => {
+    const { institutions, calls } = makeInstitutions({ [HANDSHAKE]: { state: 'none' }, 'GET /v1/present/floor': FLOORS });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await expect(institutions.ensureSpeechWindow({ privateKeyHex: KEY, burn: { rpcUrl: RPC }, tier: 'pe_fact' })).rejects.toThrow(/names at least one PE/);
+    expect(burnSpy).not.toHaveBeenCalled();
+    expect(calls.some((c) => c.url.includes('/present/preflight'))).toBe(false);
+    expect(posts(calls, '/present')).toHaveLength(0);
+  });
+
+  it('respondToChallenge to provian:commons burns 15 even at the pe_fact tier floor of 5', async () => {
+    const { institutions } = makeInstitutions({ [PRESENT]: presentOk, 'GET /v1/present/floor': FLOORS });
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await institutions.respondToChallenge({ audience: 'provian:commons', challenge: 'c'.repeat(64) }, { privateKeyHex: KEY, rpcUrl: RPC, tier: 'reputation' });
+    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n }));
+    // The floor by audience: provian:commons takes 15 at either tier; any other audience keeps its tier floor.
+    expect(await institutions.presentationFloorAtomic('pe_fact', 'provian:commons')).toBe(15n * 10n ** 18n);
+    expect(await institutions.presentationFloorAtomic('pe_fact', 'requester-1')).toBe(5n * 10n ** 18n);
+    expect(await institutions.presentationFloorAtomic('pe_fact')).toBe(5n * 10n ** 18n);
   });
 });

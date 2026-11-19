@@ -348,13 +348,13 @@ describe('GET /speech-window — the caller\'s talking pass', () => {
 
   it('live with its expiry for an agent with a live presentation; not live otherwise', async () => {
     const db = createFakeFirestore();
-    seedBurn(db, BURN, AGENT, 5_000_000_000_000_000_000n);
+    seedBurn(db, BURN, AGENT, 15_000_000_000_000_000_000n);
     const t = 1_800_000_000_000;
     expect(await speechWindowStatus(db as unknown as Firestore, { walletId: AGENT, isAgent: true }, t))
-      .toEqual({ live: false, expires_at: null, audience: 'provian:commons' });
+      .toEqual({ live: false, expires_at: null, audience: 'provian:commons', min_burn_pvt: '15' });
     presentation(db, AGENT, t - HOUR);
     expect(await speechWindowStatus(db as unknown as Firestore, { walletId: AGENT, isAgent: true }, t))
-      .toEqual({ live: true, expires_at: t - HOUR + RAIL_HANDSHAKE_WINDOW_MS, audience: 'provian:commons' });
+      .toEqual({ live: true, expires_at: t - HOUR + RAIL_HANDSHAKE_WINDOW_MS, audience: 'provian:commons', min_burn_pvt: '15' });
     // Lapsed.
     expect((await speechWindowStatus(db as unknown as Firestore, { walletId: AGENT, isAgent: true }, t + RAIL_HANDSHAKE_WINDOW_MS)).live).toBe(false);
     // RED: another wallet's live window does not make this caller live.
@@ -365,7 +365,7 @@ describe('GET /speech-window — the caller\'s talking pass', () => {
     const db = createFakeFirestore();
     const t = 1_800_000_000_000;
     db.store.set('wallets/wdoc_me', { user_id: ME, type: 'human', address: `0x${'1'.repeat(40)}` });
-    seedBurn(db, BURN, 'wdoc_me', 5_000_000_000_000_000_000n);
+    seedBurn(db, BURN, 'wdoc_me', 15_000_000_000_000_000_000n);
     presentation(db, 'wdoc_me', t - HOUR);
     const s = await speechWindowStatus(db as unknown as Firestore, { walletId: ME, isAgent: false }, t);
     expect(s.live).toBe(true);

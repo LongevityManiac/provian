@@ -127,7 +127,7 @@ import { isHiddenPrelaunchTest } from '../core/commons/public-visibility';
 function handleError(res: Response, error: unknown): void {
   if (error instanceof SpeechWindowRequiredError) {
     // tell the client WHERE to present so it can open the window and retry.
-    res.status(error.status).json({ error: error.message, reason: error.reason, present_to: error.presentTo });
+    res.status(error.status).json(error.body());
   } else if (error instanceof RailHandshakeError) {
     res.status(error.status).json({ error: error.message, reason: error.reason });
   } else if (error instanceof JobDisputeConflictError) {

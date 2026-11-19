@@ -201,7 +201,7 @@ import {
 } from '../core/pe/presentation-request-store';
 import { verifyFreshPresentationToken } from '../core/pe/presentation-submit-verify';
 import { loadCommerceAttestationKeys } from '../core/presentation/jws-key-material';
-import { readHandshakeState } from '../core/rail/handshake';
+import { readTalkingPassAwareHandshakeState } from '../core/commons/speech-window';
 import { makePledge, pledgesByWallet } from '../core/commons/pledges';
 import { subscribe, subscriptionsByWallet } from '../core/commons/subscriptions';
 import { fetchBounded, DeadlineExceededError, ResponseTooLargeError } from '../core/net/bounded-fetch';
@@ -5219,7 +5219,7 @@ export function createAgentWalletRouter(deps: RouterDeps): Router {
       const [committer, other] = role === 'audience'
         ? [counterparty, wallet_id] // caller is the audience; the OTHER party is the presenter
         : [wallet_id, counterparty]; // caller is the presenter/committer
-      const state = await readHandshakeState(db, committer, other, Date.now());
+      const state = await readTalkingPassAwareHandshakeState(db, committer, other, Date.now());
       res.json(state);
     } catch (error) {
       console.error('[AgentWallet] Rail-handshake state error:', error);

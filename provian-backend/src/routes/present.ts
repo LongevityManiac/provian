@@ -116,8 +116,22 @@ export function createPresentRouter(deps: PresentRouterDeps = {}): Router {
       // 18-decimal atomic → whole-PVT string (floors are whole-PVT literals/bounds).
       out[tier] = { floor_atomic: atomic.toString(), floor_pvt: (atomic / 10n ** 18n).toString() };
     }
+    // The Commons talking pass (a presentation to `provian:commons`) takes the reputation-tier
+    // floor at EITHER tier, for humans and agents alike: one burn of at least this opens it for
+    // seven days. Separate from `floors` so a client that prices a tier is unaffected.
+    let passAtomic = PRESENTATION_FLOOR_BY_TIER.reputation;
+    if (deps.db) {
+      try {
+        passAtomic = await resolvePresentationFloorAtomic(deps.db, 'reputation');
+      } catch {
+        passAtomic = PRESENTATION_FLOOR_BY_TIER.reputation;
+      }
+    }
     res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
-    res.json({ floors: out });
+    res.json({
+      floors: out,
+      talking_pass: { audience: 'provian:commons', floor_atomic: passAtomic.toString(), floor_pvt: (passAtomic / 10n ** 18n).toString() },
+    });
   });
 
   // POST /verify — verify a presentation (token or structured object). The

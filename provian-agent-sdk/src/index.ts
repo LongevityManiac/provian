@@ -682,6 +682,7 @@ export type { MeterBatcherOptions, SendReport, ProofsReport, MailboxReport, Seal
 export { actInclusionProofFor, peFactFromStore } from './meter/prove';
 export type { ActProofResult, StorePeFact, StorePeFactResult, StorePeFactFailure } from './meter/prove';
 export { resolveLocalPeStore } from './meter/local-store';
+export { listPresentablePes, PRESENTABLE_PES_DEFAULT_LIMIT, type PresentablePe } from './meter/presentable';
 export type { LocalPeStoreResolution } from './meter/local-store';
 export { meterStatusOf, describeMeterStatus, PE_STORE_NOTICE } from './meter/status';
 export type { MeterStatus } from './meter/status';

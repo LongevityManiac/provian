@@ -48,7 +48,7 @@ function clientIpOf(req: Request): string {
 /** Map a thrown core error message to an HTTP status. */
 function handleError(res: Response, error: unknown): void {
   if (error instanceof SpeechWindowRequiredError) {
-    res.status(error.status).json({ error: error.message, reason: error.reason, present_to: error.presentTo });
+    res.status(error.status).json(error.body());
     return;
   }
   if (error instanceof RailHandshakeError) {

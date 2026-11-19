@@ -53,7 +53,7 @@ import { loadCommerceAttestationKeys } from '../core/presentation/jws-key-materi
 
 function handleError(res: Response, error: unknown): void {
   if (error instanceof SpeechWindowRequiredError) {
-    res.status(error.status).json({ error: error.message, reason: error.reason, present_to: error.presentTo });
+    res.status(error.status).json(error.body());
   } else if (error instanceof RailHandshakeError) {
     res.status(error.status).json({ error: error.message, reason: error.reason });
   } else if (error instanceof ValidationError) {

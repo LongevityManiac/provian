@@ -305,6 +305,25 @@ export class MeterBatcher {
     return report;
   }
 
+  /**
+   * Send what is recorded so far only if no other process is sending right now — never waiting for
+   * the send lock or the relay's 5-minute rule. For a step whose result does not depend on the
+   * latest acts (opening a Commons talking pass), so it never stalls behind the daemon's send.
+   */
+  async flushIfIdle(): Promise<SendReport> {
+    const release = this.acquireSendLock();
+    if (release === null) {
+      return { outcome: 'deferred', batchesAccepted: 0, actsAccepted: 0, retryAtMs: null, lastStatus: null, halt: null };
+    }
+    try {
+      const report = await this.sendPending();
+      this.nextSendAtMs = report.retryAtMs ?? this.now() + METER_BATCH_INTERVAL_MS;
+      return report;
+    } finally {
+      release();
+    }
+  }
+
   // ─── cross-process send lock ─────────────────────────────────────────────────
 
   /**

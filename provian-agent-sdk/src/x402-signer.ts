@@ -595,8 +595,8 @@ export async function getAgentUsdcBalance(
  * JSON-RPC `eth_call` against the pinned PVT token for the chain. PVT is the
  * agent's earned/held on-chain currency; the address is resolved from the SDK's
  * own pinned allowlist ({@link getToken}), never from the relay or the caller,
- * so a read cannot be pointed at a spoofed token. Base holds the live PVT9
- * successor kernel; Arbitrum/Optimism resolve their pinned entries.
+ * so a read cannot be pointed at a spoofed token. Base resolves the kernel the
+ * permanent protocol pointer names; Arbitrum/Optimism resolve their pinned entries.
  * Format with 18 decimals for display (e.g. `Number(atomic) / 1e18`).
  */
 export async function getAgentPvtBalance(

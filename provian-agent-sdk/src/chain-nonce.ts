@@ -64,8 +64,28 @@ export async function sendChainOperation(
       return { ...(current ?? empty()), owner, leaseUntil: r.now() + 180_000 };
     });
     held = true;
+    // Reconcile the signer journal against the chain BEFORE anything reads it (a killed process
+    // leaves this journal as the record of what is in flight). An attempt whose nonce the chain has
+    // already consumed (below the latest nonce) and whose operation is settled — submitted or in
+    // conflict, with these exact bytes kept in its own record — is mined or replaced: it is never in
+    // flight and never resent, so it leaves this journal now, not only when the next transaction is
+    // signed. An attempt whose operation is still unresolved stays (and still blocks below): a mined
+    // nonce does not tell its caller the outcome, and a blind new operation must not pay twice.
+    const chainNonce = await r.nonce();
+    if (!Number.isSafeInteger(chainNonce) || chainNonce < 0) throw new Error('nonce_canonical_state_invalid');
+    const released = new Set<string>();
+    for (const old of (await r.store.transact(signerKey, current => fence(current))).attempts) {
+      if (old.nonce >= chainNonce) continue;
+      try {
+        const oldDoc = await readChainOperation(r.store, signerKey, old.intent);
+        if (['submitted', 'conflict'].includes(operation(oldDoc).state) && oldDoc.attempts.some(a => a.hash === old.hash)) released.add(old.hash);
+      } catch { /* no operation record holds these bytes: the journal keeps them */ }
+    }
     // A crash between the signer journal and operation record is recoverable.
-    const index = await r.store.transact(signerKey, current => fence(current));
+    const index = await r.store.transact(signerKey, current => {
+      const held = fence(current);
+      return released.size ? { ...held, attempts: held.attempts.filter(a => !released.has(a.hash)) } : held;
+    });
     if (!doc.attempts.length) {
       const saved = index.attempts.find(a => a.intent === id);
       if (saved) doc = await r.store.transact(key, current => ({ ...current!, next: saved.nonce + 1,
@@ -99,7 +119,7 @@ export async function sendChainOperation(
       // A later human action may recover only through the explicit reviewed route.
       if (!options.resume) throw new ChainNonceError('SUBMISSION_UNCERTAIN', id, attempt.hash);
     } else {
-      const canonical = await r.nonce();
+      const canonical = chainNonce; // read once, under the lease, when the journal was reconciled
       const nonce = options.nonce ?? canonical;
       if (!Number.isSafeInteger(canonical) || canonical < 0 || !Number.isSafeInteger(nonce) || nonce < 0) throw new Error('nonce_canonical_state_invalid');
       if (nonce < canonical) throw new ChainNonceError('NONCE_CONFLICT', id);

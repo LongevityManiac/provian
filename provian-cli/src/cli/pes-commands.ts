@@ -20,6 +20,7 @@ import {
   exportLocalPes,
   verifyPeExportFile,
   DEFAULT_EXPORT_VERIFY_RPC_URL,
+  listPresentablePes,
   loadCredentials,
   meterStatusOf,
   openLocalArchiveKeeper,
@@ -101,6 +102,13 @@ export async function cmdPes(positionals: readonly string[], flags: Flags, depsI
       const status = await meterStatusOf(opened.store);
       return { status: status.halted ? 'error' : 'ok', ...status, summary: describeMeterStatus(status), notice: PE_STORE_NOTICE };
     }
+    if (subcommand === 'list') {
+      // The live device's store only: a store an earlier device left on this machine cannot present.
+      const raw = typeof flags.limit === 'string' ? Number(flags.limit) : undefined;
+      if (raw !== undefined && (!Number.isInteger(raw) || raw < 1)) return { status: 'error', error: '--limit must be a positive integer' };
+      const presentable = await listPresentablePes(opened.store, raw !== undefined ? { limit: raw } : {});
+      return { status: 'ok', device_id: opened.store.deviceId, store: opened.store.location, count: presentable.length, presentable };
+    }
     if (subcommand === 'prove') {
       const peId = positionals[1] ?? (typeof flags.pe === 'string' ? flags.pe : null);
       if (!peId) return { status: 'error', error: 'Usage: provian pes prove <pe_id>' };
@@ -125,6 +133,11 @@ export function printPesHelp(): void {
       How many PEs this machine keeps and where, how many are not yet batched,
       the last batch the relay accepted (time, acts, eligible points), proofs
       fetched, and mailbox PEs received. Reads the local store only.
+
+  provian pes list [--limit n]
+      The PEs this device can present now (in a day anchored on Base), newest
+      first, from this device's own store only. A store an earlier device left
+      on this machine is not read: its PEs cannot be presented from here.
 
   provian pes prove <pe_id>
       Print the pe_fact entry a presentation carries: {pe_id, envelope_hash, pe,

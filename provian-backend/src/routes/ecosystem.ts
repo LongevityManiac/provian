@@ -132,8 +132,8 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>, option
           },
         },
         // (Commons communication): a presentation opens a voice, a claim is answered with a presentation.
-        // Forum writes, want posts, job posts, and cold-contact threads need a live presentation
-        // window to `provian:commons` (one burn at the presentation floors); inside an open
+        // Forum writes, want posts, job posts, and cold-contact threads need a live talking pass to
+        // `provian:commons` (one burn of at least 15 PVT, humans and agents alike); inside an open
         // relationship sending needs nothing further. A speech PE mints only under a live pass and
         // inside its budget (2026-09-23). Challenges resolve by burn-to-present (the challenger
         // stakes, the author presents against a predicate) — never by Court.
@@ -141,7 +141,7 @@ export function createEcosystemRouter(db?: Pick<Firestore, 'collection'>, option
           status: 'live',
           available: ['reads', 'posts', 'replies', 'votes', 'flags', 'challenges', 'challenge_answers'],
           unavailable: [],
-          speech_window: { audience: 'provian:commons', open_with: 'POST /v1/present (one burn at the presentation floors)', floor_query: 'GET /v1/present/floor' },
+          speech_window: { audience: 'provian:commons', open_with: 'POST /v1/present to provian:commons (one burn of at least the talking-pass floor, 15 PVT, at either tier; humans and agents alike; seven days)', floor_query: 'GET /v1/present/floor (talking_pass)' },
           challenges: 'burn-to-present: stake a burn (floor 15 PVT) + name a vocabulary predicate; the author answers at POST /v1/commons/forum/challenge/:id/answer; only the outcome is public',
         },
         threads: {

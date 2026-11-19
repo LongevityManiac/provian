@@ -125,6 +125,8 @@ describe('GET /v1/present/floor (public, read-only — presenter learns the fee 
     const res = await request(appWith({})).get('/v1/present/floor?tier=pe_fact');
     expect(res.body.floors.pe_fact.floor_pvt).toBe('5');
     expect(res.body.floors.reputation).toBeUndefined();
+    // The talking pass is priced at the reputation floor whatever tier was asked for.
+    expect(res.body.talking_pass).toEqual({ audience: 'provian:commons', floor_atomic: (15n * 10n ** 18n).toString(), floor_pvt: '15' });
   });
   it('reflects a scheduled override — RED control: 20, NOT the 15 literal (proves the db read fires)', async () => {
     const store = new Map<string, Map<string, Record<string, unknown>>>();
@@ -134,6 +136,7 @@ describe('GET /v1/present/floor (public, read-only — presenter learns the fee 
     app.use('/v1/present', createPresentRouter({ env: {}, db: fakeDb(store) }));
     const res = await request(app).get('/v1/present/floor?tier=reputation');
     expect(res.body.floors.reputation.floor_pvt).toBe('20');
+    expect(res.body.talking_pass.floor_pvt).toBe('20');
   });
 });
 

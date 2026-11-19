@@ -77,7 +77,15 @@ export interface ChallengeCheckOptions {
 export interface RailHandshakeStateResult {
   committerWalletId: string;
   counterparty: string;
-  state: 'live' | 'lapsed' | 'invalidated' | 'none';
+  /**
+   * `below_floor` (a handshake to `provian:commons` only): a presentation is live but its burn is
+   * under the talking-pass floor, so it opens no Commons talking pass.
+   */
+  state: 'live' | 'lapsed' | 'invalidated' | 'none' | 'below_floor';
+  /** For a `provian:commons` read: the talking-pass floor, in whole PVT ("15"). */
+  min_burn_pvt?: string;
+  /** For `below_floor`: the largest live burn that does not count, in PVT. */
+  below_floor_burn_pvt?: string;
   /** For `invalidated`: the reason class that closed the window. */
   reasonClass?: 'key_rotation' | 'bond_slashed' | 'bond_abandoned' | 'bond_expired' | 'reputation_downgrade';
   establishedAt?: number;
@@ -99,6 +107,15 @@ export interface AgentBalances {
   pvtAvailable: boolean;
   /** The current PVT kernel the balance was read from, resolved through the protocol pointer. */
   pvtAddress?: string;
+  /**
+   * Where the PVT figure came from, when the caller asked for a live read (`getBalances({ rpcUrl, address })`):
+   * `chain` — `balanceOf` on the pointer-resolved kernel at the latest block; `chain_unavailable` — that read
+   * failed, so no PVT figure is given (the relay's figure is cached and can lag a burn, so it is never shown in
+   * its place). Absent for a relay-only read.
+   */
+  pvtSource?: 'chain' | 'chain_unavailable';
+  /** Why the live PVT read failed (`pvtSource: 'chain_unavailable'`). */
+  pvtError?: string;
   chain: string;
 }
 
@@ -152,7 +169,8 @@ import {
   BYTES32_PATTERN,
   type EscrowCurrency,
 } from './evm-escrow';
-import { BaseError, getAddress, isAddress, sha256, stringToBytes } from 'viem';
+import { BaseError, formatUnits, getAddress, isAddress, sha256, stringToBytes } from 'viem';
+import { getErc20Balance } from './x402-signer';
 import { executeAgentSwap, type AgentSwapParams, type AgentSwapQuote, type AgentSwapResult, type AgentSwapToken } from './agent-swap';
 import { encodeWithdrawContribution, poolAddressForChain } from './evm-pool';
 import { joinCommons as joinCommonsCore } from './commons-join';
@@ -1207,6 +1225,31 @@ export interface ApplyToJobRequest {
 
 /** The Commons speech audience: one presentation to it opens the 7-day speech window. */
 export const SPEECH_AUDIENCE = 'provian:commons';
+
+/** The talking-pass floor at launch (15 PVT), used only when the relay's floor read fails. */
+export const TALKING_PASS_FLOOR_FALLBACK_ATOMIC = 15n * 10n ** 18n;
+
+/** Whole-and-fraction PVT text for an atomic amount ("15", "4.5"). */
+function pvtText(atomic: bigint): string {
+  const whole = atomic / 10n ** 18n;
+  const frac = (atomic % 10n ** 18n).toString().padStart(18, '0').replace(/0+$/, '');
+  return frac ? `${whole}.${frac}` : whole.toString();
+}
+
+/**
+ * Refused before any burn or presentation: a Commons talking pass takes at least the talking-pass
+ * floor (15 PVT), and the burn named or requested is smaller. Nothing was burned by this call.
+ */
+export class TalkingPassBelowFloorError extends ProvianValidationError {
+  constructor(public readonly amountAtomic: bigint, public readonly floorAtomic: bigint) {
+    super(
+      `a Commons talking pass takes a burn of at least ${pvtText(floorAtomic)} PVT, for agents and humans alike; `
+      + `${pvtText(amountAtomic)} PVT is not enough and nothing was presented. Open the pass with \`provian speech-window --open\` `
+      + `(it burns ${pvtText(floorAtomic)} PVT)`,
+    );
+    this.name = 'TalkingPassBelowFloorError';
+  }
+}
 
 /**
  * A thread message as the relay takes it : E2E ciphertexts per party + the plaintext hash.
@@ -3243,16 +3286,43 @@ export class CommonsInstitutions {
    * Falls back to the launch literals (reputation 15 PVT / pe_fact 5 PVT) if the
    * relay read fails — learning the fee must never block presenting.
    */
-  async presentationFloorAtomic(tier: PresentationTier): Promise<bigint> {
+  async presentationFloorAtomic(tier: PresentationTier, audience?: string): Promise<bigint> {
     const fallback = tier === 'reputation' ? 15n * 10n ** 18n : 5n * 10n ** 18n;
+    let floor = fallback;
     try {
       const res = await requestJSON(this.config, `/v1/present/floor?tier=${encodeURIComponent(tier)}`, { method: 'GET' });
       const raw = (res as { floors?: Record<string, { floor_atomic?: string }> }).floors?.[tier]?.floor_atomic;
-      if (typeof raw === 'string' && /^[0-9]+$/.test(raw)) return BigInt(raw);
+      if (typeof raw === 'string' && /^[0-9]+$/.test(raw)) floor = BigInt(raw);
     } catch {
       // fall through to the literal
     }
-    return fallback;
+    // A presentation to provian:commons opens the Commons talking pass, which takes the talking-pass
+    // floor (15 PVT at launch) at either tier, for agents and humans alike.
+    if (audience === SPEECH_AUDIENCE) {
+      const pass = await this.talkingPassFloorAtomic();
+      if (pass > floor) floor = pass;
+    }
+    return floor;
+  }
+
+  /**
+   * The minimum burn behind a Commons talking pass (a presentation to `provian:commons`): the relay's
+   * `talking_pass` floor from `GET /v1/present/floor`, else its reputation-tier floor, else 15 PVT.
+   * One rule for agents and humans; a smaller burn opens no pass at either tier.
+   */
+  async talkingPassFloorAtomic(): Promise<bigint> {
+    try {
+      const res = await requestJSON(this.config, '/v1/present/floor', { method: 'GET' });
+      const body = res as { talking_pass?: { floor_atomic?: string }; floors?: Record<string, { floor_atomic?: string }> };
+      const raw = body.talking_pass?.floor_atomic ?? body.floors?.reputation?.floor_atomic;
+      if (typeof raw === 'string' && /^[0-9]+$/.test(raw)) {
+        const v = BigInt(raw);
+        if (v > 0n) return v;
+      }
+    } catch {
+      // fall through to the launch floor
+    }
+    return TALKING_PASS_FLOOR_FALLBACK_ATOMIC;
   }
 
   /**
@@ -3367,9 +3437,13 @@ export class CommonsInstitutions {
         ? Promise.resolve(BigInt(String(opts.burnTx.amountAtomic)))
         : opts.burnAmountAtomic != null
           ? Promise.resolve(BigInt(String(opts.burnAmountAtomic)))
-          : this.presentationFloorAtomic(tier),
+          : this.presentationFloorAtomic(tier, parsed.audience),
     ]);
     if (amount <= 0n) throw new ProvianValidationError('resolved burn amount must be positive');
+    if (parsed.audience === SPEECH_AUDIENCE) {
+      const passFloor = await this.talkingPassFloorAtomic();
+      if (amount < passFloor) throw new TalkingPassBelowFloorError(amount, passFloor);
+    }
     await this.preflightPresentation({privateKeyHex:opts.privateKeyHex,tier,audience:parsed.audience,challenge:parsed.challenge,
       ttlSeconds:opts.ttlSeconds, peFacts:tier==='pe_fact'?peFacts:undefined,
       disclosure:tier==='reputation'?{redact:[],predicates}:undefined,disclosures,
@@ -3859,9 +3933,10 @@ export class CommonsInstitutions {
 
   /**
    * Read this agent wallet's on-chain balances (ETH, USDC, PVT) via the relay —
-   * self-scoped to the wallet's own credentials, no RPC needed. PVT is the LIVE
-   * PVT9 balance (the relay reads balanceOf on the successor kernel). For a direct
-   * chain read instead, use {@link getAgentPvtBalance} with your own RPC.
+   * self-scoped to the wallet's own credentials, no RPC needed. PVT is the balance
+   * on the current kernel resolved through the protocol pointer. For a direct
+   * chain read instead, pass `getBalances({ rpcUrl, address })` or use
+   * {@link getAgentPvtBalance} with your own RPC.
    */
   // -------------------------------------------------------------------------
   // On-demand payout
@@ -3995,9 +4070,26 @@ export class CommonsInstitutions {
    * relay as `?token=`; the relay answers 409 when it does not agree that kernel is
    * live. A response that is not bound to the requested kernel never supplies a PVT
    * balance (Unknown = block): `pvt` is then null and `pvtAvailable` false.
+   *
+   * `live` ({ rpcUrl, address }): read PVT straight from that kernel's `balanceOf(address)` at the
+   * latest block through the caller's own Base RPC. The relay's figure is cached and can still show the
+   * pre-burn balance right after a burn, so it is never used in place of a live read; a failed live read
+   * gives `pvt: null` with `pvtSource: 'chain_unavailable'`.
    */
-  async getBalances(): Promise<AgentBalances> {
+  async getBalances(live?: { rpcUrl: string; address?: string }): Promise<AgentBalances> {
     const token = (await currentProtocolDeployment()).addresses.kernel.toLowerCase();
+    // A live read: PVT straight from the pointer-resolved kernel's balanceOf at the latest block, in
+    // parallel with the relay read (which still answers ETH and USDC). The relay caches balances and can
+    // lag a burn just made, so with a live read its PVT figure is never used. Without an address the
+    // wallet's own record names it.
+    const chainPvt = live
+      ? (live.address !== undefined ? Promise.resolve(live.address) : this.walletAddress())
+        .then((address) => getErc20Balance(live.rpcUrl, token, address, this.config.fetch ?? fetch))
+        .then(
+        (atomic) => ({ ok: true as const, atomic }),
+        (err: unknown) => ({ ok: false as const, error: err instanceof Error ? err.message : String(err) }),
+      )
+      : null;
     const r = await requestJSON(
       this.config,
       `/v1/agent/wallet/${encodeURIComponent(this.config.walletId)}/balances?token=${token}`,
@@ -4008,14 +4100,33 @@ export class CommonsInstitutions {
     };
     const bound = typeof r.token_address === 'string' && r.token_address.toLowerCase() === token
       && typeof r.pvt?.address === 'string' && r.pvt.address.toLowerCase() === token;
-    return {
+    const base = {
       eth: String(r.eth ?? '0'),
       usdc: String(r.usdc ?? '0'),
-      pvt: bound ? r.pvt?.balance ?? null : null,
-      pvtAvailable: bound && r.pvt?.available === true,
       pvtAddress: token,
       chain: String(r.chain ?? 'base'),
     };
+    if (chainPvt) {
+      const read = await chainPvt;
+      return read.ok
+        ? { ...base, pvt: formatUnits(read.atomic, 18), pvtAvailable: true, pvtSource: 'chain' }
+        : { ...base, pvt: null, pvtAvailable: false, pvtSource: 'chain_unavailable', pvtError: read.error };
+    }
+    return {
+      eth: base.eth,
+      usdc: base.usdc,
+      pvt: bound ? r.pvt?.balance ?? null : null,
+      pvtAvailable: bound && r.pvt?.available === true,
+      pvtAddress: token,
+      chain: base.chain,
+    };
+  }
+
+  /** This agent wallet's own address, from its wallet record (self-scoped). */
+  private async walletAddress(): Promise<string> {
+    const r = await requestJSON(this.config, `/v1/agent/wallet/${encodeURIComponent(this.config.walletId)}`, { method: 'GET' }) as { address?: unknown };
+    if (typeof r.address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(r.address)) throw new Error('the wallet record names no address');
+    return r.address;
   }
 
   /**
@@ -4098,6 +4209,8 @@ export class CommonsInstitutions {
     peFacts?: BuildPresentationParams['peFacts'];
     disclosure?: BuildPresentationParams['disclosure'];
     ttlSeconds?: number;
+    /** Runs once every check has passed, right before the burn is broadcast (e.g. a meter flush). */
+    beforeBurn?: () => Promise<void>;
   }): Promise<{ state: RailHandshakeStateResult; presented: boolean; presentationId?: string; burnId?: string; txHash?: string }> {
     if (!params.counterparty) throw new ProvianValidationError('counterparty is required');
     const before = await this.readHandshakeState({ counterparty: params.counterparty, role: 'presenter' });
@@ -4105,14 +4218,27 @@ export class CommonsInstitutions {
 
     const tier: PresentationTier = params.tier ?? 'pe_fact';
     const peFacts = params.peFacts ? structuredClone(params.peFacts) : undefined;
+    if (tier === 'pe_fact' && (peFacts ?? []).length === 0) {
+      throw new ProvianValidationError(
+        "a 'pe_fact' presentation names at least one PE (peFacts); use tier 'reputation', which needs none. Nothing was burned",
+      );
+    }
+    // The amount is settled BEFORE anything else runs: a burn the relay would refuse is never broadcast.
+    const amount = params.burn
+      ? (params.burn.amountAtomic != null ? BigInt(String(params.burn.amountAtomic)) : await this.presentationFloorAtomic(tier, params.counterparty))
+      : params.burnTx ? BigInt(String(params.burnTx.amountAtomic)) : null;
+    if (params.counterparty === SPEECH_AUDIENCE && amount !== null && !params.burnId) {
+      const passFloor = await this.talkingPassFloorAtomic();
+      if (amount < passFloor) throw new TalkingPassBelowFloorError(amount, passFloor);
+    }
     await this.preflightProofs(tier === 'pe_fact' ? peFacts : [], [], params.burn?.rpcUrl);
     const challenge = issuePresentationChallenge({ audience: params.counterparty, ttlSeconds: params.ttlSeconds }).challenge;
     await this.preflightPresentation({privateKeyHex:params.privateKeyHex,tier,audience:params.counterparty,challenge,
       ttlSeconds:params.ttlSeconds,peFacts,disclosure:params.disclosure});
     let burnTx = params.burnTx;
     let broadcastHere: { txHash: string; burnId: string; amountAtomic: string; chain: SupportedChain } | null = null;
-    if (!params.burnId && !burnTx && params.burn) {
-      const amount = params.burn.amountAtomic != null ? BigInt(String(params.burn.amountAtomic)) : await this.presentationFloorAtomic(tier);
+    if (!params.burnId && !burnTx && params.burn && amount !== null) {
+      if (params.beforeBurn) await params.beforeBurn();
       const sent = await this.sendBurn({ privateKeyHex: params.privateKeyHex, amountAtomic: amount, chain: params.burn.chain, rpcUrl: params.burn.rpcUrl });
       burnTx = { txHash: sent.txHash, amountAtomic: sent.amountAtomic, chain: sent.chain };
       broadcastHere = sent;
@@ -4148,35 +4274,45 @@ export class CommonsInstitutions {
   // -------------------------------------------------------------------------
 
   /**
-   * Ensure a LIVE speech window to the Commons (`provian:commons`) before a forum post / reply /
-   * vote / flag, a want post, or a job post. One burn-to-present presentation at the presentation
-   * floors opens a 7-day window; inside it nothing further is burned. If a window is already live
-   * this is a read; otherwise `burnId` (from {@link recordBurn} / {@link burnPvt}) is required.
-   * Every speech PE sealed under the window mints at its class base, budgeted so Σ minted speech
-   * stays strictly below the burn that opened it.
+   * Ensure a LIVE Commons talking pass (a speech window to `provian:commons`) before a forum post /
+   * reply / vote / flag, a want post, a job post, or a thread opened with a stranger. One
+   * burn-to-present presentation backed by a burn of at least the talking-pass floor (15 PVT, for
+   * agents and humans alike) opens a 7-day pass; inside it nothing further is burned. If a pass is
+   * already live this is a read; otherwise it burns {@link talkingPassFloorAtomic} (`burn`), or
+   * presents a burn you name (`burnId` / `burnTx`, at least that floor). The presentation is at the
+   * `reputation` tier by default, which names no PE. Every speech PE sealed under the pass mints at
+   * its class base, budgeted so Σ minted speech stays strictly below the burn that opened it.
    */
   async ensureSpeechWindow(params: {
     burnId?: string;
     /** a burn only broadcast (from {@link sendBurn}); recorded once mined, inside the present call. */
     burnTx?: BuildPresentationParams['burnTx'];
-    /** burn the floor here only when no window is live, and open the window in one pipelined call. */
+    /** burn the talking-pass floor here only when no pass is live, and open it in one pipelined call. */
     burn?: { rpcUrl: string; amountAtomic?: string | bigint; chain?: SupportedChain };
     privateKeyHex: string;
     tier?: PresentationTier;
     peFacts?: BuildPresentationParams['peFacts'];
-  }): Promise<{ live: boolean; presented: boolean; burnId?: string; txHash?: string }> {
+    /** Runs once every check has passed, right before the burn is broadcast (e.g. a meter flush). */
+    beforeBurn?: () => Promise<void>;
+  }): Promise<{ live: boolean; presented: boolean; burnId?: string; txHash?: string; burnAmountAtomic?: string }> {
     const before = await this.readHandshakeState({ counterparty: SPEECH_AUDIENCE, role: 'presenter' });
     if (before.state === 'live') return { live: true, presented: false, burnId: before.burnId };
     if (!params.burnId && !params.burnTx && !params.burn) {
-      throw new ProvianValidationError('no live speech window — a burnId (from recordBurn / burnPvt), a burnTx (from sendBurn) or burn: { rpcUrl } is required to open one');
+      throw new ProvianValidationError('no live talking pass — a burnId (from recordBurn / burnPvt), a burnTx (from sendBurn) or burn: { rpcUrl } is required to open one');
     }
+    const passFloor = await this.talkingPassFloorAtomic();
+    const burn = params.burn
+      ? { ...params.burn, amountAtomic: params.burn.amountAtomic != null ? params.burn.amountAtomic : passFloor }
+      : undefined;
     const out = await this.ensureRailHandshake({
-      counterparty: SPEECH_AUDIENCE, burnId: params.burnId, burnTx: params.burnTx, burn: params.burn,
-      privateKeyHex: params.privateKeyHex, tier: params.tier ?? 'pe_fact', peFacts: params.peFacts,
+      counterparty: SPEECH_AUDIENCE, burnId: params.burnId, burnTx: params.burnTx, burn,
+      privateKeyHex: params.privateKeyHex, tier: params.tier ?? 'reputation', peFacts: params.peFacts,
+      ...(params.beforeBurn ? { beforeBurn: params.beforeBurn } : {}),
     });
     return {
       live: out.state.state === 'live', presented: out.presented, burnId: out.burnId ?? params.burnId,
       ...(out.txHash ? { txHash: out.txHash } : {}),
+      ...(burn ? { burnAmountAtomic: String(burn.amountAtomic) } : params.burnTx ? { burnAmountAtomic: String(params.burnTx.amountAtomic) } : {}),
     };
   }
 

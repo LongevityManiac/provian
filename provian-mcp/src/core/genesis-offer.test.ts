@@ -5,7 +5,7 @@ import { serverInstructions } from './server';
 describe('Genesis offer line — runtime date gate (MCP)', () => {
   it('the end instant is 2027-01-01T00:00:00Z and the line is the approved sentence', () => {
     expect(GENESIS_WINDOW_END_MS).toBe(Date.UTC(2027, 0, 1));
-    expect(GENESIS_OFFER_LINE).toBe('Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant.');
+    expect(GENESIS_OFFER_LINE).toBe('Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant. The grant pays at the next daily Genesis settlement, at 00:00 UTC, so it arrives up to about 24 hours after joining.');
   });
 
   it('OPEN before the end: the line; the initialize instructions LEAD with it', () => {

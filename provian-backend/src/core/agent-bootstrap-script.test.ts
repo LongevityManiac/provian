@@ -228,7 +228,7 @@ describe('the hosted install script names no npx / npm command', () => {
 
 // ─── The Genesis offer line leads the served install script while the window is open ───
 describe('hosted install scripts: the Genesis offer line (runtime date check on the agent machine)', () => {
-  const LINE = 'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant.';
+  const LINE = 'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant. The grant pays at the next daily Genesis settlement, at 00:00 UTC, so it arrives up to about 24 hours after joining.';
 
   it('the backend constant IS the relay manifest window end (one source; a moved close goes RED here)', () => {
     expect(GENESIS_WINDOW_END_MS).toBe(PROPOSED_GENESIS_CAMPAIGN_POLICY.window.end_ms);

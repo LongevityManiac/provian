@@ -112,3 +112,27 @@ describe('provian pes export / pes verify (PE export, the same SDK functions as 
     expect(verifyExport).toHaveBeenLastCalledWith('e.jsonl', { offline: false, rpcUrl: 'https://b.example' });
   });
 });
+
+/**
+ * `provian pes list`: after a machine move two device stores can sit under the root. Only the live
+ * device's (the one in ~/.provian/credentials) is listed. Non-empty-population control: the leftover
+ * store holds presentable PEs of its own. RED control (before this change): `list` is an unknown
+ * subcommand.
+ */
+describe('provian pes list — the live store only', () => {
+  it('lists the live device\'s presentable PEs, newest first, and none from a store an earlier device left here', async () => {
+    const { anchoredStore } = await import('../../../provian-agent-sdk/src/meter/anchored-store.test-support');
+    const { FsPeStore, resolveLocalPeStore, listPresentablePes } = await import('@provian/agent-sdk');
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cli-pes-two-devices-'));
+    const OLD = 'dev_' + '0d'.repeat(32);
+    const LIVE = 'dev_' + '1e'.repeat(32);
+    const old = await anchoredStore({ deviceId: OLD, idPrefix: 'pe_old', makeStore: (id: string) => new FsPeStore(id, root) });
+    await anchoredStore({ deviceId: LIVE, idPrefix: 'pe_live', makeStore: (id: string) => new FsPeStore(id, root) });
+    expect((await listPresentablePes(old.store)).length).toBe(2);
+    const r = await cmdPes(['list'], {}, { openPeStore: () => resolveLocalPeStore({ deviceId: LIVE, root, env: {} }) });
+    expect(r).toMatchObject({ status: 'ok', device_id: LIVE, count: 2 });
+    expect((r!.presentable as { pe_id: string }[]).map((p) => p.pe_id)).toEqual(['pe_live_1', 'pe_live_0']);
+    expect(await cmdPes(['list'], { limit: '0' }, { openPeStore: () => resolveLocalPeStore({ deviceId: LIVE, root, env: {} }) }))
+      .toMatchObject({ status: 'error' });
+  });
+});

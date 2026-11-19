@@ -4,23 +4,28 @@
  */
 
 import { actRecordOf, actsRootOf, batchLeafOf, METER_GENESIS_PREV_HASH, peHashOf, PE_V2_SCHEMA, type PeV2 } from '../meter-wire';
-import { MemoryPeStore, type StoredPeV2 } from './pe-store';
+import { MemoryPeStore, type PeStore, type StoredPeV2 } from './pe-store';
 
 export const ANCHORED_DEVICE_ID = 'dev_' + 'a1'.repeat(32);
 export const ANCHORED_ACTOR_ID = 'wallet_aw_presenter';
 
-export async function anchoredStore(options: { readonly pes?: number; readonly anchored?: boolean; readonly batched?: boolean } = {}): Promise<{
-  store: MemoryPeStore;
+export async function anchoredStore<S extends PeStore = MemoryPeStore>(options: {
+  readonly pes?: number; readonly anchored?: boolean; readonly batched?: boolean;
+  /** Another device (default ANCHORED_DEVICE_ID), its pe_id prefix, and the store to fill (default in memory). */
+  readonly deviceId?: string; readonly idPrefix?: string; readonly makeStore?: (deviceId: string) => S;
+} = {}): Promise<{
+  store: S;
   pes: StoredPeV2[];
   batchHash: string;
   actsRoot: string;
 }> {
-  const store = new MemoryPeStore(ANCHORED_DEVICE_ID);
+  const deviceId = options.deviceId ?? ANCHORED_DEVICE_ID;
+  const store = options.makeStore ? options.makeStore(deviceId) : (new MemoryPeStore(deviceId) as unknown as S);
   const pes: StoredPeV2[] = [];
   let prev = METER_GENESIS_PREV_HASH;
   for (let i = 0; i < (options.pes ?? 2); i++) {
     const base: PeV2 = {
-      schema: PE_V2_SCHEMA, pe_id: `pe_anchored_${i}`, device_id: ANCHORED_DEVICE_ID, prev_hash: prev,
+      schema: PE_V2_SCHEMA, pe_id: `${options.idPrefix ?? 'pe_anchored'}_${i}`, device_id: deviceId, prev_hash: prev,
       timestamp: 1_790_000_000_000 + i * 60_000, action_type: 'agent_tool_orchestration',
       description: `turn ${i}`, metadata: { tool_count: i + 1, turn_id: `tc:${i}` }, compute: null,
     };
@@ -41,7 +46,7 @@ export async function anchoredStore(options: { readonly pes?: number; readonly a
   if (options.anchored !== false) {
     await store.recordProof({
       seq: 1, batch_hash: batchHash, acts_root: actsRoot, actor_id: ANCHORED_ACTOR_ID,
-      batch_leaf: batchLeafOf({ device_id: ANCHORED_DEVICE_ID, actor_id: ANCHORED_ACTOR_ID, seq: 1, batch_hash: batchHash, acts_root: actsRoot }),
+      batch_leaf: batchLeafOf({ device_id: deviceId, actor_id: ANCHORED_ACTOR_ID, seq: 1, batch_hash: batchHash, acts_root: actsRoot }),
       anchor: {
         day: '2026-10-02', anchor_batch_id: '0x' + '9'.repeat(64), leaf_index: 0, leaf_count: 1,
         leaf_hash: '0x' + '8'.repeat(64), proof: ['0x' + '7'.repeat(64)], merkle_root: '0x' + '6'.repeat(64),

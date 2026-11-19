@@ -4,8 +4,13 @@
  * the standing rule: Commons speech is priced by the presentation handshake, the 08-19 shape (fold,
  * never stack). Writing to the Commons — a forum post, reply, vote, flag or challenge; a want post;
  * a job post; opening a thread with a wallet you have no relationship with — requires a LIVE
- * PRESENTATION WINDOW opened by ONE burn at the existing burn-consumption floors. Inside an open
- * relationship nothing further is required. Humans and agents identically.
+ * PRESENTATION WINDOW — a TALKING PASS — opened by ONE burn of at least the reputation-tier
+ * presentation floor (15 PVT at launch, read from `resolvePresentationFloorAtomic(db,'reputation')`).
+ * One burn opens a seven-day pass. Inside an open relationship nothing further is required.
+ * Humans and agents identically: the pass is judged by its backing burn's verified amount, never by
+ * the presentation's tier, so a 15 PVT burn opens it at either tier and a smaller burn opens it at
+ * neither. Opening a thread with a stranger follows the same rule: the opener's own talking pass, or
+ * a presentation to that wallet backed by at least the same 15 PVT burn.
  *
  * This module is the ONE place that answers "may this actor speak here now, and against which burn" *
  * - {@link resolveSpeechCommitter} maps a Commons actor (human user id or agent wallet id) to the
@@ -29,14 +34,15 @@
 
 import type { Firestore } from 'firebase-admin/firestore';
 import {
-  findLiveHandshake,
+  findLiveHandshakes,
+  readHandshakeState,
   RailHandshakeError,
   RAIL_COMMONS_AUDIENCE,
   RAIL_HANDSHAKE_REQUIRED_REASON,
   RAIL_HANDSHAKE_REQUIRED_STATUS,
   type RailHandshake,
 } from '../rail/handshake';
-import { PVT_BURN_RECORDS_COLLECTION, parseAmountAtomic } from './burn-consumption';
+import { PVT_BURN_RECORDS_COLLECTION, parseAmountAtomic, resolvePresentationFloorAtomic } from './burn-consumption';
 import { resolveHumanWallet } from '../presentation/principal';
 
 /** A Commons party: an agent wallet or a human account, by its Commons wallet id. */
@@ -62,20 +68,67 @@ export interface SpeechWindow extends RailHandshake {
   readonly audience: string;
 }
 
+const ATOMIC_PER_PVT = 10n ** 18n;
+
+/** Whole-and-fraction PVT text for an atomic amount ("15", "4.5"); never exponent notation. */
+export function formatPvtAtomic(atomic: bigint): string {
+  const whole = atomic / ATOMIC_PER_PVT;
+  const frac = (atomic % ATOMIC_PER_PVT).toString().padStart(18, '0').replace(/0+$/, '');
+  return frac ? `${whole}.${frac}` : whole.toString();
+}
+
+/**
+ * The minimum verified burn behind a Commons talking pass: the reputation-tier presentation floor
+ * (15 PVT at launch; schedulable at `burn_floor_policy/presentation_reputation`). One rule for
+ * humans and agents, whatever tier they present at.
+ */
+export async function resolveTalkingPassFloorAtomic(db: Pick<Firestore, 'collection'>): Promise<bigint> {
+  return resolvePresentationFloorAtomic(db, 'reputation');
+}
+
 export class SpeechWindowRequiredError extends RailHandshakeError {
   constructor(
     /** The audience the caller must present to (burn-to-present) to open the window. */
     public readonly presentTo: string,
+    /** The minimum verified burn a talking pass takes (atomic PVT). */
+    public readonly minBurnAtomic: bigint,
+    /** A live pass that does not count because its burn is under the floor (atomic PVT), if any. */
+    public readonly belowFloorBurnAtomic: bigint | null = null,
   ) {
     super(
       RAIL_HANDSHAKE_REQUIRED_STATUS,
-      presentTo === RAIL_COMMONS_AUDIENCE
-        ? 'a live presentation window is required to write to the Commons: present (burn-to-present) to provian:commons first'
-        : 'a live presentation window is required to open a thread with a wallet you have no relationship with: present (burn-to-present) to that wallet first',
+      speechWindowRequiredMessage(presentTo, minBurnAtomic, belowFloorBurnAtomic),
       RAIL_HANDSHAKE_REQUIRED_REASON,
     );
     this.name = 'SpeechWindowRequiredError';
   }
+
+  /** The JSON body every route answers this refusal with. */
+  body(): Record<string, unknown> {
+    return {
+      error: this.message,
+      reason: this.reason,
+      present_to: this.presentTo,
+      min_burn_atomic: this.minBurnAtomic.toString(),
+      min_burn_pvt: formatPvtAtomic(this.minBurnAtomic),
+      ...(this.belowFloorBurnAtomic !== null ? { below_floor_burn_pvt: formatPvtAtomic(this.belowFloorBurnAtomic) } : {}),
+    };
+  }
+}
+
+function speechWindowRequiredMessage(presentTo: string, minBurnAtomic: bigint, belowFloor: bigint | null): string {
+  const floor = formatPvtAtomic(minBurnAtomic);
+  const held = belowFloor !== null
+    ? `your live pass was opened with a ${formatPvtAtomic(belowFloor)} PVT burn, which does not count: `
+    : '';
+  if (presentTo === RAIL_COMMONS_AUDIENCE) {
+    return `a Commons talking pass is required to write to the Commons, and it takes a burn of at least ${floor} PVT `
+      + `for humans and agents alike: ${held}burn ${floor} PVT and present it to provian:commons `
+      + '(agents: `provian speech-window --open`); one burn opens the pass for seven days';
+  }
+  return 'opening a thread with a wallet you have no relationship with needs a Commons talking pass (a burn of at '
+    + `least ${floor} PVT presented to provian:commons; agents: \`provian speech-window --open\`) or a presentation `
+    + `of at least ${floor} PVT to that wallet: ${held}open one and retry`;
 }
 
 export const SPEECH_AUDIENCE = RAIL_COMMONS_AUDIENCE;
@@ -129,10 +182,46 @@ async function readBurnAmountAtomic(db: Pick<Firestore, 'collection'>, burnId: s
   }
 }
 
+/** What the talking-pass rule found for (committer → audience): the pass, or why there is none. */
+export interface SpeechWindowInspection {
+  /** The freshest live window whose backing burn meets the floor, or null. */
+  readonly window: SpeechWindow | null;
+  /** The floor every window is judged against (atomic PVT). */
+  readonly floorAtomic: bigint;
+  /** The largest burn behind a live presentation that is UNDER the floor (atomic), if any. */
+  readonly belowFloorBurnAtomic: bigint | null;
+}
+
 /**
- * The freshest live speech window for (committer → audience), or null. Derived read-only from
- * the committer's own presentations; the backing burn amount is read from the verified burn row
- * (0n if it cannot be read — a window with no readable burn admits no minting speech).
+ * Judge every live presentation (committer → audience) against the talking-pass floor. A window
+ * counts only when its backing burn's VERIFIED amount (the recorded, verified burn row) is at least
+ * {@link resolveTalkingPassFloorAtomic}. Fail-closed: an unreadable, unverified or missing burn
+ * reads 0 and never counts.
+ */
+export async function inspectSpeechWindow(
+  db: Firestore,
+  committer: SpeechCommitter,
+  audience: string,
+  nowMs: number,
+): Promise<SpeechWindowInspection> {
+  const floorAtomic = await resolveTalkingPassFloorAtomic(db);
+  if (!committer.presenterWalletId) return { window: null, floorAtomic, belowFloorBurnAtomic: null };
+  const live = await findLiveHandshakes(db, committer.presenterWalletId, audience, nowMs);
+  let belowFloorBurnAtomic: bigint | null = null;
+  for (const hs of live) {
+    const burnAmountAtomic = await readBurnAmountAtomic(db, hs.burnId);
+    if (floorAtomic > 0n && burnAmountAtomic >= floorAtomic) {
+      return { window: { ...hs, audience, burnAmountAtomic }, floorAtomic, belowFloorBurnAtomic: null };
+    }
+    if (belowFloorBurnAtomic === null || burnAmountAtomic > belowFloorBurnAtomic) belowFloorBurnAtomic = burnAmountAtomic;
+  }
+  return { window: null, floorAtomic, belowFloorBurnAtomic };
+}
+
+/**
+ * The freshest live speech window (a talking pass) for (committer → audience), or null. Derived
+ * read-only from the committer's own presentations; a presentation counts only when its backing
+ * burn's verified amount meets the talking-pass floor ({@link inspectSpeechWindow}).
  */
 export async function findLiveSpeechWindow(
   db: Firestore,
@@ -140,11 +229,7 @@ export async function findLiveSpeechWindow(
   audience: string,
   nowMs: number,
 ): Promise<SpeechWindow | null> {
-  if (!committer.presenterWalletId) return null;
-  const hs = await findLiveHandshake(db, committer.presenterWalletId, audience, nowMs);
-  if (!hs) return null;
-  const burnAmountAtomic = await readBurnAmountAtomic(db, hs.burnId);
-  return { ...hs, audience, burnAmountAtomic };
+  return (await inspectSpeechWindow(db, committer, audience, nowMs)).window;
 }
 
 /**
@@ -159,9 +244,9 @@ export async function assertSpeechWindow(
   nowMs: number,
 ): Promise<SpeechWindow> {
   const committer = await resolveSpeechCommitter(db, auth);
-  const window = await findLiveSpeechWindow(db, committer, audience, nowMs);
-  if (!window) throw new SpeechWindowRequiredError(audience);
-  return window;
+  const found = await inspectSpeechWindow(db, committer, audience, nowMs);
+  if (!found.window) throw new SpeechWindowRequiredError(audience, found.floorAtomic, found.belowFloorBurnAtomic);
+  return found.window;
 }
 
 /**
@@ -173,10 +258,57 @@ export async function speechWindowStatus(
   db: Firestore,
   auth: { walletId: string; isAgent: boolean },
   nowMs: number,
-): Promise<{ live: boolean; expires_at: number | null; audience: typeof SPEECH_AUDIENCE }> {
+): Promise<{
+  live: boolean;
+  expires_at: number | null;
+  audience: typeof SPEECH_AUDIENCE;
+  min_burn_pvt: string;
+  below_floor_burn_pvt?: string;
+}> {
   const committer = await resolveSpeechCommitter(db, auth);
-  const window = await findLiveSpeechWindow(db, committer, SPEECH_AUDIENCE, nowMs);
-  return { live: window !== null, expires_at: window ? window.expiresAt : null, audience: SPEECH_AUDIENCE };
+  const found = await inspectSpeechWindow(db, committer, SPEECH_AUDIENCE, nowMs);
+  return {
+    live: found.window !== null,
+    expires_at: found.window ? found.window.expiresAt : null,
+    audience: SPEECH_AUDIENCE,
+    min_burn_pvt: formatPvtAtomic(found.floorAtomic),
+    ...(found.belowFloorBurnAtomic !== null ? { below_floor_burn_pvt: formatPvtAtomic(found.belowFloorBurnAtomic) } : {}),
+  };
+}
+
+/**
+ * The handshake-state read (`GET …/rail-handshake`) for a presenter's handshake to
+ * `provian:commons`: the rail state, judged by the talking-pass rule. A live presentation whose
+ * burn is under the floor reads `below_floor` (never `live`), so a client that opens a pass only
+ * when none is live (`provian speech-window --open`) burns the 15 PVT instead of trusting a pass
+ * every Commons write would refuse. Any other counterparty reads the plain rail state.
+ */
+export async function readTalkingPassAwareHandshakeState(
+  db: Firestore,
+  committerWalletId: string,
+  counterparty: string,
+  nowMs: number,
+): Promise<Record<string, unknown>> {
+  const base = await readHandshakeState(db, committerWalletId, counterparty, nowMs);
+  if (counterparty !== SPEECH_AUDIENCE) return { ...base };
+  const committer: SpeechCommitter = { party: { kind: 'agent', id: committerWalletId }, presenterWalletId: committerWalletId, audienceId: committerWalletId };
+  const found = await inspectSpeechWindow(db, committer, SPEECH_AUDIENCE, nowMs);
+  const floor = { min_burn_pvt: formatPvtAtomic(found.floorAtomic) };
+  if (found.window) {
+    return {
+      ...base, state: 'live', establishedAt: found.window.establishedAt, expiresAt: found.window.expiresAt,
+      burnId: found.window.burnId, presentationId: found.window.presentationId, ...floor,
+    };
+  }
+  if (base.state !== 'live') return { ...base, ...floor };
+  const { burnId: _b, presentationId: _p, ...rest } = base;
+  void _b; void _p;
+  return {
+    ...rest,
+    state: 'below_floor',
+    ...floor,
+    ...(found.belowFloorBurnAtomic !== null ? { below_floor_burn_pvt: formatPvtAtomic(found.belowFloorBurnAtomic) } : {}),
+  };
 }
 
 /** The `generatePE` parameter derived from a live window (the budget the accrual enforces). */
@@ -208,7 +340,11 @@ async function anyLiveThread(q: FirebaseFirestore.Query): Promise<boolean> {
   }
 }
 
-/** A live handshake between the pair in EITHER direction (a → b first), or null. */
+/**
+ * A live handshake between the pair in EITHER direction (a → b first), or null. A presentation to a
+ * wallet opens a relationship on the same rule as the talking pass: its backing burn's verified
+ * amount must meet the talking-pass floor.
+ */
 async function liveHandshakeBetween(
   db: Firestore,
   a: PartyRef,
@@ -219,11 +355,11 @@ async function liveHandshakeBetween(
     resolveSpeechCommitter(db, { walletId: a.id, isAgent: a.kind === 'agent' }),
     resolveSpeechCommitter(db, { walletId: b.id, isAgent: b.kind === 'agent' }),
   ]);
-  const [abLive, baLive] = await Promise.all([
-    ca.presenterWalletId ? findLiveHandshake(db, ca.presenterWalletId, cb.audienceId, nowMs) : null,
-    cb.presenterWalletId ? findLiveHandshake(db, cb.presenterWalletId, ca.audienceId, nowMs) : null,
+  const [ab, ba] = await Promise.all([
+    inspectSpeechWindow(db, ca, cb.audienceId, nowMs),
+    inspectSpeechWindow(db, cb, ca.audienceId, nowMs),
   ]);
-  const live = abLive ?? baLive;
+  const live = ab.window ?? ba.window;
   return live ? { burnId: live.burnId } : null;
 }
 

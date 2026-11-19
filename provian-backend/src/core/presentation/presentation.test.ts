@@ -824,3 +824,75 @@ describe('human/agent SYMMETRY — human path through the shared entry point', (
     expect(r.status).toBe(400);
   });
 });
+
+// =============================================================================
+describe('the Commons talking pass takes a 15 PVT burn at presentation — humans and agents alike', () => {
+  const COMMONS = 'provian:commons';
+  const FIVE = (5n * 10n ** 18n).toString();
+  function realWindow() {
+    const iat = Math.floor(Date.now() / 1000);
+    return { iat, exp: iat + 300 };
+  }
+  function repBinding(addr: string, aud: string, chal: string, jti: string, iat: number, exp: number): string {
+    const digest = claimsDigest({ tier: 'reputation', reputation_directive: canonicalReputationDirective({ redact: [], predicates: [] }) });
+    return presentationBindingString({ tier: 'reputation', presenter_address: addr, aud, chal, iat, exp, jti, burn_id: BURN, claims_digest: digest });
+  }
+  async function phonePresents(amountAtomic: string) {
+    const human = makeHumanSigner();
+    seedBurn(store, BURN, 'hw1', { amount_atomic: amountAtomic });
+    coll(store, 'wallets').set('hw1', { user_id: 'user1', type: 'human', address: human.address });
+    seedStats(store, 'user1', { pe_count: 3 });
+    const { iat, exp } = realWindow();
+    const chal = crypto.randomBytes(32).toString('hex');
+    const principal: PresenterPrincipal = { kind: 'human', walletId: 'hw1', address: human.address, peOwnerUserId: 'user1', standing: {} };
+    const pop: PresenterPop = { scheme: 'eip191_secp256k1', signature: await human.sign(repBinding(human.address, COMMONS, chal, 'jtalk', iat, exp)) };
+    // The body the shipped phone builds sends for a talking pass: reputation tier, self-challenge, provian:commons.
+    return producePresentationFromRequest(
+      { db: makeDb(store), env: ed.env },
+      principal,
+      { tier: 'reputation', burn_id: BURN, audience: COMMONS, challenge: chal, iat, exp, jti: 'jtalk', pop, disclosure: {} },
+    );
+  }
+
+  it('the phone (already-submitted store builds: reputation tier, 15 PVT) opens a pass that the speech gate accepts', async () => {
+    const r = await phonePresents(FLOOR_15);
+    expect(r.ok).toBe(true);
+    const { assertSpeechWindow } = await import('../commons/speech-window');
+    const w = await assertSpeechWindow(makeDb(store), { walletId: 'user1', isAgent: false }, COMMONS, Date.now());
+    expect(w.burnId).toBe(BURN);
+    expect(w.burnAmountAtomic).toBe(15n * 10n ** 18n);
+  });
+
+  it('RED: a 5 PVT talking pass is refused at presentation with the talking-pass reason, and the burn is not consumed', async () => {
+    const r = await phonePresents(FIVE);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.status).toBe(400);
+    expect(r.reason).toBe('talking_pass_below_floor');
+    expect(r.error).toMatch(/at least 15 PVT, for humans and agents alike/);
+    expect(coll(store, 'burn_consumptions').has(BURN)).toBe(false);
+    expect(coll(store, 'commons_presentations').has(BURN)).toBe(false);
+  });
+
+  it('an agent at the pe_fact tier needs the same 15 PVT for provian:commons, while a 5 PVT pe_fact presentation elsewhere still issues', async () => {
+    const agent = makeAgentSigner();
+    const principal: PresenterPrincipal = { kind: 'agent', walletId: 'aw1', address: agent.address, peOwnerUserId: 'agent1', publicKeyHex: agent.pubkeyHex, standing: {} };
+    const facts = [{ pe_id: 'pe_1', envelope_hash: 'ab'.repeat(32) }];
+    mockedResolve.mockResolvedValue({ status: 'proven', proof: { envelope_hash: 'ab'.repeat(32) } } as unknown as Awaited<ReturnType<typeof proveMeterFact>>);
+    const present = async (aud: string, jti: string) => {
+      const binding = bindingFor('pe_fact', agent.address, aud, 'chal-abc-16charsmin', jti, BURN, { peFacts: facts });
+      const pop: PresenterPop = { scheme: 'ecdsa_sha256_secp256k1', signature: agent.sign(binding), pubkey: agent.pubkeyHex };
+      return producePeFactPresentation(
+        { db: makeDb(store), env: ed.env },
+        { principal, burnId: BURN, audience: aud, challenge: 'chal-abc-16charsmin', iat: IAT, exp: EXP, jti, pop, peFacts: facts.map((f) => ({ ...f, ...HELD })), nowSeconds: NOW },
+      );
+    };
+    seedBurn(store, BURN, 'aw1', { amount_atomic: FIVE });
+    const refused = await present(COMMONS, 'j-commons');
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) expect(refused.reason).toBe('talking_pass_below_floor');
+    // Control: the same 5 PVT burn still buys a pe_fact presentation to a requester (its own tier floor).
+    const elsewhere = await present('requester-1', 'j-elsewhere');
+    expect(elsewhere.ok).toBe(true);
+  });
+});

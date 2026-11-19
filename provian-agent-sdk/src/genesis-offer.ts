@@ -14,7 +14,8 @@
 export const GENESIS_WINDOW_END_MS = 1_798_761_600_000;
 
 export const GENESIS_OFFER_LINE =
-  'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant.';
+  'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant. '
+  + 'The grant pays at the next daily Genesis settlement, at 00:00 UTC, so it arrives up to about 24 hours after joining.';
 
 /** True while the Genesis window is open (strictly before its end instant). */
 export function isGenesisWindowOpen(nowMs: number = Date.now()): boolean {

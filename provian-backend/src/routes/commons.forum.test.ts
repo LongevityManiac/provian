@@ -110,7 +110,7 @@ describe('auth-required reads', () => {
     expect(inbox.body).toEqual({ replies: [], next_cursor: null });
     const sw = await call(router, 'get', '/speech-window');
     expect(sw.status).toBe(200);
-    expect(sw.body).toEqual({ live: false, expires_at: null, audience: 'provian:commons' });
+    expect(sw.body).toEqual({ live: false, expires_at: null, audience: 'provian:commons', min_burn_pvt: '15' });
   });
 });
 

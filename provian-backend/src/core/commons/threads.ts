@@ -10,9 +10,11 @@ import {prepareAgentDelivery} from './agent-delivery';
  *
  * A PRESENTATION OPENS A VOICE, ONCE. Opening a thread on a shared artifact (a job you posted or applied
  * to, an escrow you are party to, a dispute, a want) IS an open relationship — nothing further is
- * required. Opening a thread with a wallet you have NO relationship with (a profile anchor)
- * requires a live presentation window opener → target (one burn-to-present presentation to that
- * wallet, folded, never stacked). Once a thread exists, messages both ways are free to send.
+ * required. Opening a thread with a wallet you have NO relationship with (a profile anchor, or a
+ * stranger reaching a job / want owner) requires the opener's live Commons talking pass, or a live
+ * presentation opener → target (one burn-to-present presentation to that wallet, folded, never
+ * stacked); either one counts only when its burn is at least the talking-pass floor (15 PVT at
+ * launch). Once a thread exists, messages both ways are free to send.
  *
  * A MESSAGE MINTS ONLY UNDER A LIVE PASS (, fact-base fixes item 1). Sending is
  * unchanged: inside an open relationship a message needs no pass. Minting is not: a message seals
@@ -60,6 +62,8 @@ import { PVT_BURN_RECORDS_COLLECTION, parseAmountAtomic } from './burn-consumpti
 import {
   findLiveSpeechWindow,
   hasOpenRelationship,
+  inspectSpeechWindow,
+  resolveTalkingPassFloorAtomic,
   openRelationshipBasis,
   isAgentPartyId,
   presenterWalletIdOf,
@@ -414,12 +418,12 @@ async function openThreadAs(
     const basis = await openRelationshipBasis(deps.db, opener, other, now);
     if (basis === null) {
       const committer = await resolveSpeechCommitter(deps.db, actor);
-      const commonsWindow = await findLiveSpeechWindow(deps.db, committer, SPEECH_AUDIENCE, now);
-      if (!commonsWindow) {
+      const pass = await inspectSpeechWindow(deps.db, committer, SPEECH_AUDIENCE, now);
+      if (!pass.window) {
         const cp = await resolveSpeechCommitter(deps.db, { walletId: other.id, isAgent: other.kind === 'agent' });
-        throw new SpeechWindowRequiredError(cp.audienceId);
+        throw new SpeechWindowRequiredError(cp.audienceId, pass.floorAtomic, pass.belowFloorBurnAtomic);
       }
-      openedUnderBurnId = commonsWindow.burnId;
+      openedUnderBurnId = pass.window.burnId;
     } else if (basis.kind === 'handshake') {
       openedUnderBurnId = basis.burnId;
     }
@@ -607,7 +611,7 @@ async function postMessageAs(
   // relationship. Writing to it again needs a relationship or a live pass of the author's own.
   if (thread.revoked === true && !window && !(await hasOpenRelationship(deps.db, thread.parties[actor.walletId], counterparty, now))) {
     const cp = await resolveSpeechCommitter(deps.db, { walletId: counterparty.id, isAgent: counterparty.kind === 'agent' });
-    throw new SpeechWindowRequiredError(cp.audienceId);
+    throw new SpeechWindowRequiredError(cp.audienceId, await resolveTalkingPassFloorAtomic(deps.db));
   }
   const retryKey = input.idempotency_key;
   if (retryKey !== undefined && (typeof retryKey !== 'string' || !/^[A-Za-z0-9_:-]{1,160}$/.test(retryKey))) throw new ValidationError('Invalid idempotency_key');

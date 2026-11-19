@@ -43,7 +43,7 @@ import {
   preflightPresentationFromRequest,
 } from '../core/presentation/service';
 import { encodePresentationToken } from '../core/presentation/types';
-import { readHandshakeState } from '../core/rail/handshake';
+import { readTalkingPassAwareHandshakeState } from '../core/commons/speech-window';
 import { bumpOpsCounter } from '../core/observability/ops-counters';
 import { listAgentRecoveryAlertsForHuman } from '../core/agent-recovery-escrow';
 import { publishHumanRecoveryAnchor, readHumanRecoveryAnchor } from '../core/human-recovery-anchor';
@@ -493,7 +493,7 @@ export function createWalletPresentationRouter(deps: WalletPresentationDeps): Ro
       const [committer, other] = role === 'audience'
         ? [counterparty, wallet.walletId]
         : [wallet.walletId, counterparty];
-      const state = await readHandshakeState(deps.db, committer, other, Date.now());
+      const state = await readTalkingPassAwareHandshakeState(deps.db, committer, other, Date.now());
       res.json(state);
     } catch (error) {
       console.error('[WalletPresentation] rail-handshake state error:', error);

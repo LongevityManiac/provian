@@ -706,7 +706,7 @@ describe('buildOnboardJsonReport — derived from renderBootstrapOutcome, not a 
 });
 
 describe('onboard leads with the Genesis offer line while the window is open', () => {
-  const LINE = 'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant.';
+  const LINE = 'Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant. The grant pays at the next daily Genesis settlement, at 00:00 UTC, so it arrives up to about 24 hours after joining.';
 
   it('OPEN (1 ms before the end): the FIRST stderr line is exactly the offer; --json stdout stays one object', async () => {
     const human = makeIO({ now: () => 1_798_761_599_999 });

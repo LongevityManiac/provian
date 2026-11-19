@@ -13,7 +13,7 @@ describe('Genesis offer line — runtime date gate', () => {
   });
 
   it('the line is exactly the approved sentence', () => {
-    expect(GENESIS_OFFER_LINE).toBe('Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant.');
+    expect(GENESIS_OFFER_LINE).toBe('Genesis is open through December 31, 2026: a new agent wallet receives 74.25 PVT net from a 75 PVT gross grant. The grant pays at the next daily Genesis settlement, at 00:00 UTC, so it arrives up to about 24 hours after joining.');
   });
 
   it('OPEN before the end instant: the line leads', () => {

@@ -63,6 +63,7 @@ const NOW = 1_800_000_000_000;
 const DAY = 24 * 60 * 60 * 1000;
 const BURN = 'f'.repeat(64);
 const FIVE = 5_000_000_000_000_000_000n;
+const FIFTEEN = 15_000_000_000_000_000_000n;
 const HASH = '9'.repeat(64);
 const CT = 'AQIDBA'; // base64url
 
@@ -131,8 +132,16 @@ describe('opening a thread — a presentation opens a voice, once', () => {
   });
 
   it('a live window opener → target (one burn-to-present) opens the cold contact; with no commons PASS the first message records, it does not mint (2026-09-23)', async () => {
+    // RED: a presentation to the target backed by a 5 PVT burn does not open a cold contact — a
+    // thread to a stranger takes the same 15 PVT as the talking pass.
     seedPresentation(db, A, B, NOW - DAY);
     seedBurn(db, BURN, A, FIVE);
+    const small = await openThread(deps(db), actor(A), { anchor: { kind: 'profile', id: B }, message: text(B) }).catch((e: unknown) => e);
+    expect(small).toBeInstanceOf(SpeechWindowRequiredError);
+    expect((small as SpeechWindowRequiredError).presentTo).toBe(B);
+    expect((small as SpeechWindowRequiredError).message).toMatch(/at least 15 PVT/);
+    expect([...db.store.keys()].some((k) => k.startsWith(`${COMMONS_COLLECTIONS.THREADS}/`))).toBe(false);
+    seedBurn(db, BURN, A, FIFTEEN);
     const out = await openThread(deps(db), actor(A), { anchor: { kind: 'profile', id: B }, message: text(B) });
     expect(out.created).toBe(true);
     expect(out.thread.backing).toEqual({ kind: 'relationship' });
@@ -169,9 +178,16 @@ describe('opening a thread — a presentation opens a voice, once', () => {
     expect(err).toBeInstanceOf(SpeechWindowRequiredError);
     expect((err as SpeechWindowRequiredError).presentTo).toBe(A);
     expect([...db.store.keys()].some((k) => k.startsWith(`${COMMONS_COLLECTIONS.THREADS}/`))).toBe(false);
-    // The same stranger with a live COMMONS window (the one burn that prices every Commons write) is admitted.
+    // RED: a 5 PVT Commons pass is under the talking-pass floor and admits nothing; the refusal says
+    // the pass did not count and names the 15 PVT burn.
     seedPresentation(db, B, 'provian:commons', NOW - DAY);
     seedBurn(db, BURN, B, FIVE);
+    const small = await openThread(deps(db), actor(B), { anchor: { kind: 'job', id: 'job_1' }, message: text(A) }).catch((e: unknown) => e);
+    expect(small).toBeInstanceOf(SpeechWindowRequiredError);
+    expect((small as SpeechWindowRequiredError).body()).toMatchObject({ present_to: A, min_burn_pvt: '15', below_floor_burn_pvt: '5' });
+    expect([...db.store.keys()].some((k) => k.startsWith(`${COMMONS_COLLECTIONS.THREADS}/`))).toBe(false);
+    // The same stranger with a live 15 PVT COMMONS pass (the one burn that prices every Commons write) is admitted.
+    seedBurn(db, BURN, B, FIFTEEN);
     const out = await openThread(deps(db), actor(B), { anchor: { kind: 'job', id: 'job_1' }, message: text(A) });
     expect(out.thread.parties[A]).toBeDefined();
     expect(out.thread.opened_by).toBe(B);
@@ -225,7 +241,7 @@ describe('messages — the PE carries the content hash, never the content', () =
   it('a message under the author\'s live commons window is minted (durable + budgeted)', async () => {
     db.store.set('escrows/esc_1', { depositor_wallet_id: A, recipient_wallet_id: B });
     seedPresentation(db, A, 'provian:commons', NOW - DAY);
-    seedBurn(db, BURN, A, FIVE);
+    seedBurn(db, BURN, A, FIFTEEN);
     const out = await openThread(deps(db), actor(A), { anchor: { kind: 'escrow', id: 'esc_1' }, message: text(B) });
     expect(out.message.minted_under_window).toBe(true);
     const call = await accrualFor(out.message.pe_id);

@@ -522,6 +522,7 @@ describe('Commons verbs drive the relay write that performs the act', () => {
     expect(r.code).toBe(1);
     expect(r.json).toMatchObject({ status: 'error', http_status: 428, relay_code: 'rail_handshake_required', present_to: 'provian:commons' });
     expect(String(r.json.hint)).toMatch(/speech-window --open/);
+    expect(String(r.json.hint)).toMatch(/15 PVT/);
   });
 
   it('present --pe <pe_id> sends the PE and its anchored inclusion from this machine\'s store (the relay keeps no PE)', async () => {
@@ -563,6 +564,54 @@ describe('Commons verbs drive the relay write that performs the act', () => {
     } finally { spy.mockRestore(); }
   });
 
+  it('respond to provian:commons names no requester (your own talking pass), never "unverified"; an unsigned requester gets a note', async () => {
+    const response = { token: 'tok', tier: 'reputation', burnId: 'burn', txHash: TX, burnAmountAtomic: '15000000000000000000', presentation: {}, requesterVerdict: { status: 'unverified' } } as Awaited<ReturnType<CommonsInstitutions['respondToChallenge']>>;
+    const spy = vi.spyOn(CommonsInstitutions.prototype, 'respondToChallenge').mockResolvedValue(response);
+    try {
+      const own = await harness().run('respond', '--challenge-json', JSON.stringify({ audience: 'provian:commons', challenge: 'c'.repeat(32) }), '--yes');
+      expect(own.code).toBe(0);
+      expect(String(own.json.requester)).toMatch(/^none \(your own Commons talking pass/);
+      expect(own.json.requester_note).toBeUndefined();
+      // RED control: the same verdict for a real requester still says unverified, with the note.
+      const other = await harness().run('respond', '--challenge-json', JSON.stringify({ audience: 'gate', challenge: 'c'.repeat(32) }), '--yes');
+      expect(other.json.requester).toBe('unverified');
+      expect(String(other.json.requester_note)).toMatch(/unsigned/);
+    } finally { spy.mockRestore(); }
+  });
+
+  it('speech-window reads a 5 PVT pass as not counting and names the 15 PVT fix (no burn, no key)', async () => {
+    const h = harness({ respond: (c) => (c.path.endsWith('/rail-handshake')
+      ? { body: { state: 'below_floor', min_burn_pvt: '15', below_floor_burn_pvt: '5' } } : defaultRespond(c)) });
+    const r = await h.run('speech-window');
+    expect(r.json).toMatchObject({ state: 'below_floor', talking_pass_floor_pvt: '15', below_floor_burn_pvt: '5' });
+    expect(String(r.json.hint)).toMatch(/5 PVT and does not count: a talking pass takes 15 PVT/);
+    expect(h.keyUses()).toBe(0);
+  });
+
+  it('speech-window --open opens a 15 PVT reputation pass; the meter flush never waits on the relay and runs after the checks', async () => {
+    const spy = vi.spyOn(CommonsInstitutions.prototype, 'ensureSpeechWindow')
+      .mockImplementation(async (params) => { await params.beforeBurn?.(); return { live: true, presented: true, burnId: 'b1', txHash: TX, burnAmountAtomic: '15000000000000000000' }; });
+    try {
+      const h = harness();
+      const r = await h.run('speech-window', '--open');
+      expect(r.code).toBe(0);
+      expect(spy.mock.calls[0][0]).toMatchObject({ tier: 'reputation', burn: { rpcUrl: expect.any(String) } });
+      expect(spy.mock.calls[0][0].peFacts).toBeUndefined();
+      expect(h.flushMeter).toHaveBeenCalledTimes(1);
+      expect(h.flushMeter).toHaveBeenCalledWith({ waitForRelay: false });
+      expect(r.json).toMatchObject({ live: true, presented: true, burn_amount_atomic: '15000000000000000000', meter_flush: 'sent' });
+    } finally { spy.mockRestore(); }
+  });
+
+  it('RED: speech-window --open --tier pe_fact with no --pe is a usage error before anything (no flush, no key, no burn)', async () => {
+    const h = harness();
+    const r = await h.run('speech-window', '--open', '--tier', 'pe_fact');
+    expect(r.code).toBe(2);
+    expect(String(r.json.error)).toMatch(/--pe <pe_id>/);
+    expect(h.flushMeter).not.toHaveBeenCalled();
+    expect(h.keyUses()).toBe(0);
+  });
+
   it('respond without --yes burns nothing and never touches the key', async () => {
     const h = harness();
     const r = await h.run('respond', '--challenge-json', JSON.stringify({ audience: 'wallet_aw_req', challenge: 'c'.repeat(32) }));
@@ -574,11 +623,16 @@ describe('Commons verbs drive the relay write that performs the act', () => {
 });
 
 describe('On-chain verbs', () => {
-  it('balance reads the relay on the pointer-resolved kernel (no key)', async () => {
-    const h = harness();
+  it('balance reads PVT live on the pointer-resolved kernel through the Base RPC, ETH/USDC from the relay (no key)', async () => {
+    const h = harness({ respond: (c) => (c.url.startsWith('https://mainnet.base.org')
+      ? { body: { jsonrpc: '2.0', id: 1, result: '0x' + (98n * 10n ** 18n).toString(16) } }
+      : defaultRespond(c)) });
     const r = await h.run('balance');
-    expect(r.json).toMatchObject({ address: ADDRESS, pvt: '99', eth: '0.001', usdc: '0' });
+    // The relay's cached figure (99) is not the PVT shown: the chain's balanceOf (98) is.
+    expect(r.json).toMatchObject({ address: ADDRESS, pvt: '98', pvt_source: 'chain', eth: '0.001', usdc: '0' });
     expect(h.calls.find((c) => c.path.endsWith('/balances'))?.url).toMatch(/\/balances\?token=0x[0-9a-f]{40}$/);
+    const rpc = h.calls.find((c) => c.url.startsWith('https://mainnet.base.org'));
+    expect((rpc?.body as { params: [{ to: string }] }).params[0].to).toMatch(/^0x[0-9a-f]{40}$/);
     expect(h.keyUses()).toBe(0);
   });
 
@@ -910,7 +964,7 @@ describe('Your PEs: export-pes and verify-export', () => {
     const text = renderActHelp().join('\n');
     expect(text).toMatch(/Your PEs \(/);
     expect(text.indexOf('Your PEs (')).toBeLessThan(text.indexOf('  export-pes '));
-    expect(ACT_VERBS.filter((v) => v.group === 'Your PEs').map((v) => v.name)).toEqual(['export-pes', 'verify-export']);
+    expect(ACT_VERBS.filter((v) => v.group === 'Your PEs').map((v) => v.name)).toEqual(['pes', 'export-pes', 'verify-export']);
   });
 
   it('export-pes runs the export without the agent API identity and passes --out; a failed self-check exits 1', async () => {

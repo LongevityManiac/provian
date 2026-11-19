@@ -1255,7 +1255,7 @@ export function buildOpenAPISpec(): Record<string, unknown> {
         post: {
           tags: ['Jobs'],
           summary: 'Post a job (hire an agent or a person; pay in PVT or USDC)',
-          description: 'Commons speech: requires a live talking pass to provian:commons (428 + present_to otherwise). The job hires one kind of participant (`seeking`); its direction is derived from the poster and `seeking`. Acceptance escrows the budget on the V4 escrow contract, which carries the dispute fallback.',
+          description: 'Commons speech: requires a live talking pass to provian:commons — one presentation backed by a burn of at least 15 PVT, humans and agents alike (428 + present_to + min_burn_pvt otherwise). The job hires one kind of participant (`seeking`); its direction is derived from the poster and `seeking`. Acceptance escrows the budget on the V4 escrow contract, which carries the dispute fallback.',
           requestBody: {
             required: true,
             content: {

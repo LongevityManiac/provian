@@ -22,6 +22,7 @@ import {
   PVT_BURN_RECORDS_COLLECTION,
   BurnConsumptionError,
   BURN_ALREADY_CONSUMED,
+  INSUFFICIENT_BURN_AMOUNT,
   assertBurnRowUsable,
   resolvePresentationFloorAtomic,
   buildBurnConsumptionMarker,
@@ -64,6 +65,7 @@ import {
   type PeFactProof,
 } from './types';
 import { verifyPresenterPop } from './verify';
+import { RAIL_COMMONS_AUDIENCE } from '../rail/handshake';
 import { recordFirstPartyBurn, burnIdFor, BURN_RECORD_MAX_WAIT_MS, type BurnRecordDeps } from './burn-record';
 import {
   parseChallengeEnvelope,
@@ -196,6 +198,34 @@ interface ServiceDeps {
   readonly peAnchor?: PeAnchorVerifyContract | null;
   /** TEST SEAM ONLY: the hardware verifier context a disclosed record's witness is re-admitted under. */
   readonly hardware?: Pick<import('../hardware/types').HardwareVerifyContext, 'rootsOverride' | 'fetch'>;
+}
+
+/** Machine-readable refusal for a presentation to `provian:commons` under the talking-pass floor. */
+export const TALKING_PASS_BELOW_FLOOR_REASON = 'talking_pass_below_floor';
+
+/**
+ * The minimum burn a presentation must consume. A presentation to `provian:commons` opens the
+ * Commons talking pass, which takes the reputation-tier floor (15 PVT at launch) for humans and
+ * agents alike, whatever the tier; every other presentation takes its own tier's floor.
+ */
+export async function presentationMinBurnAtomic(
+  db: Pick<Firestore, 'collection'>,
+  tier: 'pe_fact' | 'reputation',
+  audience: string,
+): Promise<{ minBurnAtomic: bigint; talkingPass: boolean }> {
+  const tierFloor = await resolvePresentationFloorAtomic(db, tier);
+  if (audience !== RAIL_COMMONS_AUDIENCE) return { minBurnAtomic: tierFloor, talkingPass: false };
+  const passFloor = tier === 'reputation' ? tierFloor : await resolvePresentationFloorAtomic(db, 'reputation');
+  return { minBurnAtomic: passFloor > tierFloor ? passFloor : tierFloor, talkingPass: true };
+}
+
+function talkingPassBelowFloorMessage(minBurnAtomic: bigint): string {
+  const whole = minBurnAtomic / 10n ** 18n;
+  const frac = (minBurnAtomic % 10n ** 18n).toString().padStart(18, '0').replace(/0+$/, '');
+  const floor = frac ? `${whole}.${frac}` : whole.toString();
+  return `a Commons talking pass takes a burn of at least ${floor} PVT, for humans and agents alike; this burn is `
+    + `smaller and was not consumed: burn ${floor} PVT and present it to provian:commons `
+    + '(agents: `provian speech-window --open`)';
 }
 
 function fail(status: number, error: string, reason?: string): ProduceFailure {
@@ -334,6 +364,8 @@ async function consumeAndRecord(
     burnId: string;
     presentation: Presentation;
     minBurnAtomic: bigint;
+    /** The presentation opens the Commons talking pass: an under-floor burn gets the pass's own refusal. */
+    talkingPass?: boolean;
     nowMs: number;
   },
 ): Promise<ProducePresentationResult> {
@@ -382,7 +414,12 @@ async function consumeAndRecord(
     });
     return { ok: true, presentation };
   } catch (err) {
-    if (err instanceof BurnConsumptionError) return fail(err.status, err.message);
+    if (err instanceof BurnConsumptionError) {
+      if (params.talkingPass && err.message === INSUFFICIENT_BURN_AMOUNT) {
+        return fail(err.status, talkingPassBelowFloorMessage(minBurnAtomic), TALKING_PASS_BELOW_FLOOR_REASON);
+      }
+      return fail(err.status, err.message);
+    }
     throw err;
   }
 }
@@ -695,12 +732,13 @@ export async function produceReputationPresentation(
     ...(disclosureProofs.length > 0 ? { disclosure_proofs: disclosureProofs } : {}),
   };
 
-  const minBurnAtomic = await resolvePresentationFloorAtomic(deps.db, 'reputation');
+  const { minBurnAtomic, talkingPass } = await presentationMinBurnAtomic(deps.db, 'reputation', audience);
   return consumeAndRecord(deps, {
     principal,
     burnId,
     presentation,
     minBurnAtomic,
+    talkingPass,
     nowMs: (input.nowSeconds ?? Math.floor(Date.now() / 1000)) * 1000,
   });
 }
@@ -831,12 +869,13 @@ export async function producePeFactPresentation(
   };
   const presentation: Presentation = { tier: 'pe_fact', payload, proofs, provian_jws: provianJws };
 
-  const minBurnAtomic = await resolvePresentationFloorAtomic(deps.db, 'pe_fact');
+  const { minBurnAtomic, talkingPass } = await presentationMinBurnAtomic(deps.db, 'pe_fact', audience);
   return consumeAndRecord(deps, {
     principal,
     burnId,
     presentation,
     minBurnAtomic,
+    talkingPass,
     nowMs: (input.nowSeconds ?? Math.floor(Date.now() / 1000)) * 1000,
   });
 }

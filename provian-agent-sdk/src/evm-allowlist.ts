@@ -55,10 +55,10 @@ export const VIEM_CHAINS: Record<SupportedChain, ViemChain> = {
 /**
  * Pinned token addresses per chain.
  *
- * PVT on Base is the LIVE PVT9 successor kernel
- * `0x8811441914381143b9408c5C32247367F86F173A` (successor; every balance migrated
- * 1:1). The kernel `0x4Bf02d5C…` it replaced is HELD with its minter revoked, and
- * PVT on it is no longer the network's token.
+ * PVT on Base is never a literal here: it is the kernel the permanent protocol
+ * pointer names, read at use (`BASE_PVT9_ADDRESSES.pvt` resolves the verified
+ * pointer snapshot). Every earlier kernel the pointer retired is no longer the
+ * network's token.
  *
  * It used to be PVTv8 `0x50D6F1Ff…4BAa` (the 2026-06-26 EOA-admin cascade).
  * That was correct through the Pass-3 redeploy and went stale at the

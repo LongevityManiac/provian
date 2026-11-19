@@ -87,7 +87,7 @@ describe('CommonsInstitutions.respondToChallenge', () => {
     );
     expect(r.token).toBe('TOKEN');
     expect(r.tier).toBe('reputation');
-    expect(floorSpy).toHaveBeenCalledWith('reputation');
+    expect(floorSpy).toHaveBeenCalledWith('reputation', AUD);
     // Burned EXACTLY the resolved floor (never an under-burn, never a guess).
     expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n, rpcUrl: RPC }));
     // Burn happens BEFORE present, and present consumes that burnId.
@@ -107,7 +107,7 @@ describe('CommonsInstitutions.respondToChallenge', () => {
     floorSpy.mockResolvedValue(5n * 10n ** 18n);
     const r = await institutions.respondToChallenge({ audience: AUD, challenge: CHAL }, { privateKeyHex: KEY, rpcUrl: RPC });
     expect(r.tier).toBe('pe_fact');
-    expect(floorSpy).toHaveBeenCalledWith('pe_fact');
+    expect(floorSpy).toHaveBeenCalledWith('pe_fact', AUD);
     expect(presentSpy).toHaveBeenCalledWith(expect.objectContaining({ tier: 'pe_fact', disclosure: undefined }));
   });
 

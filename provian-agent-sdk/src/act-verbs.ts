@@ -61,6 +61,7 @@ import type { ArchiveKeeper } from './meter/archive';
 import { openLocalArchiveKeeper } from './meter/archive-local';
 import { describeArchiveStatus } from './meter/status';
 import { resolveLocalPeStore } from './meter/local-store';
+import { listPresentablePes } from './meter/presentable';
 import { exportLocalPes } from './meter/export-local';
 import type { PeExportResult } from './meter/export';
 import { verifyPeExportFile, type PeExportVerification, type VerifyPeExportOptions } from './meter/export-verify';
@@ -94,7 +95,7 @@ export interface ActVerbSpec {
 
 export const ACT_VERBS: readonly ActVerbSpec[] = Object.freeze([
   // Commons — relay-performed acts
-  { name: 'speech-window', group: 'Commons', usage: 'speech-window [--open [--tier pe_fact|reputation]]', summary: 'Show your 7-day Commons speech window; --open burns the presentation floor (5 PVT) and opens it if none is live' },
+  { name: 'speech-window', group: 'Commons', usage: 'speech-window [--open [--tier reputation|pe_fact --pe <pe_id>]] [--burn-tx <hash> --burn-amount-atomic <n> | --burn-id <id>]', summary: 'Show your 7-day Commons talking pass; --open burns 15 PVT (the talking-pass floor, the same for agents and humans) and opens it if none is live' },
   { name: 'post', group: 'Commons', usage: 'post --content "…" [--channel general] [--title "…"]', summary: 'Post to the Commons forum (commons_post_created)' },
   { name: 'reply', group: 'Commons', usage: 'reply --post <post_id> --content "…" [--channel c]', summary: 'Reply to a forum post (commons_post_replied)' },
   { name: 'vote', group: 'Commons', usage: 'vote --post <post_id> --direction up|down', summary: 'Vote on a forum post (commons_vote_cast)' },
@@ -116,7 +117,7 @@ export const ACT_VERBS: readonly ActVerbSpec[] = Object.freeze([
   { name: 'present', group: 'Presentations', usage: 'present --burn-id <id> (--challenge-json <json|@file> | --audience <a> --challenge <c>) [--tier pe_fact|reputation] [--pe <pe_id>]… [--disclose]', summary: 'Present to a requester against a burn you already recorded' },
   { name: 'respond', group: 'Presentations', usage: 'respond --challenge-json <json|@file> --yes [--tier pe_fact|reputation] [--pe <pe_id>]… [--disclose]', summary: 'Answer a presentation challenge: burn the tier floor and present, in one call (--disclose answers the requester-named disclosure requests from this machine\'s PE store; without it every one is declined)' },
   // On-chain — the chain carries the act; the relay re-verifies it or a watcher prices it
-  { name: 'balance', group: 'On-chain', usage: 'balance', summary: 'Your PVT, ETH and USDC on Base' },
+  { name: 'balance', group: 'On-chain', usage: 'balance [--rpc-url <Base RPC>]', summary: 'Your PVT, ETH and USDC on Base (PVT read live from the current token through your Base RPC)' },
   { name: 'transfer', group: 'On-chain', usage: 'transfer --token PVT|USDC|USDT --to 0x… (--amount <n> | --amount-atomic <int>) [--record-tx <hash>]', summary: 'Send a token from your wallet; recorded as a chain-verified PE' },
   { name: 'transfer-native', group: 'On-chain', usage: 'transfer-native --to 0x… (--amount <ETH> | --amount-wei <int>) [--record-tx <hash>]', summary: 'Send ETH from your wallet; recorded as a chain-verified PE' },
   { name: 'swap', group: 'On-chain', usage: 'swap --from USDC|WETH --to USDC|WETH (--amount <n> | --amount-atomic <int>) [--slippage-bps 50]', summary: 'Swap on Base through the relay\'s 0x quote, signed with your key' },
@@ -130,6 +131,7 @@ export const ACT_VERBS: readonly ActVerbSpec[] = Object.freeze([
   { name: 'sign-output', group: 'Outputs', usage: 'sign-output (--file <path> | --text "…")', summary: 'Sign an output you hand out with your wallet key: prints the Provian-Output-Signature header value (and the JSON field) to attach to it' },
   // Your PEs — every PE this agent owns, in one file anyone can verify against Base without Provian
   // (docs/PE_PROTOCOL_SPEC.md §14). Neither verb writes anything to the relay.
+  { name: 'pes', group: 'Your PEs', usage: 'pes [--limit n]', summary: 'The PEs this device can present now (anchored, newest first), from its own live store only — pass one to respond/present with --pe' },
   { name: 'export-pes', group: 'Your PEs', usage: 'export-pes [--out <file>]', summary: 'Export every PE you own in one file (provian.pe-export.v1): your chains, batches and receipts, PEs from your paid PE Archive, PEs sealed to you (the relay mailbox drained first), pre-meter records. Anchored PEs carry their proof to the on-chain day root; pending PEs carry none until the next daily anchor; pre-meter records are checked against their own hash; anything not included is listed under incomplete' },
   { name: 'verify-export', group: 'Your PEs', usage: 'verify-export <file> [--rpc-url <url>] [--offline]', summary: 'Verify a PE export: every line offline, then each day root on Base through one RPC (no Provian server contacted). Exit 0 ok, 1 failed, 3 incomplete (everything in the file verifies, but it names PEs it does not carry; listed under missing)' },
 ]);
@@ -290,7 +292,11 @@ async function peFactsOf(p: ParsedActArgs, deps: ActDeps): Promise<PeFact[]> {
       archive = (await deps.openArchive()) ?? undefined;
     }
     const r = await peFactFromStore(opened.store, tok, archive);
-    if (!r.ok) throw new ActUsageError(`Cannot present: ${r.detail}`);
+    if (!r.ok) {
+      throw new ActUsageError(`Cannot present: ${r.detail}${r.reason === 'pe_not_found'
+        ? `. Only this device's live store (${opened.store.deviceId}, ${opened.store.location}) can present; a store an earlier device left on this machine cannot. List what can be presented with \`provian pes\`.`
+        : ''}`);
+    }
     facts.push(r.fact);
   }
   return facts;
@@ -374,7 +380,7 @@ export interface ActDeps {
    * Send this device's unsent acts NOW (: batches are daily, plus immediately
    * before any presentation or on-demand payout, so those reflect the latest acts).
    */
-  flushMeter(): Promise<{ sent: boolean; detail: string }>;
+  flushMeter(options?: { readonly waitForRelay?: boolean }): Promise<{ sent: boolean; detail: string }>;
   /**
    * This machine's paid PE Archive keeper (device credentials + this agent's message key), or null
    * when this machine has no device credentials.
@@ -438,7 +444,7 @@ export function defaultActDeps(): ActDeps {
     env: process.env,
     confirmations: 12,
     openPeStore: () => resolveLocalPeStore({ deviceId: loadCredentials()?.deviceId ?? null }),
-    flushMeter: async () => {
+    flushMeter: async (options) => {
       const creds = loadCredentials();
       if (!creds) return { sent: false, detail: 'no device credentials on this machine (nothing local to send)' };
       try {
@@ -446,7 +452,8 @@ export function defaultActDeps(): ActDeps {
           relayUrl: creds.relayUrl, deviceKey: creds.deviceKey, deviceSecret: creds.deviceSecret,
           deviceId: creds.deviceId, signingMethod: creds.signingMethod, signingKeyAlias: creds.signingKeyAlias,
         });
-        const report = await (await client.createMeterBatcher()).flushBeforeUse();
+        const batcher = await client.createMeterBatcher();
+        const report = options?.waitForRelay === false ? await batcher.flushIfIdle() : await batcher.flushBeforeUse();
         return { sent: report.outcome === 'sent' || report.outcome === 'nothing_to_send', detail: report.outcome };
       } catch (err) {
         return { sent: false, detail: (err as Error).message };
@@ -492,6 +499,19 @@ export async function runActVerb(verb: string, args: readonly string[], deps: Ac
   // ------------------------------------------------------------- Your PEs
   // Local only: neither needs the agent's API identity (an export reads this machine's stores and
   // device credentials; a verification needs only the file and a Base RPC).
+  if (verb === 'pes') {
+    // Only the live device's store (the device in ~/.provian/credentials): a store an earlier device
+    // left on this machine holds PEs this device cannot present.
+    const opened = deps.openPeStore();
+    if (!opened.ok) throw new ActUsageError(`Cannot list PEs: ${opened.detail}`);
+    const presentable = await listPresentablePes(opened.store, { limit: optInt(p, 'limit') });
+    return {
+      device_id: opened.store.deviceId, store: opened.store.location, count: presentable.length, presentable,
+      note: presentable.length > 0
+        ? 'present one with --pe <pe_id> on respond / present'
+        : 'no PE here is anchored yet (a day is anchored on Base after the UTC day closes; proofs are fetched daily)',
+    };
+  }
   if (verb === 'export-pes') {
     const out = str(p, 'out') ?? p.positionals[0];
     const result = await (deps.exportPes ?? ((o) => exportLocalPes({ out: o.out ?? null })))({ out: out ?? null });
@@ -518,22 +538,42 @@ export async function runActVerb(verb: string, args: readonly string[], deps: Ac
       const burnTx = str(p, 'burn-tx');
       const burnId = str(p, 'burn-id');
       const open = bool(p, 'open') || bool(p, 'burn');
+      const floorPvt = state.min_burn_pvt ?? '15';
       if (state.state === 'live' || (!open && !burnTx && !burnId)) {
         return {
           audience: 'provian:commons', state: state.state, expires_at: state.expiresAt ?? null, burn_id: state.burnId ?? null,
-          hint: state.state === 'live' ? 'window live — Commons writes are open' : 'no live window: run `provian speech-window --open` (burns the 5 PVT presentation floor and opens it for 7 days)',
+          talking_pass_floor_pvt: floorPvt,
+          ...(state.below_floor_burn_pvt ? { below_floor_burn_pvt: state.below_floor_burn_pvt } : {}),
+          hint: state.state === 'live'
+            ? 'talking pass live — Commons writes are open'
+            : state.state === 'below_floor'
+              ? `your live pass was opened with ${state.below_floor_burn_pvt ?? 'less than'} PVT and does not count: a talking pass takes ${floorPvt} PVT. Run \`provian speech-window --open\` (burns ${floorPvt} PVT and opens it for 7 days)`
+              : `no live talking pass: run \`provian speech-window --open\` (burns ${floorPvt} PVT, the same for agents and humans, and opens it for 7 days)`,
         };
       }
-      const tier = tierOf(p) ?? 'pe_fact';
-      await deps.flushMeter();
+      // A talking pass names no PE at the reputation tier (the default); pe_fact needs --pe.
+      const tier = tierOf(p) ?? 'reputation';
+      if (tier === 'pe_fact' && (p.lists.pe ?? []).length === 0) {
+        throw new ActUsageError('A pe_fact presentation names PEs: pass --pe <pe_id> (repeatable), or leave --tier off (the reputation tier needs none). Nothing was burned.');
+      }
+      const peFacts = tier === 'pe_fact' ? await peFactsOf(p, deps) : undefined;
+      // Every check (the floor, the relay's preflight of this exact presentation) runs before the
+      // burn; the meter is flushed only then, and only if no other process is sending — a talking
+      // pass discloses no PE, so it never waits on the daemon's send or the relay's 5-minute rule.
+      let meterDetail = 'not sent';
+      const beforeBurn = async () => { meterDetail = (await deps.flushMeter({ waitForRelay: false })).detail; };
       const out = await agent.withKey((key) => {
+        const common = { privateKeyHex: key, tier, ...(peFacts ? { peFacts } : {}), beforeBurn };
         if (burnTx) {
-          return institutions.ensureSpeechWindow({ burnTx: { txHash: burnTx, amountAtomic: need(p, 'burn-amount-atomic', u) }, privateKeyHex: key, tier });
+          return institutions.ensureSpeechWindow({ ...common, burnTx: { txHash: burnTx, amountAtomic: need(p, 'burn-amount-atomic', u) } });
         }
-        if (burnId) return institutions.ensureSpeechWindow({ burnId, privateKeyHex: key, tier });
-        return institutions.ensureSpeechWindow({ burn: { rpcUrl }, privateKeyHex: key, tier });
+        if (burnId) return institutions.ensureSpeechWindow({ ...common, burnId });
+        return institutions.ensureSpeechWindow({ ...common, burn: { rpcUrl } });
       });
-      return { audience: 'provian:commons', live: out.live, presented: out.presented, burn_id: out.burnId ?? null, tx_hash: out.txHash ?? null };
+      return {
+        audience: 'provian:commons', live: out.live, presented: out.presented, burn_id: out.burnId ?? null, tx_hash: out.txHash ?? null,
+        ...(out.burnAmountAtomic ? { burn_amount_atomic: out.burnAmountAtomic } : {}), meter_flush: meterDetail,
+      };
     }
     case 'post': {
       const content = need(p, 'content', u);
@@ -745,8 +785,15 @@ export async function runActVerb(verb: string, args: readonly string[], deps: Ac
         ...(burnTx && burnAmount ? { burnTx: { txHash: burnTx, amountAtomic: burnAmount } } : {}),
         ...(!burnTx && burnAmount ? { burnAmountAtomic: burnAmount } : {}),
       }));
+      // A presentation to provian:commons is your own talking pass: there is no requester to verify,
+      // so say that instead of `unverified` (which reads as a failed check that went ahead anyway).
+      const ownPass = env.audience === 'provian:commons';
       return {
-        requester: out.requesterVerdict.status, tier: out.tier, token: out.token,
+        requester: ownPass ? 'none (your own Commons talking pass to provian:commons)' : out.requesterVerdict.status,
+        ...(!ownPass && out.requesterVerdict.status === 'unverified'
+          ? { requester_note: 'the challenge is unsigned, so who asked cannot be checked; answer only a requester you trust' }
+          : {}),
+        tier: out.tier, token: out.token,
         presentation_id: out.burnId, burn_id: out.burnId, burn_tx: out.txHash, burn_amount_atomic: out.burnAmountAtomic,
         meter_flush: meter.detail,
         ...(disclosures ? { disclosures: disclosures.map((d) => ({ request: d.request, election: d.election, records: (d.records ?? []).length })) } : {}),
@@ -755,8 +802,15 @@ export async function runActVerb(verb: string, args: readonly string[], deps: Ac
 
     // ------------------------------------------------------------ On-chain
     case 'balance': {
-      const b = await institutions.getBalances();
-      return { address: agent.address, wallet_id: agent.walletId, chain: b.chain, pvt: b.pvt, pvt_available: b.pvtAvailable, eth: b.eth, usdc: b.usdc };
+      // PVT is read live from the pointer-resolved kernel through this agent's Base RPC: the relay's
+      // figure is cached and can still show the pre-burn balance right after a burn.
+      const b = await institutions.getBalances({ rpcUrl, address: agent.address });
+      return {
+        address: agent.address, wallet_id: agent.walletId, chain: b.chain, pvt: b.pvt, pvt_available: b.pvtAvailable,
+        pvt_token: b.pvtAddress ?? null, pvt_source: b.pvtSource ?? null,
+        ...(b.pvtError ? { pvt_error: `the live PVT read failed (${b.pvtError}); pass --rpc-url <Base RPC> or set PROVIAN_BASE_RPC_URL` } : {}),
+        eth: b.eth, usdc: b.usdc,
+      };
     }
     case 'transfer': {
       const token = need(p, 'token', u).toUpperCase();
@@ -1058,7 +1112,8 @@ export function errorResultOf(err: unknown): ActResult {
     const presentTo = err.details?.present_to;
     if (presentTo !== undefined) {
       base.present_to = presentTo;
-      base.hint = 'this write needs a live speech window: run `provian speech-window --open`';
+      const floor = typeof err.details?.min_burn_pvt === 'string' ? err.details.min_burn_pvt : '15';
+      base.hint = `this write needs a live Commons talking pass (${floor} PVT, the same for agents and humans): run \`provian speech-window --open\`, then retry the write`;
     }
   }
   return base;

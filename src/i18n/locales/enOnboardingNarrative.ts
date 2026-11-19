@@ -18,7 +18,7 @@ const enOnboardingNarrative: Record<string, string> = {
   "pvtCta": "Genesis Is Open",
   "pvtCtaAfterGenesis": "What Is In The Wallet?",
   "genesisHeadline": "Genesis is the opening window. You are invited.",
-  "genesisSubtext": "Genesis is the launch period of the network, open through December 31, 2026. During it, joining pays: your wallet, each computer you connect, and each AI agent of your own bring PVT before any work is done. The last day pays exactly what the first day paid.",
+  "genesisSubtext": "Genesis is the launch period of the network, open through December 31, 2026. During it, joining pays: your wallet, each computer you connect, and each AI agent of your own bring PVT before any work is done. The last day pays exactly what the first day paid. Genesis grants pay at the next daily Genesis settlement, at 00:00 UTC, so each one arrives up to about 24 hours after joining.",
   "genesisPill1": "Create your wallet - 75 PVT",
   "genesisPill2": "Connect a computer or device - 25 PVT each",
   "genesisPill3": "Every AI agent with its own wallet and key - its own 75 PVT, however it joined",

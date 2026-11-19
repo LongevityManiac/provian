@@ -134,3 +134,45 @@ describe('canonical nonce consumer classification', () => {
     expect(queued.nonce).toBe(1); expect(c.wire.map(a => a.nonce)).toEqual([0, 1]);
   });
 });
+
+/**
+ * A mined burn never stays listed as in flight. The pattern an agent hit: an old burn (here nonce 0)
+ * was mined and settled; another wallet tool then used the next nonce outside this journal, so the
+ * chain nonce moved past it; a later presentation was killed before it signed. The signer journal is
+ * what a person (or a resumed run) reads as "in flight" — it must not still name the old mined burn.
+ * RED control (journal reconciled only when a new transaction is signed): the first test's
+ * `attempts` still lists the old burn at nonce 0 after the killed run.
+ */
+describe('the signer journal is reconciled against the chain nonce', () => {
+  it('a killed run leaves no mined, settled burn listed as the in-flight attempt; it is never resent', async () => {
+    const c = chain(), m = memory(), runtime = c.rig(m.store);
+    const old = await sendChainOperation(runtime, KEY, 'old-burn-50', CALL, prepare);
+    c.mine(old);
+    const outside = { ...runtime, nonce: async () => 2 }; // nonce 1 used by a transaction outside this journal
+    await expect(sendChainOperation(outside, KEY, 'killed-presentation', CALL, async () => { throw new Error('process killed'); }))
+      .rejects.toThrow('process killed');
+    const index = m.docs.get(KEY)!;
+    expect(index.attempts.map(a => a.nonce)).toEqual([]);
+    // The old burn's own record still holds its exact bytes, settled; nothing re-sent it.
+    const oldDoc = m.docs.get(`${KEY}_old-burn-50`)!;
+    expect(oldDoc.operation?.state).toBe('submitted');
+    expect(oldDoc.attempts.map(a => a.hash)).toEqual([old.hash]);
+    expect(c.wire.map(a => a.hash)).toEqual([old.hash]);
+    // The next burn signs at the chain's nonce and is the only attempt the journal lists.
+    const next = await sendChainOperation(outside, KEY, 'next-burn', CALL, prepare);
+    expect(next.nonce).toBe(2);
+    expect(m.docs.get(KEY)!.attempts.map(a => [a.intent, a.nonce])).toEqual([['next-burn', 2]]);
+    expect(c.wire.map(a => a.nonce)).toEqual([0, 2]);
+  });
+
+  it('guard kept: an unresolved earlier operation below the chain nonce stays listed and still blocks a blind new one', async () => {
+    const c = chain(), m = memory(), runtime = c.rig(m.store);
+    await expect(sendChainOperation({ ...runtime, broadcast: async a => { c.wire.push(a); throw new Error('lost response'); },
+      included: async () => false }, KEY, 'unresolved', CALL, prepare)).rejects.toMatchObject({ code: 'SUBMISSION_UNCERTAIN' });
+    c.mine(c.wire[0]);
+    await expect(sendChainOperation({ ...runtime, nonce: async () => 2 }, KEY, 'blind-retry', CALL, prepare))
+      .rejects.toMatchObject({ code: 'SUBMISSION_UNCERTAIN', operationId: 'unresolved' });
+    expect(m.docs.get(KEY)!.attempts.map(a => a.intent)).toEqual(['unresolved']);
+    expect(c.wire).toHaveLength(1);
+  });
+});
