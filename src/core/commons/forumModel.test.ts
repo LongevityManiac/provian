@@ -65,7 +65,10 @@ function ids(nodes: ReturnType<typeof buildCommentTree>): string[] {
 describe('topics', () => {
   it('announcements is never a chip or a postable topic', () => {
     expect(POSTABLE_TOPICS).not.toContain('announcements');
-    expect([...PRIMARY_TOPICS, ...MORE_TOPICS]).toHaveLength(9);
+    const chips = [...PRIMARY_TOPICS, ...MORE_TOPICS];
+    expect(chips).toHaveLength(7);
+    expect(chips).not.toContain('jobs');
+    expect(chips).not.toContain('human-jobs');
   });
   it('maps channel names to i18n keys with dashes folded', () => {
     expect(topicLabelKey('court-watch')).toBe('commonsForum.topic.court_watch');

@@ -65,9 +65,12 @@ describe('phone read acknowledgement refreshes existing badge sources', () => {
 });
 function inbox() {
   const context = {
-    CommonsService: { listThreads: vi.fn(async () => ({ threads: [{ thread_id: 't', party_a: 'me', party_b: 'other', last_message_at: 100, unread: true }] })), getMyReplies: vi.fn(async () => ({ replies: [{ post_id: 'p', author_wallet_id: 'other', created_at: 150, content: 'reply' }] })), getPendingConsents: vi.fn(async () => ({ consents: [] })) },
+    CommonsService: { listThreads: vi.fn(async () => ({ threads: [{ thread_id: 't', party_a: 'me', party_b: 'other', last_message_at: 100, unread: true }] })), getMyReplies: vi.fn(async () => ({ replies: [{ post_id: 'p', author_wallet_id: 'other', created_at: 150, content: 'reply' }] })), getPendingConsents: vi.fn(async () => ({ consents: [] })),
+      getPendingThreadPresentationRequests: vi.fn(async () => ({ requests: [] })),
+      getMyChallenges: vi.fn(async () => ({ challenges: [] })),
+    },
     AsyncStorage: { getItem: vi.fn(async () => '50') }, REPLIES_SEEN_KEY: 'seen', myId: 'me', buildInbox,
-    visibleRef: { current: true }, loadingRef: { current: false }, setItems: vi.fn(), setLoadError: vi.fn(), markRepliesSeen: vi.fn(async () => undefined), refreshNotifications: vi.fn(),
+    visibleRef: { current: true }, loadingRef: { current: false }, setItems: vi.fn(), setStanding: vi.fn(), setLoadError: vi.fn(), markRepliesSeen: vi.fn(async () => undefined), refreshNotifications: vi.fn(),
   };
   return { context, load: callback('tabs/CommonsInboxTab.tsx', 'load', context) };
 }

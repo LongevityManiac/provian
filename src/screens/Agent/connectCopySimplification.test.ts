@@ -89,8 +89,8 @@ export function agentPathViolations(src: string): string[] {
   const path = componentSource(src, 'AgentPath');
   const ready = path.indexOf("state === 'ready' && token && !isExpired");
   const order = [
-    "t('connectAgent.oneCommandLabel')", "t('connectAgent.agentSendLine')", "t('connectAgent.yourCode')",
-    "t('connectAgent.agentCodeHint')", "t('connectAgent.agentHostedLine')", "t('connectAgent.waitingTitle')", '<DetailsSection',
+    "t('connectAgent.oneCommandLabel')", "t('overhaul.giveAgentInstruction')", "t('overhaul.waitingAgent')",
+    '<DetailsSection', "t('connectAgent.yourCode')", "t('connectAgent.agentCodeHint')", "t('connectAgent.agentHostedLine')",
   ];
   const out: string[] = [];
   let last = ready;
@@ -136,7 +136,7 @@ describe('Connect copy simplification ', () => {
     `;
     expect(chooserViolations(planted)).toEqual(['chooser: intro paragraph', 'chooser: "let an agent invite you" card']);
     const agent = agentPathViolations(planted);
-    expect(agent.some((v) => v.includes('agentSendLine'))).toBe(true);
+    expect(agent.some((v) => v.includes('giveAgentInstruction'))).toBe(true);
     expect(agent.some((v) => v.includes('<DetailsSection'))).toBe(true);
     expect(agent).toContain('agent path: AgentSetupSummary is visible copy, not Details');
   });
@@ -145,7 +145,7 @@ describe('Connect copy simplification ', () => {
     expect(chooserViolations(screenSrc)).toEqual([]);
   });
 
-  it('the agent path shows the command, the one line, the code with its sentence, the hosted line, the closing card, then Details', () => {
+  it('the agent path shows one command and its live state, then keeps alternate setup under Details', () => {
     expect(agentPathViolations(screenSrc)).toEqual([]);
   });
 

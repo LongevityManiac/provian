@@ -26,7 +26,6 @@ import { COLORS, SPACING, BORDER_RADIUS, GRADIENTS } from '../../constants/theme
 import { shortAddress } from '../../utils/shortAddress';
 import useCommonsStore from '../../store/commonsStore';
 import * as CommonsService from '../../core/commons/CommonsService';
-import { describePredicate } from '../../core/commons/predicatePicker';
 import type { ThreadDocument, ThreadMessage, ThreadPresentationRequest } from '../../core/commons/CommonsService';
 import { viewThreadAttachment, viewThreadBody } from '../../core/commons/threadMessageView';
 import { getMessageKeyPair, sealThreadMessage, openThreadMessage, cachedMessageKeyPair } from '../../core/commons/threadCrypto';
@@ -357,7 +356,7 @@ export default function CommonsThread({ navigation, route }: Props) {
       return (
         <View style={styles.attach}>
           <Text style={styles.attachTitle}>{view.mine ? t('commons.threadYouAsked') : t('commons.threadTheyAsk')}</Text>
-          {view.predicates.map((p, i) => <Text key={i} style={styles.attachLine}>{describePredicate(p, t)}</Text>)}
+
           {view.outcome !== null && <Text style={[styles.attachLine, { color: view.outcome === 'valid' ? COLORS.success : COLORS.error }]}>{view.outcome === 'valid' ? t('commons.threadVerdictValid') : t('commons.threadVerdictInvalid')}</Text>}
         </View>
       );

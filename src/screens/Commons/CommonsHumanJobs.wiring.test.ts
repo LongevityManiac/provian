@@ -81,7 +81,7 @@ describe('CommonsHumanJobs — list screen (C7 / C8)', () => {
 
 describe('hiring in all four directions from the app', () => {
   it('Apply shows only when the job hires people; otherwise the card says why', () => {
-    expect(CARD).toContain('eligibility.canApply ?');
+    expect(CARD).toContain("eligibility.canApply || (eligibility.reason === 'not_member' && seeking === 'human' && job.status === 'open')");
     expect(CARD).toContain('applyBlockText(eligibility.reason, t)');
   });
 
@@ -98,7 +98,8 @@ describe('hiring in all four directions from the app', () => {
   });
 
   it('apply handles the talking pass (428)', () => {
-    expect(APPLY).toContain('offerSpeechWindow(err, navigation, t)');
+    expect(APPLY).toContain("confirmCommonsWrite(t('commonsHumanJobs.apply')");
+    expect(APPLY).toMatch(/applyForHumanJob\(job\.job_id, .*biometricAction\)/);
   });
 
   it('accept routes a 428 to a presentation to the APPLICANT that then hires them', () => {

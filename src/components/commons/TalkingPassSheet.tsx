@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SPACING, BORDER_RADIUS, TYPE_SCALE } from '../../constants/theme';
-import { InfoModal } from '../InfoModal';
 import { openTalkingPass, SPEECH_WINDOW_BURN_PVT } from '../../core/commons/speechGate';
 import { presentTalkingPass, registerTalkingPassPresenter, type TalkingPassRequest } from '../../core/commons/talkingPassBus';
 import {
@@ -44,7 +43,6 @@ interface SheetProps {
 
 export function TalkingPassSheet({ visible, audience, onStart, onClose, onDismiss }: SheetProps) {
   const { t } = useTranslation();
-  const [showHow, setShowHow] = useState(false);
   const pvt = SPEECH_WINDOW_BURN_PVT;
   const isCommons = audience === COMMONS_AUDIENCE;
   return (
@@ -56,20 +54,15 @@ export function TalkingPassSheet({ visible, audience, onStart, onClose, onDismis
           <View style={styles.iconWrap}>
             <Ionicons name="chatbubbles" size={24} color={COLORS.primary} />
           </View>
-          <Text style={styles.title}>{isCommons ? t('commonsForum.pass.title') : t('commonsForum.pass.titleTo')}</Text>
-          <Text style={styles.body}>{isCommons ? t('commonsForum.pass.body', { pvt }) : t('commonsForum.pass.bodyTo', { pvt })}</Text>
-          <TouchableOpacity onPress={() => setShowHow(true)} accessibilityRole="button" style={styles.howLink} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="information-circle-outline" size={16} color={COLORS.primaryLight} />
-            <Text style={styles.howText}>{t('commonsForum.pass.howLink')}</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>{t('overhaul.confirmCommonsAction')}</Text>
+          <Text style={styles.body}>{t(isCommons ? 'overhaul.commonsPrice' : 'overhaul.commonsPriceIfNeeded', { pvt })}</Text>
           <TouchableOpacity style={styles.primaryBtn} onPress={onStart} accessibilityRole="button">
-            <Text style={styles.primaryText}>{t('commonsForum.pass.start', { pvt })}</Text>
+            <Text style={styles.primaryText}>{t('common.continue')} · {pvt} PVT</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryBtn} onPress={onClose} accessibilityRole="button">
             <Text style={styles.secondaryText}>{t('commonsForum.pass.notNow')}</Text>
           </TouchableOpacity>
         </View>
-        <InfoModal visible={showHow} onClose={() => setShowHow(false)} title={t('commonsForum.pass.howTitle')} body={t('commonsForum.pass.howBody', { pvt })} />
       </View>
     </Modal>
   );

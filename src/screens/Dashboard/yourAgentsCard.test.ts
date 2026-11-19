@@ -17,16 +17,10 @@ describe('"Your Agents" card', () => {
         }
     });
 
-    it('the Wallet home renders the card from the agents loader, and its read reports failure', () => {
-        const src = readFileSync(resolve(__dirname, 'DashboardScreen.tsx'), 'utf8');
-        const start = src.indexOf('const renderYourAgentsCard = ');
-        expect(start).toBeGreaterThanOrEqual(0);
-        const card = src.slice(start, src.indexOf("t('yourAgents.connectTitle')", start));
-        expect(card).toMatch(/const mode = yourAgentsCardMode\(agents\.phase, linkedAgents\.length\);/);
-        // The connect entry is reached only in 'connect' mode — never by an empty list alone.
-        expect(card).toMatch(/if \(mode === 'connect'\) \{/);
-        expect(card).not.toMatch(/if \(linkedAgents\.length === 0\)/);
-        // A failed read must throw, not resolve to an empty list that would read as "no agents".
-        expect(src).toMatch(/getLinkedAgents\(\{ throwOnError: true \}\)/);
+    it('Earn only enables the agent connector after its connection status is known', () => {
+        const src = readFileSync(resolve(__dirname, '../Earn/EarnHubScreen.tsx'), 'utf8');
+        expect(src).toContain("getLinkedAgentIdentities({ throwOnError: true })");
+        expect(src).toContain('disabled={loading}');
+        expect(src).toContain("navigation.navigate('AgentHub')");
     });
 });

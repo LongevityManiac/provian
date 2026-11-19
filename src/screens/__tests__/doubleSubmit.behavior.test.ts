@@ -94,6 +94,8 @@ describe('Commons thread: Send', () => {
         const c = {
             ...scope,
             sending: false, sendInFlight: ref(false), threadId: 'thread', myId: 'me', otherId: 'them', otherName: 'Them', ownAgent: null,
+            confirmCommonsWrite: approval.request,
+            useCommonsStore: { getState: () => ({ profile: { wallet_id: 'me' } }) },
             ensureKeys: vi.fn(async () => ({ me: 'k1', them: 'k2' })),
             cachedMessageKeyPair: () => null,
             signedThreadPlaintext: async (body: string) => body,

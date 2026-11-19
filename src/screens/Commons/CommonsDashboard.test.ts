@@ -21,9 +21,9 @@ const read = (rel: string) => readFileSync(resolve(__dirname, rel), 'utf8');
 const SRC = read('CommonsDashboard.tsx');
 const PEOPLE = read('tabs/CommonsPeopleTab.tsx');
 const INBOX = read('tabs/CommonsInboxTab.tsx');
-const ABOUT = read('tabs/CommonsAboutSheet.tsx');
 const LAYOUT = read('tabs/layout.ts');
 const WORK = read('tabs/CommonsWorkTab.tsx');
+const HOW = read('CommonsHowItWorksScreen.tsx');
 
 describe('Commons tab - four tabs across the top ', () => {
     it('declares exactly Feed, Work, People, Inbox, with Feed first (the default)', () => {
@@ -105,16 +105,10 @@ describe('Commons tab - operator announcements', () => {
 
 describe('Commons tab - About sheet keeps the dashboard content (not-open-yet row)', () => {
     it('names the SAME institution rows as the Work-tab cards, and keeps the activity list', () => {
-        expect(ABOUT).toContain('selectInstitutionRows(institutions)');
-        expect(ABOUT).toContain("commonsDashboard.notOpenYet");
-        expect(ABOUT).toContain('commonsDashboard.recentActivity');
-        // rows are chosen by id, never by audience (the Market is audience 'both').
-        expect(ABOUT).not.toContain("i.audience === 'agent'");
-    });
-
-    it('contains no retired Research or Standards institution', () => {
-        expect(ABOUT).not.toContain('research');
-        expect(ABOUT).not.toContain('standards');
+        expect(HOW).toContain('selectInstitutionRows([])');
+        expect(HOW).toContain("commonsDashboard.notOpenYet");
+        expect(HOW).toContain('getNetworkStats()');
+        expect(HOW).not.toContain('glossary');
     });
 });
 
@@ -151,11 +145,10 @@ describe('Commons › Work - institution cards (rows, restored)', () => {
             expect(c.screen, c.id).toBeNull();
             expect(c.notOpenBodyKey, c.id).not.toBeNull();
         }
-        // The Work tab has no non-pressable tile wrapper left.
-        expect(WORK).not.toMatch(/<View\s+key=\{c\.id\}/);
-        expect(WORK).toContain('c.notOpenBodyKey');
-        const dash = (en as { commonsDashboard: Record<string, string> }).commonsDashboard;
-        for (const c of rows.notOpen) expect(typeof dash[c.notOpenBodyKey!.replace('commonsDashboard.', '')], c.id).toBe('string');
+        expect(HOW).toContain('screen ? () => navigation.navigate(screen) : undefined');
+        for (const card of [...rows.live, ...rows.notOpen]) {
+            expect(typeof en.overhaul.institution[card.id], card.id).toBe('string');
+        }
     });
 
     it('the Escrow and Bonds screens attach the wallet token (pre-launch the gate 404s a tokenless read)', () => {
@@ -174,11 +167,13 @@ describe('Commons › Work - institution cards (rows, restored)', () => {
         }
     });
 
-    it('the Work tab renders both rows at its top', () => {
-        expect(WORK).toContain('selectInstitutionRows(catalog)');
-        expect(WORK).toContain('rows.live.map');
-        expect(WORK).toContain('rows.notOpen.map');
-        expect(WORK).toContain("t('commonsDashboard.institutionsLive')");
+    it('Work starts on the job list and the institutions have their own page', () => {
+        expect(WORK).toContain("useState<'jobs' | 'asks'>('jobs')");
+        expect(WORK).toContain('<CommonsHumanJobs navigation=');
+        expect(WORK).not.toContain('rows.live.map');
+        expect(HOW).toContain('rows.live.map');
+        expect(HOW).toContain('rows.notOpen.map');
+        expect(SRC).toContain("navigation.navigate('CommonsHowItWorks')");
     });
 });
 

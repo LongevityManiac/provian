@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import ts from 'typescript';
 
-const screen = ts.createSourceFile('dashboard.tsx', readFileSync('src/screens/Dashboard/DashboardScreen.tsx', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+const screen = ts.createSourceFile('dashboard.tsx', readFileSync('src/screens/Earn/EarnHubScreen.tsx', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 const card = ts.createSourceFile('card.tsx', readFileSync('src/components/ParticipationCard.tsx', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 function nodes(ast: ts.SourceFile): ts.Node[] {
     const out: ts.Node[] = [];
@@ -14,14 +14,14 @@ function initializer(ast: ts.SourceFile, name: string): string {
     if (!node || !ts.isVariableDeclaration(node) || !node.initializer) throw new Error(`Missing ${name}`);
     return node.initializer.getText(ast);
 }
-describe('Wallet participation card', () => {
+describe('Earn participation card', () => {
     it('the card shows the error only in the failed phase', () => {
         const element = nodes(screen).find(n => ts.isJsxSelfClosingElement(n) && n.tagName.getText(screen) === 'ParticipationCard') as ts.JsxSelfClosingElement;
         const attr = (name: string) => (element.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(screen) === name) as ts.JsxAttribute | undefined)?.initializer?.getText(screen);
         expect(attr('loadError')).toBe("{participation.phase === 'failed'}");
         expect(attr('pvtAccrual')).toBe('{participation.value}');
     });
-    it('binds pull refresh and the card retry to the actual shared loader', () => {
+    it('binds pull refresh and the card retry to the actual shared loader', async () => {
         for (const [tag, prop] of [['RefreshControl', 'onRefresh'], ['ParticipationCard', 'onRetry']]) {
             const matches = nodes(screen).filter(n => ts.isJsxSelfClosingElement(n) && n.tagName.getText(screen) === tag);
             expect(matches).toHaveLength(1);
@@ -29,13 +29,14 @@ describe('Wallet participation card', () => {
             const attr = element.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(screen) === prop) as ts.JsxAttribute | undefined;
             if (tag === 'ParticipationCard') expect(attr?.initializer?.getText(screen)).toBe('{loadParticipation}');
             else {
-                const expression = (attr?.initializer as ts.JsxExpression)?.expression;
-                if (!expression) throw Error('Missing pull refresh handler');
-                const participation = vi.fn(), balances = vi.fn();
-                const handler = new Function('loadParticipation', 'refreshBalances', `return ${expression.getText(screen)}`)(participation, balances);
-                handler();
+                expect(attr?.initializer?.getText(screen)).toBe('{onRefresh}');
+                const participation = vi.fn(), connections = vi.fn(), refreshing = vi.fn();
+                const handler = new Function('useCallback', 'loadParticipation', 'loadData', 'setRefreshing',
+                    `return ${initializer(screen, 'onRefresh')}`)((callback: unknown) => callback, participation, connections, refreshing);
+                await handler();
                 expect(participation).toHaveBeenCalledOnce();
-                expect(balances).toHaveBeenCalledOnce();
+                expect(connections).toHaveBeenCalledOnce();
+                expect(refreshing.mock.calls).toEqual([[true], [false]]);
             }
         }
     });

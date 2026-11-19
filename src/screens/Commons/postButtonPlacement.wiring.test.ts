@@ -40,7 +40,9 @@ describe('Commons post buttons never float over a tab list', () => {
   });
 
   it('the tab boards render the inline button instead', () => {
-    expect(JOBS).toContain("<InlinePostButton label={t('commonsHome.postJob')} onPress={() => navigation.navigate('CommonsHumanJobsPost')}");
+    const workTab = readFileSync(resolve(__dirname, 'tabs/CommonsWorkTab.tsx'), 'utf8');
+    expect(workTab).toContain("navigation.navigate('CommonsHumanJobsPost')");
+    expect(workTab).toContain('embedded header={header}');
     expect(WANTS).toMatch(/\{profile && embedded && \(\s*<InlinePostButton label=\{t\('commonsHome\.postRequest'\)\} onPress=\{\(\) => setShowPost\(true\)\}/);
   });
 

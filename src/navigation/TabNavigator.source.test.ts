@@ -40,7 +40,7 @@ function selectedRoute(state: { index?: number; routes: readonly { name: string 
 describe('Daily entry preserves attention and every tab', () => {
     it('opens the wallet, which carries the existing attention bell', () => {
         expect(opensWallet(SRC)).toBe(true);
-        expect(SRC).toContain('component={DashboardScreen}');
+        expect(SRC).toContain('component={HomeScreen}');
         expect(SRC).toContain('tabBarBadge: attentionCount');
     });
 
@@ -56,7 +56,7 @@ describe('Daily entry preserves attention and every tab', () => {
         const router = TabRouter({ initialRouteName, backBehavior });
         const options = { routeNames, routeParamList: {}, routeGetIdList: {} };
         const initial = router.getInitialState(options);
-        expect(routeNames).toHaveLength(7);
+        expect(routeNames).toEqual(['WalletTab', 'AgentsTab', 'ChatTab', 'CommonsTab', 'PromisesTab']);
         expect(selectedRoute(initial)).toBe('WalletTab');
         expect(router.getStateForAction(initial, CommonActions.goBack(), options)).toBeNull();
         for (const name of routeNames) {
@@ -73,9 +73,10 @@ describe('Daily entry preserves attention and every tab', () => {
         expect(router.getStateForAction(initial, CommonActions.navigate('MissingTab'), options)).toBeNull();
         // RED: setting only initialRouteName silently falls back to firstRoute on Back.
         const legacy = TabRouter({ initialRouteName });
-        const legacyInitial = legacy.getInitialState(options);
-        const unwantedBack = legacy.getStateForAction(legacyInitial, CommonActions.goBack(), options);
-        expect(selectedRoute(unwantedBack)).toBe('VisionTab');
+        const otherOrder = { ...options, routeNames: [...routeNames.slice(1), routeNames[0]] };
+        const legacyInitial = legacy.getInitialState(otherOrder);
+        const unwantedBack = legacy.getStateForAction(legacyInitial, CommonActions.goBack(), otherOrder);
+        expect(selectedRoute(unwantedBack)).toBe('AgentsTab');
     });
 });
 
@@ -86,7 +87,7 @@ function findPressableGlyphs(source: string): string[] {
 
 /** The tab options blocks, one per registered tab. */
 function findTabOptions(source: string): string[] {
-    return Array.from(source.matchAll(/tabBarLabelKey:\s*'([^']+)'/g), (m) => m[1]);
+    return Array.from(source.matchAll(/label:\s*'((?:nav|overhaul)\.[^']+)'/g), (m) => m[1]);
 }
 
 describe('FloatingTabBar - touch target (negative control included)', () => {
@@ -134,17 +135,16 @@ describe('FloatingTabBar - labels are rendered and translated', () => {
         // Guards against the vacuous pass: a universally-quantified claim over
         // zero tabs would otherwise report green.
         expect(keys.length).toBeGreaterThan(0);
-        // Vision · Abundance · Wallet · Earn · Commons · Promises · Chat
-        expect(keys).toHaveLength(7);
+        expect(keys).toEqual(['overhaul.home', 'nav.earn', 'nav.chat', 'nav.commons', 'nav.promises']);
     });
 
     it('every tab label comes from an i18n key, never a hardcoded string', () => {
-        for (const k of keys) expect(k).toMatch(/^nav\./);
+        for (const k of keys) expect(k).toMatch(/^(?:nav|overhaul)\./);
         expect(SRC).not.toMatch(/tabBarLabel:\s*'/);
     });
 
     it('the label is actually rendered, not just declared in options', () => {
-        expect(SRC).toContain("const label = t(options.tabBarLabelKey as string)");
+        expect(SRC).toContain("const label = t(entry.label)");
         expect(SRC).toMatch(/style=\{\[tabStyles\.label,/);
     });
 

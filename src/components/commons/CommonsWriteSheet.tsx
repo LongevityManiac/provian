@@ -36,6 +36,7 @@ export async function confirmCommonsWrite<T>(
         const wallet = useWalletStore.getState().address;
         const profile = useCommonsStore.getState().profile;
         const context = profile ? null : await getJoinContext();
+        if (context?.already_joined) await useCommonsStore.getState().refreshMembership();
         const needsProfile = !profile && context?.already_joined !== true;
         const mayNeedSpeechWindow = options.mayNeedSpeechWindow !== false;
         const active = mayNeedSpeechWindow

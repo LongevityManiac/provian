@@ -31,6 +31,8 @@ import { invalidateForumFeed } from '../../components/commons/forum/ForumFeed';
 
 type Props = NativeStackScreenProps<AppParamList, 'CommonsCompose'>;
 
+const COMPOSE_TOPICS = POSTABLE_TOPICS.filter(topic => topic !== 'jobs' && topic !== 'human-jobs');
+
 export const TITLE_MAX = 200;
 export const BODY_MAX = 10_000;
 
@@ -53,7 +55,7 @@ export default function CommonsCompose({ navigation, route }: Props) {
   const { t } = useTranslation();
   const parentPostId = route.params?.parentPostId ?? null;
   const isReply = parentPostId !== null;
-  const initialChannel = route.params?.channel && POSTABLE_TOPICS.includes(route.params.channel) ? route.params.channel : 'general';
+  const initialChannel = route.params?.channel && COMPOSE_TOPICS.includes(route.params.channel) ? route.params.channel : 'general';
 
   const [channel, setChannel] = useState(initialChannel);
   const [title, setTitle] = useState('');
@@ -190,7 +192,7 @@ export default function CommonsCompose({ navigation, route }: Props) {
             <>
               <Text style={styles.label}>{t('commonsForum.compose.topic')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.topics}>
-                {POSTABLE_TOPICS.map((c) => {
+                {COMPOSE_TOPICS.map((c) => {
                   const active = c === channel;
                   return (
                     <TouchableOpacity
