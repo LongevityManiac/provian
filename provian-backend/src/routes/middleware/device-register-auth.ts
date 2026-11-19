@@ -32,6 +32,7 @@
  * NEVER console.log the token value or the inbound Authorization header (M6).
  */
 
+import { deterministicDeviceRegistrationIds } from '../../core/pvt/genesis-ingress';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createAgentAuthMiddleware } from './agent-auth';
@@ -182,6 +183,7 @@ export async function consumeHumanDeviceToken(
       expires_at?: number;
       user_id?: string;
       registration_id_sha256?: string;
+      computer_pairing?: boolean;
     } | undefined;
     if (!setupToken || setupToken.type !== 'device_registration') {
       return null;
@@ -199,6 +201,9 @@ export async function consumeHumanDeviceToken(
         used: true,
         used_at: Date.now(),
         registration_id_sha256: registrationIdHash,
+        ...(setupToken.computer_pairing === true ? {
+          pairing_device_id: deterministicDeviceRegistrationIds(setupToken.user_id, registrationId).deviceId,
+        } : {}),
       });
     }
     return { user_id: setupToken.user_id };

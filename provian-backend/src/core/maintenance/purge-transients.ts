@@ -52,6 +52,7 @@ export interface PurgeRule {
 export const TRANSIENT_PURGE_RULES: PurgeRule[] = [
   { collection: 'relay_requests', field: 'created_at', retentionMs: 30 * DAY_MS },
   { collection: 'connection_tokens', field: 'expires_at', retentionMs: 2 * DAY_MS },
+  { collection: 'computer_pairings', field: 'expires_at', retentionMs: 0 },
   { collection: 'setup_tokens', field: 'expires_at', retentionMs: 2 * DAY_MS },
   { collection: 'consumed_nonces', field: 'expires_at', retentionMs: 2 * DAY_MS },
   { collection: 'rate_limits', field: 'window_start', retentionMs: 2 * DAY_MS },

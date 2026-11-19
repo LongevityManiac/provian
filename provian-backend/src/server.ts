@@ -142,6 +142,7 @@ import { buildPeSchema } from './core/schema/pe-schema';
 import { createWalletPresentationRouter } from './routes/wallet-presentation';
 import { createDeviceOutputKeyRouter, createWalletOutputKeyHandler } from './routes/output-signing-keys';
 import { createSetupRouter } from './routes/setup';
+import { createComputerPairingRouter } from './routes/computer-pairing';
 import { createBootstrapRouter } from './routes/bootstrap';
 import { createWalletAttestationRouter } from './routes/wallet-attestation';
 import {
@@ -3942,6 +3943,11 @@ app.use('/v1/security', createScamListRouter({ cache, db }));
 
 // --- Device Registration Setup Tokens ---
 app.use('/v1/setup', authenticate, createSetupRouter({ db, cache }));
+app.use('/v1/computer-pairing', createComputerPairingRouter({
+  db,
+  authenticate,
+  checkRateLimitStrict: cache.checkRateLimitStrict.bind(cache),
+}));
 
 // Public discovery endpoints - must mount BEFORE the catch-all
 // `app.use('/v1', authenticate, ...)` below, otherwise they 401 even when
