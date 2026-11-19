@@ -246,7 +246,7 @@ describe('Connect-an-agent screen source', () => {
     it('the chooser has three options (agent, you, code host); a second computer is not one of them', () => {
         const chooser = src.slice(src.indexOf("{mode === 'choose' && ("), src.indexOf("{mode === 'codeHost' && ("));
         expect(chooser).toContain("openMode('agent')");
-        expect(chooser).toContain("openMode('device')");
+        expect(chooser).toContain("navigation.navigate('ComputerPairing')");
         expect(chooser).toContain("openMode('codeHost')");
         expect(chooser).not.toContain("openMode('agentDevice')");
         expect(chooser.match(/<PathCard/g)?.length).toBe(3);
