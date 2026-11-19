@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Invalidé",
       "hsNone": "Aucun handshake",
       "hsUnavailable": "Indisponible",
+      "hsBelowFloor": "Sous le seuil",
+      "hsBelowFloorBody": "Une présentation est en cours, mais sa combustion de {{pvt}} PVT est sous le seuil de {{floor}} PVT ; elle ne compte donc pas. Une nouvelle présentation de {{floor}} PVT l’ouvre.",
       "hsLiveBody": "Un handshake de présentation complété est en vigueur pour les actions passant par le rail.",
       "hsInvalidatedBody": "Fermé prématurément. Une nouvelle présentation le rouvre.",
       "hsInvalidatedBodyReason": "Fermé prématurément : {{reason}}. Une nouvelle présentation le rouvre.",

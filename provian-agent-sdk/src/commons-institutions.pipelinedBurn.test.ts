@@ -331,3 +331,22 @@ describe('an escrow or hire handshake burns 15 PVT too', () => {
     expect(calls.some((c) => c.url.includes('/present/preflight'))).toBe(false);
   });
 });
+
+describe('a pe_fact rail handshake still burns the 15 PVT floor, not its 5 PVT tier floor', () => {
+  it('burn without an amount at the pe_fact tier burns max(tier floor, pass floor) = 15 PVT', async () => {
+    const FLOORS = { floors: { pe_fact: { floor_atomic: '5000000000000000000' }, reputation: { floor_atomic: '15000000000000000000' } }, talking_pass: { audience: 'provian:commons', floor_atomic: '15000000000000000000', floor_pvt: '15' } };
+    let state = 'none';
+    const { institutions } = makeInstitutions({
+      [HANDSHAKE]: () => new Response(JSON.stringify({ state }), { status: 200 }),
+      [PRESENT]: () => { state = 'live'; return new Response(JSON.stringify(presentOk), { status: 200 }); },
+      'GET /v1/present/floor': FLOORS,
+    });
+    vi.spyOn(institutions as unknown as { preflightProofs: () => Promise<void> }, 'preflightProofs').mockResolvedValue(undefined);
+    const burnSpy = vi.spyOn(institutions, 'sendBurn').mockImplementation(fakeSendBurn);
+    await institutions.ensureRailHandshake({
+      counterparty: 'wallet_aw_applicant', privateKeyHex: KEY, burn: { rpcUrl: RPC }, tier: 'pe_fact',
+      peFacts: [{ peId: 'pe_1', envelopeHash: 'ab'.repeat(32) }],
+    });
+    expect(burnSpy).toHaveBeenCalledWith(expect.objectContaining({ amountAtomic: 15n * 10n ** 18n }));
+  });
+});

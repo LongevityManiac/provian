@@ -3262,6 +3262,8 @@
       "hsInvalidated": "無効化",
       "hsNone": "ハンドシェイクなし",
       "hsUnavailable": "利用不可",
+      "hsBelowFloor": "下限未満",
+      "hsBelowFloorBody": "提示は有効ですが、そのバーン {{pvt}} PVT は下限 {{floor}} PVT に満たないため、カウントされません。{{floor}} PVT の新しい提示で開きます。",
       "hsLiveBody": "レールを介したアクションに対して、完了した提示ハンドシェイクが有効です。",
       "hsInvalidatedBody": "早期に終了しました。新しい提示で再開できます。",
       "hsInvalidatedBodyReason": "早期に終了しました（{{reason}}）。新しい提示で再開できます。",

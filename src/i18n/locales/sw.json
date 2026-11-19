@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Imebatilishwa",
       "hsNone": "Hakuna handshake",
       "hsUnavailable": "Haipatikani",
+      "hsBelowFloor": "Chini ya kiwango cha chini",
+      "hsBelowFloorBody": "Wasilisho liko hai, lakini uchomaji wake wa PVT {{pvt}} uko chini ya kiwango cha chini cha PVT {{floor}}, kwa hiyo halihesabiki. Wasilisho jipya la PVT {{floor}} hulifungua.",
       "hsLiveBody": "Handshake ya wasilisho iliyokamilika inatumika kwa vitendo vinavyopitia reli.",
       "hsInvalidatedBody": "Imefungwa mapema. Wasilisho jipya huifungua tena.",
       "hsInvalidatedBodyReason": "Imefungwa mapema: {{reason}}. Wasilisho jipya huifungua tena.",

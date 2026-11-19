@@ -205,7 +205,7 @@ export default function PresentationRequesterScreen(): React.ReactElement {
     const [scanning, setScanning] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
     // HANDSHAKE STATE READ (Part C/C2) — a private counterparty read, on demand.
-    const [hsState, setHsState] = useState<{ role: string; state: string; reason?: string } | null>(null);
+    const [hsState, setHsState] = useState<{ role: string; state: string; reason?: string; belowPvt?: string; floorPvt?: string } | null>(null);
     const [hsLoading, setHsLoading] = useState(false);
 
     const checkHandshake = useCallback(async () => {
@@ -219,10 +219,13 @@ export default function PresentationRequesterScreen(): React.ReactElement {
             ]);
             const youToThem = t('trustLayer.requester.roleYouToThem');
             const themToYou = t('trustLayer.requester.roleThemToYou');
-            const live = mine.state === 'live' ? { role: youToThem, state: mine.state, reason: mine.reasonClass }
-                : theirs.state === 'live' ? { role: themToYou, state: theirs.state, reason: theirs.reasonClass }
-                : mine.state !== 'none' ? { role: youToThem, state: mine.state, reason: mine.reasonClass }
-                : { role: themToYou, state: theirs.state, reason: theirs.reasonClass };
+            const view = (role: string, st: typeof mine) => ({
+                role, state: st.state, reason: st.reasonClass, belowPvt: st.below_floor_burn_pvt, floorPvt: st.min_burn_pvt,
+            });
+            const live = mine.state === 'live' ? view(youToThem, mine)
+                : theirs.state === 'live' ? view(themToYou, theirs)
+                : mine.state !== 'none' ? view(youToThem, mine)
+                : view(themToYou, theirs);
             setHsState(live);
         } catch (e) {
             setHsState({ role: '', state: 'error', reason: e instanceof Error ? e.message : 'read_failed' });
@@ -423,6 +426,7 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                                         : hsState.state === 'lapsed' ? t('trustLayer.requester.hsLapsed')
                                         : hsState.state === 'invalidated' ? t('trustLayer.requester.hsInvalidated')
                                         : hsState.state === 'none' ? t('trustLayer.requester.hsNone')
+                                        : hsState.state === 'below_floor' ? t('trustLayer.requester.hsBelowFloor')
                                         : t('trustLayer.requester.hsUnavailable')}
                                     {hsState.role ? `  ·  ${hsState.role}` : ''}
                                 </Text>
@@ -431,6 +435,7 @@ export default function PresentationRequesterScreen(): React.ReactElement {
                                         : hsState.state === 'invalidated' ? (hsState.reason ? t('trustLayer.requester.hsInvalidatedBodyReason', { reason: hsState.reason }) : t('trustLayer.requester.hsInvalidatedBody'))
                                         : hsState.state === 'lapsed' ? t('trustLayer.requester.hsLapsedBody')
                                         : hsState.state === 'none' ? t('trustLayer.requester.hsNoneBody')
+                                        : hsState.state === 'below_floor' ? t('trustLayer.requester.hsBelowFloorBody', { pvt: hsState.belowPvt ?? '?', floor: hsState.floorPvt ?? '15' })
                                         : (hsState.reason ?? t('trustLayer.requester.hsReadFailed'))}
                                 </Text>
                             </View>

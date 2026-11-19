@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Dibatalkan",
       "hsNone": "Tidak ada handshake",
       "hsUnavailable": "Tidak tersedia",
+      "hsBelowFloor": "Di bawah batas",
+      "hsBelowFloorBody": "Sebuah presentasi masih berlaku, tetapi pembakaran {{pvt}} PVT-nya di bawah batas {{floor}} PVT, jadi tidak dihitung. Presentasi baru sebesar {{floor}} PVT membukanya.",
       "hsLiveBody": "Handshake presentasi yang selesai sedang berlaku untuk tindakan yang dimediasi rel.",
       "hsInvalidatedBody": "Ditutup lebih awal. Presentasi baru membukanya kembali.",
       "hsInvalidatedBodyReason": "Ditutup lebih awal: {{reason}}. Presentasi baru membukanya kembali.",

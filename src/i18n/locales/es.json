@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Invalidado",
       "hsNone": "Sin handshake",
       "hsUnavailable": "No disponible",
+      "hsBelowFloor": "Bajo el mínimo",
+      "hsBelowFloorBody": "Hay una presentación vigente, pero su quema de {{pvt}} PVT está por debajo del mínimo de {{floor}} PVT, así que no cuenta. Una nueva presentación de {{floor}} PVT lo abre.",
       "hsLiveBody": "Hay un handshake de presentación completado en vigor para las acciones mediadas por el riel.",
       "hsInvalidatedBody": "Cerrado antes de tiempo. Una nueva presentación lo reabre.",
       "hsInvalidatedBodyReason": "Cerrado antes de tiempo: {{reason}}. Una nueva presentación lo reabre.",

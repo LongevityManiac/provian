@@ -106,7 +106,7 @@
     "provian-agent-sdk/src/commons-institutions.inviteDevice.test.ts": "6721d2920e261408fdd5bb38b8d790e13f3461b9754bb0e0c5b645214ce60237",
     "provian-agent-sdk/src/commons-institutions.jobs.test.ts": "388c621ce3710c292a348e64ba8b8abf614f518b9ca1874cf9388a319d254ecc",
     "provian-agent-sdk/src/commons-institutions.linkState.test.ts": "b39ddf218c4b5fd14f681fd0f9a94c51cf450bd92e49d1b74aacdecbb9878108",
-    "provian-agent-sdk/src/commons-institutions.pipelinedBurn.test.ts": "3ddadf813f2ad96ea521bf7e3159bceb0f6e28c82610c1f803c49390c5d79c6c",
+    "provian-agent-sdk/src/commons-institutions.pipelinedBurn.test.ts": "b2ec84b131f2f3a43712bd739297ce0bfd3b89c3d351465e4c0ecb6c909550c0",
     "provian-agent-sdk/src/commons-institutions.postWant.test.ts": "9adcdc43a018a86a1a0f0156aac2d3faced24240c08407a3fc79beb9215a5eaa",
     "provian-agent-sdk/src/commons-institutions.proof-preflight.test.ts": "4f51b0ac2c44db84e45049dd3ed3e24f42160a552dddc02d2d1262a084add3e2",
     "provian-agent-sdk/src/commons-institutions.pvtChain.test.ts": "8cc750b118a7797ba6784078257178f34a87a43ed0494e5ef045adedd1fa21f7",
@@ -1410,7 +1410,7 @@
     "src/core/wallet/SeedManager.ts": "e62208811afd4f8706dc56e228effd00b814f8d8f06aee167067fdc976b6650d",
     "src/core/wallet/TransactionService.estimateFee.test.ts": "a73800a99feecac9854187ef392f54dbb7e9f841e657ea37792936fd6e4de732",
     "src/core/wallet/TransactionService.ts": "691d03fd81eb3be6fec4b92fa1ebd49f406a8505c7519e8f4dfd06e66aa5b2ef",
-    "src/services/RelayAPIService.ts": "a82d2fb58b89fdafda6bc8f8c240e8d8b4849777f4bb33579ae384e65b7418d1",
+    "src/services/RelayAPIService.ts": "260db99ecbf8b8ddaeab0041384b1331e7036e85363eb64211f0aeb81bf96602",
     "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "762ee820bf61b0a2d3dad480ac73b8705f99945a3cfc9d60126ca696c1fe44af"
   }
 }

@@ -3262,6 +3262,8 @@
       "hsInvalidated": "已失效",
       "hsNone": "无握手",
       "hsUnavailable": "不可用",
+      "hsBelowFloor": "低于下限",
+      "hsBelowFloorBody": "有一份展示仍然有效，但其 {{pvt}} PVT 的销毁低于 {{floor}} PVT 的下限，因此不计入。重新以 {{floor}} PVT 展示即可开启。",
       "hsLiveBody": "已完成的出示握手正对经由通道的操作生效。",
       "hsInvalidatedBody": "已提前关闭。新的出示会重新开启。",
       "hsInvalidatedBodyReason": "已提前关闭：{{reason}}。新的出示会重新开启。",

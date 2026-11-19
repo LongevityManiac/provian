@@ -3304,6 +3304,8 @@
       "hsInvalidated": "Invalidated",
       "hsNone": "No handshake",
       "hsUnavailable": "Unavailable",
+      "hsBelowFloor": "Below the floor",
+      "hsBelowFloorBody": "A presentation is live, but its {{pvt}} PVT burn is under the {{floor}} PVT floor, so it does not count. A fresh presentation of {{floor}} PVT opens it.",
       "hsLiveBody": "A completed presentation handshake is in force for rail-mediated actions.",
       "hsInvalidatedBody": "Closed early. A fresh presentation reopens it.",
       "hsInvalidatedBodyReason": "Closed early — {{reason}}. A fresh presentation reopens it.",

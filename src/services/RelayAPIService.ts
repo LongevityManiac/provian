@@ -3476,10 +3476,14 @@ class RelayAPIService {
         counterparty: string;
         role?: 'presenter' | 'audience';
     }, biometricAction?: BiometricAction): Promise<{
-        state: 'live' | 'lapsed' | 'invalidated' | 'none';
+        state: 'live' | 'lapsed' | 'invalidated' | 'none' | 'below_floor';
         reasonClass?: string;
         establishedAt?: number;
         expiresAt?: number;
+        /** The 15 PVT floor every rail handshake takes, in whole PVT. */
+        min_burn_pvt?: string;
+        /** For `below_floor`: the live burn that does not count, in PVT. */
+        below_floor_burn_pvt?: string;
     }> {
         const role = params.role === 'audience' ? 'audience' : 'presenter';
         const qs = `counterparty=${encodeURIComponent(params.counterparty)}&role=${role}`;
@@ -3489,10 +3493,14 @@ class RelayAPIService {
             throw new Error(err.error || `handshake state read failed (${response.status})`);
         }
         return (await response.json()) as {
-            state: 'live' | 'lapsed' | 'invalidated' | 'none';
+            state: 'live' | 'lapsed' | 'invalidated' | 'none' | 'below_floor';
             reasonClass?: string;
             establishedAt?: number;
             expiresAt?: number;
+            /** The 15 PVT floor every rail handshake takes, in whole PVT. */
+            min_burn_pvt?: string;
+            /** For `below_floor`: the live burn that does not count, in PVT. */
+            below_floor_burn_pvt?: string;
         };
     }
 

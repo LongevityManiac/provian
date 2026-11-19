@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Invalidado",
       "hsNone": "Sem handshake",
       "hsUnavailable": "Indisponível",
+      "hsBelowFloor": "Abaixo do mínimo",
+      "hsBelowFloorBody": "Há uma apresentação em vigor, mas sua queima de {{pvt}} PVT está abaixo do mínimo de {{floor}} PVT, então ela não conta. Uma nova apresentação de {{floor}} PVT a abre.",
       "hsLiveBody": "Um handshake de apresentação concluído está em vigor para ações mediadas pelo trilho.",
       "hsInvalidatedBody": "Encerrado antes do prazo. Uma nova apresentação o reabre.",
       "hsInvalidatedBodyReason": "Encerrado antes do prazo: {{reason}}. Uma nova apresentação o reabre.",

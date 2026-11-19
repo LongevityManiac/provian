@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Đã vô hiệu",
       "hsNone": "Chưa có handshake",
       "hsUnavailable": "Không khả dụng",
+      "hsBelowFloor": "Dưới mức tối thiểu",
+      "hsBelowFloorBody": "Có một bản trình bày đang hiệu lực, nhưng lượng đốt {{pvt}} PVT của nó thấp hơn mức tối thiểu {{floor}} PVT nên không được tính. Một bản trình bày mới {{floor}} PVT sẽ mở nó.",
       "hsLiveBody": "Một handshake trình bày đã hoàn tất đang có hiệu lực cho các hành động qua đường ray.",
       "hsInvalidatedBody": "Đã đóng sớm. Một bản trình bày mới sẽ mở lại.",
       "hsInvalidatedBodyReason": "Đã đóng sớm: {{reason}}. Một bản trình bày mới sẽ mở lại.",

@@ -3262,6 +3262,8 @@
       "hsInvalidated": "무효화됨",
       "hsNone": "핸드셰이크 없음",
       "hsUnavailable": "이용할 수 없음",
+      "hsBelowFloor": "최소 기준 미달",
+      "hsBelowFloorBody": "제시가 유효하지만 그 소각 {{pvt}} PVT가 최소 기준 {{floor}} PVT보다 적어 인정되지 않습니다. {{floor}} PVT로 새로 제시하면 열립니다.",
       "hsLiveBody": "레일을 거치는 작업에 대해 완료된 제시 핸드셰이크가 유효합니다.",
       "hsInvalidatedBody": "조기에 종료되었습니다. 새로운 제시로 다시 열 수 있습니다.",
       "hsInvalidatedBodyReason": "조기에 종료되었습니다: {{reason}}. 새로운 제시로 다시 열 수 있습니다.",

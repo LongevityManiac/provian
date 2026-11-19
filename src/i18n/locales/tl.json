@@ -3261,6 +3261,8 @@
       "hsInvalidated": "Pinawalang-bisa",
       "hsNone": "Walang handshake",
       "hsUnavailable": "Hindi available",
+      "hsBelowFloor": "Mas mababa sa minimum",
+      "hsBelowFloorBody": "May aktibong presentation, pero ang burn nitong {{pvt}} PVT ay mas mababa sa minimum na {{floor}} PVT, kaya hindi ito binibilang. Binubuksan ito ng bagong presentation na {{floor}} PVT.",
       "hsLiveBody": "May kumpletong presentation handshake na umiiral para sa mga aksyong dumadaan sa rail.",
       "hsInvalidatedBody": "Maagang isinara. Muli itong bubuksan ng bagong presentasyon.",
       "hsInvalidatedBodyReason": "Maagang isinara: {{reason}}. Muli itong bubuksan ng bagong presentasyon.",

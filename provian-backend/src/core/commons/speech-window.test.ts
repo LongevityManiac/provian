@@ -10,6 +10,8 @@
 import { describe, it, expect } from '@jest/globals';
 import type { Firestore } from 'firebase-admin/firestore';
 import { RailHandshakeError } from '../rail/handshake';
+import * as opsCounters from '../observability/ops-counters';
+import { jest } from '@jest/globals';
 import {
   assertFundedHandshake,
   SPEECH_AUDIENCE,
@@ -281,5 +283,24 @@ describe('escrow and hire handshakes take the same 15 PVT burn', () => {
     seedBurn(db, BURN, AGENT, FIFTEEN_PVT);
     db.store.set('burn_floor_policy/presentation_reputation', { floor_atomic: (20n * 10n ** 18n).toString() });
     await expect(assertFundedHandshake(db as unknown as Firestore, AGENT, APPLICANT, NOW)).rejects.toThrow(/at least 20 PVT/);
+  });
+});
+
+describe('a refused escrow or hire handshake is counted as a rail 428', () => {
+  it('bumps rail.handshake_428 when it refuses; RED: not when the handshake counts', async () => {
+    const spy = jest.spyOn(opsCounters, 'bumpOpsCounter');
+    try {
+      const db = createFakeFirestore();
+      seedPresentation(db, AGENT, 'wallet_aw_cp', NOW - DAY);
+      seedBurn(db, BURN, AGENT, FIVE_PVT);
+      await assertFundedHandshake(db as unknown as Firestore, AGENT, 'wallet_aw_cp', NOW).catch(() => undefined);
+      expect(spy).toHaveBeenCalledWith('rail.handshake_428');
+      spy.mockClear();
+      seedBurn(db, BURN, AGENT, FIFTEEN_PVT);
+      await assertFundedHandshake(db as unknown as Firestore, AGENT, 'wallet_aw_cp', NOW);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
