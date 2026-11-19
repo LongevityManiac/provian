@@ -1,3 +1,4 @@
+import { loadAttentionShared } from '../../core/attention/useAttentionCount';
 /**
  * AttentionCenterScreen — one place, on app open, for everything that needs the human's
  * action: pending approval requests, remote presentation requests, and linked agents needing
@@ -17,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, GRADIENTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import type { AppParamList } from '../../navigation/types';
-import { loadAttention, type AttentionItem, type AttentionSnapshot } from '../../core/attention/attention';
+import { type AttentionItem, type AttentionSnapshot } from '../../core/attention/attention';
 import type { AgentRecoveryAlert } from '../../services/RelayAPIService';
 import BackButton from '../../components/BackButton';
 import { actionStyles, DestinationRow } from '../../components/ScreenActions';
@@ -50,7 +51,7 @@ function AttentionContent({ embedded = false }: { embedded?: boolean }): React.R
     const [anchorFailed, setAnchorFailed] = useState(false);
 
     const load = useCallback(async () => {
-        setSnap(await loadAttention());
+        setSnap(await loadAttentionShared());
     }, []);
 
     useFocusEffect(useCallback(() => { void load(); }, [load]));

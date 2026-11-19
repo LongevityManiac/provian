@@ -1410,7 +1410,7 @@
     "src/core/wallet/SeedManager.ts": "e62208811afd4f8706dc56e228effd00b814f8d8f06aee167067fdc976b6650d",
     "src/core/wallet/TransactionService.estimateFee.test.ts": "a73800a99feecac9854187ef392f54dbb7e9f841e657ea37792936fd6e4de732",
     "src/core/wallet/TransactionService.ts": "691d03fd81eb3be6fec4b92fa1ebd49f406a8505c7519e8f4dfd06e66aa5b2ef",
-    "src/services/RelayAPIService.ts": "ce0d5f0f2d620559a20765d69a56bf186ec993955c22139ef81416f841a0e8ac",
+    "src/services/RelayAPIService.ts": "cbc15642a29909a3e9fdbdbefc323c0f8046e8d67d2106d99fce98bea3bfe937",
     "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "762ee820bf61b0a2d3dad480ac73b8705f99945a3cfc9d60126ca696c1fe44af"
   }
 }

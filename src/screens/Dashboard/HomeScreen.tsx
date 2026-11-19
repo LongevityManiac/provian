@@ -1,3 +1,4 @@
+import OnRampReconciler from '../../core/onramp/OnRampReconciler';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -80,7 +81,7 @@ export default function HomeScreen() {
         if (!address) return;
         setRefreshing(true);
         try {
-            const result = await BalanceService.fetchAllBalancesDetailed(address);
+            const result = await BalanceService.fetchAllBalancesDetailed(address, undefined, true);
             if (useWalletStore.getState().address !== address) return;
             if (result.assetChainsConfirmed) setMoney({
                 wallet: address, total: portfolioTotal(result.assets),
@@ -109,7 +110,10 @@ export default function HomeScreen() {
     useFocusEffect(useCallback(() => {
         void refreshBalance().catch(() => {});
         // Let the confirmed balance request enter the network before loading the proof trail.
-        const contextTimer = setTimeout(() => { void refreshContext(); }, 250);
+        const contextTimer = setTimeout(() => {
+            void refreshContext();
+            if (address) void OnRampReconciler.reconcile(address).catch(() => {});
+        }, 250);
         const ageTimer = setInterval(() => setNow(Date.now()), 30_000);
         const subscription = AppState.addEventListener('change', state => {
             if (state === 'active') {
@@ -122,7 +126,7 @@ export default function HomeScreen() {
             clearInterval(ageTimer);
             subscription.remove();
         };
-    }, [refreshBalance, refreshContext]));
+    }, [address, refreshBalance, refreshContext]));
 
     const dismissStarter = () => {
         setStarter(false);
@@ -180,7 +184,7 @@ export default function HomeScreen() {
                     </View>
                     {!!fiat && !!totalAgeLabel(fiat, t) && <Text style={styles.muted}>{totalAgeLabel(fiat, t)}</Text>}
                     <View style={styles.quickActions}>
-                        <PrimaryAction label={t('dashboard.send')} onPress={() => stack.navigate('Send')} style={styles.send} />
+                        <PrimaryAction icon="send" label={t('dashboard.send')} onPress={() => stack.navigate('Send')} style={styles.send} />
                         <Pressable accessibilityRole="button" style={styles.receive} onPress={() => stack.navigate('Receive')}>
                             <ProvianIcon name="receive" size={22} color={COLORS.primaryLight} />
                             <Text style={styles.link}>{t('dashboard.receive')}</Text>

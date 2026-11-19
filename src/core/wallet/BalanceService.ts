@@ -1,3 +1,4 @@
+import { claimHomeBalanceVerification, type HomeBalanceVerification } from '../protocol/homeBalanceVerification';
 import type { BiometricAction } from '../security/biometricAction';
 /**
  * BalanceService - Balance Queries (EVM + Solana)
@@ -273,13 +274,13 @@ class BalanceService {
      * overlapping calls are coalesced (review #31).
      */
     async fetchAllBalancesDetailed(
-        address: string, biometricAction?: BiometricAction,
+        address: string, biometricAction?: BiometricAction, homeStartup = false,
     ): Promise<{ assets: Asset[]; failedChainIds: number[]; assetChainsConfirmed: boolean }> {
         const existing = this.inFlight.get(address);
         if (existing) {
             return existing;
         }
-        const promise = this.doFetchAllBalances(address, biometricAction).finally(() => {
+        const promise = this.doFetchAllBalances(address, biometricAction, homeStartup).finally(() => {
             this.inFlight.delete(address);
         });
         this.inFlight.set(address, promise);
@@ -287,7 +288,7 @@ class BalanceService {
     }
 
     private async doFetchAllBalances(
-        address: string, biometricAction?: BiometricAction,
+        address: string, biometricAction?: BiometricAction, homeStartup = false,
     ): Promise<{ assets: Asset[]; failedChainIds: number[]; assetChainsConfirmed: boolean }> {
         const env = isTestnet() ? 'testnet' : 'mainnet';
         console.log(`[BalanceService] Fetching balances (${env}) for ${address.slice(0, 8)}...`);
@@ -299,7 +300,8 @@ class BalanceService {
         if (useWalletStore.getState().address?.toLowerCase() === address.toLowerCase()) {
             useWalletStore.getState().setPvtBalanceStatus('updating');
         }
-        const pvtRead = this.fetchPvtAsset(address, biometricAction).then((result) => {
+        const preparedPvt = homeStartup ? claimHomeBalanceVerification(address) : undefined;
+        const pvtRead = this.fetchPvtAsset(address, biometricAction, preparedPvt).then((result) => {
             if (result.asset) {
                 const state = useWalletStore.getState();
                 if (state.address?.toLowerCase() === address.toLowerCase()) {
@@ -410,7 +412,9 @@ class BalanceService {
      * The Asset carries the pinned successor-kernel address so a first-party
      * send resolves the transfer target with no relay round-trip.
      */
-    private async fetchPvtAsset(address: string, biometricAction?: BiometricAction): Promise<{ asset: Asset | null; failed: boolean }> {
+    private async fetchPvtAsset(
+        address: string, biometricAction?: BiometricAction, preparedDisplay?: HomeBalanceVerification,
+    ): Promise<{ asset: Asset | null; failed: boolean }> {
         if (isTestnet()) {
             return { asset: null, failed: false };
         }
@@ -419,7 +423,7 @@ class BalanceService {
             // Lazy import: keeps the RelayAPIService graph off BalanceService's
             // static import path and out of the hot loop.
             const { default: relayService } = await import('../../services/RelayAPIService');
-            const pvt = await relayService.getPVTBalance(address, biometricAction);
+            const pvt = await relayService.getPVTBalance(address, biometricAction, preparedDisplay);
             if (!pvt || typeof pvt.balance_raw !== 'string' || !/^\d+$/.test(pvt.balance_raw)) {
                 return { asset: null, failed: true };
             }

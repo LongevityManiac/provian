@@ -1,3 +1,4 @@
+import type { HomeBalanceVerification } from '../core/protocol/homeBalanceVerification';
 import { currentProtocolDeployment, protocolDeploymentCandidate } from '../core/protocol/runtime';
 import { readConfirmedProtocolBalance } from '../core/protocol/balance';
 import type { MembershipRequestPath } from '../core/recourse/membership-client';
@@ -4116,9 +4117,14 @@ class RelayAPIService {
     /**
      * Get on-chain PVT balance for a wallet address - public.
      */
-    async getPVTBalance(walletAddress: string, biometricAction?: BiometricAction): Promise<{ balance: string; balance_raw: string; token_address: string } | null> {
+    async getPVTBalance(
+        walletAddress: string, biometricAction?: BiometricAction, preparedDisplay?: HomeBalanceVerification,
+    ): Promise<{ balance: string; balance_raw: string; token_address: string } | null> {
         try {
-            return await readConfirmedProtocolBalance(protocolDeploymentCandidate, currentProtocolDeployment, async (token) => {
+            return await readConfirmedProtocolBalance(
+                preparedDisplay ? () => preparedDisplay.candidate : protocolDeploymentCandidate,
+                preparedDisplay ? () => preparedDisplay.confirmation : currentProtocolDeployment,
+                async (token) => {
             const { endpoint, options } = this.noCacheGet(
                 `/v1/pvt/balance/${encodeURIComponent(walletAddress)}?token=${encodeURIComponent(token)}`,
             );

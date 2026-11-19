@@ -1,3 +1,5 @@
+import { clearHomeBalanceVerification, prepareHomeBalanceVerification } from '../../core/protocol/homeBalanceVerification';
+import { isTestnet } from '../../core/shared/environment';
 import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { withBiometricAction, assertBiometricAction } from '../../core/security/biometricAction';
 import React, { useEffect, useRef, useState } from 'react';
@@ -51,6 +53,7 @@ const WalletLockScreen = ({ navigation }: any) => {
         setIsAuthenticating(true);
         setError(null);
 
+        if (!isTestnet()) prepareHomeBalanceVerification(useWalletStore.getState().address);
         try {
             return await withBiometricAction(t('walletLock.biometricPrompt'), async (biometricAction) => {
 
@@ -98,11 +101,13 @@ const WalletLockScreen = ({ navigation }: any) => {
                 // sign, so it is skipped then.
                 const wallet = seedUnreadable ? null : useWalletStore.getState().address;
                 await prepareRenewalAtUnlock(wallet, biometricAction);
+                if (seedUnreadable || backupGate === 'backup' || termsGate === 'terms') clearHomeBalanceVerification();
                 landAfterUnlock(navigation, seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate, () => setAuthenticated(true));
                 void renewRejectedSessionAfterUnlock(wallet);
 
             }, undefined);
         } catch (err) {
+            clearHomeBalanceVerification();
             if (err instanceof BiometricNotAvailableError) {
                 // N-2: When biometric is unavailable (user removed enrollment),
                 // show a clear message with a recovery option instead of a dead end.

@@ -6,12 +6,13 @@ import ProvianIcon, { type ProvianIconName } from './ProvianIcon';
 
 type Ionicon = keyof typeof Ionicons.glyphMap;
 
-export function PrimaryAction({ label, onPress, disabled, style }: {
-    label: string; onPress: () => void; disabled?: boolean; style?: StyleProp<ViewStyle>;
+export function PrimaryAction({ label, onPress, disabled, style, icon }: {
+    label: string; onPress: () => void; disabled?: boolean; style?: StyleProp<ViewStyle>; icon?: ProvianIconName;
 }) {
     return (
         <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled}
             onPress={onPress} style={({ pressed }) => [styles.primary, (pressed || disabled) && styles.dimmed, style]}>
+            {icon && <ProvianIcon name={icon} size={22} color={COLORS.background} />}
             <Text style={styles.primaryLabel}>{label}</Text>
         </Pressable>
     );
@@ -46,7 +47,7 @@ export const actionStyles = StyleSheet.create({
 const styles = StyleSheet.create({
     primary: {
         minHeight: 48, borderRadius: BORDER_RADIUS.l, paddingVertical: SPACING.m, paddingHorizontal: SPACING.l,
-        backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center',
+        backgroundColor: COLORS.primary, flexDirection: 'row', gap: SPACING.xs, justifyContent: 'center', alignItems: 'center',
     },
     primaryLabel: { color: COLORS.background, fontSize: 16, fontWeight: '700', textAlign: 'center' },
     dimmed: { opacity: 0.7 },
