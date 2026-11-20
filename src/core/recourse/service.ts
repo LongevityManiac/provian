@@ -24,11 +24,20 @@ export interface RecourseMembershipDetails {
   protectionStartedAtMs: number | null; nextMonthAtMs: number | null;
   nextBurnAtomic: string | null; noEarningsContributionAtomic: string | null; earningsBps: number | null;
 }
+export interface RecourseMonthlyApproval {
+  readonly status: 'approved' | 'approval_required';
+  readonly burnLimit: string;
+  readonly reserveLimit: string;
+  readonly earningsBpsLimit: number;
+  readonly checkedAtMs: number;
+}
 export interface RecourseView {
   currentAddress?: string;
   membershipDetails?: RecourseMembershipDetails;
   membershipTransition?: 'join' | 'leave' | 'renew';
   membershipApprovalPending?: true;
+  monthlyApproval?: RecourseMonthlyApproval;
+  monthlyApprovalStale?: true;
   primaryIdentity: string | null;
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'in_progress' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
@@ -160,12 +169,20 @@ function parseMembershipRead(reply: Record<string, unknown>, month: unknown): Pi
 /** This view is for display. The authenticated relay verifies the current pool
  * against both providers. Operations still perform their own chain checks. */
 const overviewReads = new Map<string, Promise<RecourseView>>();
+let lastOverview: { wallet: string; view: RecourseView } | undefined;
+export function getLastRecourseOverview(wallet: string | null | undefined): RecourseView | null {
+  return wallet && lastOverview?.wallet === wallet.toLowerCase() ? lastOverview.view : null;
+}
+
 export async function readRecourseOverview(): Promise<RecourseView> {
   const account = useWalletStore.getState().address;
   if (!account) throw Error('recourse_address_unavailable');
   let pending = overviewReads.get(account);
   if (!pending) {
-    pending = readWalletRecourseOverview(account).finally(() => overviewReads.delete(account));
+    pending = readWalletRecourseOverview(account).then(view => {
+      lastOverview = { wallet: account.toLowerCase(), view };
+      return view;
+    }).finally(() => overviewReads.delete(account));
     overviewReads.set(account, pending);
   }
   return pending;
@@ -183,7 +200,24 @@ async function readWalletRecourseOverview(account: string): Promise<RecourseView
   if (typeof earningsBps !== 'number' || !Number.isSafeInteger(earningsBps) || earningsBps < 0 || earningsBps > 10000) {
     throw Error('recourse_reply_invalid');
   }
-  return { ...parseMembershipRead(reply, reply.month), identity, primaryIdentity, currentAddress: account.toLowerCase(),
+  const membership = parseMembershipRead(reply, reply.month);
+  let monthly: Pick<RecourseView, 'monthlyApproval' | 'monthlyApprovalStale'> = {};
+  if (membership.membershipState === 'available' && membership.enrolled) {
+    if (reply.monthlyApproval == null) {
+      const cached = getLastRecourseOverview(account);
+      if (cached?.identity === identity && cached.monthlyApproval) {
+        monthly = { monthlyApproval: cached.monthlyApproval, monthlyApprovalStale: true };
+      }
+    } else {
+      const approval = object(reply.monthlyApproval);
+      const { status, earningsBpsLimit } = approval;
+      if ((status !== 'approved' && status !== 'approval_required') || typeof earningsBpsLimit !== 'number'
+        || !Number.isSafeInteger(earningsBpsLimit) || earningsBpsLimit < 0 || earningsBpsLimit > 10_000) throw Error('recourse_reply_invalid');
+      monthly = { monthlyApproval: { status, earningsBpsLimit, burnLimit: text(approval.burnLimit, atomic),
+        reserveLimit: text(approval.reserveLimit, atomic), checkedAtMs: Date.now() } };
+    }
+  }
+  return { ...membership, ...monthly, identity, primaryIdentity, currentAddress: account.toLowerCase(),
     historyState: 'pending', addresses: [], requests: [], earningsBps,
     participationBurnAtomic: text(reply.participationBurnAtomic, atomic),
     noEarningsContributionAtomic: text(reply.noEarningsContributionAtomic, atomic), reserveAtomic: text(reply.reserveAtomic, atomic) };

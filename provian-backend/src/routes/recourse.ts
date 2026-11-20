@@ -22,6 +22,7 @@ import { createRecourseChainPort } from '../core/recourse/chain-ledger';
 import { prepareMemberBindingConsent } from '../core/recourse/member-binding-requirement';
 import type { MemberBindingConsent } from '../core/recourse/member-binding';
 import { readPrivateMembershipView } from '../core/recourse/private-membership-view';
+import { readRecourseMonthlyApproval } from '../core/recourse/monthly-approval';
 import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool-state';
 import { RECOURSE_RATIO_COLLECTION, publicRecourseResources } from '../core/recourse/pool-ratio';
 import { parseAgentRecoveryRequest, recoverAgentOwnership } from '../core/recourse/agent-recovery';
@@ -358,14 +359,24 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         identity = bindings.length ? await ownedBindingIdentity(deps.db, owner, bindings[0]) : `0x${'00'.repeat(32)}`;
       }
       stage = 'chain';
-      const pool = await readRecoursePoolState(identity);
+      const deployment = await currentProtocolDeployment();
+      const pool = await readRecoursePoolState(identity, deployment);
       stage = 'membership';
-      const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool).catch((cause: unknown) => {
-        if (cause instanceof Error && cause.message === 'recourse_private_scan_concurrent') return null;
-        throw cause;
-      });
+      const fixedPayer: unknown = portfolio.get('membershipFixedDebitBinding');
+      const [membership, monthlyApproval] = await Promise.all([
+        readPrivateMembershipView(deps.db, ownerIdentity, pool).catch((cause: unknown) => {
+          if (cause instanceof Error && cause.message === 'recourse_private_scan_concurrent') return null;
+          throw cause;
+        }),
+        fixedPayer != null && portfolio.get('membershipTransition') == null
+          ? ownedBindingIdentity(deps.db, owner, fixedPayer)
+            .then(binding => readRecourseMonthlyApproval(binding, identity, pool, deployment))
+            .catch(() => null)
+          : null,
+      ]);
       const display = membership === null ? { membership: null, membershipChecking: true }
-        : 'membershipTransition' in membership ? { ...membership, membership: null } : { membership };
+        : 'membershipTransition' in membership ? { ...membership, membership: null }
+        : { membership, monthlyApproval: membership.enrolled ? monthlyApproval : null };
       res.json({ ...pool, identity, primaryIdentity, ...display,
         ...(owner.type === 'human' ? { walletAddress: owner.address } : {}) });
     } catch {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { useWalletStore } from '../../store/walletStore';
-import { readRecourseOverview, type RecourseView } from './service';
+import { getLastRecourseOverview, readRecourseOverview, type RecourseView } from './service';
 
 type Membership = Pick<RecourseView, 'membershipState' | 'membershipTransition' | 'membershipApprovalPending' | 'enrolled' | 'grace' | 'unpaidAtomic'>;
 type Summary = {
@@ -43,7 +43,8 @@ export function useRecourseSummary(wallet: string | null) {
             }));
         }
     }, [wallet]);
-    const summary = read?.wallet === wallet ? read.summary : RECOURSE;
+    const cached = getLastRecourseOverview(wallet);
+    const summary = read?.wallet === wallet ? read.summary : cached ? summarizeRecourse(cached) : RECOURSE;
     useEffect(() => {
         if (!focused || !summary.detail) return;
         const timer = setTimeout(() => { void refresh(); }, summary.detail === 'recourse.membershipUnavailable' ? 30_000 : 8_000);

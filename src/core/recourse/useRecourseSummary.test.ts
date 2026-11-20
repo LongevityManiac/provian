@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { summarizeRecourse } from './useRecourseSummary';
 
-vi.mock('./service', () => ({ readRecourseOverview: vi.fn() }));
+vi.mock('./service', () => ({ readRecourseOverview: vi.fn(), getLastRecourseOverview: () => null }));
 vi.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: {} }));
 

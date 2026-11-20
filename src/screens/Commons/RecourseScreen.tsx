@@ -1,4 +1,4 @@
-import { ActionTouchable } from '../../components/ScreenActions';
+import { ActionTouchable, DestinationRow } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
@@ -7,9 +7,11 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
 import { RecourseMembershipSummary } from './RecourseMembershipSummary';
+import { RecourseApprovalStatus } from './RecourseApprovalStatus';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { pvtAmount, bindHumanPrimaryAddress, readRecourseOverview, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, bindHumanPrimaryAddress, getLastRecourseOverview, readRecourseOverview, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { useWalletStore } from '../../store/walletStore';
 import { beginHumanMembership, leaveHumanMembership } from '../../core/recourse/human-membership';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import SeedManager from '../../core/wallet/SeedManager';
@@ -27,7 +29,9 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const { t } = useTranslation();
   const focused = useIsFocused();
   const loadSequence = useRef(0);
-  const [state, setState] = useState<RecourseView | null>(null);
+  const wallet = useWalletStore(s => s.address)?.toLowerCase();
+  const [loaded, setState] = useState<RecourseView | null>(() => getLastRecourseOverview(wallet));
+  const state = loaded?.currentAddress === wallet && loaded ? loaded : null;
   const [loading, setLoading] = useState(true);
   const [membershipUnavailable, setMembershipUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -72,27 +76,27 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       setState(previous => previous?.identity === overview.identity
         ? { ...overview, historyState: previous.historyState, addresses: previous.addresses, requests: previous.requests }
         : overview);
-    } else if (!membershipOnly) setState(overview);
+    } else if (overview) setState(overview);
     setLoading(false); setMembershipUnavailable(overview === null);
     if (membershipOnly) return;
     // Chain data remains useful during an outage, but it cannot answer the
     // membership question. Keep the retry visible while this read runs.
-    const display = overview ?? await readRecourseView(undefined, true).catch(() => null);
+    const display = overview ?? (getLastRecourseOverview(wallet) ?? await readRecourseView(undefined, true).catch(() => null));
     if (display && sequence === loadSequence.current) {
       setState(display);
       const history = await readRecourseHistory(display);
       if (sequence !== loadSequence.current) return;
       setState(history); setHistoryPage(1); setHistoryRefresh(value => value + 1);
     }
-  }, []);
+  }, [wallet]);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
   useEffect(() => {
     if (!focused || loading || busy || (!membershipUnavailable && state?.membershipState !== 'in_progress')) return;
     const timer = setTimeout(() => { void load(Boolean(state)); }, membershipUnavailable ? 30_000 : 8_000);
     return () => clearTimeout(timer);
   }, [focused, state, loading, busy, membershipUnavailable, load]);
-  const button = (label: string, onPress: () => void) => <ActionTouchable accessibilityRole="button"
-    disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
+  const button = (label: string, onPress: () => void, disabled = busy || loading) => <ActionTouchable accessibilityRole="button"
+    disabled={disabled} onPress={onPress} style={[styles.button, disabled && styles.disabled]}>
     <Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
   const bindPrimary = async () => {
     if (busy || loading) return;
@@ -169,10 +173,13 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         {!loading && state.historyState === 'unavailable'
           ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
         <View style={styles.card}>
-          <RecourseMembershipSummary view={state} pending={loading && state.membershipState !== 'in_progress'} />
+          <RecourseMembershipSummary view={state} />
           {state.membershipState === 'available' ? state.enrolled ? <>
-            {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
-            {button(t('recourse.leave'), () => { void leave(); })}
+            <RecourseApprovalStatus approval={state.monthlyApproval}
+              unavailable={membershipUnavailable || Boolean(state.monthlyApprovalStale) || (!loading && !state.monthlyApproval)} />
+            <DestinationRow label={t('recourse.standing.details')} stockIcon="calendar-outline"
+              onPress={busy ? undefined : () => navigation.navigate('RecourseMonthly')} />
+            {button(t('recourse.leave'), () => { void leave(); }, busy || loading || membershipUnavailable)}
           </> : /^0x0+$/.test(state.identity)
             ? button(t(addingWallet ? 'recourse.bindingPending' : 'recourse.bindPrimary'), () => { void bindPrimary(); })
             : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))

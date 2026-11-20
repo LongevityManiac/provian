@@ -1,17 +1,18 @@
 vi.mock('./restoration-ticket', () => ({ readContinuedRestorationStatus: (...args: unknown[]) => f.ticket(...args) }));
 vi.mock('./owner-chain', () => ({ readOwnerChainState: (...args: unknown[]) => f.ownerState(...args) }));
 import { beforeEach, expect, it, vi } from 'vitest';
-import { bindHumanPrimaryAddress, readRecourseHistory, readRecourseOverview, readRecourseView, submitHumanRestorationRequest, recoverHumanBoundAddress, type RecourseView } from './service';
+import { bindHumanPrimaryAddress, getLastRecourseOverview, readRecourseHistory, readRecourseOverview, readRecourseView, submitHumanRestorationRequest, recoverHumanBoundAddress, type RecourseView } from './service';
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
   history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
   register:vi.fn(), bind:vi.fn(), biometricDenied:false, ticket:vi.fn(),wrongReply:false, ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn(),
-  overviewWallet: '', overviewEnrolled: true, overviewTransition: null as 'join' | null, overviewChecking: false }));
+  overviewWallet: '', overviewEnrolled: true, overviewTransition: null as 'join' | null, overviewChecking: false,
+  monthlyApproval: null as unknown }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { readRecourseOwnership: async () => f.history, registerHumanWallet: (...args: unknown[]) => f.register(...args), bindRecourseOwnership: (...args: unknown[]) => f.bind(...args), getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   f.calls.push({ path, body });
   if (f.relayDown) throw Error('unavailable'); if (path === 'ownership') return f.history;
   if (path === 'restoration-requests' && body === undefined) return f.requests;
-  if (path === 'pool') return { identity: h('55'), primaryIdentity: null, walletAddress: f.overviewWallet, month: '1',
+  if (path === 'pool') return { identity: h('55'), primaryIdentity: null, walletAddress: f.overviewWallet, month: '1', monthlyApproval: f.monthlyApproval,
     pool: a('66'), kernel: a('77'), earningsBps: 100, reserveAtomic: '100', participationBurnAtomic: '100',
     noEarningsContributionAtomic: '100', ...(f.overviewTransition ? { membership: null, membershipTransition: f.overviewTransition }
       : f.overviewChecking ? { membership: null, membershipChecking: true }
@@ -35,7 +36,7 @@ vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 't
 vi.mock('./human-restoration-exit', () => ({ withdrawHumanRestoration: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: a('12'), setAddress: f.setAddress }) } }));
 beforeEach(() => {
-  f.overviewWallet = a('12'); f.overviewEnrolled = true; f.overviewTransition = null; f.overviewChecking = false;
+  f.overviewWallet = a('12'); f.overviewEnrolled = true; f.overviewTransition = null; f.overviewChecking = false; f.monthlyApproval = null;
   f.register.mockReset(); f.register.mockResolvedValue(true); f.bind.mockReset(); f.biometricDenied=false; f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
   f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44'),restoration:{request:h('44'),lossHash:h('88'),maximumLoss:'100'} });
@@ -175,4 +176,24 @@ it('shares an ongoing wallet check and waits for the verified result after recon
   expect(reads[1]).toEqual(reads[0]);
   f.overviewChecking = false;
   await expect(readRecourseOverview()).resolves.toMatchObject({ membershipState: 'available', enrolled: true });
+});
+
+it('shares a verified approval across screens and labels the same-wallet value stale if a later check fails', async () => {
+  const approval = { status: 'approved', burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100 };
+  f.monthlyApproval = approval;
+  const verified = await readRecourseOverview();
+  expect(verified.monthlyApproval).toMatchObject(approval);
+  expect(verified.monthlyApprovalStale).toBeUndefined();
+  expect(getLastRecourseOverview(a('12'))).toBe(verified);
+  expect(getLastRecourseOverview(a('13'))).toBeNull();
+
+  f.monthlyApproval = { ...approval, status: 'unverified' };
+  await expect(readRecourseOverview()).rejects.toThrow('recourse_reply_invalid');
+  expect(getLastRecourseOverview(a('12'))).toBe(verified);
+  f.monthlyApproval = null;
+  await expect(readRecourseOverview()).resolves.toMatchObject({
+    monthlyApproval: verified.monthlyApproval, monthlyApprovalStale: true,
+  });
+  f.overviewTransition = 'join';
+  await expect(readRecourseOverview()).resolves.not.toHaveProperty('monthlyApproval');
 });

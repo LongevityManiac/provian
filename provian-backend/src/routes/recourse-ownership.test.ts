@@ -12,6 +12,9 @@ import * as restoration from '../core/recourse/restoration-request';
 import * as auxiliaryRecovery from '../core/recourse/auxiliary-recovery';
 import * as poolState from '../core/recourse/pool-state';
 import * as membershipView from '../core/recourse/private-membership-view';
+import * as protocol from '../core/protocol/runtime';
+import * as monthly from '../core/recourse/monthly-approval';
+import type { ProtocolDeployment } from '../core/protocol/pointer';
 
 test('a registered human wallet can read non-membership before binding any address', async () => {
   const db = createFakeFirestore();
@@ -23,6 +26,7 @@ test('a registered human wallet can read non-membership before binding any addre
     debitNonce: '0', outstandingAtomic: '0', authority: account, participationBurnAtomic: '100',
     noEarningsContributionAtomic: '100', earningsBps: 100, signedRuleHash: zero, outcomeRevision: '0' };
   const readPool = jest.spyOn(poolState, 'readRecoursePoolState').mockResolvedValue(pool);
+  const readDeployment = jest.spyOn(protocol, 'currentProtocolDeployment').mockResolvedValue({ blockHash: zero } as ProtocolDeployment);
   const app = express();
   app.use('/v1/recourse', createRecourseRouter({ db } as unknown as AgentBankDeps, (req, res, next) => {
     if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
@@ -45,20 +49,24 @@ test('a registered human wallet can read non-membership before binding any addre
     db.store.delete(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`);
     db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`, { ownerIdentity, address: account, chainBindingStatus: 'pending' });
     expect((await read()).status).toBe(503);
-  } finally { readPool.mockRestore(); }
+  } finally { readPool.mockRestore(); readDeployment.mockRestore(); }
 });
 
 test('an auxiliary-only owner reads private membership without inventing primary recovery authority', async () => {
   const db=createFakeFirestore(),walletId='wallet_aw_aux_member',ownerIdentity=identityHash('agent',walletId);
   const identity=`0x${'ab'.repeat(32)}`,account=`0x${'ac'.repeat(20)}`;
   const owner={ownerIdentity,ownerType:'agent',ownerId:walletId,walletId};
-  db.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`,owner);
+  db.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`,{...owner,membershipFixedDebitBinding:identity});
   db.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`,{...owner,identity,primaryBinding:false});
   db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`,{ownerIdentity,identity,address:account,chainBindingStatus:'confirmed'});
   const pool={pool:account,kernel:account,block:100,blockHash:identity,timestamp:1000,addressConsent:true,currentAddress:account,
     month:'1',reserveAtomic:'100',consentNonce:'0',consentGeneration:'1',debitNonce:'0',outstandingAtomic:'0',authority:account,
     participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100,signedRuleHash:identity,outcomeRevision:'0'};
   const readPool=jest.spyOn(poolState,'readRecoursePoolState').mockResolvedValue(pool);
+  const deployment = { blockHash: identity } as ProtocolDeployment;
+  const readDeployment = jest.spyOn(protocol, 'currentProtocolDeployment').mockResolvedValue(deployment);
+  const approval = { status: 'approved', burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100 } as const;
+  const readMonthly = jest.spyOn(monthly, 'readRecourseMonthlyApproval').mockResolvedValue(approval);
   const readMembership=jest.spyOn(membershipView,'readPrivateMembershipView').mockResolvedValue({enrolled:true,grace:false,
     month:'1',endMonthExclusive:'2',unpaidAtomic:'0',block:100,blockHash:identity,
     details:{status:'protected',protectionStartedAtMs:1000,nextMonthAtMs:2000,nextBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100}});
@@ -70,7 +78,19 @@ test('an auxiliary-only owner reads private membership without inventing primary
     const response=await request(app).get('/v1/recourse/pool');
     expect(response.status).toBe(200);expect(response.headers['cache-control']).toBe('no-store');
     expect(response.body.identity).toBe(identity);expect(response.body.membership.enrolled).toBe(true);
-    expect(readPool).toHaveBeenCalledWith(identity);expect(readMembership).toHaveBeenCalledWith(db,ownerIdentity,pool);
+    expect(readPool).toHaveBeenCalledWith(identity,deployment);expect(readMembership).toHaveBeenCalledWith(db,ownerIdentity,pool);
+    expect(readMonthly).toHaveBeenCalledWith(identity,identity,pool,deployment);
+    expect(response.body.monthlyApproval).toEqual(approval);
+    readMonthly.mockRejectedValueOnce(Error('provider disagreement'));
+    const unavailable = await request(app).get('/v1/recourse/pool');
+    expect(unavailable.body).toMatchObject({ membership: { enrolled: true }, monthlyApproval: null });
+    const ownerRow = db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)!;
+    ownerRow.membershipFixedDebitBinding = `0x${'fe'.repeat(32)}`;
+    readMonthly.mockClear();
+    const unowned = await request(app).get('/v1/recourse/pool');
+    expect(unowned.body.monthlyApproval).toBeNull();
+    expect(readMonthly).not.toHaveBeenCalled();
+    ownerRow.membershipFixedDebitBinding = identity;
     expect(db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)).not.toHaveProperty('primaryBinding');
     readMembership.mockResolvedValueOnce({ membershipTransition: 'join' });
     const pending = await request(app).get('/v1/recourse/pool');
@@ -78,7 +98,7 @@ test('an auxiliary-only owner reads private membership without inventing primary
     expect(pending.body).toMatchObject({ identity, membership: null, membershipTransition: 'join' });
     db.store.get(`${RECOURSE_COLLECTIONS.identities}/${identity}`)!.walletId='other';
     expect((await request(app).get('/v1/recourse/pool')).status).toBe(503);
-  } finally {readPool.mockRestore();readMembership.mockRestore();}
+  } finally {readPool.mockRestore();readMembership.mockRestore();readDeployment.mockRestore();readMonthly.mockRestore();}
 });
 
 test('auxiliary recovery requires owner authentication and returns only a generic error', async () => {
