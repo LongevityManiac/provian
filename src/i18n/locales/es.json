@@ -5169,6 +5169,7 @@
     "restoreAuthorize": "Autoriza tu solicitud de restauración",
     "allocationRequest": "Identificador de solicitud de restitución",
     "withdrawAllocation": "Recibir PVT asignados",
+    "bindingAwaitingFinality": "Se añadió tu billetera. Podrás unirte cuando la red confirme el registro de forma definitiva.",
     "membershipUnavailable": "Estado de membresía no disponible",
     "memberBindingConsent": "Consentimiento de Recourse Pool para esta dirección",
     "memberBindingBytes": "Firma este segundo mensaje como los 32 bytes mostrados en hexadecimal, no como texto. Incluye esta dirección en tu membresía actual de Recourse Pool.",

@@ -5169,6 +5169,7 @@
     "restoreAuthorize": "Authorize your restoration request",
     "allocationRequest": "Restoration request ID",
     "withdrawAllocation": "Receive allocated PVT",
+    "bindingAwaitingFinality": "Your wallet was added. You can join after the network finalizes it.",
     "membershipUnavailable": "Membership status unavailable",
     "memberBindingConsent": "Recourse Pool consent for this address",
     "memberBindingBytes": "Sign this second message as the 32 bytes shown in hex, not as text. It includes this address in your existing Recourse Pool membership.",

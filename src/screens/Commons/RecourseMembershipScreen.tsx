@@ -14,7 +14,8 @@ import { useWalletStore } from '../../store/walletStore';
 import { beginHumanMembership, readHumanMembershipTransition, authorizeHumanMembershipConsent,
   authorizeExternalMembershipConsent, leaveHumanMembership } from '../../core/recourse/human-membership';
 import { RecourseMembershipSummary } from './RecourseMembershipSummary';
-import { pvtAmount, readRecourseView, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, readRecourseOverview, type RecourseView } from '../../core/recourse/service';
+import { RECOURSE_BINDING_AWAITING_FINALITY } from '../../services/RelayAPIService';
 import type { MembershipConsentChallenge, MembershipTransitionView } from '../../core/recourse/membership-client';
 import { externalWalletProofClient, accountFromSession, EXTERNAL_WALLET_APPS,
   isExternalWalletConnectConfigured, type ExternalWalletApp } from '../../core/walletconnect/ExternalWalletProofClient';
@@ -22,9 +23,10 @@ import { externalWalletProofClient, accountFromSession, EXTERNAL_WALLET_APPS,
 export default function RecourseMembershipScreen({ navigation, route }: NativeStackScreenProps<AppParamList, 'RecourseMembership'>): React.JSX.Element {
   const { t } = useTranslation();
   const account = useWalletStore(s => s.address)?.toLowerCase();
-  const [summary, setSummary] = useState<RecourseView | null>(null);
+  const [summary, setSummary] = useState<RecourseView | null>();
   const [view, setView] = useState<MembershipTransitionView | null>(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(false);
+  const [waitingForBinding, setWaitingForBinding] = useState(false);
   const [selected, setSelected] = useState<MembershipConsentChallenge | null>(null);
   const [uri, setUri] = useState('');
   const active = useRef(true), operationId = useRef<string | undefined>(undefined), session = useRef<SessionTypes.Struct | null>(null);
@@ -32,32 +34,39 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
   const load = useCallback(async () => {
     const run = ++sequence.current;
     setLoading(true); setError(false);
-    let privateSummaryPublished = false;
-    const publicView = readRecourseView(undefined, true).then(value => {
-      if (!privateSummaryPublished && active.current && run === sequence.current) setSummary(value);
-    }).catch(() => undefined);
+    void readRecourseOverview().catch(() => null).then(value => {
+      if (active.current && run === sequence.current) setSummary(value);
+    });
     try {
       let current = await readHumanMembershipTransition(operationId.current);
+      if (!active.current || run !== sequence.current) return;
       if (route.params.kind === 'leave' && current && current.kind !== 'leave') current = await beginHumanMembership('leave');
       if (!current && route.params.kind !== 'resume') current = await beginHumanMembership(route.params.kind);
       if (!active.current || run !== sequence.current) return;
       operationId.current = current?.id; setView(current); setSelected(null);
-      const latest = await readRecourseView(value => {
-        privateSummaryPublished = true;
-        if (active.current && run === sequence.current) setSummary(value);
-      });
-      if (active.current && run === sequence.current) setSummary(latest);
-    } catch { if (active.current && run === sequence.current) setError(true); }
-    finally { await publicView; if (active.current && run === sequence.current) setLoading(false); }
+      setWaitingForBinding(false);
+    } catch (cause) {
+      if (!active.current || run !== sequence.current) return;
+      const waiting = cause instanceof Error && cause.message === RECOURSE_BINDING_AWAITING_FINALITY;
+      setWaitingForBinding(waiting);
+      setError(!waiting);
+    } finally {
+      if (active.current && run === sequence.current) setLoading(false);
+    }
   }, [route.params.kind]);
   useEffect(() => {
     active.current = true; void load();
     return () => { active.current = false; ++sequence.current; void externalWalletProofClient.disconnect(session.current); };
   }, [load]);
   useEffect(() => {
-    if (!view || busy || (!view.pending.length && view.status !== 'preparing')) return;
+    if (!view || loading || busy || waitingForBinding || (!view.pending.length && view.status !== 'preparing')) return;
     const timer=setTimeout(()=>{void load();},3000);return()=>clearTimeout(timer);
-  },[view,busy,load]);
+  },[view,loading,busy,waitingForBinding,load]);
+  useEffect(() => {
+    if (!waitingForBinding || loading || busy) return;
+    const timer = setTimeout(() => { void load(); }, 30_000);
+    return () => clearTimeout(timer);
+  }, [waitingForBinding, loading, busy, load]);
   const run = async (work: () => Promise<unknown>) => {
     if (busy || loading) return;
     setBusy(true); setError(false);
@@ -92,11 +101,13 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.body}>{t('recourse.intro')}</Text>
       <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
-      {summary ? <RecourseMembershipSummary view={summary} pending={loading} statusText={view?.kind === 'join' && view.status !== 'complete' && view.status !== 'superseded' ? t('recourse.flow.joining') : undefined} /> : null}
+      {summary ? <RecourseMembershipSummary view={summary} statusText={view?.kind === 'join' && view.status !== 'complete' && view.status !== 'superseded' ? t('recourse.flow.joining') : undefined} /> : null}
       <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly burns and contributions then happen automatically, even while the app is closed. You need no ETH to join, contribute or leave. Higher amounts require your fresh approval.')}</Text>
-      {loading || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {(loading && !waitingForBinding) || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.bindingAwaitingFinality')}</Text> : null}
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
-      {!loading && (error || (!(view?.status === 'preparing' || view?.status === 'consenting') && summary?.membershipState === 'unavailable')) ? <Text style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
+      {!loading && !waitingForBinding && summary === null && !(view?.status === 'preparing' || view?.status === 'consenting')
+        ? <Text style={styles.body}>{t('recourse.membershipUnavailable')}</Text> : null}
       {view ? <>
         {view.kind !== 'join' ? <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : t('recourse.leave')}</Text> : null}
         <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text>
@@ -123,7 +134,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         {view.status === 'superseded' && route.params.kind !== 'resume' ? button(t('recourse.flow.restart', 'Continue with the current contracts'), () => {
           operationId.current = undefined; void load();
         }) : null}
-      </> : !loading ? <Text style={styles.body}>{t('recourse.flow.none', 'No unfinished membership action.')}</Text> : null}
+      </> : !loading && !waitingForBinding && !error ? <Text style={styles.body}>{t('recourse.flow.none', 'No unfinished membership action.')}</Text> : null}
       {selected ? <View style={styles.card}>
         <Text selectable style={styles.address}>{selected.consent.account}</Text>
         <Text style={styles.body}>{t('recourse.standing.external', 'Connect this wallet to approve its membership once. Later burns, contributions and leaving require no further wallet prompts.')}</Text>

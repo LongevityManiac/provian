@@ -5170,6 +5170,7 @@
     "restoreAuthorize": "복원 요청 승인",
     "allocationRequest": "복원 요청 ID",
     "withdrawAllocation": "할당된 PVT 받기",
+    "bindingAwaitingFinality": "지갑을 추가했습니다. 네트워크에서 등록이 최종 확정되면 가입할 수 있습니다.",
     "membershipUnavailable": "회원 상태 확인 불가",
     "memberBindingConsent": "이 주소의 Recourse Pool 동의",
     "memberBindingBytes": "이 두 번째 메시지는 텍스트가 아닌 16진수로 표시된 32바이트로 서명하세요. 이 주소가 기존 Recourse Pool 회원 자격에 포함됩니다.",

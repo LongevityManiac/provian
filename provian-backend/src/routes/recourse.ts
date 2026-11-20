@@ -33,6 +33,7 @@ import { readPublishedRecourseRule } from '../core/recourse/membership-rule';
 import { authenticatePrivateRecourse } from './middleware/recourse-private';
 import { addressRecoveryBinding } from '../core/recourse/address-binding';
 import { prepareMembershipTransition, ownedMembershipTransition } from '../core/recourse/membership-preparation';
+import { MEMBERSHIP_BINDING_AWAITING_FINALITY } from '../core/recourse/private-membership-transition';
 import { queueMembershipConsent, MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
 import { readSponsoredOperation } from '../core/recourse/sponsored-operation-queue';
 import { prepareMembershipDebit, parseMembershipPaymentSelection } from '../core/recourse/membership-debit-preparation';
@@ -197,7 +198,13 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).join(',') !== 'kind'
         || !('kind' in body) || (body.kind !== 'join' && body.kind !== 'leave' && body.kind !== 'renew')) throw Error('recourse_membership_input');
       res.json(await prepareMembershipTransition(deps.db, identityHash(owner.type, owner.id), { kind: body.kind }));
-    } catch { res.status(400).json({ error: 'recourse_membership_unavailable' }); }
+    } catch (error) {
+      if (error instanceof Error && error.message === MEMBERSHIP_BINDING_AWAITING_FINALITY) {
+        res.status(409).json({ error: MEMBERSHIP_BINDING_AWAITING_FINALITY });
+        return;
+      }
+      res.status(400).json({ error: 'recourse_membership_unavailable' });
+    }
   });
   router.get('/membership-transitions', async (req, res) => {
     try {

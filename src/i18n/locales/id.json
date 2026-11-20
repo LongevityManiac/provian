@@ -5169,6 +5169,7 @@
     "restoreAuthorize": "Otorisasi permintaan pemulihan Anda",
     "allocationRequest": "ID permintaan restorasi",
     "withdrawAllocation": "Terima PVT yang dialokasikan",
+    "bindingAwaitingFinality": "Dompet Anda sudah ditambahkan. Anda dapat bergabung setelah jaringan memberikan konfirmasi akhir.",
     "membershipUnavailable": "Status keanggotaan tidak tersedia",
     "memberBindingConsent": "Persetujuan Recourse Pool untuk alamat ini",
     "memberBindingBytes": "Tandatangani pesan kedua ini sebagai 32 byte yang ditampilkan dalam heksadesimal, bukan sebagai teks. Pesan ini memasukkan alamat ini ke keanggotaan Recourse Pool Anda yang sudah ada.",

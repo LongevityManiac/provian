@@ -13,6 +13,7 @@ import { createRecourseChainPort } from './chain-ledger';
 import { MEMBERSHIP_CONSENT_OPERATIONS } from './membership-operation-identifiers';
 
 export const PRIVATE_MEMBERSHIP_TRANSITIONS = 'recourse_private_membership_transitions_v1';
+export const MEMBERSHIP_BINDING_AWAITING_FINALITY = 'recourse_membership_binding_awaiting_finality';
 interface Position { readonly block: number; readonly blockHash: string; readonly logIndex: number; readonly timestamp: number }
 interface RequiredConsent {
   readonly binding: string; readonly address: string; readonly nonce: string; readonly generation: string;
@@ -102,6 +103,11 @@ export async function beginPrivateMembershipTransition(db: Firestore, ownerIdent
   if (ids.length === 0) return fail('empty_portfolio');
   const chain = createRecourseChainPort(), block = await chain.finalizedBlock(), blockHash = await chain.blockHash(block);
   if (!blockHash) return fail('checkpoint');
+  if (kind === 'join' && rows.docs.some(row => {
+    const boundBlock: unknown = row.get('boundBlock');
+    return row.get('chainBindingStatus') === 'confirmed'
+      && typeof boundBlock === 'number' && Number.isSafeInteger(boundBlock) && boundBlock > block;
+  })) throw Error(MEMBERSHIP_BINDING_AWAITING_FINALITY);
   const publicStates = await Promise.all(ids.map(id => readHistoricalRecoursePoolState(id, { block, blockHash })));
   const first = publicStates[0];
   const priorRow = await db.collection(C.owners).doc(ownerIdentity).get();

@@ -3,12 +3,22 @@ import { getBytes } from 'ethers';
 vi.mock('../NotificationService', () => ({ default: { getBackendUrl: async () => 'https://relay.test', getPushToken: async () => null } }));
 vi.mock('../../core/network/apiFetch', () => ({ apiFetch: vi.fn(), default: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: `0x${'11'.repeat(20)}` }) } }));
-import RelayAPIService from '../RelayAPIService';
+import RelayAPIService, { RECOURSE_BINDING_AWAITING_FINALITY } from '../RelayAPIService';
 import { apiFetch } from '../../core/network/apiFetch';
 import { privateRecourseIntent, type RecoursePrivateAuthorization } from '../../core/recourse/private-access-data';
 beforeEach(() => { vi.mocked(apiFetch).mockReset(); });
 const identity = `0x${'11'.repeat(32)}`, path = `owner-operations/0x${'22'.repeat(32)}`;
 const material = () => ({ identity, secret: new Uint8Array(32).fill(3), signingSeed: new Uint8Array(32).fill(4) });
+test('membership transport preserves only the join finality response', async () => {
+  vi.spyOn(RelayAPIService, 'getAuthSecret').mockResolvedValue('test-secret');
+  vi.spyOn(RelayAPIService, 'getUserId').mockResolvedValue('test-owner');
+  const pending = (status: number) => new Response(JSON.stringify({ error: RECOURSE_BINDING_AWAITING_FINALITY }), { status });
+  vi.mocked(apiFetch).mockResolvedValueOnce(pending(409)).mockResolvedValueOnce(pending(503)).mockResolvedValueOnce(pending(409));
+  await expect(RelayAPIService.recourseRequest('membership-transitions', { kind: 'join' }))
+    .rejects.toThrow(RECOURSE_BINDING_AWAITING_FINALITY);
+  await expect(RelayAPIService.recourseRequest('membership-transitions', { kind: 'join' })).rejects.toThrow('recourse_request_refused');
+  await expect(RelayAPIService.recourseRequest('pool')).rejects.toThrow('recourse_request_refused');
+});
 test('actual phone recovery transport requires a private proof and sends it only in a POST body', async () => {
   await expect(RelayAPIService.recourseRecoveryRequest(path)).rejects.toThrow('private_access_required');
   expect(apiFetch).not.toHaveBeenCalled();

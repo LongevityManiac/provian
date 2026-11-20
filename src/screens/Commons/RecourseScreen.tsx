@@ -30,6 +30,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const [loading, setLoading] = useState(true);
   const [membershipUnavailable, setMembershipUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [addingWallet, setAddingWallet] = useState(false);
   const [error, setError] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
@@ -83,10 +84,10 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     <Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
   const bindPrimary = async () => {
     if (busy || loading) return;
-    setBusy(true); setError(false);
+    setBusy(true); setAddingWallet(true); setError(false);
     try { await bindHumanPrimaryAddress(); await load(); }
     catch { setError(true); }
-    finally { setBusy(false); }
+    finally { setAddingWallet(false); setBusy(false); }
   };
   const leave = async () => {
     if (busy || loading) return;
@@ -160,7 +161,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
             {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
             {button(t('recourse.leave'), () => { void leave(); })}
           </> : /^0x0+$/.test(state.identity)
-            ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); })
+            ? button(t(addingWallet ? 'recourse.bindingPending' : 'recourse.bindPrimary'), () => { void bindPrimary(); })
             : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
             : button(t('recourse.refresh'), () => { void load(); })}
           <Text style={styles.small}>{t('recourse.graceSummary')}</Text>
@@ -180,7 +181,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
               ? <>{button(t('recourse.recoverAddress'), () => { void recoverAddress(row.identity); })}
                 {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
           {state.primaryIdentity === null && (state.membershipState !== 'available' || !/^0x0+$/.test(state.identity))
-            ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
+            ? button(t(addingWallet ? 'recourse.bindingPending' : 'recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
           {button(t('recourse.bind'), () => navigation.navigate('RecourseBind'))}
         </View>
         <View style={styles.card}>
@@ -219,7 +220,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         <ActionTouchable accessibilityRole="button" disabled={busy} onPress={() => { void withdraw(allocationRequest); }}
           style={[styles.button, busy && styles.disabled]}><Text style={styles.buttonText}>{t('recourse.withdrawAllocation')}</Text></ActionTouchable>
       </View>
-      {busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {busy && !addingWallet ? <ActivityIndicator color={COLORS.primary} /> : null}
     </ScrollView>
     <Modal visible={reportOpen} animationType="slide" onRequestClose={() => { if (!busy) setReportOpen(false); }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>

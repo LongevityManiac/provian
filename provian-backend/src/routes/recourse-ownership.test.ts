@@ -5,7 +5,7 @@ import { createRecourseRouter } from './recourse';
 import { identityHash, RECOURSE_COLLECTIONS } from '../core/recourse/ownership';
 import { createFakeFirestore } from '../core/pvt/__test-helpers__/fake-firestore';
 import { MEMBERSHIP_CONSENT_OPERATIONS, parseMembershipConsentRequest } from '../core/recourse/membership-consent-operation';
-import { PRIVATE_MEMBERSHIP_TRANSITIONS } from '../core/recourse/private-membership-transition';
+import { MEMBERSHIP_BINDING_AWAITING_FINALITY, PRIVATE_MEMBERSHIP_TRANSITIONS } from '../core/recourse/private-membership-transition';
 import { MEMBERSHIP_DEBIT_OPERATIONS, parseMembershipDebitRequest } from '../core/recourse/membership-debit-operation';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS } from '../core/recourse/private-membership-reservation';
 import * as restoration from '../core/recourse/restoration-request';
@@ -245,5 +245,29 @@ test('active transition discovery is authenticated and scoped to the caller afte
     expect(found.status).toBe(200); expect(found.headers['cache-control']).toBe('no-store');
     expect(prepare).toHaveBeenCalledWith(fake, ownerIdentity, { id });
     expect(found.body).toEqual({ id, kind: 'join', status: 'preparing', challenges: [], pending: [] });
+  } finally { prepare.mockRestore(); }
+});
+
+test('join reports confirmation pending separately from an unavailable membership', async () => {
+  const db = createFakeFirestore(), app = express();
+  const preparation = await import('../core/recourse/membership-preparation');
+  const prepare = jest.spyOn(preparation, 'prepareMembershipTransition');
+  app.use(express.json());
+  app.use('/v1/recourse', createRecourseRouter({ db } as unknown as AgentBankDeps, (req, res, next) => {
+    if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
+    req.agentWallet = { id: 'wallet_waiting' } as Request['agentWallet'];
+    next();
+  }));
+  const join = () => request(app).post('/v1/recourse/membership-transitions').set('Authorization', 'Bearer TEST_ONLY').send({ kind: 'join' });
+  try {
+    prepare.mockRejectedValueOnce(Error(MEMBERSHIP_BINDING_AWAITING_FINALITY))
+      .mockRejectedValueOnce(Error('unrelated_failure'));
+    const pending = await join();
+    expect(pending.status).toBe(409);
+    expect(pending.headers['cache-control']).toBe('no-store');
+    expect(pending.body).toEqual({ error: MEMBERSHIP_BINDING_AWAITING_FINALITY });
+    const refused = await join();
+    expect(refused.status).toBe(400);
+    expect(refused.body).toEqual({ error: 'recourse_membership_unavailable' });
   } finally { prepare.mockRestore(); }
 });

@@ -2,7 +2,8 @@ import { seedMembershipJournal } from './__test-helpers__/membership-journal-fix
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { beginPrivateMembershipTransition, openPrivateMembershipConsents, recordPrivateMembershipConsent,
-  nextPrivateAddressConsent, refreshRecoveredMembershipTransition, rolloverPrivateMembershipTransition, PRIVATE_MEMBERSHIP_TRANSITIONS as T } from './private-membership-transition';
+  nextPrivateAddressConsent, refreshRecoveredMembershipTransition, rolloverPrivateMembershipTransition, PRIVATE_MEMBERSHIP_TRANSITIONS as T,
+  MEMBERSHIP_BINDING_AWAITING_FINALITY } from './private-membership-transition';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, planPrivateDebit, reservePrivateMembership, type PrivateMembershipAccount } from './private-membership-reservation';
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { readHistoricalRecoursePoolState } from './pool-state';
@@ -43,6 +44,28 @@ function setup(joined = false) {
   };
   return { f, fake, db, effects };
 }
+test('join waits for a newly added address to finalize before creating a transition', async () => {
+  const s = setup(), addressKey = `${R.addresses}/${a(3)}`;
+  s.fake.store.set(addressKey, { ...s.fake.store.get(addressKey), boundBlock: 99 });
+  const readPool = jest.mocked(readHistoricalRecoursePoolState);
+  const fixturePool = readPool.getMockImplementation()!;
+  readPool.mockImplementation(async (id, checkpoint) => {
+    const state = await fixturePool(id, checkpoint);
+    return checkpoint.block < 99 ? { ...state, ...checkpoint, currentAddress: id === h(3) ? a(0) : state.currentAddress } : state;
+  });
+  mockFinalizedBlock = 98;
+  readPool.mockClear();
+  await expect(beginPrivateMembershipTransition(s.db, ownerId, 'join')).rejects.toThrow(MEMBERSHIP_BINDING_AWAITING_FINALITY);
+  expect(readHistoricalRecoursePoolState).not.toHaveBeenCalled();
+  expect(s.fake.store.get(ownerKey)?.membershipTransition).toBeUndefined();
+  expect(s.fake.store.has(accountKey)).toBe(false);
+
+  mockFinalizedBlock = 99;
+  const transition = await beginPrivateMembershipTransition(s.db, ownerId, 'join');
+  expect(transition).toMatchObject({ status: 'preparing', checkpoint: { block: 99 } });
+  expect(transition.bindings.map(binding => binding.address)).toEqual([a(3), a(4)]);
+  expect(s.fake.store.has(accountKey)).toBe(false);
+});
 test('first join freezes the whole portfolio and activates only after every independent address consent', async () => {
   const s = setup(), op = await beginPrivateMembershipTransition(s.db, ownerId, 'join');
   expect(s.fake.store.get(ownerKey)?.membershipTransition).toBe(op.id);

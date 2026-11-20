@@ -5170,6 +5170,7 @@
     "restoreAuthorize": "授权您的恢复请求",
     "allocationRequest": "恢复请求ID",
     "withdrawAllocation": "领取已分配的 PVT",
+    "bindingAwaitingFinality": "您的钱包已添加。网络最终确认登记后，您即可加入。",
     "membershipUnavailable": "成员状态暂不可用",
     "memberBindingConsent": "此地址的Recourse Pool同意授权",
     "memberBindingBytes": "请将第二条消息作为以十六进制显示的32字节签名，而不是文本。此操作将此地址纳入您现有的Recourse Pool成员资格。",

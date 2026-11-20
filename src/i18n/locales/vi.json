@@ -5169,6 +5169,7 @@
     "restoreAuthorize": "Cho phép yêu cầu khôi phục của bạn",
     "allocationRequest": "Mã yêu cầu khôi phục",
     "withdrawAllocation": "Nhận PVT đã phân bổ",
+    "bindingAwaitingFinality": "Ví của bạn đã được thêm. Bạn có thể tham gia sau khi mạng xác nhận việc đăng ký ví là hoàn tất.",
     "membershipUnavailable": "Không có trạng thái thành viên",
     "memberBindingConsent": "Đồng ý tham gia Recourse Pool cho địa chỉ này",
     "memberBindingBytes": "Ký thông điệp thứ hai này dưới dạng 32 byte được hiển thị bằng hệ thập lục phân, không phải văn bản. Thao tác này đưa địa chỉ này vào tư cách thành viên Recourse Pool hiện có của bạn.",

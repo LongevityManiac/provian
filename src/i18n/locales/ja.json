@@ -5170,6 +5170,7 @@
     "restoreAuthorize": "復元リクエストを承認",
     "allocationRequest": "復元申請ID",
     "withdrawAllocation": "割り当て済みPVTを受け取る",
+    "bindingAwaitingFinality": "ウォレットを追加しました。ネットワークで登録が確定すると参加できます。",
     "membershipUnavailable": "加入状況を確認できません",
     "memberBindingConsent": "このアドレスのRecourse Poolへの同意",
     "memberBindingBytes": "この2つ目のメッセージは、テキストではなく、16進数で表示された32バイトとして署名してください。このアドレスを既存のRecourse Pool会員資格に追加します。",

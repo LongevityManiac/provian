@@ -93,6 +93,7 @@ export function humanWalletRegistrationMarker(address: string, userId: string | 
  * (about one Base block; its own bound is 90 s + a margin), so those calls may wait longer than 15 s.
  */
 export const BURN_HOLD_TIMEOUT_MS = 120_000;
+export const RECOURSE_BINDING_AWAITING_FINALITY = 'recourse_membership_binding_awaiting_finality';
 
 /** A `/v1/wallet/present` refusal. `burnId` is set when the relay RECORDED the burn first (reuse it). */
 export class PresentationRefusedError extends Error {
@@ -2162,6 +2163,12 @@ class RelayAPIService {
             method: body === undefined ? 'GET' : 'POST',
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         }, undefined, biometricAction);
+        if (path === 'membership-transitions' && body !== undefined && response.status === 409) {
+            const reply: unknown = await response.json().catch(() => null);
+            if (reply && typeof reply === 'object' && 'error' in reply && reply.error === RECOURSE_BINDING_AWAITING_FINALITY) {
+                throw new Error(RECOURSE_BINDING_AWAITING_FINALITY);
+            }
+        }
         if (!response.ok) throw new Error('recourse_request_refused');
         return response.json();
     }
