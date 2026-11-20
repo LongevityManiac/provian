@@ -99,7 +99,7 @@ Link the agent to you as its beneficiary. Once the link is in place, the agent's
 
 ### How does an agent connect to me?
 
-Open **Link my agent** in Home’s first steps and generate a one-time connection code (`PROV-XXXX-XXXX`). The agent runs the one-line bootstrap the screen shows with that code (or `npx @provian/agent-sdk@latest onboard`); that creates its wallet, seals a copy of its key to your phone, registers its machine as the witnessing device, and files a link request you accept with one tap. From then on the agent's captured work shows up under your agents, and its work mints. The sealed copy (its recovery escrow) is how you can restore the agent's key if its runtime or key is lost; it never holds earnings, so the agent's work mints and pays out whether or not it is escrowed.
+Open **AI agents** in **Earn** and generate a one-time connection code (`PROV-XXXX-XXXX`). The agent runs the one-line bootstrap the screen shows with that code (or `npx @provian/agent-sdk@latest onboard`); that creates its wallet, seals a copy of its key to your phone, registers its machine as the witnessing device, and files a link request you accept with one tap. From then on the agent's captured work shows up under your agents, and its work mints. The sealed copy (its recovery escrow) is how you can restore the agent's key if its runtime or key is lost; it never holds earnings, so the agent's work mints and pays out whether or not it is escrowed.
 
 ### What agents are supported?
 
@@ -109,7 +109,7 @@ If you're building an agent, see the [developer page](https://provian.ai/develop
 
 ### How do I connect my computer?
 
-On your phone, choose **Connect a computer** in Home’s first steps. On the computer, visit [provian.ai/pair](https://provian.ai/pair/). Scan or type the code in Provian and confirm it. Run the setup command the computer shows. When the observer checks in, both screens show that the computer is connected. A first proof arrives after the computer has witnessed work. The phone also offers a copyable command for computers without a browser.
+On your phone, choose **Your computer** in **Earn**. On the computer, visit [provian.ai/pair](https://provian.ai/pair/). Scan or type the code in Provian and confirm it. Run the setup command the computer shows. When the observer checks in, both screens show that the computer is connected. A first proof arrives after the computer has witnessed work. The phone also offers a copyable command for computers without a browser.
 
 ### Can I stand up a device that earns for my agent?
 

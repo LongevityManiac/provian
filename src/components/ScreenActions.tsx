@@ -24,19 +24,21 @@ interface ButtonProps {
     stockIcon?: Ionicon;
     accessibilityLabel?: string;
     testID?: string;
+    stacked?: boolean;
 }
 
-function Button({ label, onPress, disabled, busy, style, icon, stockIcon, accessibilityLabel, testID, filled }: ButtonProps & { filled: boolean }) {
+function Button({ label, onPress, disabled, busy, style, icon, stockIcon, accessibilityLabel, testID, stacked, filled }: ButtonProps & { filled: boolean }) {
     const foreground = filled ? COLORS.onPrimary : COLORS.primaryLight;
     return (
         <ActionPressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} testID={testID}
             accessibilityState={{ disabled: disabled || busy, busy }} disabled={disabled || busy}
-            onPress={onPress} style={({ pressed }) => [styles.button, filled ? styles.primary : styles.secondary, (pressed || disabled) && styles.dimmed, style]}>
+            onPress={onPress} style={({ pressed }) => [styles.button, stacked && styles.stacked,
+                filled ? styles.primary : styles.secondary, (pressed || disabled) && styles.dimmed, style]}>
             {busy ? <ActivityIndicator size="small" color={foreground} /> : <>
                 {icon && <ProvianIcon name={icon} size={22} color={foreground} />}
                 {stockIcon && <Ionicons name={stockIcon} size={20} color={foreground} />}
             </>}
-            <Text style={[styles.buttonLabel, { color: foreground }]}>{label}</Text>
+            <Text style={[styles.buttonLabel, stacked && styles.stackedLabel, { color: foreground }]}>{label}</Text>
         </ActionPressable>
     );
 }
@@ -87,6 +89,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row', gap: SPACING.xs, justifyContent: 'center', alignItems: 'center',
     },
     primary: { backgroundColor: COLORS.primary },
+    stacked: { flexDirection: 'column', paddingHorizontal: SPACING.xs, minHeight: 68 },
+    stackedLabel: { fontSize: 13 },
     secondary: { borderColor: COLORS.border, borderWidth: 1 },
     buttonLabel: { flexShrink: 1, fontSize: 16, fontWeight: '700', textAlign: 'center' },
     chip: { minHeight: 36, justifyContent: 'center', paddingHorizontal: SPACING.s + 2, borderRadius: BORDER_RADIUS.round },

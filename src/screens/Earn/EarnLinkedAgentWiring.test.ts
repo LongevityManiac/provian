@@ -3,22 +3,24 @@ import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
 const hub = readFileSync(`${root}/src/screens/Earn/EarnHubScreen.tsx`, 'utf8');
+const connections = readFileSync(`${root}/src/core/earn/earningConnections.ts`, 'utf8');
 const detail = readFileSync(`${root}/src/screens/Earn/EarnSurfaceDetailScreen.tsx`, 'utf8');
 const agentHub = readFileSync(`${root}/src/screens/Agent/AgentHubScreen.tsx`, 'utf8');
 const relay = readFileSync(`${root}/provian-backend/src/server.ts`, 'utf8');
 
 describe(' linked-agent truth wiring', () => {
     it('Earn hub and detail resolve the cheap identity view before rich enrichment', () => {
-        expect(hub).toContain('getLinkedAgentIdentities({ throwOnError: true })');
+        expect(hub).toContain('refreshEarningConnections(address)');
+        expect(connections).toContain('getLinkedAgentIdentities({ throwOnError: true })');
         expect(detail).toContain('getLinkedAgentIdentities({ throwOnError: true })');
-        expect(hub.indexOf('getLinkedAgentIdentities({ throwOnError: true })'))
-            .toBeLessThan(hub.indexOf('getLinkedAgents({ throwOnError: true })'));
+        expect(connections.indexOf('getLinkedAgentIdentities({ throwOnError: true })'))
+            .toBeLessThan(connections.indexOf('getLinkedAgents({ throwOnError: true })'));
         expect(detail.indexOf('getLinkedAgentIdentities({ throwOnError: true })'))
             .toBeLessThan(detail.indexOf('getLinkedAgents({ throwOnError: true })'));
     });
 
     it('RED: agent screens never turn a failed linked-agent read into []', () => {
-        expect(hub).not.toContain("getLinkedAgents().catch(() => ({ linked_agents: [] }))");
+        expect(connections).not.toContain("getLinkedAgents().catch(() => ({ linked_agents: [] }))");
         expect(detail).not.toContain("getLinkedAgents().catch(() => ({ linked_agents: [] }))");
         expect(agentHub).toContain('getLinkedAgents({ throwOnError: true })');
     });

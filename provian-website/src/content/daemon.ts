@@ -102,7 +102,7 @@ export const DAEMON_STEPS: readonly DaemonStep[] = [
   {
     n: '01',
     title: 'Confirm the code on your phone',
-    body: 'On your phone, choose Connect a computer in Home’s first steps. Open provian.ai/pair on the computer, then scan its QR code or enter its code on the phone and confirm. For a computer without a browser, copy the setup command from the phone.',
+    body: 'On your phone, open Earn and choose Your computer. Open provian.ai/pair on the computer, then scan its QR code or enter its code on the phone and confirm. For a computer without a browser, copy the setup command from the phone.',
     cmd: null,
   },
   {

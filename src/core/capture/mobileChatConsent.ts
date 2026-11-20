@@ -35,14 +35,18 @@ export type MobileChatConsent = boolean | null;
 
 export async function getMobileChatConsent(): Promise<MobileChatConsent> {
     try {
-        const raw = await AsyncStorage.getItem(CAPTURE_CONSENT_KEY);
-        if (raw === null || raw === undefined) return null;
-        const parsed = JSON.parse(raw);
-        if (parsed === true || parsed === false) return parsed;
-        return null;
+        return await getMobileChatConsentOrThrow();
     } catch {
         return null;
     }
+}
+
+export async function getMobileChatConsentOrThrow(): Promise<MobileChatConsent> {
+    const raw = await AsyncStorage.getItem(CAPTURE_CONSENT_KEY);
+    if (raw == null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === true || parsed === false) return parsed;
+    throw new Error('Invalid mobile chat consent');
 }
 
 export async function setMobileChatConsent(value: boolean): Promise<void> {

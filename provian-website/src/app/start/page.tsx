@@ -40,8 +40,12 @@ const STEPS: Step[] = [
     body: 'Your wallet binds to its owner at creation. Its independent recovery commitment separates ownership from the spending key. Keep your recovery phrase or encrypted cloud backup; a backup password brings it to a new phone.',
   },
   {
+    title: 'Open Home.',
+    body: 'See your confirmed PVT balance and the value of your other assets. Send, receive, swap, and buy from the balance card. Tap PVT, USDC, ETH, or another asset you hold to see it by network, or open All assets and history for the full wallet.',
+  },
+  {
     title: 'Do what you already do.',
-    body: 'Chat with an AI, keep a promise you made, pay someone, or swap one coin for another in your wallet. Each leaves a receipt, and each receipt mints PVT. Coding and commits come with the desktop app, two steps down.',
+    body: 'Tap Start earning on Home or open Earn to connect your computer, capture AI chats, or link an agent. You can also earn from the promises you keep and the wallet activity you already do.',
     receipt: 'A receipt for each AI chat, kept promise, send, swap, and payment.',
     action: { label: 'Every way to earn', href: route.earn },
   },

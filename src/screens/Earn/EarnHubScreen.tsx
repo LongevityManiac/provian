@@ -27,20 +27,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, GRADIENTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { matchesSurface } from '../../core/earn/EarningSurfaceRegistry';
 import {
-    EARNING_SURFACES,
-    getSurface,
-    isSurfaceConnectionKnown,
-    resolveAllSurfaceStatuses,
-    shouldManageConnectedAgents,
-    type EarningSurfaceId,
-    type SurfaceStatusInputs,
-    type SurfaceStatusResult,
-    type SurfaceConnectionReadiness,
-} from '../../core/earn/EarningSurfaceRegistry';
+    CONNECTION_OPTIONS, connectionState, hasEarningConnection, refreshEarningConnections, useEarningConnections,
+} from '../../core/earn/earningConnections';
 import RelayAPIService from '../../services/RelayAPIService';
-import { getMobileChatConsent } from '../../core/capture/mobileChatConsent';
-import { anyLinkedAgentLive } from '../../utils/agentLiveness';
 import { useWalletStore } from '../../store/walletStore';
 import { isSavedAccrual, readWalletTop, saveWalletTop } from '../../core/wallet/walletTopCache';
 import { initialWalletTop, walletTopNote, WalletTopLoader, type WalletTopShown } from '../../core/wallet/walletTopLoad';
@@ -52,12 +43,9 @@ import StatusBarBackground from '../../components/StatusBarBackground';
 import { useNavigation } from '@react-navigation/native';
 import type { AppParamList } from '../../navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import useCommonsStore from '../../store/commonsStore';
 
 /** Window of recent PE history used for per-surface activity. */
 const HISTORY_WINDOW = 200;
-
-const CONNECTION_OPTIONS = EARNING_SURFACES.filter(({ id }) => id !== 'promises' && id !== 'wallet_activity');
 
 interface EarnHubNavigation {
     navigate: (screen: string, params?: Record<string, unknown>) => void;
@@ -67,32 +55,13 @@ interface EarnHubScreenProps {
     navigation: EarnHubNavigation;
 }
 
-interface HubData {
-    statuses: Record<EarningSurfaceId, SurfaceStatusResult>;
+interface HubActivity {
+    recentActionTypes: readonly string[] | null;
     pendingLinkCount: number;
-    /** §2.1: agents awaiting THIS human's approval of a described action. */
     pendingApprovalCount: number;
-    /** Each setup-producing source resolves independently; unknown never renders as setup. */
-    readiness: SurfaceConnectionReadiness;
-    /**
-     * Whether recent PE history has loaded. Until it has, a Connected card must
-     * not claim "No recent activity yet" — the history may still promote it to
-     * Earning (no false empty state while loading).
-     */
-    historyKnown: boolean;
 }
 
-const EMPTY_INPUTS: SurfaceStatusInputs = {
-    chatConsent: null,
-    activeDeviceCount: 0,
-    linkedAgentCount: 0,
-    linkedAgentsWithExternalWalletCount: 0,
-    ownExternalWalletCount: 0,
-    anyLinkedAgentLive: false,
-    commonsJoined: false,
-    activeForgeInstallProviders: [],
-    recentActionTypes: [],
-};
+const EMPTY_ACTIVITY: HubActivity = { recentActionTypes: null, pendingLinkCount: 0, pendingApprovalCount: 0 };
 
 export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React.JSX.Element {
     const { t } = useTranslation();
@@ -129,207 +98,88 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         return () => sub.remove();
     }, [loadParticipation]));
 
-    const commonsJoined = useCommonsStore((s) => s.isJoined);
-    const commonsMembershipStatus = useCommonsStore((s) => s.membershipStatus);
-    const refreshCommonsMembership = useCommonsStore((s) => s.refreshMembership);
-
-    const [cachedIdentities] = useState(() => RelayAPIService.getCachedLinkedAgentIdentities());
-    const [initialInputs] = useState<SurfaceStatusInputs>(() => ({
-        ...EMPTY_INPUTS,
-        linkedAgentCount: cachedIdentities?.length ?? 0,
-        anyLinkedAgentLive: anyLinkedAgentLive(cachedIdentities ?? []),
-    }));
-    const inputsRef = useRef<SurfaceStatusInputs>(initialInputs);
-    const [data, setData] = useState<HubData>({
-        statuses: resolveAllSurfaceStatuses(initialInputs),
-        pendingLinkCount: 0,
-        pendingApprovalCount: 0,
-        historyKnown: false,
-        readiness: {
-            chatConsent: false,
-            devices: false,
-            linkedAgents: cachedIdentities !== null,
-            commons: commonsMembershipStatus !== 'unknown',
-            forgeInstalls: false,
-            ownExternalWallets: false,
-        },
-    });
+    const connections = useEarningConnections(address);
+    const [activity, setActivity] = useState<{ wallet: string; data: HubActivity }>();
+    const data = activity?.wallet === address ? activity.data : EMPTY_ACTIVITY;
     const [refreshing, setRefreshing] = useState(false);
-    const [checkedConnections, setCheckedConnections] = useState(false);
-
-    const updateInputs = useCallback((
-        patch: Partial<SurfaceStatusInputs>,
-        dataPatch: Partial<Omit<HubData, 'statuses' | 'readiness'>> = {},
-        readinessPatch: Partial<SurfaceConnectionReadiness> = {},
-    ) => {
-        inputsRef.current = { ...inputsRef.current, ...patch };
-        setData((prev) => ({
-            ...prev,
-            ...dataPatch,
-            readiness: { ...prev.readiness, ...readinessPatch },
-            statuses: resolveAllSurfaceStatuses(inputsRef.current),
-        }));
-    }, []);
 
     const loadData = useCallback(async () => {
-        // Identity first: this is one indexed wallet query and is enough to show
-        // "Connected" immediately. Full liveness/count enrichment follows in the
-        // background and may promote the card to "Earning" without blocking it.
-        const agentTask = RelayAPIService.getLinkedAgentIdentities({ throwOnError: true })
-            .then(({ linked_agents }) => {
-                updateInputs({
-                    linkedAgentCount: linked_agents.length,
-                    anyLinkedAgentLive: anyLinkedAgentLive(linked_agents),
-                }, {}, { linkedAgents: true });
-                return RelayAPIService.getLinkedAgents({ throwOnError: true });
-            })
-            .then(({ linked_agents }) => {
-                updateInputs({
-                    linkedAgentCount: linked_agents.length,
-                    linkedAgentsWithExternalWalletCount: linked_agents.filter(
-                        (agent) => agent.external_address_linked === true,
-                    ).length,
-                    anyLinkedAgentLive: anyLinkedAgentLive(linked_agents),
-                }, {}, { linkedAgents: true });
-            })
-            .catch((error) => {
-                console.error('[EarnHub] Failed to refresh linked agents:', error);
-                // Preserve a prior confirmed state; on a cold failure the agent
-                // cards remain neutral/loading rather than becoming "Set up".
-            });
+        if (!address) return;
+        const update = (patch: Partial<HubActivity>) => {
+            if (useWalletStore.getState().address !== address) return;
+            setActivity(prior => ({ wallet: address, data: {
+                ...(prior?.wallet === address ? prior.data : EMPTY_ACTIVITY), ...patch,
+            } }));
+        };
 
-        const tasks: Promise<unknown>[] = [
-            agentTask,
-            RelayAPIService.getRegisteredDevicesOrThrow()
-                .then((devices) => {
-                    const activeDevices = devices.filter((device) => device.status === 'active');
-                    updateInputs(
-                        { activeDeviceCount: activeDevices.length },
-                        {},
-                        { devices: true },
-                    );
-                })
-                .catch((error) => console.error('[EarnHub] Failed to refresh devices:', error)),
-            RelayAPIService.listForgeInstallsOrThrow()
-                .then((forgeInstalls) => updateInputs({
-                    activeForgeInstallProviders: forgeInstalls
-                        .filter((install) => install.revoked_at === null)
-                        .map((install) => install.provider),
-                }, {}, { forgeInstalls: true }))
-                .catch((error) => console.error('[EarnHub] Failed to refresh forge installs:', error)),
-            RelayAPIService.listOwnExternalAddresses()
-                .then((rows) => {
-                    if (rows !== null) updateInputs({ ownExternalWalletCount: rows.length }, {}, { ownExternalWallets: true });
-                })
-                .catch((error) => console.error('[EarnHub] Failed to refresh proven wallets:', error)),
-            RelayAPIService.getPVTHistory(HISTORY_WINDOW)
-                .then((history) => {
-                    if (history) updateInputs({ recentActionTypes: history.entries.map(entry => entry.actionType) }, { historyKnown: true });
-                })
-                .catch((error) => console.error('[EarnHub] Failed to refresh history:', error)),
-            getMobileChatConsent()
-                .then((chatConsent) => updateInputs({ chatConsent }, {}, { chatConsent: true }))
-                .catch((error) => console.error('[EarnHub] Failed to read chat consent:', error)),
-            RelayAPIService.getLinkRequests()
-                .then((linkReq) => setData((prev) => ({
-                    ...prev,
-                    pendingLinkCount: (linkReq?.link_requests ?? []).length,
-                })))
-                .catch((error) => console.error('[EarnHub] Failed to refresh link requests:', error)),
-            RelayAPIService.getWalletApprovalRequests()
-                .then((approvalReqs) => setData((prev) => ({
-                    ...prev,
-                    pendingApprovalCount: approvalReqs.length,
-                })))
-                .catch((error) => console.error('[EarnHub] Failed to refresh approval requests:', error)),
-            refreshCommonsMembership()
-                .then((commonsMembership) => {
-                    const known = commonsMembership !== null || commonsMembershipStatus !== 'unknown';
-                    if (known) {
-                        updateInputs(
-                            { commonsJoined: commonsMembership ?? commonsJoined },
-                            {},
-                            { commons: true },
-                        );
-                    }
-                })
-                .catch((error) => console.error('[EarnHub] Failed to refresh Commons membership:', error)),
-        ];
+        await Promise.allSettled([
+            refreshEarningConnections(address),
+            RelayAPIService.getPVTHistory(HISTORY_WINDOW).then(history => {
+                if (history) update({ recentActionTypes: history.entries.map(entry => entry.actionType) });
+            }),
+            RelayAPIService.getLinkRequests().then(requests => {
+                if (requests) update({ pendingLinkCount: requests.link_requests.length });
+            }),
+            RelayAPIService.getWalletApprovalRequests().then(requests => update({ pendingApprovalCount: requests.length })),
+        ]);
+    }, [address]);
 
-        await Promise.all(tasks);
-        setCheckedConnections(true);
-    }, [commonsJoined, commonsMembershipStatus, refreshCommonsMembership, updateInputs]);
-
-    useFocusEffect(
-        useCallback(() => {
-            loadData();
-        }, [loadData])
-    );
+    useFocusEffect(useCallback(() => {
+        void loadData();
+        const sub = AppState.addEventListener('change', state => {
+            if (state === 'active') void loadData();
+        });
+        return () => sub.remove();
+    }, [loadData]));
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        await Promise.all([loadData(), loadParticipation()]);
+        await Promise.allSettled([loadData(), loadParticipation()]);
         setRefreshing(false);
     }, [loadData, loadParticipation]);
 
-    const openSurface = useCallback(
-        (surfaceId: EarningSurfaceId) => {
-            if (!isSurfaceConnectionKnown(getSurface(surfaceId), data.readiness)) return;
-            if (shouldManageConnectedAgents(surfaceId, data.statuses[surfaceId].status)) {
-                navigation.navigate('AgentHub');
-                return;
-            }
-            if (surfaceId === 'desktop_daemon' && data.statuses[surfaceId].status === 'setup') {
-                navigation.navigate('ComputerPairing');
-                return;
-            }
-            navigation.navigate('EarnSurfaceDetail', { surfaceId });
-        },
-        [data.readiness, data.statuses, navigation]
-    );
-
-    const known = (surface: typeof CONNECTION_OPTIONS[number]) => isSurfaceConnectionKnown(surface, data.readiness);
-    const isConnected = (surface: typeof CONNECTION_OPTIONS[number]) => {
-        if (!known(surface)) return false;
-        if (surface.target?.kind === 'forge') return inputsRef.current.activeForgeInstallProviders.includes(surface.target.provider);
-        if (surface.id === 'commons') return inputsRef.current.commonsJoined;
-        if (surface.id === 'agent_external_wallet') return data.statuses[surface.id].status === 'earning';
-        return data.statuses[surface.id].status !== 'setup';
-    };
-    const connected = CONNECTION_OPTIONS.filter(isConnected);
-    const available = CONNECTION_OPTIONS.filter(surface => !isConnected(surface));
-    const connectionStatusKnown = CONNECTION_OPTIONS.every(known);
-    const hasConnection = connected.some(surface => surface.id !== 'commons');
+    const connected = CONNECTION_OPTIONS.filter(({ id }) => connectionState(connections, id) === 'connected');
+    const available = CONNECTION_OPTIONS.filter(({ id }) => connectionState(connections, id) !== 'connected');
+    const hasConnection = hasEarningConnection(connections);
     const connectPrompt = hasConnection ? 'overhaul.connectNext'
-        : connectionStatusKnown ? 'overhaul.connectFirst' : 'overhaul.connections';
+        : connections.checked ? 'overhaul.connectFirst' : 'overhaul.connections';
 
-    const renderConnection = (surface: typeof CONNECTION_OPTIONS[number], active: boolean) => {
-        const result = data.statuses[surface.id];
-        const isKnown = known(surface);
-        const label = surface.id === 'github' && !active ? t('overhaul.connectGitHub') : t(`earn.surfaces.${surface.id}.title`);
+    const renderConnection = (surface: typeof CONNECTION_OPTIONS[number]) => {
+        const state = connectionState(connections, surface.id);
+        const label = surface.id === 'github' && state !== 'connected'
+            ? t('overhaul.connectGitHub') : t(`earn.surfaces.${surface.id}.title`);
         const icon = surface.id === 'desktop_daemon' ? 'computer'
             : surface.id === 'connected_agents' || surface.id === 'agent_external_wallet' ? 'agent'
             : surface.id === 'chat_capture' ? 'chat' : undefined;
-        const statusLabel = active ? t('earn.status.connected')
-            : isKnown || checkedConnections ? t('overhaul.needsAttention') : t('common.loading');
-        const note = !isKnown ? checkedConnections ? t('overhaul.couldNotCheckConnection') : null
-            : !active ? t(`earn.surfaces.${surface.id}.tagline`)
-            : surface.id === 'agent_external_wallet' ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: result.recentPECount })
-            : result.status === 'earning' && data.historyKnown ? t('earn.recentCount', { count: result.recentPECount })
-            : null;
-        const start = () => {
-            if (active) return openSurface(surface.id);
-            const target = surface.target;
-            if (target?.kind === 'forge') return stack.navigate('ForgeConnect', { provider: target.provider });
-            if (surface.id === 'own_external_wallet') return stack.navigate('ProveOwnWallet');
-            if (surface.id === 'desktop_daemon') return stack.navigate('ComputerPairing');
-            if (surface.id === 'connected_agents') return stack.navigate('ConnectAgent', { mode: 'agent' });
-            openSurface(surface.id);
+        const statusLabel = state === 'connected' ? t('earn.status.connected')
+            : state === 'stopped' ? t('overhaul.needsAttention') : null;
+        const recentCount = data.recentActionTypes?.filter(actionType => matchesSurface(surface, actionType)).length;
+        const description = t(`earn.surfaces.${surface.id}.tagline`);
+        const note = state === 'connected' && surface.id === 'agent_external_wallet'
+            ? t('earn.surfaces.agent_external_wallet.cardLinked', { count: connections.linkedWalletCount })
+            : state === 'connected' && recentCount ? t('earn.recentCount', { count: recentCount })
+            : state === undefined && connections.checked ? t('overhaul.couldNotCheckConnection') : description;
+
+        const open = () => {
+            if (surface.id === 'connected_agents' && connections.linkedAgentCount > 0) return navigation.navigate('AgentHub');
+            if (state !== 'connected') {
+                const target = surface.target;
+                if (target?.kind === 'forge') return stack.navigate('ForgeConnect', { provider: target.provider });
+                if (surface.id === 'own_external_wallet') return stack.navigate('ProveOwnWallet');
+                if (surface.id === 'desktop_daemon') return stack.navigate('ComputerPairing');
+                if (surface.id === 'connected_agents') return stack.navigate('ConnectAgent', { mode: 'agent' });
+            }
+            navigation.navigate('EarnSurfaceDetail', { surfaceId: surface.id });
         };
-        return <DestinationRow key={surface.id} label={label} detail={note ? `${statusLabel} · ${note}` : statusLabel} icon={icon}
-            stockIcon={icon ? undefined : surface.icon as keyof typeof Ionicons.glyphMap}
-            busy={!isKnown && !checkedConnections} onPress={isKnown && !surface.comingSoon ? start : undefined} />;
+        return <DestinationRow key={surface.id} label={label} detail={statusLabel ? `${statusLabel} · ${note}` : note}
+            icon={icon} stockIcon={icon ? undefined : surface.icon as keyof typeof Ionicons.glyphMap}
+            busy={state === undefined && !connections.checked} onPress={state !== undefined && !surface.comingSoon ? open : undefined} />;
     };
+
+    const waysToEarn = available.length > 0 && <View style={styles.section}>
+        <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
+        {available.map(renderConnection)}
+    </View>;
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -353,6 +203,8 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     </View>
                     <AppMenu />
                 </View>
+
+                {!hasConnection && waysToEarn}
 
                 <ParticipationCard
                     pvtAccrual={participation.value}
@@ -397,7 +249,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
 
                 {connected.length > 0 && <View style={styles.section}>
                     <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('earn.status.connected')}</Text>
-                    {connected.map(surface => renderConnection(surface, true))}
+                    {connected.map(renderConnection)}
                 </View>}
 
                 <View style={styles.section}>
@@ -406,14 +258,9 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                             : t('earn.recentCount', { count: participation.value.weeklyPEs })}
                         onPress={() => navigation.navigate('MyProvenance')} />
                     <Text style={actionStyles.body}>{t('overhaul.standardSettlement')}</Text>
-                    <DestinationRow label={t('overhaul.resumeFirstAction')} icon="home"
-                        onPress={() => stack.navigate('MainTabs', { screen: 'WalletTab', params: { starterRequest: Date.now() } })} />
                 </View>
 
-                {available.length > 0 && <View style={styles.section}>
-                    <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
-                    {available.map(surface => renderConnection(surface, false))}
-                </View>}
+                {hasConnection && waysToEarn}
             </ScrollView>
             <StatusBarBackground />
         </SafeAreaView>

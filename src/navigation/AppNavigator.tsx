@@ -20,6 +20,7 @@ import ExportMnemonicScreen from '../screens/Settings/Export/ExportMnemonicScree
 import ImportRecoveryPhraseScreen from '../screens/Recovery/ImportRecoveryPhraseScreen';
 import CloudRecoveryScreen from '../screens/Recovery/CloudRecoveryScreen';
 import DashboardScreen from '../screens/Dashboard/DashboardScreen';
+import AssetDetailScreen from '../screens/Dashboard/AssetDetailScreen';
 import SendScreen from '../screens/Action/SendScreen';
 import HumanPresentmentScreen from '../screens/Presentment/HumanPresentmentScreen';
 import PresentationRequesterScreen from '../screens/Presentment/PresentationRequesterScreen';
@@ -465,6 +466,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="Attestation" component={AttestationScreen} />
                 <Stack.Screen name="MainTabs" component={TabNavigator} />
                 <Stack.Screen name="Dashboard" component={DashboardScreen} />
+                <Stack.Screen name="AssetDetail" component={AssetDetailScreen} />
                 <Stack.Screen name="BuildWithProvian" component={BuildWithProvianScreen} />
                 <Stack.Screen name="ComputerPairing" component={ComputerPairingScreen} />
                 <Stack.Screen name="Send" component={SendScreen} />

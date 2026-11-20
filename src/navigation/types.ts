@@ -69,6 +69,7 @@ export type AppParamList = {
 
     // Dashboard
     Dashboard: undefined;
+    AssetDetail: { assetKey: string; symbol: string };
 
     // Actions
     // [F19] The agent-initiated Send params (isAgentInitiated / agentId / agent*)
@@ -199,7 +200,7 @@ export type AppParamList = {
 // =============================================================================
 
 export type TabParamList = {
-    WalletTab: { starterRequest?: number } | undefined;
+    WalletTab: undefined;
     AgentsTab: undefined;
     CommonsTab: { tab?: 'feed' | 'work' | 'people' | 'inbox' } | undefined;
     PromisesTab: undefined;

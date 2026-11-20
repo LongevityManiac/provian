@@ -1,20 +1,21 @@
 import OnRampReconciler from '../../core/onramp/OnRampReconciler';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, AppState, Image, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { AppParamList, TabParamList } from '../../navigation/types';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { ActionPressable, actionStyles, DestinationRow, PrimaryAction } from '../../components/ScreenActions';
+import { ActionPressable, actionStyles, DestinationRow, PrimaryAction, SecondaryAction } from '../../components/ScreenActions';
 import ProvianIcon from '../../components/ProvianIcon';
 import { AppMenu } from '../../components/AppMenu';
 import TokenIcon from '../../components/TokenIcon';
 import BalanceService from '../../core/wallet/BalanceService';
+import { homeAssets, homeAssetBalance } from '../../core/wallet/homeAssets';
+import { hasEarningConnection, refreshEarningConnections, useEarningConnections } from '../../core/earn/earningConnections';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { getPhoneMeter } from '../../core/meter/phoneMeterRuntime';
 import { localHistoryEntries } from '../../core/meter/peHistoryView';
@@ -31,32 +32,30 @@ import { hasPendingAgentSetup } from '../Agent/ConnectAgentScreen';
 
 type StackNav = NativeStackNavigationProp<AppParamList>;
 type TabNav = BottomTabNavigationProp<TabParamList>;
-const starterKey = (wallet: string) => `provian.home.starter.${wallet.toLowerCase()}`;
 
 export default function HomeScreen() {
     const { t } = useTranslation();
     const tab = useNavigation<TabNav>();
-    const route = useRoute<RouteProp<TabParamList, 'WalletTab'>>();
     const stack = tab.getParent<StackNav>()!;
     const address = useWalletStore(state => state.address);
+    const assets = useWalletStore(state => state.assets);
+    const connections = useEarningConnections(address);
     const lastPvt = useWalletStore(state => state.lastConfirmedPvt);
     const pvtStatus = useWalletStore(state => state.pvtBalanceStatus);
     const locked = useWalletStore(state => state.isLockdownActive);
     const userName = useWalletStore(state => state.userName);
     const [money, setMoney] = useState<{ wallet: string; total: ReturnType<typeof portfolioTotal> } | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [starter, setStarter] = useState(false);
-    const [starterY, setStarterY] = useState<number>();
-    const scroll = useRef<ScrollView>(null);
-    const starterPreference = useRef(0);
     const [resumable, setResumable] = useState<'computer' | 'agent' | null>(null);
     const [proofs, setProofs] = useState<PVTHistoryEntry[]>([]);
     const [now, setNow] = useState(Date.now);
     const [proofMoment, setProofMoment] = useState(false);
     const pulse = useRef(new Animated.Value(1)).current;
     const lastSeen = useRef<{ wallet: string; proof: string; balance: number } | undefined>(undefined);
-    const pvt = cachedPvtAsset(lastPvt, address, !isTestnet());
+    const mainnet = !isTestnet();
+    const pvt = cachedPvtAsset(lastPvt, address, mainnet);
     const fiat = money?.wallet === address ? money.total : null;
+    const rows = homeAssets(assets, pvt, mainnet);
 
     useEffect(() => {
         if (!pvt || pvtStatus !== 'fresh' || !proofs[0]) return;
@@ -92,6 +91,7 @@ export default function HomeScreen() {
 
     const refreshContext = useCallback(async () => {
         if (!address) return;
+        const connectionRefresh = refreshEarningConnections(address);
         const meter = getPhoneMeter();
         const [recent, waiting, agentSetup] = await Promise.all([
             meter.start().then(() => localHistoryEntries(meter.store)).catch(() => []),
@@ -101,31 +101,8 @@ export default function HomeScreen() {
         if (useWalletStore.getState().address !== address) return;
         setProofs(recent.slice(0, 3));
         setResumable(waiting ? 'computer' : agentSetup ? 'agent' : null);
+        await connectionRefresh;
     }, [address]);
-
-    const starterRequest = route.params?.starterRequest;
-    useEffect(() => {
-        if (!address) return;
-        const preference = ++starterPreference.current;
-        let current = true;
-        void AsyncStorage.getItem(starterKey(address)).then(value => {
-            if (current && preference === starterPreference.current) setStarter(value !== 'dismissed');
-        }).catch(() => {});
-        return () => { current = false; };
-    }, [address]);
-
-    useEffect(() => {
-        if (!address || starterRequest === undefined) return;
-        starterPreference.current++;
-        setStarter(true);
-        void AsyncStorage.removeItem(starterKey(address)).catch(() => {});
-    }, [address, starterRequest]);
-
-    useEffect(() => {
-        if (starterRequest === undefined || !starter || starterY === undefined) return;
-        scroll.current?.scrollTo({ y: Math.max(0, starterY - SPACING.s), animated: true });
-        tab.setParams({ starterRequest: undefined });
-    }, [starter, starterY, starterRequest, tab]);
 
     useFocusEffect(useCallback(() => {
         void refreshBalance().catch(() => {});
@@ -148,13 +125,6 @@ export default function HomeScreen() {
         };
     }, [address, refreshBalance, refreshContext]));
 
-    const dismissStarter = () => {
-        starterPreference.current++;
-        setStarter(false);
-        setStarterY(undefined);
-        void AsyncStorage.setItem(starterKey(address), 'dismissed').catch(() => {});
-    };
-
     return (
         <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.header}>
@@ -167,7 +137,7 @@ export default function HomeScreen() {
                 </ActionPressable>}
                 <AppMenu />
             </View>
-            <ScrollView ref={scroll} contentContainerStyle={styles.content} refreshControl={
+            <ScrollView contentContainerStyle={styles.content} refreshControl={
                 <RefreshControl refreshing={refreshing} tintColor={COLORS.primary}
                     onRefresh={() => {
                         setRefreshing(true);
@@ -203,37 +173,39 @@ export default function HomeScreen() {
                     </View>
                     {!!fiat && !!totalAgeLabel(fiat, t) && <Text style={styles.muted}>{totalAgeLabel(fiat, t)}</Text>}
                     <View style={styles.quickActions}>
-                        <PrimaryAction icon="send" label={t('dashboard.send')} onPress={() => stack.navigate('Send')} style={styles.send} />
-                        <ActionPressable accessibilityRole="button" style={styles.receive} onPress={() => stack.navigate('Receive')}>
-                            <ProvianIcon name="receive" size={22} color={COLORS.primaryLight} />
-                            <Text style={styles.link}>{t('dashboard.receive')}</Text>
-                        </ActionPressable>
+                        <PrimaryAction stacked icon="send" label={t('dashboard.send')}
+                            onPress={() => stack.navigate('Send')} style={styles.quickAction} />
+                        <SecondaryAction stacked icon="receive" label={t('dashboard.receive')}
+                            onPress={() => stack.navigate('Receive')} style={styles.quickAction} />
+                        <SecondaryAction stacked stockIcon="swap-horizontal-outline" label={t('dashboard.swap')}
+                            onPress={() => stack.navigate('Swap')} style={styles.quickAction} />
+                        <SecondaryAction stacked stockIcon="card-outline" label={t('dashboard.buy')}
+                            onPress={() => stack.navigate('BuyCrypto')} style={styles.quickAction} />
                     </View>
-                    <DestinationRow label={t('overhaul.assetsAndHistory')} stockIcon="wallet-outline" onPress={() => stack.navigate('Dashboard')} />
                 </View>
 
-                {starter && <View style={styles.starter} onLayout={event => setStarterY(event.nativeEvent.layout.y)}>
-                    <Image source={require('../../../assets/images/vision-builders.png')} style={styles.photo} accessibilityIgnoresInvertColors />
-                    <View style={styles.starterBody}>
-                        <View style={styles.balanceTop}>
-                            <Text style={[actionStyles.sectionTitle, styles.starterTitle]}>{t('overhaul.firstTask')}</Text>
-                            <ActionPressable accessibilityRole="button" accessibilityLabel={t('common.close')} hitSlop={10} onPress={dismissStarter}>
-                                <Ionicons name="close" size={22} color={COLORS.textSecondary} />
-                            </ActionPressable>
-                        </View>
-                        <DestinationRow label={t('overhaul.chatWithAi')} icon="chat" onPress={() => tab.navigate('ChatTab')} />
-                        <DestinationRow label={t('connectAgent.deviceTitle')} detail={t('overhaul.connectComputerDetail')}
-                            icon="computer" onPress={() => stack.navigate('ComputerPairing')} />
-                        <DestinationRow label={t('overhaul.connectCodeHosting')} detail={t('overhaul.connectCodeHostingDetail')}
-                            stockIcon="git-branch-outline" onPress={() => stack.navigate('ConnectAgent', { mode: 'codeHost' })} />
-                        <DestinationRow label={t('overhaul.linkMyAgent')} icon="agent" onPress={() => stack.navigate('ConnectAgent', { mode: 'agent' })} />
-                        <DestinationRow label={t('overhaul.exploreCommons')} icon="commons" onPress={() => tab.navigate('CommonsTab')} />
-                        <DestinationRow label={t('overhaul.linkMyWallet')} stockIcon="wallet-outline" onPress={() => stack.navigate('ProveOwnWallet')} />
-                        <DestinationRow label={t('overhaul.readVision')} stockIcon="compass-outline" onPress={() => stack.navigate('Vision')} />
-                    </View>
+                <HomeAttentionRows />
+
+                {connections.checked && !hasEarningConnection(connections) && <View style={styles.earnCard}>
+                    <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('overhaul.startEarningTitle')}</Text>
+                    <Text style={actionStyles.body}>{t('overhaul.startEarningBody')}</Text>
+                    <PrimaryAction label={t('overhaul.startEarning')} onPress={() => tab.navigate('AgentsTab')} />
                 </View>}
 
-                <HomeAttentionRows />
+                <View style={styles.section}>
+                    <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('dashboard.assets')}</Text>
+                    {rows.map(row => {
+                        const balance = homeAssetBalance(row, fiat !== null);
+                        const holding = row.holdings.length === 1 ? row.holdings[0] : undefined;
+                        return <DestinationRow key={row.key} label={row.symbol} detail={holding?.chain}
+                            leading={<TokenIcon symbol={row.symbol} size={30} chain={holding?.chain} />}
+                            end={<Text style={[styles.assetAmount, actionStyles.money, row.key === 'PVT' && styles.pvtAsset]}
+                                numberOfLines={1} adjustsFontSizeToFit>{balance === null ? '—' : displayBalance(balance)}</Text>}
+                            onPress={() => stack.navigate('AssetDetail', { assetKey: row.key, symbol: row.symbol })} />;
+                    })}
+                    <DestinationRow label={t('overhaul.allAssetsAndHistory')} stockIcon="wallet-outline"
+                        onPress={() => stack.navigate('Dashboard')} />
+                </View>
 
                 {proofs.length > 0 && <View style={styles.section}>
                     <View style={styles.balanceTop}>
@@ -276,13 +248,11 @@ const styles = StyleSheet.create({
     warning: { color: COLORS.warning, fontWeight: '600' },
     moneyLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: SPACING.l },
     fiat: { color: COLORS.text, fontSize: 21, fontWeight: '700' },
-    quickActions: { flexDirection: 'row', gap: SPACING.m, marginTop: SPACING.m, marginBottom: SPACING.xs },
-    send: { flex: 1 },
-    receive: { flex: 1, flexDirection: 'row', gap: 7, minHeight: 48, alignItems: 'center', justifyContent: 'center',
-        borderColor: COLORS.border, borderWidth: 1, borderRadius: BORDER_RADIUS.l },
+    quickActions: { flexDirection: 'row', gap: SPACING.xs, marginTop: SPACING.m },
+    quickAction: { flex: 1, minWidth: 0 },
     section: { gap: SPACING.xs },
-    starter: { overflow: 'hidden', borderRadius: BORDER_RADIUS.xl, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
-    photo: { width: '100%', height: 112 },
-    starterBody: { padding: SPACING.m },
-    starterTitle: { flex: 1 },
+    earnCard: { gap: SPACING.s, padding: SPACING.m, borderRadius: BORDER_RADIUS.xl,
+        borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+    assetAmount: { color: COLORS.text, fontSize: 16, fontWeight: '600', maxWidth: '48%', textAlign: 'right' },
+    pvtAsset: { color: COLORS.platinum },
 });

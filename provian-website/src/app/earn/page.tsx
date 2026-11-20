@@ -185,6 +185,9 @@ export default function EarnPage() {
           <h1 className="mt-6 font-display text-6xl font-semibold leading-[0.95] tracking-[-0.04em] md:text-8xl">
             Earn
           </h1>
+          <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary">
+            Open Earn in the app to connect the work you already do. Your setup options appear above the PVT projection until you connect something. Connected marks a working connection. Needs attention appears when a connection that was working has stopped.
+          </p>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary md:text-2xl md:leading-10">
             Everything below turns real work into receipts you own. Every act of work mints PVT
             once, at the value its evidence supports. PVT is a standard token (ERC-20) on the Base
