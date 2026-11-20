@@ -13,11 +13,14 @@ test('membership transport preserves only the join finality response', async () 
   vi.spyOn(RelayAPIService, 'getAuthSecret').mockResolvedValue('test-secret');
   vi.spyOn(RelayAPIService, 'getUserId').mockResolvedValue('test-owner');
   const pending = (status: number) => new Response(JSON.stringify({ error: RECOURSE_BINDING_AWAITING_FINALITY }), { status });
+  const timers = vi.spyOn(globalThis, 'setTimeout');
   vi.mocked(apiFetch).mockResolvedValueOnce(pending(409)).mockResolvedValueOnce(pending(503)).mockResolvedValueOnce(pending(409));
   await expect(RelayAPIService.recourseRequest('membership-transitions', { kind: 'join' }))
     .rejects.toThrow(RECOURSE_BINDING_AWAITING_FINALITY);
   await expect(RelayAPIService.recourseRequest('membership-transitions', { kind: 'join' })).rejects.toThrow('recourse_request_refused');
   await expect(RelayAPIService.recourseRequest('pool')).rejects.toThrow('recourse_request_refused');
+  expect(timers.mock.calls.filter(([, delay]) => delay === 60_000)).toHaveLength(2);
+  expect(timers.mock.calls.filter(([, delay]) => delay === 15_000)).toHaveLength(1);
 });
 test('actual phone recovery transport requires a private proof and sends it only in a POST body', async () => {
   await expect(RelayAPIService.recourseRecoveryRequest(path)).rejects.toThrow('private_access_required');

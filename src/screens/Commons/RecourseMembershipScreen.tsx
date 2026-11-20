@@ -107,6 +107,7 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         ? <RecourseMembershipSummary view={summary} statusText={joinStatus ? t(joinStatus) : undefined} />
         : joinStatus ? <Text style={styles.title}>{t(joinStatus)}</Text> : null}
       {(loading && !waitingForBinding) || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {loading && !waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.flow.preparing')}</Text> : null}
       {waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.bindingAwaitingFinality')}</Text> : null}
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
       {!loading && !waitingForBinding && summary === null && !(view?.status === 'preparing' || view?.status === 'consenting')

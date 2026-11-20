@@ -2162,6 +2162,7 @@ class RelayAPIService {
         const response = await this.makeAuthenticatedRequest(`/v1/recourse/${path}`, {
             method: body === undefined ? 'GET' : 'POST',
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+            ...(path === 'membership-transitions' || path.startsWith('membership-transitions/') ? { timeoutMs: 60_000 } : {}),
         }, undefined, biometricAction);
         if (path === 'membership-transitions' && body !== undefined && response.status === 409) {
             const reply: unknown = await response.json().catch(() => null);

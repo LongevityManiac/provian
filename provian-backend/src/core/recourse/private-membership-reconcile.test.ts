@@ -75,3 +75,25 @@ test('a receipt beyond the selected cutoff cannot credit an earlier snapshot', a
   await expect(reconcilePrivateMembershipThrough(s.db,ownerId,99,{ pool: old[8],kernel: old[0],block: 99,blockHash: h(99) })).rejects.toThrow('reconcile_log');
   expect(s.state().pendingReservation).toBe(r.id); expect(s.state().episode.invoices[String(month)].burnPaidAtomic).toBe('0');
 });
+
+test('long resume scans fetch independent windows together and cover the entire finalized range', async () => {
+  const s = setup(false), readLogs = jest.mocked(getAgreedBaseLogs);
+  let releaseFirst!: () => void;
+  const firstWindow = new Promise<void>(resolve => { releaseFirst = resolve; });
+  let started!: () => void;
+  const firstStarted = new Promise<void>(resolve => { started = resolve; });
+  readLogs.mockImplementation(async ({ fromBlock }) => {
+    if (fromBlock === 99) { started(); await firstWindow; }
+    return [];
+  });
+  const scan = reconcilePrivateMembershipThrough(s.db, ownerId, 99, {
+    pool: old[8], kernel: old[0], block: 2_100, blockHash: h(2_100),
+  });
+  await firstStarted;
+  const firstBatch = readLogs.mock.calls.map(([range]) => [range.fromBlock, range.toBlock]);
+  releaseFirst();
+  await scan;
+  expect(firstBatch).toEqual([[99, 598], [599, 1098], [1099, 1598], [1599, 2098]]);
+  expect(readLogs.mock.calls.slice(4).map(([range]) => [range.fromBlock, range.toBlock])).toEqual([[2099, 2100]]);
+  expect(s.fake.store.has(key)).toBe(false);
+});
