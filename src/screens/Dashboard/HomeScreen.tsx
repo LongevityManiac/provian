@@ -15,7 +15,7 @@ import { AppMenu } from '../../components/AppMenu';
 import TokenIcon from '../../components/TokenIcon';
 import BalanceService from '../../core/wallet/BalanceService';
 import { homeAssets, homeAssetBalance } from '../../core/wallet/homeAssets';
-import { hasEarningConnection, refreshEarningConnections, useEarningConnections } from '../../core/earn/earningConnections';
+import { refreshEarningConnections, shouldShowStartEarning, useEarningConnections } from '../../core/earn/earningConnections';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
 import { getPhoneMeter } from '../../core/meter/phoneMeterRuntime';
 import { localHistoryEntries } from '../../core/meter/peHistoryView';
@@ -186,10 +186,10 @@ export default function HomeScreen() {
 
                 <HomeAttentionRows />
 
-                {connections.checked && !hasEarningConnection(connections) && <View style={styles.earnCard}>
+                {shouldShowStartEarning(connections) && <View style={styles.earnCard}>
                     <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('overhaul.startEarningTitle')}</Text>
                     <Text style={actionStyles.body}>{t('overhaul.startEarningBody')}</Text>
-                    <PrimaryAction label={t('overhaul.startEarning')} onPress={() => tab.navigate('AgentsTab')} />
+                    <SecondaryAction label={t('overhaul.startEarning')} onPress={() => tab.navigate('AgentsTab')} />
                 </View>}
 
                 <View style={styles.section}>

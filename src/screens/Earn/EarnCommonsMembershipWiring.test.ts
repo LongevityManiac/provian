@@ -13,7 +13,7 @@ describe('Earn Commons membership wiring', () => {
   });
 
   it('keeps an unresolved membership read in a neutral state', () => {
-    expect(connections).toContain("joined !== null || commons.membershipStatus !== 'unknown'");
+    expect(connections).toContain("if (joined === null) throw new Error('Could not check Commons membership');");
     expect(detailSource).toContain("commonsMembershipStatus === 'unknown'");
   });
 });

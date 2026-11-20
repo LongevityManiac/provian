@@ -1794,7 +1794,8 @@ class RelayAPIService {
         const response = await this.makeAuthenticatedRequest('/v1/devices', undefined, undefined, biometricAction);
         if (!response.ok) throw new Error(`Devices request failed: HTTP ${response.status}`);
         const data = await response.json() as { devices?: RegisteredDevice[] };
-        return Array.isArray(data.devices) ? data.devices : [];
+        if (!Array.isArray(data.devices)) throw new Error('Devices response is missing devices');
+        return data.devices;
     }
 
     // =========================================================================
@@ -2605,7 +2606,8 @@ class RelayAPIService {
             throw new Error(`Linked-agents request failed: HTTP ${response.status}`);
         }
         const data = await response.json() as { linked_agents?: LinkedAgent[] };
-        const linkedAgents = Array.isArray(data.linked_agents) ? data.linked_agents : [];
+        if (!Array.isArray(data.linked_agents)) throw new Error('Linked-agents response is missing linked agents');
+        const linkedAgents = data.linked_agents;
         this.linkedAgentsCache = linkedAgents.map((agent) => ({ ...agent }));
         this.linkedAgentIdentitiesCache = linkedAgents.map((agent) => ({
             wallet_id: agent.wallet_id,
@@ -2646,7 +2648,8 @@ class RelayAPIService {
             throw new Error(`Linked-agent identity request failed: HTTP ${response.status}`);
         }
         const data = await response.json() as { linked_agents?: LinkedAgentIdentity[] };
-        const linkedAgents = Array.isArray(data.linked_agents) ? data.linked_agents : [];
+        if (!Array.isArray(data.linked_agents)) throw new Error('Linked-agent identity response is missing linked agents');
+        const linkedAgents = data.linked_agents;
         this.linkedAgentIdentitiesCache = linkedAgents.map((agent) => ({ ...agent }));
         if (this.linkedAgentsCache !== null) {
             const confirmedWalletIds = new Set(linkedAgents.map((agent) => agent.wallet_id));

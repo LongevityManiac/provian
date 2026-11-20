@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import RelayAPIService from '../../services/RelayAPIService';
 import useCommonsStore from '../../store/commonsStore';
@@ -17,16 +16,17 @@ export const CONNECTION_OPTIONS = EARNING_SURFACES.filter(
 interface ConnectionSnapshot {
     states: ConnectionStates;
     checked: boolean;
+    checksSucceeded: boolean;
     linkedAgentCount: number;
     linkedWalletCount: number;
 }
 
-const EMPTY: ConnectionSnapshot = { states: {}, checked: false, linkedAgentCount: 0, linkedWalletCount: 0 };
-const store = create<{ wallet: string; snapshot: ConnectionSnapshot }>(() => ({ wallet: '', snapshot: EMPTY }));
+const EMPTY: ConnectionSnapshot = { states: {}, checked: false, checksSucceeded: false, linkedAgentCount: 0, linkedWalletCount: 0 };
+export const earningConnectionStore = create<{ wallet: string; snapshot: ConnectionSnapshot }>(() => ({ wallet: '', snapshot: EMPTY }));
 const inFlight = new Map<string, Promise<void>>();
 
 export function useEarningConnections(wallet: string): ConnectionSnapshot {
-    return store(state => state.wallet === wallet ? state.snapshot : EMPTY);
+    return earningConnectionStore(state => state.wallet === wallet ? state.snapshot : EMPTY);
 }
 
 export function hasEarningConnection(snapshot: ConnectionSnapshot): boolean {
@@ -37,14 +37,16 @@ export function connectionState(snapshot: ConnectionSnapshot, id: SetupSurface):
     return snapshot.states[id];
 }
 
-export function resolveConnection(working: boolean, workedBefore: boolean): ConnectionState {
-    if (working) return 'connected';
-    return workedBefore ? 'stopped' : 'available';
+export function shouldShowStartEarning(snapshot: ConnectionSnapshot): boolean {
+    return snapshot.checksSucceeded && CONNECTION_OPTIONS.every(({ id }) => {
+        const state = connectionState(snapshot, id);
+        return state !== undefined && state !== 'connected';
+    });
 }
 
 export function refreshEarningConnections(wallet: string): Promise<void> {
-    if (!wallet) return Promise.resolve();
-    if (store.getState().wallet !== wallet) store.setState({ wallet, snapshot: EMPTY });
+    if (!wallet || useWalletStore.getState().address !== wallet) return Promise.resolve();
+    if (earningConnectionStore.getState().wallet !== wallet) earningConnectionStore.setState({ wallet, snapshot: EMPTY });
     const existing = inFlight.get(wallet);
     if (existing) return existing;
 
@@ -54,67 +56,56 @@ export function refreshEarningConnections(wallet: string): Promise<void> {
 }
 
 async function readConnections(wallet: string): Promise<void> {
-    const key = `provian.earn.connections.${wallet.toLowerCase()}`;
-    const workedBefore = new Set<SetupSurface>();
     const update = (patch: Partial<ConnectionSnapshot>) => {
-        if (useWalletStore.getState().address !== wallet || store.getState().wallet !== wallet) return;
-        store.setState(state => ({ snapshot: { ...state.snapshot, ...patch } }));
+        if (useWalletStore.getState().address !== wallet || earningConnectionStore.getState().wallet !== wallet) return;
+        earningConnectionStore.setState(state => ({ snapshot: { ...state.snapshot, ...patch } }));
     };
-    try {
-        const raw = await AsyncStorage.getItem(key);
-        const parsed: unknown = raw ? JSON.parse(raw) : [];
-        if (Array.isArray(parsed)) for (const { id } of CONNECTION_OPTIONS) {
-            if (parsed.includes(id)) workedBefore.add(id);
-        }
-    } catch { /* A missing display history is not a failed connection. */ }
-
-    if (useWalletStore.getState().address !== wallet || store.getState().wallet !== wallet) return;
-    const beforeCount = workedBefore.size;
-    for (const { id } of CONNECTION_OPTIONS) {
-        const prior = connectionState(store.getState().snapshot, id);
-        if (prior === 'connected' || prior === 'stopped') workedBefore.add(id);
-    }
-    const answer = (id: SetupSurface, working: boolean, hasHistory = false) => {
-        if (working || hasHistory) workedBefore.add(id);
-        update({ states: { ...store.getState().snapshot.states, [id]: resolveConnection(working, workedBefore.has(id)) } });
+    const answer = (id: SetupSurface, state: ConnectionState) => {
+        update({ states: { ...earningConnectionStore.getState().snapshot.states, [id]: state } });
     };
+    const availability = (connected: boolean): ConnectionState => connected ? 'connected' : 'available';
 
-    await Promise.allSettled([
-        getMobileChatConsentOrThrow().then(consent => answer('chat_capture', consent === true)),
-        RelayAPIService.getRegisteredDevicesOrThrow().then(devices => answer('desktop_daemon',
-            devices.some(device => device.status === 'active'), devices.some(device => device.status === 'revoked'))),
+    const checks = [
+        getMobileChatConsentOrThrow().then(consent => answer('chat_capture', availability(consent === true))),
+        RelayAPIService.getRegisteredDevicesOrThrow().then(devices =>
+            answer('desktop_daemon', availability(devices.some(device => device.status === 'active')))),
         RelayAPIService.listForgeInstallsOrThrow().then(installs => {
             for (const provider of ['github', 'gitlab', 'bitbucket'] as const) {
-                const proven = installs.filter(install => install.provider === provider && install.control_proven !== false);
-                answer(provider, proven.some(install => install.revoked_at === null), proven.some(install => install.revoked_at !== null));
+                answer(provider, availability(installs.some(install =>
+                    install.provider === provider && install.control_proven !== false && install.revoked_at === null)));
             }
         }),
         RelayAPIService.listOwnExternalAddresses().then(rows => {
-            if (rows !== null) answer('own_external_wallet', rows.length > 0);
+            if (rows === null) throw new Error('Could not check linked wallets');
+            answer('own_external_wallet', availability(rows.length > 0));
         }),
         useCommonsStore.getState().refreshMembership().then(joined => {
-            const commons = useCommonsStore.getState();
-            if (joined !== null || commons.membershipStatus !== 'unknown') answer('commons', joined ?? commons.isJoined);
+            if (joined === null) throw new Error('Could not check Commons membership');
+            answer('commons', availability(joined));
         }),
         RelayAPIService.getLinkedAgentIdentities({ throwOnError: true }).then(({ linked_agents }) => {
             update({ linkedAgentCount: linked_agents.length });
             if (linked_agents.length === 0) {
-                answer('connected_agents', false);
+                answer('connected_agents', 'available');
                 update({ linkedWalletCount: 0 });
-                answer('agent_external_wallet', false);
+                answer('agent_external_wallet', 'available');
                 return;
             }
             return RelayAPIService.getLinkedAgents({ throwOnError: true }).then(({ linked_agents: agents }) => {
                 const linkedWalletCount = agents.filter(agent => agent.external_address_linked === true).length;
                 update({ linkedAgentCount: agents.length, linkedWalletCount });
-                answer('connected_agents', agents.some(agent => agent.capture_broken !== true),
-                    agents.some(agent => agent.capture_broken === true && Boolean(agent.last_pe_date || agent.last_capture_at_ms)));
-                answer('agent_external_wallet', linkedWalletCount > 0);
+                const working = agents.some(agent => agent.capture_broken !== true);
+                const brokeAfterWorking = agents.some(agent => agent.capture_broken === true
+                    && Boolean(agent.last_pe_date || agent.last_capture_at_ms));
+                // Only a reported failure on a still-linked witness is evidence of a break.
+                answer('connected_agents', working ? 'connected' : brokeAfterWorking ? 'stopped' : 'available');
+                answer('agent_external_wallet', availability(linkedWalletCount > 0));
             });
         }),
-    ]);
-    update({ checked: true });
-    if (workedBefore.size > beforeCount && useWalletStore.getState().address === wallet) {
-        await AsyncStorage.setItem(key, JSON.stringify([...workedBefore])).catch(() => {});
-    }
+    ];
+    const results = await Promise.allSettled(checks.map(check => check.catch(error => {
+        update({ checksSucceeded: false });
+        throw error;
+    })));
+    update({ checked: true, checksSucceeded: results.every(result => result.status === 'fulfilled') });
 }

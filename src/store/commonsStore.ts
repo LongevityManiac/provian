@@ -87,6 +87,7 @@ const useCommonsStore = create<CommonsState>((set, get) => ({
   refreshMembership: async () => {
     try {
       const context = await CommonsService.getJoinContext();
+        if (typeof context.already_joined !== 'boolean') return null;
       if (!context.already_joined) {
         set({ profile: null, isJoined: false, membershipStatus: 'not_joined' });
         return false;
