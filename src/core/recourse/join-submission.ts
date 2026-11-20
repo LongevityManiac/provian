@@ -31,8 +31,11 @@ export function canClearJoinSubmission(submission: JoinSubmission, view: Members
   if (view.status === 'complete' || view.status === 'superseded') return true;
   if (view.pending.some(row => row.binding === submission.binding)) return true;
   if (operation?.status === 'failed') return true;
-  if (operation) return false;
   const challenge = view.challenges.find(row => row.consent.binding === submission.binding);
+  // The relay can have deduplicated this submission to a different operation
+  // ID. If reconciliation now asks only for other wallets, unblock those.
+  if (!challenge && view.challenges.length > 0) return true;
+  if (operation) return false;
   // A challenge is issued at the relay's checked chain time plus five minutes.
   // Only that time (not the phone clock) can prove a lost submission expired.
   return !!challenge && BigInt(challenge.consent.expiresAt) - 300n > BigInt(submission.expiresAt);
