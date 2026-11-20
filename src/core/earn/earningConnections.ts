@@ -14,6 +14,8 @@ export const CONNECTION_OPTIONS = EARNING_SURFACES.filter(
     (surface): surface is EarningSurface & { id: SetupSurface } => surface.id !== 'promises' && surface.id !== 'wallet_activity',
 );
 
+const REPEATABLE_CONNECTIONS = ['desktop_daemon', 'connected_agents', 'own_external_wallet'] as const;
+
 interface ConnectionSnapshot {
     states: ConnectionStates;
     checked: boolean;
@@ -39,6 +41,10 @@ export function hasEarningConnection(snapshot: ConnectionSnapshot): boolean {
 
 export function connectionState(snapshot: ConnectionSnapshot, id: SetupSurface): ConnectionState | undefined {
     return snapshot.states[id];
+}
+
+export function additionalConnectionOptions(snapshot: ConnectionSnapshot): Array<typeof REPEATABLE_CONNECTIONS[number]> {
+    return REPEATABLE_CONNECTIONS.filter(id => connectionState(snapshot, id) === 'connected');
 }
 
 export function shouldShowStartEarning(snapshot: ConnectionSnapshot): boolean {

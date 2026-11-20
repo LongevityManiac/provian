@@ -29,7 +29,7 @@ import { useTranslation } from 'react-i18next';
 import { COLORS, GRADIENTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { matchesSurface } from '../../core/earn/EarningSurfaceRegistry';
 import {
-    CONNECTION_OPTIONS, connectionState, hasEarningConnection, refreshEarningConnections, useEarningConnections,
+    CONNECTION_OPTIONS, additionalConnectionOptions, connectionState, hasEarningConnection, refreshEarningConnections, useEarningConnections,
 } from '../../core/earn/earningConnections';
 import RelayAPIService from '../../services/RelayAPIService';
 import { useWalletStore } from '../../store/walletStore';
@@ -144,6 +144,21 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
     const hasConnection = hasEarningConnection(connections);
     const connectPrompt = hasConnection ? 'overhaul.connectNext'
         : connections.checked ? 'overhaul.connectFirst' : 'overhaul.connections';
+    const additional = additionalConnectionOptions(connections);
+    const connectionSetup = {
+        desktop_daemon: {
+            label: 'overhaul.anotherComputer', visual: { icon: 'computer' },
+            open: () => stack.navigate('ComputerPairing'),
+        },
+        connected_agents: {
+            label: 'overhaul.anotherAgent', visual: { icon: 'agent' },
+            open: () => stack.navigate('ConnectAgent', { mode: 'agent' }),
+        },
+        own_external_wallet: {
+            label: 'overhaul.anotherWallet', visual: { stockIcon: 'key-outline' },
+            open: () => stack.navigate('ProveOwnWallet'),
+        },
+    } as const;
 
     const renderConnection = (surface: typeof CONNECTION_OPTIONS[number]) => {
         if (surface.id === 'desktop_daemon' && connections.computers.length > 0) {
@@ -185,9 +200,9 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             if (state !== 'connected') {
                 const target = surface.target;
                 if (target?.kind === 'forge') return stack.navigate('ForgeConnect', { provider: target.provider });
-                if (surface.id === 'own_external_wallet') return stack.navigate('ProveOwnWallet');
-                if (surface.id === 'desktop_daemon') return stack.navigate('ComputerPairing');
-                if (surface.id === 'connected_agents') return stack.navigate('ConnectAgent', { mode: 'agent' });
+                if (surface.id === 'own_external_wallet' || surface.id === 'desktop_daemon' || surface.id === 'connected_agents') {
+                    return connectionSetup[surface.id].open();
+                }
             }
             navigation.navigate('EarnSurfaceDetail', { surfaceId: surface.id });
         };
@@ -196,9 +211,13 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
             busy={state === undefined && !connections.checked} onPress={state !== undefined && !surface.comingSoon ? open : undefined} />;
     };
 
-    const waysToEarn = available.length > 0 && <View style={styles.section}>
+    const waysToEarn = (available.length > 0 || additional.length > 0) && <View style={styles.section}>
         <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t(connectPrompt)}</Text>
         {available.map(renderConnection)}
+        {additional.map(id => {
+            const { label, visual, open } = connectionSetup[id];
+            return <DestinationRow key={id} label={t(label)} {...visual} onPress={open} />;
+        })}
     </View>;
 
     return (

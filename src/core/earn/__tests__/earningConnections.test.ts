@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { earningConnectionStore, refreshEarningConnections, shouldShowStartEarning } from '../earningConnections';
+import { additionalConnectionOptions, earningConnectionStore, refreshEarningConnections, shouldShowStartEarning } from '../earningConnections';
 
 const mocks = vi.hoisted(() => ({
     wallet: '0x1234',
@@ -50,10 +50,21 @@ describe('earning connection checks', () => {
             chat_capture: 'connected', desktop_daemon: 'connected', github: 'connected',
             own_external_wallet: 'connected', connected_agents: 'connected', agent_external_wallet: 'connected',
         });
+        expect(additionalConnectionOptions(snapshot())).toEqual(['desktop_daemon', 'connected_agents', 'own_external_wallet']);
         mocks.devices.mockResolvedValueOnce([{ status: 'revoked' }]);
         mocks.forges.mockResolvedValueOnce([{ provider: 'github', revoked_at: 123 }]);
         await refresh();
         expect(Object.values(snapshot().states).every(state => state === 'available')).toBe(true);
+        expect(additionalConnectionOptions(snapshot())).toEqual([]);
+    });
+
+    it('offers each additional connection independently and waits for a matching connection', () => {
+        expect(additionalConnectionOptions(snapshot())).toEqual([]);
+        const states = { chat_capture: 'connected', agent_external_wallet: 'connected' } as const;
+        expect(additionalConnectionOptions({ ...snapshot(), states })).toEqual([]);
+        for (const id of ['desktop_daemon', 'connected_agents', 'own_external_wallet'] as const) {
+            expect(additionalConnectionOptions({ ...snapshot(), states: { ...states, [id]: 'connected' } })).toEqual([id]);
+        }
     });
 
     it('marks a still-linked agent only when capture reports a break and prior work exists', async () => {
