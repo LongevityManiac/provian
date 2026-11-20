@@ -245,8 +245,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const input = parseMembershipConsentRequest({ ...body, attestorSignature: 'standing' in body && body.standing ? '0x00' : null });
       const { attestorSignature: _unused, ...request } = input;
       const result = await queueMembershipConsent(deps.db, identityHash(owner.type, owner.id), request);
-      await kickRecourseLane(deps.db);
+      // The minute worker owns recovery once the approval is durably queued.
+      // Respond before the optional inline worker starts chain and nonce work.
       res.status(202).json(result);
+      if (result.status === 'queued') await kickRecourseLane(deps.db);
     } catch { res.status(400).json({ error: 'recourse_membership_consent_refused' }); }
     finally { req.body = undefined; req.rawBody = undefined; }
   });
@@ -358,8 +360,12 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       stage = 'chain';
       const pool = await readRecoursePoolState(identity);
       stage = 'membership';
-      const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool);
-      const display = 'membershipTransition' in membership ? { ...membership, membership: null } : { membership };
+      const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool).catch((cause: unknown) => {
+        if (cause instanceof Error && cause.message === 'recourse_private_scan_concurrent') return null;
+        throw cause;
+      });
+      const display = membership === null ? { membership: null, membershipChecking: true }
+        : 'membershipTransition' in membership ? { ...membership, membership: null } : { membership };
       res.json({ ...pool, identity, primaryIdentity, ...display,
         ...(owner.type === 'human' ? { walletAddress: owner.address } : {}) });
     } catch {

@@ -81,6 +81,26 @@ test.each(['payer', 'nonce', 'joined', 'rule', 'expiry', 'generation', 'status',
   expect(f.attestor.signBytes).not.toHaveBeenCalled();
   expect([...f.fake.store.keys()].filter(k => k.startsWith(Q))).toHaveLength(0);
 });
+test('a concurrent retry with a new salt resolves to the one saved join approval', async () => {
+  const f = await fixture();
+  const standing = { ...f.input.standing, exitSalt: h('7a') };
+  const retry = { ...f.input, standing, ownerSignature: await ownerWallet.signMessage(getBytes(standingMembershipSigningHash(f.domain, standing))) };
+  // Both approvals independently validate against the same current consent.
+  const simulate = f.p.chain.agree;
+  const p = { ...f.p, chain: { ...f.p.chain, agree: async (method: string, args: readonly unknown[]) => {
+    if (method === 'eth_call' && (args[0] as { data: string }).data.startsWith(STANDING_MEMBERSHIP_ABI.getFunction('setStandingConsent')!.selector)) return '0x';
+    return simulate(method, args);
+  } } };
+  const [first, second] = await Promise.all([
+    queueMembershipConsent(f.db, f.owner, f.input, f.attestor, p),
+    queueMembershipConsent(f.db, f.owner, retry, f.attestor, p),
+  ]);
+  expect(second).toEqual(first);
+  expect([...f.fake.store.keys()].filter(key => key.startsWith(`${Q}/`))).toHaveLength(1);
+  f.fake.store.get(`${T}/${f.input.transitionId}`)!.status = 'complete';
+  f.fake.store.get(`${Q}/${first.id}`)!.status = 'confirmed';
+  await expect(queueMembershipConsent(f.db, f.owner, retry, f.attestor, p)).resolves.toMatchObject({ id: first.id, status: 'confirmed' });
+});
 function lane(db: Firestore, adapter: ReturnType<typeof membershipConsentAdapter>) {
   const base = simulatedBase(laneWallet.address);
   const signer = { address: LANE, signTransaction: jest.fn((tx: Parameters<typeof laneWallet.signTransaction>[0]) => laneWallet.signTransaction(tx)) };

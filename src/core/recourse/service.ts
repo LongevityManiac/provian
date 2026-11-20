@@ -28,6 +28,7 @@ export interface RecourseView {
   currentAddress?: string;
   membershipDetails?: RecourseMembershipDetails;
   membershipTransition?: 'join' | 'leave' | 'renew';
+  membershipApprovalPending?: true;
   primaryIdentity: string | null;
   identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'in_progress' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
@@ -147,19 +148,30 @@ function parseMembership(value: unknown) {
 }
 
 function parseMembershipRead(reply: Record<string, unknown>, month: unknown): Pick<RecourseView,
-  'membershipState' | 'membershipTransition' | 'membershipDetails' | 'enrolled' | 'grace' | 'month' | 'endMonthExclusive' | 'unpaidAtomic'> {
+  'membershipState' | 'membershipTransition' | 'membershipApprovalPending' | 'membershipDetails' | 'enrolled' | 'grace' | 'month' | 'endMonthExclusive' | 'unpaidAtomic'> {
   const kind = reply.membershipTransition;
-  if (kind === undefined) return { ...parseMembership(reply.membership), membershipState: 'available' };
-  if (reply.membership !== null || (kind !== 'join' && kind !== 'leave' && kind !== 'renew')) throw Error('recourse_reply_invalid');
+  if (kind === undefined && reply.membershipChecking !== true) return { ...parseMembership(reply.membership), membershipState: 'available' };
+  if (reply.membership !== null || (kind !== undefined && kind !== 'join' && kind !== 'leave' && kind !== 'renew')) throw Error('recourse_reply_invalid');
   return { membershipState: 'in_progress', membershipTransition: kind, enrolled: false, grace: false,
+    ...(kind === 'join' && reply.membershipApprovalPending === true ? { membershipApprovalPending: true } : {}),
     month: text(month, atomic), endMonthExclusive: '0', unpaidAtomic: '0' };
 }
 
 /** This view is for display. The authenticated relay verifies the current pool
  * against both providers. Operations still perform their own chain checks. */
+const overviewReads = new Map<string, Promise<RecourseView>>();
 export async function readRecourseOverview(): Promise<RecourseView> {
   const account = useWalletStore.getState().address;
   if (!account) throw Error('recourse_address_unavailable');
+  let pending = overviewReads.get(account);
+  if (!pending) {
+    pending = readWalletRecourseOverview(account).finally(() => overviewReads.delete(account));
+    overviewReads.set(account, pending);
+  }
+  return pending;
+}
+
+async function readWalletRecourseOverview(account: string): Promise<RecourseView> {
   const reply = object(await RelayAPIService.recourseRequest('pool'));
   if (useWalletStore.getState().address !== account || reply.walletAddress !== account.toLowerCase()) {
     throw Error('recourse_wallet_changed');

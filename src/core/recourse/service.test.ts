@@ -5,7 +5,7 @@ import { bindHumanPrimaryAddress, readRecourseHistory, readRecourseOverview, rea
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
   history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
   register:vi.fn(), bind:vi.fn(), biometricDenied:false, ticket:vi.fn(),wrongReply:false, ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn(),
-  overviewWallet: '', overviewEnrolled: true, overviewTransition: null as 'join' | null }));
+  overviewWallet: '', overviewEnrolled: true, overviewTransition: null as 'join' | null, overviewChecking: false }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { readRecourseOwnership: async () => f.history, registerHumanWallet: (...args: unknown[]) => f.register(...args), bindRecourseOwnership: (...args: unknown[]) => f.bind(...args), getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   f.calls.push({ path, body });
@@ -14,6 +14,7 @@ vi.mock('../../services/RelayAPIService', () => ({ default: { readRecourseOwners
   if (path === 'pool') return { identity: h('55'), primaryIdentity: null, walletAddress: f.overviewWallet, month: '1',
     pool: a('66'), kernel: a('77'), earningsBps: 100, reserveAtomic: '100', participationBurnAtomic: '100',
     noEarningsContributionAtomic: '100', ...(f.overviewTransition ? { membership: null, membershipTransition: f.overviewTransition }
+      : f.overviewChecking ? { membership: null, membershipChecking: true }
       : { membership: { enrolled: f.overviewEnrolled, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } }) };
   return { requestId: f.wrongReply?h('99'):h('44'), status: 'authorized' };
 } } }));
@@ -34,7 +35,7 @@ vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 't
 vi.mock('./human-restoration-exit', () => ({ withdrawHumanRestoration: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: a('12'), setAddress: f.setAddress }) } }));
 beforeEach(() => {
-  f.overviewWallet = a('12'); f.overviewEnrolled = true; f.overviewTransition = null;
+  f.overviewWallet = a('12'); f.overviewEnrolled = true; f.overviewTransition = null; f.overviewChecking = false;
   f.register.mockReset(); f.register.mockResolvedValue(true); f.bind.mockReset(); f.biometricDenied=false; f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
   f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44'),restoration:{request:h('44'),lossHash:h('88'),maximumLoss:'100'} });
@@ -164,4 +165,14 @@ it('shows verified public chain data before private lookup even when no wallet i
   expect(observed).toHaveLength(1);
   expect(view.enrolled).toBe(false);
   expect(view.membershipState).toBe('unavailable');
+});
+
+it('shares an ongoing wallet check and waits for the verified result after reconciliation', async () => {
+  f.overviewChecking = true;
+  const reads = await Promise.all([readRecourseOverview(), readRecourseOverview()]);
+  expect(f.calls).toHaveLength(1);
+  expect(reads[0]).toMatchObject({ membershipState: 'in_progress', enrolled: false });
+  expect(reads[1]).toEqual(reads[0]);
+  f.overviewChecking = false;
+  await expect(readRecourseOverview()).resolves.toMatchObject({ membershipState: 'available', enrolled: true });
 });

@@ -8,6 +8,7 @@ import { readPrivateMembershipScan, commitPrivateMembershipScan } from './privat
 import { utcCalendarMonth } from './calendar-month';
 import { RECOURSE_COLLECTIONS } from './ownership';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS, type PrivateMembershipTransition } from './private-membership-transition';
+import { pendingMembershipConsents } from './membership-progress';
 import type { RecoursePoolState } from './pool-state';
 
 export interface PrivateMembershipView {
@@ -49,16 +50,16 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
     } };
 }
 
-/** Authenticated caller supplies its private owner key, never a public binding
- * interpreted as a portfolio key. Outstanding operations show as unavailable
- * until their receipts reconcile; they never become fabricated zero dues. */
+/** The authenticated owner sees progress until all required receipts reconcile. */
 export async function readPrivateMembershipView(db: Firestore, ownerIdentity: string,
-  pool: RecoursePoolState): Promise<PrivateMembershipView | { membershipTransition: PrivateMembershipTransition['kind'] }> {
+  pool: RecoursePoolState): Promise<PrivateMembershipView | {
+    membershipTransition: PrivateMembershipTransition['kind']; membershipApprovalPending?: true;
+  }> {
   await reconcilePrivateMembershipDomain(db,ownerIdentity);
   const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity);
   const owner = await ownerRef.get();
   if (owner.get('membershipTransition') != null) {
-    const kind = await db.runTransaction(async tx => {
+    const transition = await db.runTransaction(async tx => {
       const current = await tx.get(ownerRef);
       const id: unknown = current.get('membershipTransition');
       if (id == null) return null;
@@ -73,9 +74,12 @@ export async function readPrivateMembershipView(db: Firestore, ownerIdentity: st
         || (operation !== 'join' && operation !== 'leave' && operation !== 'renew')) {
         throw Error('recourse_private_membership_transition_invalid');
       }
-      return row.get('departureRequested') === true ? 'leave' as const : operation;
+      return { id, kind: row.get('departureRequested') === true ? 'leave' : operation } as const;
     }, { readOnly: true });
-    if (kind !== null) return { membershipTransition: kind };
+    if (transition !== null) {
+      const pending = transition.kind === 'join' && (await pendingMembershipConsents(db, transition.id)).length > 0;
+      return { membershipTransition: transition.kind, ...(pending ? { membershipApprovalPending: true } : {}) };
+    }
   }
   const ref = db.collection(C.owners).doc(ownerIdentity), initial = await ref.get();
   if (!initial.exists) {

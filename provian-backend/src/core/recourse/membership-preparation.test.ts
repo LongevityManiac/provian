@@ -98,11 +98,14 @@ test('resume discovers exact queued consent without requesting a second signatur
   const request = { transitionId: view.id, domain: challenge.domain, consent: challenge.consent,
     standing,exitSecret:null,ownerSignature: 'PRIVATE_OWNER_SIGNATURE', attestorSignature: 'PRIVATE_ATTESTOR_SIGNATURE' };
   f.fake.store.set(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`, { request, status: 'queued', transactionHash: null });
+  (readHistoricalRecoursePoolState as jest.Mock).mockRejectedValueOnce(Error('slow chain history'));
   const resumed = await prepareMembershipTransition(f.db, owner, { id: view.id });
-  expect(resumed.challenges).toHaveLength(1);
+  expect(resumed.challenges).toHaveLength(0);
   expect(resumed.pending).toEqual([{ binding: challenge.consent.binding, account: challenge.consent.account,
     operation: { id, status: 'queued', transactionHash: null } }]);
   expect(JSON.stringify(resumed)).not.toContain('PRIVATE_');
+  (readHistoricalRecoursePoolState as jest.Mock).mockReset();
+  (readHistoricalRecoursePoolState as jest.Mock).mockImplementation((readRecoursePoolState as jest.Mock).getMockImplementation()!);
   // Another transition and an obsolete nonce cannot suppress the current challenge.
   f.fake.store.get(`${MEMBERSHIP_CONSENT_OPERATIONS}/${id}`)!.request = { ...request, transitionId: h('ee') };
   expect((await prepareMembershipTransition(f.db, owner, { id: view.id })).challenges).toHaveLength(2);

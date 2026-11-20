@@ -13,8 +13,8 @@ import { humanBreakKey } from './human-secret';
 import { signHashAccountMessage, signHashAccountDeparture } from './hash-account';
 import { readHashAccountDepartureRoot } from './hash-account-chain';
 import { recoverySigningRoot } from './hash-authorization';
-import { beginMembershipTransition, readMembershipTransition, submitMembershipConsent, retainMembershipDeparture,
-  type MembershipRelay, type MembershipConsentChallenge, type MembershipTransitionView } from './membership-client';
+import { beginMembershipTransition, readMembershipConsentStatus, readMembershipTransition, submitMembershipConsent, retainMembershipDeparture,
+  type JoinSubmission, type MembershipRelay, type MembershipConsentChallenge, type MembershipTransitionView } from './membership-client';
 
 export const humanMembershipRelay = (action?: BiometricAction): MembershipRelay => ({
   request: (path, body) => RelayAPIService.recourseRequest(path, body, action),
@@ -24,6 +24,9 @@ export function readHumanMembershipTransition(id?: string): Promise<MembershipTr
 }
 export function beginHumanMembership(kind: 'join' | 'leave' | 'renew'): Promise<MembershipTransitionView> {
   return beginMembershipTransition(humanMembershipRelay(), kind);
+}
+export function readHumanMembershipConsentStatus(id: string) {
+  return readMembershipConsentStatus(humanMembershipRelay(), id);
 }
 export async function signHumanMembershipBytes(account: string, bytes: Uint8Array, action: BiometricAction, binding?: string): Promise<string> {
   const mnemonic = await SeedManager.getMnemonic(action);
@@ -67,10 +70,11 @@ export async function signHumanMembershipDeparture(account:string,binding:string
     assertBiometricAction(action);return signature;
   }finally{seed.fill(0);}
 }
-export function authorizeHumanMembershipConsent(transition: Pick<MembershipTransitionView, 'id' | 'kind'>, challenge: MembershipConsentChallenge) {
+export function authorizeHumanMembershipConsent(transition: Pick<MembershipTransitionView, 'id' | 'kind'>, challenge: MembershipConsentChallenge,
+  onJoinSubmission?: (submission: JoinSubmission) => Promise<void>) {
   return withBiometricAction(translate('recourse.authorize', 'Authorize your Recourse action'), action =>
     submitMembershipConsent(humanMembershipRelay(action), ownerChainNetwork(), { transitionId: transition.id, kind: transition.kind,
-      account: challenge.consent.account, challenge, signBytes: bytes => transition.kind==='leave'
+      account: challenge.consent.account, challenge, onJoinSubmission, signBytes: bytes => transition.kind==='leave'
         ? signHumanMembershipDeparture(challenge.consent.account,challenge.consent.binding,bytes,action)
         : signHumanMembershipBytes(challenge.consent.account, bytes, action, challenge.consent.binding),
       exitSecret: async salt => { const mnemonic=await SeedManager.getMnemonic(action); if(!mnemonic)throw Error('recourse_seed_unavailable');
@@ -79,10 +83,11 @@ export function authorizeHumanMembershipConsent(transition: Pick<MembershipTrans
 /** Outside wallets sign for themselves. The parsed challenge is independently
  * checked before opening their signer and again before relay submission. */
 export function authorizeExternalMembershipConsent(transition: Pick<MembershipTransitionView, 'id' | 'kind'>,
-  challenge: MembershipConsentChallenge, signBytes: (bytes: Uint8Array) => Promise<string>) {
+  challenge: MembershipConsentChallenge, signBytes: (bytes: Uint8Array) => Promise<string>,
+  onJoinSubmission?: (submission: JoinSubmission) => Promise<void>) {
   return withBiometricAction(translate('recourse.authorize','Authorize your Recourse action'),action=>
     submitMembershipConsent(humanMembershipRelay(action), ownerChainNetwork(), { transitionId: transition.id, kind: transition.kind,
-      account: challenge.consent.account, challenge, signBytes,
+      account: challenge.consent.account, challenge, signBytes, onJoinSubmission,
       exitSecret:async salt=>{ const mnemonic=await SeedManager.getMnemonic(action); if(!mnemonic)throw Error('recourse_seed_unavailable');
         return humanMembershipExitSecret(mnemonic,challenge.domain,challenge.consent.binding,salt); } }));
 }

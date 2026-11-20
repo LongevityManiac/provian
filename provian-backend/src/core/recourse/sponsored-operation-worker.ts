@@ -31,7 +31,7 @@ export interface SponsoredOperationAdapter<R, P extends SponsoredOperationPlan> 
   /** Rows this adapter queues are sent by the Recourse transaction lane. */
   readonly lane?: true;
   /** Fence queue admission against a concurrently persisted owner intent. */
-  beforeQueue?(tx: FirestoreTransaction, request: R): Promise<void>;
+  beforeQueue?(tx: FirestoreTransaction, request: R): Promise<void | string>;
 }
 function validateTransaction(raw: string, signer: string, target: string, data: string): void {
   const tx = Transaction.from(raw);

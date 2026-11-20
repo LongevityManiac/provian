@@ -1,6 +1,6 @@
 import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -11,12 +11,13 @@ import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import type { AppParamList } from '../../navigation/types';
 import { useWalletStore } from '../../store/walletStore';
-import { beginHumanMembership, readHumanMembershipTransition, authorizeHumanMembershipConsent,
+import { beginHumanMembership, readHumanMembershipTransition, readHumanMembershipConsentStatus, authorizeHumanMembershipConsent,
   authorizeExternalMembershipConsent, leaveHumanMembership } from '../../core/recourse/human-membership';
+import { canClearJoinSubmission, clearJoinSubmission, readJoinSubmission, saveJoinSubmission } from '../../core/recourse/join-submission';
 import { RecourseMembershipSummary } from './RecourseMembershipSummary';
 import { pvtAmount, readRecourseOverview, type RecourseView } from '../../core/recourse/service';
 import { RECOURSE_BINDING_AWAITING_FINALITY } from '../../services/RelayAPIService';
-import type { MembershipConsentChallenge, MembershipTransitionView } from '../../core/recourse/membership-client';
+import type { JoinSubmission, MembershipConsentChallenge, MembershipTransitionView } from '../../core/recourse/membership-client';
 import { externalWalletProofClient, accountFromSession, EXTERNAL_WALLET_APPS,
   isExternalWalletConnectConfigured, type ExternalWalletApp } from '../../core/walletconnect/ExternalWalletProofClient';
 
@@ -27,52 +28,84 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
   const [view, setView] = useState<MembershipTransitionView | null>(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(false);
   const [waitingForBinding, setWaitingForBinding] = useState(false);
+  const [waitingForApproval, setWaitingForApproval] = useState(false);
   const [selected, setSelected] = useState<MembershipConsentChallenge | null>(null);
   const [uri, setUri] = useState('');
   const active = useRef(true), operationId = useRef<string | undefined>(undefined), session = useRef<SessionTypes.Struct | null>(null);
   const walletApp = useRef<ExternalWalletApp | null>(null), sequence = useRef(0);
+  const running = useRef(false);
   const load = useCallback(async () => {
     const run = ++sequence.current;
     setLoading(true); setError(false);
     void readRecourseOverview().catch(() => null).then(value => {
-      if (active.current && run === sequence.current) setSummary(value);
+      if (active.current && run === sequence.current) setSummary(previous => value ?? (previous?.membershipState === 'in_progress' ? previous : null));
     });
+    let submitted: JoinSubmission | null = null;
     try {
-      let current = await readHumanMembershipTransition(operationId.current);
+      submitted = account ? await readJoinSubmission(account) : null;
+      if (!active.current || run !== sequence.current) return;
+      setWaitingForApproval(submitted !== null);
+      let current = await readHumanMembershipTransition(operationId.current ?? submitted?.transitionId);
       if (!active.current || run !== sequence.current) return;
       if (route.params.kind === 'leave' && current && current.kind !== 'leave') current = await beginHumanMembership('leave');
       if (!current && route.params.kind !== 'resume') current = await beginHumanMembership(route.params.kind);
       if (!active.current || run !== sequence.current) return;
+      if (submitted && current && account) {
+        const status = current.challenges.length ? await readHumanMembershipConsentStatus(submitted.operationId).catch(() => null) : null;
+        if (!active.current || run !== sequence.current) return;
+        if (canClearJoinSubmission(submitted, current, status)) {
+          await clearJoinSubmission(account);
+          if (!active.current || run !== sequence.current) return;
+          setWaitingForApproval(false);
+        }
+      }
       operationId.current = current?.id; setView(current); setSelected(null);
       setWaitingForBinding(false);
     } catch (cause) {
       if (!active.current || run !== sequence.current) return;
       const waiting = cause instanceof Error && cause.message === RECOURSE_BINDING_AWAITING_FINALITY;
       setWaitingForBinding(waiting);
-      setError(!waiting);
+      if (!submitted) setView(previous => previous?.pending.length ? previous : null);
+      setError(!waiting && submitted === null);
     } finally {
       if (active.current && run === sequence.current) setLoading(false);
     }
-  }, [route.params.kind]);
+  }, [account, route.params.kind]);
   useEffect(() => {
     active.current = true; void load();
     return () => { active.current = false; ++sequence.current; void externalWalletProofClient.disconnect(session.current); };
   }, [load]);
+  const confirming = waitingForApproval || Boolean(view?.pending.length);
+  const checkingEnrollment = view?.kind === 'join' && view.status === 'complete' && summary?.membershipState !== 'available';
   useEffect(() => {
-    if (!view || loading || busy || waitingForBinding || (!view.pending.length && view.status !== 'preparing')) return;
-    const timer=setTimeout(()=>{void load();},3000);return()=>clearTimeout(timer);
-  },[view,loading,busy,waitingForBinding,load]);
-  useEffect(() => {
-    if (!waitingForBinding || loading || busy) return;
-    const timer = setTimeout(() => { void load(); }, 30_000);
-    return () => clearTimeout(timer);
-  }, [waitingForBinding, loading, busy, load]);
-  const run = async (work: () => Promise<unknown>) => {
-    if (busy || loading) return;
+    if (loading || busy || (!confirming && !waitingForBinding && !checkingEnrollment && view?.status !== 'preparing')) return;
+    const timer = setTimeout(() => { void load(); }, waitingForBinding ? 30_000 : 5_000);
+    const foreground = AppState.addEventListener('change', state => {
+      if (state === 'active') { clearTimeout(timer); void load(); }
+    });
+    return () => { clearTimeout(timer); foreground.remove(); };
+  }, [view, loading, busy, confirming, checkingEnrollment, waitingForBinding, load]);
+  const trackJoin = async (submission: JoinSubmission) => {
+    if (!account || useWalletStore.getState().address?.toLowerCase() !== account) throw Error('recourse_wallet_changed');
+    await saveJoinSubmission(account, submission);
+    if (active.current) setWaitingForApproval(true);
+  };
+  const run = async (work: () => Promise<unknown>, joining = false) => {
+    if (running.current || loading || (joining && confirming)) return;
+    running.current = true;
     setBusy(true); setError(false);
     try { await work(); if (active.current) await load(); }
-    catch { if (active.current) setError(true); }
-    finally { if (active.current) { setBusy(false); setUri(''); } }
+    catch {
+      if (active.current) {
+        const submitted = joining && account && await readJoinSubmission(account).catch(() => null);
+        if (submitted) await load();
+        else setError(true);
+      }
+    }
+    finally {
+      running.current = false;
+      if (active.current) { setBusy(false); setUri(''); }
+    }
   };
   const button = (label: string, press: () => void, disabled = busy || loading) => <ActionTouchable accessibilityRole="button"
     onPress={press} disabled={disabled} style={[styles.button, disabled && styles.disabled]}><Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
@@ -93,11 +126,11 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         void pending.catch(() => undefined);
         if (walletApp.current) await Linking.openURL(walletApp.current.open);
         return pending;
-      });
+      }, trackJoin);
     } finally { await externalWalletProofClient.disconnect(approved); session.current = null; }
   };
   const joinStatus = view?.kind === 'join' && view.status === 'consenting'
-    ? view.challenges.length ? 'recourse.standing.approvalNeeded' : view.pending.length ? 'recourse.flow.joining' : undefined
+    ? confirming || busy ? 'recourse.flow.joining' : view.challenges.length ? 'recourse.standing.approvalNeeded' : undefined
     : undefined;
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.flow.title', 'Your membership')}</Text></View>
@@ -106,23 +139,25 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       {summary && !(view?.status === 'complete' && summary.membershipState === 'in_progress')
         ? <RecourseMembershipSummary view={summary} statusText={joinStatus ? t(joinStatus) : undefined} />
         : joinStatus ? <Text style={styles.title}>{t(joinStatus)}</Text> : null}
-      {(loading && !waitingForBinding) || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
-      {loading && !waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.flow.preparing')}</Text> : null}
+      {(loading && !waitingForBinding) || busy || confirming ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {waitingForApproval && !view?.pending.length
+        ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.flow.checkingApproval')}</Text>
+        : loading && !waitingForBinding && !confirming ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.flow.preparing')}</Text> : null}
       {waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.bindingAwaitingFinality')}</Text> : null}
-      {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
-      {!loading && !waitingForBinding && summary === null && !(view?.status === 'preparing' || view?.status === 'consenting')
+      {error && !confirming ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
+      {!loading && !waitingForBinding && !confirming && summary === null && !(view?.status === 'preparing' || view?.status === 'consenting')
         ? <Text style={styles.body}>{t('recourse.membershipUnavailable')}</Text> : null}
       {view ? <>
         {view.kind !== 'join' ? <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : t('recourse.leave')}</Text> : null}
-        {view.kind !== 'join' || view.status !== 'consenting' || view.challenges.length > 0
+        {view.kind !== 'join' || view.status !== 'consenting' || (!confirming && !busy && view.challenges.length > 0)
           ? <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text> : null}
         {view.pending.map(pending => <View style={styles.card} key={pending.operation.id}>
           <Text selectable style={styles.address}>{pending.account}</Text>
-          <Text style={styles.body}>{t('recourse.flow.pending', 'Authorization submitted. Refresh to check its confirmation.')}</Text>
+          <Text style={styles.body}>{t('recourse.flow.pending')}</Text>
           {pending.operation.transactionHash ? <Text selectable style={styles.address}>{pending.operation.transactionHash}</Text> : null}
         </View>)}
         {view.kind === 'leave' && view.status !== 'complete' && view.status !== 'superseded' ? button(t('recourse.leave', 'Leave Recourse Pool'), () => { void run(() => leaveHumanMembership(view)); }) : null}
-        {view.kind !== 'leave' ? view.challenges.map(challenge => <View key={challenge.consent.binding} style={styles.card}>
+        {view.kind !== 'leave' && !confirming ? view.challenges.map(challenge => <View key={challenge.consent.binding} style={styles.card}>
           <Text selectable style={styles.address}>{challenge.consent.account}</Text>
           <Text style={styles.body}>{challenge.consent.joined ? t('recourse.flow.enable', 'Include this wallet') : view.kind === 'join' ? t('recourse.flow.rejoinClose') : t('recourse.flow.disable', 'End this wallet’s participation')}</Text>
           <Text style={styles.body}>{t('recourse.standing.limits', 'Maximum each month: {{burn}} PVT burned and {{reserve}} PVT contributed from this wallet’s PVT holdings. Earnings contribution: {{percent}}%.', {burn:pvtAmount(challenge.burnLimit),reserve:pvtAmount(challenge.reserveLimit),percent:challenge.earningsBpsLimit/100})}</Text>
@@ -132,7 +167,9 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
                 burn: pvtAmount(payment.burn), reserve: pvtAmount(payment.reserve) })}
             </Text>)}
           </> : null}
-          {button(view.kind === 'join' && challenge.consent.joined ? t('recourse.flow.approveJoin') : t('recourse.authorize'), () => { void run(() => authorizeHumanMembershipConsent(view, challenge)); })}
+          {button(view.kind === 'join' && challenge.consent.joined ? t('recourse.flow.approveJoin') : t('recourse.authorize'), () => {
+            void run(() => authorizeHumanMembershipConsent(view, challenge, trackJoin), view.kind === 'join');
+          })}
           {challenge.consent.account !== account ? button(t('recourse.flow.external', 'Authorize in this wallet'), () => { setSelected(challenge); setError(false); }) : null}
         </View>) : null}
         {view.status === 'complete' ? button(t('recourse.flow.done', 'Return to Recourse'), () => navigation.goBack()) : null}
@@ -140,10 +177,10 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
           operationId.current = undefined; void load();
         }) : null}
       </> : !loading && !waitingForBinding && !error ? <Text style={styles.body}>{t('recourse.flow.none', 'No unfinished membership action.')}</Text> : null}
-      {selected ? <View style={styles.card}>
+      {selected && !confirming ? <View style={styles.card}>
         <Text selectable style={styles.address}>{selected.consent.account}</Text>
         <Text style={styles.body}>{t('recourse.standing.external', 'Connect this wallet to approve its membership once. Later burns, contributions and leaving require no further wallet prompts.')}</Text>
-        {isExternalWalletConnectConfigured() ? button(t('recourse.flow.connect', 'Connect the external wallet'), () => { void run(connect); }) : null}
+        {isExternalWalletConnectConfigured() ? button(t('recourse.flow.connect', 'Connect the external wallet'), () => { void run(connect, view?.kind === 'join'); }) : null}
         {uri ? <>
           <View style={styles.qr}><QRCode value={uri} size={200} /></View>
           {EXTERNAL_WALLET_APPS.map(app => <React.Fragment key={app.id}>{button(app.label, () => {

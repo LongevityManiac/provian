@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { summarizeRecourse } from './useRecourseSummary';
 
 vi.mock('./service', () => ({ readRecourseOverview: vi.fn() }));
+vi.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: {} }));
 
 const member = { membershipState: 'available', enrolled: true, grace: false, unpaidAtomic: '0' } as const;
@@ -19,6 +20,8 @@ describe('wallet Recourse summary', () => {
         expect(summarizeRecourse({ ...member, membershipState: 'in_progress', membershipTransition: 'join' })).toEqual({
             label: 'recourse.title', detail: 'recourse.continueJoining', icon: 'shield-outline', month: null,
         });
+        expect(summarizeRecourse({ ...member, membershipState: 'in_progress', membershipTransition: 'join',
+            membershipApprovalPending: true })).toMatchObject({ detail: 'recourse.membershipInProgress', icon: 'shield-outline' });
     });
 
     it('shows protection through grace and distinguishes a due month from a current member', () => {

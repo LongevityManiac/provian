@@ -2,7 +2,7 @@ import { ActionTouchable } from '../../components/ScreenActions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AppParamList } from '../../navigation/types';
@@ -25,6 +25,7 @@ export function RecourseBindScreen(): React.JSX.Element {
 
 export default function RecourseScreen({ navigation }: NativeStackScreenProps<AppParamList, 'Recourse'>): React.JSX.Element {
   const { t } = useTranslation();
+  const focused = useIsFocused();
   const loadSequence = useRef(0);
   const [state, setState] = useState<RecourseView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,12 +63,18 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     })();
     return () => { active = false; };
   }, [reportOpen, transferAccount, historyPage, historyRefresh]);
-  const load = useCallback(async () => {
+  const load = useCallback(async (membershipOnly = false) => {
     const sequence = ++loadSequence.current;
     setLoading(true); setError(false); setMembershipUnavailable(false);
     const overview = await readRecourseOverview().catch(() => null);
     if (sequence !== loadSequence.current) return;
-    setState(overview); setLoading(false); setMembershipUnavailable(overview === null);
+    if (membershipOnly && overview) {
+      setState(previous => previous?.identity === overview.identity
+        ? { ...overview, historyState: previous.historyState, addresses: previous.addresses, requests: previous.requests }
+        : overview);
+    } else if (!membershipOnly) setState(overview);
+    setLoading(false); setMembershipUnavailable(overview === null);
+    if (membershipOnly) return;
     // Chain data remains useful during an outage, but it cannot answer the
     // membership question. Keep the retry visible while this read runs.
     const display = overview ?? await readRecourseView(undefined, true).catch(() => null);
@@ -79,6 +86,11 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
     }
   }, []);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
+  useEffect(() => {
+    if (!focused || loading || busy || (!membershipUnavailable && state?.membershipState !== 'in_progress')) return;
+    const timer = setTimeout(() => { void load(Boolean(state)); }, membershipUnavailable ? 30_000 : 8_000);
+    return () => clearTimeout(timer);
+  }, [focused, state, loading, busy, membershipUnavailable, load]);
   const button = (label: string, onPress: () => void) => <ActionTouchable accessibilityRole="button"
     disabled={busy || loading} onPress={onPress} style={[styles.button, (busy || loading) && styles.disabled]}>
     <Text style={styles.buttonText}>{label}</Text></ActionTouchable>;
@@ -157,15 +169,16 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
         {!loading && state.historyState === 'unavailable'
           ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
         <View style={styles.card}>
-          <RecourseMembershipSummary view={state} pending={loading} />
+          <RecourseMembershipSummary view={state} pending={loading && state.membershipState !== 'in_progress'} />
           {state.membershipState === 'available' ? state.enrolled ? <>
             {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
             {button(t('recourse.leave'), () => { void leave(); })}
           </> : /^0x0+$/.test(state.identity)
             ? button(t(addingWallet ? 'recourse.bindingPending' : 'recourse.bindPrimary'), () => { void bindPrimary(); })
             : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
-            : state.membershipState === 'in_progress'
-              ? button(t(state.membershipTransition === 'join' ? 'recourse.continueJoining' : 'recourse.flow.resume'),
+            : state.membershipState === 'in_progress' && state.membershipTransition !== undefined
+              ? button(t(state.membershipApprovalPending ? 'recourse.flow.title'
+                : state.membershipTransition === 'join' ? 'recourse.continueJoining' : 'recourse.flow.resume'),
                 () => navigation.navigate('RecourseMembership', { kind: 'resume' }))
               : button(t('recourse.refresh'), () => { void load(); })}
           <Text style={styles.small}>{t('recourse.graceSummary')}</Text>

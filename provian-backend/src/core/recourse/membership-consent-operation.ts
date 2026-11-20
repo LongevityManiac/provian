@@ -18,7 +18,7 @@ import { nextPrivateAddressConsent, PRIVATE_MEMBERSHIP_TRANSITIONS, type Private
 import { RECOURSE_COLLECTIONS as R } from './ownership';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C } from './private-membership-reservation';
 import { readRecoursePoolState, type RecoursePoolState } from './pool-state';
-import { queueSponsoredOperation } from './sponsored-operation-queue';
+import { queueSponsoredOperation, readSponsoredOperation } from './sponsored-operation-queue';
 import type { SponsoredOperationAdapter } from './sponsored-operation-worker';
 import { finalizedOwnerTransaction } from './transaction-finality';
 import { readMembershipReceipt } from './membership-receipt';
@@ -143,6 +143,12 @@ export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredO
   return { lane: true, collection: MEMBERSHIP_CONSENT_OPERATIONS, parse: parseMembershipConsentRequest, id: membershipConsentOperationId,
     beforeQueue: async (tx, request) => {
       const transition = await tx.get(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(request.transitionId));
+      const joining = transition.get('kind') === 'join' && request.standing !== null;
+      if (joining) {
+        const existing = await tx.get(acceptedApprovals(db, request.transitionId));
+        const accepted = existing.docs.find(row => sameJoinApproval(row.get('request'), request));
+        if (accepted) return accepted.id;
+      }
       if (!transition.exists || (transition.get('departureRequested') && request.consent.joined) || transition.get('status') === 'superseded'
         || transition.get('status') === 'complete') return fail('finished');
       const operation = transition.data() as PrivateMembershipTransition;
@@ -153,6 +159,13 @@ export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredO
         {revision:request.consent.revision,ruleHash:request.consent.ruleHash,timestamp:0});
       if (!expected || Object.entries(expected).some(([key,value]) => key !== 'expiresAt'
         && request.consent[key as keyof AddressMembershipConsent] !== value)) return fail('finished');
+      if (joining) {
+        // Contending approvals for this transition share a write fence, even
+        // if each signer used a different salt and the queue started empty.
+        const version = transition.get('approvalQueueVersion') ?? 0;
+        if (!Number.isSafeInteger(version) || version < 0) return fail('changed');
+        tx.update(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(request.transitionId), { approvalQueueVersion: version + 1 });
+      }
     },
     target: r => getCreateAddress({from:r.domain.pool,nonce:1}).toLowerCase(), calldata: membershipConsentCalldata, check: r => checkMembershipConsent(db, r, p), assert: assertCheckedMembershipConsent,
     satisfied: () => false, obsolete: e => e instanceof Error && ['retired', 'finished', 'stale', 'owner', 'rejoin_amount'].some(s => e.message === `recourse_membership_consent_${s}`),
@@ -162,11 +175,30 @@ export function membershipConsentAdapter(db: Firestore, p = ports()): SponsoredO
       await reconcilePrivateMembershipReceipt(db, ownerIdentity, await readMembershipReceipt(transactionHash, request.domain.pool));
     } };
 }
+function acceptedApprovals(db: Firestore, transitionId: string) {
+  return db.collection(MEMBERSHIP_CONSENT_OPERATIONS).where('request.transitionId', '==', transitionId)
+    .where('status', 'in', ['queued', 'submitted', 'confirmed']);
+}
+
+function sameJoinApproval(value: unknown, request: MembershipConsentRequest): boolean {
+  if (!request.standing || !request.consent.joined) return false;
+  const saved = parseMembershipConsentRequest(value);
+  return saved.standing !== null && saved.consent.joined && saved.transitionId === request.transitionId
+    && saved.consent.binding === request.consent.binding && saved.consent.account === request.consent.account
+    && saved.consent.nonce === request.consent.nonce && saved.consent.revision === request.consent.revision
+    && Object.keys(request.domain).every(key => saved.domain[key as keyof MembershipAuthorizationDomain] === request.domain[key as keyof MembershipAuthorizationDomain]);
+}
+
 export async function queueMembershipConsent(db: Firestore, ownerIdentity: string, input: Omit<MembershipConsentRequest, 'attestorSignature'>,
   attestor: IdentityAttestor = configuredIdentityAttestor(), p = ports()) {
   // Authentication/ownership is checked even when an identical queue ID exists.
-  await ownedMembershipTransition(db, ownerIdentity, input.transitionId);
+  const transition = await ownedMembershipTransition(db, ownerIdentity, input.transitionId);
   const request = parseMembershipConsentRequest({ ...input, attestorSignature: input.standing ? '0x00' : null });
+  if (transition.kind === 'join' && request.standing) {
+    const candidates = await acceptedApprovals(db, request.transitionId).get();
+    const prior = candidates.docs.find(row => sameJoinApproval(row.get('request'), request));
+    if (prior) return readSponsoredOperation(db, MEMBERSHIP_CONSENT_OPERATIONS, prior.id);
+  }
   const context = await consentContext(db, request, p);
   if (context.ownerIdentity !== ownerIdentity) return fail('owner');
   if(!request.standing)return queueSponsoredOperation(db,request,membershipConsentAdapter(db,p));

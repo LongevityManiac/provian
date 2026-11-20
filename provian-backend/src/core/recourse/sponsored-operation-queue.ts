@@ -35,7 +35,7 @@ export async function queueSponsoredOperation<R, P extends SponsoredOperationPla
   }
   const plan = await adapter.check(request); adapter.assert(plan);
   if (plan.id !== id || plan.executor !== adapter.target(request, plan.executor) || plan.calldata !== adapter.calldata(request)) throw Error('recourse_sponsor_plan_mismatch');
-  await db.runTransaction(async tx => {
+  const accepted = await db.runTransaction(async tx => {
     const current = await tx.get(ref);
     if (current.exists && current.get('status') !== 'failed') return;
     if (current.get('signedTransaction') !== oldRaw) throw Error('recourse_sponsor_record_changed');
@@ -43,12 +43,13 @@ export async function queueSponsoredOperation<R, P extends SponsoredOperationPla
     const archive = archiveRef ? await tx.get(archiveRef) : null;
     if (oldSigner !== null && ((await tx.get(db.collection(SETTLEMENT_SIGNER_LEASES_COLLECTION).doc(oldSigner))).get('pending_operation') === id
       || await laneHoldsOperation(tx, db, oldSigner, adapter.collection, id))) throw Error('recourse_sponsor_retry_unreconciled');
-    if (adapter.beforeQueue) await adapter.beforeQueue(tx, request);
+    const existing = await adapter.beforeQueue?.(tx, request);
+    if (existing !== undefined) return existing;
     if (archiveRef && !archive?.exists) tx.create(archiveRef, { operation: id, signedTransaction: oldRaw,
       transactionHash: keccak256(String(oldRaw)), status: 'finalized_revert', archivedAtMs: Date.now() });
     tx.set(ref, { request, executor: plan.executor, gasPayer: plan.gasPayer, manifestHash: plan.manifestHash,
       status: adapter.satisfied(plan) ? 'confirmed' : 'queued', transactionHash: null, createdAtMs: Date.now(),
       ...(adapter.lane && !adapter.satisfied(plan) ? laneQueuedFields(Date.now(), id) : {}) });
   });
-  return readSponsoredOperation(db, adapter.collection, id);
+  return readSponsoredOperation(db, adapter.collection, accepted ?? id);
 }

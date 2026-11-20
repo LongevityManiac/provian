@@ -1,11 +1,11 @@
-import { getBytes, randomBytes, hexlify } from 'ethers';
+import { AbiCoder, getBytes, randomBytes, hexlify, sha256 } from 'ethers';
 import type { OwnerChainNetwork } from './owner-chain';
 import type { ProtocolDeployment } from '../protocol/pointer';
 import { readRecoursePoolChain } from './pool-chain';
 import { readStandingMembershipState } from './standing-state';
 import { RECOURSE_POOL_ABI } from './pool-abi';
 import { addressMembershipSigningHash, standingMembershipDebitSigningHash, parseAddressMembershipConsent,
-  parseRejoinPayments, type RejoinPayment, standingMembershipSigningHash, authenticatedDepartureSigningHash, membershipExitCommitment, type StandingMembershipAuthorization,
+  parseRejoinPayments, type RejoinPayment, standingMembershipDigest, standingMembershipSigningHash, authenticatedDepartureSigningHash, membershipExitCommitment, type StandingMembershipAuthorization,
   parseExactMembershipDebit, parseMembershipAuthorizationDomain, type AddressMembershipConsent,
   type ExactMembershipDebit, type MembershipAuthorizationDomain } from './membership-authorization';
 
@@ -30,6 +30,12 @@ export interface MembershipTransitionView {
 }
 export interface MembershipOperationStatus {
   readonly id: string; readonly status: 'queued' | 'submitted' | 'confirmed' | 'failed'; readonly transactionHash: string | null;
+}
+export interface JoinSubmission {
+  readonly transitionId: string;
+  readonly binding: string;
+  readonly operationId: string;
+  readonly expiresAt: string;
 }
 export type MembershipDebitPreparation = { readonly status: 'ready'; readonly challenge: MembershipDebitChallenge }
   | { readonly status: 'settled' | 'approval_required' } | { readonly status: 'pending'; readonly operation: MembershipOperationStatus | null };
@@ -153,11 +159,17 @@ export async function readMembershipTransition(relay: MembershipRelay, id?: stri
   const view = parseMembershipTransitionView(raw);
   if (id && view.id !== id) return fail(); return view;
 }
+export async function readMembershipConsentStatus(relay: MembershipRelay, id: string): Promise<MembershipOperationStatus> {
+  const operation = parseMembershipOperationStatus(await relay.request(`membership-consents/${hash(id)}`));
+  if (operation.id !== id) return fail();
+  return operation;
+}
 /** The callback owns its key and sees exact raw bytes. Signing a hex string as
  * text is a different authorization and is deliberately never requested. */
 export async function submitMembershipConsent(relay: MembershipRelay, network: OwnerChainNetwork,
   input: { readonly transitionId: string; readonly kind: 'join' | 'leave' | 'renew'; readonly account: string; readonly challenge: MembershipConsentChallenge;
-    signBytes(bytes: Uint8Array): Promise<string>; exitSecret(salt:string, expectedCommitment?:string): Promise<string> }): Promise<MembershipOperationStatus> {
+    signBytes(bytes: Uint8Array): Promise<string>; exitSecret(salt:string, expectedCommitment?:string): Promise<string>;
+    onJoinSubmission?(submission: JoinSubmission): Promise<void> }): Promise<MembershipOperationStatus> {
   const transitionId=hash(input.transitionId),challenge=await validateMembershipConsent(input.challenge,input.account,input.kind,network);
   let standing:StandingMembershipAuthorization|null=null,ownerSignature:string|null=null,exitSecret:string|null=null;
   if(challenge.consent.joined){
@@ -177,6 +189,11 @@ export async function submitMembershipConsent(relay: MembershipRelay, network: O
     }
   }
   await validateMembershipConsent(challenge,input.account,input.kind,network);
+  if (input.kind === 'join' && standing && input.onJoinSubmission) {
+    const operationId = sha256(AbiCoder.defaultAbiCoder().encode(['string', 'bytes32'],
+      ['Provian sponsored standing consent', standingMembershipDigest(challenge.domain, standing)]));
+    await input.onJoinSubmission({ transitionId, operationId, binding: challenge.consent.binding, expiresAt: challenge.consent.expiresAt });
+  }
   return parseMembershipOperationStatus(await relay.request('membership-consents',{transitionId,domain:challenge.domain,
     consent:challenge.consent,standing,ownerSignature,exitSecret}));
 }

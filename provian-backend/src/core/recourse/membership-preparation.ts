@@ -79,11 +79,26 @@ export async function ownedMembershipTransition(db: Firestore, ownerIdentity: st
   return row.data() as PrivateMembershipTransition;
 }
 
+async function joinProgress(db: Firestore, operation: PrivateMembershipTransition): Promise<MembershipTransitionView | null> {
+  if (operation.kind !== 'join' || operation.departureRequested) return null;
+  const { id, kind, status } = operation;
+  if (status === 'complete' || status === 'superseded') return { id, kind, status, challenges: [], pending: [] };
+  if (status !== 'consenting') return null;
+  const queued = await pendingMembershipConsents(db, id);
+  if (!queued.length) return null;
+  return { id, kind, status, challenges: [], pending: queued.map(({ consent, operation }) => ({
+    binding: consent.binding, account: consent.account, operation,
+  })) };
+}
+
 /** All returned portfolio information is owner-authenticated and no-store.
  * Each public payload authorizes one address, without an owner/group digest. */
 export async function prepareMembershipTransition(db: Firestore, ownerIdentity: string,
   input: { readonly kind: 'join' | 'leave' | 'renew' } | { readonly id: string }): Promise<MembershipTransitionView> {
-  if ('id' in input) await ownedMembershipTransition(db, ownerIdentity, input.id);
+  if ('id' in input) {
+    const known = await joinProgress(db, await ownedMembershipTransition(db, ownerIdentity, input.id));
+    if (known) return known;
+  }
   // Persist departure before reconciliation: a pending financial receipt must
   // never prevent the owner from durably refusing further admissions.
   const departure = 'kind' in input && input.kind === 'leave'
@@ -91,6 +106,8 @@ export async function prepareMembershipTransition(db: Firestore, ownerIdentity: 
   await reconcileCurrentPrivateMembership(db, ownerIdentity);
   let operation = departure ?? ('id' in input ? await ownedMembershipTransition(db, ownerIdentity, input.id)
     : await beginPrivateMembershipTransition(db, ownerIdentity, input.kind));
+  const known = await joinProgress(db, operation);
+  if (known) return known;
   if (operation.departureRequested && operation.kind !== 'leave') {
     const queued = await pendingMembershipConsents(db, operation.id);
     if (queued.length) return { id: operation.id, kind: 'leave', status: 'preparing', challenges: [],
