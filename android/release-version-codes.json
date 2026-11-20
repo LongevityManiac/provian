@@ -490,6 +490,13 @@
       "artifact": "app-release.aab",
       "sha256": "acff68675c27ed0a6b0b60fe5ef33530e8c20308ffbd06b5d1823e19c49cee1a",
       "built_at": "2026-11-20T21:12:18.209Z"
+    },
+    {
+      "versionCode": 125,
+      "channel": "play",
+      "artifact": "app-release.aab",
+      "sha256": "9dde190f0b2e03d89b56505cb8f6e2cbb40f7447ac45271abc48418fd0e4c8c5",
+      "built_at": "2026-11-20T22:09:08.819Z"
     }
   ]
 }
