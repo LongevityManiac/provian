@@ -44,11 +44,16 @@ export default function AttentionCenterScreen(): React.ReactElement {
     return <AttentionContent />;
 }
 
-export function HomeAttentionRows(): React.ReactElement {
-    return <AttentionContent embedded />;
+interface HomeAttentionProps {
+    recourseMonth?: 'due' | 'grace' | null;
+    archiveFull?: boolean;
 }
 
-function AttentionContent({ embedded = false }: { embedded?: boolean }): React.ReactElement {
+export function HomeAttentionRows(props: HomeAttentionProps): React.ReactElement {
+    return <AttentionContent embedded {...props} />;
+}
+
+function AttentionContent({ embedded = false, recourseMonth, archiveFull }: HomeAttentionProps & { embedded?: boolean }): React.ReactElement {
     const { t } = useTranslation();
     const navigation = useNavigation<NativeStackNavigationProp<AppParamList>>();
     const [snap, setSnap] = useState<AttentionSnapshot | null>(null);
@@ -213,7 +218,7 @@ function AttentionContent({ embedded = false }: { embedded?: boolean }): React.R
 
     if (embedded) {
         const needsYou = snap?.items.filter(item => item.kind !== 'challenge') ?? [];
-        if (!needsYou.length) return <></>;
+        if (!needsYou.length && !recourseMonth && !archiveFull) return <></>;
         return (
             <View>
                 <Text style={actionStyles.sectionTitle}>{t('overhaul.needsYou')}</Text>
@@ -222,6 +227,11 @@ function AttentionContent({ embedded = false }: { embedded?: boolean }): React.R
                     return <DestinationRow key={`${item.kind}:${item.id}`} label={row.title} detail={row.subtitle}
                         stockIcon={row.icon} onPress={() => openItem(item)} />;
                 })}
+                {recourseMonth && <DestinationRow stockIcon="shield-checkmark-outline"
+                    label={t(recourseMonth === 'grace' ? 'overhaul.recourseGraceMonth' : 'overhaul.recourseMonthDue')}
+                    onPress={() => navigation.navigate('RecourseMonthly')} />}
+                {archiveFull && <DestinationRow stockIcon="archive-outline" label={t('overhaul.archiveFull')}
+                    onPress={() => navigation.navigate('PeArchive', undefined)} />}
             </View>
         );
     }

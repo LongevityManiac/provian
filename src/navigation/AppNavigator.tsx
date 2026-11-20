@@ -45,6 +45,7 @@ import WalletLockScreen from '../screens/Security/WalletLockScreen';
 import BiometricSettingsScreen from '../screens/Settings/BiometricSettingsScreen';
 import WalletConnectSecurityScreen from '../screens/Settings/WalletConnectSecurityScreen';
 import ArchiveScreen from '../screens/Settings/ArchiveScreen';
+import SettleNowScreen from '../screens/Earn/SettleNowScreen';
 import CommonsBlockedScreen from '../screens/Settings/CommonsBlockedScreen';
 import ProfileEditScreen from '../screens/Settings/ProfileEditScreen';
 import DeviceManagementScreen from '../screens/Settings/DeviceManagementScreen';
@@ -543,6 +544,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
 
                 {/* Provenance / PVT Dashboard */}
                 <Stack.Screen name="MyProvenance" component={MyProvenanceDashboardScreen} />
+                <Stack.Screen name="SettleNow" component={SettleNowScreen} />
                 <Stack.Screen name="PVTDetail" component={PVTDetailScreen} />
 
                 {/* Trust Layer (pass 2) */}

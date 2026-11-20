@@ -1,6 +1,7 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import BackButton from '../../components/BackButton';
@@ -10,6 +11,7 @@ import { COLORS, SPACING } from '../../constants/theme';
 import { isTestnet } from '../../core/shared/environment';
 import { homeAssets, individualAssetKey } from '../../core/wallet/homeAssets';
 import { cachedPvtAsset } from '../../core/wallet/pvtBalanceDisplay';
+import { useRecourseSummary } from '../../core/recourse/useRecourseSummary';
 import type { AppParamList } from '../../navigation/types';
 import { useWalletStore } from '../../store/walletStore';
 import { displayBalance } from '../../utils/displayBalance';
@@ -27,6 +29,16 @@ export default function AssetDetailScreen({ navigation, route }: NativeStackScre
     const holdings = asset?.holdings ?? assets.filter(holding => individualAssetKey(holding) === route.params.assetKey);
     const symbol = asset?.symbol ?? route.params.symbol;
     const name = holdings[0]?.name;
+    const isPvt = mainnet && (route.params.assetKey === 'PVT' || holdings.some(holding => holding.isPVT === true));
+    const { summary: recourse, refresh: refreshRecourse } = useRecourseSummary(isPvt ? address : null);
+    useFocusEffect(useCallback(() => {
+        if (!isPvt) return;
+        void refreshRecourse();
+        const subscription = AppState.addEventListener('change', state => {
+            if (state === 'active') void refreshRecourse();
+        });
+        return () => subscription.remove();
+    }, [isPvt, refreshRecourse]));
 
     return <SafeAreaView style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -46,6 +58,8 @@ export default function AssetDetailScreen({ navigation, route }: NativeStackScre
                     label={holding.chain} detail={detail}
                     end={<Text style={[styles.balance, actionStyles.money]}>{displayBalance(holding.balance)} {symbol}</Text>} />;
             }) : <Text style={actionStyles.body}>{t('overhaul.assetBalanceUnavailable')}</Text>}
+            {isPvt && <DestinationRow stockIcon={recourse.icon} label={t(recourse.label)}
+                onPress={() => navigation.navigate('Recourse')} />}
         </ScrollView>
     </SafeAreaView>;
 }

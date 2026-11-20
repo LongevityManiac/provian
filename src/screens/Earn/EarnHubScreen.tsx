@@ -60,9 +60,10 @@ interface HubActivity {
     recentActionTypes: readonly string[] | null;
     pendingLinkCount: number;
     pendingApprovalCount: number;
+    payoutReady: boolean;
 }
 
-const EMPTY_ACTIVITY: HubActivity = { recentActionTypes: null, pendingLinkCount: 0, pendingApprovalCount: 0 };
+const EMPTY_ACTIVITY: HubActivity = { recentActionTypes: null, pendingLinkCount: 0, pendingApprovalCount: 0, payoutReady: false };
 
 export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React.JSX.Element {
     const { t } = useTranslation();
@@ -103,9 +104,11 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
     const [activity, setActivity] = useState<{ wallet: string; data: HubActivity }>();
     const data = activity?.wallet === address ? activity.data : EMPTY_ACTIVITY;
     const [refreshing, setRefreshing] = useState(false);
+    const payoutRead = useRef(0);
 
     const loadData = useCallback(async () => {
         if (!address) return;
+        const payoutCheck = ++payoutRead.current;
         const update = (patch: Partial<HubActivity>) => {
             if (useWalletStore.getState().address !== address) return;
             setActivity(prior => ({ wallet: address, data: {
@@ -122,6 +125,9 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                 if (requests) update({ pendingLinkCount: requests.link_requests.length });
             }),
             RelayAPIService.getWalletApprovalRequests().then(requests => update({ pendingApprovalCount: requests.length })),
+            RelayAPIService.hasReadyPayoutWork().catch(() => false).then(payoutReady => {
+                if (payoutRead.current === payoutCheck) update({ payoutReady });
+            }),
         ]);
     }, [address]);
 
@@ -251,6 +257,7 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                     note={participationNote}
                     onRetry={loadParticipation}
                     onPress={() => navigation.navigate('MyProvenance')}
+                    onSettleNow={data.payoutReady ? () => stack.navigate('SettleNow') : undefined}
                 />
 
                 {/* Agents that connected with your code and are waiting to be linked.
@@ -296,7 +303,6 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
                         detail={participation.value?.weeklyPEs === undefined ? undefined
                             : t('earn.recentCount', { count: participation.value.weeklyPEs })}
                         onPress={() => navigation.navigate('MyProvenance')} />
-                    <Text style={actionStyles.body}>{t('overhaul.standardSettlement')}</Text>
                 </View>
 
                 {hasConnection && waysToEarn}

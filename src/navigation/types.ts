@@ -183,6 +183,7 @@ export type AppParamList = {
 
     // Provenance / PVT Dashboard
     MyProvenance: undefined;
+    SettleNow: undefined;
     PVTDetail: undefined;
 
     // Trust Layer (pass 2)

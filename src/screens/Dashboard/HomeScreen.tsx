@@ -26,6 +26,8 @@ import { displayBalance } from '../../utils/displayBalance';
 import { formatUsd, portfolioTotal, totalAgeLabel } from '../../utils/fiatDisplay';
 import { timeAgo } from '../../utils/timeAgo';
 import type { PVTHistoryEntry } from '../../services/RelayAPIService';
+import RelayAPIService from '../../services/RelayAPIService';
+import { useRecourseSummary } from '../../core/recourse/useRecourseSummary';
 import { HomeAttentionRows } from '../Attention/AttentionCenterScreen';
 import { getWaitingPairing } from '../Agent/ComputerPairingScreen';
 import { hasPendingAgentSetup } from '../Agent/ConnectAgentScreen';
@@ -38,6 +40,7 @@ export default function HomeScreen() {
     const tab = useNavigation<TabNav>();
     const stack = tab.getParent<StackNav>()!;
     const address = useWalletStore(state => state.address);
+    const { summary: recourse, refresh: refreshRecourse } = useRecourseSummary(address);
     const assets = useWalletStore(state => state.assets);
     const connections = useEarningConnections(address);
     const lastPvt = useWalletStore(state => state.lastConfirmedPvt);
@@ -48,6 +51,8 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [resumable, setResumable] = useState<'computer' | 'agent' | null>(null);
     const [proofs, setProofs] = useState<PVTHistoryEntry[]>([]);
+    const [archive, setArchive] = useState<{ wallet: string; full: boolean }>();
+    const archiveRead = useRef(0);
     const [now, setNow] = useState(Date.now);
     const [proofMoment, setProofMoment] = useState(false);
     const pulse = useRef(new Animated.Value(1)).current;
@@ -56,6 +61,7 @@ export default function HomeScreen() {
     const pvt = cachedPvtAsset(lastPvt, address, mainnet);
     const fiat = money?.wallet === address ? money.total : null;
     const rows = homeAssets(assets, pvt, mainnet);
+    const archiveFull = archive?.wallet === address && archive.full;
 
     useEffect(() => {
         if (!pvt || pvtStatus !== 'fresh' || !proofs[0]) return;
@@ -92,6 +98,13 @@ export default function HomeScreen() {
     const refreshContext = useCallback(async () => {
         if (!address) return;
         const connectionRefresh = refreshEarningConnections(address);
+        const recourseRefresh = refreshRecourse();
+        const check = ++archiveRead.current;
+        const archiveRefresh = RelayAPIService.archiveStatus().catch(() => null).then(view => {
+            if (archiveRead.current === check && useWalletStore.getState().address === address) {
+                setArchive({ wallet: address, full: view?.spaceExhausted === true });
+            }
+        });
         const meter = getPhoneMeter();
         const [recent, waiting, agentSetup] = await Promise.all([
             meter.start().then(() => localHistoryEntries(meter.store)).catch(() => []),
@@ -101,8 +114,8 @@ export default function HomeScreen() {
         if (useWalletStore.getState().address !== address) return;
         setProofs(recent.slice(0, 3));
         setResumable(waiting ? 'computer' : agentSetup ? 'agent' : null);
-        await connectionRefresh;
-    }, [address]);
+        await Promise.allSettled([connectionRefresh, recourseRefresh, archiveRefresh]);
+    }, [address, refreshRecourse]);
 
     useFocusEffect(useCallback(() => {
         void refreshBalance().catch(() => {});
@@ -148,8 +161,8 @@ export default function HomeScreen() {
                     <View style={styles.balanceTop}>
                         <Text style={styles.muted}>{t('overhaul.confirmedPvt')}</Text>
                         <ActionPressable accessibilityRole="button" onPress={() => stack.navigate('Recourse')} style={styles.inline}>
-                            <Ionicons name="shield-checkmark-outline" size={17} color={COLORS.primaryLight} />
-                            <Text style={styles.link}>{t('recourse.title')}</Text>
+                            <Ionicons name={recourse.icon} size={17} color={COLORS.primaryLight} />
+                            <Text style={styles.link}>{t(recourse.label)}</Text>
                         </ActionPressable>
                     </View>
                     {pvt && lastPvt ? (
@@ -184,7 +197,7 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                <HomeAttentionRows />
+                <HomeAttentionRows recourseMonth={recourse.month} archiveFull={archiveFull} />
 
                 {shouldShowStartEarning(connections) && <View style={styles.earnCard}>
                     <Text accessibilityRole="header" style={actionStyles.sectionTitle}>{t('overhaul.startEarningTitle')}</Text>

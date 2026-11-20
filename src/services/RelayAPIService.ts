@@ -3731,6 +3731,16 @@ class RelayAPIService {
     /** What a payout would settle now and its terms. Pays nothing. The latest acts go first. */
     async payoutQuote(payee?: string, biometricAction?: BiometricAction): Promise<PayoutQuote> {
         await this.sendLatestActs();
+        return this.readPayoutQuote(payee, biometricAction);
+    }
+
+    /** Read availability for the Earn button without uploading pending work or starting a purchase. */
+    async hasReadyPayoutWork(): Promise<boolean> {
+        const quote = await this.readPayoutQuote();
+        return quote.available ? (quote.readyClaims ?? 0) > 0 : quote.reason === 'waits_for_gas';
+    }
+
+    private async readPayoutQuote(payee?: string, biometricAction?: BiometricAction): Promise<PayoutQuote> {
         const response = await this.makeAuthenticatedRequest('/v1/payout/mobile', {
             method: 'POST',
             body: JSON.stringify(payee ? { payee } : {}),

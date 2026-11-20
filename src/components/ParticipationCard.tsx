@@ -15,7 +15,7 @@
  * Rendered on Earn.
  */
 
-import { ActionTouchable } from './ScreenActions';
+import { ActionTouchable, SecondaryAction } from './ScreenActions';
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,9 +34,10 @@ interface ParticipationCardProps {
     note?: string;
     onPress?: () => void;
     onRetry?: () => void;
+    onSettleNow?: () => void;
 }
 
-const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: ParticipationCardProps) => {
+const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry, onSettleNow }: ParticipationCardProps) => {
     const { t } = useTranslation();
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const [infoVisible, setInfoVisible] = useState(false);
@@ -166,6 +167,10 @@ const ParticipationCard = ({ pvtAccrual, loadError, note, onPress, onRetry }: Pa
                 )}
             </View>
         </ActionTouchable>
+        <View style={styles.settlementLine}>
+            <Text style={styles.settlementCopy}>{t('overhaul.standardSettlement')}</Text>
+            {onSettleNow && <SecondaryAction label={t('settleNow.title')} onPress={onSettleNow} />}
+        </View>
         <InfoModal
             visible={infoVisible}
             onClose={() => setInfoVisible(false)}
@@ -193,6 +198,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: SPACING.m,
     },
+    settlementLine: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: SPACING.s,
+        marginTop: SPACING.m,
+    },
+    settlementCopy: { flex: 1, minWidth: 96, color: COLORS.textSecondary, fontSize: 13, lineHeight: 18 },
     statBlock: {
         flex: 1,
         alignItems: 'center',
