@@ -5384,6 +5384,7 @@
     "newHere": "baru di sini",
     "recordCount": "{{number}} catatan",
     "needsAttention": "Perlu perhatian",
+    "lastRecordedWork": "Pekerjaan terakhir yang terekam · {{time}}",
     "couldNotCheckConnection": "Koneksi tidak dapat diperiksa",
     "standardSettlement": "Penghasilan standar diselesaikan setiap 30 hari.",
     "promisesKept_one": "{{number}} janji ditepati",

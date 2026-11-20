@@ -5384,6 +5384,7 @@
     "newHere": "mgeni hapa",
     "recordCount": "rekodi {{number}}",
     "needsAttention": "Inahitaji kuangaliwa",
+    "lastRecordedWork": "Kazi ya mwisho iliyorekodiwa · {{time}}",
     "couldNotCheckConnection": "Imeshindwa kukagua muunganisho",
     "standardSettlement": "Mapato ya kawaida hulipwa kila baada ya siku 30.",
     "promisesKept_one": "Ahadi {{number}} imetimizwa",

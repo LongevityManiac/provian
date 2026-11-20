@@ -5384,6 +5384,7 @@
     "newHere": "new here",
     "recordCount": "{{number}} records",
     "needsAttention": "Needs attention",
+    "lastRecordedWork": "Last recorded work · {{time}}",
     "couldNotCheckConnection": "Couldn’t check the connection",
     "standardSettlement": "Standard earnings settle every 30 days.",
     "promisesKept_one": "{{number}} promise kept",

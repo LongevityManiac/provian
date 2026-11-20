@@ -25,11 +25,13 @@ jest.mock('../core/commons/agent-delivery', () => ({
 import { createDeviceSelfRouter } from './devices';
 
 function app(): express.Express {
+  const tx = {
+    get: async () => ({ exists: false, data: () => undefined }),
+    set: () => undefined,
+  };
   const db = {
-    collection: () => ({ doc: () => ({
-      get: async () => ({ exists: false, data: () => undefined }),
-      set: async () => undefined,
-    }) }),
+    collection: () => ({ doc: () => ({}) }),
+    runTransaction: (run: (transaction: typeof tx) => Promise<unknown>) => run(tx),
   };
   const a = express();
   a.use(express.json());

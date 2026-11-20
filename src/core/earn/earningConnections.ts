@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import RelayAPIService from '../../services/RelayAPIService';
+import type { RegisteredDevice } from '../../services/RelayAPIService';
 import useCommonsStore from '../../store/commonsStore';
 import { useWalletStore } from '../../store/walletStore';
 import { getMobileChatConsentOrThrow } from '../capture/mobileChatConsent';
@@ -17,11 +18,14 @@ interface ConnectionSnapshot {
     states: ConnectionStates;
     checked: boolean;
     checksSucceeded: boolean;
+    computers: readonly RegisteredDevice[];
     linkedAgentCount: number;
     linkedWalletCount: number;
 }
 
-const EMPTY: ConnectionSnapshot = { states: {}, checked: false, checksSucceeded: false, linkedAgentCount: 0, linkedWalletCount: 0 };
+const EMPTY: ConnectionSnapshot = {
+    states: {}, checked: false, checksSucceeded: false, computers: [], linkedAgentCount: 0, linkedWalletCount: 0,
+};
 export const earningConnectionStore = create<{ wallet: string; snapshot: ConnectionSnapshot }>(() => ({ wallet: '', snapshot: EMPTY }));
 const inFlight = new Map<string, Promise<void>>();
 
@@ -38,10 +42,8 @@ export function connectionState(snapshot: ConnectionSnapshot, id: SetupSurface):
 }
 
 export function shouldShowStartEarning(snapshot: ConnectionSnapshot): boolean {
-    return snapshot.checksSucceeded && CONNECTION_OPTIONS.every(({ id }) => {
-        const state = connectionState(snapshot, id);
-        return state !== undefined && state !== 'connected';
-    });
+    return snapshot.checksSucceeded && snapshot.linkedAgentCount === 0
+        && CONNECTION_OPTIONS.every(({ id }) => id === 'commons' || connectionState(snapshot, id) === 'available');
 }
 
 export function refreshEarningConnections(wallet: string): Promise<void> {
@@ -67,8 +69,13 @@ async function readConnections(wallet: string): Promise<void> {
 
     const checks = [
         getMobileChatConsentOrThrow().then(consent => answer('chat_capture', availability(consent === true))),
-        RelayAPIService.getRegisteredDevicesOrThrow().then(devices =>
-            answer('desktop_daemon', availability(devices.some(device => device.status === 'active')))),
+        RelayAPIService.getRegisteredDevicesOrThrow().then(devices => {
+            const computers = devices.filter(device => device.status === 'active');
+            update({ computers, states: {
+                ...earningConnectionStore.getState().snapshot.states,
+                desktop_daemon: availability(computers.length > 0),
+            } });
+        }),
         RelayAPIService.listForgeInstallsOrThrow().then(installs => {
             for (const provider of ['github', 'gitlab', 'bitbucket'] as const) {
                 answer(provider, availability(installs.some(install =>

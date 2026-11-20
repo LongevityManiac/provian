@@ -5384,6 +5384,7 @@
     "newHere": "vient d’arriver",
     "recordCount": "{{number}} preuves",
     "needsAttention": "À vérifier",
+    "lastRecordedWork": "Dernier travail enregistré · {{time}}",
     "couldNotCheckConnection": "Impossible de vérifier la connexion",
     "standardSettlement": "Les gains standard sont réglés tous les 30 jours.",
     "promisesKept_one": "{{number}} promesse tenue",

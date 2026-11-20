@@ -5384,6 +5384,7 @@
     "newHere": "recién llegó",
     "recordCount": "{{number}} registros",
     "needsAttention": "Requiere atención",
+    "lastRecordedWork": "Último trabajo registrado · {{time}}",
     "couldNotCheckConnection": "No se pudo comprobar la conexión",
     "standardSettlement": "Las ganancias estándar se liquidan cada 30 días.",
     "promisesKept_one": "{{number}} promesa cumplida",

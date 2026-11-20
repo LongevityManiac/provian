@@ -5384,6 +5384,7 @@
     "newHere": "mới tham gia",
     "recordCount": "{{number}} bản ghi",
     "needsAttention": "Cần chú ý",
+    "lastRecordedWork": "Công việc được ghi nhận gần nhất · {{time}}",
     "couldNotCheckConnection": "Không kiểm tra được kết nối",
     "standardSettlement": "Thu nhập thông thường được quyết toán mỗi 30 ngày.",
     "promisesKept_one": "đã giữ {{number}} lời hứa",

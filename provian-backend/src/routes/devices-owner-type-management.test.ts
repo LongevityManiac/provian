@@ -128,6 +128,21 @@ describe('device management owner_type boundary', () => {
     jest.clearAllMocks();
   });
 
+  it.each([
+    { health: undefined, broken: false, workAt: null },
+    { health: { updated_at: 10, last_work_pe_at_ms: 8 }, broken: false, workAt: 8 },
+    { health: { updated_at: 10, last_work_pe_at_ms: 12, last_capture_at_ms: 7 }, broken: false, workAt: 7 },
+    { health: { updated_at: 10, broken: true, broken_reason: 'process_launcher_changed' }, broken: false, workAt: null },
+    { health: { updated_at: 10, broken: true, broken_reason: 'session_format_broken', last_capture_at_ms: 7 }, broken: true, workAt: 7 },
+  ])('lists only the relay verdict and witnessed work time for a computer ($broken, $workAt)', async ({ health, broken, workAt }) => {
+    const { app } = appFor({ ...device('human'), capture_health: health, last_pe_at: 100 });
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+    expect(response.body.devices).toHaveLength(1);
+    expect(response.body.devices[0]).toMatchObject({ capture_broken: broken, last_work_at_ms: workAt });
+    expect(response.body.devices[0]).not.toHaveProperty('capture_health');
+  });
+
   it.each([...INVALID_OWNER_TYPES, 'agent'])(
     'DELETE rejects invalid or contradictory ownership %p with no PE or economic effect',
     async (ownerType) => {

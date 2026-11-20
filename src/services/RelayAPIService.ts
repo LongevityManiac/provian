@@ -317,6 +317,9 @@ export interface RegisteredDevice {
     last_pe_at: number | null;
     total_pes: number;
     created_at: number;
+    /** The relay's judgment of the last observer report. Missing on older relays. */
+    capture_broken?: boolean;
+    last_work_at_ms?: number | null;
     /**
      * Self-reported LLM-session (AI-app) capture status from the device's
      * observer daemon. null = the daemon has not reported yet (older SDK, or

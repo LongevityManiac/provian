@@ -43,6 +43,7 @@ import StatusBarBackground from '../../components/StatusBarBackground';
 import { useNavigation } from '@react-navigation/native';
 import type { AppParamList } from '../../navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { timeAgo } from '../../utils/timeAgo';
 
 /** Window of recent PE history used for per-surface activity. */
 const HISTORY_WINDOW = 200;
@@ -145,6 +146,25 @@ export default function EarnHubScreen({ navigation }: EarnHubScreenProps): React
         : connections.checked ? 'overhaul.connectFirst' : 'overhaul.connections';
 
     const renderConnection = (surface: typeof CONNECTION_OPTIONS[number]) => {
+        if (surface.id === 'desktop_daemon' && connections.computers.length > 0) {
+            return connections.computers.map(computer => {
+                const status = computer.capture_broken === true
+                    ? t('overhaul.needsAttention') : t('earn.status.connected');
+                const lastWork = computer.last_work_at_ms != null ? timeAgo(computer.last_work_at_ms, t) : '';
+                const detail = lastWork ? `${status} · ${t('overhaul.lastRecordedWork', { time: lastWork })}` : status;
+                return <DestinationRow key={computer.device_id}
+                    label={connections.computers.length === 1 ? t('earn.surfaces.desktop_daemon.title') : computer.device_name}
+                    detail={detail} icon="computer"
+                    onPress={() => {
+                        if (computer.capture_broken === true || connections.computers.length > 1) {
+                            stack.navigate('DeviceManagement', { deviceId: computer.device_id });
+                        } else {
+                            navigation.navigate('EarnSurfaceDetail', { surfaceId: surface.id });
+                        }
+                    }} />;
+            });
+        }
+
         const state = connectionState(connections, surface.id);
         const label = surface.id === 'github' && state !== 'connected'
             ? t('overhaul.connectGitHub') : t(`earn.surfaces.${surface.id}.title`);

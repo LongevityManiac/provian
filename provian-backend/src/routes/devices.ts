@@ -997,6 +997,7 @@ export function createDeviceRouter(deps: DeviceRouterDeps): Router {
           return;
         }
         const d = rawDevice as unknown as DeviceDocument;
+        const health = d.capture_health ?? {};
         devices.push({
           device_id: d.device_id,
           device_name: d.device_name,
@@ -1011,6 +1012,8 @@ export function createDeviceRouter(deps: DeviceRouterDeps): Router {
           total_pes: d.total_pes,
           created_at: d.created_at,
           capture_status: d.capture_status ?? null,
+          capture_broken: linkedAgentCaptureFields(health, null).capture_broken,
+          last_work_at_ms: lastReportedWorkAt(health),
         });
       }
 
@@ -1528,14 +1531,9 @@ export function linkedAgentCaptureFields(ch: Record<string, unknown>, lastPeAt: 
   // The card's "last activity" the last work the daemon witnessed — a session
   // turn, or a command the process lane sealed — never the arrival of the day's batch, which is only
   // the fallback for a device that has reported neither.
-  // A daemon's clock is its own: a moment after the relay received the report is never shown.
-  const receivedAt = typeof ch.updated_at === 'number' && Number.isFinite(ch.updated_at) ? ch.updated_at : null;
-  const witnessed = [ch.last_capture_at_ms, ch.process_last_act_at_ms]
-    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0 && receivedAt !== null && v <= receivedAt);
+  const witnessedAt = latestReportedTime(ch.updated_at, ch.last_capture_at_ms, ch.process_last_act_at_ms);
   return {
-    last_capture_at_ms: witnessed.length > 0 ? Math.max(...witnessed)
-      : typeof lastPeAt === 'number' ? lastPeAt
-        : null,
+    last_capture_at_ms: witnessedAt ?? (typeof lastPeAt === 'number' ? lastPeAt : null),
     capture_reported_at_ms: typeof ch.updated_at === 'number' ? ch.updated_at : null,
     capture_broken: reason !== null,
     capture_broken_reason: reason,
@@ -1544,6 +1542,17 @@ export function linkedAgentCaptureFields(ch: Record<string, unknown>, lastPeAt: 
     // work's arrival as the moment it broke.
     capture_broken_since_ms: since,
   };
+}
+
+function latestReportedTime(receivedAt: unknown, ...times: unknown[]): number | null {
+  if (typeof receivedAt !== 'number' || !Number.isFinite(receivedAt)) return null;
+  // A daemon's clock is its own. Discard timestamps ahead of the relay's receipt time.
+  const valid = times.filter((time): time is number => typeof time === 'number' && time > 0 && time <= receivedAt);
+  return valid.length > 0 ? Math.max(...valid) : null;
+}
+
+function lastReportedWorkAt(health: Partial<NonNullable<DeviceDocument['capture_health']>>): number | null {
+  return latestReportedTime(health.updated_at, health.last_work_pe_at_ms, health.last_capture_at_ms, health.process_last_act_at_ms);
 }
 
 export function createDeviceSelfRouter(deps: Pick<DeviceRouterDeps, 'db' | 'cache'>): Router {
@@ -1629,19 +1638,26 @@ export function createDeviceSelfRouter(deps: Pick<DeviceRouterDeps, 'db' | 'cach
         return;
       }
       const now = Date.now();
-      const capture_health = buildDeviceCaptureHealth(req.body, now);
-      // A restarted daemon knows no command it sealed before the restart: keep the last one reported,
-      // so the card's last activity never falls back to the batch's arrival.
-      // Read fresh: the authenticated device can come from a 30 s cache that predates the last report.
-      const prev = await db.collection('devices').doc(device.device_id).get();
-      const prevLastAct = (prev.data() as DeviceDocument | undefined)?.capture_health?.process_last_act_at_ms;
-      if (capture_health.process_last_act_at_ms === null && typeof prevLastAct === 'number' && Number.isFinite(prevLastAct) && prevLastAct > 0 && prevLastAct <= now) {
-        capture_health.process_last_act_at_ms = prevLastAct;
-      }
-      // Replace the stored report WHOLE (mergeFields, not a deep merge): a deep merge kept
-      // fields a daemon no longer sends — 's retired hooks_* / self_report_* read
-      // "active" on devices that had closed both lanes (seen on the Grok bot,).
-      await db.collection('devices').doc(device.device_id).set({ capture_health }, { mergeFields: ['capture_health'] });
+      const incoming = buildDeviceCaptureHealth(req.body, now);
+      const ref = db.collection('devices').doc(device.device_id);
+      const capture_health = await db.runTransaction(async tx => {
+        // Device auth may have cached a doc from before the last report.
+        const prev = (await tx.get(ref)).data() as DeviceDocument | undefined;
+        const priorHealth = prev?.capture_health;
+        const report = {
+          ...incoming,
+          process_last_act_at_ms: incoming.process_last_act_at_ms
+            ?? latestReportedTime(now, priorHealth?.process_last_act_at_ms),
+          // An observer can restart with no work timestamp. Keep the paired computer's
+          // last known work while taking the new health judgment from the current report.
+          last_work_pe_at_ms: device.owner_type === 'human'
+            ? latestReportedTime(now, lastReportedWorkAt(incoming), lastReportedWorkAt(priorHealth ?? {}))
+            : incoming.last_work_pe_at_ms,
+        };
+        // Replace the report as a whole so retired fields do not carry over.
+        tx.set(ref, { capture_health: report }, { mergeFields: ['capture_health'] });
+        return report;
+      });
       // the device's own registration time, the fence a daemon applies before
       // minting a snapshot-written (backfilled) transcript turn — turns whose activity
       // predates registration never mint (09-07 backfill ruling).

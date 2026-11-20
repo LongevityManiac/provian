@@ -5385,6 +5385,7 @@
     "newHere": "刚加入",
     "recordCount": "{{number}} 条记录",
     "needsAttention": "需要处理",
+    "lastRecordedWork": "最近一次工作记录 · {{time}}",
     "couldNotCheckConnection": "无法检查连接",
     "standardSettlement": "常规收益每 30 天结算一次。",
     "promisesKept_one": "兑现 {{number}} 个承诺",

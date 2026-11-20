@@ -5385,6 +5385,7 @@
     "newHere": "새로 참여함",
     "recordCount": "기록 {{number}}건",
     "needsAttention": "확인 필요",
+    "lastRecordedWork": "마지막으로 기록된 작업 · {{time}}",
     "couldNotCheckConnection": "연결을 확인할 수 없어요",
     "standardSettlement": "일반 수익은 30일마다 정산됩니다.",
     "promisesKept_one": "지킨 약속 {{number}}건",

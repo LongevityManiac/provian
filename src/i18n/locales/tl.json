@@ -5384,6 +5384,7 @@
     "newHere": "bago rito",
     "recordCount": "{{number}} rekord",
     "needsAttention": "Kailangang tingnan",
+    "lastRecordedWork": "Huling naitalang trabaho · {{time}}",
     "couldNotCheckConnection": "Hindi masuri ang koneksyon",
     "standardSettlement": "Isinasara ang karaniwang kita tuwing 30 araw.",
     "promisesKept_one": "{{number}} pangakong tinupad",

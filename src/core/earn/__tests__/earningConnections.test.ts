@@ -83,10 +83,24 @@ describe('earning connection checks', () => {
         expect(shouldShowStartEarning(snapshot())).toBe(true);
     });
 
-    it('hides Home promotion when a check confirms a connection', async () => {
-        mocks.commons.mockResolvedValueOnce(true);
+    it('keeps Home promotion after joining Commons alone and hides it after pairing a computer', async () => {
+        mocks.commons.mockResolvedValue(true);
         await refresh();
         expect(snapshot().checksSucceeded).toBe(true);
+        expect(snapshot().states.commons).toBe('connected');
+        expect(shouldShowStartEarning(snapshot())).toBe(true);
+
+        mocks.devices.mockResolvedValueOnce([{ status: 'active', capture_broken: true }]);
+        await refresh();
         expect(shouldShowStartEarning(snapshot())).toBe(false);
+    });
+
+    it('keeps each active computer and its own work and fault data, omitting revoked computers', async () => {
+        const idle = { device_id: 'idle', status: 'active', last_work_at_ms: 100 };
+        const faulted = { device_id: 'faulted', status: 'active', capture_broken: true, last_work_at_ms: 50 };
+        mocks.devices.mockResolvedValueOnce([idle, faulted, { status: 'revoked', capture_broken: true }]);
+        await refresh();
+        expect(snapshot().computers).toEqual([idle, faulted]);
+        expect(snapshot().states.desktop_daemon).toBe('connected');
     });
 });

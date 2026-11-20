@@ -25,11 +25,13 @@ import { createDeviceSelfRouter } from './devices';
 let storedDoc: Record<string, unknown> | null = null;
 function app(): { app: express.Express; writes: Array<Record<string, unknown>> } {
   const writes: Array<Record<string, unknown>> = [];
+  const tx = {
+    get: async () => ({ exists: storedDoc !== null, data: () => storedDoc ?? undefined }),
+    set: (_ref: unknown, v: Record<string, unknown>, opts: unknown) => { writes.push({ v, opts }); },
+  };
   const db = {
-    collection: () => ({ doc: () => ({
-      get: async () => ({ exists: storedDoc !== null, data: () => storedDoc ?? undefined }),
-      set: async (v: Record<string, unknown>, opts: unknown) => { writes.push({ v, opts }); },
-    }) }),
+    collection: () => ({ doc: () => ({}) }),
+    runTransaction: (run: (transaction: typeof tx) => Promise<unknown>) => run(tx),
   };
   const a = express();
   a.use(express.json());
@@ -56,6 +58,16 @@ describe('PUT /v1/devices/me/capture-health — device_registered_at_ms', () => 
     const res = await request(a).put('/v1/devices/me/capture-health').send({});
     expect(res.status).toBe(200);
     expect(res.body.device_registered_at_ms).toBeNull();
+  });
+
+  it('retains the human computer’s last work when a fresh report clears the previous fault', async () => {
+    deviceForRequest = { ...DEVICE, owner_type: 'human' };
+    const lastWork = 1_790_000_000_000;
+    storedDoc = { capture_health: { updated_at: lastWork + 1, last_work_pe_at_ms: lastWork, broken: true } };
+    const { app: a, writes } = app();
+    const res = await request(a).put('/v1/devices/me/capture-health').send({});
+    expect(res.status).toBe(200);
+    expect(writes[0].v).toMatchObject({ capture_health: { last_work_pe_at_ms: lastWork, broken: false } });
   });
 });
 
