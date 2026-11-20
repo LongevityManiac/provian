@@ -104,14 +104,27 @@ describe('every wallet-auth client is accepted by the tightened relay ', () => {
 });
 
 describe('the app\'s /v1/users/recover body passes the tightened window ', () => {
-  const recover = appSource.slice(appSource.indexOf('private async doRecoverRelayCredentials'));
+  // Signing moved into signRecoveryProof so unlock can pre-sign a renewal. The recover path
+  // still takes one clock read and passes it through; the signer converts that value to seconds
+  // for both the request body and the signed message. Do not slice from doRecover only — the
+  // seconds conversion now lives above it.
+  const signStart = appSource.indexOf('private async signRecoveryProof');
+  const recoverStart = appSource.indexOf('private async doRecoverRelayCredentials');
+  const sign = appSource.slice(signStart, appSource.indexOf('private async submitRecoveryProof'));
+  const recover = appSource.slice(recoverStart, appSource.indexOf('private presignedRenewal'));
   const server = readFileSync(SERVER, 'utf8');
 
   it('the app sends numeric seconds in both the request and the signed message, from one clock read', () => {
+    expect(signStart).toBeGreaterThan(-1);
+    expect(recoverStart).toBeGreaterThan(signStart);
+    expect(sign.length).toBeGreaterThan(0);
+    expect(recover.length).toBeGreaterThan(0);
     expect(recover).toMatch(/const timestamp = Date\.now\(\);/);
-    expect(recover).toMatch(/const tsSeconds = Math\.floor\(timestamp \/ 1000\);/);
-    expect(recover).toMatch(/const message = \{\s*user: walletAddress,\s*timestamp: tsSeconds,/);
-    expect(recover).toMatch(/wallet_address: walletAddress,\s*timestamp: tsSeconds,/);
+    expect(recover).toMatch(/this\.signRecoveryProof\(walletAddress, biometricAction, timestamp\)/);
+    expect(sign).not.toMatch(/Date\.now\(\)/);
+    expect(sign).toMatch(/const tsSeconds = Math\.floor\(nowMs \/ 1000\);/);
+    expect(sign).toMatch(/const message = \{\s*user: walletAddress,\s*timestamp: tsSeconds,/);
+    expect(sign).toMatch(/wallet_address: walletAddress,\s*timestamp: tsSeconds,/);
   });
 
   it('the relay still requires numbers and applies the window to both timestamps (B2 stays)', () => {

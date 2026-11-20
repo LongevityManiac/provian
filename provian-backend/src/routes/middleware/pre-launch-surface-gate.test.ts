@@ -337,6 +337,13 @@ describe('pre-launch surface gate', () => {
         '/v1/witnesses', '/v1/admin/pvt/policy', '/v1/ecosystem', '/v1/pvt/network-stats',
         '/v1/wallet/agent/create', '/v1/admin/health',
         '/v1/bootstrap', // hosted `curl … | sh` agent onboarding (script + bundle); public by design, pre-flip
+        // Browser half of computer pairing. The public setup page has no wallet yet, so these
+        // two routes must stay reachable pre-flip or the published computer-setup page cannot
+        // start a code. /start returns only a short-lived code. /browser-status returns the
+        // one-time setup command only to the browser key that started it, after the phone
+        // confirms with wallet auth. /confirm and /phone-status stay wallet-authenticated and
+        // are not exceptions.
+        '/v1/computer-pairing/start', '/v1/computer-pairing/browser-status',
         '/v1/sdk/version', // advisory SDK-staleness signal; public + ungated by design so agents learn
                            // staleness pre-launch. Discloses only static version strings (latest/min/
                            // upgrade command), no user/wallet data. See core/sdk-version.ts.
