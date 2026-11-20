@@ -9,7 +9,7 @@ import type { AppParamList } from '../../navigation/types';
 import { RecourseMembershipSummary } from './RecourseMembershipSummary';
 import BackButton from '../../components/BackButton';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import { pvtAmount, bindHumanPrimaryAddress, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
+import { pvtAmount, bindHumanPrimaryAddress, readRecourseOverview, readRecourseView, readRecourseHistory, submitHumanRestorationRequest, withdrawHumanRestoration, recoverHumanBoundAddress, type RecourseView } from '../../core/recourse/service';
 import { beginHumanMembership, leaveHumanMembership } from '../../core/recourse/human-membership';
 import { withBiometricAction } from '../../core/security/biometricAction';
 import SeedManager from '../../core/wallet/SeedManager';
@@ -28,6 +28,7 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   const loadSequence = useRef(0);
   const [state, setState] = useState<RecourseView | null>(null);
   const [loading, setLoading] = useState(true);
+  const [membershipUnavailable, setMembershipUnavailable] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -62,15 +63,19 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
   }, [reportOpen, transferAccount, historyPage, historyRefresh]);
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
-    setLoading(true); setError(false);
-    try {
-      const chain = await readRecourseView(value => { if (sequence === loadSequence.current) setState(value); });
+    setLoading(true); setError(false); setMembershipUnavailable(false);
+    const overview = await readRecourseOverview().catch(() => null);
+    if (sequence !== loadSequence.current) return;
+    setState(overview); setLoading(false); setMembershipUnavailable(overview === null);
+    // Chain data remains useful during an outage, but it cannot answer the
+    // membership question. Keep the retry visible while this read runs.
+    const display = overview ?? await readRecourseView(undefined, true).catch(() => null);
+    if (display && sequence === loadSequence.current) {
+      setState(display);
+      const history = await readRecourseHistory(display);
       if (sequence !== loadSequence.current) return;
-      setState(chain); setLoading(false);
-      const history = await readRecourseHistory(chain);
-      if (sequence === loadSequence.current) { setState(history); setHistoryPage(1); setHistoryRefresh(value => value + 1); }
-    } catch { if (sequence === loadSequence.current) setError(true); }
-    finally { if (sequence === loadSequence.current) setLoading(false); }
+      setState(history); setHistoryPage(1); setHistoryRefresh(value => value + 1);
+    }
   }, []);
   useFocusEffect(useCallback(() => { void load(); return () => { ++loadSequence.current; }; }, [load]));
   const button = (label: string, onPress: () => void) => <ActionTouchable accessibilityRole="button"
@@ -141,17 +146,22 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       <Text style={styles.lead}>{t('recourse.intro')}</Text>
       <Text style={styles.small}>{t('recourse.pvtOnly')}</Text>
       {loading && !state ? <ActivityIndicator color={COLORS.primary} /> : null}
+      {membershipUnavailable && !state ? <View style={styles.card}>
+        <Text accessibilityRole="alert" style={styles.body}>{t('recourse.membershipUnavailable')}</Text>
+        {button(t('recourse.refresh'), () => { void load(); })}</View> : null}
       {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error')}</Text>
         {button(t('recourse.refresh'), () => { void load(); })}</View> : null}
       {state ? <>
-        {!loading && (state.historyState === 'unavailable' || state.membershipState === 'unavailable')
+        {!loading && state.historyState === 'unavailable'
           ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.historyUnavailable')}</Text> : null}
         <View style={styles.card}>
           <RecourseMembershipSummary view={state} pending={loading} />
           {state.membershipState === 'available' ? state.enrolled ? <>
             {button(t('recourse.standing.payments'), () => navigation.navigate('RecourseMonthly'))}
             {button(t('recourse.leave'), () => { void leave(); })}
-          </> : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
+          </> : /^0x0+$/.test(state.identity)
+            ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); })
+            : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
             : button(t('recourse.refresh'), () => { void load(); })}
           <Text style={styles.small}>{t('recourse.graceSummary')}</Text>
           {state.membershipState === 'unavailable' ? button(t('recourse.flow.resume'), () => navigation.navigate('RecourseMembership', { kind: 'resume' })) : null}
@@ -169,7 +179,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
             {row.confirmed && row.identity !== state.primaryIdentity
               ? <>{button(t('recourse.recoverAddress'), () => { void recoverAddress(row.identity); })}
                 {button(t('recourse.transfer.open'), () => { void sendFromAddress(row.identity); })}</> : null}</View>)}
-          {state.primaryIdentity === null ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
+          {state.primaryIdentity === null && (state.membershipState !== 'available' || !/^0x0+$/.test(state.identity))
+            ? button(t('recourse.bindPrimary'), () => { void bindPrimary(); }) : null}
           {button(t('recourse.bind'), () => navigation.navigate('RecourseBind'))}
         </View>
         <View style={styles.card}>

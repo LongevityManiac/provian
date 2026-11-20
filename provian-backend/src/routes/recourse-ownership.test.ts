@@ -13,6 +13,41 @@ import * as auxiliaryRecovery from '../core/recourse/auxiliary-recovery';
 import * as poolState from '../core/recourse/pool-state';
 import * as membershipView from '../core/recourse/private-membership-view';
 
+test('a registered human wallet can read non-membership before binding any address', async () => {
+  const db = createFakeFirestore();
+  const userId = 'user_recourse_reader', account = `0x${'ae'.repeat(20)}`, zero = `0x${'00'.repeat(32)}`;
+  const ownerIdentity = identityHash('human', userId);
+  db.store.set('wallets/wallet_recourse_reader', { address: account, type: 'human', user_id: userId });
+  const pool = { pool: account, kernel: account, block: 100, blockHash: zero, timestamp: 1000, addressConsent: false,
+    currentAddress: `0x${'00'.repeat(20)}`, month: '1', reserveAtomic: '100', consentNonce: '0', consentGeneration: '0',
+    debitNonce: '0', outstandingAtomic: '0', authority: account, participationBurnAtomic: '100',
+    noEarningsContributionAtomic: '100', earningsBps: 100, signedRuleHash: zero, outcomeRevision: '0' };
+  const readPool = jest.spyOn(poolState, 'readRecoursePoolState').mockResolvedValue(pool);
+  const app = express();
+  app.use('/v1/recourse', createRecourseRouter({ db } as unknown as AgentBankDeps, (req, res, next) => {
+    if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
+    req.user = { id: userId } as Request['user'];
+    next();
+  }));
+  const read = () => request(app).get('/v1/recourse/pool').set('Authorization', 'Bearer TEST_ONLY');
+  try {
+    expect((await request(app).get('/v1/recourse/pool')).status).toBe(401);
+    const response = await read();
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).toMatchObject({ identity: zero, primaryIdentity: null, walletAddress: account,
+      membership: { enrolled: false, details: { status: 'not_member' } } });
+    expect(db.store.size).toBe(1);
+    readPool.mockResolvedValueOnce({ ...pool, addressConsent: true });
+    expect((await read()).status).toBe(503);
+    db.store.set(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`, { ownerIdentity });
+    expect((await read()).status).toBe(503);
+    db.store.delete(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`);
+    db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`, { ownerIdentity, address: account, chainBindingStatus: 'pending' });
+    expect((await read()).status).toBe(503);
+  } finally { readPool.mockRestore(); }
+});
+
 test('an auxiliary-only owner reads private membership without inventing primary recovery authority', async () => {
   const db=createFakeFirestore(),walletId='wallet_aw_aux_member',ownerIdentity=identityHash('agent',walletId);
   const identity=`0x${'ab'.repeat(32)}`,account=`0x${'ac'.repeat(20)}`;

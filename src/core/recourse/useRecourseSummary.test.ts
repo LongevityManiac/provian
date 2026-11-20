@@ -1,17 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 import { summarizeRecourse } from './useRecourseSummary';
 
-vi.mock('./service', () => ({ readRecourseView: vi.fn() }));
+vi.mock('./service', () => ({ readRecourseOverview: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: {} }));
 
 const member = { membershipState: 'available', enrolled: true, grace: false, unpaidAtomic: '0' } as const;
 
 describe('wallet Recourse summary', () => {
-    it('shows the plain shield for a non-member or an unconfirmed membership', () => {
+    it('distinguishes non-membership from a failed check', () => {
         const plain = { label: 'recourse.title', icon: 'shield-outline', month: null };
-        expect(summarizeRecourse(null)).toEqual(plain);
+        const unavailable = { ...plain, label: 'recourse.membershipUnavailable' };
+        expect(summarizeRecourse(null)).toEqual(unavailable);
         expect(summarizeRecourse({ ...member, enrolled: false, unpaidAtomic: '1' })).toEqual(plain);
-        expect(summarizeRecourse({ ...member, membershipState: 'unavailable' })).toEqual(plain);
+        expect(summarizeRecourse({ ...member, membershipState: 'unavailable' })).toEqual(unavailable);
     });
 
     it('shows protection through grace and distinguishes a due month from a current member', () => {

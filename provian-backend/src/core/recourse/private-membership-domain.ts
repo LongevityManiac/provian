@@ -17,7 +17,11 @@ export async function reconcilePrivateMembershipDomain(db: Firestore, ownerIdent
   await reconcileAddressIssuance(db,addresses.docs.map(r => String(r.get('address'))));
   for (;;) {
     const accountRow = await db.collection(C.owners).doc(ownerIdentity).get(), owner = await db.collection(R.owners).doc(ownerIdentity).get();
-    if (!owner.exists) throw Error('recourse_membership_domain_owner');
+    if (!owner.exists) {
+      // A wallet can read its membership before it has ever registered for Recourse.
+      if (!accountRow.exists && addresses.empty) return;
+      throw Error('recourse_membership_domain_owner');
+    }
     const account = accountRow.exists ? accountRow.data() as PrivateMembershipAccount : null;
     const transitionId: unknown = owner.get('membershipTransition');
     const transitionRow = typeof transitionId === 'string' ? await db.collection(T).doc(transitionId).get() : null;

@@ -38,14 +38,16 @@ import { readSponsoredOperation } from '../core/recourse/sponsored-operation-que
 import { prepareMembershipDebit, parseMembershipPaymentSelection } from '../core/recourse/membership-debit-preparation';
 import { queueMembershipDebit, ownedMembershipDebit, parseMembershipDebitRequest, MEMBERSHIP_DEBIT_OPERATIONS } from '../core/recourse/membership-debit-operation';
 
-interface Owner { readonly type: 'human' | 'agent'; readonly id: string; readonly walletId: string }
+type Owner = { readonly id: string; readonly walletId: string } & (
+  { readonly type: 'human'; readonly address: string } | { readonly type: 'agent' }
+);
 async function resolveOwner(req: Request, deps: AgentBankDeps): Promise<Owner> {
   if (req.agentWallet && !req.user) return { type: 'agent', id: req.agentWallet.id, walletId: req.agentWallet.id };
   if (!req.user || req.agentWallet) throw new Error('recourse_auth_required');
   const snapshots = await deps.db.collection('wallets').where('user_id', '==', req.user.id).where('type', '==', 'human').limit(10).get();
   const active = snapshots.docs.filter(doc => isActiveHumanWallet(doc.data()));
   if (active.length !== 1) throw new Error('recourse_active_wallet_required');
-  return { type: 'human', id: req.user.id, walletId: active[0].id };
+  return { type: 'human', id: req.user.id, walletId: active[0].id, address: String(active[0].get('address')).toLowerCase() };
 }
 
 /** Bodies are never logged: recovery credentials must not enter request/error telemetry. */
@@ -331,21 +333,31 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });
   router.get('/pool', async (req, res) => {
+    let stage: 'owner' | 'binding' | 'chain' | 'membership' = 'owner';
     try {
       const owner = await resolveOwner(req, deps);
-      const portfolio = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(identityHash(owner.type, owner.id)).get();
+      stage = 'binding';
+      const ownerIdentity = identityHash(owner.type, owner.id);
+      const portfolio = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
+      const primaryIdentity = portfolio.get('primaryBinding') === undefined ? null : await primaryBindingIdentity(deps.db, owner);
       let identity: string;
-      if (portfolio.get('primaryBinding') !== undefined) identity = await primaryBindingIdentity(deps.db, owner);
+      if (primaryIdentity !== null) identity = primaryIdentity;
       else {
-        const addresses = await deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', identityHash(owner.type, owner.id)).get();
+        const addresses = await deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', ownerIdentity).get();
         const bindings = addresses.docs.filter(row => row.get('chainBindingStatus') === 'confirmed')
           .map(row => String(row.get('identity'))).sort();
         identity = bindings.length ? await ownedBindingIdentity(deps.db, owner, bindings[0]) : `0x${'00'.repeat(32)}`;
       }
+      stage = 'chain';
       const pool = await readRecoursePoolState(identity);
-      const membership = await readPrivateMembershipView(deps.db, identityHash(owner.type, owner.id), pool);
-      res.json({ ...pool, identity, membership });
-    } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
+      stage = 'membership';
+      const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool);
+      res.json({ ...pool, identity, primaryIdentity, membership,
+        ...(owner.type === 'human' ? { walletAddress: owner.address } : {}) });
+    } catch {
+      console.warn('[Recourse] Pool status unavailable', { stage });
+      res.status(503).json({ error: 'recourse_unavailable' });
+    }
   });
   router.post('/binding-challenge', async (req, res) => {
     try {

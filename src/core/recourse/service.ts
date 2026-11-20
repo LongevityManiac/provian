@@ -137,6 +137,36 @@ function membershipDetails(value: unknown): RecourseMembershipDetails | undefine
     earningsBps: row.earningsBps as number | null };
 }
 
+function parseMembership(value: unknown) {
+  const row = object(value);
+  if (typeof row.enrolled !== 'boolean' || typeof row.grace !== 'boolean') throw Error('recourse_reply_invalid');
+  return { enrolled: row.enrolled, grace: row.grace, month: text(row.month, atomic),
+    endMonthExclusive: text(row.endMonthExclusive, atomic), unpaidAtomic: text(row.unpaidAtomic, atomic),
+    membershipDetails: membershipDetails(row.details) };
+}
+
+/** This view is for display. The authenticated relay verifies the current pool
+ * against both providers. Operations still perform their own chain checks. */
+export async function readRecourseOverview(): Promise<RecourseView> {
+  const account = useWalletStore.getState().address;
+  if (!account) throw Error('recourse_address_unavailable');
+  const reply = object(await RelayAPIService.recourseRequest('pool'));
+  if (useWalletStore.getState().address !== account || reply.walletAddress !== account.toLowerCase()) {
+    throw Error('recourse_wallet_changed');
+  }
+  const identity = text(reply.identity, hash);
+  const primaryIdentity = reply.primaryIdentity === null ? null : text(reply.primaryIdentity, hash);
+  if (primaryIdentity !== null && primaryIdentity !== identity) throw Error('recourse_reply_invalid');
+  const earningsBps = reply.earningsBps;
+  if (typeof earningsBps !== 'number' || !Number.isSafeInteger(earningsBps) || earningsBps < 0 || earningsBps > 10000) {
+    throw Error('recourse_reply_invalid');
+  }
+  return { ...parseMembership(reply.membership), identity, primaryIdentity, currentAddress: account.toLowerCase(),
+    membershipState: 'available', historyState: 'pending', addresses: [], requests: [], earningsBps,
+    participationBurnAtomic: text(reply.participationBurnAtomic, atomic),
+    noEarningsContributionAtomic: text(reply.noEarningsContributionAtomic, atomic), reserveAtomic: text(reply.reserveAtomic, atomic) };
+}
+
 /** Deliver the chain view before waiting for private membership data. */
 export async function readRecourseView(onChain?: (view: RecourseView) => void, chainOnly = false): Promise<RecourseView> {
   const userId = await RelayAPIService.getUserId();
@@ -153,7 +183,6 @@ export async function readRecourseView(onChain?: (view: RecourseView) => void, c
 
   }
   let pool = await readRecoursePoolChain(identity, ownerChainNetwork());
-  let details: RecourseMembershipDetails | undefined;
   const chainView: RecourseView = { identity, primaryIdentity, currentAddress: account.toLowerCase(), historyState: 'pending',
     membershipState: 'unavailable', enrolled: false, grace: false, earningsBps: pool.earningsBps, month: pool.month,
     endMonthExclusive: '0', participationBurnAtomic: pool.participationBurnAtomic,
@@ -173,17 +202,13 @@ export async function readRecourseView(onChain?: (view: RecourseView) => void, c
       }
     } catch { /* Public chain information was already delivered. */ }
   }
-  let membership: { enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string; unpaidAtomic: string } | null = null;
+  let membership: ReturnType<typeof parseMembership> | null = null;
   try {
     const reply = object(await RelayAPIService.recourseRequest('pool'));
     if (reply.identity !== identity || reply.pool !== pool.pool || reply.kernel !== pool.kernel) throw Error('recourse_reply_invalid');
-    const privateView = object(reply.membership);
-    details = membershipDetails(privateView.details);
-    if (typeof privateView.enrolled !== 'boolean' || typeof privateView.grace !== 'boolean') throw Error('recourse_reply_invalid');
-    membership = { enrolled: privateView.enrolled, grace: privateView.grace, month: text(privateView.month, atomic),
-      endMonthExclusive: text(privateView.endMonthExclusive, atomic), unpaidAtomic: text(privateView.unpaidAtomic, atomic) };
+    membership = parseMembership(reply.membership);
   } catch { /* The public reserve and direct allocated exit remain usable. */ }
-  return { ...chainView, membershipDetails: details, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
+  return { ...chainView, membershipDetails: membership?.membershipDetails, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
     enrolled: membership?.enrolled ?? false, grace: membership?.grace ?? false, earningsBps: pool.earningsBps,
     month: membership?.month ?? pool.month, endMonthExclusive: membership?.endMonthExclusive ?? '0',
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,

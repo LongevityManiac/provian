@@ -162,7 +162,7 @@ export default function HomeScreen() {
                         <Text style={styles.muted}>{t('overhaul.confirmedPvt')}</Text>
                         <ActionPressable accessibilityRole="button" onPress={() => stack.navigate('Recourse')} style={styles.inline}>
                             <Ionicons name={recourse.icon} size={17} color={COLORS.primaryLight} />
-                            <Text style={styles.link}>{t(recourse.label)}</Text>
+                            <Text style={[styles.link, styles.recourseLabel]}>{t(recourse.label)}</Text>
                         </ActionPressable>
                     </View>
                     {pvt && lastPvt ? (
@@ -253,7 +253,8 @@ const styles = StyleSheet.create({
     balanceCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.xl, padding: SPACING.m },
     balanceTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.s },
     balanceLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s, marginTop: SPACING.s },
-    inline: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: SPACING.xs },
+    inline: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: SPACING.xs, flexShrink: 1 },
+    recourseLabel: { flexShrink: 1, textAlign: 'right' },
     pvt: { color: COLORS.platinum, flexShrink: 1, fontSize: 36, fontWeight: '700' },
     checking: { color: COLORS.text, fontSize: 21, marginVertical: SPACING.m },
     muted: { color: COLORS.textSecondary, fontSize: 13 },
