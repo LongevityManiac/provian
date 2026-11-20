@@ -5,16 +5,16 @@ import { bindHumanPrimaryAddress, readRecourseHistory, readRecourseOverview, rea
 const f = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[], recovery: vi.fn(), setAddress: vi.fn(),
   history: null as unknown, requests: null as unknown, primaryMissing: false, relayDown: false, poolBinding: '',
   register:vi.fn(), bind:vi.fn(), biometricDenied:false, ticket:vi.fn(),wrongReply:false, ownerState: vi.fn(), breakContext: vi.fn(), recoverBreak: vi.fn(),
-  overviewWallet: '', overviewEnrolled: true }));
+  overviewWallet: '', overviewEnrolled: true, overviewTransition: null as 'join' | null }));
 const h = (b: string) => `0x${b.repeat(32)}`, a = (b: string) => `0x${b.repeat(20)}`;
 vi.mock('../../services/RelayAPIService', () => ({ default: { readRecourseOwnership: async () => f.history, registerHumanWallet: (...args: unknown[]) => f.register(...args), bindRecourseOwnership: (...args: unknown[]) => f.bind(...args), getUserId: async () => 'owner', recourseRequest: async (path: string, body: unknown) => {
   f.calls.push({ path, body });
   if (f.relayDown) throw Error('unavailable'); if (path === 'ownership') return f.history;
   if (path === 'restoration-requests' && body === undefined) return f.requests;
-  if (path === 'pool') return { identity: h('55'), primaryIdentity: null, walletAddress: f.overviewWallet,
+  if (path === 'pool') return { identity: h('55'), primaryIdentity: null, walletAddress: f.overviewWallet, month: '1',
     pool: a('66'), kernel: a('77'), earningsBps: 100, reserveAtomic: '100', participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', membership: {
-      enrolled: f.overviewEnrolled, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } };
+    noEarningsContributionAtomic: '100', ...(f.overviewTransition ? { membership: null, membershipTransition: f.overviewTransition }
+      : { membership: { enrolled: f.overviewEnrolled, grace: false, month: '1', endMonthExclusive: '2', unpaidAtomic: '0' } }) };
   return { requestId: f.wrongReply?h('99'):h('44'), status: 'authorized' };
 } } }));
 vi.mock('../protocol/runtime', () => ({ ownerChainNetwork: () => ({}) }));
@@ -34,7 +34,7 @@ vi.mock('../wallet/SeedManager', () => ({ default: { getMnemonic: async () => 't
 vi.mock('./human-restoration-exit', () => ({ withdrawHumanRestoration: vi.fn() }));
 vi.mock('../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: a('12'), setAddress: f.setAddress }) } }));
 beforeEach(() => {
-  f.overviewWallet = a('12'); f.overviewEnrolled = true;
+  f.overviewWallet = a('12'); f.overviewEnrolled = true; f.overviewTransition = null;
   f.register.mockReset(); f.register.mockResolvedValue(true); f.bind.mockReset(); f.biometricDenied=false; f.calls = []; f.setAddress.mockReset(); f.recovery.mockReset(); f.primaryMissing=false;f.relayDown=false;f.poolBinding='';
   f.history={identity:h('11'),addresses:[{identity:h('11'),chainBindingStatus:'confirmed'}, {identity:h('55'),chainBindingStatus:'confirmed'}]};
   f.recovery.mockResolvedValue({ destination: a('22'), requestId: h('44'),restoration:{request:h('44'),lossHash:h('88'),maximumLoss:'100'} });
@@ -50,6 +50,13 @@ it('displays authenticated non-membership without waiting for a public chain rea
   await expect(readRecourseOverview()).rejects.toThrow('recourse_wallet_changed');
   f.relayDown = true;
   await expect(readRecourseOverview()).rejects.toThrow('unavailable');
+});
+it('keeps a saved join visible without showing protection, even when the public binding already exists', async () => {
+  f.overviewTransition = 'join';
+  await expect(readRecourseOverview()).resolves.toMatchObject({
+    membershipState: 'in_progress', membershipTransition: 'join', enrolled: false, month: '1',
+  });
+  expect(f.calls).toEqual([{ path: 'pool', body: undefined }]);
 });
 it('recovers an auxiliary after a break without membership or primary changes and never falls back on unverifiable history',async()=>{
   f.history={identity:null,addresses:[{identity:h('55'),address:a('22'),recoveryGeneration:0,chainBindingStatus:'confirmed'}]};

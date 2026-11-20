@@ -7,7 +7,8 @@ import { pvtAmount, type RecourseView } from '../../core/recourse/service';
 export function RecourseMembershipSummary({ view, pending = false, statusText }: { view: RecourseView; pending?: boolean; statusText?: string }): React.JSX.Element {
   const { t, i18n } = useTranslation();
   const details = view.membershipDetails;
-  const status = view.membershipState !== 'available' ? 'membershipUnavailable'
+  const status = view.membershipState === 'in_progress' ? 'membershipInProgress'
+    : view.membershipState === 'unavailable' ? 'membershipUnavailable'
     : view.grace ? 'grace' : view.enrolled ? 'active' : details?.status === 'lapsed' ? 'lapsed' : 'inactive';
   const date = (ms: number): string => new Date(ms).toLocaleDateString(i18n.language, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
   return <View style={styles.content}>

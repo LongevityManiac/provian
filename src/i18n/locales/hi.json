@@ -5170,6 +5170,8 @@
     "allocationRequest": "बहाली अनुरोध पहचान संख्या",
     "withdrawAllocation": "आवंटित PVT प्राप्त करें",
     "bindingAwaitingFinality": "आपका वॉलेट जोड़ दिया गया है। नेटवर्क से अंतिम पुष्टि मिलने के बाद आप सदस्य बन सकते हैं।",
+    "membershipInProgress": "सदस्यता की कार्रवाई जारी है",
+    "continueJoining": "सदस्यता लेना जारी रखें",
     "membershipUnavailable": "सदस्यता की स्थिति उपलब्ध नहीं है",
     "memberBindingConsent": "इस पते के लिए Recourse Pool की सहमति",
     "memberBindingBytes": "इस दूसरे संदेश पर हेक्स में दिखाए गए 32 बाइट के रूप में हस्ताक्षर करें, पाठ के रूप में नहीं। यह इस पते को आपकी मौजूदा Recourse Pool सदस्यता में शामिल करता है।",

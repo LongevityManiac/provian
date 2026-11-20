@@ -5170,6 +5170,8 @@
     "allocationRequest": "ID da solicitação de restauração",
     "withdrawAllocation": "Receber PVT alocados",
     "bindingAwaitingFinality": "Sua carteira foi adicionada. Você poderá aderir quando a rede confirmar o registro em definitivo.",
+    "membershipInProgress": "Ação de adesão em andamento",
+    "continueJoining": "Continuar a adesão",
     "membershipUnavailable": "Estado da adesão indisponível",
     "memberBindingConsent": "Consentimento do Recourse Pool para este endereço",
     "memberBindingBytes": "Assine esta segunda mensagem como os 32 bytes exibidos em hexadecimal, não como texto. Ela inclui este endereço na sua participação atual no Recourse Pool.",

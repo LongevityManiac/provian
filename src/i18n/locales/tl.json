@@ -5170,6 +5170,8 @@
     "allocationRequest": "ID ng kahilingan sa pagpapanumbalik",
     "withdrawAllocation": "Tanggapin ang nakalaang PVT",
     "bindingAwaitingFinality": "Naidagdag na ang wallet mo. Makakasali ka kapag pinal na ang pagkumpirma ng network.",
+    "membershipInProgress": "Isinasagawa ang hakbang sa pagiging miyembro",
+    "continueJoining": "Ipagpatuloy ang pagsali",
     "membershipUnavailable": "Hindi makuha ang katayuan ng pagiging miyembro",
     "memberBindingConsent": "Pahintulot sa Recourse Pool para sa address na ito",
     "memberBindingBytes": "Lagdaan ang ikalawang mensaheng ito bilang 32 byte na ipinakita sa hex, hindi bilang teksto. Isinasama nito ang address na ito sa kasalukuyan mong pagiging miyembro ng Recourse Pool.",

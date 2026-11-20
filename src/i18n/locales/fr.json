@@ -5170,6 +5170,8 @@
     "allocationRequest": "Identifiant de demande de restauration",
     "withdrawAllocation": "Recevoir les PVT alloués",
     "bindingAwaitingFinality": "Votre portefeuille a été ajouté. Vous pourrez adhérer dès que le réseau aura confirmé définitivement son enregistrement.",
+    "membershipInProgress": "Action d’adhésion en cours",
+    "continueJoining": "Poursuivre l’adhésion",
     "membershipUnavailable": "État de l’adhésion indisponible",
     "memberBindingConsent": "Consentement Recourse Pool pour cette adresse",
     "memberBindingBytes": "Signez ce second message comme les 32 octets affichés en hexadécimal, et non comme du texte. Il inclut cette adresse dans votre adhésion actuelle au Recourse Pool.",

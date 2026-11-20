@@ -59,6 +59,7 @@ export default function AssetDetailScreen({ navigation, route }: NativeStackScre
                     end={<Text style={[styles.balance, actionStyles.money]}>{displayBalance(holding.balance)} {symbol}</Text>} />;
             }) : <Text style={actionStyles.body}>{t('overhaul.assetBalanceUnavailable')}</Text>}
             {isPvt && <DestinationRow stockIcon={recourse.icon} label={t(recourse.label)}
+                detail={recourse.detail ? t(recourse.detail) : undefined}
                 onPress={() => navigation.navigate('Recourse')} />}
         </ScrollView>
     </SafeAreaView>;

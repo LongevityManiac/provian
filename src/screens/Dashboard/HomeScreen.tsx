@@ -159,12 +159,14 @@ export default function HomeScreen() {
             }>
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceTop}>
-                        <Text style={styles.muted}>{t('overhaul.confirmedPvt')}</Text>
-                        <ActionPressable accessibilityRole="button" onPress={() => stack.navigate('Recourse')} style={styles.inline}>
+                        <Text style={[styles.muted, styles.balanceLabel]}>{t('overhaul.confirmedPvt')}</Text>
+                        <ActionPressable accessibilityRole="button" accessibilityLabel={recourse.detail ? `${t(recourse.label)}. ${t(recourse.detail)}` : t(recourse.label)}
+                            onPress={() => stack.navigate('Recourse')} style={styles.inline}>
                             <Ionicons name={recourse.icon} size={17} color={COLORS.primaryLight} />
-                            <Text style={[styles.link, styles.recourseLabel]}>{t(recourse.label)}</Text>
+                            <Text style={[styles.link, styles.recourseLabel]} numberOfLines={1} adjustsFontSizeToFit>{t(recourse.label)}</Text>
                         </ActionPressable>
                     </View>
+                    {recourse.detail ? <Text style={[styles.muted, styles.recourseDetail]}>{t(recourse.detail)}</Text> : null}
                     {pvt && lastPvt ? (
                         <>
                             <View style={styles.balanceLine}>
@@ -252,9 +254,11 @@ const styles = StyleSheet.create({
     content: { paddingHorizontal: SPACING.l, paddingBottom: 134, gap: SPACING.l },
     balanceCard: { backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderRadius: BORDER_RADIUS.xl, padding: SPACING.m },
     balanceTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.s },
+    balanceLabel: { flex: 1 },
     balanceLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.s, marginTop: SPACING.s },
     inline: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: SPACING.xs, flexShrink: 1 },
     recourseLabel: { flexShrink: 1, textAlign: 'right' },
+    recourseDetail: { textAlign: 'right', marginTop: SPACING.xs },
     pvt: { color: COLORS.platinum, flexShrink: 1, fontSize: 36, fontWeight: '700' },
     checking: { color: COLORS.text, fontSize: 21, marginVertical: SPACING.m },
     muted: { color: COLORS.textSecondary, fontSize: 13 },

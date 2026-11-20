@@ -79,8 +79,7 @@ test('the actual private view selects retained admission and closure history aft
     db.store.set(`${C.owners}/${state.ownerIdentity}`, { ...state });
     const active = await readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, state.ownerIdentity, pool);
     expect(journal).toHaveBeenCalled();
-    expect(active.details.protectionStartedAtMs).toBe(stamp(1) * 1000);
-    expect(active.details.protectionStartedAtMs).not.toBe(stamp(3) * 1000);
+    expect(active).toMatchObject({ details: { protectionStartedAtMs: stamp(1) * 1000 } });
     const closedEpisode = leavePrivateMembership(state.episode, month, rules);
     const closure = { ...entry(2, 'closure'), episode: closedEpisode };
     state = { ...state, episode: closedEpisode };
@@ -88,8 +87,31 @@ test('the actual private view selects retained admission and closure history aft
       succession: { ...audit[2].succession!, cutoff: { ...position(4), logIndex: Number.MAX_SAFE_INTEGER }, ancestorId: closure.id } }];
     db.store.set(`${C.owners}/${state.ownerIdentity}`, { ...state });
     const left = await readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, state.ownerIdentity, pool);
-    expect(left.details.status).toBe('not_member');
-    expect(left.details.protectionStartedAtMs).toBe(stamp(1) * 1000);
+    expect(left).toMatchObject({ details: { status: 'not_member', protectionStartedAtMs: stamp(1) * 1000 } });
     expect(db.store.get(`${C.owners}/${state.ownerIdentity}`)).toEqual(state);
   } finally { journal.mockRestore(); scan.mockRestore(); commit.mockRestore(); calendar.mockRestore(); }
+});
+
+test('an unfinished join is visible after reopening without granting protection or disclosing private operation data', async () => {
+  const { createFakeFirestore } = await import('../pvt/__test-helpers__/fake-firestore');
+  const { RECOURSE_COLLECTIONS } = await import('./ownership');
+  const { PRIVATE_MEMBERSHIP_TRANSITIONS } = await import('./private-membership-transition');
+  const { readPrivateMembershipView } = await import('./private-membership-view');
+  const state = account(), owner = state.ownerIdentity, id = `0x${'aa'.repeat(32)}`;
+  const ownerKey = `${RECOURSE_COLLECTIONS.owners}/${owner}`;
+  const transitionKey = `${PRIVATE_MEMBERSHIP_TRANSITIONS}/${id}`;
+  const db = createFakeFirestore({ strictTransactionOrder: true });
+  db.store.set(ownerKey, { ownerIdentity: owner, membershipTransition: id });
+  const draft = { id, ownerIdentity: owner, kind: 'join', status: 'consenting' };
+  db.store.set(transitionKey, draft);
+  const read = () => readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, owner,
+    { addressConsent: false } as import('./pool-state').RecoursePoolState);
+  await expect(read()).resolves.toEqual({ membershipTransition: 'join' });
+  expect(db.store.size).toBe(2);
+  db.store.set(transitionKey, { ...draft, departureRequested: true });
+  await expect(read()).resolves.toEqual({ membershipTransition: 'leave' });
+  db.store.set(transitionKey, { ...draft, ownerIdentity: `0x${'bb'.repeat(32)}` });
+  await expect(read()).rejects.toThrow('recourse_private_membership_transition_invalid');
+  db.store.set(transitionKey, { ...draft, status: 'complete' });
+  await expect(read()).rejects.toThrow('recourse_private_membership_transition_invalid');
 });

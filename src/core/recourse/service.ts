@@ -27,8 +27,9 @@ export interface RecourseMembershipDetails {
 export interface RecourseView {
   currentAddress?: string;
   membershipDetails?: RecourseMembershipDetails;
+  membershipTransition?: 'join' | 'leave' | 'renew';
   primaryIdentity: string | null;
-  identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
+  identity: string; historyState: 'pending' | 'available' | 'unavailable'; membershipState: 'available' | 'in_progress' | 'unavailable'; enrolled: boolean; grace: boolean; month: string; endMonthExclusive: string;
   participationBurnAtomic: string; noEarningsContributionAtomic: string; earningsBps: number;
   unpaidAtomic: string; reserveAtomic: string;
   addresses: { identity: string; address: string; openingBalanceAtomic: string; boundAtMs: number; confirmed: boolean }[];
@@ -145,6 +146,15 @@ function parseMembership(value: unknown) {
     membershipDetails: membershipDetails(row.details) };
 }
 
+function parseMembershipRead(reply: Record<string, unknown>, month: unknown): Pick<RecourseView,
+  'membershipState' | 'membershipTransition' | 'membershipDetails' | 'enrolled' | 'grace' | 'month' | 'endMonthExclusive' | 'unpaidAtomic'> {
+  const kind = reply.membershipTransition;
+  if (kind === undefined) return { ...parseMembership(reply.membership), membershipState: 'available' };
+  if (reply.membership !== null || (kind !== 'join' && kind !== 'leave' && kind !== 'renew')) throw Error('recourse_reply_invalid');
+  return { membershipState: 'in_progress', membershipTransition: kind, enrolled: false, grace: false,
+    month: text(month, atomic), endMonthExclusive: '0', unpaidAtomic: '0' };
+}
+
 /** This view is for display. The authenticated relay verifies the current pool
  * against both providers. Operations still perform their own chain checks. */
 export async function readRecourseOverview(): Promise<RecourseView> {
@@ -161,8 +171,8 @@ export async function readRecourseOverview(): Promise<RecourseView> {
   if (typeof earningsBps !== 'number' || !Number.isSafeInteger(earningsBps) || earningsBps < 0 || earningsBps > 10000) {
     throw Error('recourse_reply_invalid');
   }
-  return { ...parseMembership(reply.membership), identity, primaryIdentity, currentAddress: account.toLowerCase(),
-    membershipState: 'available', historyState: 'pending', addresses: [], requests: [], earningsBps,
+  return { ...parseMembershipRead(reply, reply.month), identity, primaryIdentity, currentAddress: account.toLowerCase(),
+    historyState: 'pending', addresses: [], requests: [], earningsBps,
     participationBurnAtomic: text(reply.participationBurnAtomic, atomic),
     noEarningsContributionAtomic: text(reply.noEarningsContributionAtomic, atomic), reserveAtomic: text(reply.reserveAtomic, atomic) };
 }
@@ -202,17 +212,15 @@ export async function readRecourseView(onChain?: (view: RecourseView) => void, c
       }
     } catch { /* Public chain information was already delivered. */ }
   }
-  let membership: ReturnType<typeof parseMembership> | null = null;
+  let membership: ReturnType<typeof parseMembershipRead> | null = null;
   try {
     const reply = object(await RelayAPIService.recourseRequest('pool'));
     if (reply.identity !== identity || reply.pool !== pool.pool || reply.kernel !== pool.kernel) throw Error('recourse_reply_invalid');
-    membership = parseMembership(reply.membership);
+    membership = parseMembershipRead(reply, pool.month);
   } catch { /* The public reserve and direct allocated exit remain usable. */ }
-  return { ...chainView, membershipDetails: membership?.membershipDetails, historyState: 'pending', membershipState: membership ? 'available' : 'unavailable',
-    enrolled: membership?.enrolled ?? false, grace: membership?.grace ?? false, earningsBps: pool.earningsBps,
-    month: membership?.month ?? pool.month, endMonthExclusive: membership?.endMonthExclusive ?? '0',
+  return { ...chainView, ...membership, earningsBps: pool.earningsBps, month: membership?.month ?? pool.month,
     participationBurnAtomic: pool.participationBurnAtomic, noEarningsContributionAtomic: pool.noEarningsContributionAtomic,
-    unpaidAtomic: membership?.unpaidAtomic ?? '0', reserveAtomic: pool.reserveAtomic, addresses: [], requests: [] };
+    reserveAtomic: pool.reserveAtomic };
 }
 /** Address/request history is separate from private membership reconciliation. */
 export async function readRecourseHistory(view: RecourseView): Promise<RecourseView> {

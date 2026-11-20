@@ -96,13 +96,16 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       });
     } finally { await externalWalletProofClient.disconnect(approved); session.current = null; }
   };
+  const joinStatus = view?.kind === 'join' && view.status === 'consenting'
+    ? view.challenges.length ? 'recourse.standing.approvalNeeded' : view.pending.length ? 'recourse.flow.joining' : undefined
+    : undefined;
   return <SafeAreaView style={styles.screen}>
     <View style={styles.header}><BackButton onPress={() => navigation.goBack()} /><Text style={styles.title}>{t('recourse.flow.title', 'Your membership')}</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.body}>{t('recourse.intro')}</Text>
       <Text style={styles.body}>{t('recourse.pvtOnly')}</Text>
-      {summary ? <RecourseMembershipSummary view={summary} statusText={view?.kind === 'join' && view.status !== 'complete' && view.status !== 'superseded' ? t('recourse.flow.joining') : undefined} /> : null}
-      <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly burns and contributions then happen automatically, even while the app is closed. You need no ETH to join, contribute or leave. Higher amounts require your fresh approval.')}</Text>
+      {summary && !(view?.status === 'complete' && summary.membershipState === 'in_progress')
+        ? <RecourseMembershipSummary view={summary} statusText={joinStatus ? t(joinStatus) : undefined} />
+        : joinStatus ? <Text style={styles.title}>{t(joinStatus)}</Text> : null}
       {(loading && !waitingForBinding) || busy ? <ActivityIndicator color={COLORS.primary} /> : null}
       {waitingForBinding ? <Text accessibilityRole="alert" style={styles.body}>{t('recourse.bindingAwaitingFinality')}</Text> : null}
       {error ? <Text style={styles.body}>{t('recourse.error')}</Text> : null}
@@ -110,7 +113,8 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
         ? <Text style={styles.body}>{t('recourse.membershipUnavailable')}</Text> : null}
       {view ? <>
         {view.kind !== 'join' ? <Text style={styles.title}>{view.kind === 'renew' ? t('recourse.standing.review','Review new amounts') : t('recourse.leave')}</Text> : null}
-        <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text>
+        {view.kind !== 'join' || view.status !== 'consenting' || view.challenges.length > 0
+          ? <Text style={styles.body}>{t(`recourse.flow.${view.status}`, view.status)}</Text> : null}
         {view.pending.map(pending => <View style={styles.card} key={pending.operation.id}>
           <Text selectable style={styles.address}>{pending.account}</Text>
           <Text style={styles.body}>{t('recourse.flow.pending', 'Authorization submitted. Refresh to check its confirmation.')}</Text>
@@ -148,6 +152,8 @@ export default function RecourseMembershipScreen({ navigation, route }: NativeSt
       </View> : null}
       <Text style={styles.body}>{t('recourse.graceRule')}</Text>
       {button(t('recourse.refresh'), () => { void load(); })}
+      <Text style={styles.body}>{t('recourse.intro')}</Text>
+      <Text style={styles.body}>{t('recourse.standing.explain', 'Approve membership once. Monthly burns and contributions then happen automatically, even while the app is closed. You need no ETH to join, contribute or leave. Higher amounts require your fresh approval.')}</Text>
       <View style={styles.card}>
         <Text style={styles.title}>{t('recourse.finePrint')}</Text>
         <Text style={styles.fine}>{t('recourse.restorationLegal')}</Text>

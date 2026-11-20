@@ -2,18 +2,20 @@ import { useCallback, useRef, useState } from 'react';
 import { useWalletStore } from '../../store/walletStore';
 import { readRecourseOverview, type RecourseView } from './service';
 
-type Membership = Pick<RecourseView, 'membershipState' | 'enrolled' | 'grace' | 'unpaidAtomic'>;
+type Membership = Pick<RecourseView, 'membershipState' | 'membershipTransition' | 'enrolled' | 'grace' | 'unpaidAtomic'>;
 type Summary = {
-    label: 'recourse.title' | 'recourse.active' | 'recourse.membershipUnavailable';
+    label: 'recourse.title' | 'recourse.active';
+    detail?: 'recourse.membershipUnavailable' | 'recourse.membershipInProgress' | 'recourse.continueJoining';
     icon: 'shield-outline' | 'shield-checkmark-outline';
     month: 'due' | 'grace' | null;
 };
 
 const RECOURSE: Summary = { label: 'recourse.title', icon: 'shield-outline', month: null };
-const UNAVAILABLE: Summary = { ...RECOURSE, label: 'recourse.membershipUnavailable' };
-
 export function summarizeRecourse(view: Membership | null): Summary {
-    if (view?.membershipState !== 'available') return UNAVAILABLE;
+    if (view?.membershipState === 'in_progress') return {
+        ...RECOURSE, detail: view.membershipTransition === 'join' ? 'recourse.continueJoining' : 'recourse.membershipInProgress',
+    };
+    if (view?.membershipState !== 'available') return { ...RECOURSE, detail: 'recourse.membershipUnavailable' };
     if (!view.enrolled) return RECOURSE;
     return {
         label: 'recourse.active',

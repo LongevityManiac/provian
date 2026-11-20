@@ -359,7 +359,8 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
       const pool = await readRecoursePoolState(identity);
       stage = 'membership';
       const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool);
-      res.json({ ...pool, identity, primaryIdentity, membership,
+      const display = 'membershipTransition' in membership ? { ...membership, membership: null } : { membership };
+      res.json({ ...pool, identity, primaryIdentity, ...display,
         ...(owner.type === 'human' ? { walletAddress: owner.address } : {}) });
     } catch {
       console.warn('[Recourse] Pool status unavailable', { stage });

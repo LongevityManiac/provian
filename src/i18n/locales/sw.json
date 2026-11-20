@@ -5170,6 +5170,8 @@
     "allocationRequest": "Kitambulisho cha ombi la urejeshaji",
     "withdrawAllocation": "Pokea PVT zilizotengwa",
     "bindingAwaitingFinality": "Pochi yako imeongezwa. Utaweza kujiunga baada ya mtandao kukamilisha uthibitishaji wake.",
+    "membershipInProgress": "Hatua ya uanachama inaendelea",
+    "continueJoining": "Endelea kujiunga",
     "membershipUnavailable": "Hali ya uanachama haipatikani",
     "memberBindingConsent": "Idhini ya Recourse Pool kwa anwani hii",
     "memberBindingBytes": "Saini ujumbe huu wa pili kama baiti 32 zilizoonyeshwa kwa heksadesimali, si kama maandishi. Unajumuisha anwani hii katika uanachama wako wa sasa wa Recourse Pool.",

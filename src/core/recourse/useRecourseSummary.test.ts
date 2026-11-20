@@ -9,10 +9,16 @@ const member = { membershipState: 'available', enrolled: true, grace: false, unp
 describe('wallet Recourse summary', () => {
     it('distinguishes non-membership from a failed check', () => {
         const plain = { label: 'recourse.title', icon: 'shield-outline', month: null };
-        const unavailable = { ...plain, label: 'recourse.membershipUnavailable' };
+        const unavailable = { ...plain, detail: 'recourse.membershipUnavailable' };
         expect(summarizeRecourse(null)).toEqual(unavailable);
         expect(summarizeRecourse({ ...member, enrolled: false, unpaidAtomic: '1' })).toEqual(plain);
         expect(summarizeRecourse({ ...member, membershipState: 'unavailable' })).toEqual(unavailable);
+    });
+
+    it('keeps a pending join unchecked and exposes a separate continuation label', () => {
+        expect(summarizeRecourse({ ...member, membershipState: 'in_progress', membershipTransition: 'join' })).toEqual({
+            label: 'recourse.title', detail: 'recourse.continueJoining', icon: 'shield-outline', month: null,
+        });
     });
 
     it('shows protection through grace and distinguishes a due month from a current member', () => {

@@ -149,7 +149,8 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
       {loading && !state ? <ActivityIndicator color={COLORS.primary} /> : null}
       {membershipUnavailable && !state ? <View style={styles.card}>
         <Text accessibilityRole="alert" style={styles.body}>{t('recourse.membershipUnavailable')}</Text>
-        {button(t('recourse.refresh'), () => { void load(); })}</View> : null}
+        {button(t('recourse.refresh'), () => { void load(); })}
+        {button(t('recourse.flow.resume'), () => navigation.navigate('RecourseMembership', { kind: 'resume' }))}</View> : null}
       {error ? <View style={styles.card}><Text style={styles.body}>{t('recourse.error')}</Text>
         {button(t('recourse.refresh'), () => { void load(); })}</View> : null}
       {state ? <>
@@ -163,7 +164,10 @@ export default function RecourseScreen({ navigation }: NativeStackScreenProps<Ap
           </> : /^0x0+$/.test(state.identity)
             ? button(t(addingWallet ? 'recourse.bindingPending' : 'recourse.bindPrimary'), () => { void bindPrimary(); })
             : button(state.membershipDetails?.status === 'lapsed' ? t('recourse.rejoin.amount', { amount: pvtAmount(state.unpaidAtomic) }) : t('recourse.join'), () => navigation.navigate('RecourseMembership', { kind: 'join' }))
-            : button(t('recourse.refresh'), () => { void load(); })}
+            : state.membershipState === 'in_progress'
+              ? button(t(state.membershipTransition === 'join' ? 'recourse.continueJoining' : 'recourse.flow.resume'),
+                () => navigation.navigate('RecourseMembership', { kind: 'resume' }))
+              : button(t('recourse.refresh'), () => { void load(); })}
           <Text style={styles.small}>{t('recourse.graceSummary')}</Text>
           {state.membershipState === 'unavailable' ? button(t('recourse.flow.resume'), () => navigation.navigate('RecourseMembership', { kind: 'resume' })) : null}
         </View>

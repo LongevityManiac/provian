@@ -7,6 +7,7 @@ import { readPrivateCalendarRules } from './private-calendar-rules';
 import { readPrivateMembershipScan, commitPrivateMembershipScan } from './private-membership-scan';
 import { utcCalendarMonth } from './calendar-month';
 import { RECOURSE_COLLECTIONS } from './ownership';
+import { PRIVATE_MEMBERSHIP_TRANSITIONS, type PrivateMembershipTransition } from './private-membership-transition';
 import type { RecoursePoolState } from './pool-state';
 
 export interface PrivateMembershipView {
@@ -52,10 +53,30 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
  * interpreted as a portfolio key. Outstanding operations show as unavailable
  * until their receipts reconcile; they never become fabricated zero dues. */
 export async function readPrivateMembershipView(db: Firestore, ownerIdentity: string,
-  pool: RecoursePoolState): Promise<PrivateMembershipView> {
+  pool: RecoursePoolState): Promise<PrivateMembershipView | { membershipTransition: PrivateMembershipTransition['kind'] }> {
   await reconcilePrivateMembershipDomain(db,ownerIdentity);
-  const owner = await db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
-  if (owner.get('membershipTransition') != null) throw Error('recourse_private_membership_transition_pending');
+  const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity);
+  const owner = await ownerRef.get();
+  if (owner.get('membershipTransition') != null) {
+    const kind = await db.runTransaction(async tx => {
+      const current = await tx.get(ownerRef);
+      const id: unknown = current.get('membershipTransition');
+      if (id == null) return null;
+      if (current.get('ownerIdentity') !== ownerIdentity || typeof id !== 'string' || !/^0x[0-9a-f]{64}$/.test(id)) {
+        throw Error('recourse_private_membership_transition_invalid');
+      }
+      const row = await tx.get(db.collection(PRIVATE_MEMBERSHIP_TRANSITIONS).doc(id));
+      const operation: unknown = row.get('kind');
+      const status: unknown = row.get('status');
+      if (row.get('id') !== id || row.get('ownerIdentity') !== ownerIdentity
+        || (status !== 'preparing' && status !== 'consenting')
+        || (operation !== 'join' && operation !== 'leave' && operation !== 'renew')) {
+        throw Error('recourse_private_membership_transition_invalid');
+      }
+      return row.get('departureRequested') === true ? 'leave' as const : operation;
+    }, { readOnly: true });
+    if (kind !== null) return { membershipTransition: kind };
+  }
   const ref = db.collection(C.owners).doc(ownerIdentity), initial = await ref.get();
   if (!initial.exists) {
     if (pool.addressConsent) throw Error('recourse_private_membership_unreconciled');

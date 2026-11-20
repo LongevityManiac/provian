@@ -72,6 +72,10 @@ test('an auxiliary-only owner reads private membership without inventing primary
     expect(response.body.identity).toBe(identity);expect(response.body.membership.enrolled).toBe(true);
     expect(readPool).toHaveBeenCalledWith(identity);expect(readMembership).toHaveBeenCalledWith(db,ownerIdentity,pool);
     expect(db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)).not.toHaveProperty('primaryBinding');
+    readMembership.mockResolvedValueOnce({ membershipTransition: 'join' });
+    const pending = await request(app).get('/v1/recourse/pool');
+    expect(pending.status).toBe(200);
+    expect(pending.body).toMatchObject({ identity, membership: null, membershipTransition: 'join' });
     db.store.get(`${RECOURSE_COLLECTIONS.identities}/${identity}`)!.walletId='other';
     expect((await request(app).get('/v1/recourse/pool')).status).toBe(503);
   } finally {readPool.mockRestore();readMembership.mockRestore();}
