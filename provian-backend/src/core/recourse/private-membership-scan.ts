@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import { getOperatorBoundRpcLegs } from '../onchain/rpc-provider';
-import { getAgreedBaseLogs } from '../onchain/economic-discovery';
+import { readMembershipLogWindows } from './membership-log-windows';
 import { rpcChainFactsEqual } from '../onchain/rpc-chain-facts';
 import { resolveHistoricalProtocolDeployment, type PointerRpc } from '../protocol/pointer';
 import { PROTOCOL_POINTER_PIN } from '../protocol/pointer-pin.generated';
@@ -96,9 +96,7 @@ export async function readPrivateMembershipScan(db: Firestore, ownerIdentity: st
     .map(name => MEMBERSHIP_RECEIPT_ABI.getEvent(name)!.topicHash);
   const transactions = new Set<string>(), effects: { kernel: string; transactionHash: string; logIndex: number }[] = [];
   let lastBlock = from.block, lastLog = -1;
-  for (let start = from.block + 1; start <= block; start += 500) {
-    const end = Math.min(start + 499, block);
-    const logs = await getAgreedBaseLogs({ address: from.pool, topics: [topics], fromBlock: start, toBlock: end });
+  for await (const { start, end, logs } of readMembershipLogWindows(from.pool, topics, from.block + 1, block)) {
     for (const l of logs) {
       if (l.removed || l.address !== from.pool || l.blockNumber < start || l.blockNumber > end
         || l.blockNumber < lastBlock || (l.blockNumber === lastBlock && l.logIndex <= lastLog)) return fail('log_order');

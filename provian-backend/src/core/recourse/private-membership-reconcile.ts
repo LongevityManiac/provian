@@ -1,5 +1,5 @@
 import type { Firestore } from 'firebase-admin/firestore';
-import { getAgreedBaseLogs } from '../onchain/economic-discovery';
+import { readMembershipLogWindows } from './membership-log-windows';
 import { MEMBERSHIP_RECEIPT_ABI, readMembershipReceipt, assertMembershipReceipt, type VerifiedMembershipReceipt } from './membership-receipt';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, commitPrivateMembershipReceipt, type PrivateMembershipReservation } from './private-membership-reservation';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS as T, recordPrivateMembershipConsent, type PrivateMembershipTransition } from './private-membership-transition';
@@ -68,26 +68,15 @@ export async function reconcilePrivateMembershipThrough(db: Firestore, ownerIden
   const topics = MEMBERSHIP_RECEIPT_ABI.fragments.filter(f => f.type === 'event').map(f => MEMBERSHIP_RECEIPT_ABI.getEvent(f.format())!.topicHash);
   const transactions = new Set<string>();
   let lastBlock = fromBlock, lastIndex = -1;
-  const blocksPerWindow = 500, concurrentWindows = 4;
-  for (let first = fromBlock; first <= cutoff.block; first += blocksPerWindow * concurrentWindows) {
-    const length = Math.min(concurrentWindows, Math.floor((cutoff.block - first) / blocksPerWindow) + 1);
-    // Fetch independent windows together. Validate them in block order before
-    // reconciling any receipt, so a failed window cannot commit partial evidence.
-    const windows = await Promise.all(Array.from({ length }, async (_, index) => {
-      const start = first + index * blocksPerWindow, end = Math.min(start + blocksPerWindow - 1, cutoff.block);
-      const logs = await getAgreedBaseLogs({ address: cutoff.pool, topics: [topics], fromBlock: start, toBlock: end });
-      return { start, end, logs };
-    }));
-    for (const { start, end, logs } of windows) {
-      for (const log of logs) {
-        if (log.removed || log.address !== cutoff.pool || log.blockNumber < start || log.blockNumber > end || log.blockNumber < lastBlock
-          || !Number.isSafeInteger(log.logIndex) || log.logIndex < 0 || (log.blockNumber === lastBlock && log.logIndex <= lastIndex)) throw Error('recourse_membership_reconcile_log');
-        lastBlock = log.blockNumber; lastIndex = log.logIndex;
-        const event = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...log.topics], data: log.data });
-        if (!event) throw Error('recourse_membership_reconcile_log');
-        if (event.name === 'IssuanceBatchCancelled' || (event.name === 'IssuanceTicketConsumed'
-          ? wallets.has(String(event.args.account).toLowerCase()) : bindings.has(String(event.args.binding)))) transactions.add(log.transactionHash);
-      }
+  for await (const { start, end, logs } of readMembershipLogWindows(cutoff.pool, topics, fromBlock, cutoff.block)) {
+    for (const log of logs) {
+      if (log.removed || log.address !== cutoff.pool || log.blockNumber < start || log.blockNumber > end || log.blockNumber < lastBlock
+        || !Number.isSafeInteger(log.logIndex) || log.logIndex < 0 || (log.blockNumber === lastBlock && log.logIndex <= lastIndex)) throw Error('recourse_membership_reconcile_log');
+      lastBlock = log.blockNumber; lastIndex = log.logIndex;
+      const event = MEMBERSHIP_RECEIPT_ABI.parseLog({ topics: [...log.topics], data: log.data });
+      if (!event) throw Error('recourse_membership_reconcile_log');
+      if (event.name === 'IssuanceBatchCancelled' || (event.name === 'IssuanceTicketConsumed'
+        ? wallets.has(String(event.args.account).toLowerCase()) : bindings.has(String(event.args.binding)))) transactions.add(log.transactionHash);
     }
   }
   for (const hash of transactions) {
