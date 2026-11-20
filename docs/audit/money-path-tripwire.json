@@ -1407,6 +1407,8 @@
     "src/core/recourse/standing-state.ts": "d775a5638ab6338bd98cc8116b5240e4fe3b36886e3c36187c1fe9ede264fd3f",
     "src/core/recourse/theft-transfer-history.test.ts": "6512e39e1224d13933c37cefae19786021aac937095d847e1147da460c1f6964",
     "src/core/recourse/theft-transfer-history.ts": "921a99212b7de5cba5e18b266e70a8afe7ca8b7f27e406fe63eeb8a03ac55079",
+    "src/core/recourse/useRecourseSummary.test.ts": "db8c0aae5029af859cfe23a7752f6e04fc8c05c0e78b1c894447faa16dd55b8d",
+    "src/core/recourse/useRecourseSummary.ts": "647b32d319f451256d82490372c5cabd03a4df5970e0f02ef2a515011d4adbf2",
     "src/core/security/ActionWallet.builderCode.test.ts": "01a4de951ca4cb854b577b0fd2594970ad388e64c1f289ad80803be7cc4c39c7",
     "src/core/security/ActionWallet.ts": "4c983840529241d5225690b3e7444ba7b72765982ff27344ecbc9d501ba44daf",
     "src/core/wallet/SeedManager.ts": "e62208811afd4f8706dc56e228effd00b814f8d8f06aee167067fdc976b6650d",
