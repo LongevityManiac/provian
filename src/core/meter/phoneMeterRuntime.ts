@@ -239,62 +239,137 @@ export function renewRejectedSessionAfterUnlock(address: string | null, relay?: 
 }
 
 export const UNLOCK_MAINTENANCE_TIMEOUT_MS = 6_000;
+/**
+ * The longest any one unlock-maintenance step may run, counted from the unlock. A step still
+ * running then is abandoned and reported; every step runs again at the next unlock, and the
+ * relay, message-key and Solana steps also on every foreground and meter tick.
+ */
+export const UNLOCK_STEP_CAP_MS = 45_000;
 
-/** Run after navigation, with a short window for work that uses the unlock approval. */
+export type UnlockStepOutcome = 'done' | 'failed' | 'skipped' | 'gave_up';
+export interface UnlockStepReport { readonly step: string; readonly outcome: UnlockStepOutcome; readonly ms: number; readonly error?: string }
+
+/** Steps of the most recent unlock that are still running (in order of start). */
+const runningUnlockSteps = new Map<string, number>();
+let lastUnlockReport: UnlockStepReport[] = [];
+/** The outcome of each step of the latest unlock (diagnostics and tests). */
+export function lastUnlockMaintenanceReport(): readonly UnlockStepReport[] { return lastUnlockReport; }
+
+/** Run one named step: it settles as done, failed, skipped, or gave_up at `capMs`. Never throws. */
+export async function runUnlockStep(
+    step: string,
+    fn: () => Promise<unknown>,
+    capMs: number = UNLOCK_STEP_CAP_MS,
+    report: UnlockStepReport[] = lastUnlockReport,
+    now: () => number = Date.now,
+): Promise<UnlockStepOutcome> {
+    const started = now();
+    runningUnlockSteps.set(step, started);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cap = new Promise<'gave_up'>(resolve => { timer = setTimeout(() => resolve('gave_up'), capMs); });
+    const work = Promise.resolve().then(fn).then(
+        (v): UnlockStepOutcome => (v === 'skipped' ? 'skipped' : 'done'),
+        (err: unknown): UnlockStepOutcome => {
+            report.push({ step, outcome: 'failed', ms: now() - started, error: err instanceof Error ? err.message : String(err) });
+            return 'failed';
+        },
+    );
+    const outcome = await Promise.race([work, cap]).finally(() => clearTimeout(timer));
+    runningUnlockSteps.delete(step);
+    if (outcome !== 'failed') report.push({ step, outcome, ms: now() - started });
+    const line = `[WalletLock] unlock step ${step}: ${outcome} in ${now() - started}ms`;
+    if (outcome === 'gave_up' || outcome === 'failed') console.warn(line + (outcome === 'gave_up' ? ' (runs again at the next unlock)' : `: ${report[report.length - 1]?.error ?? ''}`));
+    else console.log(line);
+    return outcome;
+}
+
+/**
+ * Run after navigation. Work that needs the unlock approval gets `timeoutMs`; the approval then
+ * ends and each step still running is named in the log and given at most `UNLOCK_STEP_CAP_MS`
+ * in all. Never throws and never waits on a step beyond the window.
+ */
 export async function onWalletUnlocked(
     address: string | null,
     biometricAction: BiometricAction,
     timeoutMs: number = UNLOCK_MAINTENANCE_TIMEOUT_MS,
+    capMs: number = UNLOCK_STEP_CAP_MS,
 ): Promise<void> {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
+    runningUnlockSteps.clear();
+    const report: UnlockStepReport[] = [];
+    lastUnlockReport = report;
+    const started = Date.now();
     try {
-        const deadline = new Promise<void>(resolve => { timer = setTimeout(resolve, timeoutMs); });
-        await Promise.race([deadline, maintainUnlockedWallet(address, biometricAction, controller.signal)]);
-    } catch {
-        console.warn('[WalletLock] unlock maintenance deferred');
+        const deadline = new Promise<'deadline'>(resolve => { timer = setTimeout(() => resolve('deadline'), timeoutMs); });
+        const all = maintainUnlockedWallet(address, biometricAction, controller.signal, (step, fn) => {
+            // Each step's cap counts from the unlock, so nothing outlives it by more than capMs.
+            return runUnlockStep(step, fn, Math.max(0, capMs - (Date.now() - started)), report);
+        });
+        const winner = await Promise.race([deadline, all.then(() => 'finished' as const)]);
+        if (winner === 'deadline') {
+            console.warn(`[WalletLock] unlock maintenance deferred after ${timeoutMs}ms; still running: ${[...runningUnlockSteps.keys()].join(', ') || 'none'}`);
+        }
+    } catch (err) {
+        console.warn('[WalletLock] unlock maintenance deferred', err instanceof Error ? err.message : String(err));
     } finally {
         clearTimeout(timer);
         controller.abort();
         // Mailbox and archive maintenance use derived caches, without the unlock grant.
-        void Promise.resolve().then(() => getPhoneMeter().afterUnlock()).catch(() => undefined);
+        void runUnlockStep('meter-after-unlock', () => getPhoneMeter().afterUnlock(), capMs, report);
     }
 }
 
-async function maintainUnlockedWallet(address: string | null, biometricAction: BiometricAction, signal: AbortSignal): Promise<void> {
+type UnlockStepRunner = (step: string, fn: () => Promise<unknown>) => Promise<UnlockStepOutcome>;
+
+async function maintainUnlockedWallet(address: string | null, biometricAction: BiometricAction, signal: AbortSignal, step: UnlockStepRunner): Promise<void> {
     const stillApproved = () => !signal.aborted && isBiometricActionValid(biometricAction);
     if (!stillApproved()) return;
 
     // Get a renewal proof while the unlock grant is live even if another service is slow.
-    const renewal = prepareRenewalAtUnlock(address, biometricAction).then(() => {
+    const renewal = step('renewal-proof', async () => {
+        const r = await prepareRenewalAtUnlock(address, biometricAction);
         if (stillApproved()) void renewRejectedSessionAfterUnlock(address);
+        return r === 'skipped' ? 'skipped' : r;
     });
     const { getMessageKeyPair } = await import('../commons/threadCrypto');
     const PECloudSync = (await import('../provenance/PECloudSync')).default;
     const { initializePromiseTermsKey } = await import('../promises/PromiseTermsVault');
     const provenance = (await import('../provenance/ProvenanceEnvelopeManager')).default;
     if (!stillApproved()) return;
-    await Promise.allSettled([
-        getMessageKeyPair(publishKeyReason(), biometricAction),
-        PECloudSync.getArchiveKeyForBackup({ allowPrompt: false, biometricAction }, biometricAction),
-        initializePromiseTermsKey(biometricAction),
+    await Promise.all([
+        step('message-key', () => getMessageKeyPair(publishKeyReason(), biometricAction)),
+        step('archive-key', () => PECloudSync.getArchiveKeyForBackup({ allowPrompt: false, biometricAction }, biometricAction)),
+        step('terms-key', () => initializePromiseTermsKey(biometricAction)),
     ]);
     if (!stillApproved()) return;
     // iCloud/Drive can take minutes to inventory. Start it independently of relay and proof work.
-    await Promise.allSettled([
-        getPhoneMeter().backup.primeKey(biometricAction, signal),
-        finishRelayUnlock(address, biometricAction, stillApproved),
-        provenance.retryDeferredEnvelopes(biometricAction),
+    await Promise.all([
+        step('cloud-backup-key', () => getPhoneMeter().backup.primeKey(biometricAction, signal)),
+        finishRelayUnlock(address, biometricAction, stillApproved, step),
+        step('deferred-records', () => provenance.retryDeferredEnvelopes(biometricAction)),
         renewal,
     ]);
 }
 
-async function finishRelayUnlock(address: string | null, biometricAction: BiometricAction, stillApproved: () => boolean): Promise<void> {
+async function finishRelayUnlock(address: string | null, biometricAction: BiometricAction, stillApproved: () => boolean, step: UnlockStepRunner): Promise<void> {
     const relay = (await import('../../services/RelayAPIService')).default;
-    if (address && !(await relay.isRegistered()) && stillApproved()) await relay.recoverRelayCredentials(address, biometricAction);
+    await step('relay-credentials', async () => {
+        if (!address || (await relay.isRegistered())) return 'skipped';
+        if (!stillApproved()) throw new Error('approval ended');
+        return relay.recoverRelayCredentials(address, biometricAction);
+    });
     if (!stillApproved()) return;
-    await ensureMessageKeyAtLaunch({ allowPrompt: false, biometricAction }, biometricAction);
-    if (stillApproved()) await (await import('../chains/solana/solanaAddressProof')).ensureSolanaAddressProven(biometricAction);
+    await step('message-key-publish', async () => {
+        if (!(await ensureMessageKeyAtLaunch({ allowPrompt: false, biometricAction }, biometricAction))) throw new Error('not published');
+    });
+    if (stillApproved()) {
+        await step('solana-proof', async () => {
+            const outcome = await (await import('../chains/solana/solanaAddressProof')).ensureSolanaAddressProven(biometricAction);
+            if (outcome === 'failed') throw new Error('proof failed');
+            return outcome;
+        });
+    }
 }
 
 /**

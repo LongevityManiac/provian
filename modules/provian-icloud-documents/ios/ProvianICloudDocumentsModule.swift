@@ -42,8 +42,14 @@ public class ProvianICloudDocumentsModule: Module {
         let data = Data(contents.utf8)
         var coordinationError: NSError?
         var writeError: Error?
-        NSFileCoordinator(filePresenter: nil).coordinate(writingItemAt: url, options: .forReplacing, error: &coordinationError) { target in
-          do { try data.write(to: target, options: .atomic) } catch { writeError = error }
+        Self.boundedCoordination(timeout: Self.coordinationTimeout, error: &coordinationError) { coordinator, err in
+          coordinator.coordinate(writingItemAt: url, options: .forReplacing, error: err) { target in
+            do { try data.write(to: target, options: .atomic) } catch { writeError = error }
+          }
+        }
+        if coordinationError?.code == NSUserCancelledError {
+          promise.reject("ICLOUD_COORDINATION_TIMEOUT", "iCloud kept \(name) locked too long")
+          return
         }
         if let error = coordinationError ?? writeError {
           promise.reject("ICLOUD_WRITE_FAILED", error.localizedDescription)
@@ -118,6 +124,23 @@ public class ProvianICloudDocumentsModule: Module {
 
   // MARK: - helpers
 
+  /// The longest a coordinated read or write may wait for iCloud's file lock.
+  static let coordinationTimeout: TimeInterval = 30
+
+  /// `NSFileCoordinator.coordinate` waits without limit while another process (bird, an upload)
+  /// holds the file. Everything here runs on one serial queue, so one such wait stopped every later
+  /// iCloud call. Cancel the coordinator after `timeout`: a cancelled coordinator returns at once
+  /// with `NSUserCancelledError` and does not run the accessor.
+  static func boundedCoordination(timeout: TimeInterval, error: inout NSError?, _ body: (NSFileCoordinator, NSErrorPointer) -> Void) {
+    let coordinator = NSFileCoordinator(filePresenter: nil)
+    let cancel = DispatchWorkItem { coordinator.cancel() }
+    DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout, execute: cancel)
+    var err: NSError?
+    body(coordinator, &err)
+    cancel.cancel()
+    error = err
+  }
+
   struct ICloudReadError: Error {
     let code: String
     let message: String
@@ -177,14 +200,20 @@ public class ProvianICloudDocumentsModule: Module {
     var coordinationError: NSError?
     var text: String?
     var readError: Error?
-    NSFileCoordinator(filePresenter: nil).coordinate(readingItemAt: url, options: [], error: &coordinationError) { target in
-      do {
-        let data = try Data(contentsOf: target)
-        text = String(data: data, encoding: .utf8)
-        if text == nil { readError = ICloudReadError(code: "ICLOUD_NOT_TEXT", message: "\(name) is not UTF-8") }
-      } catch {
-        readError = error
+    let remaining = max(1, deadline.timeIntervalSinceNow)
+    boundedCoordination(timeout: min(remaining, coordinationTimeout), error: &coordinationError) { coordinator, err in
+      coordinator.coordinate(readingItemAt: url, options: [], error: err) { target in
+        do {
+          let data = try Data(contentsOf: target)
+          text = String(data: data, encoding: .utf8)
+          if text == nil { readError = ICloudReadError(code: "ICLOUD_NOT_TEXT", message: "\(name) is not UTF-8") }
+        } catch {
+          readError = error
+        }
       }
+    }
+    if coordinationError?.code == NSUserCancelledError {
+      throw ICloudReadError(code: "ICLOUD_COORDINATION_TIMEOUT", message: "iCloud kept \(name) locked too long")
     }
     if let error = coordinationError ?? readError { throw error }
     return text

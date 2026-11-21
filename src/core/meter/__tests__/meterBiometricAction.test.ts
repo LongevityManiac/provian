@@ -33,7 +33,7 @@ import { MemoryCloudFiles } from '../cloudFiles';
 import { MemoryMeterFiles } from '../meterFiles';
 import { PhoneMeter, type KeyValue } from '../phoneMeter';
 import { PeCloudBackup, deriveArchiveKey, type BackupKeyProvider } from '../peCloudBackup';
-import { meterTransportForAction, restoreMyPes, backUpMyPes, onWalletUnlocked } from '../phoneMeterRuntime';
+import { meterTransportForAction, restoreMyPes, backUpMyPes, onWalletUnlocked, lastUnlockMaintenanceReport, runUnlockStep } from '../phoneMeterRuntime';
 import { FakeRelay, openStore, recordPes, envelope, T0 } from './meterTestkit';
 
 const phrase = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
@@ -151,6 +151,29 @@ describe('meter operations retain one explicit approval', () => {
         expect(stopped?.aborted).toBe(true);
         expect(() => assertBiometricAction(approval)).toThrow();
         expect(mailbox).toHaveBeenCalledOnce();
+    });
+    it('names the step still running when the unlock window closes, then gives it up at the cap', async () => {
+        vi.spyOn(PeCloudBackup.prototype, 'primeKey').mockImplementation(() => new Promise(() => undefined));
+        vi.spyOn(PhoneMeter.prototype, 'afterUnlock').mockResolvedValue();
+        vi.spyOn(RelayAPIService, 'isRegistered').mockResolvedValue(false);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await withBiometricAction('Unlock', action => onWalletUnlocked(null, action, 100, 400));
+        expect(warn.mock.calls.map(c => String(c[0])).join('\n')).toMatch(/unlock maintenance deferred after 100ms; still running: .*cloud-backup-key/);
+        await new Promise(r => setTimeout(r, 450));
+        const prime = lastUnlockMaintenanceReport().find(r => r.step === 'cloud-backup-key');
+        expect(prime?.outcome).toBe('gave_up');
+        expect(warn.mock.calls.map(c => String(c[0])).join('\n')).toMatch(/unlock step cloud-backup-key: gave_up/);
+    });
+    it('every unlock step settles: done, failed or gave up', async () => {
+        const report: Parameters<typeof runUnlockStep>[3] = [];
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        await Promise.all([
+            runUnlockStep('ok', async () => 1, 50, report),
+            runUnlockStep('bad', async () => { throw new Error('boom'); }, 50, report),
+            runUnlockStep('stuck', () => new Promise(() => undefined), 50, report),
+        ]);
+        expect(Object.fromEntries(report.map(r => [r.step, r.outcome]))).toEqual({ ok: 'done', bad: 'failed', stuck: 'gave_up' });
     });
     it.each(['cold', 'rotated'])('export uses its explicit transport for %s credentials and preserves all local records', async mode => {
         let secret: string | null = mode === 'cold' ? null : 'old-secret';
