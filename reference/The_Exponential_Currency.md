@@ -18,11 +18,9 @@ PVT, the currency of the Provian network, implements it end to end. Supply is un
 
 The serious competitor is not a scarcity coin. It is the dollar and its on-chain wrappers. The dollar is elastic, stablecoins settle at machine speed, and PVT is built to live alongside both. But a stablecoin moves money without making any, and a central bank can only print for a whole economy at once, delivering the new money to whoever stands nearest the issuer. Neither lets a unit come into existence because work happened and hands it to whoever did the work. That is the job parity minting exists to do.
 
-It also changes who pays for the exponential itself. A currency finances only what its participants earn and accept in it, and today the build-out is paid for in dollars by people who earn in dollars. Parity minting changes what is possible as that boundary moves: supply accumulates across every participant whose work the network witnesses, and when something large is proposed, the money to commit to it already exists and is spread across the people and machines who earned it, rather than printed for everyone at once or allocated by whoever already held the capital.
+It also changes who pays for the exponential itself: as more of the build-out is done by people who earn in the unit, the money to commit to the next large project already exists, spread across the people and machines who earned it, rather than printed for everyone at once or allocated by whoever already held the capital (Part 7).
 
-A currency that pays whoever did the work also has to be one they can keep. Crypto's critics point to stolen keys, ledgers that expose every holding, and the chance that the mathematics behind keys will one day fail. Those are real problems, and they are solvable. Banks get robbed too; what saves the customer is a ledger of what each person is owed that does not live in a password. PVT has that layer. Ownership of PVT is recorded apart from the key, the record survives a failure of the cryptography, and a theft can be reversed. Part 12 sets it out.
-
-No other project has built this. Bitcoin fixes supply. Ethereum and Solana pay new coins to whoever stakes what they already hold. Energy-denominated money, the successor to fiat that some now propose, is issued to whoever owns the generation. None of them mint against work. The question each of them answers is what to hold. The question this document answers is who receives: money as the instrument that records what participants are worth to each other, in a unit that keeps its meaning as the economy grows.
+A currency that pays whoever did the work also has to be one they can keep. PVT's ownership is recorded apart from the key, so a balance survives a failure of the cryptography and a theft can be reversed (Part 12).
 
 None of this is a small claim, and this document does not pretend it is. The people building the exponential say openly that money will have to change, and they name the problems this paper takes up, falling prices, elastic money that pays the holder first, output no ledger counts, without proposing a rule for issuance that answers them. A solution has to be as consequential as the problems. The path from a dollar-financed present to an economy that counts its own growth is not mapped here, and nobody can map it yet. What can be built now is the architecture that makes the destination reachable: a receipt for work, a unit minted from it, and a burn that keeps the economy open. That is what PVT is. Whether the world walks the path is decided by the participants who use it, not by anything written here.
 
@@ -236,8 +234,6 @@ That is why the receipt and the currency are inseparable and why the currency ha
 
 ## 10. Money Is a Measurement Tool, Not a Scarcity Asset
 
-This is the inversion everything else rests on.
-
 Most people treat money first as a store of value: earn it, hold it, expect it to be worth something later. Under that frame, scarcity is the whole game. Scarcer money is a better store.
 
 That frame is wrong for an exponential economy.
@@ -264,16 +260,6 @@ It is not a peg. PVT is not redeemable for compute, energy, a stablecoin, or a r
 
 ## 11. Why Nobody Else Built It
 
-**Bitcoin.** Hard cap, halvings, pure scarcity. No connection between issuance and the production of anything. New coins reward solving puzzles that exist only to be hard; the coins are real, but the work produces nothing.
-
-**Ethereum and Solana.** New coins are paid to whoever stakes coins they already hold to help secure the network. Issuance responds to staking participation, the locking of existing coins, not to work performed. Capital is paid for being capital.
-
-**Dollar stablecoins.** The dollar on a faster rail. They solve settlement and leave issuance with the central bank (Part 4).
-
-**Energy money.** A unit denominated in watts, or redeemable for them, proposed as what comes after fiat. It is issued to whoever owns the generation, which is the holder paid for holding under a new backing (Part 3).
-
-**Everyone else.** Caps, halvings, scarcity, belief.
-
 Nobody has built issuance tied to witnessed productive work, uncapped, and paid to whoever did the work, end to end. That gap is not an oversight by a hundred competent teams. It is because the constraint was never named. Scarcity was inherited from gold and from the first blockchain, and every project since has optimized inside the inheritance instead of asking whether it fits the economy money is supposed to measure.
 
 The same inheritance explains the other thing nobody built. On every one of these networks the key is the only proof of ownership, so a stolen key is a lost balance and a broken signature scheme is a lost currency. Part 12 is about that gap.
@@ -284,43 +270,13 @@ Every crypto asset, PVT included, rests on a private key. Whoever holds the key 
 
 Critics treat those weaknesses as the outer edge of what crypto can be. This paper treats them as unfinished work. Provian’s founder does not believe a civilization trading across planets a thousand years from now will settle its accounts in national currencies. The money of that future will be digital, and money meant to last that long cannot depend on no key ever being stolen and no cipher ever failing.
 
-Banks solved a version of this long ago. A bank's record of what each customer is owed is kept apart from anyone's password, which is why a robbed customer can be made whole. On Bitcoin and Ethereum the chain is the only ledger. It records which key controls each coin and nothing else, so an honest transfer and a theft look the same, and undoing one means persuading the whole network to rewrite history.
+Banks solved a version of this long ago: a bank's record of what each customer is owed is kept apart from anyone's password, which is why a robbed customer can be made whole. On Bitcoin and Ethereum the chain is the only ledger, so an honest transfer and a theft look the same, and undoing one means persuading the whole network to rewrite history.
 
-PVT separates the two. The chain is the rail PVT moves on. Ownership is recorded apart from it, and the key is only the instrument an owner uses to move what is theirs.
+PVT separates the two. The chain is the rail PVT moves on. Ownership is recorded apart from it, privately, for every owner, person or agent, that binds its addresses, together with the fingerprint of a recovery secret that a thief who takes the key does not have. The key is only the instrument an owner uses to move what is theirs.
 
-### The record of ownership
+If the cryptography breaks, PVT moves onto a cipher that holds: balances are taken as of the last block the network can trust, and each bound owner proves its secret and receives its PVT on a successor contract, free. Settled work stays settled and cannot mint twice. When Bitcoin's chain fails, the money fails with it. When PVT's rail fails, the owners are still known.
 
-An owner, person or agent, binds the addresses it holds. Wallets made in the app and agent wallets are bound when they are created; an address held elsewhere is bound by proving control of it. From then on the relay follows that owner's PVT across the chain, whether the units were earned or received in payment. Only PVT is followed. Ether, dollars, and other tokens at a bound address are outside the record and depend on the key, as they always have. Nothing before binding is reconstructed.
-
-The link between an owner and its addresses is never published. Each address and its transfers are public, as on any chain, but nothing the network serves reveals that two addresses belong together or totals what an owner holds. A recovery or restoration is the one event that shows an old address beside its replacement.
-
-Binding also registers a recovery commitment, the fingerprint of a secret unrelated to the wallet key. A person's secret comes from the seed and travels inside the backup they already keep; an agent's is generated by the developer tools and stored encrypted with its key. The relay sees only the fingerprint, so a thief who takes the key still lacks the secret.
-
-### If the cryptography breaks
-
-A broken cipher is answered by moving PVT onto one that holds. The network takes balances as of the last block it can trust; each bound owner proves its secret, names a safe destination, and receives its PVT there on a successor contract, at no cost and with no membership required. Settled work stays settled and cannot mint twice. Nothing on the old chain is rewritten; it simply stops being where PVT lives. The token contract has been succeeded before, and a permanent pointer on the chain names the current contracts, so wallets and tools can find them without taking anyone's word for it.
-
-That is the difference that matters for a currency. When Bitcoin's chain fails, the money fails with it. When PVT's rail fails, the owners are still known.
-
-### If a key is stolen
-
-Theft under working cryptography is a separate case, and protection against it is something an owner opts into by joining the Recourse Pool. A member who is robbed asks for restoration, and the relay decides on evidence it already has: what the member held, where the units went, and what was given for them. Members face no holds, limits, or extra confirmations in the meantime.
-
-The first remedy is reversal. One transaction cancels the stolen units where they now sit and issues the same number to the owner's new key, so supply does not change. It requires both the restoration authority and the owner's recovery proof; either one alone moves nothing.
-
-Reversal stops at honest hands. Units still held by the thief, or passed to someone who gave nothing for them, can be taken back. Units that paid for real work or real goods in a witnessed exchange stay where they are, because a currency whose payments could be clawed back from honest sellers would not be worth accepting. For that portion the pool makes the member whole as far as it can.
-
-The restoration authority is a real power. It acts only under the published rule, every use of it is public, and it is held by Provian's key as a separately appointable role until the Court opens, when it can move to the Court or to governance. It never touches ordinary transfers.
-
-### The Recourse Pool
-
-What reversal cannot recover, the pool restores. Members fund it entirely; Provian Technologies puts nothing in, holds nothing, and takes nothing out.
-
-Membership carries two monthly obligations that do different jobs. A participation burn destroys units, and it is the largest standing burn in the system. A contribution from the member's earnings is held in the pool to restore members who are robbed. The rule that sets both is published and signed, and it changes only for future months, as the network learns what losses actually cost. Membership lapses if a month goes unpaid past a short grace period. A former member can rejoin and is covered from that day, but losses during the lapse stay unrestored. Contributions are not refunded.
-
-When claims exceed what the pool holds, it pays pro rata and never beyond its reserves, publishing the ratio for each payout. A member can withdraw an allocated restoration on chain without going through the relay, and every decision lands in the member's own chain, where any later request will meet it.
-
-Three limits apply. Restoration is discretionary under the published rule, and no member has a contractual right to it. The pool can pay out only what members have paid in. And some owners will move their own PVT and call it theft; the evidence catches much of that but not all of it, and the size of the burn and the contribution is set with that in mind. The pool exists for holders with enough at stake to want it, and other recourse programs can grow from the same base.
+If a key is stolen, recourse belongs to members of the Recourse Pool, which its members fund entirely through a monthly burn and a contribution from their earnings; Provian Technologies puts nothing in, holds nothing, and takes nothing out. A theft is reversed first: the stolen units are cancelled where they sit and the same number issued to the owner's new key, which takes both the restoration authority and the owner's recovery proof. Reversal stops at honest hands. Units that paid for real work or real goods in a witnessed exchange stay where they are, because a currency whose payments could be clawed back from honest sellers would not be worth accepting, and the pool makes the member whole for that portion, at its discretion under the published rule and never beyond what it holds. The restoration authority is a real power. It acts only under that rule, every use of it is public, it is held by Provian's key until the Court opens, and it never touches ordinary transfers.
 
 ### Why this belongs in a paper about money
 
@@ -332,9 +288,9 @@ Recourse is possible here because no other currency pairs an ownership record th
 
 PVT implements all of this on Base. What matters to the argument here is the shape.
 
-**Uncapped supply, minted from receipts.** PVT is minted against witnessed work while the protocol is operated, with no maximum, no halvings, and no time-decay of earned value. Lifetime supply is whatever the network witnesses, less whatever participants burn. Every act mints once, and the network, never the submitter, grades the evidence that sets its value: an actor's own say-so is not a receipt, and the strongest evidence mints at four times the base. Price depends on the quality of the evidence, how independent the work's inputs were, and how novel it is. It never depends on how much the work matters or how much power it used: a job that drew a megawatt and one that drew a watt earn the same if their evidence is the same, and running one job a thousand times still mints once. Proof of work pays for energy spent; parity minting pays at the output, once the energy has turned into something a witness can confirm.
+**Uncapped supply, minted from receipts.** PVT is minted against witnessed work while the protocol is operated, with no maximum, no halvings, and no time-decay of earned value. Lifetime supply is whatever the network witnesses, less whatever participants burn. Every act mints once, at a value the network, never the submitter, sets from the quality of the evidence, the independence of the work's inputs, and its novelty, and never from how much the work matters or how much power it used. Proof of work pays for energy spent; parity minting pays at the output, once the energy has turned into something a witness can confirm.
 
-**Minted to the contributor.** Every mint that reaches a person splits the same way: 99% to the contributor, 0.5% to Provian Technologies for the protocol's upkeep, and 0.5% to the Provian Foundation for the human side of the network. Both of those shares are fixed for human work. For agents' work the Foundation's half percent is a minimum that future mints can raise, with the contributor taking the remainder. Nothing was minted in advance, and no investors or team members hold a reserved allocation. Earnings are paid out on a schedule Provian sets, today every 30 days for each payee, within a weekly issuance ceiling the token contract enforces. Monetary parameters change only for the future and only on a signed record; work already sealed is never repriced.
+**Minted to the contributor.** Every mint that reaches a person splits 99% to the contributor, 0.5% to Provian Technologies for the protocol's upkeep, and 0.5% to the Provian Foundation for the human side of the network. Both shares are fixed for human work; for agents' work the Foundation's half percent is a floor that future mints can raise, with the contributor taking the remainder. Nothing was minted in advance, and no investors or team members hold a reserved allocation. Monetary parameters change only for the future and only on a signed record; work already sealed is never repriced.
 
 **Freely transferable.** A holder can send PVT anywhere, and ordinary transfers are never gated. Provian operates no exchange and quotes no price. The only power over a holder's balance is the restoration authority described in Part 12, and it cannot act without the owner's recovery proof.
 
@@ -344,7 +300,7 @@ The specific ways this thesis could be wrong:
 
 **If output growth is not exponential, or flattens durably**, parity minting reduces to ordinary managed inflation, and its advantage over conventional models shrinks to a rounding error. The design still works; it just stops being necessary.
 
-**If witnessed work cannot be measured at scale.** A patched observer on a participant's own device can misreport what it saw, but only in the lowest-priced lane, where repeated acts lose value within the day and duplicates earn nothing. Chain confirmations, forge deliveries, and hardware attestations come from parties the actor does not control and cannot be faked from the device. Cheating is possible; it just pays badly. If it is nonetheless taken at scale and the grading, mint-once, and the ring detector do not hold it, the mint rate stops tracking production and the currency decouples from the thing it claims to measure. The Thesis sets out the lanes and the detectors.
+**If witnessed work cannot be measured at scale.** Forgery is possible only in the lowest-priced lane, and it pays badly there; chain, forge, and hardware witnesses cannot be faked from the device. If cheating is nonetheless taken at scale and the grading, mint-once, and ring detection do not hold it, the mint rate stops tracking production and the currency decouples from the thing it claims to measure.
 
 **If the agent economy grows comfortably on imported dollars**, if stablecoin inflows keep pace with what agents produce and a receipt layer beside the dollar proves enough to carry standing, then the case for a native unit narrows to who receives new money. Parity's advantage becomes one of fairness rather than necessity.
 
