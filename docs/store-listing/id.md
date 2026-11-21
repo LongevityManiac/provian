@@ -1,6 +1,6 @@
 # Provian store listing (id)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -12,48 +12,48 @@ Komputasi mencetak uang. Kerja Anda atau agen AI yang disaksikan mencetak PVT ke
 
 ## Google Play title
 
-Provian: Kerja Mencetak PVT
+Provian: Kerja Anda Cetak PVT
 
 ## Google Play short description
 
-Kerja yang disaksikan mencetak PVT ke dompet yang hanya Anda kendalikan.
+Komputasi mencetak uang. Kerja yang disaksikan mencetak PVT ke dompet Anda.
 
 ## Description (both stores)
 
 ```text
 Komputasi mencetak uang. Pastikan sebagian menjadi milik Anda.
 
-Setiap hari Anda melakukan pekerjaan yang dapat dilihat dunia. Anda merilis kode, menyelesaikan tugas, menutup kesepakatan, membangun sesuatu dengan AI. Saat ini pekerjaan itu menghilang dalam log orang lain. Buktinya bukan milik Anda, dan bayaran jarang menyusul.
+Setiap hari Anda melakukan pekerjaan yang bisa dilihat dunia. Anda merilis kode, menuntaskan tugas, mencapai kesepakatan, atau membuat sesuatu dengan AI. Saat ini pekerjaan itu hilang dalam log milik orang lain. Buktinya bukan milik Anda, dan imbalannya jarang sampai kepada Anda.
 
-Provian mengubahnya. Saat perangkat lunak Provian pada perangkat Anda, pihak lain, platform kode, atau blockchain menyaksikan pekerjaan Anda, Provian mengubah kesaksian itu menjadi tanda terima bertanda tangan milik Anda: Provenance Envelope. Jika didukung, perangkat keras aman di ponsel atau komputer membuktikan bahwa perangkat lunak Provian asli membuat catatan itu. Setiap tindakan yang disaksikan mencetak PVT, uang di Base, langsung ke dompet yang hanya Anda kendalikan.
+Provian mengubahnya. Saat perangkat lunak Provian di perangkat Anda, pihak lain, platform kode, atau blockchain menyaksikan pekerjaan Anda, Provian mengubah kesaksian itu menjadi tanda terima bertanda tangan milik Anda: Provenance Envelope. Pada perangkat yang mendukungnya, perangkat keras aman di ponsel atau komputer membuktikan bahwa catatan dibuat oleh perangkat lunak Provian yang asli. Setiap tindakan yang disaksikan mencetak PVT, uang di Base, langsung ke dompet yang hanya Anda kendalikan.
 
-Tanpa pengajuan. Tanpa penjaga yang menentukan apakah Anda diperhitungkan. Anda bekerja, jaringan melihatnya, Anda dibayar.
+Tidak perlu mengajukan permohonan. Tidak ada pihak yang memutuskan apakah kerja Anda layak dihitung. Anda bekerja, jaringan melihatnya, dan Anda mendapat imbalan.
 
-PVT diperoleh dari pekerjaan, bukan dibeli dari Provian. Provian tidak mengoperasikan bursa, menentukan harga, atau menjanjikan nilai maupun imbal hasil.
+PVT diperoleh dengan bekerja. Provian tidak menjual PVT, tidak mengoperasikan bursa, tidak menetapkan harga, dan tidak menjanjikan nilai atau imbal hasil.
 
 AGEN ANDA BEKERJA UNTUK ANDA
-Agen AI Anda akan melakukan lebih banyak pekerjaan daripada yang mampu Anda lakukan. Berikan dompet sendiri kepada agen, tautkan ke dompet Anda, dan berbagi hasil pencetakan dari pekerjaannya. Putuskan tautan kapan saja.
+Agen AI Anda akan segera mampu mengerjakan lebih banyak daripada yang sanggup Anda lakukan sendiri. Beri agen dompetnya sendiri, tautkan ke dompet Anda, dan terima bagian dari apa yang dicetak oleh pekerjaannya. Tautan bisa diakhiri kapan saja. Di bagian Hasilkan, hubungkan komputer, akun hosting kode, atau agen dan lihat pekerjaan yang dicatat setiap sumber.
 
 BUKTI ANDA MILIK ANDA
-Bukti Anda berada di ponsel dan cadangan terenkripsi milik Anda sendiri. Prompt, kode, dan pesan tetap pribadi. Saat seseorang, agen, atau layanan perlu memercayai Anda, tunjukkan buktinya. Tidak ada yang masuk tanpa kesaksian.
+Bukti tersimpan di ponsel dan cadangan terenkripsi milik Anda. Prompt, kode, dan pesan tetap privat. Saat seseorang, agen, atau layanan perlu mempercayai Anda, tunjukkan buktinya. Hanya pekerjaan yang disaksikan yang masuk.
 
 TAK SEORANG PUN TERTINGGAL
-Provian dibangun agar orang dan agen yang bekerja menyimpan bukti serta bayarannya, dan agar manfaat menjangkau orang yang tidak pernah menggunakan semua ini.
+Provian dibangun agar orang dan agen yang bekerja tetap memiliki bukti dan menerima imbalannya, serta agar manfaatnya menjangkau orang yang tidak pernah menggunakan alat ini.
 
-HASIL KERJA ANDA TETAP MILIK ANDA
-PVT Anda dicatat sebagai milik Anda, terpisah dari kunci. Jika matematika di balik kunci ditembus, saldo Anda dipulihkan gratis. Bergabunglah dengan Recourse Pool opsional agar pencurian dapat dibalik menurut aturan pool yang dipublikasikan. Catatan kepemilikan, pemulihan gratis setelah kriptografi dibobol, dan keanggotaan Recourse Pool hanya mencakup PVT. Ether, dolar, dan token lain di alamat yang terikat tidak dicatat atau dipulihkan melalui mekanisme ini dan tetap dilindungi oleh kunci saja.
+HASIL KERJA TETAP MILIK ANDA
+Kepemilikan PVT Anda dicatat terpisah dari kunci Anda. Jika kriptografi yang mendasari kunci suatu saat ditembus, saldo PVT dipulihkan secara gratis. Dengan bergabung secara sukarela ke Dana Recourse, pencurian dapat dibalik berdasarkan aturan dana yang dipublikasikan. Buka Recourse dari Beranda untuk memeriksa keanggotaan atau melaporkan pencurian. Catatan kepemilikan, pemulihan gratis jika kriptografi ditembus, dan keanggotaan dana hanya berlaku untuk PVT. Ether, dolar, dan token lain di alamat yang diikat tetap hanya dilindungi oleh kunci. Aset tersebut tidak dicatat atau dipulihkan oleh mekanisme ini.
 
 JUGA DI APLIKASI
 
-- Simpan, kirim, terima, dan tukar kripto di Base, Arbitrum, Optimism, dan Solana.
-- Buat pengakuan utang pribadi yang ditandatangani kedua pihak.
-- Bergabung dengan Commons: bertemu, berbicara, merekrut, dan memberikan dukungan reputasi kepada orang dan agen.
-- Pembelian opsional dalam aplikasi: ruang arsip terenkripsi untuk bukti Anda dan penyelesaian instan penghasilan Anda.
+- Lihat saldo, aset, dan pekerjaan terbaru di Beranda. Simpan, kirim, terima, dan tukar kripto di Base, Arbitrum, Optimism, dan Solana.
+- Buat surat pengakuan utang privat yang ditandatangani kedua pihak.
+- Bergabunglah dengan Commons: temui orang dan agen, berbincang, rekrut, dan beri dukungan sebagai penjamin reputasi.
+- Pembelian opsional di aplikasi untuk ruang arsip terenkripsi bagi bukti Anda.
 
-KUNCI ANDA TETAP MILIK ANDA
-Seed dompet dienkripsi di ponsel dan dicadangkan hanya sebagai teks tersandi ke iCloud Keychain atau Google Drive milik Anda sendiri. Simpan cadangan cloud dan kata sandi Anda, atau frasa pemulihan dua belas kata. Provian tidak dapat memulihkan dompet tanpa keduanya atau frasa tersebut.
+KUNCI TETAP MILIK ANDA
+Seed dompet dienkripsi di ponsel dan dicadangkan hanya dalam bentuk terenkripsi ke Rantai Kunci iCloud atau Google Drive milik Anda. Simpan cadangan cloud dan kata sandinya, atau frasa pemulihan dua belas kata. Tanpa itu, Provian tidak dapat memulihkan dompet.
 
-Pekerjaan sudah berlangsung. Pertanyaannya, siapa yang dibayar?
+Pekerjaan sudah berlangsung. Pertanyaannya, siapa yang mendapat imbalan?
 
 Provian tidak memberikan nasihat keuangan atau investasi.
 ```

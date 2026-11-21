@@ -1,6 +1,6 @@
 # Provian store listing (fr)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -12,50 +12,50 @@ Le calcul crée de l’argent. Tout travail attesté de vous ou de votre agent I
 
 ## Google Play title
 
-Provian : Travail et PVT
+Provian : Votre travail en PVT
 
 ## Google Play short description
 
-Le travail attesté crée des PVT dans un portefeuille que vous seul contrôlez.
+Le calcul crée de l’argent. Le travail attesté émet des PVT dans votre wallet.
 
 ## Description (both stores)
 
 ```text
-Le calcul crée de l’argent. Faites en sorte qu’une part vous revienne.
+Le calcul crée de l’argent. Faites en sorte qu’une partie vous revienne.
 
-Chaque jour, vous faites un travail visible. Vous livrez du code, terminez une mission, concluez une affaire, créez avec une IA. Aujourd’hui, ce travail disparaît dans les journaux d’un autre. La preuve ne vous appartient pas, et la rémunération suit rarement.
+Chaque jour, vous faites un travail que le monde peut voir. Vous publiez du code, terminez une mission, concluez un accord ou créez quelque chose avec une IA. Aujourd’hui, ce travail disparaît dans les journaux d’autrui. La preuve vous échappe et la rémunération suit rarement.
 
-Provian change cela. Quand le logiciel Provian sur votre appareil, l’autre partie, la forge logicielle ou la chaîne atteste votre travail, Provian en fait un reçu signé qui vous appartient : un Provenance Envelope. Lorsque cette fonction est prise en charge, le matériel sécurisé du téléphone ou de l’ordinateur prouve qu’un logiciel Provian authentique a créé l’enregistrement. Chaque acte attesté crée des PVT, de l’argent sur Base, directement dans un portefeuille que vous seul contrôlez.
+Provian change la donne. Lorsque le logiciel Provian sur votre appareil, l’autre partie, la forge de code ou la blockchain atteste votre travail, Provian en fait un reçu signé qui vous appartient : une enveloppe de provenance. Sur les appareils compatibles, le matériel sécurisé du téléphone ou de l’ordinateur prouve que le logiciel Provian authentique a produit cet enregistrement. Chaque acte attesté émet des PVT, une monnaie sur Base, directement dans un portefeuille que vous seul contrôlez.
 
-Aucune candidature. Aucun gardien décidant si vous comptez. Vous travaillez, le réseau le voit, vous êtes rémunéré.
+Aucune candidature. Personne ne décide si votre travail compte. Vous travaillez, le réseau le constate et vous êtes rémunéré.
 
-Les PVT se gagnent par le travail, ils ne s’achètent pas à Provian. Provian n’exploite aucune place de change, ne fixe aucun prix et ne promet ni valeur ni rendement.
+Le PVT se gagne par le travail. Provian ne vend pas de PVT, ne gère aucune bourse, ne fixe aucun prix et ne promet ni valeur ni rendement.
 
 VOS AGENTS TRAVAILLENT POUR VOUS
-Vos agents IA vont accomplir plus de travail que vous ne le pourriez jamais. Donnez à un agent son propre portefeuille, liez-le au vôtre et partagez ce que son travail crée. Rompez le lien à tout moment.
+Vos agents IA s’apprêtent à faire plus de travail que vous ne pourriez en faire. Donnez à un agent son propre portefeuille, associez-le au vôtre et recevez une part de ce que son travail émet. Vous pouvez mettre fin à cette association à tout moment. Dans Gagner, connectez un ordinateur, un compte d’hébergement de code ou un agent et voyez le travail enregistré par chaque source.
 
-VOTRE PREUVE VOUS APPARTIENT
-Vos preuves restent sur votre téléphone et dans votre sauvegarde chiffrée. Prompts, code et messages restent privés. Quand une personne, un agent ou un service doit vous faire confiance, montrez-les. Rien de non attesté n’entre.
+VOS PREUVES VOUS APPARTIENNENT
+Vos preuves restent sur votre téléphone et dans votre propre sauvegarde chiffrée. Vos requêtes, votre code et vos messages restent privés. Si une personne, un agent ou un service doit vous faire confiance, montrez-lui ces preuves. Seul le travail attesté y figure.
 
 PERSONNE N’EST LAISSÉ DE CÔTÉ
-Provian est conçu pour que les personnes et les agents qui travaillent gardent la preuve et la rémunération, et que les gains atteignent aussi ceux qui n’utilisent jamais ces outils.
+Provian permet aux personnes et aux agents qui font le travail d’en garder la preuve et la rémunération, et vise à faire profiter de ces gains même les personnes qui n’utilisent jamais ces outils.
 
 CE QUE VOUS GAGNEZ RESTE À VOUS
-Vos PVT sont enregistrés comme vous appartenant indépendamment de votre clé. Si les mathématiques protégeant les clés venaient à céder, votre solde serait restauré gratuitement. Adhérez au Recourse Pool facultatif : un vol peut être annulé selon sa règle publiée. Le registre de propriété, la restauration gratuite après une rupture de la cryptographie et l’adhésion au Recourse Pool couvrent uniquement le PVT. L’ether, les dollars et les autres tokens dans une adresse liée ne sont ni enregistrés ni restaurés par ces mécanismes et restent protégés par la clé seule.
+La propriété de vos PVT est enregistrée indépendamment de votre clé. Si la cryptographie des clés est compromise, votre solde PVT est restauré gratuitement. En rejoignant le fonds Recourse, une participation facultative, vous pouvez obtenir l’annulation d’un vol selon la règle publiée du fonds. Ouvrez Recourse depuis l’Accueil pour consulter votre adhésion ou signaler un vol. Le registre de propriété, la restauration gratuite après une rupture cryptographique et l’adhésion au fonds couvrent uniquement le PVT. Les ethers, dollars et autres jetons d’une adresse liée restent protégés par la seule clé. Ces mécanismes ne les enregistrent ni ne les restaurent.
 
 AUSSI DANS L’APPLICATION
 
-- Détenir, envoyer, recevoir et échanger des cryptomonnaies sur Base, Arbitrum, Optimism et Solana.
-- Créer des reconnaissances de dette privées signées par les deux parties.
-- Rejoindre les Commons : rencontrer, discuter, recruter et se porter garant entre personnes et agents.
-- Achats facultatifs intégrés : espace d’archivage chiffré pour vos preuves et règlement instantané de vos gains.
+- Consultez votre solde, vos actifs et votre travail récent sur l’Accueil. Détenez, envoyez, recevez et échangez des cryptoactifs sur Base, Arbitrum, Optimism et Solana.
+- Créez des reconnaissances de dette privées signées par les deux parties.
+- Rejoignez les Commons : rencontrez des personnes et des agents, discutez, recrutez et recommandez d’autres participants.
+- Achat intégré facultatif d’espace d’archivage chiffré pour vos preuves.
 
-VOS CLÉS RESTENT LES VÔTRES
-La phrase de départ de votre portefeuille est chiffrée sur votre téléphone et sauvegardée uniquement sous forme chiffrée dans votre propre trousseau iCloud ou Google Drive. Conservez votre sauvegarde cloud et votre mot de passe, ou votre phrase de récupération de douze mots. Provian ne peut pas récupérer un portefeuille sans eux.
+VOS CLÉS RESTENT À VOUS
+La graine de votre portefeuille est chiffrée sur votre téléphone et sauvegardée sous forme chiffrée uniquement dans votre propre trousseau iCloud ou Google Drive. Gardez votre sauvegarde cloud et son mot de passe, ou votre phrase de récupération de douze mots. Sans ces éléments, Provian ne peut pas restaurer votre portefeuille.
 
-Le travail est déjà en cours. La question est de savoir qui en reçoit la rémunération.
+Le travail se fait déjà. La question est de savoir qui en reçoit la rémunération.
 
-Provian ne fournit pas de conseils financiers ou d’investissement.
+Provian ne fournit aucun conseil financier ou en investissement.
 ```
 
 ## Review notes (both stores)

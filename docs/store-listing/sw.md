@@ -1,6 +1,6 @@
 # Provian store listing (sw)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -12,50 +12,50 @@ Ukokotoaji hutengeneza pesa. Kazi yako au ya wakala wa AI ikishuhudiwa huzalisha
 
 ## Google Play title
 
-Provian: Kazi Huzalisha PVT
+Provian: Kazi yako huunda PVT
 
 ## Google Play short description
 
-Kazi iliyoshuhudiwa huzalisha PVT kwenye pochi unayoidhibiti wewe pekee.
+Ukokotoaji huzalisha pesa. Kazi iliyoshuhudiwa huunda PVT kwenye pochi yako.
 
 ## Description (both stores)
 
 ```text
-Ukokotoaji hutengeneza pesa. Hakikisha sehemu yake ni yako.
+Ukokotoaji huzalisha pesa. Hakikisha sehemu yake ni yako.
 
-Kila siku unafanya kazi inayoonekana duniani. Unatoa msimbo, unamaliza kazi, unafunga makubaliano, unajenga kitu kwa AI. Leo kazi hiyo hupotelea kwenye kumbukumbu za mtu mwingine. Uthibitisho si wako, na malipo hayafuati mara nyingi.
+Kila siku unafanya kazi ambayo ulimwengu unaweza kuona. Unatoa msimbo, unakamilisha kazi, unafunga dili au unaunda kitu kwa msaada wa AI. Leo, kazi hiyo inapotea kwenye kumbukumbu za mtu mwingine. Uthibitisho si wako, na mara chache unapata malipo.
 
-Provian hubadilisha hilo. Programu ya Provian kwenye kifaa chako, mhusika mwingine, jukwaa la msimbo au blockchain inaposhuhudia kazi yako, Provian hugeuza ushuhuda huo kuwa risiti iliyotiwa saini unayoimiliki: Provenance Envelope. Pale inapowezekana, maunzi salama kwenye simu au kompyuta yanathibitisha kuwa programu halisi ya Provian ilitengeneza rekodi. Kila tendo lililoshuhudiwa huzalisha PVT, pesa kwenye Base, moja kwa moja kwenye pochi unayoidhibiti wewe pekee.
+Provian inabadilisha hali hiyo. Programu ya Provian kwenye kifaa chako, mhusika mwingine, jukwaa la kuhifadhi msimbo au mnyororo inaposhuhudia kazi yako, Provian hubadili ushuhuda huo kuwa risiti iliyosainiwa ambayo ni yako: Provenance Envelope. Kwenye vifaa vinavyotumika, maunzi salama katika simu au kompyuta huthibitisha kuwa programu halisi ya Provian ilitengeneza rekodi hiyo. Kila tendo lililoshuhudiwa huzalisha PVT, pesa kwenye Base, moja kwa moja katika pochi ambayo ni wewe tu unayeidhibiti.
 
-Hakuna maombi. Hakuna mlinzi anayeamua kama unahesabika. Unafanya kazi, mtandao unaiona, unalipwa.
+Hakuna ombi la kuwasilisha. Hakuna mtu wa kuamua kama kazi yako itahesabiwa. Unafanya kazi, mtandao unaiona na unapata malipo.
 
-PVT hupatikana kwa kazi, hainunuliwi kutoka Provian. Provian haiendeshi soko la kubadilishana, haiweki bei, wala kuahidi thamani au faida.
+PVT hupatikana kwa kufanya kazi. Provian haiuzi PVT, haiendeshi soko la kubadilishia sarafu, haiweki bei wala kuahidi thamani au faida.
 
 MAWAKALA WAKO WANAKUFANYIA KAZI
-Mawakala wako wa AI wanakaribia kufanya kazi nyingi kuliko unavyoweza kufanya. Mpe wakala pochi yake, iunganishe na yako, na ushiriki kile kinachozalishwa na kazi yake. Kata uhusiano wakati wowote.
+Hivi karibuni mawakala wako wa AI wataweza kufanya kazi nyingi kuliko unazoweza kufanya mwenyewe. Mpe wakala pochi yake, iunganishe na yako na upokee sehemu ya PVT inayozalishwa na kazi yake. Unaweza kukatisha muunganisho wakati wowote. Katika Mapato, unganisha kompyuta, akaunti ya kuhifadhi msimbo au wakala na uone kazi iliyorekodiwa na kila chanzo.
 
 UTHIBITISHO WAKO NI WAKO
-Uthibitisho wako unaishi kwenye simu yako na nakala yako ya akiba iliyosimbwa. Prompt, msimbo na ujumbe hubaki faraghani. Mtu, wakala au huduma ikihitaji kukuamini, waonyeshe. Hakuna kisichoshuhudiwa kinachoingia.
+Uthibitisho wako hubaki kwenye simu yako na kwenye nakala yako iliyosimbwa kwa njia fiche. Maagizo kwa AI, msimbo na ujumbe hubaki faragha. Mtu, wakala au huduma ikihitaji kukuamini, ionyeshe uthibitisho huo. Kazi iliyoshuhudiwa pekee ndiyo huingia kwenye rekodi.
 
 HAKUNA ANAYEACHWA NYUMA
-Provian imejengwa ili watu na mawakala wanaofanya kazi wahifadhi uthibitisho na malipo, na manufaa yawafikie pia watu ambao hawatumii chochote kati ya hivi.
+Provian imeundwa ili watu na mawakala wanaofanya kazi wabaki na uthibitisho na malipo, na manufaa yawafikie hata watu wasiowahi kutumia zana hizi.
 
 UNACHOPATA KINABAKI CHAKO
-PVT yako huandikwa kuwa yako kando na ufunguo wako. Ikiwa hisabati ya funguo itavunjwa, salio lako litarejeshwa bila malipo. Jiunge kwa hiari na Recourse Pool, na wizi unaweza kubatilishwa kulingana na kanuni ya pool iliyochapishwa. Rekodi ya umiliki, urejeshaji wa bure baada ya kriptografia kuvunjwa, na uanachama wa Recourse Pool vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa hazirekodiwi wala kurejeshwa kwa mifumo hii na zinaendelea kulindwa na ufunguo pekee.
+Umiliki wa PVT yako hurekodiwa kando na ufunguo wako. Mbinu za kriptografia zinazolinda funguo zikivunjwa, salio lako la PVT hurejeshwa bila malipo. Ukijiunga kwa hiari na Hazina ya Recourse, wizi unaweza kutenguliwa kulingana na kanuni iliyochapishwa ya hazina. Fungua Recourse kutoka Mwanzo kuangalia uanachama wako au kuripoti wizi. Rekodi ya umiliki, urejeshaji bila malipo iwapo kriptografia itavunjwa, na uanachama wa hazina vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa zinalindwa na ufunguo pekee. Hazirekodiwi wala kurejeshwa kwa njia hizo.
 
-PIA NDANI YA PROGRAMU
+PIA KWENYE PROGRAMU
 
-- Hifadhi, tuma, pokea na badilisha kripto kwenye Base, Arbitrum, Optimism na Solana.
-- Tengeneza hati binafsi za kukiri deni zilizotiwa saini na pande zote mbili.
-- Jiunge na Commons: kutana, zungumza, ajiri na toa dhamana ya sifa kwa watu na mawakala.
-- Ununuzi wa hiari ndani ya programu: nafasi ya kumbukumbu iliyosimbwa kwa uthibitisho wako na malipo ya papo hapo ya mapato yako.
+- Angalia salio, mali na kazi yako ya karibuni kwenye Mwanzo. Hifadhi, tuma, pokea na ubadilishe sarafu za kidijitali kwenye Base, Arbitrum, Optimism na Solana.
+- Tengeneza hati za siri za kutambua deni zilizosainiwa na pande zote mbili.
+- Jiunge na Commons kukutana na watu na mawakala, kuzungumza, kuajiri na kuthibitisha sifa za wengine.
+- Unaweza kununua nafasi ya kuhifadhi uthibitisho wako kwa njia iliyosimbwa ndani ya programu.
 
 FUNGUO ZAKO ZINABAKI ZAKO
-Seed ya pochi yako husimbwa kwenye simu na kuhifadhiwa kama maandishi yaliyosimbwa pekee kwenye iCloud Keychain au Google Drive yako mwenyewe. Hifadhi nakala yako ya akiba ya wingu na nenosiri, au maneno yako kumi na mawili ya urejeshaji. Provian haiwezi kurejesha pochi bila vitu hivyo.
+Taarifa ya msingi ya kuunda pochi yako husimbwa kwa njia fiche kwenye simu yako. Nakala yake iliyosimbwa pekee ndiyo huhifadhiwa kwenye iCloud Keychain au Google Drive yako. Tunza nakala yako ya wingu na nenosiri lake, au kifungu chako cha urejeshaji cha maneno kumi na mawili. Bila hivyo, Provian haiwezi kurejesha pochi.
 
-Kazi tayari inafanyika. Swali ni nani anayelipwa kwa hiyo.
+Kazi tayari inafanyika. Swali ni nani anayepata malipo yake.
 
-Provian haitoi ushauri wa fedha au uwekezaji.
+Provian haitoi ushauri wa kifedha au wa uwekezaji.
 ```
 
 ## Review notes (both stores)

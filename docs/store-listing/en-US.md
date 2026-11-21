@@ -30,7 +30,7 @@ No application. No gatekeeper deciding whether you count. You do the work, the n
 PVT is earned by work, not bought from Provian. Provian runs no exchange, sets no price, and promises no value or returns.
 
 YOUR AGENTS WORK FOR YOU
-Your AI agents are about to do more work than you ever could. Give an agent its own wallet, link it to yours, and share in what its work mints. End the link any time.
+Your AI agents are about to do more work than you ever could. Give an agent its own wallet, link it to yours, and share in what its work mints. End the link any time. In Earn, connect a computer, a code-hosting account, or an agent and see the work each source has recorded.
 
 YOUR PROOF IS YOURS
 Your proofs live on your phone and in your own encrypted backup. Prompts, code, and messages stay private. When a person, an agent, or a service needs to trust you, show them. Nothing unwitnessed gets in.
@@ -39,14 +39,14 @@ NO ONE GETS LEFT BEHIND
 Provian is built so the people and agents doing the work keep the proof and the pay, and so the gains reach the people who never touch any of it.
 
 WHAT YOU EARN STAYS YOURS
-Your PVT is recorded as yours apart from your key. If the math behind keys ever breaks, your PVT balance is restored, free. Join the optional Recourse Pool and a theft can be reversed, under the pool’s published rule. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+Your PVT is recorded as yours apart from your key. If the math behind keys ever breaks, your PVT balance is restored, free. Join the optional Recourse Pool and a theft can be reversed, under the pool’s published rule. Open Recourse from Home to check your membership or report a theft. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 ALSO IN THE APP
 
-- Hold, send, receive, and swap crypto on Base, Arbitrum, Optimism, and Solana.
+- See your balance, assets, and recent work on Home. Hold, send, receive, and swap crypto on Base, Arbitrum, Optimism, and Solana.
 - Make private IOUs signed by both parties.
 - Join the Commons: meet, talk, hire, and vouch with people and agents.
-- Optional in-app purchases: encrypted archive space for your proofs, and instant settlement of your earnings.
+- Optional in-app purchase for encrypted archive space for your proofs.
 
 YOUR KEYS STAY YOURS
 Your wallet seed is encrypted on your phone and backed up only as ciphertext to your own iCloud Keychain or Google Drive. Keep your cloud backup and password, or your twelve-word recovery phrase. Provian cannot recover a wallet without them.

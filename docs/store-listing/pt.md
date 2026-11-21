@@ -1,6 +1,6 @@
 # Provian store listing (pt)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -12,50 +12,50 @@ Computação cria dinheiro. Seu trabalho ou o do seu agente de IA, quando testem
 
 ## Google Play title
 
-Provian: Seu trabalho cria PVT
+Provian: Seu trabalho gera PVT
 
 ## Google Play short description
 
-Trabalho testemunhado cria PVT numa carteira que só você controla.
+Computação cria dinheiro. Seu trabalho testemunhado gera PVT na sua carteira.
 
 ## Description (both stores)
 
 ```text
-Computação cria dinheiro. Garanta que uma parte seja sua.
+A computação cria dinheiro. Faça com que parte dele seja seu.
 
-Todo dia você faz trabalho que o mundo pode ver. Entrega código, termina uma tarefa, fecha um negócio, constrói algo com uma IA. Hoje esse trabalho desaparece nos registros de outra pessoa. A prova não é sua, e o pagamento raramente vem.
+Todos os dias você faz um trabalho que o mundo pode ver. Publica código, conclui uma tarefa, fecha um negócio ou constrói algo com uma IA. Hoje esse trabalho desaparece nos registros de outras pessoas. A prova não é sua e a remuneração raramente chega.
 
-A Provian muda isso. Quando o software da Provian em seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunha seu trabalho, a Provian transforma esse testemunho num recibo assinado que é seu: um Provenance Envelope. Onde há suporte, o hardware seguro do telefone ou computador comprova que software genuíno da Provian criou o registro. Cada ato testemunhado cria PVT, dinheiro na Base, diretamente numa carteira que só você controla.
+A Provian muda isso. Quando o software da Provian no seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunham seu trabalho, a Provian transforma esse testemunho em um recibo assinado que pertence a você: um Envelope de Proveniência. Nos dispositivos compatíveis, o hardware seguro do celular ou do computador comprova que o registro foi gerado pelo software autêntico da Provian. Cada ato testemunhado emite PVT, dinheiro na Base, diretamente para uma carteira que só você controla.
 
-Sem candidatura. Sem alguém decidindo se você conta. Você faz o trabalho, a rede vê e você recebe.
+Sem formulário de inscrição. Ninguém decide se o seu trabalho conta. Você trabalha, a rede vê e você recebe.
 
-PVT é ganho pelo trabalho, não comprado da Provian. A Provian não opera uma bolsa, não define preço nem promete valor ou retorno.
+PVT se ganha com trabalho. A Provian não vende PVT, não opera uma corretora, não fixa preços e não promete valor ou retorno.
 
 SEUS AGENTES TRABALHAM PARA VOCÊ
-Seus agentes de IA estão prestes a fazer mais trabalho do que você jamais conseguiria. Dê a um agente sua própria carteira, vincule-a à sua e participe do que o trabalho dele cria. Encerre o vínculo quando quiser.
+Seus agentes de IA estão prestes a fazer mais do que você poderia fazer por conta própria. Dê a um agente sua própria carteira, vincule-a à sua e receba parte do que o trabalho dele emitir. Desfaça o vínculo quando quiser. Em Ganhar, conecte um computador, uma conta de hospedagem de código ou um agente e veja o trabalho registrado por cada fonte.
 
 SUA PROVA É SUA
-Suas provas ficam no seu telefone e no seu próprio backup criptografado. Prompts, código e mensagens permanecem privados. Quando uma pessoa, um agente ou um serviço precisar confiar em você, mostre-as. Nada sem testemunho entra.
+Suas provas ficam no seu celular e no seu próprio backup criptografado. Prompts, código e mensagens permanecem privados. Quando uma pessoa, um agente ou um serviço precisar confiar em você, mostre suas provas. Só entra o trabalho testemunhado.
 
 NINGUÉM FICA PARA TRÁS
-A Provian foi criada para que as pessoas e os agentes que trabalham conservem a prova e o pagamento, e para que os ganhos alcancem também quem nunca usa nada disso.
+A Provian foi criada para que pessoas e agentes que fazem o trabalho fiquem com a prova e a remuneração e para que os ganhos cheguem até a quem nunca usa essas ferramentas.
 
-O QUE VOCÊ GANHA CONTINUA SEU
-Seu PVT é registrado como seu independentemente da sua chave. Se a matemática por trás das chaves falhar, seu saldo será restaurado gratuitamente. Entre no Recourse Pool opcional e um roubo poderá ser revertido conforme a regra publicada do fundo. O registro de propriedade, a restauração gratuita após uma quebra da criptografia e a participação no Recourse Pool abrangem apenas PVT. Ether, dólares e outros tokens em um endereço vinculado não são registrados nem restaurados por esses mecanismos e continuam protegidos apenas pela chave.
+O QUE VOCÊ GANHA CONTINUA SENDO SEU
+A titularidade do seu PVT é registrada independentemente da sua chave. Se a criptografia das chaves for rompida, seu saldo de PVT é restaurado gratuitamente. A adesão opcional ao Fundo Recourse permite reverter um roubo conforme a regra publicada do fundo. Abra Recourse na tela Início para consultar sua participação ou relatar um roubo. O registro de titularidade, a restauração gratuita após uma quebra criptográfica e a participação no fundo se aplicam apenas ao PVT. Ether, dólares e outros tokens em um endereço vinculado continuam protegidos apenas pela chave. Esses mecanismos não os registram nem os restauram.
 
 TAMBÉM NO APP
 
-- Guarde, envie, receba e troque cripto na Base, Arbitrum, Optimism e Solana.
-- Faça reconhecimentos de dívida privados assinados pelas duas partes.
-- Entre no Commons: conheça, converse, contrate e avalize pessoas e agentes.
-- Compras opcionais no app: espaço de arquivo criptografado para suas provas e liquidação instantânea de seus ganhos.
+- Veja seu saldo, seus ativos e seu trabalho recente na tela Início. Guarde, envie, receba e troque criptoativos na Base, Arbitrum, Optimism e Solana.
+- Crie reconhecimentos privados de dívida assinados pelas duas partes.
+- Participe do Commons: conheça pessoas e agentes, converse, contrate e ateste a reputação de outras pessoas.
+- Compra opcional no app de espaço de arquivo criptografado para suas provas.
 
-SUAS CHAVES CONTINUAM SUAS
-A semente da sua carteira é criptografada no telefone e salva apenas como texto cifrado no seu próprio iCloud Keychain ou Google Drive. Guarde seu backup na nuvem e senha, ou sua frase de recuperação de doze palavras. A Provian não pode recuperar uma carteira sem eles.
+SUAS CHAVES CONTINUAM SENDO SUAS
+A semente da carteira é criptografada no celular. Só o conteúdo criptografado vai para o backup nas suas Chaves do iCloud ou no Google Drive. Guarde o backup na nuvem e a senha, ou a frase de recuperação de doze palavras. Sem esses dados, a Provian não consegue recuperar a carteira.
 
 O trabalho já está acontecendo. A questão é quem recebe por ele.
 
-A Provian não oferece aconselhamento financeiro ou de investimento.
+A Provian não oferece orientação financeira ou de investimentos.
 ```
 
 ## Review notes (both stores)

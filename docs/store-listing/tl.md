@@ -1,6 +1,6 @@
 # Provian store listing (tl)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -12,50 +12,50 @@ Lumilikha ng pera ang compute. Ang nasaksihang trabaho mo o ng AI agent mo ay lu
 
 ## Google Play title
 
-Provian: Trabaho Mo, PVT Mo
+Provian: PVT mula sa gawa mo
 
 ## Google Play short description
 
-Nasaksihang trabaho ay lumilikha ng PVT sa wallet na ikaw lang ang may kontrol.
+Ang compute ay lumilikha ng pera. Ang nasaksihang gawa ay nagmi-mint ng PVT.
 
 ## Description (both stores)
 
 ```text
-Lumilikha ng pera ang compute. Tiyaking may mapupunta sa iyo.
+Ang compute ay lumilikha ng pera. Tiyaking may bahaging mapupunta sa iyo.
 
-Araw-araw, gumagawa ka ng trabahong nakikita ng mundo. Naglalabas ka ng code, tumatapos ng gawain, nagsasara ng kasunduan, bumubuo ng bagay kasama ang AI. Ngayon, nawawala ang trabahong iyon sa log ng iba. Hindi sa iyo ang patunay, at bihirang sumunod ang bayad.
+Araw-araw, gumagawa ka ng trabahong nakikita ng mundo. Naglalabas ka ng code, tumatapos ng gawain, nagsasara ng kasunduan o bumubuo ng isang bagay kasama ang AI. Sa ngayon, nawawala ang trabahong iyon sa mga log ng iba. Hindi sa iyo ang patunay, at bihirang may bayad na sumusunod.
 
-Binabago iyon ng Provian. Kapag nasaksihan ng Provian software sa iyong device, kabilang partido, code forge, o blockchain ang trabaho mo, ginagawa ng Provian ang patunay na iyon na isang pirmadong resibong pag-aari mo: isang Provenance Envelope. Kung suportado, pinatutunayan ng secure hardware sa telepono o computer na tunay na Provian software ang gumawa ng rekord. Bawat nasaksihang gawain ay lumilikha ng PVT, pera sa Base, diretso sa wallet na ikaw lang ang may kontrol.
+Binabago iyon ng Provian. Kapag nasaksihan ng Provian software sa device mo, ng kabilang panig, ng code hosting platform o ng blockchain ang trabaho mo, ginagawa ng Provian ang saksing iyon na isang pirmadong resibong pag-aari mo: ang Provenance Envelope. Sa mga suportadong device, pinatutunayan ng secure na hardware sa telepono o computer na tunay na Provian software ang gumawa ng rekord. Bawat nasaksihang gawa ay nagmi-mint ng PVT, perang nasa Base, diretso sa wallet na ikaw lang ang kumokontrol.
 
-Walang aplikasyon. Walang tagapagbantay na nagpapasya kung may halaga ka. Ginagawa mo ang trabaho, nakikita ito ng network, binabayaran ka.
+Walang kailangang aplikasyon. Walang tagabantay na magpapasiya kung mabibilang ang trabaho mo. Ikaw ang gumagawa, nakikita iyon ng network, at ikaw ang kumikita.
 
-Kinikita ang PVT sa trabaho, hindi binibili sa Provian. Walang palitan na pinatatakbo ang Provian, hindi ito nagtatakda ng presyo, at hindi nangangako ng halaga o tubo.
+Kinikita ang PVT sa pagtatrabaho. Hindi nagbebenta ng PVT ang Provian, walang pinatatakbong exchange, hindi nagtatakda ng presyo at hindi nangangako ng halaga o tubo.
 
-NAGTATRABAHO PARA SA IYO ANG MGA AHENTE MO
-Mas marami nang magagawa ang mga AI agent mo kaysa sa kaya mong gawin. Bigyan ang ahente ng sariling wallet, iugnay ito sa iyo, at makibahagi sa nalilikha ng trabaho nito. Wakasan ang ugnayan anumang oras.
+NAGTATRABAHO PARA SA IYO ANG MGA AGENT MO
+Malapit nang makagawa ang mga AI agent mo ng higit sa kaya mong gawin nang mag-isa. Bigyan ang agent ng sarili nitong wallet, i-link ito sa wallet mo, at tumanggap ng bahagi ng PVT na mina-mint ng trabaho nito. Maaari mong alisin ang link anumang oras. Sa Kumita, ikonekta ang computer, code hosting account o agent at tingnan ang gawaing naitala ng bawat isa.
 
 SA IYO ANG PATUNAY MO
-Nasa iyong telepono at sarili mong naka-encrypt na backup ang iyong mga patunay. Pribado ang mga prompt, code, at mensahe. Kapag kailangang magtiwala sa iyo ng tao, ahente, o serbisyo, ipakita ang mga ito. Walang pumapasok nang walang saksi.
+Nasa telepono mo at nasa sarili mong naka-encrypt na backup ang mga patunay mo. Nananatiling pribado ang mga prompt, code at mensahe. Kapag kailangan ng isang tao, agent o serbisyo na magtiwala sa iyo, ipakita ang mga patunay. Tanging gawaing nasaksihan ang naitatala.
 
 WALANG MAIIWAN
-Itinayo ang Provian upang mapanatili ng mga tao at ahenteng nagtatrabaho ang patunay at bayad, at upang makarating ang pakinabang sa mga taong hindi kailanman gumagamit ng alinman dito.
+Idinisenyo ang Provian para mapanatili ng mga tao at agent na nagtatrabaho ang patunay at kita nila, at para makarating ang pakinabang maging sa mga taong hindi gumagamit ng mga tool na ito.
 
-NANANATILING SA IYO ANG KINIKITA MO
-Nakatala bilang sa iyo ang PVT mo nang hiwalay sa susi. Kung masira ang matematikang nasa likod ng mga susi, libre ang pagpapanumbalik ng balanse mo. Sumali sa opsyonal na Recourse Pool at maaaring baligtarin ang pagnanakaw ayon sa inilathalang tuntunin ng pool. PVT lamang ang saklaw ng tala ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang kriptograpiya, at pagiging miyembro ng Recourse Pool. Ang ether, dolyar at iba pang token sa nakaugnay na address ay hindi itinatala o ibinabalik ng mga mekanismong ito at nananatiling protektado ng susi lamang.
+SA IYO PA RIN ANG KINITA MO
+Hiwalay sa key mo ang rekord na sa iyo ang PVT mo. Kung masira ang cryptography sa likod ng mga key, maibabalik nang libre ang balanse ng PVT mo. Kung sasali ka sa opsyonal na Recourse Pool, maaaring mabawi ang ninakaw alinsunod sa inilathalang tuntunin ng pool. Buksan ang Recourse mula sa Home para tingnan ang membership mo o mag-ulat ng pagnanakaw. PVT lang ang sakop ng rekord ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang cryptography, at membership sa Recourse Pool. Key lang ang patuloy na nagpoprotekta sa ether, dolyar at ibang token sa naka-bind na address. Hindi naitatala o naibabalik ang mga iyon sa mga paraang ito.
 
 NASA APP DIN
 
-- Maghawak, magpadala, tumanggap, at magpalit ng crypto sa Base, Arbitrum, Optimism, at Solana.
-- Gumawa ng pribadong pagkilala sa utang na pirmado ng dalawang partido.
-- Sumali sa Commons: makipagkilala, makipag-usap, kumuha ng serbisyo, at magbigay ng pagpapatibay para sa mga tao at ahente.
-- Opsyonal na pagbili sa app: naka-encrypt na espasyo sa archive para sa mga patunay at agarang settlement ng kita.
+- Tingnan sa Home ang balanse, mga asset at kamakailang trabaho mo. Mag-imbak, magpadala, tumanggap at magpalit ng crypto sa Base, Arbitrum, Optimism at Solana.
+- Gumawa ng mga pribadong kasulatan ng pagkakautang na pirmado ng magkabilang panig.
+- Sumali sa Commons para makakilala, makipag-usap, kumuha ng trabahador at magpatunay sa reputasyon ng ibang tao at agent.
+- Opsyonal na in-app purchase ng naka-encrypt na archive para sa mga patunay mo.
 
-SA IYO PA RIN ANG MGA SUSI MO
-Naka-encrypt sa telepono ang seed ng wallet mo at ciphertext lamang ang backup sa sarili mong iCloud Keychain o Google Drive. Itago ang cloud backup at password mo, o ang labindalawang-salitang recovery phrase. Hindi mababawi ng Provian ang wallet nang wala ang mga iyon.
+SA IYO PA RIN ANG MGA KEY MO
+Naka-encrypt ang wallet seed sa telepono mo. Naka-encrypt din ang tanging kopyang bina-back up sa sarili mong iCloud Keychain o Google Drive. Itago ang cloud backup at password mo, o ang recovery phrase na may labindalawang salita. Kung wala ang mga iyon, hindi mare-recover ng Provian ang wallet mo.
 
-Nangyayari na ang trabaho. Ang tanong ay kung sino ang binabayaran.
+Nangyayari na ang trabaho. Ang tanong ay kung sino ang kumikita rito.
 
-Hindi nagbibigay ang Provian ng payong pinansyal o pang-investment.
+Hindi nagbibigay ang Provian ng payong pinansyal o payo sa pamumuhunan.
 ```
 
 ## Review notes (both stores)

@@ -1,6 +1,6 @@
 # Provian store listing (vi)
 
-<!-- source-sha256: f0ee1bfea7519ef4272df39f9476357e0f61693ba620b39efb210a43a06d0b2b -->
+<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
 
 ## App Store subtitle
 
@@ -16,42 +16,42 @@ Provian: Công việc tạo PVT
 
 ## Google Play short description
 
-Công việc được chứng thực tạo PVT vào ví chỉ bạn kiểm soát.
+Tính toán tạo tiền. Công việc được chứng kiến tạo PVT vào ví của bạn.
 
 ## Description (both stores)
 
 ```text
-Tính toán tạo ra tiền. Hãy để một phần thuộc về bạn.
+Tính toán tạo ra tiền. Hãy giữ một phần cho mình.
 
-Mỗi ngày bạn làm việc mà thế giới có thể thấy. Bạn phát hành mã, hoàn thành nhiệm vụ, chốt giao dịch, xây dựng cùng AI. Hiện nay công việc ấy biến mất trong nhật ký của người khác. Bằng chứng không thuộc về bạn, và tiền công hiếm khi theo sau.
+Mỗi ngày bạn làm những việc mà cả thế giới có thể nhìn thấy. Bạn phát hành mã, hoàn thành một công việc, chốt thỏa thuận hay tạo ra thứ gì đó cùng AI. Giờ đây, công việc ấy biến mất trong nhật ký của người khác. Bằng chứng không thuộc về bạn và thù lao hiếm khi đến tay bạn.
 
-Provian thay đổi điều đó. Khi phần mềm Provian trên thiết bị, bên đối tác, nền tảng mã hoặc blockchain chứng thực công việc, Provian biến chứng thực đó thành biên nhận có chữ ký thuộc về bạn: Provenance Envelope. Khi được hỗ trợ, phần cứng bảo mật trong điện thoại hoặc máy tính chứng minh phần mềm Provian chính hãng đã tạo bản ghi. Mỗi hành động được chứng thực tạo PVT, tiền trên Base, thẳng vào ví chỉ bạn kiểm soát.
+Provian thay đổi điều đó. Khi phần mềm Provian trên thiết bị của bạn, bên còn lại, nền tảng lưu trữ mã hoặc blockchain chứng kiến công việc của bạn, Provian chuyển lời chứng đó thành biên nhận có chữ ký thuộc sở hữu của bạn: Phong bì Nguồn gốc (Provenance Envelope). Trên thiết bị được hỗ trợ, phần cứng bảo mật trên điện thoại hoặc máy tính chứng minh bản ghi được tạo bởi phần mềm Provian chính hãng. Mỗi hành động được chứng kiến phát hành PVT, một đồng tiền trên Base, thẳng vào ví chỉ bạn kiểm soát.
 
-Không cần nộp đơn. Không người gác cổng quyết định bạn có được tính đến không. Bạn làm việc, mạng nhìn thấy, bạn được trả công.
+Không cần nộp đơn. Không ai đứng ra quyết định công việc của bạn có được tính hay không. Bạn làm việc, mạng lưới ghi nhận và bạn nhận thù lao.
 
-PVT kiếm được từ công việc, không mua từ Provian. Provian không vận hành sàn giao dịch, không đặt giá, không hứa hẹn giá trị hay lợi nhuận.
+PVT do lao động mà có. Provian không bán PVT, không vận hành sàn giao dịch, không định giá và không hứa hẹn giá trị hay lợi nhuận.
 
 TÁC NHÂN LÀM VIỆC CHO BẠN
-Các tác nhân AI sắp làm nhiều việc hơn khả năng của một mình bạn. Cho tác nhân một ví riêng, liên kết với ví của bạn và chia sẻ những gì công việc của nó tạo ra. Chấm dứt liên kết bất cứ lúc nào.
+Các tác nhân AI của bạn sắp có thể làm nhiều việc hơn bạn có thể tự làm. Hãy cấp ví riêng cho tác nhân, liên kết ví đó với ví của bạn và nhận một phần PVT phát hành từ công việc của tác nhân. Bạn có thể hủy liên kết bất cứ lúc nào. Trong mục Thu nhập, kết nối máy tính, tài khoản lưu trữ mã hoặc tác nhân và xem công việc mà từng nguồn đã ghi lại.
 
 BẰNG CHỨNG THUỘC VỀ BẠN
-Bằng chứng nằm trên điện thoại và bản sao lưu mã hóa của chính bạn. Prompt, mã và tin nhắn vẫn riêng tư. Khi một người, tác nhân hoặc dịch vụ cần tin bạn, hãy cho họ xem. Không gì thiếu chứng thực được đưa vào.
+Bằng chứng được lưu trên điện thoại và trong bản sao lưu mã hóa của chính bạn. Lời nhắc, mã và tin nhắn vẫn riêng tư. Khi một người, tác nhân hoặc dịch vụ cần tin tưởng bạn, hãy cho họ xem bằng chứng. Chỉ công việc có bên chứng kiến mới được ghi nhận.
 
 KHÔNG AI BỊ BỎ LẠI
-Provian được xây dựng để người và tác nhân làm việc giữ bằng chứng cùng tiền công, và để lợi ích đến cả những người chưa bao giờ dùng các công cụ này.
+Provian được xây dựng để con người và tác nhân thực hiện công việc giữ được bằng chứng và thù lao, đồng thời để lợi ích đến được cả với những người chưa từng dùng các công cụ này.
 
 THỨ BẠN KIẾM ĐƯỢC VẪN LÀ CỦA BẠN
-PVT được ghi nhận là của bạn, tách biệt với khóa. Nếu nền tảng toán học của khóa bị phá vỡ, số dư được khôi phục miễn phí. Tham gia Recourse Pool tùy chọn để việc mất cắp có thể được đảo ngược theo quy tắc đã công bố của pool. Hồ sơ quyền sở hữu, việc khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên Recourse Pool chỉ áp dụng cho PVT. Ether, đô la và các token khác tại địa chỉ đã liên kết không được ghi nhận hoặc khôi phục bằng các cơ chế này và vẫn chỉ được bảo vệ bằng khóa.
+Quyền sở hữu PVT được ghi riêng với khóa của bạn. Nếu cơ chế mật mã bảo vệ khóa bị phá vỡ, số dư PVT của bạn được khôi phục miễn phí. Bạn có thể tùy chọn tham gia Quỹ Recourse để việc lấy cắp PVT có thể được đảo ngược theo quy tắc đã công bố của quỹ. Mở Recourse từ Trang chủ để kiểm tra tư cách thành viên hoặc báo mất trộm. Hồ sơ quyền sở hữu, khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên quỹ chỉ áp dụng cho PVT. Ether, đô la và các token khác trong địa chỉ đã ràng buộc vẫn chỉ được bảo vệ bằng khóa. Các cơ chế này không ghi nhận hay khôi phục chúng.
 
-CŨNG CÓ TRONG ỨNG DỤNG
+CÒN CÓ TRONG ỨNG DỤNG
 
-- Giữ, gửi, nhận và đổi tiền mã hóa trên Base, Arbitrum, Optimism và Solana.
-- Lập giấy nhận nợ riêng tư có chữ ký của cả hai bên.
-- Tham gia Commons: gặp gỡ, trò chuyện, thuê và bảo chứng cho người cùng tác nhân.
-- Mua hàng tùy chọn trong ứng dụng: dung lượng lưu trữ mã hóa cho bằng chứng và quyết toán thu nhập tức thì.
+- Xem số dư, tài sản và công việc gần đây trên Trang chủ. Giữ, gửi, nhận và đổi tài sản mã hóa trên Base, Arbitrum, Optimism và Solana.
+- Tạo giấy nhận nợ riêng tư do hai bên ký.
+- Tham gia Commons để gặp gỡ, trò chuyện, thuê người và xác nhận uy tín của con người và tác nhân.
+- Tùy chọn mua dung lượng lưu trữ mã hóa cho bằng chứng ngay trong ứng dụng.
 
-KHÓA VẪN THUỘC VỀ BẠN
-Seed của ví được mã hóa trên điện thoại và chỉ sao lưu dưới dạng bản mã vào iCloud Keychain hoặc Google Drive của bạn. Giữ bản sao lưu đám mây và mật khẩu, hoặc cụm khôi phục mười hai từ. Provian không thể khôi phục ví nếu không có chúng.
+KHÓA VẪN LÀ CỦA BẠN
+Seed của ví được mã hóa trên điện thoại và chỉ được sao lưu dưới dạng mã hóa vào Chuỗi khóa iCloud hoặc Google Drive của chính bạn. Hãy giữ bản sao lưu đám mây và mật khẩu, hoặc cụm từ khôi phục gồm mười hai từ. Thiếu cả hai, Provian không thể khôi phục ví.
 
 Công việc đã và đang diễn ra. Câu hỏi là ai được trả công.
 
