@@ -187,7 +187,12 @@ public class ProvianICloudDocumentsModule: Module {
     try? fm.startDownloadingUbiquitousItem(at: url)
     let deadline = Date().addingTimeInterval(timeout)
     while true {
-      let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
+      // URL caches resource values, and on this queue (no run loop) the cache is never flushed:
+      // without a fresh copy every poll repeats the first answer ("not downloaded") until the
+      // timeout, even after iCloud has delivered the file. Same reason as the upload poll above.
+      var freshURL = url
+      freshURL.removeAllCachedResourceValues()
+      let values = try? freshURL.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey])
       let status = values?.ubiquitousItemDownloadingStatus
       if status == .current { break }
       if status == nil && fm.fileExists(atPath: url.path) { break }
