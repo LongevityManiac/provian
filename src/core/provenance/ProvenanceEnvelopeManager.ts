@@ -940,12 +940,29 @@ class ProvenanceEnvelopeManager {
 
         // Verify signature against the actor address (who should have signed it)
         const result = await KeyManager.verifySignature(payload, signature, pe.actor_address);
+        if (result.isValid || !('energy_estimate' in envelopeWithoutSignature)) {
+            return { isValid: result.isValid, error: result.error, recoveredAddress: result.recoveredAddress };
+        }
 
+        // Builds before 2026-11-11 attached `energy_estimate` to the envelope AFTER signing it
+        // (a footprint annotation, never signed). Those records are authentic over every signed
+        // field; verify exactly the bytes that were signed. Any other changed field still fails.
+        const { energy_estimate: _unsignedAnnotation, ...signedFields } = envelopeWithoutSignature;
+        const signedOnly = await KeyManager.verifySignature(stableStringify(signedFields) || '', signature, pe.actor_address);
         return {
-            isValid: result.isValid,
-            error: result.error,
-            recoveredAddress: result.recoveredAddress,
+            isValid: signedOnly.isValid,
+            error: signedOnly.isValid ? undefined : result.error,
+            recoveredAddress: signedOnly.recoveredAddress,
         };
+    }
+
+    /**
+     * Records in chain order (oldest first). Storage order is not chain order: an archival pass
+     * that could not reach the archive put aged records back after newer ones. Ties keep their
+     * stored order (Array.prototype.sort is stable).
+     */
+    private chainOrder(history: ProvenanceEnvelope[]): ProvenanceEnvelope[] {
+        return [...history].sort((a, b) => a.timestamp - b.timestamp);
     }
 
     /**
@@ -1092,7 +1109,7 @@ class ProvenanceEnvelopeManager {
     // Starts verification from the last known-good position instead of genesis.
     async verifyChainIntegrity(): Promise<ChainIntegrityResult> {
         try {
-            const history = await this.getHistoryRaw();
+            const history = this.chainOrder(await this.getHistoryRaw());
 
             if (history.length === 0) {
                 return { valid: true, envelopesVerified: 0 };

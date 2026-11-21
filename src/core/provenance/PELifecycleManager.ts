@@ -337,8 +337,10 @@ class PELifecycleManager {
                     console.error('[PELifecycleManager] Cloud sync failed:', error);
                     result.errors.push(`Cloud sync failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
                     result.cloudSyncSuccess = false;
-                    // Keep PEs in hot tier if cloud sync fails
+                    // Keep PEs in hot tier if cloud sync fails, in time order: appending them after
+                    // newer records left the stored hot tier out of chain order.
                     stillHot.push(...toArchive);
+                    stillHot.sort((a, b) => a.timestamp - b.timestamp);
                 }
             }
 
@@ -641,7 +643,7 @@ class PELifecycleManager {
 
             // Verify hot-to-warm boundary
             if (storage.hotPEs.length > 0 && storage.warmBoundaryHash !== GENESIS_PREV_HASH) {
-                const firstHotPE = storage.hotPEs[0];
+                const firstHotPE = [...storage.hotPEs].sort((a, b) => a.timestamp - b.timestamp)[0];
                 if (firstHotPE.prev_envelope_hash !== storage.warmBoundaryHash) {
                     result.boundaryValid = false;
                     result.valid = false;
