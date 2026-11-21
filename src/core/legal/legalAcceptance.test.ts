@@ -133,7 +133,8 @@ describe('wiring', () => {
     it('unlock routes a stale acceptance to the review, after the backup and restore gates', () => {
         const s = read('screens/Security/WalletLockScreen.tsx');
         expect(s).toContain("const termsGate = legalReviewRequired(useWalletStore.getState()) ? 'terms' as const : 'app' as const;");
-        expect(s).toContain("landAfterUnlock(navigation, seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate, () => setAuthenticated(true));");
+        expect(s).toContain("const gate = seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate;");
+        expect(s).toContain('landAfterUnlock(navigation, gate, () => setAuthenticated(true));');
     });
 
     it('review mode accepts into the app and cannot be backed out of', () => {
