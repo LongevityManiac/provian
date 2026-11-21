@@ -310,10 +310,11 @@ export class PeCloudBackup {
     }
 
     /** Prime another phone's archive salt during unlock; authenticate the index before adoption. */
-    async primeKey(biometricAction: BiometricAction): Promise<void> {
+    async primeKey(biometricAction: BiometricAction, signal?: AbortSignal): Promise<void> {
         const { cloud, keys } = this.options;
         if (!(await cloud.available())) return;
-        const snapshots = await this.readIndexes({ allowPrompt: false, biometricAction });
+        const snapshots = await this.readIndexes({ allowPrompt: false, biometricAction }, signal);
+        if (signal?.aborted) return;
         const latest = snapshots.indexes.sort((a, b) => b.index.updated_at_ms - a.index.updated_at_ms)[0];
         if (latest) await keys.adopt({ saltHex: latest.salt, key: latest.key });
     }
@@ -432,13 +433,17 @@ export class PeCloudBackup {
         return { ok: pending === 0, uploaded: written, skippedUnchanged, state: 'ok', error: null };
     }
 
-    private async readIndexes(options: { readonly allowPrompt: boolean; readonly biometricAction?: BiometricAction }): Promise<{
+    private async readIndexes(
+        options: { readonly allowPrompt: boolean; readonly biometricAction?: BiometricAction },
+        signal?: AbortSignal,
+    ): Promise<{
         indexes: { index: CloudIndex; key: Uint8Array; salt: string }[]; refused: string[];
     }> {
         const { cloud, keys } = this.options;
-        const names = (await cloud.list()).filter((n) => n === PE_BACKUP_INDEX_NAME || /^pe_snapshot_[0-9a-f]{48}$/.test(n));
         const indexes: { index: CloudIndex; key: Uint8Array; salt: string }[] = [];
         const refused: string[] = [];
+        if (signal?.aborted) return { indexes, refused };
+        const names = (await cloud.list()).filter((n) => n === PE_BACKUP_INDEX_NAME || /^pe_snapshot_[0-9a-f]{48}$/.test(n));
         let keyUnavailable = false;
         // Older transports may not list the legacy index (it used Keychain). Read it explicitly.
         if (!names.includes(PE_BACKUP_INDEX_NAME)) names.unshift(PE_BACKUP_INDEX_NAME);
@@ -450,6 +455,7 @@ export class PeCloudBackup {
         const budget = this.options.budget?.() ?? cpuBudget();
         for (const name of names) {
             await budget.pace();
+            if (signal?.aborted) return { indexes, refused };
             try {
                 const cached = name === PE_BACKUP_INDEX_NAME ? undefined : this.snapshotCache.get(name);
                 if (cached !== undefined) {
@@ -464,6 +470,7 @@ export class PeCloudBackup {
                     this.snapshotCache.delete(name);
                 }
                 const raw = await cloud.read(name);
+                if (signal?.aborted) return { indexes, refused };
                 if (raw === null) continue;
                 const wire = parseIndexWire(raw, name);
                 const key = await keyFor(wire.kdf.salt);

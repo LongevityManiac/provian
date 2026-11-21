@@ -18,7 +18,10 @@ vi.mock('../../wallet/SeedManager', () => ({ default: { getMnemonic: vi.fn(async
 }) } }));
 vi.mock('../../recovery/cloud/CloudBackupV2', () => ({ hasCloudBackup: vi.fn(async () => false) }));
 vi.mock('../../recovery/cloud/ProvianCloudKeychainSync', () => ({ retrieveSynced: vi.fn(async () => null) }));
-vi.mock('../../provenance/ProvenanceEnvelopeManager', () => ({ default: { verifyAllPESignatures: vi.fn(async () => ({ tamperedIds: [], missingSignatureIds: [], unverifiableIds: [] })) } }));
+vi.mock('../../provenance/ProvenanceEnvelopeManager', () => ({ default: {
+    verifyAllPESignatures: vi.fn(async () => ({ tamperedIds: [], missingSignatureIds: [], unverifiableIds: [] })),
+    retryDeferredEnvelopes: vi.fn(async () => 0),
+} }));
 vi.mock('../../../services/NotificationService', () => ({ default: { getBackendUrl: async () => 'https://relay.test', getPushToken: async () => null } }));
 vi.mock('../../network/apiFetch', () => ({ apiFetch: vi.fn(), default: vi.fn() }));
 vi.mock('../../../store/walletStore', () => ({ useWalletStore: { getState: () => ({ address: '0x' + '11'.repeat(20) }) } }));
@@ -30,7 +33,7 @@ import { MemoryCloudFiles } from '../cloudFiles';
 import { MemoryMeterFiles } from '../meterFiles';
 import { PhoneMeter, type KeyValue } from '../phoneMeter';
 import { PeCloudBackup, deriveArchiveKey, type BackupKeyProvider } from '../peCloudBackup';
-import { meterTransportForAction, restoreMyPes, backUpMyPes } from '../phoneMeterRuntime';
+import { meterTransportForAction, restoreMyPes, backUpMyPes, onWalletUnlocked } from '../phoneMeterRuntime';
 import { FakeRelay, openStore, recordPes, envelope, T0 } from './meterTestkit';
 
 const phrase = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
@@ -130,6 +133,24 @@ describe('meter operations retain one explicit approval', () => {
         expect(result.ok).toBe(true); expect(LocalAuthentication.authenticateAsync).toHaveBeenCalledTimes(1);
         expect(SeedManager.getMnemonic).toHaveBeenCalledTimes(reads);
         expect(await AsyncStorage.getItem('provian_pe_encryption_salt')).toBe(foreignSalt);
+    });
+    it('a stalled archive read releases the unlock approval and still lets the mailbox run', async () => {
+        let stopped: AbortSignal | undefined;
+        const read = vi.spyOn(PeCloudBackup.prototype, 'primeKey').mockImplementation((_action, signal) => {
+            stopped = signal;
+            return new Promise(() => undefined);
+        });
+        const mailbox = vi.spyOn(PhoneMeter.prototype, 'afterUnlock').mockResolvedValue();
+        vi.spyOn(RelayAPIService, 'isRegistered').mockResolvedValue(false);
+        let approval: BiometricAction | undefined;
+        await withBiometricAction('Unlock', async action => {
+            approval = action;
+            await onWalletUnlocked(null, action, 250);
+        });
+        expect(read).toHaveBeenCalledOnce();
+        expect(stopped?.aborted).toBe(true);
+        expect(() => assertBiometricAction(approval)).toThrow();
+        expect(mailbox).toHaveBeenCalledOnce();
     });
     it.each(['cold', 'rotated'])('export uses its explicit transport for %s credentials and preserves all local records', async mode => {
         let secret: string | null = mode === 'cold' ? null : 'old-secret';

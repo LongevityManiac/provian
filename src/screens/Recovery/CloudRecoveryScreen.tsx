@@ -384,7 +384,7 @@ const CloudRecoveryScreen = ({ navigation }: any) => {
         // try so a restore outcome never mis-reports a wrong-PIN/finish-setup
         // error, and runs only after completeOnboarding so the wallet is already
         // accessible regardless of outcome.
-        await onWalletUnlocked(biometricAction).catch(() => undefined);
+        await onWalletUnlocked(useWalletStore.getState().address, biometricAction);
         await runHistoryRestore('with_session', biometricAction);
     };
 

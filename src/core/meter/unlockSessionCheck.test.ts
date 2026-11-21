@@ -108,18 +108,12 @@ describe('the unlock: no relay wait, renewal pre-signed when the session is not 
         expect(healthy.renewWithPresignedProof).not.toHaveBeenCalled();
     });
 
-    it('wiring: the lock screen checks first; the unlock signs, lands, and awaits nothing after landing', () => {
+    it('the lock screen lands before starting optional cloud, relay, and proof work', () => {
         const lock = readFileSync('src/screens/Security/WalletLockScreen.tsx', 'utf8');
-        const runtime = readFileSync('src/core/meter/phoneMeterRuntime.ts', 'utf8');
         expect(lock).toMatch(/probeRelaySessionAtLock\(useWalletStore\.getState\(\)\.address\)/);
-        const sign = lock.indexOf('await prepareRenewalAtUnlock(');
-        const land = lock.indexOf('landAfterUnlock(navigation, seedUnreadable');
-        expect(sign).toBeGreaterThan(0);
-        expect(land).toBeGreaterThan(sign);
-        const afterLand = lock.slice(land, lock.indexOf('}, undefined);', land));
-        expect(afterLand).not.toMatch(/await /);
-        expect(afterLand).toMatch(/void renewRejectedSessionAfterUnlock\(wallet\)/);
-        const unlocked = runtime.slice(runtime.indexOf('export async function onWalletUnlocked'));
-        expect(unlocked).not.toMatch(/checkRelaySessionAtUnlock/);
+        const land = lock.indexOf('landAfterUnlock(navigation, gate');
+        expect(land).toBeGreaterThan(0);
+        expect(lock.indexOf('await onWalletUnlocked(')).toBeGreaterThan(land);
+        expect(lock.slice(0, land)).not.toMatch(/await prepareRenewalAtUnlock\(/);
     });
 });

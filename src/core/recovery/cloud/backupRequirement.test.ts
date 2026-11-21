@@ -87,7 +87,8 @@ describe('the onboarding paths are wired to the gate', () => {
     it('unlock routes a wallet that still owes its backup to the backup screen', () => {
         const s = src('screens/Security/WalletLockScreen.tsx');
         expect(s).toMatch(/resolveBackupGate\(/);
-        expect(s).toMatch(/landAfterUnlock\(navigation, [^;]{0,60}backupGate === 'backup' \? 'backup'/);
+        expect(s).toMatch(/const gate = seedUnreadable \? 'restore' : backupGate === 'backup' \? 'backup' : termsGate;/);
+        expect(s).toMatch(/landAfterUnlock\(navigation, gate,/);
         // …and the helper it calls opens the backup screen first for that gate.
         expect(src('navigation/afterUnlock.ts')).toMatch(/gate === 'backup'[\s\S]{0,120}name: 'CloudBackupConfirm', params: \{ requiredBeforeApp: true \}/);
     });

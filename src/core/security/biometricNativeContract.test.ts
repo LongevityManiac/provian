@@ -24,10 +24,10 @@ function legacyIosDefects(source: string) {
     return /if status == errSecAuthFailed \{ throw seedError\("ERR_SEED_UNRECOVERABLE"/.test(read) ? [] : ['legacy invalidated key misclassified'];
 }
 function unlockDefects(source: string) {
-    const initialized = source.indexOf('await onWalletUnlocked(biometricAction)');
-    const guard = source.indexOf('assertBiometricAction(biometricAction)', initialized);
-    const unlocked = source.indexOf('setAuthenticated(true)', initialized);
-    return initialized >= 0 && guard > initialized && unlocked > guard ? [] : ['late revoked unlock allowed'];
+    const backup = source.indexOf('await resolveBackupGate(');
+    const guard = source.indexOf('assertBiometricAction(biometricAction)', backup);
+    const unlocked = source.indexOf('landAfterUnlock(navigation, gate,');
+    return backup >= 0 && guard > backup && unlocked > guard ? [] : ['late revoked unlock allowed'];
 }
 describe('native authentication contract',()=>{
     it('Android authenticates trusted fresh root, wipes ended grants, keeps referenced keys and classifies legacy failures',()=>{
@@ -56,7 +56,7 @@ describe('native authentication contract',()=>{
         expect(legacyIosDefects(ios)).toEqual([]);
         expect(legacyIosDefects(ios.replace('if status == errSecAuthFailed { throw seedError("ERR_SEED_UNRECOVERABLE", "Legacy seed authentication key is no longer usable") }', ''))).toEqual(['legacy invalidated key misclassified']);
     });
-    it('unlock cannot overwrite a background lock after late key initialization', () => {
+    it('unlock cannot overwrite a background lock after the required backup check', () => {
         const source = readFileSync(resolve(__dirname, '../../screens/Security/WalletLockScreen.tsx'), 'utf8');
         expect(unlockDefects(source)).toEqual([]);
         const unsafe = source.replace(/assertBiometricAction\(biometricAction\);/g, '');

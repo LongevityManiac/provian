@@ -294,7 +294,7 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
         // History restore + the wallet_created PE happen in finishAfterRestore so
         // Retry / Skip can re-drive them. A declined biometric surfaces the retry
         // panel (no silent empty-Activity completion).
-        await onWalletUnlocked(biometricAction).catch(() => undefined);
+        await onWalletUnlocked(evmAddress, biometricAction);
         await finishAfterRestore('with_session', evmAddress, biometricAction);
     }, [setAddress, completeOnboarding, finishAfterRestore]);
 

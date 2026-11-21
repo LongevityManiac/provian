@@ -1333,6 +1333,7 @@ class RelayAPIService {
         if (!(await this.isRegistered())) return false;
         const nowMs = Date.now();
         const body = await this.signRecoveryProof(walletAddress, biometricAction, nowMs);
+        assertBiometricAction(biometricAction);
         this.presignedRenewal = { address: walletAddress.toLowerCase(), body, usableUntilMs: nowMs + PRESIGNED_RENEWAL_LIFETIME_MS };
         return true;
     }

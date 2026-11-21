@@ -22,7 +22,7 @@ import { useBiometricLabel } from '../../core/security/biometricLabel';
 import { requireBiometric, BiometricNotAvailableError, BiometricAuthError, BiometricRateLimitError } from '../../core/security/requireBiometric';
 import SeedManager from '../../core/wallet/SeedManager';
 import WalletCreationService from '../../core/wallet/WalletCreationService';
-import { onWalletUnlocked, prepareRenewalAtUnlock, probeRelaySessionAtLock, renewRejectedSessionAfterUnlock } from '../../core/meter/phoneMeterRuntime';
+import { onWalletUnlocked, probeRelaySessionAtLock } from '../../core/meter/phoneMeterRuntime';
 import { hasCloudBackup } from '../../core/recovery/cloud/CloudBackupV2';
 import { resolveBackupGate } from '../../core/recovery/cloud/backupRequirement';
 import { landAfterUnlock } from '../../navigation/afterUnlock';
@@ -53,8 +53,9 @@ const WalletLockScreen = ({ navigation }: any) => {
         setIsAuthenticating(true);
         setError(null);
 
-        if (!isTestnet()) prepareHomeBalanceVerification(useWalletStore.getState().address);
         try {
+            const address = useWalletStore.getState().address;
+            if (address && !isTestnet()) prepareHomeBalanceVerification(address);
             return await withBiometricAction(t('walletLock.biometricPrompt'), async (biometricAction) => {
 
                 assertBiometricAction(biometricAction);
@@ -84,9 +85,6 @@ const WalletLockScreen = ({ navigation }: any) => {
                     if (current.sol && state.solanaAddress && state.solanaAddress !== current.sol) state.setSolanaAddress(current.sol);
                 }
                 assertBiometricAction(biometricAction);
-                // PE METER: publish the message key if the relay has none (so PEs can reach this phone).
-                if (!seedUnreadable) await onWalletUnlocked(biometricAction).catch(err => console.warn('[WalletLock] key initialization deferred', err));
-                assertBiometricAction(biometricAction);
                 // A restored wallet that still owes its cloud backup (the app was closed on the
                 // backup screen) goes back to it before the app.
                 const backupGate = seedUnreadable
@@ -94,16 +92,11 @@ const WalletLockScreen = ({ navigation }: any) => {
                     : await resolveBackupGate(known?.evm ?? useWalletStore.getState().address ?? null, hasCloudBackup);
                 // Terms or a Privacy Policy changed since this install accepted them: review and accept first.
                 const termsGate = legalReviewRequired(useWalletStore.getState()) ? 'terms' as const : 'app' as const;
-                // A notification tapped while locked opens on top of the app, never raced by this reset.
-                // Unless the relay already accepted this session since the lock screen appeared, sign a
-                // renewal proof inside this approval (local signing, bounded; no relay request), so an
-                // expired session renews later with no second prompt. A seed that cannot be read cannot
-                // sign, so it is skipped then.
-                const wallet = seedUnreadable ? null : useWalletStore.getState().address;
-                await prepareRenewalAtUnlock(wallet, biometricAction);
-                if (seedUnreadable || backupGate === 'backup' || termsGate === 'terms') clearHomeBalanceVerification();
-                landAfterUnlock(navigation, seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate, () => setAuthenticated(true));
-                void renewRejectedSessionAfterUnlock(wallet);
+                const gate = seedUnreadable ? 'restore' : backupGate === 'backup' ? 'backup' : termsGate;
+                assertBiometricAction(biometricAction);
+                if (gate !== 'app') clearHomeBalanceVerification();
+                landAfterUnlock(navigation, gate, () => setAuthenticated(true));
+                if (gate === 'app') await onWalletUnlocked(useWalletStore.getState().address, biometricAction);
 
             }, undefined);
         } catch (err) {
@@ -138,7 +131,6 @@ const WalletLockScreen = ({ navigation }: any) => {
 
     const handleSkipForTesting = () => {
         console.log('[WalletLockScreen] Skipping auth for simulator testing');
-        onWalletUnlocked();
         landAfterUnlock(navigation, 'app', () => setAuthenticated(true));
     };
 

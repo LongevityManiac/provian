@@ -238,30 +238,63 @@ export function renewRejectedSessionAfterUnlock(address: string | null, relay?: 
     })().catch(() => false);
 }
 
-/** Initialize derived keys and publish them inside the unlock action, before it is revoked. */
-export async function onWalletUnlocked(biometricAction?: BiometricAction): Promise<void> {
-    if (!biometricAction) return;
-    assertBiometricAction(biometricAction);
+export const UNLOCK_MAINTENANCE_TIMEOUT_MS = 6_000;
+
+/** Run after navigation, with a short window for work that uses the unlock approval. */
+export async function onWalletUnlocked(
+    address: string | null,
+    biometricAction: BiometricAction,
+    timeoutMs: number = UNLOCK_MAINTENANCE_TIMEOUT_MS,
+): Promise<void> {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+        const deadline = new Promise<void>(resolve => { timer = setTimeout(resolve, timeoutMs); });
+        await Promise.race([deadline, maintainUnlockedWallet(address, biometricAction, controller.signal)]);
+    } catch {
+        console.warn('[WalletLock] unlock maintenance deferred');
+    } finally {
+        clearTimeout(timer);
+        controller.abort();
+        // Mailbox and archive maintenance use derived caches, without the unlock grant.
+        void Promise.resolve().then(() => getPhoneMeter().afterUnlock()).catch(() => undefined);
+    }
+}
+
+async function maintainUnlockedWallet(address: string | null, biometricAction: BiometricAction, signal: AbortSignal): Promise<void> {
+    const stillApproved = () => !signal.aborted && isBiometricActionValid(biometricAction);
+    if (!stillApproved()) return;
+
+    // Get a renewal proof while the unlock grant is live even if another service is slow.
+    const renewal = prepareRenewalAtUnlock(address, biometricAction).then(() => {
+        if (stillApproved()) void renewRejectedSessionAfterUnlock(address);
+    });
     const { getMessageKeyPair } = await import('../commons/threadCrypto');
     const PECloudSync = (await import('../provenance/PECloudSync')).default;
     const { initializePromiseTermsKey } = await import('../promises/PromiseTermsVault');
-    // Cache only domain-separated messaging/archive/terms keys, never a seed or seed grant.
-    await getMessageKeyPair(publishKeyReason(), biometricAction);
-    await PECloudSync.getArchiveKeyForBackup({ allowPrompt: false, biometricAction }, biometricAction);
-    await initializePromiseTermsKey(biometricAction);
-    // Another phone may have chosen a different PE backup salt. Prime it inside this approval
-    // so later scheduled backup never needs to authenticate. No records are restored or uploaded.
-    await getPhoneMeter().backup.primeKey(biometricAction).catch(() => undefined);
+    const provenance = (await import('../provenance/ProvenanceEnvelopeManager')).default;
+    if (!stillApproved()) return;
+    await Promise.allSettled([
+        getMessageKeyPair(publishKeyReason(), biometricAction),
+        PECloudSync.getArchiveKeyForBackup({ allowPrompt: false, biometricAction }, biometricAction),
+        initializePromiseTermsKey(biometricAction),
+    ]);
+    if (!stillApproved()) return;
+    // iCloud/Drive can take minutes to inventory. Start it independently of relay and proof work.
+    await Promise.allSettled([
+        getPhoneMeter().backup.primeKey(biometricAction, signal),
+        finishRelayUnlock(address, biometricAction, stillApproved),
+        provenance.retryDeferredEnvelopes(biometricAction),
+        renewal,
+    ]);
+}
+
+async function finishRelayUnlock(address: string | null, biometricAction: BiometricAction, stillApproved: () => boolean): Promise<void> {
     const relay = (await import('../../services/RelayAPIService')).default;
-    const { useWalletStore } = await import('../../store/walletStore');
-    const address = useWalletStore.getState().address;
-    if (address && !(await relay.isRegistered())) await relay.recoverRelayCredentials(address, biometricAction);
+    if (address && !(await relay.isRegistered()) && stillApproved()) await relay.recoverRelayCredentials(address, biometricAction);
+    if (!stillApproved()) return;
     await ensureMessageKeyAtLaunch({ allowPrompt: false, biometricAction }, biometricAction);
-    await (await import('../chains/solana/solanaAddressProof')).ensureSolanaAddressProven(biometricAction);
-    // Retry attestations whose Android signing window elapsed after a confirmed transaction.
-    await (await import('../provenance/ProvenanceEnvelopeManager')).default.retryDeferredEnvelopes(biometricAction);
-    // Archive work uses the derived caches; it holds no seed authorization after unlock.
-    void getPhoneMeter().afterUnlock().catch(() => undefined);
+    if (stillApproved()) await (await import('../chains/solana/solanaAddressProof')).ensureSolanaAddressProven(biometricAction);
 }
 
 /**
