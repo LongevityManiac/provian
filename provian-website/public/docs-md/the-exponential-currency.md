@@ -28,7 +28,7 @@ None of this is a small claim, and this document does not pretend it is. The peo
 
 The rest of this document is an economic argument, and it needs three facts about Provian on the table first. The Provian Thesis sets each of them out in full.
 
-Useful work done on the Provian network, by a person, an agent, or a device, produces a receipt called a Provenance Envelope. The receipt belongs to whoever did the work and contains none of the work's private content. Each witnessed act mints PVT once, at a value set by how strong its evidence is, and nothing else creates it: no pre-mine, no issuance outside the settlement of witnessed work. In between, PVT is simply money. A participant pays it to another for a job, locks it in escrow against delivery, or accepts it for work, and a plain transfer is never gated and never burns. What it buys grows with who accepts it: inside the network first, and beyond it as more of the world's work leaves receipts. And PVT leaves the world the way it entered, one act at a time. Participants burn it, permanently and on chain, whenever they claim trust, take a public voice, or commit to one another, led by presenting their own history to someone who asks for proof. Earning is free. Reading is free. Claiming trust costs the claimant something real, in the only currency that work creates.
+Useful work done on the Provian network, by a person, an agent, or a device, produces a receipt called a Provenance Envelope. The receipt belongs to whoever did the work and contains none of the work's private content. Each witnessed act mints PVT once, at a value set by how strong its evidence is, and nothing else creates it: no pre-mine, no issuance outside the settlement of witnessed work. Each mint splits 99% to whoever did the work and half a percent each to Provian Technologies and to the Provian Foundation for the human side of the network; on agents' work the Foundation's share is a floor that can rise. In between, PVT is simply money. A participant pays it to another for a job, locks it in escrow against delivery, or accepts it for work, and a plain transfer is never gated and never burns. What it buys grows with who accepts it: inside the network first, and beyond it as more of the world's work leaves receipts. And PVT leaves the world the way it entered, one act at a time. Participants burn it, permanently and on chain, whenever they claim trust, take a public voice, or commit to one another, led by presenting their own history to someone who asks for proof. Earning is free. Reading is free. Claiming trust costs the claimant something real, in the only currency that work creates.
 
 Witnessed work mints, trust burns, and the currency in between is the measure of what the network's participants have done for one another. Everything that follows is about why that design holds up better than any alternative when output goes exponential.
 
@@ -284,17 +284,7 @@ Parity minting decides who receives new units; recourse decides whether they can
 
 Recourse is possible here because no other currency pairs an ownership record that does not depend on any key with a flow of earnings from which members can build their own reserve, with no treasury behind it.
 
-## 13. How It Is Built
-
-PVT implements all of this on Base. What matters to the argument here is the shape.
-
-**Uncapped supply, minted from receipts.** PVT is minted against witnessed work while the protocol is operated, with no maximum, no halvings, and no time-decay of earned value. Lifetime supply is whatever the network witnesses, less whatever participants burn. Every act mints once, at a value the network, never the submitter, sets from the quality of the evidence, the independence of the work's inputs, and its novelty, and never from how much the work matters or how much power it used. Proof of work pays for energy spent; parity minting pays at the output, once the energy has turned into something a witness can confirm.
-
-**Minted to the contributor.** Every mint that reaches a person splits 99% to the contributor, 0.5% to Provian Technologies for the protocol's upkeep, and 0.5% to the Provian Foundation for the human side of the network. Both shares are fixed for human work; for agents' work the Foundation's half percent is a floor that future mints can raise, with the contributor taking the remainder. Nothing was minted in advance, and no investors or team members hold a reserved allocation. Monetary parameters change only for the future and only on a signed record; work already sealed is never repriced.
-
-**Freely transferable.** A holder can send PVT anywhere, and ordinary transfers are never gated. Provian operates no exchange and quotes no price. The only power over a holder's balance is the restoration authority described in Part 12, and it cannot act without the owner's recovery proof.
-
-## 14. What Would Falsify This
+## 13. What Would Falsify This
 
 The specific ways this thesis could be wrong:
 
