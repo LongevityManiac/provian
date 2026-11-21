@@ -1422,6 +1422,6 @@
     "src/core/wallet/TransactionService.estimateFee.test.ts": "a73800a99feecac9854187ef392f54dbb7e9f841e657ea37792936fd6e4de732",
     "src/core/wallet/TransactionService.ts": "691d03fd81eb3be6fec4b92fa1ebd49f406a8505c7519e8f4dfd06e66aa5b2ef",
     "src/services/RelayAPIService.ts": "8918b2dfffcc928ac62aa46f1a6eb8c2361d5a84d6730e5f7475dd94c226104c",
-    "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "b47925d49dedc264501116a63e73d22e85e7142151cac5f7fd06728a5c50aa5e"
+    "src/services/__tests__/RelayAPIService.recoursePrivate.test.ts": "39fa20e46326412277da2d86d1ec3d404f6c7093fb1b562c81b43e22bb9800a5"
   }
 }
