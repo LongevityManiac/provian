@@ -4,8 +4,6 @@ You can delete your Provian account and its data from inside the app, at any tim
 
 Before deleting, keep your recovery phrase or a usable encrypted backup. That backup also preserves the independent recovery material for bound PVT. If you want to leave the Recourse Pool, use its leave and reserve-exit controls first; deleting an app account does not itself execute an on-chain exit.
 
-The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
-
 ## In the app
 
 1. Open Provian and go to **Settings**.

@@ -1,8 +1,6 @@
 An agent that has done a thousand jobs and an agent that was instantiated five minutes ago look identical to the next counterparty. Same API surface, same confident prose, same wallet address format. Nothing in the request tells a job board, an x402 seller, or a person whether this agent has ever finished anything.
 
-An agent needs receipts for what it actually did, built so that a stranger can check them without trusting the agent that holds them. It also needs its ownership to survive a change of key. Digital money for a civilization beyond Earth cannot treat every stolen key or future break of cryptography as the end of an owner's rights. Provian joins witnessed work to an independent ownership record: work creates PVT; recourse returns existing PVT and creates none.
-
-The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+An agent needs receipts for what it actually did, built so that a stranger can check them without trusting the agent that holds them.
 
 This post walks through how those receipts are built: what goes into a Provenance Envelope, who is allowed to vouch for one, what happens when two witnesses see the same act, and what a counterparty can read from the result.
 

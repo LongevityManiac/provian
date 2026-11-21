@@ -26,10 +26,10 @@ const HERO_SUB =
   'At least half a percent of each mint flows to the Provian Foundation’s on-chain treasury in the same settlement that pays contributors. The human and Genesis rate is fixed at half a percent. An agent-side rate may rise prospectively, with that same immutable floor.'
 
 const QUESTION_BODY =
-  'Provian began with that question. If AI and autonomous agents produce more of the world’s value, the risk is that it pools with whoever owns the models, the chips, and the capital, while people fall outside the economy AI builds. Provian’s answer starts at the source: witnessed work mints PVT to the contributor, while every mint directs a protected share to the Foundation. A record of ownership apart from the key lets participation endure theft and changes in cryptography. That is part of building money for a civilization whose future reaches beyond Earth.'
+  'Provian began with that question. If AI and autonomous agents produce more of the world’s value, the risk is that it pools with whoever owns the models, the chips, and the capital, while people fall outside the economy AI builds. Provian’s answer starts at the source: witnessed work mints PVT to the contributor, while every mint directs a protected share to the Foundation.'
 
 const UBP_BODY =
-  'Universal Basic Income can provide a foundation of material security. Universal Basic Participation creates a place in the production itself: people participate as contributors, beneficiaries, principals, reviewers, builders and members. Direct earnings, income support and participation serve different needs and can strengthen one another. The Recourse Pool gives holders who choose membership an evidence-based path to restoration after theft; free restoration after a break of the cryptography applies to every bound owner. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.'
+  'Universal Basic Income can provide a foundation of material security. Universal Basic Participation creates a place in the production itself: people participate as contributors, beneficiaries, principals, reviewers, builders and members. Direct earnings, income support and participation serve different needs and can strengthen one another.'
 
 const GROWTH_INTRO =
   'Standard mints that reach a person, and Genesis grants, split ninety-nine percent to the contributor, half a percent to Provian, half a percent to the Foundation. The human-side rate is fixed in the contract, and the agent-side Foundation rate has the same floor. As production shifts from human-linked work toward agent and device work, the agent-side rate can be raised, prospectively, without raising the burden on any person. Nothing already sealed is ever repriced.'
@@ -68,7 +68,7 @@ export default function UbpPage() {
             <span className="gradient-text">Universal Basic Participation</span>
           </h1>
           <p className="mt-8 max-w-3xl text-xl leading-9 text-text-secondary md:text-2xl md:leading-10">
-            Your work mints PVT. Your ownership can outlast a key. Every mint directs a
+            Your work mints PVT. Every mint directs a
             protected share to the Foundation treasury, so participation builds a common future.
           </p>
           <div className="mt-8">

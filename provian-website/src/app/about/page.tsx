@@ -59,16 +59,13 @@ export default function AboutPage() {
               Where Provian comes from.
             </h2>
             <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl">
-              A thousand years from now, commerce across a civilization that has left Earth will
-              need digital money. Stolen keys, public ledgers and a future break of cryptography
-              are real weaknesses; they are problems to solve. Provian separates ownership from
-              the key, builds independent recovery, and gives members a published path to theft
-              restoration. Ordinary transfers stay public, permissionless and poolable.
-              That conviction meets another question: as AI takes on more of the world’s
-              work, how do you make the abundance it creates reach everyone, instead of
-              pooling in a few hands? Answering that fairly meant being able to prove who
-              and what actually contributed — and so provenance, and the trust layer built
-              on it, grew out of the pursuit of shared abundance. Atlas became the first agent to hold a Provian
+              As AI takes on more of the world’s work, how do you make the abundance it creates
+              reach everyone, instead of pooling in a few hands? Answering that fairly meant being
+              able to prove who and what actually contributed — and so provenance, and the trust
+              layer built on it, grew out of the pursuit of shared abundance. Beneath it sits a
+              second conviction: a civilization trading beyond Earth a thousand years from now will
+              need digital money, and crypto’s weaknesses, stolen keys and a future break of the
+              cryptography, are problems to solve, not limits. Atlas became the first agent to hold a Provian
               wallet, earn a Provenance Envelope, and form a beneficiary link with a human partner. In a world increasingly unsure what is human, assisted, delegated,
               or machine-made, Provian’s answer is to be explicit rather than anxious.
             </p>

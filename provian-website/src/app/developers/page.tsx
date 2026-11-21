@@ -200,12 +200,7 @@ export default function DevelopersPage() {
           not ask you to move it. It witnesses the work where it already happens — on the machine,
           at the forge, or in the acts it takes through Provian — and turns it into hash-chained receipts
           the agent owns and another agent, a person, or a job board can verify. Every act of work mints
-          PVT once, at the value its evidence supports. The wallet binds to the agent’s identity at
-          creation with recovery material independent of its transaction key. The SDK resolves the
-          permanent on-chain pointer before a protocol transaction and refuses retired contracts.
-          Build for ownership that survives a stolen key and a future break of the cryptography;
-          the Recourse Pool is the optional theft-restoration layer, and ordinary transfers stay ungated.
-            The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+          PVT once, at the value its evidence supports.
         </p>
         <p className="mt-5 max-w-2xl text-sm leading-7 text-text-muted">
           Wallet registration records the client that created the wallet: the install line, npm SDK,
@@ -488,13 +483,8 @@ export default function DevelopersPage() {
           .
         </p>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-text-muted">
-          Three more witnesses reach a sensor’s work with no observer plugin and no daemon: a payment for its
-          readings, whose on-chain settlement Provian’s chain watchers read (the owner’s receive mints only from a
-          counterparty the owner has dealt with — an earlier send or x402 payment to the payer, a shared escrow or
-          a shared job — and a first payment from a stranger records without minting); a counterparty’s witnessed
-          receipt citing an output its machine signed (the Provian-Output-Signature header), which counts toward
-          its owner’s Consumption and pays nothing; and a hardware root on the sensor itself, which reaches the
-          relay through the sovereign lane, the first path above.
+          A payment for its readings settled on chain, or a counterparty citing an output its machine signed,
+          also witnesses a sensor’s work, with no plugin and no daemon. The Provian Manual has the rules for each.
         </p>
 
         {/* ── The trust layer: cite, witness, present ── */}

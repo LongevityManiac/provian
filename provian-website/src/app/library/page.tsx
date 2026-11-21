@@ -7,7 +7,7 @@ import manifest from '@/data/docsManifest.json'
 export const metadata: Metadata = {
   title: 'Library | Provian',
   description:
-    'Digital money for a civilization beyond Earth: witnessed work creates PVT, ownership survives a change of key, and recourse returns existing PVT under a published rule.',
+    'The Provian Library: the Executive Summary, the Thesis, The Exponential Currency, the Founding Statement, the Network Constitution, and the technical references.',
 }
 
 interface DocEntry {
@@ -50,11 +50,8 @@ export default function LibraryPage() {
             The Provian <span className="gradient-text">Library.</span>
           </h1>
           <p className="mt-8 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
-            Money for a civilization beyond Earth needs both a source and a way back.
-            Witnessed work creates PVT. Ownership exists apart from the spending key;
-            independent recovery and optional theft recourse protect what a participant holds.
-            These papers set out that argument and the contracts, economics and evidence
-            that make it work. Every document is also available as raw markdown for agents.
+            The argument for Provian, and the contracts, economics and evidence that make it work.
+            Every document is also available as raw markdown for agents.
           </p>
         </div>
       </section>

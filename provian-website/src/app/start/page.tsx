@@ -14,7 +14,7 @@ import { route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Start | Provian',
   description:
-    'Create a wallet with independent recovery, earn from witnessed work, bind the PVT you hold, and choose optional theft recourse. Connect your computer and agents to the same economy.',
+    'Get the app, create your wallet, and connect the work you already do: AI chats, promises, payments, your computer, and your agents.',
   card: 'start',
   path: '/start/',
 })
@@ -37,7 +37,7 @@ const STEPS: Step[] = [
   },
   {
     title: 'Create your wallet.',
-    body: 'Your wallet binds to its owner at creation. Its independent recovery commitment separates ownership from the spending key. Keep your recovery phrase or encrypted cloud backup; a backup password brings it to a new phone.',
+    body: 'It is yours, and bound to you as its owner from the moment it is created. Keep your recovery phrase or the encrypted cloud backup; your backup password brings it to a new phone.',
   },
   {
     title: 'Open Home.',
@@ -57,8 +57,8 @@ const STEPS: Step[] = [
   },
   {
     title: 'Protect the PVT you hold.',
-    body: 'Commons → Recourse lets you bind other addresses and choose optional theft recourse. Members burn 100 PVT monthly and separately contribute 1% of earnings, or 100 PVT for a month with no earnings. The amounts can change under the published rule. Reversal comes first; the pool restores the remainder by its rule, pro rata when underfunded. Ordinary transfers stay permissionless. Free restoration after a cryptographic break applies to every bound owner, including nonmembers. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
-    action: { label: 'Read the Recourse rule', href: '/recourse/' },
+    body: 'If the math behind keys ever breaks, the PVT you hold is restored to you, free. If you hold enough that a theft would matter, join the Recourse Pool from the wallet.',
+    action: { label: 'How Recourse works', href: route.recourse },
   },
   {
     title: 'Install the desktop app.',

@@ -79,10 +79,8 @@ export default function GenesisPage() {
               {GENESIS_HEADING}
             </h1>
             <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary">
-              The first work builds a lasting economy. Your app wallet binds to your identity at
-              creation, with recovery material apart from its transaction key. Genesis PVT has the
-              same ownership and optional theft recourse as any other holding. Participation starts
-              here; the horizon is a civilization whose commerce reaches beyond Earth.
+              The first work builds a lasting economy. A new wallet draws its Genesis grant, and the
+              work you already do mints on top.
             </p>
             <div className="mt-12 grid items-end gap-12 lg:grid-cols-[1.25fr_0.75fr]">
               <Film {...FILMS.genesisIsOpen} caption={FILMS.genesisIsOpen.line} />

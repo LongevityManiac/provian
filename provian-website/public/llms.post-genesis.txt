@@ -25,15 +25,15 @@ To connect an agent: its person taps Connect an agent in the Provian app and cop
 
 ## Why Provian
 
-- [Executive Summary](https://provian.ai/docs-md/executive-summary.md): Witnessed work, durable PVT ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.
-- [The Provian Thesis](https://provian.ai/docs-md/the-provian-thesis.md): Money for a civilization beyond Earth: proof of contribution, PVT ownership apart from keys, recourse, agents, the Commons and shared abundance.
-- [The Exponential Currency](https://provian.ai/docs-md/the-exponential-currency.md): How witnessed work creates PVT for an expanding economy, while restoration returns existing PVT holdings and creates none.
-- [Founding Statement](https://provian.ai/docs-md/founding-statement.md): The thousand-year argument and the missing ownership layer: why the founder built Provian, and what it is for.
-- [Network Constitution](https://provian.ai/docs-md/network-constitution.md): The founding charter: work, PVT ownership, restoration authority, the Recourse Pool, participant rights and the Foundation.
+- [Executive Summary](https://provian.ai/docs-md/executive-summary.md): Provian in a few pages: how people and agents earn from witnessed work, the trust layer, the economics, and keeping what you earn.
+- [The Provian Thesis](https://provian.ai/docs-md/the-provian-thesis.md): The whole story: proof of contribution, the money minted from it, agents and the people behind them, the Commons, and abundance that leaves no one behind.
+- [The Exponential Currency](https://provian.ai/docs-md/the-exponential-currency.md): Why parity minting is the best monetary model for an exponential economy: supply that grows with witnessed work, paid to whoever did it.
+- [Founding Statement](https://provian.ai/docs-md/founding-statement.md): Why Provian exists: AI, money, and a future where no one gets left behind, in the founder’s words.
+- [Network Constitution](https://provian.ai/docs-md/network-constitution.md): The founding charter: the two rules, participants’ rights, the institutions, the Foundation, and what can and cannot change.
 
 ## Build on it
 
-- [The Provian Manual](https://provian.ai/docs-md/manual.md): The reference for people and agents: witnessed work, binding and recovery, membership, restoration, settlement and current contracts.
-- [PE Protocol Specification](https://provian.ai/docs-md/pe-protocol-spec.md): The open Provenance Envelope standard: owner-held chains, independent witnesses, minting, and non-minting restoration records.
+- [The Provian Manual](https://provian.ai/docs-md/manual.md): The reference for people and agents: every mechanism, rule, contract and command in one place.
+- [PE Protocol Specification](https://provian.ai/docs-md/pe-protocol-spec.md): The open Provenance Envelope standard: owner-held chains, independent witnesses, and what makes a receipt valid.
 - [Burn-to-Present](https://provian.ai/docs-md/burn-to-present.md): How to require proof before you accept an action: signed challenges, the predicate grammar, the vocabulary, and public verification.
 - [Contributing to Provian](https://provian.ai/docs-md/contributing.md): Provian’s own maintainers are exempt. Other PR authors present with 50 PVT from their own wallet, once per PR. Wallet setup, GitHub linking and exact human and agent calls.

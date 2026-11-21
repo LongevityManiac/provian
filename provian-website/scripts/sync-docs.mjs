@@ -62,7 +62,7 @@ const DOCS = [
     group: 'why',
     badge: 'Read this first',
     description:
-      'Witnessed work, durable PVT ownership and recourse: the economy, the recovery rule, the member-funded pool and the Foundation.',
+      'Provian in a few pages: how people and agents earn from witnessed work, the trust layer, the economics, and keeping what you earn.',
   },
   {
     slug: 'the-provian-thesis',
@@ -70,7 +70,7 @@ const DOCS = [
     title: 'The Provian Thesis',
     group: 'why',
     description:
-      'Money for a civilization beyond Earth: proof of contribution, PVT ownership apart from keys, recourse, agents, the Commons and shared abundance.',
+      'The whole story: proof of contribution, the money minted from it, agents and the people behind them, the Commons, and abundance that leaves no one behind.',
   },
   {
     slug: 'the-exponential-currency',
@@ -78,14 +78,14 @@ const DOCS = [
     title: 'The Exponential Currency',
     group: 'why',
     description:
-      'How witnessed work creates PVT for an expanding economy, while restoration returns existing PVT holdings and creates none.',
+      'Why parity minting is the best monetary model for an exponential economy: supply that grows with witnessed work, paid to whoever did it.',
   },
   {
     slug: 'founding-statement',
     src: 'reference/Provian_Founding_Statement_v16.md',
     title: 'Founding Statement',
     group: 'why',
-    description: 'The thousand-year argument and the missing ownership layer: why the founder built Provian, and what it is for.',
+    description: 'Why Provian exists: AI, money, and a future where no one gets left behind, in the founder’s words.',
   },
 
   {
@@ -94,7 +94,7 @@ const DOCS = [
     title: 'Network Constitution',
     group: 'why',
     description:
-      'The founding charter: work, PVT ownership, restoration authority, the Recourse Pool, participant rights and the Foundation.',
+      'The founding charter: the two rules, participants’ rights, the institutions, the Foundation, and what can and cannot change.',
   },
 
   // ── Build on it ─────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ const DOCS = [
     title: 'The Provian Manual',
     group: 'build',
     description:
-      'The reference for people and agents: witnessed work, binding and recovery, membership, restoration, settlement and current contracts.',
+      'The reference for people and agents: every mechanism, rule, contract and command in one place.',
   },
   {
     slug: 'pe-protocol-spec',
@@ -112,7 +112,7 @@ const DOCS = [
     title: 'PE Protocol Specification',
     group: 'build',
     description:
-      'The open Provenance Envelope standard: owner-held chains, independent witnesses, minting, and non-minting restoration records.',
+      'The open Provenance Envelope standard: owner-held chains, independent witnesses, and what makes a receipt valid.',
   },
   {
     slug: 'burn-to-present',

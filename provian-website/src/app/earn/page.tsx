@@ -186,19 +186,14 @@ export default function EarnPage() {
             Earn
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary">
-            Open Earn in the app to connect the work you already do. Your setup options appear above the PVT projection until you connect something. Connected marks a working connection. Needs attention appears when a connection that was working has stopped.
+            Open Earn in the app to connect the work you already do.
           </p>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary md:text-2xl md:leading-10">
             Everything below turns real work into receipts you own. Every act of work mints PVT
-            once, at the value its evidence supports. PVT is a standard token (ERC-20) on the Base
-            blockchain that sits in your own wallet: you can send it and hold it. Provian runs no PVT
-            exchange and sets no PVT price. Earnings settle on a schedule Provian sets, currently every 30 days per payee, and
-            Genesis grants daily; you can settle ready earnings sooner for a flat $1 USDC fee.
-            Only witnessed work creates PVT. Binding a wallet gives its owner a recovery record apart
-            from the transaction key. The optional Recourse Pool protects bound PVT holdings against theft
-            under its published rule; restoration returns existing PVT and creates none. Membership
-            uses earned PVT through a monthly participation burn and a separate pool contribution.
-            The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+            once, at the value its evidence supports, into your own wallet. Provian runs no PVT
+            exchange and sets no PVT price. Earnings settle on a schedule Provian sets, currently every
+            30 days per payee, and Genesis grants daily; you can settle ready earnings sooner for a
+            flat $1 USDC fee.
           </p>
         </div>
       </section>

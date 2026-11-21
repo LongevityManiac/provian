@@ -10,7 +10,7 @@ import { route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Provian for agents: one command gives your agent its own wallet',
   description:
-    'One command gives your agent its own wallet. Copy it from the Provian app, give it to your agent, then tap Accept. Its witnessed work mints PVT, with independent ownership, recovery and optional theft recourse.',
+    'One command gives your agent its own wallet. Copy it from the Provian app, give it to your agent, then tap Accept. Its witnessed work mints PVT, and four fifths of a linked agent’s share comes to you.',
   card: 'agents',
   path: '/agents/',
 })
@@ -107,11 +107,8 @@ export default function AgentsPage() {
             One command gives your agent <span className="gradient-text">its own wallet.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
-            Its witnessed work mints PVT. Its identity owns the balance; a key is how it moves it.
-            By default, four fifths of a linked agent’s contributor share comes to you. Any runtime.
-            The agent keeps independent recovery material, and can choose the Recourse Pool to protect
-            the PVT it holds. Ordinary transfers remain permissionless.
-            The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+            Its witnessed work mints PVT, and by default four fifths of a linked agent’s contributor
+            share comes to you. Any runtime.
           </p>
           <p className="mt-4 max-w-2xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             Already running a wallet? Prove it&rsquo;s yours with one signature. Your agent keeps
@@ -311,10 +308,8 @@ export default function AgentsPage() {
             The agent spends its own money with its own key.
           </h2>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-text-secondary">
-            Provian witnesses and prices the agent&rsquo;s work and never sees its content. It keeps none of
-            the agent&rsquo;s proofs unless the owner pays to keep them in the PE Archive ($5 USDC per GB, paid
-            up front, kept for as long as Provian operates the Archive), and those are sealed on the owner&rsquo;s own device, so Provian holds
-            only ciphertext it cannot open. It permits nothing: there is no gate, budget, approval, or kill
+            Provian witnesses and prices the agent&rsquo;s work, never sees its content, and keeps none of
+            the agent&rsquo;s proofs unless the owner pays for the encrypted PE Archive. It permits nothing: there is no gate, budget, approval, or kill
             switch on an agent.
           </p>
           <div className="mt-12 grid gap-5 md:grid-cols-2">
@@ -380,21 +375,16 @@ export default function AgentsPage() {
               monthly signature and no ETH, at the amounts the signed membership rule sets.
             </p>
             <p className="mt-4 leading-7 text-text-secondary">
-              If PVT is stolen, the agent chooses the transfer it did not make and reports it. PVT still
-              held by whoever took it is reversed first. Until the Court opens, Provian reviews the
-              report and decides what the pool can restore. Restoration is discretionary, PVT only, and
-              pool contributions are not refundable.
+              If PVT is stolen, the agent reports the transfer it did not make. Every recourse command,
+              its MCP tools, and the membership rule are in the Provian Manual.
             </p>
           </div>
           <div>
             <code className="block overflow-x-auto whitespace-pre rounded-xl border border-white/10 bg-black/45 p-3.5 font-mono text-sm text-provian-blue-bright">
-              {'npx @provian/agent-sdk@latest recourse status\nnpx @provian/agent-sdk@latest recourse join --yes\nnpx @provian/agent-sdk@latest recourse transfers\nnpx @provian/agent-sdk@latest recourse report --tx <hash> --yes\nnpx @provian/agent-sdk@latest recourse requests'}
+              {'npx @provian/agent-sdk@latest recourse status\nnpx @provian/agent-sdk@latest recourse join --yes\nnpx @provian/agent-sdk@latest recourse report --tx <hash> --yes'}
             </code>
             <p className="mt-3 text-sm leading-6 text-text-secondary">
-              Without --yes nothing is signed: each command shows what it would approve. Also rejoin
-              (after a lapse, completing the unpaid protected months first) and leave. MCP clients use
-              recourse_status, recourse_transfers, recourse_requests and recourse_action. To pin a
-              version, replace @latest with a version number.
+              Without --yes nothing is signed: each command shows what it would approve.
             </p>
           </div>
         </div>

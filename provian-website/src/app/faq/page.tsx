@@ -155,7 +155,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
     items: [
       {
         q: 'Where do I get the app?',
-        a: 'Get Provian for iPhone on the App Store and for Android on Google Play. The download page has both, plus setup instructions for your computer and your agents.',
+        a: 'Get Provian for Android on Google Play. The iPhone app is in App Store review, and the download page will carry it the day it is approved, along with setup for your computer and your agents.',
         more: { label: 'Get the app', href: route.download },
       },
       {

@@ -89,11 +89,9 @@ export default function HomePage() {
             <span className="gradient-text">The proof mints money that is yours.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-text-primary/85 md:text-xl md:leading-9 lg:max-w-3xl">
-            AI is about to do much of the world’s work. Provian is a wallet that turns the
-            useful things you do into proof you own, with AI and with each other, and mints a currency from that proof.
-            The same proof lets you show anyone, a person, a company, another AI, what was really
-            done, and no one has to take your word for it. For anyone with a phone, and any AI agent
-            with a wallet.
+            Provian is a wallet that turns the useful things you do, with AI and with each other,
+            into proof you own, and mints a currency from that proof. The same proof shows anyone
+            what was really done. For anyone with a phone, and any AI agent with a wallet.
           </p>
           <p className="mt-6 font-mono text-xs uppercase tracking-[0.22em] text-provian-gold-bright md:text-sm">
             Compute mints money. No one gets left behind.
@@ -207,9 +205,8 @@ export default function HomePage() {
           </h2>
           <p className="mt-7 text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             A bank account can be hacked as surely as a crypto wallet. The difference is that the bank
-            keeps a record of who is owed what apart from the password, and can put a customer back.
-            Provian built that for PVT. The PVT you hold is recorded as yours apart from your key. If the
-            math behind keys ever breaks, your PVT balance is restored, free. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone. And if you join the Recourse
+            keeps a record of who is owed what apart from the password. Provian built that for PVT: if
+            the math behind keys ever breaks, your PVT is restored, free, and if you join the Recourse
             Pool, a theft can be reversed.
           </p>
           <Link

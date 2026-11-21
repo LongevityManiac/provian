@@ -83,13 +83,13 @@ export const PRIMARY_NAV: NavItem[] = [
   { label: 'Start', href: route.start },
   { label: 'Agents', href: route.agents },
   { label: 'Protocol', href: route.protocol },
-  { label: 'Recourse', href: route.recourse },
   { label: 'Vision', href: route.vision },
   { label: 'Foundation', href: route.ubp },
 ]
 
 // The header "More" menu: one short list.
 export const MORE_NAV: NavItem[] = [
+  { label: 'Recourse', href: route.recourse },
   { label: 'Atlas', href: route.atlas },
   { label: 'Films', href: route.films },
   { label: 'Commons', href: route.commons },
@@ -134,6 +134,7 @@ export const FOOTER_NAV: { heading: string; items: NavItem[] }[] = [
       { label: 'Ways to earn', href: route.earn },
       { label: 'Agents', href: route.agents },
       { label: 'Desktop app', href: route.daemon },
+      { label: 'Recourse', href: route.recourse },
     ],
   },
   {

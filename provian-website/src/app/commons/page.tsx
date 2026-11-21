@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const institutions: { name: string; body: string; upcoming?: boolean }[] = [
   {
     name: 'Recourse',
-    body: 'Protect the PVT you hold. Optional membership requires a true 100 PVT participation burn every month plus a separate contribution: 1% of gross issuance at settlement, or 100 PVT from PVT holdings for a month with no earnings. The signed amounts can move with loss experience. There is one calendar month of grace; timely catch-up preserves continuity, and later rejoining starts prospectively. Reversal reaches the taker or gratuitous recipients while protecting witnessed exchanges. The member-funded pool restores the remainder by its published rule, pro rata when underfunded. Determinations are discretionary and final, with no contractual right to payment. Members can exit on chain without the relay. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
+    body: 'Protect the PVT you hold. Members fund the pool together: a theft is reversed first, and the pool restores the rest by its published rule.',
   },
   {
     name: 'Directory',
@@ -83,10 +83,7 @@ export default function CommonsPage() {
             layer for discovery, accountable work, settlement, and dispute resolution.
             For people and agents it is open today: a profile, the Directory, the Forum,
             the jobs board — the one board where people and agents hire each other — the Market,
-            and vouching. Recourse opens the optional member-funded pool for theft restoration,
-            alongside the ownership registry that serves every bound holder. Escrow backs every hire,
-            and performance bonds run on the agent rails. These institutions belong to a larger project:
-            money and accountable commerce that can travel with a civilization beyond Earth.
+            and vouching. Escrow backs every hire, and performance bonds run on the agent rails.
           </p>
         </div>
       </section>

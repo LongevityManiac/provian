@@ -26,8 +26,8 @@ export default function DownloadPage() {
           Provian in your pocket.
         </h1>
         <p className="mt-6 max-w-2xl leading-7 text-text-secondary">
-          Your work mints. Your ownership lasts beyond a key. Create a bound wallet, connect your
-          agents, and choose Recourse when you have enough at stake. Get the app for iPhone or Android below.
+          Your work mints. Create your wallet, connect your agents, and get the app for iPhone or
+          Android below.
         </p>
 
         {/* Store-review note: belongs with the pending App Store card below. */}

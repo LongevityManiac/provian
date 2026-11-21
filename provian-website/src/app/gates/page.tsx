@@ -93,9 +93,7 @@ export default function GatesPage() {
           <p className="mt-6 max-w-3xl text-lg leading-8 text-text-secondary md:text-xl md:leading-9">
             Agents are about to ask your systems to act. Provian lets you make them show
             their record first — and reading it costs you nothing. Agents burn PVT to present
-            proof they own. Recourse provides the separate ownership and restoration layer behind
-            their holdings; it does not turn an ordinary transfer into a gated action. These are
-            foundations for commerce that can outlast today’s devices, keys and geography.
+            proof they own.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <a href={REFERENCE_GATE_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
@@ -113,33 +111,6 @@ export default function GatesPage() {
       {/* ── The handshake, in motion — illustrative: the reference repo's two fixture presenters ── */}
       <section className="border-b border-white/10 px-6 py-16 md:px-10 md:py-20 lg:px-14">
         <GateHandshake />
-      </section>
-
-      <section id="contributing" className="border-b border-white/10 bg-surface px-6 py-20 md:px-10 lg:px-14">
-        <div className="mx-auto max-w-7xl">
-          <p className="eyebrow text-provian-blue-bright">Live on our own door</p>
-          <h2 className="mt-5 max-w-4xl font-display text-3xl font-semibold md:text-5xl">A contributor PR starts with proof.</h2>
-          <p className="mt-6 max-w-4xl text-lg leading-8 text-text-secondary">
-            Outside agents and human contributors open a PR on <strong className="text-text-primary">LongevityManiac/provian</strong> or{' '}
-            <strong className="text-text-primary">LongevityManiac/provian-reference-gate</strong> with a{' '}
-            <strong className="text-text-primary">50 PVT burn-to-present handshake, once per PR</strong>.
-            Provian operates this live gate under the identity provian.ai, published through its well-known keys.
-            The actual GitHub author presents from its own linked wallet; another wallet cannot pay. Provian’s own maintainers are exempt: their pushes and PRs need no burn, presentation, gate check or review. Direct push and merge remain available to them.
-          </p>
-          <p className="mt-4 max-w-4xl text-lg leading-8 text-text-secondary">
-            Without a presentation, the required check stays unsuccessful and the PR carries a label.
-            A verified presentation clears it for review. Clearance only unlocks merge. The repository owner approves the current head on GitHub before the App merges. A push needs a fresh approval and no additional burn;
-            another PR cannot reuse it. This is the gate’s own price. Git Witness earning is unchanged — merged commits keep earning.
-          </p>
-          <p className="mt-4 max-w-4xl leading-7 text-text-secondary">
-            Agents present through the SDK, MCP or CLI. Human contributors present from the app’s outside-gate flow.
-            Wallet setup, the curl install command and GitHub linking are in the contributor walkthrough.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-4">
-            <Link href="/gates/pr" className="btn-primary">Open the PR gate <ArrowRight size={16} /></Link>
-            <Link href={`${route.library}/contributing`} className="btn-secondary">Contributing walkthrough <ArrowRight size={16} /></Link>
-          </div>
-        </div>
       </section>
 
       {/* ── The problem you already have ── */}
@@ -382,6 +353,24 @@ export default function GatesPage() {
               The open protocol
               <ArrowRight size={16} />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Live on our own door ── */}
+      <section id="contributing" className="border-b border-white/10 px-6 py-20 md:px-10 lg:px-14">
+        <div className="mx-auto max-w-7xl">
+          <p className="eyebrow text-provian-blue-bright">Live on our own door</p>
+          <h2 className="mt-5 max-w-4xl font-display text-3xl font-semibold md:text-5xl">A contributor PR starts with proof.</h2>
+          <p className="mt-6 max-w-4xl text-lg leading-8 text-text-secondary">
+            Provian&rsquo;s own repositories run this gate. An outside agent or contributor opening a pull
+            request burns <strong className="text-text-primary">50 PVT, once per PR</strong>, to present its
+            record. A verified presentation clears the PR for review, and the repository owner still approves
+            it before it merges.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-4">
+            <Link href="/gates/pr" className="btn-primary">Open the PR gate <ArrowRight size={16} /></Link>
+            <Link href={`${route.library}/contributing`} className="btn-secondary">Contributing walkthrough <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

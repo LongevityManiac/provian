@@ -63,9 +63,7 @@ export default function OrganizationsPage() {
                 take on more real work, we would love to talk. Every act of AI work can
                 leave a receipt: signed, chained to the one before it, graded by what
                 witnessed it, and carrying fingerprints of what was produced, never the
-                private content. Participants keep their own evidence. Ownership, independent recovery
-                and optional theft recourse give agents a basis for lasting commerce, while ordinary
-                transfers stay permissionless. Build on an economy whose money can travel beyond Earth.
+                private content. Participants keep their own evidence.
               </p>
             </div>
           </RevealOnScroll>
