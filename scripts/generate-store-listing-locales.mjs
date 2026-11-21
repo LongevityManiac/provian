@@ -21,7 +21,8 @@ const sections = [
   ['promotional', 'App Store promotional text', 170],
   ['title', 'Google Play title', 30],
   ['short', 'Google Play short description', 80],
-  ['description', 'Description (both stores)', 4000],
+  ['playDescription', 'Google Play full description', 4000],
+  ['appStoreDescription', 'App Store full description', 4000],
   ['review', 'Review notes (both stores)', 4000],
 ];
 const check = process.argv.includes('--check');
@@ -36,7 +37,7 @@ for (const locale of locales) {
     }
   }
   const content = `# Provian store listing (${locale})\n\n<!-- source-sha256: ${translated.sourceSha256} -->\n\n`
-    + sections.map(([key, heading]) => `## ${heading}\n\n${key === 'description' ? '```text\n' + copy[key] + '\n```' : copy[key]}\n`).join('\n');
+    + sections.map(([key, heading]) => `## ${heading}\n\n${key.endsWith('Description') ? '```text\n' + copy[key] + '\n```' : copy[key]}\n`).join('\n');
   const path = resolve(directory, `${locale}.md`);
   if (check) {
     if (readFileSync(path, 'utf8') !== content) throw Error(`${locale}: stale store listing`);

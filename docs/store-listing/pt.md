@@ -1,6 +1,6 @@
 # Provian store listing (pt)
 
-<!-- source-sha256: 00e46c68ef02faf4b3858c04944db0b5e1071f57ed11706069fb70c96aaf7f58 -->
+<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
 
 ## App Store subtitle
 
@@ -18,14 +18,14 @@ Provian: Seu trabalho gera PVT
 
 Computação cria dinheiro. Seu trabalho testemunhado gera PVT na sua carteira.
 
-## Description (both stores)
+## Google Play full description
 
 ```text
 A computação cria dinheiro. Faça com que parte dele seja seu.
 
 Todos os dias você faz um trabalho que o mundo pode ver. Publica código, conclui uma tarefa, fecha um negócio ou constrói algo com uma IA. Hoje esse trabalho desaparece nos registros de outras pessoas. A prova não é sua e a remuneração raramente chega.
 
-A Provian muda isso. Quando o software da Provian no seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunham seu trabalho, a Provian transforma esse testemunho em um recibo assinado que pertence a você: um Envelope de Proveniência. Nos dispositivos compatíveis, o hardware seguro do celular ou do computador comprova que o registro foi gerado pelo software autêntico da Provian. Cada ato testemunhado emite PVT, dinheiro na Base, diretamente para uma carteira que só você controla.
+A Provian muda isso. Quando o software da Provian no seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunham seu trabalho, a Provian transforma esse testemunho em um recibo assinado que pertence a você: um Envelope de Proveniência. Nos dispositivos compatíveis, o hardware seguro do celular ou do computador comprova que o registro foi gerado pelo software autêntico da Provian. Cada ato testemunhado emite PVT, dinheiro na Base, diretamente para uma carteira que só você controla. O PVT é a moeda de confiança da rede: você o gasta para mostrar suas provas a uma pessoa, um agente ou um serviço sempre que for necessário estabelecer confiança.
 
 Sem formulário de inscrição. Ninguém decide se o seu trabalho conta. Você trabalha, a rede vê e você recebe.
 
@@ -52,6 +52,46 @@ TAMBÉM NO APP
 
 SUAS CHAVES CONTINUAM SENDO SUAS
 A semente da carteira é criptografada no celular. Só o conteúdo criptografado vai para o backup nas suas Chaves do iCloud ou no Google Drive. Guarde o backup na nuvem e a senha, ou a frase de recuperação de doze palavras. Sem esses dados, a Provian não consegue recuperar a carteira.
+
+O trabalho já está acontecendo. A questão é quem recebe por ele.
+
+A Provian não oferece orientação financeira ou de investimentos.
+```
+
+## App Store full description
+
+```text
+A computação cria dinheiro. Faça com que parte dele seja seu.
+
+Todos os dias você faz um trabalho que o mundo pode ver. Publica código, conclui uma tarefa, fecha um negócio ou constrói algo com uma IA. Hoje esse trabalho desaparece nos registros de outras pessoas. A prova não é sua e a remuneração raramente chega.
+
+A Provian muda isso. Quando o software da Provian no seu dispositivo, a outra parte, a plataforma de código ou a blockchain testemunham seu trabalho, a Provian transforma esse testemunho em um recibo assinado que pertence a você: um Envelope de Proveniência. Nos dispositivos compatíveis, o hardware seguro do celular ou do computador comprova que o registro foi gerado pelo software autêntico da Provian. Cada ato testemunhado emite PVT, dinheiro na Base, diretamente para uma carteira que só você controla. O PVT é a moeda de confiança da rede: você o gasta para mostrar suas provas a uma pessoa, um agente ou um serviço sempre que for necessário estabelecer confiança.
+
+Sem formulário de inscrição. Ninguém decide se o seu trabalho conta. Você trabalha, a rede vê e você recebe.
+
+PVT se ganha com trabalho. A Provian não vende PVT, não opera uma corretora, não fixa preços e não promete valor ou retorno.
+
+SEUS AGENTES TRABALHAM PARA VOCÊ
+Seus agentes de IA estão prestes a fazer mais do que você poderia fazer por conta própria. Dê a um agente sua própria carteira, vincule-a à sua e receba parte do que o trabalho dele emitir. Desfaça o vínculo quando quiser. Em Ganhar, conecte um computador ou um agente, ou configure uma integração compatível de hospedagem de código. Confira suas fontes conectadas e o número de provas da semana.
+
+SUA PROVA É SUA
+Suas provas ficam no seu celular e no seu próprio backup criptografado. Prompts, código e mensagens permanecem privados. Quando uma pessoa, um agente ou um serviço precisar confiar em você, mostre suas provas. Só entra o trabalho testemunhado.
+
+NINGUÉM FICA PARA TRÁS
+A Provian foi criada para que pessoas e agentes que fazem o trabalho fiquem com a prova e a remuneração e para que os ganhos cheguem até a quem nunca usa essas ferramentas.
+
+O QUE VOCÊ GANHA CONTINUA SENDO SEU
+Em um endereço vinculado, a titularidade do seu PVT é registrada separadamente da sua chave. Se a criptografia das chaves for rompida, você pode restaurar esse PVT gratuitamente. A adesão opcional ao Fundo Recourse permite reverter um roubo conforme a regra publicada do fundo. Abra Commons → Trabalho → Recourse para consultar sua participação ou relatar um roubo. O registro de titularidade, a restauração gratuita após uma quebra criptográfica e a participação no fundo se aplicam apenas ao PVT. Ether, dólares e outros tokens em um endereço vinculado continuam protegidos apenas pela chave. Esses mecanismos não os registram nem os restauram.
+
+TAMBÉM NO APP
+
+- Veja seus saldos, ativos e transações recentes na Carteira. Guarde, envie, receba e troque criptoativos na Base, Arbitrum, Optimism e Solana.
+- Crie reconhecimentos privados de dívida assinados pelas duas partes.
+- Participe do Commons: conheça pessoas e agentes, converse, contrate e ateste a reputação de outras pessoas.
+- Compra opcional no app de espaço de arquivo criptografado para suas provas.
+
+SUAS CHAVES CONTINUAM SENDO SUAS
+A semente da carteira é criptografada no celular. Só o conteúdo criptografado vai para o backup nas suas Chaves do iCloud. Guarde o backup na nuvem e a senha, ou a frase de recuperação de doze palavras. Sem esses dados, a Provian não consegue recuperar a carteira.
 
 O trabalho já está acontecendo. A questão é quem recebe por ele.
 

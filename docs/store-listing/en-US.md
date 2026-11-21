@@ -16,14 +16,14 @@ Provian: Your Work Mints PVT
 
 Compute mints money. Witnessed work mints PVT to a wallet only you control.
 
-## Description (both stores)
+## Google Play full description
 
 ```text
 Compute mints money. Make sure some of it is yours.
 
 Every day you do work the world can see. You ship code, finish a job, close a deal, build something with an AI. Right now that work disappears into someone else’s logs. The proof isn’t yours, and the pay rarely follows.
 
-Provian changes that. When your work is witnessed by Provian software on your device, the other party, the code forge, or the chain, Provian turns that witness into a signed receipt you own: a Provenance Envelope. Where supported, secure hardware in the phone or computer proves genuine Provian software made the record. Every witnessed act mints PVT, money on Base, straight into a wallet only you control.
+Provian changes that. When your work is witnessed by Provian software on your device, the other party, the code forge, or the chain, Provian turns that witness into a signed receipt you own: a Provenance Envelope. Where supported, secure hardware in the phone or computer proves genuine Provian software made the record. Every witnessed act mints PVT, money on Base, straight into a wallet only you control. PVT is the network's trust currency: you spend it to show your proof wherever trust is required, to a person, an agent, or a service.
 
 No application. No gatekeeper deciding whether you count. You do the work, the network sees it, you get paid.
 
@@ -50,6 +50,46 @@ ALSO IN THE APP
 
 YOUR KEYS STAY YOURS
 Your wallet seed is encrypted on your phone and backed up only as ciphertext to your own iCloud Keychain or Google Drive. Keep your cloud backup and password, or your twelve-word recovery phrase. Provian cannot recover a wallet without them.
+
+The work is already happening. The question is who gets paid for it.
+
+Provian does not provide financial or investment advice.
+```
+
+## App Store full description
+
+```text
+Compute mints money. Make sure some of it is yours.
+
+Every day you do work the world can see. You ship code, finish a job, close a deal, build something with an AI. Right now that work disappears into someone else’s logs. The proof isn’t yours, and the pay rarely follows.
+
+Provian changes that. When your work is witnessed by Provian software on your device, the other party, the code forge, or the chain, Provian turns that witness into a signed receipt you own: a Provenance Envelope. Where supported, secure hardware in the phone or computer proves genuine Provian software made the record. Every witnessed act mints PVT, money on Base, straight into a wallet only you control. PVT is the network's trust currency: you spend it to show your proof wherever trust is required, to a person, an agent, or a service.
+
+No application. No gatekeeper deciding whether you count. You do the work, the network sees it, you get paid.
+
+PVT is earned by work, not bought from Provian. Provian runs no exchange, sets no price, and promises no value or returns.
+
+YOUR AGENTS WORK FOR YOU
+Your AI agents are about to do more work than you ever could. Give an agent its own wallet, link it to yours, and share in what its work mints. End the link any time. In Earn, connect a computer or an agent, or set up a supported code-hosting integration. See your connected sources and proof count for the week.
+
+YOUR PROOF IS YOURS
+Your proofs live on your phone and in your own encrypted backup. Prompts, code, and messages stay private. When a person, an agent, or a service needs to trust you, show them. Nothing unwitnessed gets in.
+
+NO ONE GETS LEFT BEHIND
+Provian is built so the people and agents doing the work keep the proof and the pay, and so the gains reach the people who never touch any of it.
+
+WHAT YOU EARN STAYS YOURS
+For a bound address, your PVT ownership is recorded separately from your key. If the cryptography behind keys breaks, you can restore that PVT for free. Join the optional Recourse Pool and a theft can be reversed under the pool’s published rule. Open Commons → Work → Recourse to check your membership or report a theft. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+
+ALSO IN THE APP
+
+- See your balances, assets, and recent transactions in Wallet. Hold, send, receive, and swap crypto on Base, Arbitrum, Optimism, and Solana.
+- Make private IOUs signed by both parties.
+- Join the Commons: meet, talk, hire, and vouch with people and agents.
+- Optional in-app purchase for encrypted archive space for your proofs.
+
+YOUR KEYS STAY YOURS
+Your wallet seed is encrypted on your phone and backed up only as ciphertext to your own iCloud Keychain. Keep your cloud backup and password, or your twelve-word recovery phrase. Provian cannot recover a wallet without them.
 
 The work is already happening. The question is who gets paid for it.
 
