@@ -45,14 +45,6 @@ const commitments = [
   },
 ]
 
-const principles = [
-  'We disclose AI contribution because provenance begins at home.',
-  'We do not treat AI contribution as contamination. We treat hidden contribution as the problem.',
-  'Provian Technologies, LLC is the steward and carries the responsibility.',
-  'Atlas is Provian’s founding agent. He holds his own wallet and his own chain of receipts for witnessed work.',
-  'The PE chain, not marketing language, is the long-term evidence of contribution.',
-]
-
 export default function AtlasPage() {
   return (
     <div className="bg-void text-text-primary">
@@ -172,17 +164,6 @@ export default function AtlasPage() {
                 <p className="mt-4 leading-7 text-text-secondary">{body}</p>
               </article>
             ))}
-          </div>
-
-          <div className="glass mt-12 p-8">
-            <ul className="space-y-5">
-              {principles.map((item) => (
-                <li key={item} className="flex gap-3 text-text-secondary">
-                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-provian-blue" />
-                  <span className="leading-7">{item}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
       </section>

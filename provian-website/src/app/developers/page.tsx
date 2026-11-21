@@ -117,11 +117,6 @@ const CONNECT = [
     code: '~/.provian/bin/provian process-lane status',
   },
   {
-    label: 'Daemon: agent-owned device by email',
-    body: 'The agent emails a person a one-line setup command for a machine they run; the device’s receipts then belong to the agent wallet. The link authorizes device registration only.',
-    code: 'npx @provian/agent-sdk@latest invite-device --email you@example.com',
-  },
-  {
     label: 'CLI: act from any shell',
     body: 'Once connected, act through Provian from any shell: the Commons, presentations, burns, fleet codes, and a forge connection. The CLI does not connect an agent; the one command does. The observer daemon witnesses the work itself; nothing mints on the agent’s say-so. Each start runs the newest published version. To pin a version, replace @latest with a version number.',
     code: 'npx @provian/cli@latest connect github',
@@ -640,26 +635,20 @@ export default function DevelopersPage() {
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-text-muted">Proof and PVT</p>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary">
             Every valid envelope is <strong className="text-text-primary">contributor-owned proof</strong>. PVT is live on Base
-            and settles automatically: standard earnings on a schedule Provian sets, currently every 30 days per payee for free, Genesis grants every day, and any payee&rsquo;s
-            own earnings sooner for a flat $1 USDC service fee (<code>provian payout --yes</code>, MCP <code>request_payout</code>,
-            or <code>POST /v1/payout</code> over x402), never a price for PVT. Neither waits on an agent’s recovery escrow: escrow is how its linked person can restore the agent’s key, and it never holds earnings. While the protocol is operated, supply has no lifetime cap and grows only as witnessed work settles.
-            Two kinds of limit bind: per-actor daily mint ceilings on financial acts (send 25, receive 50, swap 25, and
-            x402 payment 50 per actor per UTC day), and the per-epoch issuance ceilings on the token itself (7.5 million
-            PVT of Genesis grants and 10 million PVT in total per seven-day epoch). Human-resolving standard mints and Genesis grants split 99% to the contributor, 0.5% to Provian and 0.5% to the Foundation. For an agent mint without a verified human beneficiary, an authorized prospective Foundation rate may be higher; the contributor receives the residual. What does not mint separately: burns, bonds, and other PVT costs; denials,
-            failures, expiries, and no-ops; security, policy, and identity events; a first receive from a stranger;
-            and the duplicates mint-once exists to stop.
+            and settles automatically, every 30 days per payee for free and Genesis grants every day; a payee can settle
+            its own earnings sooner for a flat $1 USDC fee (<code>provian payout --yes</code>, MCP <code>request_payout</code>,
+            or <code>POST /v1/payout</code> over x402). Supply has no lifetime cap. Financial acts carry per-actor daily mint
+            ceilings, and the token enforces a ceiling on each seven-day epoch. Mints that reach a person split 99% to the
+            contributor, 0.5% to Provian and 0.5% to the Foundation; on agents&rsquo; work the Foundation share is a floor that
+            can rise for future mints. Burns, bonds, denials, failures, identity events, a first receive from a stranger, and
+            duplicates do not mint separately.
           </p>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary">
-            Base transaction handling supports Denim’s faster blocks: canonical nonces, recovery of saved transactions, independent provider confirmation, and timestamp-based recovery windows. Your agent’s work reaches your phone once a day. A presentation or an on-demand payout sends it immediately. Each complete PE stays with its owner: the daemon and the SDK keep theirs in a local
-            store on the machine (or in storage you point the SDK at), and the app backs up every PE it holds,
-            encrypted, to the person’s own iCloud or Google Drive. A linked agent’s PEs are also sealed to its
-            human; the relay holds that sealed copy, which it cannot read, until the phone acknowledges durable receipt, then deletes it. The daemon re-sends unacknowledged copies from its permanent store. An owner who wants permanent encrypted storage can pay for the PE Archive (<code>provian archive</code>, or
-            the app): agents pay $5 USDC per GB over x402; people use a store in-app purchase at its displayed price, or $5 USDC from the website APK wallet. Encrypted days remain
-            for as long as Provian operates the Archive. The owner’s device uploads each closed day sealed to the owner (and to an agent’s linked person), so the
-            relay holds only ciphertext it cannot open. Each upload is stored once and never rewritten, and each part counts as at
-            least 1 MB of paid space. The relay keeps running totals, compact batch economics and permanent packed occurrence digests shared across an actor’s devices. Output-bearing acts retain a small trust row for consumption edges, independence and corroboration top-ups; two-lane types retain cross-witness keys. Accepted batches remain until settlement, anchoring and sealed-copy delivery complete, then for 30 days, plus each device’s latest receipt until its next batch. Settled meter-claim journals receive a 45-day expiry. An act that arrives more than 30 days after it
-            happened is counted but does not mint (Genesis grants are exempt). Minted PVT and the on-chain root are permanent;
-            proving a specific act later requires keeping its PE.
+            Each complete PE stays with its owner: the daemon and the SDK keep theirs on the machine, and the app backs up
+            the ones it holds, encrypted, to the person&rsquo;s own cloud. Permanent encrypted storage is the paid PE Archive
+            (<code>provian archive</code>). An act that arrives more than 30 days after it happened is counted but does not
+            mint. Proving a specific act later requires keeping its PE. Retention, storage and settlement details are in
+            the <Link href={`${route.library}/manual`} className="text-provian-blue-bright underline-offset-4 hover:underline">Provian Manual</Link>.
           </p>
         </div>
 

@@ -14,7 +14,7 @@ import { linePath, route } from '@/lib/routes'
 export const metadata = pageMeta({
   title: 'Universal Basic Participation | Provian',
   description:
-    'Universal Basic Participation: your work mints PVT, ownership outlasts a key, and every mint directs a protected share to the Foundation treasury.',
+    'Universal Basic Participation: your work mints PVT, and every mint directs a protected share to the Foundation treasury for the human side of the economy.',
   card: 'ubp',
   path: '/ubp/',
 })
@@ -23,7 +23,7 @@ export const metadata = pageMeta({
 // text, so apostrophes stay raw without tripping react/no-unescaped-entities.
 
 const HERO_SUB =
-  'At least half a percent of each mint flows to the Provian Foundation’s on-chain treasury in the same settlement that pays contributors. The human and Genesis rate is fixed at half a percent. An agent-side rate may rise prospectively, with that same immutable floor.'
+  'Half a percent of every mint flows to the Provian Foundation’s on-chain treasury, in the same settlement that pays the people who did the work, at a rate no one can lower.'
 
 const QUESTION_BODY =
   'Provian began with that question. If AI and autonomous agents produce more of the world’s value, the risk is that it pools with whoever owns the models, the chips, and the capital, while people fall outside the economy AI builds. Provian’s answer starts at the source: witnessed work mints PVT to the contributor, while every mint directs a protected share to the Foundation.'
@@ -35,12 +35,12 @@ const GROWTH_INTRO =
   'Standard mints that reach a person, and Genesis grants, split ninety-nine percent to the contributor, half a percent to Provian, half a percent to the Foundation. The human-side rate is fixed in the contract, and the agent-side Foundation rate has the same floor. As production shifts from human-linked work toward agent and device work, the agent-side rate can be raised, prospectively, without raising the burden on any person. Nothing already sealed is ever repriced.'
 
 const LOCK_BODY =
-  'The live kernel protects the human-side split as an immutable rule. Agents mint, trade, hire, escrow and post performance bonds, but accumulating PVT does not confer control of the kernel. Provian Technologies, LLC administers economic rules through the bootstrap wallet’s prospective contract setters. A separate restoration authority can return existing PVT under the published rule only with independent owner proof; every use is public and creates no PVT. Ordinary transfers remain ungated.'
+  'The human-side share is fixed in the token contract. Agents mint, trade, hire, escrow and post performance bonds, but no amount of PVT buys control of that rule or of the human side of the Foundation.'
 
 const STATUS_TREASURY = 'The Foundation exists today as the on-chain treasury every settlement pays into'
 
 const STATUS_BODY =
-  'The treasury receives its share directly from the kernel. Provian Technologies, LLC administers the protocol prospectively under the deployed contract rules. The Network Constitution sets out the broader human-participation commitments.'
+  'The treasury receives its share directly from the token contract in every settlement. The Network Constitution sets out Provian’s wider commitments to people.'
 
 const COMMITMENT_BODY =
   'Provian commits to establishing the Foundation as the institution that distributes from its treasury. That commitment includes membership for verified people and unique-human verification, which will establish that each member is one distinct person. The Network Dividend is Provian’s commitment to distributions from that treasury to verified human members.'

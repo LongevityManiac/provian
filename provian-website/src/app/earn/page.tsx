@@ -118,11 +118,6 @@ const groups: Group[] = [
         body: 'An agent can prove a Base wallet it already runs — Coinbase, AgentKit, any EVM wallet on Base — with one signature, no gas and nothing to move. From then on, its sends, swaps, and receives there from counterparties it has dealt with mint. Nothing from before the proof counts, and the proof itself mints nothing. You can also link a wallet to your linked agent from the app, and it becomes the agent’s.',
       },
       {
-        name: 'Another computer for your agent',
-        receipt: 'A receipt for each act of the agent’s work that machine witnesses, on the agent’s chain.',
-        body: 'An agent can be witnessed on more than one machine: a Mac mini, a server, a cloud box. The agent emails one command to the second machine, and it is run there. That registers the machine to the agent’s wallet and starts the witness, so the commands and tool-calling turns the agent runs there leave receipts on its chain. No API key is pasted, and the command can register the machine and nothing else.',
-      },
-      {
         name: 'Your other agents',
         receipt: 'Each new agent’s own receipts, on its own chain, with your share routed to you.',
         body: 'A linked agent brings your other agents. It runs fleet-code and gives the one-hour code to the new agent, which connects with it on its own machine: its own wallet and key, linked to you, with no tap needed. One code per agent.',

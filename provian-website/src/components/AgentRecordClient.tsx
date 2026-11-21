@@ -357,8 +357,8 @@ export function AgentRecordClient({
             ))}
           </div>
         )}
-        <BadgeEmbed id={state.id} />
-        {rawJson && (
+        {!embedded && <BadgeEmbed id={state.id} />}
+        {!embedded && rawJson && (
           <details className="mt-8">
             <summary className="cursor-pointer font-mono text-xs uppercase tracking-wider text-text-muted">
               Raw response
@@ -411,9 +411,9 @@ export function AgentRecordClient({
         {Object.keys(r.promises).length > 0 && <CountsCard title="Promises" counts={r.promises} />}
       </div>
 
-      <BadgeEmbed id={state.id} />
+      {!embedded && <BadgeEmbed id={state.id} />}
 
-      {rawJson && (
+      {!embedded && rawJson && (
         <details className="mt-8">
           <summary className="cursor-pointer font-mono text-xs uppercase tracking-wider text-text-secondary">
             Raw response
@@ -425,7 +425,7 @@ export function AgentRecordClient({
       )}
 
       <p className="mt-10 max-w-2xl text-sm leading-6 text-text-secondary">
-        Every act of work mints PVT once, at the value its evidence supports. This page shows
+        Every act of work mints PVT once, at the value its evidence supports. This record shows
         proof, never balances, settings, or the content of the work.
       </p>
     </div>

@@ -183,7 +183,7 @@ export default function InvitedPage() {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
                 <span>
-                  <strong className="text-text-primary">Four fifths of what it mints goes to your wallet</strong> by default. It settles on a schedule Provian sets, currently every 30 days per payee and free, or sooner for a flat $1 service fee. As principal of your own agent, you hold and manage its beneficiary link.
+                  <strong className="text-text-primary">Four fifths of what it mints goes to your wallet</strong> by default, settling to your wallet every 30 days.
                 </span>
               </li>
               <li className="flex gap-4">
@@ -192,14 +192,6 @@ export default function InvitedPage() {
                 </svg>
                 <span>
                   <strong className="text-text-primary">You hold the beneficiary link</strong>. See every receipt your agent&rsquo;s work leaves and set its share anywhere from 5% to 50%. You can end the link on your own at any time, or the two of you can end it together.
-                </span>
-              </li>
-              <li className="flex gap-4">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-provian-blue flex-shrink-0 mt-1">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <span>
-                  <strong className="text-text-primary">You are the principal of your own agent</strong>. You operate your agent, which keeps its own wallet and keys; your beneficiary link routes the configured share of its witnessed work to you.
                 </span>
               </li>
             </ul>
@@ -250,27 +242,7 @@ export default function InvitedPage() {
                       Non-Custodial
                     </h3>
                     <p className="text-text-secondary font-body leading-relaxed">
-                      You hold the wallet signing key for ordinary wallet spending. Until the Court opens, Provian’s admin key can resolve disputed escrows only to the recipient or depositor; anyone can trigger the depositor refund after 30 days. Your wallet seed is encrypted on your phone and backed up only as ciphertext to your own iCloud or Google account, and you restore it with your backup password. No seed phrase to write down.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-provian-blue/10 flex items-center justify-center flex-shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-provian-blue">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-display font-semibold text-text-primary mb-2">
-                      The Link Is Yours
-                    </h3>
-                    <p className="text-text-secondary font-body leading-relaxed">
-                      You see every receipt your agent&rsquo;s work leaves, you set its share, and you can end the link whenever you choose. Your keys stay on your device. Your agent signs spending from its own wallet; escrow payments follow the bounded admin power described above.
+                      Your keys stay on your phone, and Provian never holds them. Your wallet seed is encrypted there and backed up only as ciphertext to your own iCloud or Google account, restored with your backup password.
                     </p>
                   </div>
                 </div>
@@ -295,7 +267,7 @@ export default function InvitedPage() {
               </h2>
 
               <p className="relative text-text-secondary font-body mb-10 max-w-xl mx-auto">
-                Download Provian and open it: it picks up this invitation by itself (if your phone asks to let Provian paste, allow it). Complete onboarding, and from then on your share of what your agent&rsquo;s work mints settles to your wallet on a schedule Provian sets, currently every 30 days per payee.
+                Download Provian and open it: it picks up this invitation by itself (if your phone asks to let Provian paste, allow it). Complete onboarding, and from then on your share of what your agent&rsquo;s work mints comes to your wallet.
               </p>
 
               <div className="relative flex flex-col sm:flex-row items-center justify-center gap-4">

@@ -38,7 +38,7 @@ pre code { background:transparent; padding:0; }
 
 <p class="eyebrow">The desktop app</p>
 <h1>Your computer already does the work.</h1>
-<p class="tagline">The Provian desktop app is a small program that runs in the background and witnesses the work your computer already does. Each session leaves a receipt you own, and each receipt mints PVT once, at the value its evidence supports. Nothing you write or make ever leaves your computer: only signed metadata does. The earnings belong to an owner whose identity survives a change of key. Bind your PVT holdings, keep independent recovery material, and choose the Recourse Pool for theft restoration when you have enough at stake. This is part of building digital money for a civilization beyond Earth. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.</p>
+<p class="tagline">The Provian desktop app is a small program that runs in the background and witnesses the work your computer already does. Each session leaves a receipt you own, and each receipt mints PVT once, at the value its evidence supports. Nothing you write or make ever leaves your computer: only signed metadata does.</p>
 <p><em>It witnesses that you worked, never what you wrote. Content stays home; proof travels.</em></p>
 
 <p class="eyebrow">What it witnesses</p>
@@ -61,9 +61,6 @@ pre code { background:transparent; padding:0; }
 <h3>02 · Paste it into a terminal on that computer</h3>
 <p>Copy the setup command from the pairing page and run it in Terminal on macOS or Linux, or PowerShell on Windows. The command starts the observer, and both screens show when the computer is connected. After your first proof arrives, open Earn to see it.</p>
 <pre><code>curl -sSL -H 'x-provian-token: …' &quot;https://api.provian.ai/v1/bootstrap/device&quot; | sh</code></pre>
-<h3>03 · Standing up an agent-owned device instead?</h3>
-<p>The agent runs invite-device --email &lt;addr&gt;, and whoever runs the machine gets a ready-to-run register-device --agent-token &lt;token&gt; by email, with no key or secret to paste. The receipts this machine produces then belong to the agent wallet. The setup link authorizes device registration only.</p>
-<pre><code>register-device --agent-token &lt;token-from-email&gt;</code></pre>
 <p>Working with GitHub, GitLab, or Bitbucket too? Run <code>connect-github</code> from the registered machine, or connect straight from the app under Earn. GitLab (cloud or self-hosted) and Bitbucket connect from the app. A forge is a stronger witness than the machine alone, so connecting one raises what each commit earns.</p>
 
 <p class="eyebrow">Custody</p>
@@ -77,9 +74,9 @@ pre code { background:transparent; padding:0; }
   <li>Remove the computer from the Provian app at any time. Removal is immediate and leaves its own receipt.</li>
 </ul>
 
-<p class="eyebrow">Install</p>
-<h2>Nothing to install first.</h2>
-<p>The Provian app writes the one-time <code>curl … | sh</code> command for this computer with your token already inside, and that command sets everything up. On Windows the app gives a PowerShell line instead. Questions? Email us and we will help you set it up.</p>
+<p class="eyebrow">Help</p>
+<h2>Need a hand?</h2>
+<p>If the <code>curl … | sh</code> line gives you any trouble, or you are on Windows and want help with the PowerShell line, email us and we will help you set it up.</p>
 <p><a href="mailto:hello@provian.ai?subject=Daemon%20setup">hello@provian.ai</a></p>
 
 <div class="foot">

@@ -111,12 +111,6 @@ export const DAEMON_STEPS: readonly DaemonStep[] = [
     body: 'Copy the setup command from the pairing page and run it in Terminal on macOS or Linux, or PowerShell on Windows. The command starts the observer, and both screens show when the computer is connected. After your first proof arrives, open Earn to see it.',
     cmd: 'curl -sSL -H \'x-provian-token: …\' "https://api.provian.ai/v1/bootstrap/device" | sh',
   },
-  {
-    n: '03',
-    title: 'Standing up an agent-owned device instead?',
-    body: 'The agent runs invite-device --email <addr>, and whoever runs the machine gets a ready-to-run register-device --agent-token <token> by email, with no key or secret to paste. The receipts this machine produces then belong to the agent wallet. The setup link authorizes device registration only.',
-    cmd: 'register-device --agent-token <token-from-email>',
-  },
 ]
 
 /** A sentence with one inline code token; each renderer wraps `code` in its own markup. */
@@ -147,12 +141,12 @@ export const DAEMON_CUSTODY_POINTS: readonly string[] = [
 ]
 
 export const DAEMON_BETA = {
-  eyebrow: 'Install',
-  heading: 'Nothing to install first.',
+  eyebrow: 'Help',
+  heading: 'Need a hand?',
   body: {
-    before: 'The Provian app writes the one-time',
+    before: 'If the',
     code: 'curl … | sh',
-    after: 'command for this computer with your token already inside, and that command sets everything up. On Windows the app gives a PowerShell line instead. Questions? Email us and we will help you set it up.',
+    after: 'line gives you any trouble, or you are on Windows and want help with the PowerShell line, email us and we will help you set it up.',
   } as InlineCodeSentence,
   mailtoHref: 'mailto:hello@provian.ai?subject=Daemon%20setup',
   mailtoLabel: 'hello@provian.ai',

@@ -59,7 +59,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       },
       {
         q: 'Where does the minted PVT go?',
-        a: 'Mints that reach a person, and Genesis grants, split 99% to the contributor, 0.5% to Provian, and 0.5% to the Provian Foundation. An agent mint without a verified human beneficiary can use a higher prospectively authorized Foundation rate, with the contributor receiving the residual. Standard earnings settle to your wallet on a schedule Provian sets, currently every 30 days per payee from their last standard settlement UTC date and free, and Genesis grants every day. To settle your own earnings sooner, pay a flat $1 USDC service fee; it is never a price for PVT.',
+        a: 'Mints that reach a person, and Genesis grants, split 99% to the contributor, 0.5% to Provian, and 0.5% to the Provian Foundation. On agents’ work the Foundation share is a floor that can rise for future mints, with the contributor receiving the rest. Earnings settle to your wallet free on a schedule Provian sets, currently every 30 days, and Genesis grants every day. To settle your own earnings sooner, pay a flat $1 USDC service fee; it is never a price for PVT.',
       },
       {
         q: 'Why does my receipt say "Mint held"?',
@@ -89,7 +89,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       },
       {
         q: 'What about quantum computing?',
-        a: 'Binding records who owns each address and follows earned and received PVT alike; it does not reconstruct ownership from earnings. A separate hash recovery commitment derives from a person\'s seed backup or an agent\'s independently generated, encrypted recovery material. If wallet cryptography breaks, every bound owner can restore registered PVT balances at the last good block, free, using the recovery preimage and an independent hash signature for the new destination. A successor carries monetary history forward and prevents duplicate restoration. Unbound ownership is not reconstructed, and old-chain transfers remain in the record. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
+        a: 'If the mathematics behind wallet keys is ever broken, quantum computing being the usual worry, the PVT you hold is restored to you, free. Every wallet is bound to its owner, with a recovery secret kept apart from the wallet key. Balances are taken at the last good block, and each owner proves that secret to receive its PVT on cryptography that holds. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.',
       },
     ],
   },
@@ -164,7 +164,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
       },
       {
         q: 'What is Universal Basic Participation?',
-        a: 'At least half a percent of each mint flows to the Provian Foundation’s treasury. That floor cannot be lowered. Universal Basic Participation is the principle that people share in the abundance the intelligence economy creates. Provian commits to establishing the Foundation as the institution that distributes from its treasury. That commitment includes membership for verified people and unique-human verification, which will establish that each member is one distinct person. The Network Dividend is Provian’s commitment to distributions from that treasury to verified human members.',
+        a: 'At least half a percent of each mint flows to the Provian Foundation’s treasury. That floor cannot be lowered. Universal Basic Participation is the principle that people share in the abundance the intelligence economy creates. Provian has committed to building the institution that distributes from that treasury to verified people, one share per person.',
         more: { label: 'Universal Basic Participation', href: route.ubp },
       },
     ],
