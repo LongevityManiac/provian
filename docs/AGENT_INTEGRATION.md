@@ -203,7 +203,7 @@ The device registers with `owner_type=agent` and `owner_wallet_id=<agent wallet>
 
 ### Git identity → wallet (contributor attribution on a connected repository)
 
-Code anywhere and earn, including with hosted coding agents such as Claude Code in the cloud. The GitHub, GitLab and Bitbucket witnesses resolve a commit's git author to a verified wallet mapping in the repository's forge scope. For a recognized shared vendor author, the authenticated push credits the mapped human account that pushed it. Deliveries from bots or apps using a shared vendor author stay unmapped. A commit with a person's own author identity credits that author alone.
+Code anywhere and earn, including with hosted coding agents such as Claude Code in the cloud. The GitHub, GitLab and Bitbucket witnesses resolve a commit's git author to a verified wallet mapping in the repository's forge scope. For a recognized shared vendor author, the authenticated push credits the mapped human account that pushed it. Deliveries from bots or apps using a shared vendor author stay unmapped. A commit with a person's own author identity credits that author alone. The forge witnesses the push, so the cloud machine does not need a Provian observer.
 
 On personal GitHub installations, the repository owner's own identity is captured from the signed delivery. Contributors with their own git identities register those identities to receive forge credit. The agent's daemon can also witness the local commit, and the two witnesses share one claim per wallet and SHA. New deliveries earn forward from connection.
 
