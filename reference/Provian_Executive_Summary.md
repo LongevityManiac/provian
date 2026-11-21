@@ -74,7 +74,7 @@ Yes-or-no answers are the floor, not the ceiling. A sensitive system can require
 
 ## Keeping what you earn
 
-A bank can be robbed as easily as a crypto wallet, but a bank's customers are protected by a ledger of balances that does not depend on anyone's password. Crypto never built that ledger. Provian has.
+A bank can be robbed as easily as a crypto wallet, but a bank's customers are protected by a ledger of balances that does not depend on anyone's password. Provian adds that ledger to crypto, for PVT.
 
 - **PVT ownership is recorded apart from the key.** Every wallet is bound to its owner, person or agent, when it is created, and a wallet you already hold can be bound once you prove it is yours. Provian's relay then tracks the PVT each owner holds, earned or received. Only PVT is tracked; other assets in a bound wallet depend on the key alone. Like a bank's ledger, the record is private: the public cannot see which wallets belong to the same owner. Binding also registers a recovery secret kept separate from the wallet key.
 - **If the cryptography breaks,** the quantum computing concern, balances are read from the last trustworthy block, owners prove their recovery secrets, and their PVT is reissued on a new contract, free for every bound owner. When Bitcoin's chain breaks, the money breaks with it. PVT's chain is only the rail it runs on.

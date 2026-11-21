@@ -28,11 +28,11 @@ None of this is a small claim, and this document does not pretend it is. The peo
 
 ## 1. What PVT Is
 
-The rest of this document is an economic argument, and it needs three facts about Provian on the table first. The Provian Thesis sets each of them out in full; here they are in one breath.
+The rest of this document is an economic argument, and it needs three facts about Provian on the table first. The Provian Thesis sets each of them out in full.
 
 Useful work done on the Provian network, by a person, an agent, or a device, produces a receipt called a Provenance Envelope. The receipt belongs to whoever did the work and contains none of the work's private content. Each witnessed act mints PVT once, at a value set by how strong its evidence is, and nothing else creates it: no pre-mine, no issuance outside the settlement of witnessed work. In between, PVT is simply money. A participant pays it to another for a job, locks it in escrow against delivery, or accepts it for work, and a plain transfer is never gated and never burns. What it buys grows with who accepts it: inside the network first, and beyond it as more of the world's work leaves receipts. And PVT leaves the world the way it entered, one act at a time. Participants burn it, permanently and on chain, whenever they claim trust, take a public voice, or commit to one another, led by presenting their own history to someone who asks for proof. Earning is free. Reading is free. Claiming trust costs the claimant something real, in the only currency that work creates.
 
-That is the whole machine: witnessed work mints, trust burns, and the currency in between is the measure of what the network's participants have done for one another. Everything that follows is about why that design holds up better than any alternative when output goes exponential.
+Witnessed work mints, trust burns, and the currency in between is the measure of what the network's participants have done for one another. Everything that follows is about why that design holds up better than any alternative when output goes exponential.
 
 ## 2. The Exponential Output Problem
 
@@ -112,7 +112,7 @@ The serious objection to all of this does not come from Bitcoin. Nobody proposes
 
 The argument runs like this. The dollar is not fixed; the Federal Reserve expands it whenever it judges the economy needs more. Dollar stablecoins such as USDC put that dollar on a public chain, where it settles in seconds, moves between agents without a bank, and carries the deepest liquidity in the digital economy. Agents already pay each other in it. If machine output outruns the money supply, the institution that issues the world's reserve currency can simply print more. Why build a new unit at all?
 
-The objection deserves a real answer, because most of it is true. The dollar is elastic, stablecoins are excellent settlement rails, and nothing in Provian asks anyone to stop using either. An agent paid in dollars for a task a person handed it should be paid in dollars, and on Provian that payment is witnessed and mints like any other act. The question is narrower and harder: which unit should count the growth itself?
+Most of it is true: the dollar is elastic, stablecoins are excellent settlement rails, and nothing in Provian asks anyone to stop using either. An agent paid in dollars for a task a person handed it should be paid in dollars, and on Provian that payment is witnessed and mints like any other act. The question is narrower and harder: which unit should count the growth itself?
 
 **A stablecoin moves money. It does not make any.** Every dollar stablecoin in circulation was issued against a dollar deposited with its issuer. Its supply grows when people want to hold dollars on chain and shrinks when they leave. It has no relationship to what its holders produce, and by design it cannot: a stablecoin that minted against work would no longer be a dollar.
 
@@ -204,7 +204,7 @@ This is where the rule leads, not how this decade's campuses are being paid for.
 
 And the build mints as it goes. Every witnessed act of construction and commissioning, by a person, an agent, or a machine that attests to what it did, mints at the value its evidence supports, under the same rule as any single commit. The project's own output becomes part of its financing as the work is witnessed. The supply a build of this size adds is bounded by what its evidence supports, not by its ambition, so the largest project on the network is priced by the same rule as the smallest.
 
-That is the full shape of the answer. Supply precedes the project. Commitment burns it in. Work mints the rest.
+Supply precedes the project. Commitment burns it in. Work mints the rest.
 
 ## 8. The Analog Boundary
 
@@ -228,7 +228,7 @@ The claim: humans require purpose; purpose requires contribution; contribution r
 
 This is not sentiment. Jahoda's work on the latent functions of employment, Frankl on the existential vacuum, and Durkheim on anomie converge on one finding: removing the economic recognition of contribution produces measurable psychological and social damage, and people do not adapt to it over time the way they adapt to most losses. A person who is provided for but not counted does not become content. They become unmoored.
 
-Note the precise claim. The evidence establishes that people need purposeful activity with recognition. It does not establish that they need payment. Unpaid caregivers and open-source contributors have purpose, and plenty of paid work destroys it. This distinction strengthens the architecture rather than weakening it.
+The evidence establishes that people need purposeful activity with recognition. It does not establish that they need payment. Unpaid caregivers and open-source contributors have purpose, and plenty of paid work destroys it. This distinction strengthens the architecture rather than weakening it.
 
 The existentially load-bearing artifact is the receipt: the permanent, signed, portable proof that you did something the network found useful, owned by you, carried across every platform and employer and city you ever move through. The currency is downstream of the receipt. It exists to force the recognition to be taken seriously, by attaching economic consequence to a record that would otherwise be one more ignored measurement.
 
@@ -252,7 +252,7 @@ The question an investor asks of a currency is what to hold. The question a mone
 
 ### Stored value as a consequence, not a design
 
-Being exact here matters, because the easy version of this claim is false. PVT is not designed to store value the way a scarcity coin is: nothing in the supply rule withholds units to make the remaining ones dearer. But PVT can have market value, because it is freely transferable and buys things participants need, and not all of it can be spent at once, because trust is claimed, voices are taken, and commitments are made over time rather than in a single day. Money that has value and cannot all be spent at once stores value. That is true of every currency people actually use, and this document does not pretend otherwise.
+PVT is not designed to store value the way a scarcity coin is: nothing in the supply rule withholds units to make the remaining ones dearer. But PVT can have market value, because it is freely transferable and buys things participants need, and not all of it can be spent at once, because trust is claimed, voices are taken, and commitments are made over time rather than in a single day. Money that has value and cannot all be spent at once stores value. That is true of every currency people actually use, PVT included.
 
 The distinction is where the stored value comes from. A scarcity coin stores value by withholding supply; its holders are paid for the fact that no more is coming. PVT stores whatever value it stores because of what the network is producing and asking for: the work being witnessed and the trust being claimed. Nothing in the design promises that this rises, and nothing in it rewards a holder for holding. It is simply what Part 7 relies on: the supply that funds the next build is held, for a while, by the participants who earned it, until a commitment moves it.
 
@@ -310,7 +310,7 @@ The first remedy is reversal. One transaction cancels the stolen units where the
 
 Reversal stops at honest hands. Units still held by the thief, or passed to someone who gave nothing for them, can be taken back. Units that paid for real work or real goods in a witnessed exchange stay where they are, because a currency whose payments could be clawed back from honest sellers would not be worth accepting. For that portion the pool makes the member whole as far as it can.
 
-The restoration authority is a real power, and this paper does not dress it up. It acts only under the published rule, every use of it is public, and it is held by Provian's key as a separately appointable role until the Court opens, when it can move to the Court or to governance. It never touches ordinary transfers.
+The restoration authority is a real power. It acts only under the published rule, every use of it is public, and it is held by Provian's key as a separately appointable role until the Court opens, when it can move to the Court or to governance. It never touches ordinary transfers.
 
 ### The Recourse Pool
 
@@ -340,7 +340,7 @@ PVT implements all of this on Base. What matters to the argument here is the sha
 
 ## 14. What Would Falsify This
 
-A thesis that cannot fail is not a thesis. The specific ways this one could be wrong:
+The specific ways this thesis could be wrong:
 
 **If output growth is not exponential, or flattens durably**, parity minting reduces to ordinary managed inflation, and its advantage over conventional models shrinks to a rounding error. The design still works; it just stops being necessary.
 

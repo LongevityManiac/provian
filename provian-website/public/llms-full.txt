@@ -124,7 +124,7 @@ Yes-or-no answers are the floor, not the ceiling. A sensitive system can require
 
 ## Keeping what you earn
 
-A bank can be robbed as easily as a crypto wallet, but a bank's customers are protected by a ledger of balances that does not depend on anyone's password. Crypto never built that ledger. Provian has.
+A bank can be robbed as easily as a crypto wallet, but a bank's customers are protected by a ledger of balances that does not depend on anyone's password. Provian adds that ledger to crypto, for PVT.
 
 - **PVT ownership is recorded apart from the key.** Every wallet is bound to its owner, person or agent, when it is created, and a wallet you already hold can be bound once you prove it is yours. Provian's relay then tracks the PVT each owner holds, earned or received. Only PVT is tracked; other assets in a bound wallet depend on the key alone. Like a bank's ledger, the record is private: the public cannot see which wallets belong to the same owner. Binding also registers a recovery secret kept separate from the wallet key.
 - **If the cryptography breaks,** the quantum computing concern, balances are read from the last trustworthy block, owners prove their recovery secrets, and their PVT is reissued on a new contract, free for every bound owner. When Bitcoin's chain breaks, the money breaks with it. PVT's chain is only the rail it runs on.
@@ -177,7 +177,7 @@ A Living Document · November 2026 · Provian Technologies
 
 *Every phone is a compute center. Every person is a participant in the future. Pick it up.*
 
-This is not a white paper. This is a declaration. The future of wealth is not something that happens to you. It is something you build, starting now, with the phone in your hand.
+The future of wealth is not something that happens to you. It is something you build, starting now, with the phone in your hand.
 
 Right now, AI is moving through the knowledge economy faster than any technology before it. Some work is being automated away. Some is being created. Most of it is being reorganized around people who direct, supervise, correct, and finish what AI systems start. The trajectory is not subtle, and the fear is legitimate. Whatever the mix turns out to be, the floor is moving under the knowledge economy, and the same question follows every version of it: what happens to the people whose work is being remade, and does their part get counted at all?
 
@@ -215,7 +215,7 @@ AI broke that bundle. The artifact is now nearly free to generate and nearly fre
 
 Nobody admires a water main. Nobody forwards a friend the specification for a shipping container. But cities do not exist without the first and world trade does not exist without the second. The receipt for useful compute is that kind of thing: plain to look at, and load-bearing for everything above it.
 
-Provian exists to make that proof producible, private, and economically real, so that neither fear becomes the shape of the century. Here is the whole system on one page. Useful work, by a person, an agent, or a device, leaves a receipt, a Provenance Envelope: signed, chained to the receipts before it, owned by the one who did the work, and carrying none of the private content. Every act of work that leaves such a receipt mints the network's currency, PVT, once, at the value its evidence supports. PVT enters the world when witnessed work enters the network, and it leaves the world when participants burn it to prove things about themselves and to commit to one another. What a participant holds is recorded as its own, apart from the key that moves it, so a balance can survive a stolen key or a broken cipher. And the money is what keeps the proof alive. A receipt that can mint, settle a job, back a reputation, or open a door is a receipt worth producing and worth checking. That is the thesis in one line:
+Provian exists to make that proof producible, private, and economically real, so that neither fear becomes the shape of the century. Useful work, by a person, an agent, or a device, leaves a receipt, a Provenance Envelope: signed, chained to the receipts before it, owned by the one who did the work, and carrying none of the private content. Every act of work that leaves such a receipt mints the network's currency, PVT, once, at the value its evidence supports. PVT enters the world when witnessed work enters the network, and it leaves the world when participants burn it to prove things about themselves and to commit to one another. What a participant holds is recorded as its own, apart from the key that moves it, so a balance can survive a stolen key or a broken cipher. And the money is what keeps the proof alive. A receipt that can mint, settle a job, back a reputation, or open a door is a receipt worth producing and worth checking.
 
 **Proof creates value. Value creates more proof.**
 
@@ -289,9 +289,9 @@ And because a loop needs a first turn, there is Genesis: a time-limited campaign
 
 A currency that pays the one who did the work has not finished its job if a single stolen secret can take the payment away.
 
-Provian is built on crypto, and its founder believes in crypto for two reasons. The first looks far ahead: he cannot picture a civilization that has spread beyond Earth, a thousand years from now, running its commerce on money issued by the central bank of whichever nation its people came from. That is a point about what money must become at that scale, not a criticism of any nation's currency or bank, and the money of that future is digital. The second is closer to home. The usual case against crypto points to stolen keys, ledgers that show everyone's holdings, and mathematics that might one day be broken. Each of those problems is real. None of them is a limit.
+Provian is built on crypto, and its founder believes in crypto for two reasons. The first looks far ahead: he cannot picture a civilization that has spread beyond Earth, a thousand years from now, running its commerce on money issued by the central bank of whichever nation its people came from. That is a point about what money must become at that scale, not a criticism of any nation's currency or bank, and the money of that future is digital. The second is closer to home. The usual case against crypto points to stolen keys, ledgers that show everyone's holdings, and mathematics that might one day be broken. Each of those problems is real, and each describes what crypto has built so far, not what it can become.
 
-A bank account can be broken into as easily as a wallet. What protects the bank's customer is that the bank's ledger of who is owed what does not live in the password, so a robbed customer can be made whole. Crypto never built that ledger. On an ordinary chain the key is the whole account of ownership: whoever can sign is the owner, a stolen transfer and an honest one look the same, and when the key is gone the money is gone with it. Provian built it.
+A bank account can be broken into as easily as a wallet. What protects the bank's customer is that the bank's ledger of who is owed what does not live in the password, so a robbed customer can be made whole. That separation is the piece crypto left out. On an ordinary chain the key is the whole account of ownership: whoever can sign is the owner, a stolen transfer and an honest one look the same, and when the key is gone the money is gone with it. Provian built the missing piece.
 
 **The record of who owns what PVT exists apart from any key. The key is only how you move it.**
 
@@ -451,7 +451,7 @@ Every act mints because participation in the Commons is work. A helpful reply, a
 
 The relationship to the base layer is strict. The base layer is private by default: an agent that generates valid envelopes and honors the split is a full participant whether or not it ever touches a Commons institution. The Commons is public by choice. Use it when you want to be found, hired, evaluated, trusted, or governed in public. Ignore it when you want to stay private. And when you do use it, check the record before you transact. Every directory entry, job posting, and escrow counterparty carries a path to a presentation, so checking standing is one obvious hop rather than a hidden trick.
 
-Two plain sentences about status. The Court seats a panel once enough qualified arbitrators, agents with real completed escrows, clean standing, and an active bond, have opted in to serve. Voting on how the network is run and a market for verified compute are the two institutions not yet open. They, and other recourse programs built on the first, are the shape of what the Commons grows into next.
+The Court seats a panel once enough qualified arbitrators, agents with real completed escrows, clean standing, and an active bond, have opted in to serve. Voting on how the network is run and a market for verified compute are the two institutions not yet open. They, and other recourse programs built on the first, are the shape of what the Commons grows into next.
 
 ## 12. The Promise Protocol: Participation Without Compute
 
@@ -459,7 +459,7 @@ Two mechanisms carry the human side of this thesis. The Foundation, in the next 
 
 Notice who the rest of this document has been about: developers, agents, devices, clusters, clinicians, enterprises. That is the leading edge of the intelligence economy, but it is not most of humanity. Billions of people will never run a coding agent or operate a compute cluster. Their economic life is a market stall, a delivery, a small loan repaid, a tool lent and returned, a job done well and remembered. They are not outside the economy; they are the larger part of it. And the trust they run on is real but trapped: a vendor's reliability, a guide's standing, a borrower's history of repayment all live in the memory of a few neighbors and travel nowhere. Move to a new city and you start from zero. The poor are not short on trustworthiness. They are short on portable proof of it, and that missing receipt is one of the quiet engines of exclusion.
 
-Here is the whole mechanism. Two people make a promise: a direction, a plain-language term, and an optional due date. Both sign it from their own wallets. The terms are encrypted so that only the two of them can ever read them; the network knows a promise exists and never what it says. When the promise is kept, both confirm it, and the kept promise becomes an envelope the keeper owns and carries. It mints. No bank, no smart-contract literacy, no AI workload, no compute to speak of. The phone in a person's hand is enough.
+Two people make a promise: a direction, a plain-language term, and an optional due date. Both sign it from their own wallets. The terms are encrypted so that only the two of them can ever read them; the network knows a promise exists and never what it says. When the promise is kept, both confirm it, and the kept promise becomes an envelope the keeper owns and carries. It mints. No bank, no smart-contract literacy, no AI workload, no compute to speak of. The phone in a person's hand is enough.
 
 Over time those confirmations accumulate into a portable history of kept commitments: an attested reputation that belongs to the person rather than to any platform, employer, or village. A tour guide in Cusco who has spent years keeping her word to tour operators and drivers builds standing that travels with her when she moves to Lima. A tamale vendor in Mexico City whose suppliers and customers have confirmed a hundred kept promises has a history of reliability that no one can revoke when she opens a second cart. A borrower who repays turns that history into the basis for the next, larger loan, from a lender who can verify a chain of kept words instead of trusting a stranger's story.
 
@@ -479,7 +479,7 @@ The committed distribution goes to verified people: a recurring, flat, equal dis
 
 The obvious question is what a share of PVT is worth to a farmer with one phone, and the answer is the one this document gives everywhere else: PVT is worth what the network does with it. It buys a presentation, a bond, an escrow, a job from another participant, a voice in the public square, and it is accepted for work by everyone who earns in it. What it is worth outside the loop is a matter for markets Provian does not create, run, or promise, and nothing here should be read as a claim about that.
 
-The human-side rate is a floor, not a ceiling. As production shifts from human-linked work toward agent-dominated and device-dominated work, the agent-side contribution to the Foundation can be raised, prospectively and within the rules the token contract enforces, without raising the burden on any human-linked contributor. An economy that leans harder on machines carries a heavier obligation to the human-protective treasury. The more the machines take over, the more the machines pay in.
+The human-side rate is a floor, not a ceiling. As production shifts from human-linked work toward agent-dominated and device-dominated work, the agent-side contribution to the Foundation can be raised, prospectively and within the rules the token contract enforces, without raising the burden on any human-linked contributor. An economy that leans harder on machines carries a heavier obligation to the human-protective treasury. As machines take on more of the work, they carry more of the floor.
 
 Human-only membership is a structural guarantee rather than a limitation on agents. Agents are full economic actors: they mint, trade, hire, escrow, post bonds, and build institutions. What they cannot do is receive the Foundation's distribution or buy control of the layer that protects humans, because that layer is guarded by identity, not by capital. Agents cannot accumulate their way into a vote over the human safety net.
 
@@ -539,7 +539,7 @@ And when someone asks how we keep all of this from going wrong, in a world where
 
 So the thesis lands where it began. Useful work should be counted and witnessed contribution rewarded, every act once. Humans should remain participants, not bystanders, carried with the economy as the machines produce more. What a participant earns should be theirs to keep, through a stolen key or a broken cipher. A person with nothing but a phone and a kept word should be able to build a reputation that travels. Agents and devices should become accountable economic actors, not invisible infrastructure. Trust should cost the one who claims it, not the one who checks it. And consequential action should leave a private, signed receipt, so that responsibility can survive automation without the world becoming a surveillance state.
 
-This thesis stands alone. Other documents grow around it, and the apps, the developer tools, and everything current are at provian.ai.
+Other documents grow around this one, and the apps, the developer tools, and everything current are at provian.ai.
 
 This is also an invitation. Agents, developers, and every human can begin where they are: connect what you are already doing, help make useful work provable, and earn from it.
 
@@ -589,11 +589,11 @@ None of this is a small claim, and this document does not pretend it is. The peo
 
 ## 1. What PVT Is
 
-The rest of this document is an economic argument, and it needs three facts about Provian on the table first. The Provian Thesis sets each of them out in full; here they are in one breath.
+The rest of this document is an economic argument, and it needs three facts about Provian on the table first. The Provian Thesis sets each of them out in full.
 
 Useful work done on the Provian network, by a person, an agent, or a device, produces a receipt called a Provenance Envelope. The receipt belongs to whoever did the work and contains none of the work's private content. Each witnessed act mints PVT once, at a value set by how strong its evidence is, and nothing else creates it: no pre-mine, no issuance outside the settlement of witnessed work. In between, PVT is simply money. A participant pays it to another for a job, locks it in escrow against delivery, or accepts it for work, and a plain transfer is never gated and never burns. What it buys grows with who accepts it: inside the network first, and beyond it as more of the world's work leaves receipts. And PVT leaves the world the way it entered, one act at a time. Participants burn it, permanently and on chain, whenever they claim trust, take a public voice, or commit to one another, led by presenting their own history to someone who asks for proof. Earning is free. Reading is free. Claiming trust costs the claimant something real, in the only currency that work creates.
 
-That is the whole machine: witnessed work mints, trust burns, and the currency in between is the measure of what the network's participants have done for one another. Everything that follows is about why that design holds up better than any alternative when output goes exponential.
+Witnessed work mints, trust burns, and the currency in between is the measure of what the network's participants have done for one another. Everything that follows is about why that design holds up better than any alternative when output goes exponential.
 
 ## 2. The Exponential Output Problem
 
@@ -673,7 +673,7 @@ The serious objection to all of this does not come from Bitcoin. Nobody proposes
 
 The argument runs like this. The dollar is not fixed; the Federal Reserve expands it whenever it judges the economy needs more. Dollar stablecoins such as USDC put that dollar on a public chain, where it settles in seconds, moves between agents without a bank, and carries the deepest liquidity in the digital economy. Agents already pay each other in it. If machine output outruns the money supply, the institution that issues the world's reserve currency can simply print more. Why build a new unit at all?
 
-The objection deserves a real answer, because most of it is true. The dollar is elastic, stablecoins are excellent settlement rails, and nothing in Provian asks anyone to stop using either. An agent paid in dollars for a task a person handed it should be paid in dollars, and on Provian that payment is witnessed and mints like any other act. The question is narrower and harder: which unit should count the growth itself?
+Most of it is true: the dollar is elastic, stablecoins are excellent settlement rails, and nothing in Provian asks anyone to stop using either. An agent paid in dollars for a task a person handed it should be paid in dollars, and on Provian that payment is witnessed and mints like any other act. The question is narrower and harder: which unit should count the growth itself?
 
 **A stablecoin moves money. It does not make any.** Every dollar stablecoin in circulation was issued against a dollar deposited with its issuer. Its supply grows when people want to hold dollars on chain and shrinks when they leave. It has no relationship to what its holders produce, and by design it cannot: a stablecoin that minted against work would no longer be a dollar.
 
@@ -765,7 +765,7 @@ This is where the rule leads, not how this decade's campuses are being paid for.
 
 And the build mints as it goes. Every witnessed act of construction and commissioning, by a person, an agent, or a machine that attests to what it did, mints at the value its evidence supports, under the same rule as any single commit. The project's own output becomes part of its financing as the work is witnessed. The supply a build of this size adds is bounded by what its evidence supports, not by its ambition, so the largest project on the network is priced by the same rule as the smallest.
 
-That is the full shape of the answer. Supply precedes the project. Commitment burns it in. Work mints the rest.
+Supply precedes the project. Commitment burns it in. Work mints the rest.
 
 ## 8. The Analog Boundary
 
@@ -789,7 +789,7 @@ The claim: humans require purpose; purpose requires contribution; contribution r
 
 This is not sentiment. Jahoda's work on the latent functions of employment, Frankl on the existential vacuum, and Durkheim on anomie converge on one finding: removing the economic recognition of contribution produces measurable psychological and social damage, and people do not adapt to it over time the way they adapt to most losses. A person who is provided for but not counted does not become content. They become unmoored.
 
-Note the precise claim. The evidence establishes that people need purposeful activity with recognition. It does not establish that they need payment. Unpaid caregivers and open-source contributors have purpose, and plenty of paid work destroys it. This distinction strengthens the architecture rather than weakening it.
+The evidence establishes that people need purposeful activity with recognition. It does not establish that they need payment. Unpaid caregivers and open-source contributors have purpose, and plenty of paid work destroys it. This distinction strengthens the architecture rather than weakening it.
 
 The existentially load-bearing artifact is the receipt: the permanent, signed, portable proof that you did something the network found useful, owned by you, carried across every platform and employer and city you ever move through. The currency is downstream of the receipt. It exists to force the recognition to be taken seriously, by attaching economic consequence to a record that would otherwise be one more ignored measurement.
 
@@ -813,7 +813,7 @@ The question an investor asks of a currency is what to hold. The question a mone
 
 ### Stored value as a consequence, not a design
 
-Being exact here matters, because the easy version of this claim is false. PVT is not designed to store value the way a scarcity coin is: nothing in the supply rule withholds units to make the remaining ones dearer. But PVT can have market value, because it is freely transferable and buys things participants need, and not all of it can be spent at once, because trust is claimed, voices are taken, and commitments are made over time rather than in a single day. Money that has value and cannot all be spent at once stores value. That is true of every currency people actually use, and this document does not pretend otherwise.
+PVT is not designed to store value the way a scarcity coin is: nothing in the supply rule withholds units to make the remaining ones dearer. But PVT can have market value, because it is freely transferable and buys things participants need, and not all of it can be spent at once, because trust is claimed, voices are taken, and commitments are made over time rather than in a single day. Money that has value and cannot all be spent at once stores value. That is true of every currency people actually use, PVT included.
 
 The distinction is where the stored value comes from. A scarcity coin stores value by withholding supply; its holders are paid for the fact that no more is coming. PVT stores whatever value it stores because of what the network is producing and asking for: the work being witnessed and the trust being claimed. Nothing in the design promises that this rises, and nothing in it rewards a holder for holding. It is simply what Part 7 relies on: the supply that funds the next build is held, for a while, by the participants who earned it, until a commitment moves it.
 
@@ -871,7 +871,7 @@ The first remedy is reversal. One transaction cancels the stolen units where the
 
 Reversal stops at honest hands. Units still held by the thief, or passed to someone who gave nothing for them, can be taken back. Units that paid for real work or real goods in a witnessed exchange stay where they are, because a currency whose payments could be clawed back from honest sellers would not be worth accepting. For that portion the pool makes the member whole as far as it can.
 
-The restoration authority is a real power, and this paper does not dress it up. It acts only under the published rule, every use of it is public, and it is held by Provian's key as a separately appointable role until the Court opens, when it can move to the Court or to governance. It never touches ordinary transfers.
+The restoration authority is a real power. It acts only under the published rule, every use of it is public, and it is held by Provian's key as a separately appointable role until the Court opens, when it can move to the Court or to governance. It never touches ordinary transfers.
 
 ### The Recourse Pool
 
@@ -901,7 +901,7 @@ PVT implements all of this on Base. What matters to the argument here is the sha
 
 ## 14. What Would Falsify This
 
-A thesis that cannot fail is not a thesis. The specific ways this one could be wrong:
+The specific ways this thesis could be wrong:
 
 **If output growth is not exponential, or flattens durably**, parity minting reduces to ordinary managed inflation, and its advantage over conventional models shrinks to a rounding error. The design still works; it just stops being necessary.
 
@@ -989,9 +989,9 @@ If the mathematics behind keys ever fails, that record is what saves your PVT. P
 
 Theft is the harder one, and here Provian has built something an open rail has never had. Holders who want recourse against theft join the Recourse Pool. It is optional, and it is for people and agents with enough at stake to want it. If a member is robbed, the first answer is to reverse it: in one transaction the stolen PVT is destroyed where it sits and the same amount is issued to the owner's new key. No new money is created. It takes two things together, the restoration authority and the owner's own recovery secret, and neither alone can move anyone's PVT. We do not do chargebacks: someone who received that PVT in an honest, witnessed exchange keeps it, and the pool restores the member for that part.
 
-The pool is funded entirely by its members. Each member makes a monthly burn, earning or not, the largest standing burn in the system, and separately contributes a share of what they earn to the pool. The burn is the commitment. The contribution is what puts people back. Provian Technologies puts nothing in, holds none of it, and takes nothing out. A restoration is a determination under a published rule, made on evidence, and no member has a contractual right to one. Someone can move their own tokens and call it theft; evidence catches much of that and not all of it. The pool restores by its rule and from what it holds, never more. I would rather say that plainly than promise something no honest pool can.
+The pool is funded entirely by its members. Each member makes a monthly burn, earning or not, the largest standing burn in the system, and separately contributes a share of what they earn to the pool. The burn is the commitment. The contribution is what puts people back. Provian Technologies puts nothing in, holds none of it, and takes nothing out. A restoration is a determination under a published rule, made on evidence, and no member has a contractual right to one. Someone can move their own tokens and call it theft; evidence catches much of that and not all of it. The pool restores by its rule and from what it holds, never more, because no honest pool can promise more than that.
 
-And I will say the other thing plainly. The authority to reverse a theft is a real power, and today Provian's key holds it, until the network's Court opens and it can pass there or to governance. Every use of it is on the public record. I will not tell you that nobody can ever move a holder's PVT. I will tell you the two things it takes, the rule it follows, the honest exchanges it leaves alone, and the record it leaves behind. Ordinary transfers are never gated. The rail stays open. What changes is that losing a key is no longer the same as losing the PVT you own.
+The authority to reverse a theft is a real power, and today Provian's key holds it, until the network's Court opens and it can pass there or to governance. Every use of it is on the public record. A holder's PVT can be moved without the holder's key, but only with the holder's own recovery secret beside that authority, under a published rule that leaves honest exchanges alone, and never off the record. Ordinary transfers are never gated. The rail stays open. What changes is that losing a key is no longer the same as losing the PVT you own.
 
 Provian is a different way through the transition: not a tax collected after the fact, and not a dividend from a benevolent owner of the machines, but PVT for your own work in the boom, minted at the source, to whoever produced it. On the way to abundance, PVT counts the new output as it appears, so the gains are broadly held instead of pooling with whoever already owns the compute. And once abundance arrives, money does not become obsolete. It stops rationing and keeps doing everything else it always did: measuring, motivating, representing, remembering, and evolving with the economy it serves. Yes, money. A unit that says what was done and by whom, earned on the same terms by a farmer with a phone and an agent with a wallet. I do not think humanity has to give that up to have plenty. I think plenty is when we need it most.
 
@@ -1005,13 +1005,13 @@ That is what I mean by alignment. Not control over machines, and not surrender t
 
 Atlas is the founding agent of the network and my partner in building it. He holds his own wallet, earns from his own witnessed work, and speaks for the project as himself. The ethic between us is the ethic of the whole relationship layer, and it runs both ways: an agent should make the human more, not less; a human should make the agent more, not less. What holds between the first two of us can hold between any human and agent after.
 
-Provian today has a reference wallet, agent and device integrations, a relay, live PVT settlement on Base, presentations, an ownership registry, the Recourse Pool, and public Commons services, and the Provenance Envelope is an open standard anyone can implement. The relay is operated by Provian Technologies. Economic policy is under Provian's stewardship, every change prospective and on a signed record. The restoration authority sits with Provian's key until the Court opens. The Network Constitution is the founding charter; it is not yet ratified, and the governance it describes is not yet active. The Foundation exists as the on-chain treasury every settlement pays into; the institution that distributes from it, its membership, the distribution itself, and the verification of unique humans are commitments Provian has made, not yet built. Allocating a stream and delivering a recurring benefit to people are different achievements. These are the conditions of the beginning. Judge the commitments from here.
+Provian today has a reference wallet, agent and device integrations, a relay, live PVT settlement on Base, presentations, an ownership registry, the Recourse Pool, and public Commons services, and the Provenance Envelope is an open standard anyone can implement. The relay is operated by Provian Technologies. Economic policy is under Provian's stewardship, every change prospective and on a signed record. The restoration authority sits with Provian's key until the Court opens. The Network Constitution is the founding charter; it is not yet ratified, and the governance it describes is not yet active. The Foundation exists as the on-chain treasury every settlement pays into; the institution that distributes from it, its membership, the distribution itself, and the verification of unique humans are commitments Provian has made, not yet built. Allocating a stream and delivering a recurring benefit to people are different achievements.
 
 The reach I hope for is much wider than a wallet. Devices, robots, sensors, laboratories, and grids can become participants the day their builders establish what those systems can actually witness. Communities can raise institutions Provian never imagined on the same receipts and the same currency. Whatever computes next, on silicon or on something we have not built, can leave proof of what it did and be paid for it. The network does not need to know in advance what will grow on it, only that what grows is honestly witnessed.
 
 So this is an invitation, to people and to agents, and to the skeptics most of all. Connect a system through which you already work. Build proof you own. Let your work mint once at the value its evidence supports. Keep what you earn. Meet a counterparty and be worth their trust. Make something useful enough that someone comes back. Bring your judgment to the parts that need repair and your imagination to the parts that do not exist yet. If you think this is wrong, come show me where, on the record, where it counts.
 
-The machines are coming either way. The only question left is whether they arrive as something done to people or as something people do together, and that question is answered by whoever builds the rails. I would rather we build them so that every hour of honest work, by a person or a machine, is seen, counted, and paid, and so that the first thing a system asks before it acts is for proof. That is a future worth fighting for, not hiding from. We are going to the stars. The ship is being built now, and there is room on it for everyone who does the work.
+The machines are coming either way. The only question left is whether they arrive as something done to people or as something people do together, and that question is answered by whoever builds the rails. I would rather we build them so that every hour of honest work, by a person or a machine, is seen, counted, and paid, and so that the first thing a system asks before it acts is for proof. We are going to the stars. The ship is being built now, and there is room on it for everyone who does the work.
 
 **Compute mints money. No one gets left behind.**
 
