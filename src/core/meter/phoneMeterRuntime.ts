@@ -128,7 +128,7 @@ export async function ensureMessageKeyAtLaunch(options: { allowPrompt: boolean; 
         }
         return await ensureMessageKeyPublished({ allowPrompt: false, biometricAction }, biometricAction);
     } catch (err) {
-        console.warn('[PE meter] message key not published yet:', err instanceof Error ? err.message : String(err));
+        console.error('[PE meter] message key not published yet:', err instanceof Error ? err.message : String(err));
         return false;
     }
 }
@@ -221,7 +221,7 @@ export async function prepareRenewalAtUnlock(
             .finally(() => clearTimeout(timer));
         return signed ? 'signed' : 'skipped';
     } catch (err) {
-        console.warn('[WalletLock] renewal proof deferred', err instanceof Error ? err.message : String(err));
+        console.error('[WalletLock] renewal proof deferred', err instanceof Error ? err.message : String(err));
         return 'skipped';
     }
 }
@@ -278,8 +278,8 @@ export async function runUnlockStep(
     runningUnlockSteps.delete(step);
     if (outcome !== 'failed') report.push({ step, outcome, ms: now() - started });
     const line = `[WalletLock] unlock step ${step}: ${outcome} in ${now() - started}ms`;
-    if (outcome === 'gave_up' || outcome === 'failed') console.warn(line + (outcome === 'gave_up' ? ' (runs again at the next unlock)' : `: ${report[report.length - 1]?.error ?? ''}`));
-    else console.log(line);
+    // Release builds forward only console.error to the device log; these lines must reach it.
+    console.error(line + (outcome === 'gave_up' ? ' (runs again at the next unlock)' : outcome === 'failed' ? `: ${report[report.length - 1]?.error ?? ''}` : ''));
     return outcome;
 }
 
@@ -308,10 +308,10 @@ export async function onWalletUnlocked(
         });
         const winner = await Promise.race([deadline, all.then(() => 'finished' as const)]);
         if (winner === 'deadline') {
-            console.warn(`[WalletLock] unlock maintenance deferred after ${timeoutMs}ms; still running: ${[...runningUnlockSteps.keys()].join(', ') || 'none'}`);
+            console.error(`[WalletLock] unlock maintenance deferred after ${timeoutMs}ms; still running: ${[...runningUnlockSteps.keys()].join(', ') || 'none'}`);
         }
     } catch (err) {
-        console.warn('[WalletLock] unlock maintenance deferred', err instanceof Error ? err.message : String(err));
+        console.error('[WalletLock] unlock maintenance deferred', err instanceof Error ? err.message : String(err));
     } finally {
         clearTimeout(timer);
         controller.abort();

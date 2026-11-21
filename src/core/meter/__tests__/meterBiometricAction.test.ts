@@ -156,7 +156,7 @@ describe('meter operations retain one explicit approval', () => {
         vi.spyOn(PeCloudBackup.prototype, 'primeKey').mockImplementation(() => new Promise(() => undefined));
         vi.spyOn(PhoneMeter.prototype, 'afterUnlock').mockResolvedValue();
         vi.spyOn(RelayAPIService, 'isRegistered').mockResolvedValue(false);
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = vi.spyOn(console, 'error').mockImplementation(() => undefined);
         await withBiometricAction('Unlock', action => onWalletUnlocked(null, action, 100, 400));
         expect(warn.mock.calls.map(c => String(c[0])).join('\n')).toMatch(/unlock maintenance deferred after 100ms; still running: .*cloud-backup-key/);
         await new Promise(r => setTimeout(r, 450));
@@ -166,8 +166,7 @@ describe('meter operations retain one explicit approval', () => {
     });
     it('every unlock step settles: done, failed or gave up', async () => {
         const report: Parameters<typeof runUnlockStep>[3] = [];
-        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
         await Promise.all([
             runUnlockStep('ok', async () => 1, 50, report),
             runUnlockStep('bad', async () => { throw new Error('boom'); }, 50, report),
