@@ -1285,3 +1285,37 @@ describe('handleGitHubWebhook - cross-witness corroboration via CorroborationMan
     expect(upgraded.corroboration_source).toBe('d_ownagent');
   });
 });
+
+it('resolves Claude cloud pushes to the signed human sender on both branches, with the same wallet and SHA', async () => {
+  const { deps, store, enqueued } = makeFakeDeps();
+  await createServiceInstall(deps.db, { user_id: 'install-owner', provider: 'github', installation_id: '42' });
+  seedOwnerWallet(store, 'install-owner');
+  for (const [id, wallet] of [['777', 'cloud-wallet'], ['778', 'bot-wallet']]) {
+    await createVerifiedAuthorMapping(deps.db, {
+      provider: 'github', forgeAccountId: OWNER_ACCOUNT_ID, sourceOwnerWalletId: 'install-owner',
+      agentWalletId: wallet, agentId: wallet, agentAddress: '0x1',
+      authorKey: normalizeAuthorKey({ type: 'account_id', value: id })!,
+    });
+  }
+  const sha = '10f120c851a802a71699ff2ce9ccffbb92b0fed5';
+  const deliver = (branch: string, sender: { id: number; login: string; type: string }, email = 'noreply@anthropic.com') => {
+    const head = { id: sha, message: 'A cloud edit\n\nClaude-Session: example',
+      author: { name: 'Claude', email, username: email === 'noreply@anthropic.com' ? 'claude' : 'collaborator' } };
+    const rawBody = JSON.stringify(makePushPayload({
+      after: sha, ref: `refs/heads/${branch}`, sender, pusher: { name: sender.login }, head_commit: head,
+      commits: [{ id: 'a'.repeat(40), author: { username: 'octocat' } }, head],
+    }));
+    return handleGitHubWebhook(deps, { rawBody, eventType: 'push', config: CONFIG_ENABLED,
+      signatureHeader: signPayload(rawBody, CONFIG_ENABLED.webhookSecret!), deliveryId: branch });
+  };
+  const human = { id: 777, login: 'contributor', type: 'User' };
+  expect((await deliver('collaborator', human, 'collaborator@example.com')).body.reason).toBe('unmapped_author');
+  expect((await deliver('bot', { id: 778, login: 'vendor[bot]', type: 'Bot' })).body.reason).toBe('unmapped_author');
+  expect(enqueued).toHaveLength(0);
+  expect((await deliver('master', human)).body.pe_id).toBeDefined();
+  expect((await deliver('prod', human)).body.pe_id).toBeDefined();
+  expect(enqueued).toHaveLength(2); // Neither branch can corroborate the same forge's act.
+  expect(enqueued.filter(act => act.pe.action_type === 'service:github_commit').map(act =>
+    [act.intake.actor_id, (act.pe.metadata as Record<string, unknown>).commit_sha]))
+    .toEqual([['cloud-wallet', sha], ['cloud-wallet', sha]]);
+});

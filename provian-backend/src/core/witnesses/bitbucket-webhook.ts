@@ -441,7 +441,9 @@ export async function handleBitbucketWebhook(
     // other wallet's mappings can attribute this delivery.
     forgeAccountId: installForgeAccountScope(install) as string,
     sourceOwnerWalletId: install.user_id,
-    candidates: extractBitbucketAuthorKeyCandidates(payload),
+    candidates: extractBitbucketAuthorKeyCandidates(input.eventKey === 'repo:push'
+      ? { push: payload.push, actor: payload.actor }
+      : { pullrequest: payload.pullrequest }, synthesized.commitSha),
   });
   const targetWalletId = attribution?.agentWalletId ?? install.user_id;
   const targetAgentId = attribution?.agentId ?? targetWalletId;
@@ -457,7 +459,7 @@ export async function handleBitbucketWebhook(
     console.warn('[bitbucket-webhook] prior-commit origin union failed (non-blocking):', err);
   }
 
-  const { peId, peHash } = await generatePE(deps, {
+  const { peId, peHash } = attribution ? await generatePE(deps, {
     walletId: targetWalletId,
     agentId: targetAgentId,
     actorAddress: attribution?.agentAddress ?? '',
@@ -479,7 +481,7 @@ export async function handleBitbucketWebhook(
       witness: 'bitbucket_webhook',
       attribution: attributionMetadata(PROVIDER, install.user_id, attribution),
     },
-  });
+  }) : {};
 
   // (9) Bidirectional cross-witness corroboration via CorroborationManager.
   // corroboratingParty is the system actor 'bitbucket_app' (distinct from the
@@ -489,7 +491,7 @@ export async function handleBitbucketWebhook(
     // both metadata.commit_sha AND the canonical hash) and returns the hash +
     // chain owner; CorroborationManager validates against pe_history.peHash and
     // writes the status back there. (No second read needed.)
-    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha);
+    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha, PROVIDER);
     for (const match of matches) {
       if (match.envelopeId === peId) continue;
       if (!match.hash) continue;
@@ -517,5 +519,6 @@ export async function handleBitbucketWebhook(
     }
   }
 
+  if (!peId) return { status: 200, body: { dropped: true, reason: 'unmapped_author' } };
   return { status: 200, body: { pe_id: peId, pe_hash: peHash } };
 }

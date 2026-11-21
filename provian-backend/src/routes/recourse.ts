@@ -22,8 +22,9 @@ import { createRecourseChainPort } from '../core/recourse/chain-ledger';
 import { prepareMemberBindingConsent } from '../core/recourse/member-binding-requirement';
 import type { MemberBindingConsent } from '../core/recourse/member-binding';
 import { readPrivateMembershipView } from '../core/recourse/private-membership-view';
-import { readRecourseMonthlyApproval } from '../core/recourse/monthly-approval';
-import { readRecoursePoolState, recoursePoolConfig } from '../core/recourse/pool-state';
+import { readMonthlyApprovalDisplay } from '../core/recourse/monthly-approval-display';
+import { readRecoursePoolDisplay, UNBOUND_RECOURSE_IDENTITY } from '../core/recourse/pool-display';
+import { readRecoursePoolState } from '../core/recourse/pool-state';
 import { RECOURSE_RATIO_COLLECTION, publicRecourseResources } from '../core/recourse/pool-ratio';
 import { parseAgentRecoveryRequest, recoverAgentOwnership } from '../core/recourse/agent-recovery';
 import { parseHumanRecoveryRequest, recoverHumanOwnership } from '../core/recourse/human-recovery';
@@ -84,10 +85,10 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
   });
   router.get('/resources', async (_req, res) => {
     try {
-      const config = await recoursePoolConfig();
-      const snapshot = await deps.db.collection(RECOURSE_RATIO_COLLECTION).doc(config.address).get();
+      const { pool } = await readRecoursePoolDisplay(deps.db);
+      const snapshot = await deps.db.collection(RECOURSE_RATIO_COLLECTION).doc(pool).get();
       if (!snapshot.exists) throw new Error('recourse_resources_unavailable');
-      res.json(publicRecourseResources(snapshot.data(), config.address));
+      res.json(publicRecourseResources(snapshot.data(), pool));
     } catch { res.status(503).json({ error: 'recourse_resources_unavailable' }); }
   });
   // The independent secret plus fresh-key proof authenticate recovery. Requiring
@@ -343,44 +344,37 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
     } catch { res.status(503).json({ error: 'recourse_unavailable' }); }
   });
   router.get('/pool', async (req, res) => {
-    let stage: 'owner' | 'binding' | 'chain' | 'membership' = 'owner';
     try {
       const owner = await resolveOwner(req, deps);
-      stage = 'binding';
       const ownerIdentity = identityHash(owner.type, owner.id);
-      const portfolio = await deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get();
+      const [pool, portfolio] = await Promise.all([
+        readRecoursePoolDisplay(deps.db),
+        deps.db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity).get(),
+      ]);
       const primaryIdentity = portfolio.get('primaryBinding') === undefined ? null : await primaryBindingIdentity(deps.db, owner);
-      let identity: string;
-      if (primaryIdentity !== null) identity = primaryIdentity;
-      else {
+      let identity = primaryIdentity;
+      if (!identity) {
         const addresses = await deps.db.collection(RECOURSE_COLLECTIONS.addresses).where('ownerIdentity', '==', ownerIdentity).get();
         const bindings = addresses.docs.filter(row => row.get('chainBindingStatus') === 'confirmed')
           .map(row => String(row.get('identity'))).sort();
-        identity = bindings.length ? await ownedBindingIdentity(deps.db, owner, bindings[0]) : `0x${'00'.repeat(32)}`;
+        identity = bindings.length ? await ownedBindingIdentity(deps.db, owner, bindings[0]) : UNBOUND_RECOURSE_IDENTITY;
       }
-      stage = 'chain';
-      const deployment = await currentProtocolDeployment();
-      const pool = await readRecoursePoolState(identity, deployment);
-      stage = 'membership';
+      const membership = await readPrivateMembershipView(deps.db, ownerIdentity, pool)
+        .catch(() => null);
       const fixedPayer: unknown = portfolio.get('membershipFixedDebitBinding');
-      const [membership, monthlyApproval] = await Promise.all([
-        readPrivateMembershipView(deps.db, ownerIdentity, pool).catch((cause: unknown) => {
-          if (cause instanceof Error && cause.message === 'recourse_private_scan_concurrent') return null;
-          throw cause;
-        }),
-        fixedPayer != null && portfolio.get('membershipTransition') == null
-          ? ownedBindingIdentity(deps.db, owner, fixedPayer)
-            .then(binding => readRecourseMonthlyApproval(binding, identity, pool, deployment))
-            .catch(() => null)
-          : null,
-      ]);
+      const monthlyApproval = membership && 'enrolled' in membership && membership.enrolled && fixedPayer != null
+        ? await ownedBindingIdentity(deps.db, owner, fixedPayer)
+          .then(binding => readMonthlyApprovalDisplay(deps.db, ownerIdentity, binding, pool))
+          .catch(() => null)
+        : null;
       const display = membership === null ? { membership: null, membershipChecking: true }
         : 'membershipTransition' in membership ? { ...membership, membership: null }
-        : { membership, monthlyApproval: membership.enrolled ? monthlyApproval : null };
-      res.json({ ...pool, identity, primaryIdentity, ...display,
+        : { membership, monthlyApproval };
+      const { schedule: _schedule, revision: _revision, ...publicPool } = pool;
+      res.json({ ...publicPool, identity, primaryIdentity, ...display,
         ...(owner.type === 'human' ? { walletAddress: owner.address } : {}) });
     } catch {
-      console.warn('[Recourse] Pool status unavailable', { stage });
+      console.warn('[Recourse] Pool display unavailable');
       res.status(503).json({ error: 'recourse_unavailable' });
     }
   });
@@ -393,7 +387,7 @@ export function createRecourseRouter(deps: AgentBankDeps, authenticateOwner: Req
         || !('recoveryCommitment' in body) || typeof body.recoveryCommitment !== 'string') {
         res.status(400).json({ error: 'recourse_binding_invalid' }); return;
       }
-      const deployment = await currentProtocolDeployment();
+      const deployment = await currentProtocolDeployment({ fresh: true });
       const identity = addressRecoveryBinding({ chainId: '8453', pointer: deployment.pointer.toLowerCase(), origin: body.address.toLowerCase() });
       const pool = await readRecoursePoolState(identity, deployment);
       const binding: OwnershipBinding = { identity,

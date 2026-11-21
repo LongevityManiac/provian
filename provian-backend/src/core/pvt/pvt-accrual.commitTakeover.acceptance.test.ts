@@ -224,6 +224,17 @@ describe(' commit takeover — one commit, one mint, forge wins, arrival-indepen
     expect(settleable('pe-forge')).toBeGreaterThan(forgeRaw);
   });
 
+  it('two forge deliveries of the same wallet and SHA mint only once', async () => {
+    const first = await seal(forgeParams('pe-master'));
+    const second = await seal(forgeParams('pe-prod'));
+    expect(first.mint_status).toBe('eligible');
+    expect(points(first)).toBeGreaterThan(0n);
+    expect(second.mint_status).toBe('corroborated_duplicate');
+    expect(claimOwner()).toBe('pe-master');
+    expect(row('pe-master').mint_status).toBe('eligible');
+    expect((await seal(forgeParams('pe-other-commit', 'a'.repeat(40)))).mint_status).toBe('eligible');
+  });
+
   it('SOLO daemon → eligible at compute base × software 0.8×', async () => {
     const daemon = await seal(daemonParams('pe-daemon'));
     expect(daemon.mint_status).toBe('eligible');

@@ -32,6 +32,7 @@
  */
 
 import { Timestamp } from 'firebase-admin/firestore';
+import { gitLabAccountIsHuman } from './gitlab-human-account';
 import crypto from 'crypto';
 import type { AgentBankDeps } from '../agent-bank/types';
 import { generatePE } from '../agent-bank/pe-utils';
@@ -53,6 +54,7 @@ import { findPEsByCommitSha, findCommitOriginsBySha } from './pe-lookup';
 import {
   attributionMetadata,
   extractGitLabAuthorKeyCandidates,
+  gitLabHostedPusher,
   resolveAgentAuthorAttribution,
 } from '../agent-attribution/author-mappings';
 
@@ -369,6 +371,18 @@ export async function handleGitLabWebhook(
     return { status: 400, body: { error: 'invalid_delivery_id' } };
   }
 
+  // Confirm the account type before marking a hosted push so transient forge
+  // lookup failures remain retryable. The signed push supplies the identity.
+  const hostedPusher = input.eventType === 'Push Hook' ? gitLabHostedPusher(payload) : null;
+  let humanPusher = false;
+  if (hostedPusher) {
+    try {
+      humanPusher = await gitLabAccountIsHuman(hostedPusher);
+    } catch {
+      return { status: 503, body: { error: 'pusher_account_lookup_unavailable' } };
+    }
+  }
+
   // (6) Dedup BEFORE synthesize / submit.
   const alreadySeen = await checkAndMarkDelivery(deps, {
     userId: install.user_id,
@@ -405,7 +419,10 @@ export async function handleGitLabWebhook(
     // other wallet's mappings can attribute this delivery.
     forgeAccountId: installForgeAccountScope(install) as string,
     sourceOwnerWalletId: install.user_id,
-    candidates: extractGitLabAuthorKeyCandidates(payload),
+    candidates: extractGitLabAuthorKeyCandidates(input.eventType === 'Push Hook'
+      ? { after: payload.after, commits: payload.commits, user_id: payload.user_id,
+        user_username: payload.user_username, user_email: payload.user_email }
+      : { object_attributes: payload.object_attributes }, humanPusher),
   });
   const targetWalletId = attribution?.agentWalletId ?? install.user_id;
   const targetAgentId = attribution?.agentId ?? targetWalletId;
@@ -421,7 +438,7 @@ export async function handleGitLabWebhook(
     console.warn('[gitlab-webhook] prior-commit origin union failed (non-blocking):', err);
   }
 
-  const { peId, peHash } = await generatePE(deps, {
+  const { peId, peHash } = attribution ? await generatePE(deps, {
     walletId: targetWalletId,
     agentId: targetAgentId,
     actorAddress: attribution?.agentAddress ?? '',
@@ -443,7 +460,7 @@ export async function handleGitLabWebhook(
       witness: 'gitlab_webhook',
       attribution: attributionMetadata(PROVIDER, install.user_id, attribution),
     },
-  });
+  }) : {};
 
   // (9) Bidirectional cross-witness corroboration via CorroborationManager.
   // corroboratingParty is the system actor 'gitlab_app' (distinct from the
@@ -453,7 +470,7 @@ export async function handleGitLabWebhook(
     // both metadata.commit_sha AND the canonical hash) and returns the hash +
     // chain owner; CorroborationManager validates against pe_history.peHash and
     // writes the status back there. (No second read needed.)
-    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha);
+    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha, PROVIDER);
     for (const match of matches) {
       if (match.envelopeId === peId) continue;
       if (!match.hash) continue;
@@ -481,5 +498,6 @@ export async function handleGitLabWebhook(
     }
   }
 
+  if (!peId) return { status: 200, body: { dropped: true, reason: 'unmapped_author' } };
   return { status: 200, body: { pe_id: peId, pe_hash: peHash } };
 }

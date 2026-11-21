@@ -1,6 +1,6 @@
-jest.mock('./private-membership-domain', () => ({ reconcilePrivateMembershipDomain: jest.fn(async () => undefined) }));
 import { joinPrivateMembership, creditPrivateMembership, type PrivateCalendarRules } from './private-membership-calendar';
 import { projectPrivateMembershipView } from './private-membership-view';
+import type { RecourseDisplayPool } from './pool-display';
 import type { PrivateMembershipAccount } from './private-membership-reservation';
 const rules: PrivateCalendarRules = () => ({ ruleHash: `0x${'12'.repeat(32)}`, rule: {
   schema: 'provian-recourse-membership/v1', chainId: 8453, pointer: `0x${'34'.repeat(20)}`, firstMonth: 0,
@@ -46,7 +46,6 @@ test('display dates use the confirmed admission and prospective rules without mo
 test('the actual private view selects retained admission and closure history after succession', async () => {
   const { createFakeFirestore } = await import('../pvt/__test-helpers__/fake-firestore');
   const scans = await import('./private-membership-scan');
-  const calendars = await import('./private-calendar-rules');
   const journals = await import('./private-membership-journal');
   const { readPrivateMembershipView } = await import('./private-membership-view');
   const { leavePrivateMembership } = await import('./private-membership-calendar');
@@ -69,12 +68,9 @@ test('the actual private view selects retained admission and closure history aft
       succession: { cutoff: { ...position(2), logIndex: Number.MAX_SAFE_INTEGER }, ancestorId: first.id,
         afterBreak: true, manifestHash: h(8), previousManifestHash: h(9) } }];
   const journal = jest.spyOn(journals, 'readMembershipJournal').mockImplementation(async () => audit);
-  const scan = jest.spyOn(scans, 'readPrivateMembershipScan').mockResolvedValue({ ownerIdentity: state.ownerIdentity,
-    accountVersion: state.version, bindingHash: h(7), historical: false, fromBlock: 10, fromBlockHash: h(10),
-    pool: a(5), block: 10, blockHash: h(10), timestamp: stamp(10), receipts: [], requiredEffects: [] });
-  const commit = jest.spyOn(scans, 'commitPrivateMembershipScan').mockResolvedValue(undefined);
-  const calendar = jest.spyOn(calendars, 'readPrivateCalendarRules').mockResolvedValue(rules);
-  const pool = { pool: a(5), addressConsent: true, block: 10, blockHash: h(10) } as import('./pool-state').RecoursePoolState;
+  const scan = jest.spyOn(scans, 'readPrivateMembershipScan').mockRejectedValue(Error('must not scan'));
+  const commit = jest.spyOn(scans, 'commitPrivateMembershipScan').mockRejectedValue(Error('must not write'));
+  const pool = { pool: a(5), month: String(month), block: 10, blockHash: h(10), schedule: [rules(month)] };
   try {
     db.store.set(`${C.owners}/${state.ownerIdentity}`, { ...state });
     const active = await readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, state.ownerIdentity, pool);
@@ -89,7 +85,9 @@ test('the actual private view selects retained admission and closure history aft
     const left = await readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, state.ownerIdentity, pool);
     expect(left).toMatchObject({ details: { status: 'not_member', protectionStartedAtMs: stamp(1) * 1000 } });
     expect(db.store.get(`${C.owners}/${state.ownerIdentity}`)).toEqual(state);
-  } finally { journal.mockRestore(); scan.mockRestore(); commit.mockRestore(); calendar.mockRestore(); }
+    expect(scan).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+  } finally { journal.mockRestore(); scan.mockRestore(); commit.mockRestore(); }
 });
 
 test('an unfinished join is visible after reopening without granting protection or disclosing private operation data', async () => {
@@ -105,7 +103,7 @@ test('an unfinished join is visible after reopening without granting protection 
   const draft = { id, ownerIdentity: owner, kind: 'join', status: 'consenting' };
   db.store.set(transitionKey, draft);
   const read = () => readPrivateMembershipView(db as unknown as import('firebase-admin/firestore').Firestore, owner,
-    { addressConsent: false } as import('./pool-state').RecoursePoolState);
+    {} as RecourseDisplayPool);
   await expect(read()).resolves.toEqual({ membershipTransition: 'join' });
   expect(db.store.size).toBe(2);
   db.store.set(transitionKey, { ...draft, departureRequested: true });

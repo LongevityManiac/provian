@@ -65,6 +65,7 @@ export interface PECommitShaMatch {
 export async function findPEsByCommitSha(
   db: Firestore,
   commitSha: string,
+  excludeForge?: 'github' | 'gitlab' | 'bitbucket',
 ): Promise<PECommitShaMatch[]> {
   if (!commitSha) return [];
   // PE METER: a metered act's commit lives on its 31-day act key (the ruled cross-witness window);
@@ -73,23 +74,28 @@ export async function findPEsByCommitSha(
     privateRetentionCollection(db, METER_ACT_KEYS_COLLECTION).where('row.commit_sha', '==', commitSha).get(),
     db.collection(PROVENANCE_ENVELOPES).where('metadata.commit_sha', '==', commitSha).get(),
   ]);
-  const metered = keys.docs.map((d) => {
+  // Re-delivery from the same forge, such as mirroring master to prod, is
+  // the same witness and cannot add a corroboration top-up to its own act.
+  const sameForge = (action: string | undefined): boolean =>
+    excludeForge !== undefined && action?.startsWith(`service:${excludeForge}_`) === true;
+  const metered = keys.docs.flatMap((d) => {
     const key = d.data() as MeterActKeyDoc;
-    return { envelopeId: d.id, userId: key.actor_id, agentId: key.actor_id, hash: key.pe_hash };
+    return sameForge(key.action_type) ? [] : [{ envelopeId: d.id, userId: key.actor_id, agentId: key.actor_id, hash: key.pe_hash }];
   });
-  return [...metered, ...legacy.docs.map((d) => {
+  return [...metered, ...legacy.docs.flatMap((d) => {
     const data = d.data() as {
-      user_id?: string; agent_id?: string; hash?: string; peHash?: string;
+      user_id?: string; agent_id?: string; hash?: string; peHash?: string; action_type?: string;
     };
+    if (sameForge(data.action_type)) return [];
     const userId = data.user_id ?? '';
-    return {
+    return [{
       envelopeId: d.id,
       userId,
       agentId: data.agent_id ?? userId,
       // `hash` is the envelope's canonical hash; `peHash` fallback covers any
       // derived-shaped doc that might be present in test fakes.
       hash: data.hash ?? data.peHash ?? '',
-    };
+    }];
   })];
 }
 

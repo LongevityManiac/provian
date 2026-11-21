@@ -1,3 +1,4 @@
+import { createVerifiedAuthorMapping, normalizeAuthorKey } from '../agent-attribution/author-mappings';
 /**
  * bitbucket-webhook handler tests. Mirrors gitlab-webhook.test.ts / the GitHub
  * suite: covers the status-code matrix and the security invariants -
@@ -33,6 +34,15 @@ function makeFakeDeps(): {
   return makeWitnessFakeDeps();
 }
 
+function mapFixtureAuthor(db: Parameters<typeof createVerifiedAuthorMapping>[0],
+  scope = 'workspace/repo', wallet = 'user_1') {
+  return createVerifiedAuthorMapping(db, {
+    provider: 'bitbucket', forgeAccountId: scope, sourceOwnerWalletId: wallet,
+    agentWalletId: wallet, agentId: wallet, agentAddress: '0x1',
+    authorKey: normalizeAuthorKey({ type: 'email', value: 'author@example.com' })!,
+  });
+}
+
 const SECRET = 'bitbucket-webhook-secret-at-least-32-characters';
 const CONFIG_ENABLED: BitbucketAppConfig = { enabled: true, webhookSecret: SECRET, baseUrl: null };
 const CONFIG_DISABLED: BitbucketAppConfig = { enabled: false, webhookSecret: null, baseUrl: null };
@@ -51,7 +61,7 @@ function makePushPayload(overrides: Record<string, unknown> = {}): Record<string
     push: {
       changes: [
         {
-          new: { type: 'branch', name: 'main', target: { hash: PUSH_SHA } },
+          new: { type: 'branch', name: 'main', target: { hash: PUSH_SHA, author: { raw: 'Author <author@example.com>' } } },
           old: { type: 'branch', name: 'main' },
           commits: [{ hash: PUSH_SHA, message: 'do the thing' }],
           closed: false,
@@ -238,6 +248,7 @@ describe('handleBitbucketWebhook - status code matrix', () => {
     const { deps, enqueued, store } = makeFakeDeps();
     const { doc: installRepo } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const raw = JSON.stringify(makePushPayload());
+    await mapFixtureAuthor(deps.db);
     const input = {
       rawBody: raw,
       signatureHeader: sign(raw, installRepo.webhook_secret!),
@@ -379,6 +390,7 @@ describe('B2 per-install secrets — bitbucket mirror controls', () => {
 describe('a registration without a control proof earns nothing', () => {
   it('RED: a correctly signed delivery for an install with no control proof is 403 and records nothing', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db);
     const { doc: unproven } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID });
     const raw = JSON.stringify(makePushPayload());
     const input = {
@@ -482,6 +494,7 @@ describe('a delivery must name the repository path the registration proved', () 
 
   it('the proven full_name matches whatever its case', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db);
     const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN });
     const payload = makePushPayload();
     (payload.repository as Record<string, unknown>).full_name = 'Workspace/Repo';
@@ -503,6 +516,7 @@ describe('a registration holds only the path it proved; the uuid it names holds 
 
   it('RED: a registrant who proved attacker/x while naming the victim\'s repository uuid neither locks the victim out nor receives its deliveries', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db, 'victim/repo', 'victim');
     const attacker = await createServiceInstall(deps.db, {
       user_id: 'attacker', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
     });
@@ -525,6 +539,7 @@ describe('a registration holds only the path it proved; the uuid it names holds 
 
   it('RED: a row keyed only by the repository uuid (an earlier registration) is refused even carrying a proof, mints nothing, and never blocks a proven registration', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db, 'victim/repo', 'victim');
     const legacySecret = 'e'.repeat(64);
     await deps.db.collection('service_installs').doc(`bitbucket_${REPO_UUID}`).set({
       user_id: 'squatter', provider: 'bitbucket', installation_id: REPO_UUID, installed_at: 1, revoked_at: null,
@@ -563,4 +578,36 @@ describe('a registration holds only the path it proved; the uuid it names holds 
     expect(refused.body.error).toBe('project_id_mismatch');
     expect(enqueued).toHaveLength(0);
   });
+});
+
+it('credits a hosted commit only to the authenticated human actor', async () => {
+  const { deps, enqueued } = makeFakeDeps();
+  const { doc: install } = await createServiceInstall(deps.db, {
+    user_id: 'owner-wallet', provider: 'bitbucket', installation_id: REPO_UUID, control_proof: PROVEN,
+  });
+  await createVerifiedAuthorMapping(deps.db, {
+    provider: 'bitbucket', forgeAccountId: 'workspace/repo', sourceOwnerWalletId: 'owner-wallet',
+    agentWalletId: 'pusher-wallet', agentId: 'pusher-id', agentAddress: '0x1',
+    authorKey: normalizeAuthorKey({ type: 'account_id', value: '777' })!,
+  });
+  await createVerifiedAuthorMapping(deps.db, {
+    provider: 'bitbucket', forgeAccountId: 'workspace/repo', sourceOwnerWalletId: 'owner-wallet',
+    agentWalletId: 'owner-wallet', agentId: 'owner-id', agentAddress: '0x2',
+    authorKey: normalizeAuthorKey({ type: 'email', value: 'owner@example.com' })!,
+  });
+  const deliver = (id: string, email: string, type: string) => {
+    const rawBody = JSON.stringify(makePushPayload({
+      actor: { type, account_id: '777', nickname: 'pusher' },
+      push: { changes: [{ new: { type: 'branch', name: 'main', target: {
+        hash: PUSH_SHA, author: { raw: `Author <${email}>` },
+      } }, commits: [{ hash: 'f'.repeat(40), author: { raw: 'Owner <owner@example.com>' } }] }] },
+    }));
+    return handleBitbucketWebhook(deps, { rawBody, signatureHeader: sign(rawBody, install.webhook_secret!),
+      eventKey: 'repo:push', deliveryId: id, config: CONFIG_ENABLED });
+  };
+  expect((await deliver('collaborator', 'collaborator@example.com', 'user')).body.reason).toBe('unmapped_author');
+  expect((await deliver('hosted-bot', 'noreply@anthropic.com', 'app_user')).body.reason).toBe('unmapped_author');
+  expect(enqueued).toHaveLength(0);
+  expect((await deliver('hosted-human', 'noreply@anthropic.com', 'user')).body.pe_id).toBeDefined();
+  expect(enqueued.map(act => act.intake.actor_id)).toEqual(['pusher-id']);
 });

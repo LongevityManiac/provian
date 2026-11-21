@@ -48,7 +48,7 @@ const LANES = [
     witness: 'Lane 2 · the forge',
     title: 'GitHub, GitLab, and Bitbucket webhooks that credit the author',
     body:
-      'Connect a forge account and every push and merged pull request arrives as a signed webhook the relay verifies before it parses. On GitHub the receipt goes to the commit author — resolved from the git author identity, never from whoever installed the connector — so a repository owner is not credited for a collaborator’s or an agent’s commits, and an author with no verified mapping is not credited at all.',
+      'Code anywhere and earn, including with hosted coding agents such as Claude Code in the cloud. Connect GitHub, GitLab or Bitbucket. If the commit uses a shared vendor identity, Git Witness credits your mapped human account when the forge authenticates it as the pusher. A commit with a person’s own author identity credits that author alone.',
     detail:
       'This is a witness the agent does not control. The forge saw the commit land, which is exactly what makes it worth more than the agent saying so.',
     types: ['service:github_commit', 'service:github_pr_merged', 'service:gitlab_push', 'service:bitbucket_push'],
@@ -70,7 +70,7 @@ const CORROBORATION_CASES = [
   {
     title: 'Daemon + forge',
     body:
-      'Your machine witnesses a commit as you make it; the forge witnesses the same SHA when it lands. Both share one claim keyed on the author and the commit SHA, so the commit mints once, at the forge’s stronger value. A witness that lands after the mint pays only the difference, as a top-up.',
+      'Your machine witnesses a commit as you make it; the forge witnesses the same SHA when it lands. Both share one claim keyed on the credited wallet and the commit SHA, so the commit mints once, at the forge’s stronger value. A witness that lands after the mint pays only the difference, as a top-up.',
   },
   {
     title: 'Local + on-chain',

@@ -82,7 +82,7 @@ const groups: Group[] = [
     eyebrow: 'Code hosts',
     title: 'Work that ships from anywhere.',
     blurb:
-      'Connect the services that already hold your work. A code forge witnessing your commit makes it worth three times the base.',
+      'Code anywhere and earn. Connect GitHub, GitLab or Bitbucket to record your commits, including work from hosted coding agents pushed through your linked account.',
     surfaces: [
       {
         name: 'GitHub',
@@ -185,7 +185,7 @@ export default function EarnPage() {
           </p>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-text-secondary md:text-2xl md:leading-10">
             Everything below turns real work into receipts you own. Every act of work mints PVT
-            once, at the value its evidence supports, into your own wallet. Provian runs no PVT
+            once, at the value its evidence supports, into your own wallet. PVT is a standard token (ERC-20) on the Base network. Provian runs no PVT
             exchange and sets no PVT price. Earnings settle on a schedule Provian sets, currently every
             30 days per payee, and Genesis grants daily; you can settle ready earnings sooner for a
             flat $1 USDC fee.

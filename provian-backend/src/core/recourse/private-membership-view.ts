@@ -1,15 +1,12 @@
 import { activeMembershipJournal, readMembershipJournal } from './private-membership-journal';
-import { reconcilePrivateMembershipDomain } from './private-membership-domain';
 import type { Firestore } from 'firebase-admin/firestore';
 import { PRIVATE_MEMBERSHIP_COLLECTIONS as C, type PrivateMembershipAccount } from './private-membership-reservation';
 import { assessPrivateMembership, privateMembershipStatus, type PrivateCalendarRules } from './private-membership-calendar';
-import { readPrivateCalendarRules } from './private-calendar-rules';
-import { readPrivateMembershipScan, commitPrivateMembershipScan } from './private-membership-scan';
-import { utcCalendarMonth } from './calendar-month';
 import { RECOURSE_COLLECTIONS } from './ownership';
 import { PRIVATE_MEMBERSHIP_TRANSITIONS, type PrivateMembershipTransition } from './private-membership-transition';
 import { pendingMembershipConsents } from './membership-progress';
-import type { RecoursePoolState } from './pool-state';
+import { privateCalendarRulesFromSchedule } from './private-calendar-rules';
+import type { RecourseDisplayPool } from './pool-display';
 
 export interface PrivateMembershipView {
   readonly enrolled: boolean; readonly grace: boolean; readonly month: string;
@@ -52,10 +49,9 @@ export function projectPrivateMembershipView(account: PrivateMembershipAccount, 
 
 /** The authenticated owner sees progress until all required receipts reconcile. */
 export async function readPrivateMembershipView(db: Firestore, ownerIdentity: string,
-  pool: RecoursePoolState): Promise<PrivateMembershipView | {
+  pool: Pick<RecourseDisplayPool, 'pool' | 'month' | 'block' | 'blockHash' | 'schedule'>): Promise<PrivateMembershipView | {
     membershipTransition: PrivateMembershipTransition['kind']; membershipApprovalPending?: true;
-  }> {
-  await reconcilePrivateMembershipDomain(db,ownerIdentity);
+  } | null> {
   const ownerRef = db.collection(RECOURSE_COLLECTIONS.owners).doc(ownerIdentity);
   const owner = await ownerRef.get();
   if (owner.get('membershipTransition') != null) {
@@ -81,22 +77,22 @@ export async function readPrivateMembershipView(db: Firestore, ownerIdentity: st
       return { membershipTransition: transition.kind, ...(pending ? { membershipApprovalPending: true } : {}) };
     }
   }
-  const ref = db.collection(C.owners).doc(ownerIdentity), initial = await ref.get();
-  if (!initial.exists) {
-    if (pool.addressConsent) throw Error('recourse_private_membership_unreconciled');
+  const row = await db.collection(C.owners).doc(ownerIdentity).get();
+  if (!row.exists) {
+    // A locally confirmed binding can predate a migrated membership account.
+    // Initial registration alone does not grant any protection.
+    if (owner.get('membershipScanRequired') === true) return null;
     return { enrolled: false, grace: false, month: pool.month, endMonthExclusive: '0', unpaidAtomic: '0',
       block: pool.block, blockHash: pool.blockHash,
       details: { status: 'not_member', protectionStartedAtMs: null, nextMonthAtMs: null,
         nextBurnAtomic: null, noEarningsContributionAtomic: null, earningsBps: null } };
   }
-  if (initial.get('pendingReservation') !== null) throw Error('recourse_private_membership_pending');
-  const scan = await readPrivateMembershipScan(db, ownerIdentity);
-  await commitPrivateMembershipScan(db, scan);
-  const row = await ref.get(), account = row.data() as PrivateMembershipAccount;
-  if (account.ownerIdentity !== ownerIdentity || account.needsScan || account.pendingReservation !== null
-    || account.checkpoint.pool !== pool.pool || account.checkpoint.block !== scan.block
-    || account.checkpoint.blockHash !== scan.blockHash) throw Error('recourse_private_membership_changed');
-  const rules = await readPrivateCalendarRules(db, account.checkpoint);
+  const account = row.data() as PrivateMembershipAccount;
+  const month = Number(pool.month);
+  if (account.ownerIdentity !== ownerIdentity || account.checkpoint?.pool !== pool.pool
+    || !account.episode || account.episode.observedMonth > month
+    || owner.get('membershipScanRequired') === true) return null;
+  const rules = privateCalendarRulesFromSchedule(pool.schedule);
   let left = Boolean(account.closure);
   let started = account.admission ? account.admission.timestamp * 1000 : null;
   if (started === null && account.episode.generation > 0 && account.journalHead) {
@@ -107,5 +103,5 @@ export async function readPrivateMembershipView(db: Firestore, ownerIdentity: st
     left = journal.some(entry => entry.kind === 'closure' && entry.episode.generation === account.episode.generation
       && entry.episode.startMonth === account.episode.startMonth);
   }
-  return projectPrivateMembershipView(account, utcCalendarMonth(scan.timestamp), rules, started, left);
+  return projectPrivateMembershipView(account, month, rules, started, left);
 }

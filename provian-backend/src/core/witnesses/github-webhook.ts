@@ -608,24 +608,13 @@ export async function handleGitHubWebhook(
     return { status: 200, body: { dropped: true, reason: 'unsynthesizable_or_unsupported_event' } };
   }
 
-  // (8) Resolve attribution by the commit's git-AUTHOR identity. We credit the
-  // author, NEVER the repo connector: a commit whose author has no verified mapping
-  // is not attributable to anyone we can name, so we do not mint it (Unknown =
-  // Block). This is what stops a repo owner being credited for a collaborator's or
-  // agent's commits, and — together with the per-wallet mint-once claim — stops one
-  // commit minting to two different wallets (the committer's daemon + the owner's
-  // webhook). Registration of contributor identities is the agent-signature flow in
-  // routes/agent-attribution.ts.
-  // Mappings are scoped to the STABLE forge account (repository.owner.id), so
-  // they survive GitHub-side reinstalls (new installation_id) and wallet
-  // re-points (the 08-13 production orphan mechanism). A payload without a
-  // repository owner cannot resolve any scope and drops below — fail-closed,
-  // identical to today's unmapped drop (Unknown = Block).
-  // A commit-family event (push / merged PR) attributes to its git AUTHOR only — never the
-  // pusher/sender. A generic event (issue, release, review…) has no author; its SENDER did the act.
+  // Resolve the exact commit's author, or the signed human sender for a shared
+  // hosted author. The repository owner only supplies the mapping scope.
   const candidates = synthesized.commitSha === null
     ? extractGitHubSenderKeyCandidates(payload)
-    : extractGitHubAuthorKeyCandidates(payload);
+    : extractGitHubAuthorKeyCandidates(input.eventType === 'push'
+      ? { after: payload.after, head_commit: payload.head_commit, sender: payload.sender }
+      : { pull_request: payload.pull_request });
   let attribution = repoOwner
     ? await resolveAgentAuthorAttribution(deps.db, {
       provider: PROVIDER,
@@ -782,7 +771,7 @@ export async function handleGitHubWebhook(
     // agent's own PE and over-suppress its legitimate corroboration (Sec. Invariant
     // #8). The unmapped fallback is install.user_id, unchanged.
     const attributedOwner = preparedPE?.agentId ?? attribution?.agentId ?? install.user_id;
-    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha);
+    const matches = await findPEsByCommitSha(deps.db, synthesized.commitSha, PROVIDER);
     for (const match of matches) {
       if (peId && match.envelopeId === peId) continue; // skip the PE we just created
       if (!match.hash) continue; // can't emit a corroboration without a target hash

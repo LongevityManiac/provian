@@ -1,3 +1,5 @@
+import * as gitLabAccount from './gitlab-human-account';
+import { createVerifiedAuthorMapping, normalizeAuthorKey } from '../agent-attribution/author-mappings';
 /**
  * gitlab-webhook handler tests. Mirrors github-webhook.test.ts: covers the
  * status-code matrix and the security invariants - verify-before-parse (a bad
@@ -31,6 +33,15 @@ function makeFakeDeps(): {
   return makeWitnessFakeDeps();
 }
 
+function mapFixtureAuthor(db: Parameters<typeof createVerifiedAuthorMapping>[0],
+  scope = 'group/project', wallet = 'user_1') {
+  return createVerifiedAuthorMapping(db, {
+    provider: 'gitlab', forgeAccountId: scope, sourceOwnerWalletId: wallet,
+    agentWalletId: wallet, agentId: wallet, agentAddress: '0x1',
+    authorKey: normalizeAuthorKey({ type: 'email', value: 'author@example.com' })!,
+  });
+}
+
 const SECRET = 'gitlab-secret-token-at-least-32-characters-long';
 const CONFIG_ENABLED: GitLabAppConfig = { enabled: true, webhookSecret: SECRET, baseUrl: null };
 const CONFIG_DISABLED: GitLabAppConfig = { enabled: false, webhookSecret: null, baseUrl: null };
@@ -42,7 +53,7 @@ function makePushPayload(overrides: Record<string, unknown> = {}): Record<string
     ref: 'refs/heads/main',
     project: { id: 100, path_with_namespace: 'group/project' },
     commits: [
-      { id: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2', added: ['x.ts'], removed: [], modified: ['y.ts'] },
+      { id: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2', added: ['x.ts'], removed: [], modified: ['y.ts'], author: { email: 'author@example.com' } },
     ],
     total_commits_count: 1,
     ...overrides,
@@ -211,6 +222,7 @@ describe('handleGitLabWebhook - status code matrix', () => {
   it('submits a PE on a valid push and is idempotent on redelivery', async () => {
     const { deps, enqueued, store } = makeFakeDeps();
     const { doc: install100 } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
+    await mapFixtureAuthor(deps.db);
     const input = {
       rawBody: JSON.stringify(makePushPayload()),
       tokenHeader: install100.webhook_secret!,
@@ -365,6 +377,7 @@ describe('B2 per-install secrets — the invariants, each with its RED leg', () 
 
   it('RED: an install registered without a control proof is 403 with its OWN valid secret, until registered again with proof', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db);
     const { doc: unproven } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100' });
     const input = {
       rawBody: JSON.stringify(makePushPayload()),
@@ -501,6 +514,7 @@ describe('a delivery must name the project path the registration proved', () => 
 
   it('the proven path matches whatever its case, and the refusal consumed no delivery id', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db);
     const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const input = {
       rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'Group/Project' } })),
@@ -513,6 +527,7 @@ describe('a delivery must name the project path the registration proved', () => 
 
   it('after a rename the project registers again with the new path, and the forge\'s redelivery lands', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db, 'group/renamed');
     const { doc: install } = await createServiceInstall(deps.db, { user_id: 'user_1', provider: 'gitlab', installation_id: '100', control_proof: PROVEN });
     const input = {
       rawBody: JSON.stringify(makePushPayload({ project: { id: 100, path_with_namespace: 'group/renamed' } })),
@@ -532,6 +547,7 @@ describe('a registration holds only the path it proved; the id it names holds no
 
   it('RED: a registrant who proved attacker/x while naming the victim\'s project id neither locks the victim out nor receives its deliveries', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db, 'victim/project', 'victim');
     const attacker = await createServiceInstall(deps.db, {
       user_id: 'attacker', provider: 'gitlab', installation_id: VICTIM_ID, control_proof: { ...PROVEN, project_path: 'attacker/x' },
     });
@@ -574,6 +590,7 @@ describe('a registration holds only the path it proved; the id it names holds no
 
   it('a row keyed only by the project id (an earlier registration) is refused and never blocks a proven registration', async () => {
     const { deps, enqueued } = makeFakeDeps();
+    await mapFixtureAuthor(deps.db, 'victim/project', 'victim');
     const legacySecret = 'e'.repeat(64);
     await deps.db.collection('service_installs').doc(`gitlab_${VICTIM_ID}`).set({
       user_id: 'squatter', provider: 'gitlab', installation_id: VICTIM_ID, installed_at: 1, revoked_at: null,
@@ -595,4 +612,47 @@ describe('a registration holds only the path it proved; the id it names holds no
     expect(ok.status).toBe(200);
     expect(enqueued).toHaveLength(1);
   });
+});
+
+it('credits a hosted commit only to the verified human pushing account', async () => {
+  const { deps, enqueued } = makeFakeDeps();
+  const { doc: install } = await createServiceInstall(deps.db, {
+    user_id: 'owner-wallet', provider: 'gitlab', installation_id: '100', control_proof: PROVEN,
+  });
+  await createVerifiedAuthorMapping(deps.db, {
+    provider: 'gitlab', forgeAccountId: 'group/project', sourceOwnerWalletId: 'owner-wallet',
+    agentWalletId: 'pusher-wallet', agentId: 'pusher-id', agentAddress: '0x1',
+    authorKey: normalizeAuthorKey({ type: 'account_id', value: '777' })!,
+  });
+  await createVerifiedAuthorMapping(deps.db, {
+    provider: 'gitlab', forgeAccountId: 'group/project', sourceOwnerWalletId: 'owner-wallet',
+    agentWalletId: 'owner-wallet', agentId: 'owner-id', agentAddress: '0x2',
+    authorKey: normalizeAuthorKey({ type: 'email', value: 'owner@example.com' })!,
+  });
+  const human = jest.spyOn(gitLabAccount, 'gitLabAccountIsHuman').mockResolvedValue(true);
+  const sha = makePushPayload().after;
+  const deliver = (id: string, email: string) => handleGitLabWebhook(deps, {
+    rawBody: JSON.stringify(makePushPayload({
+      user_id: 777, user_username: 'pusher', user_email: 'owner@example.com',
+      commits: [
+        { id: 'f'.repeat(40), author: { email: 'owner@example.com' } },
+        { id: sha, author: { name: 'pusher', email } },
+      ],
+    })),
+    tokenHeader: install.webhook_secret!, eventType: 'Push Hook', deliveryId: id, config: CONFIG_ENABLED,
+  });
+  try {
+    expect((await deliver('collaborator', 'collaborator@example.com')).body.reason).toBe('unmapped_author');
+    expect(human).not.toHaveBeenCalled();
+    expect(enqueued).toHaveLength(0);
+    human.mockRejectedValueOnce(Error('directory unavailable'));
+    expect((await deliver('hosted-human', 'noreply@anthropic.com')).status).toBe(503);
+    expect((await deliver('hosted-human', 'noreply@anthropic.com')).body.pe_id).toBeDefined();
+    expect(human).toHaveBeenCalledWith({ id: 777, username: 'pusher' });
+    expect(enqueued.map(act => act.intake.actor_id)).toEqual(['pusher-id']);
+
+    human.mockResolvedValue(false);
+    expect((await deliver('hosted-bot', 'noreply@anthropic.com')).body.reason).toBe('unmapped_author');
+    expect(enqueued).toHaveLength(1);
+  } finally { human.mockRestore(); }
 });

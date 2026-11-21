@@ -8,8 +8,8 @@ import type { PrivateCalendarRules, PrivateCalendarRule } from './private-member
 
 /** The private calendar consumes only signed rules actually present in the
  * authenticated pool's schedule at the specified canonical checkpoint. */
-export async function readPrivateCalendarRules(db: Firestore,
-  checkpoint: { readonly pool: string; readonly block: number; readonly blockHash: string }): Promise<PrivateCalendarRules> {
+export async function readPrivateCalendarSchedule(db: Firestore,
+  checkpoint: { readonly pool: string; readonly block: number; readonly blockHash: string }): Promise<readonly PrivateCalendarRule[]> {
   const configured = getOperatorBoundRpcLegs('base');
   if (!configured[0].operatorId || !configured[1].operatorId || configured[0].operatorId === configured[1].operatorId) throw Error('recourse_rule_operators');
   const pointer = PROTOCOL_POINTER_PIN.address, pinHash = PROTOCOL_POINTER_PIN.runtimeHash;
@@ -35,11 +35,18 @@ export async function readPrivateCalendarRules(db: Firestore,
     if (i > 0 && signed.rule.firstMonth <= rules[i - 1].rule.firstMonth) throw Error('recourse_rule_schedule');
     rules.push(Object.freeze({ rule: signed.rule, ruleHash: signed.ruleHash }));
   }
-  // A caller cannot observe a different rule halfway through calendar replay.
-  const schedule = Object.freeze(rules);
+  return Object.freeze(rules);
+}
+
+export function privateCalendarRulesFromSchedule(schedule: readonly PrivateCalendarRule[]): PrivateCalendarRules {
   return month => {
     if (!Number.isSafeInteger(month) || month < 0) throw Error('recourse_rule_month');
     for (let i = schedule.length - 1; i >= 0; --i) if (schedule[i].rule.firstMonth <= month) return schedule[i];
     throw Error('recourse_rule_missing');
   };
+}
+
+export async function readPrivateCalendarRules(db: Firestore,
+  checkpoint: { readonly pool: string; readonly block: number; readonly blockHash: string }): Promise<PrivateCalendarRules> {
+  return privateCalendarRulesFromSchedule(await readPrivateCalendarSchedule(db, checkpoint));
 }

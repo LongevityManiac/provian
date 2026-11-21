@@ -40,7 +40,7 @@ const LOCK_BODY =
 const STATUS_TREASURY = 'The Foundation exists today as the on-chain treasury every settlement pays into'
 
 const STATUS_BODY =
-  'The treasury receives its share directly from the token contract in every settlement. The Network Constitution sets out Provian’s wider commitments to people.'
+  'The treasury receives its share directly from the kernel, the Base token contract, in every settlement. Provian administers the protocol prospectively. The Network Constitution sets out Provian’s wider commitments to people.'
 
 const COMMITMENT_BODY =
   'Provian commits to establishing the Foundation as the institution that distributes from its treasury. That commitment includes membership for verified people and unique-human verification, which will establish that each member is one distinct person. The Network Dividend is Provian’s commitment to distributions from that treasury to verified human members.'

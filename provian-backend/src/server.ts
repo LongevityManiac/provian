@@ -4631,7 +4631,14 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
       const recourseRecords = await runRecourseLifecycleWatcher(agentBankDeps.db);
       {
         const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
-        await refreshRecoursePoolRatio(agentBankDeps.db);
+        const { refreshRecoursePoolDisplay } = await import('./core/recourse/pool-display');
+        const { refreshMonthlyApprovalDisplays } = await import('./core/recourse/monthly-approval-display');
+        const [ratio] = await Promise.allSettled([
+          refreshRecoursePoolRatio(agentBankDeps.db),
+          refreshRecoursePoolDisplay(agentBankDeps.db).catch(() => console.warn('[Recourse] Pool display refresh unavailable')),
+          refreshMonthlyApprovalDisplays(agentBankDeps.db).catch(() => console.warn('[Recourse] Monthly display queue unavailable')),
+        ]);
+        if (ratio.status === 'rejected') throw ratio.reason;
       }
       return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, recourse_records: recourseRecords };
     }, () => releaseChainRecordRunLease(db, { workerId, nowMs: Date.now(), workload: 'discovery' }));

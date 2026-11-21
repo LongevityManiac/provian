@@ -625,48 +625,37 @@ export function attributionMetadata(
   };
 }
 
-/**
- * Author-ONLY earning candidates from a GitHub payload: the commit author(s) on a
- * push, and the PR author on a merged PR — the parties who did the work.
- *
- * DELIBERATELY EXCLUDES the pusher (`payload.pusher`) and the event sender
- * (`payload.sender`). Merely PUSHING someone else's commit (a merge, a rebase, an
- * integration) must NEVER credit the pusher — that was a residual double-mint path
- * (the pusher's webhook PE + the author's own daemon PE). Attribution follows the
- * git author, full stop. GitHub stamps `author.username` on any commit whose email
- * is linked to a GitHub account (the normal case), so this needs nothing from the
- * user; a commit made with an unlinked email carries no username and correctly does
- * not attribute (GitHub itself would not link it to an account either).
- */
+// Shared vendor identities are exact email addresses, never a domain or display name.
+const HOSTED_COMMIT_AUTHORS = new Set(['noreply@anthropic.com', 'cursoragent@cursor.com']);
+
+function isHostedCommitAuthor(email: unknown): boolean {
+  return typeof email === 'string' && HOSTED_COMMIT_AUTHORS.has(email.trim().toLowerCase());
+}
+
+function githubCommitAuthor(payload: Record<string, unknown>): Record<string, unknown> {
+  const head = asRecord(payload.head_commit);
+  return head.id === payload.after ? asRecord(head.author) : {};
+}
+
 export function extractGitHubAuthorKeyCandidates(payload: Record<string, unknown>): AuthorKeyCandidate[] {
   const candidates: AuthorKeyCandidate[] = [];
-  const headCommit = asRecord(payload.head_commit);
-  const headAuthor = asRecord(headCommit.author);
-  pushCandidate(candidates, 'email', headAuthor.email);
-  pushCandidate(candidates, 'username', headAuthor.username);
-
-  const commits = Array.isArray(payload.commits) ? payload.commits : [];
-  for (const commit of commits) {
-    const author = asRecord(asRecord(commit).author);
-    pushCandidate(candidates, 'email', author.email);
-    pushCandidate(candidates, 'username', author.username);
+  const author = githubCommitAuthor(payload);
+  if (isHostedCommitAuthor(author.email)) {
+    const sender = asRecord(payload.sender);
+    // Use the forge account, which also supplies the account type. Git author and
+    // pusher display names are not account-type evidence.
+    if (sender.type !== 'User' || typeof sender.id !== 'number' || !Number.isSafeInteger(sender.id) || sender.id <= 0) return [];
+    pushCandidate(candidates, 'account_id', sender.id);
+    pushCandidate(candidates, 'username', sender.login);
+    return dedupeCandidates(candidates);
   }
-
-  // PR-merged events carry no `commits[]`; the PR opener is the work-doer.
-  const pr = asRecord(payload.pull_request);
-  const prUser = asRecord(pr.user);
-  pushCandidate(candidates, 'username', prUser.login);
-
+  pushCandidate(candidates, 'email', author.email);
+  pushCandidate(candidates, 'username', author.username);
+  pushCandidate(candidates, 'username', asRecord(asRecord(payload.pull_request).user).login);
   return dedupeCandidates(candidates);
 }
 
-/**
- * SENDER-only candidates for a GENERIC (non-commit) GitHub event — the account that performed the
- * act (opened the issue, cut the release, reviewed the PR). Used ONLY by the generic synthesizer
- * path (`commitSha === null`); it is a SEPARATE function so the author-only list above can never
- * fall through to the sender on a push/PR (1 on the Trust Layer build: appending the
- * sender "last" still credited the pusher whenever the author was unmapped — first-mapped wins).
- */
+/** Identity of the account that performed a generic GitHub event or a hosted push. */
 export function extractGitHubSenderKeyCandidates(payload: Record<string, unknown>): AuthorKeyCandidate[] {
   const candidates: AuthorKeyCandidate[] = [];
   const sender = asRecord(payload.sender);
@@ -675,50 +664,79 @@ export function extractGitHubSenderKeyCandidates(payload: Record<string, unknown
   return dedupeCandidates(candidates);
 }
 
-export function extractGitLabAuthorKeyCandidates(payload: Record<string, unknown>): AuthorKeyCandidate[] {
-  const candidates: AuthorKeyCandidate[] = [];
+function gitLabCommit(payload: Record<string, unknown>): Record<string, unknown> {
   const commits = Array.isArray(payload.commits) ? payload.commits : [];
-  for (const commit of commits) {
-    const cm = asRecord(commit);
-    pushCandidate(candidates, 'email', cm.author_email);
-    pushCandidate(candidates, 'username', cm.author_name);
-    const author = asRecord(cm.author);
-    pushCandidate(candidates, 'email', author.email);
-    pushCandidate(candidates, 'username', author.name);
+  return asRecord(commits.find(c => asRecord(c).id === payload.after));
+}
+
+/** GitLab's push supplies an account id and login, but no account type. */
+export function gitLabHostedPusher(payload: Record<string, unknown>): { id: number; username: string } | null {
+  const commit = gitLabCommit(payload);
+  if (!isHostedCommitAuthor(asRecord(commit.author).email ?? commit.author_email)) return null;
+  const { user_id: id, user_username: username } = payload;
+  if (typeof id !== 'number' || !Number.isSafeInteger(id) || id <= 0
+    || typeof username !== 'string' || !/^[a-z0-9_.-]{1,255}$/i.test(username)) return null;
+  return { id, username };
+}
+
+export function extractGitLabAuthorKeyCandidates(
+  payload: Record<string, unknown>,
+  verifiedHumanPusher: boolean,
+): AuthorKeyCandidate[] {
+  const candidates: AuthorKeyCandidate[] = [];
+  const commit = gitLabCommit(payload);
+  const author = asRecord(commit.author);
+  const email = author.email ?? commit.author_email;
+  if (isHostedCommitAuthor(email)) {
+    const sender = verifiedHumanPusher ? gitLabHostedPusher(payload) : null;
+    if (!sender) return [];
+    pushCandidate(candidates, 'account_id', sender.id);
+    pushCandidate(candidates, 'username', sender.username);
+    pushCandidate(candidates, 'email', payload.user_email);
+    return dedupeCandidates(candidates);
   }
 
-  pushCandidate(candidates, 'email', payload.user_email);
-  pushCandidate(candidates, 'username', payload.user_username);
-  pushCandidate(candidates, 'username', payload.user_name);
-
+  pushCandidate(candidates, 'email', email);
+  pushCandidate(candidates, 'username', author.username);
   const attrs = asRecord(payload.object_attributes);
   pushCandidate(candidates, 'username', attrs.author_username);
   pushCandidate(candidates, 'account_id', attrs.author_id);
   return dedupeCandidates(candidates);
 }
 
-export function extractBitbucketAuthorKeyCandidates(payload: Record<string, unknown>): AuthorKeyCandidate[] {
+export function extractBitbucketAuthorKeyCandidates(
+  payload: Record<string, unknown>,
+  commitSha: string,
+): AuthorKeyCandidate[] {
   const candidates: AuthorKeyCandidate[] = [];
-  const push = asRecord(payload.push);
-  const changes = Array.isArray(push.changes) ? push.changes : [];
-  for (const change of changes) {
-    const commits = Array.isArray(asRecord(change).commits) ? asRecord(change).commits as unknown[] : [];
-    for (const commit of commits) {
-      const cm = asRecord(commit);
-      const author = asRecord(cm.author);
-      pushCandidate(candidates, 'account_id', asRecord(author.user).account_id);
-      pushCandidate(candidates, 'account_id', asRecord(author.user).uuid);
-      pushCandidate(candidates, 'username', asRecord(author.user).nickname);
-      const raw = stringField(author.raw);
-      if (raw) {
-        const email = extractEmail(raw);
-        if (email) pushCandidate(candidates, 'email', email);
-      }
+  const changes = asRecord(payload.push).changes;
+  if (Array.isArray(changes)) {
+    const change = changes.map(asRecord).find(change => {
+      const branch = asRecord(change.new);
+      return change.closed !== true && branch.type === 'branch' && asRecord(branch.target).hash === commitSha;
+    });
+    const target = asRecord(asRecord(change?.new).target);
+    const commits = Array.isArray(change?.commits) ? change.commits : [];
+    const included = asRecord(commits.find(c => asRecord(c).hash === commitSha));
+    const author = asRecord(target.author ?? included.author);
+    const raw = stringField(author.raw);
+    const email = raw && extractEmail(raw);
+    if (isHostedCommitAuthor(email)) {
+      const actor = asRecord(payload.actor);
+      if (actor.type !== 'user' || !(stringField(actor.account_id) || stringField(actor.uuid))) return [];
+      pushCandidate(candidates, 'account_id', actor.account_id);
+      pushCandidate(candidates, 'account_id', actor.uuid);
+      pushCandidate(candidates, 'username', actor.nickname);
+      return dedupeCandidates(candidates);
     }
+    const account = asRecord(author.user);
+    pushCandidate(candidates, 'account_id', account.account_id);
+    pushCandidate(candidates, 'account_id', account.uuid);
+    pushCandidate(candidates, 'username', account.nickname);
+    pushCandidate(candidates, 'email', email);
   }
 
-  const pr = asRecord(payload.pullrequest);
-  const author = asRecord(pr.author);
+  const author = asRecord(asRecord(payload.pullrequest).author);
   pushCandidate(candidates, 'account_id', author.account_id);
   pushCandidate(candidates, 'account_id', author.uuid);
   pushCandidate(candidates, 'username', author.nickname);

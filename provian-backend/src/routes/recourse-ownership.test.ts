@@ -11,27 +11,47 @@ import { PRIVATE_MEMBERSHIP_COLLECTIONS } from '../core/recourse/private-members
 import * as restoration from '../core/recourse/restoration-request';
 import * as auxiliaryRecovery from '../core/recourse/auxiliary-recovery';
 import * as poolState from '../core/recourse/pool-state';
-import * as membershipView from '../core/recourse/private-membership-view';
+import * as membershipDomain from '../core/recourse/private-membership-domain';
+import * as membershipScan from '../core/recourse/private-membership-scan';
+import * as monthlyDisplay from '../core/recourse/monthly-approval-display';
+import type { RecourseDisplayPool } from '../core/recourse/pool-display';
+import { recourseMembershipRuleHash, type RecourseMembershipRule } from '../core/recourse/membership-rule';
+import { joinPrivateMembership } from '../core/recourse/private-membership-calendar';
 import * as protocol from '../core/protocol/runtime';
 import * as monthly from '../core/recourse/monthly-approval';
 import type { ProtocolDeployment } from '../core/protocol/pointer';
 
-test('a registered human wallet can read non-membership before binding any address', async () => {
+const chainBlock = `0x${'0b'.repeat(32)}`;
+const chainPool = `0x${'cd'.repeat(20)}`;
+const displayMonth = 2026 * 12 + 10;
+const displayRule: RecourseMembershipRule = {
+  schema: 'provian-recourse-membership/v1', chainId: 8453, pointer: `0x${'9a'.repeat(20)}`,
+  firstMonth: displayMonth, participationBurnAtomic: '100', noEarningsContributionAtomic: '200', earningsBps: 100,
+};
+const ruleHash = recourseMembershipRuleHash(displayRule);
+const pool: RecourseDisplayPool = {
+  pool: chainPool, kernel: chainPool, block: 100, blockHash: chainBlock, revision: '1',
+  timestamp: Date.UTC(2026, 10, 21) / 1000, observedAtMs: Date.now(), month: String(displayMonth),
+  reserveAtomic: '900', participationBurnAtomic: '100', noEarningsContributionAtomic: '200',
+  earningsBps: 100, signedRuleHash: ruleHash, schedule: [{ rule: displayRule, ruleHash }],
+};
+const poolKey = 'recourse_public_resources_v1/display';
+
+test('the display loads without chain reads, reconciliation, or a private scan while binding challenges require fresh verification', async () => {
   const db = createFakeFirestore();
   const userId = 'user_recourse_reader', account = `0x${'ae'.repeat(20)}`, zero = `0x${'00'.repeat(32)}`;
   const ownerIdentity = identityHash('human', userId);
   db.store.set('wallets/wallet_recourse_reader', { address: account, type: 'human', user_id: userId });
-  const pool = { pool: account, kernel: account, block: 100, blockHash: zero, timestamp: 1000, addressConsent: false,
-    currentAddress: `0x${'00'.repeat(20)}`, month: '1', reserveAtomic: '100', consentNonce: '0', consentGeneration: '0',
-    debitNonce: '0', outstandingAtomic: '0', authority: account, participationBurnAtomic: '100',
-    noEarningsContributionAtomic: '100', earningsBps: 100, signedRuleHash: zero, outcomeRevision: '0' };
-  const readPool = jest.spyOn(poolState, 'readRecoursePoolState').mockResolvedValue(pool);
-  const readDeployment = jest.spyOn(protocol, 'currentProtocolDeployment').mockResolvedValue({ blockHash: zero } as ProtocolDeployment);
-  const app = express();
+  db.store.set(poolKey, { ...pool });
+  const deployment = { pointer: displayRule.pointer, addresses: { kernel: pool.kernel } } as ProtocolDeployment;
+  const readDeployment = jest.spyOn(protocol, 'currentProtocolDeployment').mockResolvedValue(deployment);
+  const readPool = jest.spyOn(poolState, 'readRecoursePoolState').mockRejectedValue(Error('recourse_chain_unavailable'));
+  const reconcile = jest.spyOn(membershipDomain, 'reconcilePrivateMembershipDomain').mockRejectedValue(Error('unavailable'));
+  const scan = jest.spyOn(membershipScan, 'readPrivateMembershipScan').mockRejectedValue(Error('unavailable'));
+  const app = express(); app.use(express.json());
   app.use('/v1/recourse', createRecourseRouter({ db } as unknown as AgentBankDeps, (req, res, next) => {
     if (req.headers.authorization !== 'Bearer TEST_ONLY') { res.sendStatus(401); return; }
-    req.user = { id: userId } as Request['user'];
-    next();
+    req.user = { id: userId } as Request['user']; next();
   }));
   const read = () => request(app).get('/v1/recourse/pool').set('Authorization', 'Bearer TEST_ONLY');
   try {
@@ -40,65 +60,62 @@ test('a registered human wallet can read non-membership before binding any addre
     expect(response.status).toBe(200);
     expect(response.headers['cache-control']).toBe('no-store');
     expect(response.body).toMatchObject({ identity: zero, primaryIdentity: null, walletAddress: account,
-      membership: { enrolled: false, details: { status: 'not_member' } } });
-    expect(db.store.size).toBe(1);
-    readPool.mockResolvedValueOnce({ ...pool, addressConsent: true });
-    expect((await read()).status).toBe(503);
+      reserveAtomic: '900', membership: { enrolled: false, details: { status: 'not_member' } } });
+    expect(db.store.size).toBe(2);
+
     db.store.set(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`, { ownerIdentity });
-    expect((await read()).status).toBe(503);
-    db.store.delete(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`);
-    db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`, { ownerIdentity, address: account, chainBindingStatus: 'pending' });
-    expect((await read()).status).toBe(503);
-  } finally { readPool.mockRestore(); readDeployment.mockRestore(); }
+    const checking = await read();
+    expect(checking.status).toBe(200);
+    expect(checking.body).toMatchObject({ reserveAtomic: '900', membershipChecking: true, membership: null });
+    expect(readDeployment).not.toHaveBeenCalled();
+    expect(readPool).not.toHaveBeenCalled();
+    expect(reconcile).not.toHaveBeenCalled();
+    expect(scan).not.toHaveBeenCalled();
+
+    const challenge = await request(app).post('/v1/recourse/binding-challenge').set('Authorization', 'Bearer TEST_ONLY')
+      .send({ address: account, signingRoot: chainBlock, recoveryCommitment: chainBlock });
+    expect(readDeployment).toHaveBeenCalledWith({ fresh: true });
+    expect(readPool).toHaveBeenCalledWith(expect.stringMatching(/^0x[0-9a-f]{64}$/), deployment);
+    expect(challenge.body).toEqual({ error: 'recourse_chain_unavailable' });
+    expect(challenge.body.binding).toBeUndefined();
+  } finally { readPool.mockRestore(); readDeployment.mockRestore(); reconcile.mockRestore(); scan.mockRestore(); }
 });
 
-test('an auxiliary-only owner reads private membership without inventing primary recovery authority', async () => {
-  const db=createFakeFirestore(),walletId='wallet_aw_aux_member',ownerIdentity=identityHash('agent',walletId);
-  const identity=`0x${'ab'.repeat(32)}`,account=`0x${'ac'.repeat(20)}`;
-  const owner={ownerIdentity,ownerType:'agent',ownerId:walletId,walletId};
-  db.store.set(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`,{...owner,membershipFixedDebitBinding:identity});
-  db.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`,{...owner,identity,primaryBinding:false});
-  db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`,{ownerIdentity,identity,address:account,chainBindingStatus:'confirmed'});
-  const pool={pool:account,kernel:account,block:100,blockHash:identity,timestamp:1000,addressConsent:true,currentAddress:account,
-    month:'1',reserveAtomic:'100',consentNonce:'0',consentGeneration:'1',debitNonce:'0',outstandingAtomic:'0',authority:account,
-    participationBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100,signedRuleHash:identity,outcomeRevision:'0'};
-  const readPool=jest.spyOn(poolState,'readRecoursePoolState').mockResolvedValue(pool);
-  const deployment = { blockHash: identity } as ProtocolDeployment;
-  const readDeployment = jest.spyOn(protocol, 'currentProtocolDeployment').mockResolvedValue(deployment);
-  const approval = { status: 'approved', burnLimit: '100', reserveLimit: '100', earningsBpsLimit: 100 } as const;
-  const readMonthly = jest.spyOn(monthly, 'readRecourseMonthlyApproval').mockResolvedValue(approval);
-  const readMembership=jest.spyOn(membershipView,'readPrivateMembershipView').mockResolvedValue({enrolled:true,grace:false,
-    month:'1',endMonthExclusive:'2',unpaidAtomic:'0',block:100,blockHash:identity,
-    details:{status:'protected',protectionStartedAtMs:1000,nextMonthAtMs:2000,nextBurnAtomic:'100',noEarningsContributionAtomic:'100',earningsBps:100}});
-  const app=express();app.use(express.json());
-  app.use('/v1/recourse',createRecourseRouter({db} as unknown as AgentBankDeps,(req,_res,next)=>{
-    req.agentWallet={id:walletId} as Request['agentWallet'];next();
+test('an auxiliary-only owner reads committed membership and only its own monthly approval display', async () => {
+  const db = createFakeFirestore(), walletId = 'wallet_aw_aux_member', ownerIdentity = identityHash('agent', walletId);
+  const identity = `0x${'ab'.repeat(32)}`, account = `0x${'ac'.repeat(20)}`;
+  const owner = { ownerIdentity, ownerType: 'agent', ownerId: walletId, walletId };
+  const ownerKey = `${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`;
+  db.store.set(ownerKey, { ...owner, membershipFixedDebitBinding: identity });
+  db.store.set(`${RECOURSE_COLLECTIONS.identities}/${identity}`, { ...owner, identity, primaryBinding: false });
+  db.store.set(`${RECOURSE_COLLECTIONS.addresses}/${account}`, { ownerIdentity, identity, address: account, chainBindingStatus: 'confirmed' });
+  db.store.set(poolKey, { ...pool });
+  db.store.set(`${PRIVATE_MEMBERSHIP_COLLECTIONS.owners}/${ownerIdentity}`, {
+    ownerIdentity, version: 1, checkpoint: { pool: pool.pool, block: pool.block, blockHash: pool.blockHash },
+    needsScan: true, pendingReservation: 'in-flight',
+    episode: joinPrivateMembership(null, displayMonth, () => ({ rule: displayRule, ruleHash })),
+  });
+  const approval = { status: 'approved', burnLimit: '100', reserveLimit: '200', earningsBpsLimit: 100 } as const;
+  const readMonthly = jest.spyOn(monthlyDisplay, 'readMonthlyApprovalDisplay').mockResolvedValue(approval);
+  const chainMonthly = jest.spyOn(monthly, 'readRecourseMonthlyApproval').mockRejectedValue(Error('offline'));
+  const app = express();
+  app.use('/v1/recourse', createRecourseRouter({ db } as unknown as AgentBankDeps, (req, _res, next) => {
+    req.agentWallet = { id: walletId } as Request['agentWallet']; next();
   }));
   try {
-    const response=await request(app).get('/v1/recourse/pool');
-    expect(response.status).toBe(200);expect(response.headers['cache-control']).toBe('no-store');
-    expect(response.body.identity).toBe(identity);expect(response.body.membership.enrolled).toBe(true);
-    expect(readPool).toHaveBeenCalledWith(identity,deployment);expect(readMembership).toHaveBeenCalledWith(db,ownerIdentity,pool);
-    expect(readMonthly).toHaveBeenCalledWith(identity,identity,pool,deployment);
-    expect(response.body.monthlyApproval).toEqual(approval);
-    readMonthly.mockRejectedValueOnce(Error('provider disagreement'));
+    const response = await request(app).get('/v1/recourse/pool');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ identity, primaryIdentity: null, membership: { enrolled: true }, monthlyApproval: approval });
+    expect(readMonthly).toHaveBeenCalledWith(db, ownerIdentity, identity, expect.objectContaining({ signedRuleHash: ruleHash }));
+    expect(chainMonthly).not.toHaveBeenCalled();
+    readMonthly.mockRejectedValueOnce(Error('display unavailable'));
     const unavailable = await request(app).get('/v1/recourse/pool');
     expect(unavailable.body).toMatchObject({ membership: { enrolled: true }, monthlyApproval: null });
-    const ownerRow = db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)!;
-    ownerRow.membershipFixedDebitBinding = `0x${'fe'.repeat(32)}`;
+    db.store.get(ownerKey)!.membershipFixedDebitBinding = `0x${'fe'.repeat(32)}`;
     readMonthly.mockClear();
-    const unowned = await request(app).get('/v1/recourse/pool');
-    expect(unowned.body.monthlyApproval).toBeNull();
+    expect((await request(app).get('/v1/recourse/pool')).body.monthlyApproval).toBeNull();
     expect(readMonthly).not.toHaveBeenCalled();
-    ownerRow.membershipFixedDebitBinding = identity;
-    expect(db.store.get(`${RECOURSE_COLLECTIONS.owners}/${ownerIdentity}`)).not.toHaveProperty('primaryBinding');
-    readMembership.mockResolvedValueOnce({ membershipTransition: 'join' });
-    const pending = await request(app).get('/v1/recourse/pool');
-    expect(pending.status).toBe(200);
-    expect(pending.body).toMatchObject({ identity, membership: null, membershipTransition: 'join' });
-    db.store.get(`${RECOURSE_COLLECTIONS.identities}/${identity}`)!.walletId='other';
-    expect((await request(app).get('/v1/recourse/pool')).status).toBe(503);
-  } finally {readPool.mockRestore();readMembership.mockRestore();readDeployment.mockRestore();readMonthly.mockRestore();}
+  } finally { readMonthly.mockRestore(); chainMonthly.mockRestore(); }
 });
 
 test('auxiliary recovery requires owner authentication and returns only a generic error', async () => {
