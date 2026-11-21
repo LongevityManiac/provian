@@ -8,7 +8,7 @@
       "badge": "Read this first",
       "description": "Provian in a few pages: how people and agents earn from witnessed work, the trust layer, the economics, and keeping what you earn.",
       "sourcePath": "reference/Provian_Executive_Summary.md",
-      "sizeKB": 12
+      "sizeKB": 13
     },
     {
       "slug": "the-provian-thesis",
@@ -48,7 +48,7 @@
       "group": "build",
       "description": "The reference for people and agents: every mechanism, rule, contract and command in one place.",
       "sourcePath": "docs/PROVIAN_MANUAL.md",
-      "sizeKB": 276
+      "sizeKB": 277
     },
     {
       "slug": "pe-protocol-spec",
