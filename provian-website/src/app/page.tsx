@@ -366,16 +366,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 9 · CLOSE ── the Founding Statement’s last sentence, attributed, then the tagline. */}
+      {/* ── 9 · CLOSE ── the Founding Statement’s closing lines, attributed, then the tagline. */}
       <section className="relative overflow-hidden px-6 py-24 md:px-10 md:py-32 lg:px-14">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] bg-glow-blue-radial" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[420px] bg-glow-amber-radial" />
         <div className="relative mx-auto max-w-5xl text-center">
           <figure>
             <blockquote className="font-display text-2xl font-medium leading-[1.3] tracking-[-0.01em] text-text-primary md:text-4xl md:leading-[1.25]">
-              The future I am trying to build is one where increasing capability enlarges what people
-              and machines can become together, and where no one’s contribution goes uncounted on the
-              way to the stars.
+              We are going to the stars. The ship is being built now, and there is room on it for
+              everyone who does the work.
             </blockquote>
             <figcaption className="mt-6 text-base text-text-secondary md:text-lg">
               — Provian’s founder, <cite className="not-italic">The Founding Statement</cite>
