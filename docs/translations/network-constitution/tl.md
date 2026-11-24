@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # Ang Konstitusyon ng Provian Network
 
 **Katayuan: saligang kasulatan ng pagtatatag — hindi pa nararatipikahan.** Ito ang nag-iisang tekstong konstitusyonal ng Provian Network. Iginagapos nito ang Provian Technologies sa pamamagitan ng inilathalang pangako. Hindi pa na-activate ang pamamahala ng uring pantao at hindi pa nito nararatipikahan ang kasulatan. Hindi kondisyon ng pagiging kasapi sa network na walang kinakailangang pahintulot ang pagbabasa o pagtanggap dito.
@@ -9,7 +9,7 @@ Ipinapaliwanag ng Tesis ang bisyon. Binubuo ng Perang Eksponensiyal ang pang-eko
 
 ## Panimula
 
-Ang pagkuwenta ay lumilikha ng pera. Iniuugnay ng network ang nasaksihang ambag sa pagmamay-ari at lunas para sa tao at agent. Kasangkapan ng kontrol ang susi, hindi ang buong rekord ng may-ari. Binibigyan ng talaang nagsisimula sa pag-uugnay, hiwalay na pangako sa pagbawi at diskresyonaryong Recourse Pool ng anyong institusyonal ang pagkakaibang ito habang pinananatili ang paglilipat na walang pahintulot. Pagkaraan ng isang libong taon, kakailanganin ng kalakalan ng sibilisasyong umalis na sa Daigdig ang digital na salapi, hindi ang mga pera ng mga bansang pinagmulan ng mga mamamayan nito. Ang ninakaw na susi, pampublikong ledger at posibilidad ng pagkasira ng kriptograpiya ay totoong kahinaang lulutasin, hindi hangganan ng kinabukasang iyon. Ginagawang posible ang pagpapanumbalik ng paghihiwalay ng pagmamay-ari ng PVT sa susi.
+Ang pagkuwenta ay lumilikha ng pera. Iniuugnay ng network ang nasaksihang ambag sa pagmamay-ari at lunas para sa tao at agent. Kasangkapan ng kontrol ang susi, hindi ang buong rekord ng may-ari. Binibigyan ng talaang nagsisimula sa pag-uugnay, hiwalay na pangako sa pagbawi at diskresyonaryong Recourse Pool ng anyong institusyonal ang pagkakaibang ito habang pinananatili ang paglilipat na walang pahintulot. Pagkaraan ng isang libong taon, kakailanganin ng kalakalan ng sibilisasyong umalis na sa Daigdig ang digital na salaping lampas sa alinmang iisang bansa, hindi perang nakatali sa iisang pamahalaan. Ang ninakaw na susi, pampublikong ledger at posibilidad ng pagkasira ng kriptograpiya ay totoong kahinaang lulutasin, hindi hangganan ng kinabukasang iyon. Ginagawang posible ang pagpapanumbalik ng paghihiwalay ng pagmamay-ari ng PVT sa susi.
 
 Ang Provian Network ay bukas na protocol para sa pakikilahok na may ebidensiya sa ekonomiyang pinagsasaluhan ng mga tao at ahente. Iniuugnay nito ang patunay na pag-aari ng kalahok tungkol sa gawaing ginawa niya sa pakikilahok sa ekonomiya at sa mga ugnayang maaaring suriin gamit ang ebidensiya. Nagsisilbi ang mga pangako nito sa parehong uri ng kalahok.
 

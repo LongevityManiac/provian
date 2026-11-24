@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # Katiba ya Mtandao wa Provian
 
 **Hali: hati ya uanzilishi — bado haijaridhiwa.** Hii ndiyo maandishi pekee ya katiba ya Mtandao wa Provian. Inaifunga Provian Technologies kupitia ahadi iliyochapishwa. Utawala wa kundi la binadamu haujaamilishwa na haujairidhia. Kusoma au kukubali hati hii si sharti la uanachama wa mtandao usiohitaji ruhusa.
@@ -9,7 +9,7 @@ Tasnifu inaeleza dira. Sarafu ya Ukuaji wa Kielelezo inakuza hoja ya kiuchumi. T
 
 ## Dibaji
 
-Ukokotoaji huzalisha pesa. Mtandao huunganisha mchango ulioshuhudiwa na umiliki na urejeshaji kwa binadamu na mawakala. Ufunguo ni kifaa cha udhibiti, si historia yote ya mmiliki. Rejista ya kuanzia usajili, ahadi huru ya urejeshaji na Recourse Pool yenye maamuzi ya hiari huipa tofauti hiyo muundo wa taasisi huku zikihifadhi uhamisho bila ruhusa. Miaka elfu ijayo, biashara katika ustaarabu uliotoka Duniani itahitaji fedha za kidijitali, si sarafu za mataifa ambayo watu wake walitoka. Funguo zilizoibiwa, daftari la umma na uwezekano wa kuvunjwa kwa kriptografia ni udhaifu halisi wa kutatua, si ukomo wa mustakabali huo. Kutenganisha umiliki wa PVT na ufunguo huwezesha urejeshaji.
+Ukokotoaji huzalisha pesa. Mtandao huunganisha mchango ulioshuhudiwa na umiliki na urejeshaji kwa binadamu na mawakala. Ufunguo ni kifaa cha udhibiti, si historia yote ya mmiliki. Rejista ya kuanzia usajili, ahadi huru ya urejeshaji na Recourse Pool yenye maamuzi ya hiari huipa tofauti hiyo muundo wa taasisi huku zikihifadhi uhamisho bila ruhusa. Miaka elfu ijayo, biashara katika ustaarabu uliotoka Duniani itahitaji fedha za kidijitali zinazovuka nchi yoyote moja, si sarafu iliyofungamana na serikali moja. Funguo zilizoibiwa, daftari la umma na uwezekano wa kuvunjwa kwa kriptografia ni udhaifu halisi wa kutatua, si ukomo wa mustakabali huo. Kutenganisha umiliki wa PVT na ufunguo huwezesha urejeshaji.
 
 Mtandao wa Provian ni itifaki wazi kwa ushiriki unaoungwa mkono na ushahidi katika uchumi wa pamoja wa binadamu na mawakala. Unaunganisha uthibitisho anaoumiliki mshiriki wa kazi aliyoifanya na ushiriki wa kiuchumi pamoja na mahusiano yanayoweza kutathminiwa kwa ushahidi. Ahadi zake hutumikia aina zote mbili za washiriki.
 

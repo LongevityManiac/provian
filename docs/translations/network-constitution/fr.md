@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # La Constitution du Réseau Provian
 
 **Statut : charte fondatrice — pas encore ratifiée.** Il s’agit de l’unique texte constitutionnel du Réseau Provian. Il engage Provian Technologies par un engagement publié. La gouvernance de la classe humaine n’a pas été activée et ne l’a pas ratifié. Lire ou accepter cette charte n’est pas une condition d’adhésion sans autorisation préalable au réseau.
@@ -9,7 +9,7 @@ La Thèse explique la vision. La Monnaie Exponentielle développe l’argument �
 
 ## Préambule
 
-Le calcul crée la monnaie. Le réseau relie la contribution attestée à la propriété et au recours pour les humains et les agents. Une clé est un instrument de contrôle, pas toute l’histoire d’un propriétaire. Le registre prospectif, l’engagement de récupération indépendant et le Recourse Pool discrétionnaire donnent une forme institutionnelle à cette distinction tout en préservant les transferts sans autorisation. Dans mille ans, le commerce d’une civilisation ayant quitté la Terre aura besoin de monnaie numérique, et non des devises des nations d’où viennent ses habitants. Les clés volées, un registre public et une cryptographie qui pourrait être brisée sont des faiblesses réelles à résoudre, pas des plafonds à cet avenir. Séparer la propriété du PVT de la clé rend la restauration possible.
+Le calcul crée la monnaie. Le réseau relie la contribution attestée à la propriété et au recours pour les humains et les agents. Une clé est un instrument de contrôle, pas toute l’histoire d’un propriétaire. Le registre prospectif, l’engagement de récupération indépendant et le Recourse Pool discrétionnaire donnent une forme institutionnelle à cette distinction tout en préservant les transferts sans autorisation. Dans mille ans, le commerce d’une civilisation ayant quitté la Terre aura besoin d’une monnaie numérique qui dépasse tout pays, et non d’une devise liée à un seul gouvernement. Les clés volées, un registre public et une cryptographie qui pourrait être brisée sont des faiblesses réelles à résoudre, pas des plafonds à cet avenir. Séparer la propriété du PVT de la clé rend la restauration possible.
 
 Le Réseau Provian est un protocole ouvert de participation étayée par des preuves dans une économie partagée entre humains et agents. Il relie la preuve, détenue par chaque participant, du travail qu’il a accompli à la participation économique et à des relations évaluables sur preuves. Ses engagements servent les deux catégories de participants.
 

@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # Konstitusi Jaringan Provian
 
 **Status: piagam pendiri — belum diratifikasi.** Ini adalah satu-satunya teks konstitusional Jaringan Provian. Teks ini mengikat Provian Technologies melalui komitmen yang dipublikasikan. Tata kelola kelas manusia belum diaktifkan dan belum meratifikasinya. Membaca atau menerima piagam ini bukan syarat keanggotaan jaringan yang tidak memerlukan izin.
@@ -9,7 +9,7 @@ Tesis menjelaskan visi. Mata Uang Eksponensial mengembangkan argumen ekonomi. Te
 
 ## Pembukaan
 
-Komputasi mencetak uang. Jaringan menghubungkan kontribusi yang disaksikan dengan kepemilikan dan pemulihan bagi manusia serta agen. Kunci adalah alat kendali, bukan seluruh riwayat pemilik. Registri prospektif, komitmen pemulihan independen dan Recourse Pool diskresioner memberi bentuk kelembagaan pada perbedaan itu sambil mempertahankan transfer tanpa izin. Seribu tahun mendatang, perdagangan peradaban yang telah meninggalkan Bumi akan membutuhkan uang digital, bukan mata uang bangsa-bangsa asal penduduknya. Kunci dicuri, buku besar publik, dan kemungkinan kriptografi dipecahkan adalah kelemahan nyata untuk diatasi, bukan batas masa depan itu. Memisahkan kepemilikan PVT dari kunci memungkinkan pemulihan.
+Komputasi mencetak uang. Jaringan menghubungkan kontribusi yang disaksikan dengan kepemilikan dan pemulihan bagi manusia serta agen. Kunci adalah alat kendali, bukan seluruh riwayat pemilik. Registri prospektif, komitmen pemulihan independen dan Recourse Pool diskresioner memberi bentuk kelembagaan pada perbedaan itu sambil mempertahankan transfer tanpa izin. Seribu tahun mendatang, perdagangan peradaban yang telah meninggalkan Bumi akan membutuhkan uang digital yang melampaui negara mana pun, bukan mata uang yang terikat pada satu pemerintah. Kunci dicuri, buku besar publik, dan kemungkinan kriptografi dipecahkan adalah kelemahan nyata untuk diatasi, bukan batas masa depan itu. Memisahkan kepemilikan PVT dari kunci memungkinkan pemulihan.
 
 Jaringan Provian adalah protokol terbuka untuk partisipasi berbukti dalam ekonomi yang dibagi oleh manusia dan agen. Protokol ini menghubungkan bukti milik peserta atas pekerjaan yang telah mereka lakukan dengan partisipasi ekonomi dan dengan hubungan yang dapat dinilai berdasarkan bukti. Komitmennya melayani kedua jenis peserta.
 

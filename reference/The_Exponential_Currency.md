@@ -268,7 +268,7 @@ The same inheritance explains the other thing nobody built. On every one of thes
 
 Every crypto asset, PVT included, rests on a private key. Whoever holds the key holds the money, and that is also the weakness: steal the key and the money goes with it, and if the mathematics behind keys ever breaks, which is the quantum computing worry, every key is exposed at once.
 
-Critics treat those weaknesses as the outer edge of what crypto can be. This paper treats them as unfinished work. Provian’s founder does not believe a civilization trading across planets a thousand years from now will settle its accounts in national currencies. The money of that future will be digital, and money meant to last that long cannot depend on no key ever being stolen and no cipher ever failing.
+Critics treat those weaknesses as the outer edge of what crypto can be. This paper treats them as unfinished work. Provian’s founder does not believe a civilization trading across planets a thousand years from now will settle its accounts in a currency tied to any one country or set by one government's committee, however much he hopes the nations themselves make the journey. The money of that future will be digital, and money meant to last that long cannot depend on no key ever being stolen and no cipher ever failing.
 
 Banks solved a version of this long ago: a bank's record of what each customer is owed is kept apart from anyone's password, which is why a robbed customer can be made whole. On Bitcoin and Ethereum the chain is the only ledger, so an honest transfer and a theft look the same, and undoing one means persuading the whole network to rewrite history.
 

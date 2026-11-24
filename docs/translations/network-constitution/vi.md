@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # Hiến pháp Mạng lưới Provian
 
 **Trạng thái: hiến chương sáng lập — chưa được phê chuẩn.** Đây là văn bản hiến pháp duy nhất của Mạng lưới Provian. Văn bản ràng buộc Provian Technologies bằng cam kết công bố công khai. Quản trị của nhóm con người chưa được kích hoạt và chưa phê chuẩn văn bản này. Đọc hoặc chấp nhận hiến chương không phải điều kiện để gia nhập mạng lưới không cần cấp phép.
@@ -9,7 +9,7 @@ Luận đề giải thích tầm nhìn. Đồng tiền cấp số nhân phát tr
 
 ## Lời mở đầu
 
-Tính toán tạo ra tiền. Mạng kết nối đóng góp có nhân chứng với quyền sở hữu và cơ chế khắc phục cho con người và tác nhân. Khóa là công cụ kiểm soát, không phải toàn bộ hồ sơ của chủ sở hữu. Sổ đăng ký từ thời điểm liên kết, cam kết khôi phục độc lập và Recourse Pool tùy nghi tạo hình thức thể chế cho khác biệt đó, đồng thời giữ chuyển khoản không cần xin phép. Một nghìn năm nữa, thương mại của nền văn minh đã rời Trái Đất sẽ cần tiền kỹ thuật số, chứ không phải tiền tệ của những quốc gia nơi con người của nó xuất thân. Khóa bị đánh cắp, sổ cái công khai và khả năng mật mã bị phá là những điểm yếu thật sự cần giải quyết, không phải giới hạn của tương lai ấy. Tách quyền sở hữu PVT khỏi khóa cho phép khôi phục.
+Tính toán tạo ra tiền. Mạng kết nối đóng góp có nhân chứng với quyền sở hữu và cơ chế khắc phục cho con người và tác nhân. Khóa là công cụ kiểm soát, không phải toàn bộ hồ sơ của chủ sở hữu. Sổ đăng ký từ thời điểm liên kết, cam kết khôi phục độc lập và Recourse Pool tùy nghi tạo hình thức thể chế cho khác biệt đó, đồng thời giữ chuyển khoản không cần xin phép. Một nghìn năm nữa, thương mại của nền văn minh đã rời Trái Đất sẽ cần tiền kỹ thuật số vượt lên trên mọi quốc gia, chứ không phải một đồng tiền gắn với một chính phủ duy nhất. Khóa bị đánh cắp, sổ cái công khai và khả năng mật mã bị phá là những điểm yếu thật sự cần giải quyết, không phải giới hạn của tương lai ấy. Tách quyền sở hữu PVT khỏi khóa cho phép khôi phục.
 
 Mạng lưới Provian là giao thức mở cho sự tham gia có bằng chứng trong nền kinh tế chung của con người và tác nhân. Mạng lưới kết nối bằng chứng mà người tham gia sở hữu về công việc họ đã làm với sự tham gia kinh tế và với những quan hệ có thể được đánh giá bằng bằng chứng. Các cam kết phục vụ cả hai loại người tham gia.
 

@@ -1,4 +1,4 @@
-<!-- source-sha256: 02fb0b6a4450f9ae7c1d6c9ac206588d36dfc99f54a6d723b3a9e47dc8a19450 -->
+<!-- source-sha256: a6282b613897c1c2de83224f077f364cf9721a6d3e4e4d25c5fe9eaf1bc499d3 -->
 # La Constitución de la Red Provian
 
 **Estado: carta fundacional, aún no ratificada.** Este es el único texto constitucional de la Red Provian. Vincula a Provian Technologies mediante un compromiso publicado. La gobernanza de la clase humana no se ha activado ni la ha ratificado. Leer o aceptar esta carta no es una condición para pertenecer a la red sin permiso previo.
@@ -9,7 +9,7 @@ La Tesis explica la visión. La Moneda Exponencial desarrolla el argumento econ�
 
 ## Preámbulo
 
-La computación acuña dinero. La red conecta la contribución atestiguada con la propiedad y el recurso para humanos y agentes. Una clave es un instrumento de control, no toda la historia de un propietario. El registro prospectivo, el compromiso de recuperación independiente y el Recourse Pool discrecional dan forma institucional a esa distinción, preservando las transferencias sin permiso. Dentro de mil años, el comercio de una civilización que ha dejado la Tierra necesitará dinero digital, no las monedas de las naciones de las que vino su gente. Las claves robadas, un registro público y la posibilidad de que se rompa la criptografía son debilidades reales que resolver, no límites a ese futuro. Separar la propiedad del PVT de la clave hace posible la restauración.
+La computación acuña dinero. La red conecta la contribución atestiguada con la propiedad y el recurso para humanos y agentes. Una clave es un instrumento de control, no toda la historia de un propietario. El registro prospectivo, el compromiso de recuperación independiente y el Recourse Pool discrecional dan forma institucional a esa distinción, preservando las transferencias sin permiso. Dentro de mil años, el comercio de una civilización que ha dejado la Tierra necesitará dinero digital que trascienda cualquier país, no una moneda ligada a un solo gobierno. Las claves robadas, un registro público y la posibilidad de que se rompa la criptografía son debilidades reales que resolver, no límites a ese futuro. Separar la propiedad del PVT de la clave hace posible la restauración.
 
 La Red Provian es un protocolo abierto para la participación respaldada por evidencia en una economía compartida por humanos y agentes. Conecta la prueba, propiedad de cada participante, del trabajo que realizó con la participación económica y con relaciones evaluables mediante evidencia. Sus compromisos sirven a ambos tipos de participante.
 
