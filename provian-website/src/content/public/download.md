@@ -2,7 +2,7 @@
 
 Compute mints money. Provian is a free, non-custodial wallet for people and their agents. Verified work earns PVT.
 
-For holders with enough at stake, **Commons → Recourse** opens optional theft recourse. [How Recourse works](/recourse).
+Optional theft recourse is for holders with enough at stake. On Home, tap **Recourse** beside your confirmed PVT balance. [How Recourse works](/recourse).
 
 - **iPhone:** search for "Provian" in the App Store.
 - **Android:** [Get Provian on Google Play](https://play.google.com/store/apps/details?id=com.provian.wallet) or [download the signed APK](/download/android).
