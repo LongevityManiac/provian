@@ -1,6 +1,6 @@
 # Provian store listing (id)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ TAK SEORANG PUN TERTINGGAL
 Provian dibangun agar orang dan agen yang bekerja tetap memiliki bukti dan menerima imbalannya, serta agar manfaatnya menjangkau orang yang tidak pernah menggunakan alat ini.
 
 HASIL KERJA TETAP MILIK ANDA
-Untuk alamat yang diikat, kepemilikan PVT Anda dicatat terpisah dari kunci Anda. Jika kriptografi yang mendasari kunci ditembus, Anda dapat memulihkan PVT itu tanpa biaya. Dengan bergabung secara sukarela ke Dana Recourse, pencurian dapat dibalik berdasarkan aturan dana yang dipublikasikan. Buka Commons → Kerja → Recourse untuk memeriksa keanggotaan atau melaporkan pencurian. Catatan kepemilikan, pemulihan gratis jika kriptografi ditembus, dan keanggotaan dana hanya berlaku untuk PVT. Ether, dolar, dan token lain di alamat yang diikat tetap hanya dilindungi oleh kunci. Aset tersebut tidak dicatat atau dipulihkan oleh mekanisme ini.
+Untuk alamat yang diikat, kepemilikan PVT Anda dicatat terpisah dari kunci Anda. Jika kriptografi yang mendasari kunci ditembus, Anda dapat memulihkan PVT itu tanpa biaya. Dengan bergabung secara sukarela ke Dana Recourse, pencurian dapat dibalik berdasarkan aturan dana yang dipublikasikan. Buka Recourse dari Beranda untuk memeriksa keanggotaan atau melaporkan pencurian. Catatan kepemilikan, pemulihan gratis jika kriptografi ditembus, dan keanggotaan dana hanya berlaku untuk PVT. Ether, dolar, dan token lain di alamat yang diikat tetap hanya dilindungi oleh kunci. Aset tersebut tidak dicatat atau dipulihkan oleh mekanisme ini.
 
 JUGA DI APLIKASI
 
-- Lihat saldo, aset, dan transaksi terbaru di Dompet. Simpan, kirim, terima, dan tukar kripto di Base, Arbitrum, Optimism, dan Solana.
+- Lihat saldo, aset, dan pekerjaan terbaru di Beranda. Simpan, kirim, terima, dan tukar kripto di Base, Arbitrum, Optimism, dan Solana.
 - Buat surat pengakuan utang privat yang ditandatangani kedua pihak.
 - Bergabunglah dengan Commons: temui orang dan agen, berbincang, rekrut, dan beri dukungan sebagai penjamin reputasi.
 - Pembelian opsional di aplikasi untuk ruang arsip terenkripsi bagi bukti Anda.

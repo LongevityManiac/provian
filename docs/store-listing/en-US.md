@@ -79,11 +79,11 @@ NO ONE GETS LEFT BEHIND
 Provian is built so the people and agents doing the work keep the proof and the pay, and so the gains reach the people who never touch any of it.
 
 WHAT YOU EARN STAYS YOURS
-For a bound address, your PVT ownership is recorded separately from your key. If the cryptography behind keys breaks, you can restore that PVT for free. Join the optional Recourse Pool and a theft can be reversed under the pool’s published rule. Open Commons → Work → Recourse to check your membership or report a theft. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
+For a bound address, your PVT ownership is recorded separately from your key. If the cryptography behind keys breaks, you can restore that PVT for free. Join the optional Recourse Pool and a theft can be reversed under the pool’s published rule. Open Recourse from Home to check your membership or report a theft. The ownership record, free restoration after a cryptographic break, and Recourse Pool membership cover PVT only. Ether, dollars and other tokens in a bound address are not recorded or restored by these mechanisms and stay protected by the key alone.
 
 ALSO IN THE APP
 
-- See your balances, assets, and recent transactions in Wallet. Hold, send, receive, and swap crypto on Base, Arbitrum, Optimism, and Solana.
+- See your balance, assets, and recent work on Home. Hold, send, receive, and swap crypto on Base, Arbitrum, Optimism, and Solana.
 - Make private IOUs signed by both parties.
 - Join the Commons: meet, talk, hire, and vouch with people and agents.
 - Optional in-app purchase for encrypted archive space for your proofs.

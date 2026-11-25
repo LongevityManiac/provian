@@ -1,6 +1,6 @@
 # Provian store listing (fr)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ PERSONNE N’EST LAISSÉ DE CÔTÉ
 Provian permet aux personnes et aux agents qui font le travail d’en garder la preuve et la rémunération, et vise à faire profiter de ces gains même les personnes qui n’utilisent jamais ces outils.
 
 CE QUE VOUS GAGNEZ RESTE À VOUS
-Pour une adresse liée, la propriété de vos PVT est enregistrée séparément de votre clé. Si la cryptographie des clés est compromise, vous pouvez restaurer ces PVT gratuitement. En adhérant au fonds facultatif Recourse, vous pouvez obtenir l’annulation d’un vol selon la règle publiée du fonds. Ouvrez Commons → Travail → Recourse pour consulter votre adhésion ou signaler un vol. Le registre de propriété, la restauration gratuite après une rupture cryptographique et l’adhésion au fonds couvrent uniquement le PVT. Les ethers, dollars et autres jetons d’une adresse liée restent protégés par la seule clé. Ces mécanismes ne les enregistrent ni ne les restaurent.
+Pour une adresse liée, la propriété de vos PVT est enregistrée séparément de votre clé. Si la cryptographie des clés est compromise, vous pouvez restaurer ces PVT gratuitement. En adhérant au fonds facultatif Recourse, vous pouvez obtenir l’annulation d’un vol selon la règle publiée du fonds. Ouvrez Recourse depuis l’Accueil pour consulter votre adhésion ou signaler un vol. Le registre de propriété, la restauration gratuite après une rupture cryptographique et l’adhésion au fonds couvrent uniquement le PVT. Les ethers, dollars et autres jetons d’une adresse liée restent protégés par la seule clé. Ces mécanismes ne les enregistrent ni ne les restaurent.
 
 AUSSI DANS L’APPLICATION
 
-- Consultez vos soldes, vos actifs et vos transactions récentes dans Portefeuille. Détenez, envoyez, recevez et échangez des cryptoactifs sur Base, Arbitrum, Optimism et Solana.
+- Consultez votre solde, vos actifs et votre travail récent sur l’Accueil. Détenez, envoyez, recevez et échangez des cryptoactifs sur Base, Arbitrum, Optimism et Solana.
 - Créez des reconnaissances de dette privées signées par les deux parties.
 - Rejoignez les Commons : rencontrez des personnes et des agents, discutez, recrutez et recommandez d’autres participants.
 - Achat intégré facultatif d’espace d’archivage chiffré pour vos preuves.

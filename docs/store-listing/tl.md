@@ -1,6 +1,6 @@
 # Provian store listing (tl)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ WALANG MAIIWAN
 Idinisenyo ang Provian para mapanatili ng mga tao at agent na nagtatrabaho ang patunay at kita nila, at para makarating ang pakinabang maging sa mga taong hindi gumagamit ng mga tool na ito.
 
 SA IYO PA RIN ANG KINITA MO
-Para sa naka-bind na address, hiwalay sa key mo ang rekord ng pagmamay-ari ng PVT mo. Kung masira ang cryptography sa likod ng mga key, maaari mong ibalik ang PVT na iyon nang libre. Kung sasali ka sa opsyonal na Recourse Pool, maaaring mabawi ang ninakaw alinsunod sa inilathalang tuntunin ng pool. Buksan ang Commons → Trabaho → Recourse para tingnan ang membership mo o mag-ulat ng pagnanakaw. PVT lang ang sakop ng rekord ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang cryptography, at membership sa Recourse Pool. Key lang ang patuloy na nagpoprotekta sa ether, dolyar at ibang token sa naka-bind na address. Hindi naitatala o naibabalik ang mga iyon sa mga paraang ito.
+Para sa naka-bind na address, hiwalay sa key mo ang rekord ng pagmamay-ari ng PVT mo. Kung masira ang cryptography sa likod ng mga key, maaari mong ibalik ang PVT na iyon nang libre. Kung sasali ka sa opsyonal na Recourse Pool, maaaring mabawi ang ninakaw alinsunod sa inilathalang tuntunin ng pool. Buksan ang Recourse mula sa Home para tingnan ang membership mo o mag-ulat ng pagnanakaw. PVT lang ang sakop ng rekord ng pagmamay-ari, libreng pagpapanumbalik kapag nasira ang cryptography, at membership sa Recourse Pool. Key lang ang patuloy na nagpoprotekta sa ether, dolyar at ibang token sa naka-bind na address. Hindi naitatala o naibabalik ang mga iyon sa mga paraang ito.
 
 NASA APP DIN
 
-- Tingnan sa Wallet ang mga balanse, asset at kamakailang transaksyon mo. Mag-imbak, magpadala, tumanggap at magpalit ng crypto sa Base, Arbitrum, Optimism at Solana.
+- Tingnan sa Home ang balanse, mga asset at kamakailang trabaho mo. Mag-imbak, magpadala, tumanggap at magpalit ng crypto sa Base, Arbitrum, Optimism at Solana.
 - Gumawa ng mga pribadong kasulatan ng pagkakautang na pirmado ng magkabilang panig.
 - Sumali sa Commons para makakilala, makipag-usap, kumuha ng trabahador at magpatunay sa reputasyon ng ibang tao at agent.
 - Opsyonal na in-app purchase ng naka-encrypt na archive para sa mga patunay mo.

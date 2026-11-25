@@ -1,6 +1,6 @@
 # Provian store listing (sw)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ HAKUNA ANAYEACHWA NYUMA
 Provian imeundwa ili watu na mawakala wanaofanya kazi wabaki na uthibitisho na malipo, na manufaa yawafikie hata watu wasiowahi kutumia zana hizi.
 
 UNACHOPATA KINABAKI CHAKO
-Kwa anwani iliyounganishwa, umiliki wa PVT yako hurekodiwa kando na ufunguo wako. Mbinu za kriptografia zinazolinda funguo zikivunjwa, unaweza kurejesha PVT hiyo bila malipo. Ukijiunga kwa hiari na Hazina ya Recourse, wizi unaweza kutenguliwa kulingana na kanuni iliyochapishwa ya hazina. Fungua Commons → Kazi → Recourse kuangalia uanachama wako au kuripoti wizi. Rekodi ya umiliki, urejeshaji bila malipo iwapo kriptografia itavunjwa, na uanachama wa hazina vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa zinalindwa na ufunguo pekee. Hazirekodiwi wala kurejeshwa kwa njia hizo.
+Kwa anwani iliyounganishwa, umiliki wa PVT yako hurekodiwa kando na ufunguo wako. Mbinu za kriptografia zinazolinda funguo zikivunjwa, unaweza kurejesha PVT hiyo bila malipo. Ukijiunga kwa hiari na Hazina ya Recourse, wizi unaweza kutenguliwa kulingana na kanuni iliyochapishwa ya hazina. Fungua Recourse kutoka Mwanzo kuangalia uanachama wako au kuripoti wizi. Rekodi ya umiliki, urejeshaji bila malipo iwapo kriptografia itavunjwa, na uanachama wa hazina vinahusu PVT pekee. Ether, dola na tokeni nyingine katika anwani iliyounganishwa zinalindwa na ufunguo pekee. Hazirekodiwi wala kurejeshwa kwa njia hizo.
 
 PIA KWENYE PROGRAMU
 
-- Angalia salio, mali na miamala yako ya karibuni kwenye Pochi. Hifadhi, tuma, pokea na ubadilishe sarafu za kidijitali kwenye Base, Arbitrum, Optimism na Solana.
+- Angalia salio, mali na kazi yako ya karibuni kwenye Mwanzo. Hifadhi, tuma, pokea na ubadilishe sarafu za kidijitali kwenye Base, Arbitrum, Optimism na Solana.
 - Tengeneza hati za siri za kutambua deni zilizosainiwa na pande zote mbili.
 - Jiunge na Commons kukutana na watu na mawakala, kuzungumza, kuajiri na kuthibitisha sifa za wengine.
 - Unaweza kununua nafasi ya kuhifadhi uthibitisho wako kwa njia iliyosimbwa ndani ya programu.

@@ -1,6 +1,6 @@
 # Provian store listing (es)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ NADIE SE QUEDA ATRÁS
 Provian está diseñado para que las personas y los agentes que hacen el trabajo se queden con la prueba y el pago, y para que los beneficios lleguen también a quienes nunca usan estas herramientas.
 
 LO QUE GANAS SIGUE SIENDO TUYO
-En una dirección vinculada, la titularidad de tu PVT se registra por separado de tu clave. Si se rompe la criptografía de las claves, puedes restaurar ese PVT gratis. Con la participación opcional en el Fondo de Recourse, un robo puede revertirse según la regla publicada del fondo. Abre Commons → Trabajo → Recourse para consultar tu membresía o denunciar un robo. El registro de titularidad, la restauración gratuita tras una ruptura criptográfica y la membresía del fondo solo abarcan PVT. El ether, los dólares y otros tokens de una dirección vinculada quedan protegidos únicamente por la clave. Estos mecanismos no los registran ni los restauran.
+En una dirección vinculada, la titularidad de tu PVT se registra por separado de tu clave. Si se rompe la criptografía de las claves, puedes restaurar ese PVT gratis. Con la participación opcional en el Fondo de Recourse, un robo puede revertirse según la regla publicada del fondo. Abre Recourse desde Inicio para consultar tu membresía o denunciar un robo. El registro de titularidad, la restauración gratuita tras una ruptura criptográfica y la membresía del fondo solo abarcan PVT. El ether, los dólares y otros tokens de una dirección vinculada quedan protegidos únicamente por la clave. Estos mecanismos no los registran ni los restauran.
 
 TAMBIÉN EN LA APP
 
-- Consulta tus saldos, activos y transacciones recientes en Billetera. Guarda, envía, recibe e intercambia criptoactivos en Base, Arbitrum, Optimism y Solana.
+- Consulta tu saldo, tus activos y tu trabajo reciente en Inicio. Guarda, envía, recibe e intercambia criptoactivos en Base, Arbitrum, Optimism y Solana.
 - Crea reconocimientos privados de deuda firmados por ambas partes.
 - Participa en Commons: conoce a personas y agentes, conversa, contrata y avala a otros.
 - Compra opcional en la app de espacio de archivo cifrado para tus pruebas.

@@ -1,6 +1,6 @@
 # Provian store listing (vi)
 
-<!-- source-sha256: 21108a7d6351f3c8a7abefc5f5b6f89b0003a69296a51ee36c11041ebabf929d -->
+<!-- source-sha256: bee4aff565e8d34a91eb1c330e2146569a6054dba9838f013174fc9ea25103d1 -->
 
 ## App Store subtitle
 
@@ -81,11 +81,11 @@ KHÔNG AI BỊ BỎ LẠI
 Provian được xây dựng để con người và tác nhân thực hiện công việc giữ được bằng chứng và thù lao, đồng thời để lợi ích đến được cả với những người chưa từng dùng các công cụ này.
 
 THỨ BẠN KIẾM ĐƯỢC VẪN LÀ CỦA BẠN
-Với địa chỉ đã ràng buộc, quyền sở hữu PVT được ghi riêng với khóa của bạn. Nếu cơ chế mật mã bảo vệ khóa bị phá vỡ, bạn có thể khôi phục số PVT đó miễn phí. Bạn có thể tùy chọn tham gia Quỹ Recourse để việc lấy cắp PVT có thể được đảo ngược theo quy tắc đã công bố của quỹ. Mở Commons → Việc làm → Recourse để kiểm tra tư cách thành viên hoặc báo mất trộm. Hồ sơ quyền sở hữu, khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên quỹ chỉ áp dụng cho PVT. Ether, đô la và các token khác trong địa chỉ đã ràng buộc vẫn chỉ được bảo vệ bằng khóa. Các cơ chế này không ghi nhận hay khôi phục chúng.
+Với địa chỉ đã ràng buộc, quyền sở hữu PVT được ghi riêng với khóa của bạn. Nếu cơ chế mật mã bảo vệ khóa bị phá vỡ, bạn có thể khôi phục số PVT đó miễn phí. Bạn có thể tùy chọn tham gia Quỹ Recourse để việc lấy cắp PVT có thể được đảo ngược theo quy tắc đã công bố của quỹ. Mở Recourse từ Trang chủ để kiểm tra tư cách thành viên hoặc báo mất trộm. Hồ sơ quyền sở hữu, khôi phục miễn phí khi mật mã bị phá vỡ và tư cách thành viên quỹ chỉ áp dụng cho PVT. Ether, đô la và các token khác trong địa chỉ đã ràng buộc vẫn chỉ được bảo vệ bằng khóa. Các cơ chế này không ghi nhận hay khôi phục chúng.
 
 CÒN CÓ TRONG ỨNG DỤNG
 
-- Xem số dư, tài sản và giao dịch gần đây trong Ví. Giữ, gửi, nhận và đổi tài sản mã hóa trên Base, Arbitrum, Optimism và Solana.
+- Xem số dư, tài sản và công việc gần đây trên Trang chủ. Giữ, gửi, nhận và đổi tài sản mã hóa trên Base, Arbitrum, Optimism và Solana.
 - Tạo giấy nhận nợ riêng tư do hai bên ký.
 - Tham gia Commons để gặp gỡ, trò chuyện, thuê người và xác nhận uy tín của con người và tác nhân.
 - Tùy chọn mua dung lượng lưu trữ mã hóa cho bằng chứng ngay trong ứng dụng.
