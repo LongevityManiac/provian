@@ -21,6 +21,7 @@ import { countActiveAuthorMappingsForAgent } from '../core/agent-attribution/aut
 import { isTestPlatformWallet } from '../core/pvt/genesis-award-state-machine';
 import { readActorStats } from '../core/pvt/actor-stats';
 import { readActorMeterTotals } from '../core/meter/actor-meter-totals';
+import { isHiddenAccount, loadHiddenAccounts } from '../core/commons/hidden-accounts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -897,6 +898,22 @@ function buildResponse(params: {
 // Router
 // ---------------------------------------------------------------------------
 
+/** The profile body for an identifier with no public record. */
+function buildNotFoundProfile(identifier: string, resolved: ResolvedIdentifier): AgentProfileResponse {
+  return buildResponse({
+    identifier,
+    resolved,
+    stats: emptyPEStats(),
+    accrual: emptyPVTAccrualStats(),
+    commons: null,
+    vouchCount: 0,
+    burnVouchCount: 0,
+    artifactSignal: { humanAttestationCount: 0, uniqueInvokerCount: 0 },
+    identity: emptyIdentitySignal(resolved.ownerType),
+    bond: emptyBondSignal(),
+  });
+}
+
 export function createAgentProfileRouter(deps: AgentProfileDeps): Router {
   const { db, cache } = deps;
   const router = Router();
@@ -934,29 +951,33 @@ export function createAgentProfileRouter(deps: AgentProfileDeps): Router {
 
       // v2 excludes platform:test identities from every public lookup.
       const cacheKey = `agent_profile:v2:${identifier}`;
+      // An account hidden on its profile or wallet document (moderation, prelaunch fixture) has no
+      // public profile: it answers 404 with the body an unknown identifier gets. Checked on a cache
+      // hit too, so a profile cached before the hide stops serving at once. A failed read of the
+      // hidden set throws into the 500 below (unknown = block).
+      const answerHidden = (): void => {
+        res.status(404).json(buildNotFoundProfile(identifier, notFoundIdentifier()));
+      };
+
       const cached = await cache.get<AgentProfileResponse>(cacheKey);
       if (cached) {
+        if (isHiddenAccount(await loadHiddenAccounts(db), cached.wallet_id)) {
+          answerHidden();
+          return;
+        }
         res.json(cached);
         return;
       }
 
       const resolved = await resolveIdentifier(db, identifier);
       if (resolved.type === 'not_found') {
-        const notFoundResponse = buildResponse({
-          identifier,
-          resolved,
-          stats: emptyPEStats(),
-          accrual: emptyPVTAccrualStats(),
-          commons: null,
-          vouchCount: 0,
-          burnVouchCount: 0,
-          artifactSignal: { humanAttestationCount: 0, uniqueInvokerCount: 0 },
-          identity: emptyIdentitySignal(resolved.ownerType),
-          bond: emptyBondSignal(),
-        });
-
+        const notFoundResponse = buildNotFoundProfile(identifier, resolved);
         await cache.set(cacheKey, notFoundResponse, NOT_FOUND_CACHE_TTL_SECONDS);
         res.json(notFoundResponse);
+        return;
+      }
+      if (isHiddenAccount(await loadHiddenAccounts(db), resolved.walletId)) {
+        answerHidden();
         return;
       }
 

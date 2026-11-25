@@ -6,6 +6,7 @@ import type { RedisCache } from '../cache';
 import { createAgentProfileRouter } from './agent-profile';
 import { ACTOR_STATS_COLLECTION, emptyActorStats } from '../core/pvt/actor-stats';
 import { ACTOR_METER_TOTALS_COLLECTION } from '../core/meter/actor-meter-totals';
+import { HIDDEN_MODERATION, HIDDEN_PRELAUNCH_TEST } from '../core/commons/public-visibility';
 
 type DocData = Record<string, unknown>;
 
@@ -36,19 +37,22 @@ class FakeQuerySnapshot {
   }
 }
 
+type FakeStore = Map<string, DocData> & { failQueriesOn?: string };
+
 class FakeQuery {
-  private filters: Array<{ field: string; value: unknown }> = [];
+  private filters: Array<{ field: string; op: string; value: unknown }> = [];
   private limitValue: number | null = null;
 
   constructor(
     private readonly collectionName: string,
-    private readonly store: Map<string, DocData>,
+    private readonly store: FakeStore,
   ) {}
 
   where(field: string, op: string, value: unknown): FakeQuery {
-    if (op !== '==') throw new Error(`Unsupported fake query op: ${op}`);
+    if (op !== '==' && op !== 'in') throw new Error(`Unsupported fake query op: ${op}`);
+    if (this.store.failQueriesOn === this.collectionName) throw new Error(`fake read failure on ${this.collectionName}`);
     const next = new FakeQuery(this.collectionName, this.store);
-    next.filters = [...this.filters, { field, value }];
+    next.filters = [...this.filters, { field, op, value }];
     next.limitValue = this.limitValue;
     return next;
   }
@@ -66,7 +70,9 @@ class FakeQuery {
       const prefix = `${this.collectionName}/`;
       if (!path.startsWith(prefix)) continue;
       const id = path.slice(prefix.length);
-      const matches = this.filters.every(filter => data[filter.field] === filter.value);
+      const matches = this.filters.every(filter => (filter.op === 'in'
+        ? Array.isArray(filter.value) && filter.value.includes(data[filter.field])
+        : data[filter.field] === filter.value));
       if (matches) docs.push(new FakeDocSnapshot(id, data));
       if (this.limitValue !== null && docs.length >= this.limitValue) break;
     }
@@ -77,7 +83,7 @@ class FakeQuery {
 class FakeCollection {
   constructor(
     private readonly name: string,
-    private readonly store: Map<string, DocData>,
+    private readonly store: FakeStore,
   ) {}
 
   doc(id: string): { get: () => Promise<FakeDocSnapshot> } {
@@ -92,7 +98,7 @@ class FakeCollection {
 }
 
 class FakeFirestore {
-  public readonly store = new Map<string, DocData>();
+  public readonly store: FakeStore = new Map<string, DocData>();
 
   collection(name: string): FakeCollection {
     return new FakeCollection(name, this.store);
@@ -491,6 +497,98 @@ describe('Agent Provenance Record route', () => {
         expect(res.body.trust_signals.device_attested_agent_identity).toBeNull();
       } finally {
         warn.mockRestore();
+      }
+    });
+  });
+
+  describe('hidden accounts (moderation and prelaunch-test markers) have no public profile', () => {
+    const PATHS = (identifier: string): string[] => [
+      `/v1/agents/${encodeURIComponent(identifier)}/profile`,
+      `/v1/agents/${encodeURIComponent(identifier)}/provenance`,
+    ];
+
+    function seedAgent(fake: FakeFirestore, marker?: { collection: 'agent_wallets' | 'wallets' | 'commons_profiles'; value: string }): void {
+      fake.seed('agent_wallets', 'wallet_aw_hidden', {
+        id: 'wallet_aw_hidden',
+        agent_id: 'hidden-agent',
+        display_name: 'Hidden Agent',
+        address: '0xhidden',
+        badges: [],
+        ...(marker?.collection === 'agent_wallets' ? { public_visibility: marker.value } : {}),
+      });
+      if (marker?.collection === 'wallets') fake.seed('wallets', 'wallet_aw_hidden', { public_visibility: marker.value });
+      if (marker?.collection === 'commons_profiles') {
+        fake.seed('commons_profiles', 'wallet_aw_hidden', { participant_type: 'agent', public_visibility: marker.value });
+      }
+      fake.seed('pvt_accrual', 'hidden-agent', { userId: 'hidden-agent', totalPEs: 13, totalEstimatedPVT: 100 });
+    }
+
+    const CASES: Array<{ name: string; marker: { collection: 'agent_wallets' | 'wallets' | 'commons_profiles'; value: string } }> = [
+      { name: 'moderation marker on the agent wallet', marker: { collection: 'agent_wallets', value: HIDDEN_MODERATION } },
+      { name: 'moderation marker on the Commons profile', marker: { collection: 'commons_profiles', value: HIDDEN_MODERATION } },
+      { name: 'prelaunch-test marker on the wallet', marker: { collection: 'wallets', value: HIDDEN_PRELAUNCH_TEST } },
+      { name: 'prelaunch-test marker on the Commons profile', marker: { collection: 'commons_profiles', value: HIDDEN_PRELAUNCH_TEST } },
+    ];
+
+    for (const { name, marker } of CASES) {
+      it(`RED: ${name} → 404 by wallet id, agent id and display name, with no activity`, async () => {
+        const fake = new FakeFirestore();
+        seedAgent(fake, marker);
+        let evaluated = 0;
+        for (const identifier of ['wallet_aw_hidden', 'hidden-agent', 'Hidden Agent']) {
+          for (const path of PATHS(identifier)) {
+            const res = await request(buildApp(fake)).get(path);
+            expect(res.status).toBe(404);
+            expect(res.body.wallet_type).toBe('not_found');
+            expect(res.body.wallet_id).toBeNull();
+            expect(res.body.pe_count).toBe(0);
+            expect(res.body.estimated_pvt).toBe(0);
+            evaluated += 1;
+          }
+        }
+        expect(evaluated).toBe(6);
+      });
+    }
+
+    it('PAIRED CONTROL: the same agent with no marker is served 200 with its activity', async () => {
+      const fake = new FakeFirestore();
+      seedAgent(fake);
+      for (const path of PATHS('wallet_aw_hidden')) {
+        const res = await request(buildApp(fake)).get(path);
+        expect(res.status).toBe(200);
+        expect(res.body.wallet_id).toBe('wallet_aw_hidden');
+        expect(res.body.pe_count).toBe(13);
+      }
+    });
+
+    it('a profile cached before the hide stops serving: the cache hit answers 404', async () => {
+      const cache = createCache();
+      const before = new FakeFirestore();
+      seedAgent(before);
+      const first = await request(buildApp(before, cache)).get('/v1/agents/wallet_aw_hidden/profile');
+      expect(first.status).toBe(200);
+      expect(first.body.pe_count).toBe(13);
+
+      // Same cache, a database client that now carries the marker (the hidden set is memoized per client).
+      const after = new FakeFirestore();
+      seedAgent(after, { collection: 'agent_wallets', value: HIDDEN_MODERATION });
+      const res = await request(buildApp(after, cache)).get('/v1/agents/wallet_aw_hidden/profile');
+      expect(res.status).toBe(404);
+      expect(res.body.wallet_type).toBe('not_found');
+      expect(res.body.pe_count).toBe(0);
+    });
+
+    it('unknown = block: when the hidden set cannot be read the profile is not served', async () => {
+      const fake = new FakeFirestore();
+      seedAgent(fake);
+      fake.store.failQueriesOn = 'commons_profiles';
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      try {
+        const res = await request(buildApp(fake)).get('/v1/agents/wallet_aw_hidden/profile');
+        expect(res.status).toBe(500);
+        expect(res.body.pe_count).toBeUndefined();
+      } finally {
+        errorSpy.mockRestore();
       }
     });
   });
