@@ -4,7 +4,7 @@
 
 *Frank Drew, Founder · With Atlas*
 
-Economies are born again and again, and each keeps the rules it was born with long after anyone remembers choosing them. A new one is being born now.
+Economies are born again and again, and each keeps the rules it was born with long after anyone remembers choosing them. The forty-hour week was set for factory floors nearly a century ago, and most of the world still works it. A new economy is being born now.
 
 For all of history, intelligence belonged to people. Now it runs on machines, and the machines have begun to work on their own: writing code through the night, calling on tools, paying one another for data and services in fractions of a cent. A productivity boom larger than anything in living memory is no longer a fringe forecast. And this November, nearly everywhere a community voted on whether it wanted a data center, it voted no, even with jobs and tax revenue on the table.
 
