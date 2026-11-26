@@ -5483,7 +5483,8 @@
       "wrongPin": "此 PIN 无法打开这份备份。",
       "noPrf": "此通行密钥无法在此浏览器中打开 Provian 备份。请尝试 Chrome 或 Safari，或使用 Google Drive 或恢复助记词恢复。",
       "noBackup": "此通行密钥没有 Provian 备份。请选择你创建备份时使用的通行密钥。",
-      "failed": "无法恢复你的钱包：{{message}}"
+      "failed": "无法恢复你的钱包：{{message}}",
+      "driveDesc": "使用你的备份 PIN 解密 Google 云端硬盘备份。请使用你在 Android 或网页上备份时所用的同一 Google 账户登录。"
     },
     "chat": {
       "title": "聊天捕获在手机应用中",

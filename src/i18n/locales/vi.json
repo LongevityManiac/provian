@@ -5482,7 +5482,8 @@
       "wrongPin": "Mã PIN này không mở được bản sao lưu này.",
       "noPrf": "Khóa truy cập này không mở được bản sao lưu Provian trong trình duyệt này. Hãy thử Chrome hoặc Safari, hoặc khôi phục bằng Google Drive hay cụm từ khôi phục.",
       "noBackup": "Khóa truy cập này không có bản sao lưu Provian. Hãy chọn khóa truy cập mà bạn đã dùng để tạo bản sao lưu.",
-      "failed": "Không thể khôi phục ví của bạn: {{message}}"
+      "failed": "Không thể khôi phục ví của bạn: {{message}}",
+      "driveDesc": "Giải mã bản sao lưu Google Drive của bạn bằng mã PIN sao lưu. Đăng nhập bằng cùng tài khoản Google bạn đã dùng để sao lưu, trên Android hoặc trên web."
     },
     "chat": {
       "title": "Ghi nhận chat có trong ứng dụng điện thoại",

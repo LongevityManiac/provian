@@ -5482,7 +5482,8 @@
       "wrongPin": "Ce PIN n'ouvre pas cette sauvegarde.",
       "noPrf": "Cette clé d'accès ne peut pas ouvrir une sauvegarde Provian dans ce navigateur. Essayez Chrome ou Safari, ou restaurez avec Google Drive ou votre phrase de récupération.",
       "noBackup": "Cette clé d'accès n'a aucune sauvegarde Provian. Choisissez la clé d'accès avec laquelle vous avez fait la sauvegarde.",
-      "failed": "Impossible de restaurer votre portefeuille : {{message}}"
+      "failed": "Impossible de restaurer votre portefeuille : {{message}}",
+      "driveDesc": "Déchiffrez votre sauvegarde Google Drive à l'aide de votre code PIN de sauvegarde. Connectez-vous avec le même compte Google que celui utilisé pour la sauvegarde, sur Android ou sur le Web."
     },
     "chat": {
       "title": "La capture de discussion se trouve dans l'app mobile",

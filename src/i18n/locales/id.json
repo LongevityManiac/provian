@@ -5482,7 +5482,8 @@
       "wrongPin": "PIN itu tidak membuka cadangan ini.",
       "noPrf": "Passkey ini tidak dapat membuka cadangan Provian di browser ini. Coba Chrome atau Safari, atau pulihkan dengan Google Drive atau frasa pemulihan Anda.",
       "noBackup": "Passkey ini tidak memiliki cadangan Provian. Pilih passkey yang Anda pakai saat membuat cadangan.",
-      "failed": "Dompet Anda tidak dapat dipulihkan: {{message}}"
+      "failed": "Dompet Anda tidak dapat dipulihkan: {{message}}",
+      "driveDesc": "Dekripsi cadangan Google Drive Anda menggunakan PIN cadangan Anda. Masuk dengan akun Google yang sama yang Anda gunakan untuk mencadangkan, di Android atau di web."
     },
     "chat": {
       "title": "Perekaman obrolan ada di aplikasi ponsel",

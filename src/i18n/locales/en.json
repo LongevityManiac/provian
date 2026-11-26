@@ -5482,7 +5482,8 @@
       "wrongPin": "That PIN does not open this backup.",
       "noPrf": "This passkey cannot open a Provian backup in this browser. Try Chrome or Safari, or restore with Google Drive or your recovery phrase.",
       "noBackup": "This passkey has no Provian backup. Choose the passkey you made the backup with.",
-      "failed": "Your wallet could not be restored: {{message}}"
+      "failed": "Your wallet could not be restored: {{message}}",
+      "driveDesc": "Decrypt your Google Drive backup with your backup PIN. Sign in with the same Google account you backed up with, on Android or on the web."
     },
     "chat": {
       "title": "Chat capture is in the phone app",

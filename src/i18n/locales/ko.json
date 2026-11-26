@@ -5483,7 +5483,8 @@
       "wrongPin": "이 PIN으로는 이 백업을 열 수 없습니다.",
       "noPrf": "이 패스키로는 이 브라우저에서 Provian 백업을 열 수 없습니다. Chrome 또는 Safari를 사용해 보거나, Google Drive 또는 복구 문구로 복원하세요.",
       "noBackup": "이 패스키에는 Provian 백업이 없습니다. 백업할 때 사용한 패스키를 선택하세요.",
-      "failed": "지갑을 복원할 수 없습니다: {{message}}"
+      "failed": "지갑을 복원할 수 없습니다: {{message}}",
+      "driveDesc": "백업 PIN으로 Google Drive 백업을 복호화합니다. Android 또는 웹에서 백업할 때 사용한 것과 동일한 Google 계정으로 로그인하세요."
     },
     "chat": {
       "title": "채팅 캡처는 휴대폰 앱에서 사용할 수 있습니다",

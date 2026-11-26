@@ -5482,7 +5482,8 @@
       "wrongPin": "Ese PIN no abre este respaldo.",
       "noPrf": "Esta llave de acceso no puede abrir un respaldo de Provian en este navegador. Prueba con Chrome o Safari, o restaura con Google Drive o con tu frase de recuperación.",
       "noBackup": "Esta llave de acceso no tiene ningún respaldo de Provian. Elige la llave de acceso con la que hiciste el respaldo.",
-      "failed": "No se pudo restaurar tu billetera: {{message}}"
+      "failed": "No se pudo restaurar tu billetera: {{message}}",
+      "driveDesc": "Descifra tu respaldo de Google Drive con tu PIN de respaldo. Inicia sesión con la misma cuenta de Google con la que hiciste el respaldo, en Android o en la web."
     },
     "chat": {
       "title": "La captura de chat está en la app del teléfono",

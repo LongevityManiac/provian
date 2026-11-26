@@ -5482,7 +5482,8 @@
       "wrongPin": "Esse PIN não abre este backup.",
       "noPrf": "Esta chave de acesso não consegue abrir um backup da Provian neste navegador. Tente o Chrome ou o Safari, ou restaure com o Google Drive ou com sua frase de recuperação.",
       "noBackup": "Esta chave de acesso não tem backup da Provian. Escolha a chave de acesso com que você fez o backup.",
-      "failed": "Não foi possível restaurar sua carteira: {{message}}"
+      "failed": "Não foi possível restaurar sua carteira: {{message}}",
+      "driveDesc": "Descriptografe seu backup do Google Drive usando seu PIN de backup. Entre com a mesma conta Google usada no backup, no Android ou na web."
     },
     "chat": {
       "title": "A captura de chat está no app para telefone",

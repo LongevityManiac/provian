@@ -3,6 +3,10 @@ import { keccak256, sha256 } from 'ethers';
 import { HASH_ACCOUNT_ABI, hashAccountIntentDigest, hashAccountCall } from '../../provian-agent-sdk/dist/hash-account.js';
 import { recoverySigningRoot } from '../../provian-agent-sdk/dist/recourse-hash-authorization.js';
 import { prepareDurableHashAuthority, verifyDurableHashAuthority } from './hash-authority-durable.mjs';
+// Every test derives and signs with real hash-based keys: about 2.5 s each alone, twice that for
+// the tests that sign twice. The full suite runs files in parallel and can more than double that,
+// so the 5 s default timed out under load. Same budget as hash-authority-cancellation.test.mjs.
+vi.setConfig({ testTimeout: 30000 });
 const a = n => '0x' + n.toString(16).padStart(40, '0'), h = n => '0x' + n.toString(16).padStart(64, '0');
 const code = '0x60006000', runtime = keccak256(code), seed = new Uint8Array(32).fill(7);
 let initialRoot;

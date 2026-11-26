@@ -103,7 +103,7 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                         <View style={styles.optionContent}>
                             <Text style={styles.optionTitle}>{t('recoveryStart.cloudTitle', { cloudName })}</Text>
                             <Text style={styles.optionDesc}>
-                                {t('recoveryStart.cloudDesc')}
+                                {Platform.OS === 'web' ? t('webApp.restore.driveDesc') : t('recoveryStart.cloudDesc')}
                             </Text>
                         </View>
                         <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />

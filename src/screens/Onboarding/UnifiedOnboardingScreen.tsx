@@ -40,7 +40,7 @@ import {
     Text,
     StyleSheet,
     Animated,
-    Dimensions,
+    useWindowDimensions,
     Image,
     ScrollView,
     ImageSourcePropType,
@@ -57,7 +57,6 @@ import { useBiometricLabel } from '../../core/security/biometricLabel';
 import { isGenesisWindowOpen } from './genesisWindow';
 import BackButton from '../../components/BackButton';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // The Genesis step (index 3) is a campaign slide that RETIRES ITSELF when the
 // approved window closes — see genesisWindow.ts. Nobody has to remember to pull
 // it: once `isGenesisWindowOpen()` goes false the step, its hero, and its accent
@@ -116,6 +115,9 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const bio = useBiometricLabel();
     const [currentStep, setCurrentStep] = useState(0);
+    // The live window width, not one read at load: in a browser the window can be resized (or
+    // can have no width yet when the page loads), and each step is exactly one window wide.
+    const { width: screenWidth } = useWindowDimensions();
     const slideAnim = useRef(new Animated.Value(0)).current;
     const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -127,7 +129,7 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
             if (saved) {
                 const step = parseInt(saved, 10);
                 if (step > 0 && step < TOTAL_STEPS) {
-                    slideAnim.setValue(-step * SCREEN_WIDTH);
+                    slideAnim.setValue(-step * screenWidth);
                     progressAnim.setValue(step / (TOTAL_STEPS - 1));
                     setCurrentStep(step);
                 }
@@ -139,7 +141,7 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
     const goToStep = useCallback((step: number) => {
         Animated.parallel([
             Animated.timing(slideAnim, {
-                toValue: -step * SCREEN_WIDTH,
+                toValue: -step * screenWidth,
                 duration: 300,
                 useNativeDriver: true,
             }),
@@ -152,7 +154,14 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
         setCurrentStep(step);
         // D-1 fix: Persist step so crash/force-quit resumes here
         AsyncStorage.setItem(ONBOARDING_STEP_KEY, String(step)).catch(() => {});
-    }, [slideAnim, progressAnim]);
+    }, [slideAnim, progressAnim, screenWidth]);
+
+    // A resize keeps the current step in view: move the strip to its offset at the new width.
+    useEffect(() => {
+        slideAnim.setValue(-currentStep * screenWidth);
+        // Only a width change re-positions; step changes animate through goToStep.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [screenWidth]);
 
     // --- Navigation handlers ---
 
@@ -199,7 +208,7 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
             <Animated.View
                 style={[
                     styles.slidingContainer,
-                    { transform: [{ translateX: slideAnim }] },
+                    { width: screenWidth * TOTAL_STEPS, transform: [{ translateX: slideAnim }] },
                 ]}
             >
                 {/* ──────────── Step 0: THE HOOK ──────────── */}
@@ -391,9 +400,10 @@ const StepShell = ({ index, children }: { index: number; children: React.ReactNo
     const childArray = React.Children.toArray(children);
     const footer = childArray[childArray.length - 1];
     const scrollContent = childArray.slice(0, -1);
+    const { width } = useWindowDimensions();
 
     return (
-        <View style={styles.step}>
+        <View style={[styles.step, { width }]}>
             <View style={styles.stepScrollWrap}>
                 <ScrollView
                     style={styles.stepScroll}
@@ -508,10 +518,8 @@ const styles = StyleSheet.create({
     slidingContainer: {
         flex: 1,
         flexDirection: 'row',
-        width: SCREEN_WIDTH * TOTAL_STEPS,
     },
     step: {
-        width: SCREEN_WIDTH,
         flex: 1,
     },
     stepScrollWrap: {

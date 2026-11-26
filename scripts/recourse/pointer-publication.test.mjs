@@ -127,10 +127,14 @@ test('supplied institution file cannot replace freshly reconstructed cutoff inve
 });
 test('actual unsigned CLI help needs no provider and execution flags are refused', () => {
   const cli = new URL('./pointer-publication-cli.mjs', import.meta.url).pathname;
+  // The CLI imports the relay's TypeScript (builder-code.ts). The test starts it with test-only
+  // hooks that compile that TypeScript to ES modules, so it loads the same way on every Node: bare
+  // Node 20 cannot load .ts, and Node 22+ loads it as CommonJS and prints a warning on stderr.
+  const node = [process.execPath, '--import', new URL('./test-support/register-ts.mjs', import.meta.url).pathname];
   const env = { ...process.env, BASE_RPC_URL: 'not-a-provider', BASE_RPC_URL_SECONDARY: 'not-a-provider' };
-  expect(execFileSync(process.execPath, [cli, '--help'], { env, encoding: 'utf8' })).toContain('Read-only unsigned preparation');
+  expect(execFileSync(node[0], [...node.slice(1), cli, '--help'], { env, encoding: 'utf8', timeout: 30000 })).toContain('Read-only unsigned preparation');
   for (const args of [['prepare', '/missing-input', '--execute'], ['inspect', '/missing-input', '--execute']]) {
-    const result = spawnSync(process.execPath, [cli, ...args], { env, encoding: 'utf8' });
+    const result = spawnSync(node[0], [...node.slice(1), cli, ...args], { env, encoding: 'utf8', timeout: 30000 });
     expect(result.status).toBe(1); expect(result.stderr.trim()).toBe('pointer_publication_cli_usage');
   }
 });

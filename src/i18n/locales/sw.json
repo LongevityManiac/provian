@@ -5482,7 +5482,8 @@
       "wrongPin": "PIN hiyo haifungui nakala rudufu hii.",
       "noPrf": "Passkey hii haiwezi kufungua nakala rudufu ya Provian kwenye kivinjari hiki. Jaribu Chrome au Safari, au rejesha kwa Google Drive au maneno yako ya urejesho.",
       "noBackup": "Passkey hii haina nakala rudufu ya Provian. Chagua passkey uliyotumia kuunda nakala rudufu.",
-      "failed": "Pochi yako haikuweza kurejeshwa: {{message}}"
+      "failed": "Pochi yako haikuweza kurejeshwa: {{message}}",
+      "driveDesc": "Simbua hifadhi rudufu yako ya Google Drive kwa kutumia PIN yako ya hifadhi rudufu. Ingia kwa akaunti ileile ya Google uliyotumia kuhifadhi nakala, kwenye Android au kwenye wavuti."
     },
     "chat": {
       "title": "Kunasa Soga kuko kwenye programu ya simu",
