@@ -271,11 +271,15 @@ Loss restoration is the first program. Other recourse programs can follow.
 
 ### How is my wallet secured? <!-- app:howWalletSecured -->
 
-Your wallet is a BIP-39 account with the seed generated and stored encrypted on your device. Signing uses action-specific authentication: supported biometrics or the explicitly configured device-passcode fallback. The seed leaves your device only as ciphertext: a backup encrypted with a backup password you choose (AES-256-GCM) syncs to your iCloud Keychain on iOS or to your Google Drive app data folder on Android. When cloud backup is unavailable during setup, you back up by writing down the twelve-word recovery phrase and confirming three words. You can also export that phrase in Settings for an independent offline backup. A separate hardware-held device key signs Provenance Envelopes; it identifies the device, not the wallet, and verified platform evidence, not signing alone, determines any hardware attestation tier.
+Your wallet is a BIP-39 account with the seed generated and stored encrypted on your device. Signing uses action-specific authentication: supported biometrics or the explicitly configured device-passcode fallback. The seed leaves your device only as ciphertext: a backup encrypted with a backup password you choose (AES-256-GCM) syncs to your iCloud Keychain on iOS or to your Google Drive app data folder on Android. When cloud backup is unavailable during setup, you back up by writing down the twelve-word recovery phrase and confirming three words. You can also export that phrase in Settings for an independent offline backup. A separate hardware-held device key signs Provenance Envelopes; it identifies the device, not the wallet, and verified platform evidence, not signing alone, determines any hardware attestation tier. In the web app at app.provian.ai the seed is stored encrypted in your browser and opens only with your passkey and your PIN together; there you back it up to Google Drive, to your recovery phrase, or as a passkey backup that Provian stores and can never open.
 
 ### What if I lose my phone? <!-- app:losePhone -->
 
 Restore your encrypted cloud backup by signing in to the same iCloud or Google account on the new device and entering your backup password. Alternatively, restore with the twelve-word recovery phrase you wrote down during setup or exported from Settings. Provian cannot reset the backup password or recover a lost phrase. If you lose the device and both recovery methods, the wallet cannot be recovered.
+
+### Can I use Provian in a web browser? <!-- app:useInBrowser -->
+
+Yes. Open app.provian.ai on a computer: it is the same app, wallet and account as the phone app, and your phone and your browser stay signed in together. You unlock it with a passkey (Touch ID, Windows Hello or your password manager) and a 6-digit PIN. To use one wallet in both places, restore it in the browser from your Google Drive backup or your recovery phrase, or start in the browser and open Add your phone in Backup & Recovery, which shows your recovery phrase after your passkey and PIN. Chat capture runs only in the phone app.
 
 ### Can Provian access my funds? <!-- app:canProvianAccessFunds -->
 
@@ -327,7 +331,7 @@ It's a functional, non-custodial wallet and your gateway to Provenance Envelopes
 - Chain support: **Base, Arbitrum, Optimism** (EVM) and **Solana**
 - Send suggests the cheapest supported chain for the asset
 - Token swaps (same-chain and cross-chain) with a 0.25% Provian fee
-- Standard BIP-39 underneath, encrypted with your backup password and auto-backed up to iCloud Keychain (iOS) or Google Drive encrypted app folder (Android), with optional offline seed-phrase export. Non-custodial: Provian never holds your keys.
+- Standard BIP-39 underneath, encrypted with your backup password and auto-backed up to iCloud Keychain (iOS) or Google Drive encrypted app folder (Android), with optional offline seed-phrase export. In the web app you can also choose a passkey backup, which Provian stores and cannot open. Non-custodial: Provian never holds your keys.
 
 ---
 

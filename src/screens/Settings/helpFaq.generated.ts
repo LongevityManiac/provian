@@ -127,6 +127,10 @@ export const HELP_FAQ: readonly HelpFaqSection[] = [
         "answerKey": "help.faq.losePhoneA"
       },
       {
+        "questionKey": "help.faq.useInBrowser",
+        "answerKey": "help.faq.useInBrowserA"
+      },
+      {
         "questionKey": "help.faq.canProvianAccessFunds",
         "answerKey": "help.faq.canProvianAccessFundsA"
       },

@@ -3,9 +3,9 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const TERMS_DOCUMENT: LegalDocument = {
-  "version": "sha256:4ef661dfe95ef2b8eb21637f92f5f6460f211b1163e74525b7ea12574c7bcab7",
+  "version": "sha256:414a1ab7bfc315c327193b5c61df6391220a896d599db99727c63ab8daa98ad0",
   "title": "Provian Terms of Service",
-  "lastUpdated": "November 13, 2026",
+  "lastUpdated": "November 26, 2026",
   "footer": "These Terms of Service are effective as of July 16, 2026.",
   "blocks": [
     {
@@ -184,7 +184,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
             "bold": true
           },
           {
-            "text": " A non-custodial, multi-chain cryptocurrency wallet (EVM and Solana) with automatic cloud backup, encrypted with a backup password you choose, to iCloud Keychain (iOS) or Google Drive (encrypted, app-private) on Android. Optional BIP-39 recovery phrase export for advanced users."
+            "text": " A non-custodial, multi-chain cryptocurrency wallet (EVM and Solana) with automatic cloud backup, encrypted with a backup password you choose, to iCloud Keychain (iOS) or Google Drive (encrypted, app-private) on Android and in the web app, or, in the web app, a passkey backup that Provian stores and cannot open. Optional BIP-39 recovery phrase export for advanced users."
           }
         ],
         [
@@ -506,7 +506,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Provian uses a cloud backup encrypted with a backup password. Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and synced to your iCloud Keychain (iOS) or to your Google Drive app-data folder (encrypted, app-private) on Android. On a new device signed in to the same Apple or Google account, the encrypted backup syncs automatically and you enter your backup password to decrypt the seed and restore the wallet locally. Recovery requires both the encrypted backup and your backup password; neither alone is sufficient, and Provian holds neither. If you originally set a 6-digit PIN, that PIN is your backup password. An optional BIP-39 recovery phrase export is available in Settings for users who want an additional offline backup. You are solely responsible for:"
+          "text": "Provian uses a cloud backup encrypted with a backup password. Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and synced to your iCloud Keychain (iOS) or to your Google Drive app-data folder (encrypted, app-private) on Android. On a new device signed in to the same Apple or Google account, the encrypted backup syncs automatically and you enter your backup password to decrypt the seed and restore the wallet locally. Recovery requires both the encrypted backup and your backup password; neither alone is sufficient, and Provian holds neither. If you originally set a 6-digit PIN, that PIN is your backup password. In the web app at app.provian.ai you can back up to Google Drive in the same format, or choose a passkey backup: your seed is encrypted in your browser under a key that only your passkey and your PIN together produce, and Provian stores that ciphertext without any way to open it. Delete All Data erases a passkey backup. An optional BIP-39 recovery phrase export is available in Settings for users who want an additional offline backup. You are solely responsible for:"
         }
       ]
     },

@@ -27,6 +27,7 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const [state, setState] = useState<BackupState | null>(null);
 
+    const [passkeyBackup, setPasskeyBackup] = useState(false);
     const loadState = useCallback(async () => {
         const provider: 'icloud' | 'googleDrive' = Platform.OS === 'ios' ? 'icloud' : 'googleDrive';
         // [Group 8] last-backup and seed-exported are read via hmacAsyncStorage
@@ -46,6 +47,10 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
             getItemHmac<string>('@provian_last_cloud_backup_at').catch(() => null),
             getItemHmac<boolean>('@provian_seed_phrase_exported').catch(() => null),
         ]);
+        // Web app: a passkey backup of this wallet counts as its backup (Provian stores it, sealed).
+        const passkeyMark = Platform.OS === 'web' ? await AsyncStorage.getItem('@provian_web_passkey_backup_v1').catch(() => null) : null;
+        const address = useWalletStore.getState().address;
+        setPasskeyBackup(!!passkeyMark && !!address && passkeyMark === address.toLowerCase());
         setState({
             deviceKey,
             cloudBackup: cloud,
@@ -186,6 +191,17 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
                         value={cloudBackupValue}
                         ok={!!state?.cloudBackup}
                     />
+                    {Platform.OS === 'web' && (
+                        <>
+                            <View style={styles.statusDivider} />
+                            <StatusRow
+                                icon="finger-print"
+                                label={t('webApp.settings.passkeyBackup')}
+                                value={yesNo(passkeyBackup)}
+                                ok={passkeyBackup}
+                            />
+                        </>
+                    )}
                     <View style={styles.statusDivider} />
                     <StatusRow
                         icon="time-outline"
@@ -230,10 +246,19 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
                     title={t('settings.backupAndRecovery.actionShowRecoveryPhrase')}
                     onPress={handleShowPhrase}
                 />
+                {Platform.OS === 'web' && (
+                    <ActionCard
+                        icon="phone-portrait-outline"
+                        dotColor="#4CC38A"
+                        title={t('webApp.settings.addPhone')}
+                        subtitle={t('webApp.settings.addPhoneSubtitle')}
+                        onPress={() => navigation.navigate('AddYourPhone')}
+                    />
+                )}
 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>
-                        {t('settings.backupAndRecovery.modelExplainer')}
+                        {Platform.OS === 'web' ? t('webApp.settings.modelExplainer') : t('settings.backupAndRecovery.modelExplainer')}
                     </Text>
                 </View>
             </ScrollView>

@@ -865,7 +865,7 @@
       "whatIsCourtA": "As contestações do fórum se resolvem por queimar-para-apresentar, não por um tribunal: o contestante aposta uma queima e nomeia um predicado do vocabulário de apresentação; o autor responde apresentando. Se o predicado vale, a aposta queima; se falha, a contestação é mantida e a aposta volta; se o autor nunca apresenta, a contestação permanece. Só o resultado é público. O Tribunal continua sendo o órgão de disputas dos trilhos de agentes para Escrows (três árbitros, maioria de dois votos) e só forma painel quando há árbitros qualificados suficientes inscritos.",
       "securityAndRecovery": "Segurança e Recuperação",
       "howWalletSecured": "Como minha carteira é protegida?",
-      "howWalletSecuredA": "Sua carteira é uma conta BIP-39 com a seed gerada e armazenada criptografada em seu dispositivo. A assinatura utiliza autenticação específica para cada ação: biometria compatível ou o código de acesso do dispositivo configurado explicitamente como alternativa. A seed sai do seu dispositivo apenas como texto cifrado: um backup criptografado com uma senha de backup escolhida por você ( AES-256-GCM ) é sincronizado com o seu iCloud Keychain no iOS ou com a pasta de dados do seu aplicativo Google Drive no Android. Quando o backup na nuvem não estiver disponível durante a configuração, você pode fazer um backup anotando a frase de recuperação de doze palavras e confirmando três delas. Você também pode exportar essa frase nas Configurações para um backup offline independente. Uma chave de hardware separada assina Provenance Envelopes ; ela identifica o dispositivo, não a carteira, e a evidência verificada da plataforma, e não apenas a assinatura, determina qualquer nível de atestação de hardware.",
+      "howWalletSecuredA": "Sua carteira é uma conta BIP-39 com a seed gerada e armazenada criptografada em seu dispositivo. A assinatura utiliza autenticação específica para cada ação: biometria compatível ou o código de acesso do dispositivo configurado explicitamente como alternativa. A seed sai do seu dispositivo apenas como texto cifrado: um backup criptografado com uma senha de backup escolhida por você ( AES-256-GCM ) é sincronizado com o seu iCloud Keychain no iOS ou com a pasta de dados do seu aplicativo Google Drive no Android. Quando o backup na nuvem não estiver disponível durante a configuração, você pode fazer um backup anotando a frase de recuperação de doze palavras e confirmando três delas. Você também pode exportar essa frase nas Configurações para um backup offline independente. Uma chave de hardware separada assina Provenance Envelopes ; ela identifica o dispositivo, não a carteira, e a evidência verificada da plataforma, e não apenas a assinatura, determina qualquer nível de atestação de hardware. No app web em app.provian.ai, a seed fica armazenada criptografada no seu navegador e só abre com sua chave de acesso e seu PIN juntos; lá você faz backup dela no Google Drive, na sua frase de recuperação ou como um backup com chave de acesso que a Provian guarda e nunca consegue abrir.",
       "losePhone": "E se eu perder meu celular?",
       "losePhoneA": "Restaure seu backup criptografado na nuvem fazendo login na mesma conta do iCloud ou do Google no novo dispositivo e inserindo sua senha de backup. Como alternativa, restaure usando a frase de recuperação de doze palavras que você anotou durante a configuração ou exportou das Configurações. Provian não pode redefinir a senha de backup nem recuperar uma frase perdida. Se você perder o dispositivo e ambos os métodos de recuperação, a carteira não poderá ser recuperada.",
       "canProvianAccessFunds": "Provian pode acessar meus fundos?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Por que minha projeção de PVT é diferente do saldo da minha carteira?",
       "whyProjectionDiffersA": "O saldo da sua carteira é PVT já liquidado na Base. Uma projeção estima o trabalho pendente usando o contexto de liquidação aplicável. O calendário de liquidação (atualmente a cada 30 dias por destinatário), a capacidade da época e as atualizações de evidências podem afetar o prazo e o valor final. Eventos que não cunham separadamente são excluídos.",
       "complianceHoldA": "A emissão está retida pela política de jurisdição, e seu valor selado é preservado. O relay repete automaticamente as verificações de localização ou sanções ainda não resolvidas. Um bloqueio jurisdicional retém a emissão até que a política da jurisdição original permita a liberação; então ela ocorre automaticamente na liquidação normal, pelo valor selado original, sem recalcular. Uma jurisdição diferida segue seu processo de liberação gradual. Uma correspondência de endereço na lista SDN da OFAC é uma recusa definitiva e não gera emissão; não é uma retenção temporária. Você pode continuar registrando provas enquanto a emissão está retida.",
-      "complianceHold": "Por que meu recibo mostra “Emissão retida”?"
+      "complianceHold": "Por que meu recibo mostra “Emissão retida”?",
+      "useInBrowser": "Posso usar a Provian em um navegador web?",
+      "useInBrowserA": "Sim. Abra app.provian.ai em um computador: é o mesmo app, a mesma carteira e a mesma conta do app para telefone, e seu telefone e seu navegador continuam conectados ao mesmo tempo. Você o desbloqueia com uma chave de acesso (Touch ID, Windows Hello ou seu gerenciador de senhas) e um PIN de 6 dígitos. Para usar uma só carteira nos dois lugares, restaure-a no navegador a partir do seu backup do Google Drive ou da sua frase de recuperação, ou comece no navegador e abra Adicionar seu telefone em Backup e recuperação, que mostra sua frase de recuperação depois da sua chave de acesso e do seu PIN. A captura de chat só funciona no app para telefone."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT cobrem 7 dias. Os PVT são destruídos e ninguém os recebe.",
     "commonsPriceIfNeeded": "Se for preciso abrir esta conversa, {{pvt}} PVT cobrem 7 dias. Os PVT são destruídos e ninguém os recebe.",
     "priceChanged": "O valor mudou. Feche esta janela e confira o novo valor."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Abra sua carteira",
+      "presenceTitle": "Confirme que é você",
+      "revealTitle": "Mostre sua frase de recuperação",
+      "hint": "Use a chave de acesso desta carteira: Touch ID, Face ID, Windows Hello ou uma chave de segurança.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Seu PIN",
+      "pinTooShort": "Seu PIN tem pelo menos {{min}} caracteres.",
+      "continue": "Continuar com chave de acesso",
+      "cancel": "Cancelar",
+      "noWallet": "Nenhuma carteira está configurada neste navegador.",
+      "cancelled": "A chave de acesso não foi confirmada. Tente novamente.",
+      "wrongPin": "Esse PIN não está correto. Tentativas restantes antes de uma breve espera: {{count}}.",
+      "wrongPinNoCount": "Esse PIN não está correto.",
+      "wait": "Muitos PINs incorretos. Tente novamente depois de {{time}}.",
+      "failed": "Não foi possível abrir sua carteira: {{message}}"
+    },
+    "vault": {
+      "title": "Proteja sua carteira neste navegador",
+      "body": "Sua carteira abre aqui com uma chave de acesso e um PIN. A chave de acesso é Touch ID, Face ID, Windows Hello ou uma chave de segurança. Sua frase de recuperação fica criptografada neste navegador e nunca sai dele sem criptografia.",
+      "pinLabel": "Escolha um PIN",
+      "pinPlaceholder": "Pelo menos {{min}} caracteres",
+      "confirmPlaceholder": "Digite o PIN novamente",
+      "pinNote": "Use o mesmo PIN do seu telefone, se você tiver um. Você precisa dele junto com sua chave de acesso sempre que abrir sua carteira aqui.",
+      "pinRule": "Um PIN tem de {{min}} a {{max}} caracteres.",
+      "pinMismatch": "Os dois PINs não coincidem.",
+      "create": "Criar chave de acesso",
+      "passkeyName": "Carteira Provian",
+      "passkeyCancelled": "A chave de acesso não foi criada. Tente novamente.",
+      "noPasskeys": "Este navegador não pode usar chaves de acesso. Abra a Provian em uma versão atual do Safari, Chrome, Edge ou Firefox.",
+      "failed": "Não foi possível configurar a chave de acesso: {{message}}",
+      "noPrf": "Esta chave de acesso não pode proteger uma carteira neste navegador. Salve a chave de acesso nas Chaves do iCloud, no Gerenciador de senhas do Google ou em um gerenciador de senhas compatível com criptografia por chave de acesso, em uma versão atual do Chrome, Safari ou Edge, e tente de novo."
+    },
+    "backup": {
+      "title": "Faça backup da sua carteira",
+      "doneTitle": "O backup da sua carteira está feito",
+      "body": "Escolha um backup antes de usar sua carteira. Sem ele, perder este navegador significa perder a carteira.",
+      "passkeyTitle": "Fazer backup com sua chave de acesso",
+      "passkeyDesc": "A Provian guarda sua frase de recuperação criptografada com sua chave de acesso e seu PIN. A Provian nunca consegue abri-la. Em outro computador, sua chave de acesso e seu PIN restauram sua carteira.",
+      "driveTitle": "Fazer backup no Google Drive",
+      "driveDesc": "Sua frase de recuperação é criptografada com seu PIN e salva em uma pasta privada da Provian no seu Google Drive. Ela pode ser restaurada no Android e na web.",
+      "phraseTitle": "Anote sua frase de recuperação",
+      "phraseDesc": "Copie suas 12 palavras no papel e guarde-as em um lugar seguro.",
+      "recommended": "Recomendado",
+      "recommendedMac": "Recomendado no Mac",
+      "passkeyPrompt": "Faça backup da sua carteira com sua chave de acesso",
+      "googleNotSignedIn": "Você não entrou no Google Drive. Tente novamente e escolha sua conta do Google.",
+      "otherWalletMessage": "Este Google Drive já tem um backup de outra carteira Provian. Manter os dois backups ou substituí-lo pelo backup desta carteira?",
+      "failed": "O backup não foi concluído: {{message}}",
+      "note": "Você pode adicionar outro backup depois em Configurações."
+    },
+    "restore": {
+      "optionTitle": "Restaurar com sua chave de acesso",
+      "optionDesc": "Use a chave de acesso e o PIN do seu backup com chave de acesso.",
+      "title": "Restaurar com sua chave de acesso",
+      "body": "Digite seu PIN e depois use a chave de acesso com que você fez o backup. As chaves de acesso são sincronizadas pelo iCloud Keychain, Google Password Manager e outros gerenciadores de chaves de acesso.",
+      "button": "Usar minha chave de acesso",
+      "note": "A Provian verifica a chave de acesso e devolve seu backup criptografado. Seu PIN o abre aqui, neste navegador.",
+      "offline": "Não foi possível conectar à Provian. Verifique sua conexão e tente novamente.",
+      "wrongPin": "Esse PIN não abre este backup.",
+      "noPrf": "Esta chave de acesso não consegue abrir um backup da Provian neste navegador. Tente o Chrome ou o Safari, ou restaure com o Google Drive ou com sua frase de recuperação.",
+      "noBackup": "Esta chave de acesso não tem backup da Provian. Escolha a chave de acesso com que você fez o backup.",
+      "failed": "Não foi possível restaurar sua carteira: {{message}}"
+    },
+    "chat": {
+      "title": "A captura de chat está no app para telefone",
+      "body": "O app da Provian para telefone abre seus chats de IA dentro do app e registra cada conversa enquanto ela acontece. Uma página web não consegue ver dentro da aba de outro site, então o app web não registra chats. Seus agentes, commits e outros trabalhos testemunhados continuam rendendo aqui.",
+      "getPhoneApp": "Adicionar seu telefone",
+      "download": "Baixar o app para telefone"
+    },
+    "addPhone": {
+      "title": "Adicionar seu telefone",
+      "body": "Use esta carteira também no seu telefone. Seu telefone e este navegador continuam conectados ao mesmo tempo.",
+      "step1Title": "Instale a Provian",
+      "step1Body": "Baixe o app para iPhone ou Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Toque em \"Já tenho uma carteira Provian\"",
+      "step2Body": "Abra o app e escolha restaurar sua carteira.",
+      "step3Title": "Escolha sua frase de recuperação",
+      "step3Body": "Digite no seu telefone as 12 palavras abaixo, na ordem.",
+      "show": "Mostrar minha frase de recuperação",
+      "hide": "Ocultar as palavras",
+      "warning": "Qualquer pessoa que veja estas palavras pode tomar sua carteira. Digite-as somente no app da Provian no seu próprio telefone e feche esta página quando terminar.",
+      "revealFailed": "Não foi possível mostrar sua frase de recuperação. Tente novamente.",
+      "noWallet": "Primeiro abra sua carteira neste navegador e depois volte a esta página.",
+      "driveNote": "No Android, você também pode restaurar a partir do Google Drive se tiver feito backup lá.",
+      "together": "Restaurar no seu telefone não desconecta este navegador."
+    },
+    "settings": {
+      "passkeyBackup": "Backup com chave de acesso",
+      "addPhone": "Adicionar seu telefone",
+      "addPhoneSubtitle": "Coloque esta carteira no seu telefone",
+      "modelExplainer": "Neste navegador, sua carteira é criptografada com sua chave de acesso e seu PIN. Ela é restaurada a partir de um backup com chave de acesso, que a Provian guarda e nunca consegue abrir; da pasta de dados do app no seu Google Drive, o mesmo backup que o Android usa, então cada um restaura no outro; ou da sua frase de recuperação. A Provian não pode redefinir seu PIN."
+    },
+    "onboarding": {
+      "walletSubtext": "Sua chave de acesso e seu PIN protegem sua carteira neste navegador. Suas chaves são criptografadas aqui. Em seguida, você escolhe um backup: um backup com chave de acesso que a Provian guarda e nunca consegue abrir, seu próprio Google Drive ou sua frase de recuperação de doze palavras. Um backup só abre com seu PIN ou sua frase, e a Provian não consegue abrir nenhum deles. Você pode ver sua frase de recuperação a qualquer momento em Configurações."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Não foi possível excluir seu backup no Google Drive. Para removê-lo, abra o Google Drive em um computador, vá em Configurações e depois em Gerenciar apps, encontre o Provian e escolha Excluir dados ocultos do app."
+    }
   }
 }

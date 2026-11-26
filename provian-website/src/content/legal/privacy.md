@@ -1,6 +1,6 @@
 # Provian Privacy Policy
 
-**Last Updated: November 9, 2026**
+**Last Updated: November 26, 2026**
 
 Provian Technologies LLC ("Provian," "Company," "we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the Provian mobile application and related services (the "Service").
 
@@ -239,10 +239,11 @@ Provian's recovery system encrypts your wallet seed and stores it in the followi
 
 - **Wallet keys:** The BIP-39 seed is generated on-device and held in the native seed vault (iOS Keychain / Android Keystore), protected by operating-system user authentication. Spending keys are derived on demand and are not stored separately.
 - **PE attestation key:** A separate device key signs device-originated Provenance Envelopes and is never reused for wallet operations. On supported human mobile devices it can be non-extractable in the Secure Enclave / StrongBox; the relay assigns the PE's attestation tier from verified evidence, not from signing capability alone.
-- **Cloud backup:** Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and stored in YOUR iCloud Keychain on iOS or Google Drive app data folder on Android (not accessible to Provian). Recovery requires the encrypted backup PLUS your backup password; neither alone is sufficient. If you originally set a 6-digit PIN, that PIN is your backup password.
+- **Cloud backup:** Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and stored in YOUR iCloud Keychain on iOS or Google Drive app data folder on Android (not accessible to Provian). Recovery requires the encrypted backup PLUS your backup password; neither alone is sufficient. If you originally set a 6-digit PIN, that PIN is your backup password. The web app at app.provian.ai can back up to your Google Drive app data folder in the same format, so a backup made in one restores in the other.
+- **Passkey backup (web app):** In the web app you can instead back up with your passkey. Your seed is encrypted in your browser with a key that only your passkey and your PIN together can produce, and Provian stores that ciphertext with your passkey's public key and your wallet address. Provian cannot open it: the key never leaves your browser. It is released only to a browser that signs in with the same passkey, and only your PIN then opens it. Delete All Data erases it.
 - **Optional recovery phrase:** You can export your BIP-39 recovery phrase from Settings as an offline escape hatch. The phrase is displayed to you and never transmitted to Provian; there is no on-chain recovery-signer or timelock mechanism.
 
-Provian does not store, access, or have the ability to decrypt your cloud backup or reconstruct your wallet.
+Provian does not store, access, or have the ability to decrypt your cloud backup or reconstruct your wallet. If you choose a passkey backup in the web app, Provian stores the encrypted copy but has no way to decrypt it.
 
 ## 6. How We Use Your Information
 

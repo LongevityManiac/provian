@@ -134,6 +134,8 @@ function policyClasses(user: string): Array<[string, Expect, string]> {
   return [
     [`users/${user}`, 'gone', '§4.1 account information (device ids, push tokens, display name)'],
     [`auth_secrets/${user}`, 'gone', '§8.2 authentication record'],
+    [`device_auth_secrets/${user}__web`, 'gone', '§8.2 a device\'s own authentication record'],
+    [`passkey_backups/${user}_pk`, 'gone', 'the passkey backup of the seed (ciphertext)'],
     [`user_preferences/${user}`, 'gone', '§11.2 settings'],
     [`devices/${user}_mac`, 'revoked', '§4.2 registered computer (owner_user_id)'],
     [`service_installs/github_${user}`, 'revoked', '§4.13 code-witness install'],
@@ -182,6 +184,8 @@ function seedUser(fake: FakeFirestore, user: string): void {
   const set = (key: string, value: Record<string, unknown>) => fake.store.set(key, value);
   set(`users/${user}`, { id: user, devices: [{ id: 'device_1' }], fcm_tokens: ['tok'] });
   set(`auth_secrets/${user}`, { secret: 's'.repeat(64), created_at: T0 });
+  set(`device_auth_secrets/${user}__web`, { user_id: user, device_id: 'web_1', wallet_address: '0x' + '1'.repeat(40), secret: 'd'.repeat(64), created_at: T0 });
+  set(`passkey_backups/${user}_pk`, { user_id: user, wallet_address: '0x' + '1'.repeat(40), credential_id: 'cred', envelope: { v: 1 } });
   set(`user_preferences/${user}`, { notifications: { announcements: false } });
   set(`devices/${user}_mac`, { device_id: `${user}_mac`, owner_type: 'human', owner_user_id: user, owner_wallet_id: hw, status: 'active' });
   set(`service_installs/github_${user}`, { user_id: user, provider: 'github', installation_id: user, installed_at: T0, revoked_at: null });

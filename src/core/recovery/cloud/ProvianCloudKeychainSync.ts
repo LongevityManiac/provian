@@ -156,7 +156,8 @@ export async function isSyncAvailable(): Promise<boolean> {
  * backup when in fact they just need to authenticate.
  */
 export async function signInForRecovery(): Promise<boolean> {
-    if (Platform.OS !== 'android') return true;
+    // iOS needs no sign-in (iCloud Keychain); Android and the web app sign in to Google Drive.
+    if (Platform.OS !== 'android' && Platform.OS !== 'web') return true;
     const mod = requireModule();
     if (!mod.signIn) {
         // Older native module without signIn(); fall through to isSyncVerified

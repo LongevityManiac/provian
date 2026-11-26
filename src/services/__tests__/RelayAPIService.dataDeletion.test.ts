@@ -120,7 +120,8 @@ describe('RelayAPIService.requestDataDeletion', () => {
     });
 
     it('the gone-account text is the relay verifier\'s own', () => {
-        const relay = readFileSync(resolve(__dirname, '../../../provian-backend/src/routes/middleware/wallet-auth.ts'), 'utf8');
+        // The wallet-auth verifier's secret lookup (account or per-device secret) answers it.
+        const relay = readFileSync(resolve(__dirname, '../../../provian-backend/src/core/wallet/device-auth-secrets.ts'), 'utf8');
         expect(relay).toContain(`error: '${RELAY_AUTH_RECORD_GONE_ERROR}'`);
     });
 

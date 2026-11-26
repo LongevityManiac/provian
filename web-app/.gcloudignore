@@ -1,0 +1,2 @@
+# Upload the exported app (web-app/dist is gitignored, so this file replaces .gitignore for gcloud).
+scripts/

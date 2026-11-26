@@ -5,10 +5,12 @@ export function PendingStoreCard({
   platform,
   className = 'glass flex flex-col p-7',
   children,
+  footer,
 }: {
   platform: 'ios_app_store' | 'google_play'
   className?: string
   children?: ReactNode
+  footer?: ReactNode
 }) {
   return (
     <div className={className}>
@@ -21,6 +23,7 @@ export function PendingStoreCard({
         cta="Email me when it's live"
         doneText="You're on the list. We'll email you when it's live."
       />
+      {footer}
     </div>
   )
 }

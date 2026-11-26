@@ -101,7 +101,10 @@ These two keys are distinct and must never be described as one:
    (biometrics or device passcode); chain signing keys are derived on demand and not persisted separately. It **does leave the device** — as
    AES-256-GCM ciphertext under the owner's backup password, synced to iCloud Keychain (iOS) or an
    encrypted Google Drive app folder (Android). That ciphertext backup is what makes seedless
-   recovery work (§9.2).
+   recovery work (§9.2). In the web app (app.provian.ai) the seed is held in the browser under a
+   key derived from the passkey's PRF secret and the PIN, and its backup is Google Drive (same
+   folder and envelope as Android), the recovery phrase, or a passkey backup: ciphertext under a
+   key only the passkey and PIN together produce, stored by the relay, which can never open it.
 2. **The PE attestation key** — P-256, key id `provian_pe_attestation`
    (`src/core/security/KeyManager.ts`), created in the Secure Enclave / StrongBox,
    hardware-bound, and it genuinely never leaves. It identifies **the device** in the PE chain,
@@ -1566,6 +1569,19 @@ write verified by read-back. The plaintext mnemonic never syncs
 (`WHEN_UNLOCKED_THIS_DEVICE_ONLY`); restoring over an existing seed demands typed
 `I UNDERSTAND` + biometric. Seed and private-key export live in Settings behind their own
 biometric gates.
+
+**The web app** (app.provian.ai) is the same app exported for the browser. Unlock is a passkey
+plus the 6-digit PIN: the passkey's WebAuthn PRF output and a PBKDF2-SHA256 (600,000 iterations)
+key from the PIN are combined with HKDF into the AES-256-GCM key that wraps a random data key, and
+the data key seals the seed in browser storage; five wrong PINs start a doubling wait. Revealing
+the recovery phrase always asks for the passkey and the PIN. Backup is required before the wallet
+is made: Google Drive appDataFolder in the Android envelope (each restores on the other), the
+recovery phrase, or a passkey backup — the seed sealed in the browser under HKDF(PRF ‖ PIN key),
+stored by the relay with the passkey's public key and the wallet address, released only against a
+fresh user-verified passkey assertion on a single-use challenge, and erased by Delete All Data.
+Each browser signs in to the relay with its own device credential, so a phone and a browser stay
+signed in together. The device key in the browser is a software P-256 key, so a browser's PEs
+carry the software tier.
 
 **Recovery on a new device.** There are no guardians, no Shamir shares, no on-chain signer
 rotation. A person who backed up to the cloud signs in to the same Apple or Google

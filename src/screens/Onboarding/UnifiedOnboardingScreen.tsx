@@ -45,6 +45,7 @@ import {
     ScrollView,
     ImageSourcePropType,
     Linking,
+    Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -340,7 +341,9 @@ const UnifiedOnboardingScreen = ({ navigation }: any) => {
                         {t('onboarding.unified.walletHeadline')}
                     </Text>
                     <Text style={styles.subtext}>
-                        {t('onboarding.unified.walletSubtext', { biometric: bio.label })}
+                        {Platform.OS === 'web'
+                            ? t('webApp.onboarding.walletSubtext')
+                            : t('onboarding.unified.walletSubtext', { biometric: bio.label })}
                     </Text>
                     <View style={styles.accordRow}>
                         <View style={{ flex: 1 }}>

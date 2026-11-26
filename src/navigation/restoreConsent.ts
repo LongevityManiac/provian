@@ -8,7 +8,8 @@
  * as not accepted (see core/legal/legalAcceptance).
  */
 
-export const RESTORE_METHODS = ['CloudRecovery', 'ImportRecoveryPhrase'] as const;
+/** PasskeyRestore exists only in the web app (the passkey backup). */
+export const RESTORE_METHODS = ['CloudRecovery', 'ImportRecoveryPhrase', 'PasskeyRestore'] as const;
 export type RestoreMethod = (typeof RESTORE_METHODS)[number];
 
 export type RestoreEntry =

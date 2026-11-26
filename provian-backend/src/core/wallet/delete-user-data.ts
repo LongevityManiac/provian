@@ -13,6 +13,8 @@ import { COMMONS_COLLECTIONS } from '../commons/types';
 import { STORE_TRANSACTIONS_COLLECTION } from '../store-purchases/store-products';
 import { deleteWalletLocation, COMPLIANCE_EVENTS_COLLECTION } from '../jurisdiction/location-retention';
 import { SESSION_COLLECTION } from '../jurisdiction/mint-compliance';
+import { DEVICE_AUTH_SECRETS_COLLECTION } from './device-auth-secrets';
+import { PASSKEY_BACKUPS_COLLECTION } from './passkey-backup';
 import {
   SERVICE_INSTALLS_COLLECTION,
   revokeOwnedServiceInstalls,
@@ -36,6 +38,10 @@ export const USER_RECORD_DISPOSITIONS: Readonly<Record<string, 'deleted' | 'revo
   Object.freeze({
     users: 'deleted',
     auth_secrets: 'deleted',
+    // Each device's own sign-in secret (several devices on one wallet).
+    [DEVICE_AUTH_SECRETS_COLLECTION]: 'deleted',
+    // The passkey backups of this wallet's seed: Delete All Data erases them.
+    [PASSKEY_BACKUPS_COLLECTION]: 'deleted',
     user_preferences: 'deleted',
     agents: 'deleted',
     agent_sessions: 'deleted',
@@ -209,8 +215,8 @@ export async function deleteUserRelayData(userId: string, deps: DeleteUserDataDe
     if ((await keyRef.get()).exists) del(keyRef);
   }
 
-  // 5. Legacy per-user records and settings.
-  for (const name of USER_DATA_LEGACY_COLLECTIONS) {
+  // 5. Legacy per-user records and settings, and the passkey backups of the seed.
+  for (const name of [...USER_DATA_LEGACY_COLLECTIONS, PASSKEY_BACKUPS_COLLECTION]) {
     for (const ref of await refsWhere(db, name, 'user_id', userId)) del(ref);
   }
   const prefsRef = db.collection('user_preferences').doc(userId);
@@ -226,6 +232,10 @@ export async function deleteUserRelayData(userId: string, deps: DeleteUserDataDe
       final.delete(ref);
       deleted += 1;
     }
+  }
+  for (const ref of await refsWhere(db, DEVICE_AUTH_SECRETS_COLLECTION, 'user_id', userId)) {
+    final.delete(ref);
+    deleted += 1;
   }
   await final.commit();
   if (deps.invalidateAuthSecret) await deps.invalidateAuthSecret(userId);

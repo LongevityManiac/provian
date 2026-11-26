@@ -865,7 +865,7 @@
       "whatIsCourtA": "Changamoto za jukwaa hutatuliwa kwa burn-ili-kuwasilisha, si kwa mahakama: mpinzani huweka dau la burn na kutaja kiarifu kimoja kutoka msamiati wa uwasilishaji; mwandishi hujibu kwa kuwasilisha. Kiarifu kikithibitika, dau linaungua; kikishindwa, changamoto inathibitishwa na dau linarudi; mwandishi asipowasilisha kamwe, changamoto inabaki. Matokeo pekee ndiyo ya umma. Mahakama inabaki kuwa chombo cha mizozo cha njia za mawakala kwa escrow (waamuzi watatu, wengi wa kura mbili) na huunda jopo tu baada ya waamuzi wenye sifa wa kutosha kujiandikisha.",
       "securityAndRecovery": "Usalama na Urejesho",
       "howWalletSecured": "Pochi yangu inalindwaje?",
-      "howWalletSecuredA": "Pochi yako ni akaunti ya BIP-39 yenye mbegu iliyotengenezwa na kuhifadhiwa kwa njia fiche kwenye kifaa chako. Kusaini hutumia uthibitishaji maalum wa vitendo: biometriki zinazoungwa mkono au njia mbadala ya nenosiri la kifaa iliyosanidiwa wazi. Mbegu huacha kifaa chako kama maandishi ya siri pekee: nakala rudufu iliyosimbwa kwa nenosiri la ziada unalochagua ( AES-256-GCM ) husawazishwa kwenye iCloud Keychain yako kwenye iOS au kwenye folda ya data ya programu ya Google Drive kwenye Android. Wakati nakala rudufu ya wingu haipatikani wakati wa usanidi, unahifadhi nakala rudufu kwa kuandika kifungu cha urejeshaji cha maneno kumi na mbili na kuthibitisha maneno matatu. Unaweza pia kuhamisha kifungu hicho katika Mipangilio kwa nakala rudufu huru ya nje ya mtandao. Kitufe tofauti cha kifaa kinachoshikiliwa na vifaa huashiria Provenance Envelopes ; hutambua kifaa, sio pochi, na ushahidi wa jukwaa uliothibitishwa, bila kusaini pekee, huamua kiwango chochote cha uthibitisho wa vifaa.",
+      "howWalletSecuredA": "Pochi yako ni akaunti ya BIP-39 yenye mbegu iliyotengenezwa na kuhifadhiwa kwa njia fiche kwenye kifaa chako. Kusaini hutumia uthibitishaji maalum wa vitendo: biometriki zinazoungwa mkono au njia mbadala ya nenosiri la kifaa iliyosanidiwa wazi. Mbegu huacha kifaa chako kama maandishi ya siri pekee: nakala rudufu iliyosimbwa kwa nenosiri la ziada unalochagua ( AES-256-GCM ) husawazishwa kwenye iCloud Keychain yako kwenye iOS au kwenye folda ya data ya programu ya Google Drive kwenye Android. Wakati nakala rudufu ya wingu haipatikani wakati wa usanidi, unahifadhi nakala rudufu kwa kuandika kifungu cha urejeshaji cha maneno kumi na mbili na kuthibitisha maneno matatu. Unaweza pia kuhamisha kifungu hicho katika Mipangilio kwa nakala rudufu huru ya nje ya mtandao. Kitufe tofauti cha kifaa kinachoshikiliwa na vifaa huashiria Provenance Envelopes ; hutambua kifaa, sio pochi, na ushahidi wa jukwaa uliothibitishwa, bila kusaini pekee, huamua kiwango chochote cha uthibitisho wa vifaa. Kwenye programu ya wavuti katika app.provian.ai, mbegu huhifadhiwa kwa usimbaji kwenye kivinjari chako na hufunguka tu kwa passkey yako na PIN yako kwa pamoja; huko unaihifadhi nakala rudufu kwenye Google Drive, kwenye maneno yako ya urejesho, au kama nakala rudufu ya passkey ambayo Provian huhifadhi na haiwezi kamwe kuifungua.",
       "losePhone": "Nikiipoteza simu yangu je?",
       "losePhoneA": "Rejesha nakala rudufu yako ya wingu iliyosimbwa kwa kuingia katika akaunti ile ile ya iCloud au Google kwenye kifaa kipya na kuingiza nenosiri lako la chelezo. Vinginevyo, rejesha kwa kutumia kifungu cha maneno kumi na mawili cha kurejesha ulichoandika wakati wa usanidi au kuhamisha kutoka kwa Mipangilio. Provian haiwezi kuweka upya nenosiri la chelezo au kurejesha kifungu kilichopotea. Ukipoteza kifaa na njia zote mbili za kurejesha, pochi haiwezi kupatikana.",
       "canProvianAccessFunds": "Je, Provian inaweza kufikia fedha zangu?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Kwa nini makadirio yangu ya PVT yanatofautiana na salio la pochi yangu?",
       "whyProjectionDiffersA": "Salio la pochi yako ni PVT ambayo tayari imelipwa kwenye Base. Makadirio hukadiria kazi ambayo bado haijalipwa kwa kutumia muktadha unaotumika wa malipo. Ratiba ya malipo (kwa sasa kila baada ya siku 30 kwa kila mpokeaji), uwezo wa enzi na masasisho ya ushahidi yanaweza kuathiri muda na kiasi cha mwisho. Matukio yasiyozalisha PVT kando hayajumuishwi.",
       "complianceHoldA": "Utoaji umeshikiliwa chini ya sera ya mamlaka ya kisheria, na thamani yako iliyofungwa imehifadhiwa. Relay hurudia kiotomatiki ukaguzi wa eneo au vikwazo ambao haujatatuliwa. Kizuizi cha mamlaka hushikilia utoaji hadi sera ya mamlaka ya awali iruhusu kuachiliwa; kisha hutolewa kiotomatiki kupitia malipo ya kawaida kwa thamani ya awali iliyofungwa, bila kukokotolewa upya. Mamlaka iliyoahirishwa hufuata njia yake ya kuachilia kwa hatua. Anwani inayolingana na orodha ya SDN ya OFAC hukataliwa kabisa na haitolewi; huu si ushikiliaji wa muda. Unaweza kuendelea kurekodi ushahidi utoaji ukiwa umeshikiliwa.",
-      "complianceHold": "Kwa nini risiti yangu inasema “Utoaji umeshikiliwa”?"
+      "complianceHold": "Kwa nini risiti yangu inasema “Utoaji umeshikiliwa”?",
+      "useInBrowser": "Je, ninaweza kutumia Provian kwenye kivinjari cha wavuti?",
+      "useInBrowserA": "Ndiyo. Fungua app.provian.ai kwenye kompyuta: ni programu ileile, pochi ileile na akaunti ileile kama programu ya simu, na simu yako na kivinjari chako hubaki vimeingia pamoja. Unaifungua kwa passkey (Touch ID, Windows Hello au kidhibiti chako cha manenosiri) na PIN ya tarakimu 6. Ili kutumia pochi moja mahali pote pawili, irejeshe kwenye kivinjari kutoka nakala rudufu yako ya Google Drive au maneno yako ya urejesho, au anza kwenye kivinjari kisha ufungue Ongeza simu yako katika Hifadhi na Urejesho, ambayo huonyesha maneno yako ya urejesho baada ya passkey na PIN yako. Kunasa Soga hufanya kazi kwenye programu ya simu pekee."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT zinatosha kwa siku 7. PVT hizo zinaharibiwa na hakuna anayezipokea.",
     "commonsPriceIfNeeded": "Ikiwa mazungumzo haya lazima yafunguliwe, {{pvt}} PVT zinatosha kwa siku 7. PVT zinaharibiwa na hakuna anayezipokea.",
     "priceChanged": "Kiasi kimebadilika. Funga dirisha hili na ukague kiasi kipya."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Fungua pochi yako",
+      "presenceTitle": "Thibitisha kuwa ni wewe",
+      "revealTitle": "Onyesha maneno yako ya urejesho",
+      "hint": "Tumia passkey ya pochi hii: Touch ID, Face ID, Windows Hello au ufunguo wa usalama.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "PIN yako",
+      "pinTooShort": "PIN yako ina angalau herufi {{min}}.",
+      "continue": "Endelea kwa passkey",
+      "cancel": "Ghairi",
+      "noWallet": "Hakuna pochi iliyowekwa kwenye kivinjari hiki.",
+      "cancelled": "Passkey haikuthibitishwa. Jaribu tena.",
+      "wrongPin": "PIN hiyo si sahihi. Majaribio {{count}} zaidi kabla ya kusubiri kidogo.",
+      "wrongPinNoCount": "PIN hiyo si sahihi.",
+      "wait": "PIN nyingi mno zisizo sahihi. Jaribu tena baada ya {{time}}.",
+      "failed": "Pochi yako haikuweza kufunguliwa: {{message}}"
+    },
+    "vault": {
+      "title": "Linda pochi yako kwenye kivinjari hiki",
+      "body": "Pochi yako hufunguka hapa kwa passkey na PIN. Passkey ni Touch ID, Face ID, Windows Hello au ufunguo wa usalama. Maneno yako ya urejesho huhifadhiwa kwa usimbaji kwenye kivinjari hiki na kamwe hayatoki humo bila kusimbwa.",
+      "pinLabel": "Chagua PIN",
+      "pinPlaceholder": "Angalau herufi {{min}}",
+      "confirmPlaceholder": "Weka PIN tena",
+      "pinNote": "Tumia PIN ileile ya simu yako ikiwa unayo. Unaihitaji pamoja na passkey yako kila mara unapofungua pochi yako hapa.",
+      "pinRule": "PIN ina herufi {{min}} hadi {{max}}.",
+      "pinMismatch": "PIN hizo mbili hazilingani.",
+      "create": "Unda passkey",
+      "passkeyName": "Pochi ya Provian",
+      "passkeyCancelled": "Passkey haikuundwa. Jaribu tena.",
+      "noPasskeys": "Kivinjari hiki hakiwezi kutumia passkey. Fungua Provian kwenye toleo la sasa la Safari, Chrome, Edge au Firefox.",
+      "failed": "Passkey haikuweza kuwekwa: {{message}}",
+      "noPrf": "Passkey hii haiwezi kulinda pochi kwenye kivinjari hiki. Hifadhi passkey kwenye iCloud Keychain, Google Password Manager au kidhibiti cha manenosiri kinachoauni usimbaji fiche wa passkey, katika toleo la sasa la Chrome, Safari au Edge, kisha ujaribu tena."
+    },
+    "backup": {
+      "title": "Hifadhi nakala rudufu ya pochi yako",
+      "doneTitle": "Pochi yako ina nakala rudufu",
+      "body": "Chagua nakala rudufu kabla ya kutumia pochi yako. Bila nakala rudufu, kupoteza kivinjari hiki ni kupoteza pochi.",
+      "passkeyTitle": "Hifadhi kwa passkey yako",
+      "passkeyDesc": "Provian huhifadhi maneno yako ya urejesho yakiwa yamesimbwa kwa passkey na PIN yako. Provian haiwezi kamwe kuyafungua. Kwenye kompyuta nyingine, passkey na PIN yako hurejesha pochi yako.",
+      "driveTitle": "Hifadhi kwenye Google Drive",
+      "driveDesc": "Maneno yako ya urejesho husimbwa kwa PIN yako na kuhifadhiwa kwenye folda binafsi ya Provian ndani ya Google Drive yako. Hurejeshwa kwenye Android na kwenye wavuti.",
+      "phraseTitle": "Andika maneno yako ya urejesho",
+      "phraseDesc": "Nakili maneno yako 12 kwenye karatasi na uyaweke mahali salama.",
+      "recommended": "Inapendekezwa",
+      "recommendedMac": "Inapendekezwa kwenye Mac",
+      "passkeyPrompt": "Hifadhi nakala rudufu ya pochi yako kwa passkey yako",
+      "googleNotSignedIn": "Hujaingia kwenye Google Drive. Jaribu tena na uchague akaunti yako ya Google.",
+      "otherWalletMessage": "Google Drive hii tayari ina nakala rudufu ya pochi nyingine ya Provian. Uhifadhi nakala zote mbili, au uibadilishe kwa nakala rudufu ya pochi hii?",
+      "failed": "Hifadhi rudufu haikukamilika: {{message}}",
+      "note": "Unaweza kuongeza nakala rudufu nyingine baadaye kwenye Mipangilio."
+    },
+    "restore": {
+      "optionTitle": "Rejesha kwa passkey yako",
+      "optionDesc": "Tumia passkey na PIN za nakala rudufu yako ya passkey.",
+      "title": "Rejesha kwa passkey yako",
+      "body": "Weka PIN yako, kisha utumie passkey uliyotumia kuunda nakala rudufu. Passkey husawazishwa kupitia iCloud Keychain, Google Password Manager na vidhibiti vingine vya passkey.",
+      "button": "Tumia passkey yangu",
+      "note": "Provian hukagua passkey na kurudisha nakala rudufu yako iliyosimbwa. PIN yako huifungua hapa, kwenye kivinjari hiki.",
+      "offline": "Imeshindikana kufikia Provian. Angalia muunganisho wako kisha ujaribu tena.",
+      "wrongPin": "PIN hiyo haifungui nakala rudufu hii.",
+      "noPrf": "Passkey hii haiwezi kufungua nakala rudufu ya Provian kwenye kivinjari hiki. Jaribu Chrome au Safari, au rejesha kwa Google Drive au maneno yako ya urejesho.",
+      "noBackup": "Passkey hii haina nakala rudufu ya Provian. Chagua passkey uliyotumia kuunda nakala rudufu.",
+      "failed": "Pochi yako haikuweza kurejeshwa: {{message}}"
+    },
+    "chat": {
+      "title": "Kunasa Soga kuko kwenye programu ya simu",
+      "body": "Programu ya simu ya Provian hufungua soga zako za AI ndani ya programu na kurekodi kila mazungumzo yanapoendelea. Ukurasa wa wavuti hauwezi kuona ndani ya kichupo cha tovuti nyingine, kwa hivyo programu ya wavuti hairekodi soga. Mawakala wako, commit zako na kazi nyingine iliyoshuhudiwa bado zinapata mapato hapa.",
+      "getPhoneApp": "Ongeza simu yako",
+      "download": "Pata programu ya simu"
+    },
+    "addPhone": {
+      "title": "Ongeza simu yako",
+      "body": "Tumia pochi hii kwenye simu yako pia. Simu yako na kivinjari hiki hubaki vimeingia pamoja.",
+      "step1Title": "Sakinisha Provian",
+      "step1Body": "Pata programu kwa iPhone au Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Gusa \"Tayari nina Provian pochi\"",
+      "step2Body": "Fungua programu na uchague kurejesha pochi yako.",
+      "step3Title": "Chagua maneno yako ya urejesho",
+      "step3Body": "Andika maneno 12 yaliyo hapa chini kwenye simu yako, kwa mpangilio.",
+      "show": "Onyesha maneno yangu ya urejesho",
+      "hide": "Ficha maneno",
+      "warning": "Mtu yeyote anayeona maneno haya anaweza kuchukua pochi yako. Yaandike tu kwenye programu ya Provian kwenye simu yako mwenyewe, na ufunge ukurasa huu ukimaliza.",
+      "revealFailed": "Maneno yako ya urejesho hayakuweza kuonyeshwa. Jaribu tena.",
+      "noWallet": "Fungua pochi yako kwenye kivinjari hiki kwanza, kisha urudi kwenye ukurasa huu.",
+      "driveNote": "Kwenye Android unaweza pia kurejesha kutoka Google Drive ikiwa ulihifadhi nakala rudufu huko.",
+      "together": "Kurejesha kwenye simu yako hakukitoi kivinjari hiki kwenye akaunti."
+    },
+    "settings": {
+      "passkeyBackup": "Nakala rudufu ya passkey",
+      "addPhone": "Ongeza simu yako",
+      "addPhoneSubtitle": "Weka pochi hii kwenye simu yako",
+      "modelExplainer": "Kwenye kivinjari hiki pochi yako imesimbwa kwa passkey yako na PIN yako. Hurejeshwa kutoka nakala rudufu ya passkey, ambayo Provian huhifadhi na haiwezi kamwe kuifungua; kutoka folda ya data ya programu ya Google Drive yako, nakala rudufu ileile ambayo Android hutumia, kwa hivyo kila moja hurejeshwa kwenye nyingine; au kutoka maneno yako ya urejesho. Provian haiwezi kuweka upya PIN yako."
+    },
+    "onboarding": {
+      "walletSubtext": "Passkey yako na PIN yako hulinda pochi yako kwenye kivinjari hiki. Funguo zako zimesimbwa hapa. Kisha unachagua nakala rudufu: nakala rudufu ya passkey ambayo Provian huhifadhi na haiwezi kamwe kuifungua, Google Drive yako mwenyewe, au maneno yako kumi na mawili ya urejesho. Nakala rudufu hufunguka tu kwa PIN yako au maneno yako, na Provian haiwezi kufungua hata moja. Unaweza kuona maneno yako ya urejesho wakati wowote kwenye Mipangilio."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Nakala rudufu yako ya Google Drive haikuweza kufutwa. Ili kuiondoa, fungua Google Drive kwenye kompyuta, nenda kwenye Mipangilio, kisha Dhibiti programu, tafuta Provian na uchague Futa data fiche ya programu."
+    }
   }
 }

@@ -3,9 +3,9 @@
 import type { LegalDocument } from './legalDocumentTypes';
 
 export const PRIVACY_DOCUMENT: LegalDocument = {
-  "version": "sha256:174100ffc8647a0d53ed71ce67485211b08f0f00c7a828ceb0de9d996a30dff5",
+  "version": "sha256:dd02cd7a6025336df6d40971b15d96eca6f01519ab2f0cf9f07b038e11bbc7aa",
   "title": "Provian Privacy Policy",
-  "lastUpdated": "November 9, 2026",
+  "lastUpdated": "November 26, 2026",
   "footer": "This Privacy Policy is effective as of July 16, 2026.",
   "blocks": [
     {
@@ -1043,7 +1043,16 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
             "bold": true
           },
           {
-            "text": " Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and stored in YOUR iCloud Keychain on iOS or Google Drive app data folder on Android (not accessible to Provian). Recovery requires the encrypted backup PLUS your backup password; neither alone is sufficient. If you originally set a 6-digit PIN, that PIN is your backup password."
+            "text": " Your BIP-39 seed is encrypted with a backup password of your choosing using AES-256-GCM and stored in YOUR iCloud Keychain on iOS or Google Drive app data folder on Android (not accessible to Provian). Recovery requires the encrypted backup PLUS your backup password; neither alone is sufficient. If you originally set a 6-digit PIN, that PIN is your backup password. The web app at app.provian.ai can back up to your Google Drive app data folder in the same format, so a backup made in one restores in the other."
+          }
+        ],
+        [
+          {
+            "text": "Passkey backup (web app):",
+            "bold": true
+          },
+          {
+            "text": " In the web app you can instead back up with your passkey. Your seed is encrypted in your browser with a key that only your passkey and your PIN together can produce, and Provian stores that ciphertext with your passkey's public key and your wallet address. Provian cannot open it: the key never leaves your browser. It is released only to a browser that signs in with the same passkey, and only your PIN then opens it. Delete All Data erases it."
           }
         ],
         [
@@ -1061,7 +1070,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       "type": "paragraph",
       "spans": [
         {
-          "text": "Provian does not store, access, or have the ability to decrypt your cloud backup or reconstruct your wallet."
+          "text": "Provian does not store, access, or have the ability to decrypt your cloud backup or reconstruct your wallet. If you choose a passkey backup in the web app, Provian stores the encrypted copy but has no way to decrypt it."
         }
       ]
     },

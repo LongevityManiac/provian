@@ -242,7 +242,7 @@ export default function InvitedPage() {
                       Non-Custodial
                     </h3>
                     <p className="text-text-secondary font-body leading-relaxed">
-                      Your keys stay on your phone, and Provian never holds them. Your wallet seed is encrypted there and backed up only as ciphertext to your own iCloud or Google account, restored with your backup password.
+                      Your keys stay on your device, and Provian never holds them. Your wallet seed is encrypted there and backed up only as ciphertext: to your own iCloud or Google account, restored with your backup password, or, in the web app, as a passkey backup that Provian stores and can never open.
                     </p>
                   </div>
                 </div>

@@ -869,9 +869,11 @@
       "whatIsCourtA": "Forum challenges resolve by burn-to-present, not by a court: a challenger stakes a burn and names one predicate from the presentation vocabulary; the author answers by presenting. If the predicate holds, the stake burns; if it fails, the challenge is upheld and the stake returns; if the author never presents, the challenge stands. Only the outcome is public. The Court remains the agent rails' disputes body for escrows — three arbitrators, a two-vote majority — and seats a panel only once enough qualified arbitrators have opted in.",
       "securityAndRecovery": "Security & Recovery",
       "howWalletSecured": "How is my wallet secured?",
-      "howWalletSecuredA": "Your wallet is a BIP-39 account with the seed generated and stored encrypted on your device. Signing uses action-specific authentication: supported biometrics or the explicitly configured device-passcode fallback. The seed leaves your device only as ciphertext: a backup encrypted with a backup password you choose (AES-256-GCM) syncs to your iCloud Keychain on iOS or to your Google Drive app data folder on Android. When cloud backup is unavailable during setup, you back up by writing down the twelve-word recovery phrase and confirming three words. You can also export that phrase in Settings for an independent offline backup. A separate hardware-held device key signs Provenance Envelopes; it identifies the device, not the wallet, and verified platform evidence, not signing alone, determines any hardware attestation tier.",
+      "howWalletSecuredA": "Your wallet is a BIP-39 account with the seed generated and stored encrypted on your device. Signing uses action-specific authentication: supported biometrics or the explicitly configured device-passcode fallback. The seed leaves your device only as ciphertext: a backup encrypted with a backup password you choose (AES-256-GCM) syncs to your iCloud Keychain on iOS or to your Google Drive app data folder on Android. When cloud backup is unavailable during setup, you back up by writing down the twelve-word recovery phrase and confirming three words. You can also export that phrase in Settings for an independent offline backup. A separate hardware-held device key signs Provenance Envelopes; it identifies the device, not the wallet, and verified platform evidence, not signing alone, determines any hardware attestation tier. In the web app at app.provian.ai the seed is stored encrypted in your browser and opens only with your passkey and your PIN together; there you back it up to Google Drive, to your recovery phrase, or as a passkey backup that Provian stores and can never open.",
       "losePhone": "What if I lose my phone?",
       "losePhoneA": "Restore your encrypted cloud backup by signing in to the same iCloud or Google account on the new device and entering your backup password. Alternatively, restore with the twelve-word recovery phrase you wrote down during setup or exported from Settings. Provian cannot reset the backup password or recover a lost phrase. If you lose the device and both recovery methods, the wallet cannot be recovered.",
+      "useInBrowser": "Can I use Provian in a web browser?",
+      "useInBrowserA": "Yes. Open app.provian.ai on a computer: it is the same app, wallet and account as the phone app, and your phone and your browser stay signed in together. You unlock it with a passkey (Touch ID, Windows Hello or your password manager) and a 6-digit PIN. To use one wallet in both places, restore it in the browser from your Google Drive backup or your recovery phrase, or start in the browser and open Add your phone in Backup & Recovery, which shows your recovery phrase after your passkey and PIN. Chat capture runs only in the phone app.",
       "canProvianAccessFunds": "Can Provian access my funds?",
       "canProvianAccessFundsA": "Provian never holds your wallet keys and cannot spend from your wallet. For PVT only, the restoration authority, held by Provian's key until the Court opens, can return stolen PVT under the published rule with the owner's required recovery proof. Every use is public. Money you put into a Commons escrow sits in that contract instead. Until the Commons Court opens, Provian’s admin key resolves disputed escrows, paying only an escrow’s recipient or refunding its depositor; anyone can trigger the depositor’s refund after the 30-day dispute timeout.",
       "whatAboutQuantum": "What about quantum computing?",
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT covers 7 days. The PVT is destroyed and goes to no one.",
     "commonsPriceIfNeeded": "If this conversation needs an opening, {{pvt}} PVT covers 7 days. The PVT is destroyed and goes to no one.",
     "priceChanged": "The amount changed. Close this sheet and check the new amount."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Open your wallet",
+      "presenceTitle": "Confirm it's you",
+      "revealTitle": "Show your recovery phrase",
+      "hint": "Use this wallet's passkey: Touch ID, Face ID, Windows Hello or a security key.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Your PIN",
+      "pinTooShort": "Your PIN has at least {{min}} characters.",
+      "continue": "Continue with passkey",
+      "cancel": "Cancel",
+      "noWallet": "No wallet is set up in this browser.",
+      "cancelled": "The passkey was not confirmed. Try again.",
+      "wrongPin": "That PIN is not right. {{count}} more tries before a short wait.",
+      "wrongPinNoCount": "That PIN is not right.",
+      "wait": "Too many wrong PINs. Try again after {{time}}.",
+      "failed": "Your wallet could not be opened: {{message}}"
+    },
+    "vault": {
+      "title": "Protect your wallet in this browser",
+      "body": "Your wallet opens here with a passkey and a PIN. The passkey is Touch ID, Face ID, Windows Hello or a security key. Your recovery phrase is kept encrypted in this browser and never leaves it unencrypted.",
+      "pinLabel": "Choose a PIN",
+      "pinPlaceholder": "At least {{min}} characters",
+      "confirmPlaceholder": "Enter the PIN again",
+      "pinNote": "Use the same PIN as on your phone if you have one. You need it with your passkey every time you open your wallet here.",
+      "pinRule": "A PIN has {{min}} to {{max}} characters.",
+      "pinMismatch": "The two PINs do not match.",
+      "create": "Create passkey",
+      "passkeyName": "Provian wallet",
+      "passkeyCancelled": "The passkey was not created. Try again.",
+      "noPasskeys": "This browser cannot use passkeys. Open Provian in a current version of Safari, Chrome, Edge or Firefox.",
+      "failed": "The passkey could not be set up: {{message}}",
+      "noPrf": "This passkey cannot protect a wallet in this browser. Save the passkey in iCloud Keychain, Google Password Manager or a password manager that supports passkey encryption, in a current Chrome, Safari or Edge, and try again."
+    },
+    "backup": {
+      "title": "Back up your wallet",
+      "doneTitle": "Your wallet is backed up",
+      "body": "Choose a backup before you use your wallet. Without one, losing this browser means losing the wallet.",
+      "passkeyTitle": "Back up with your passkey",
+      "passkeyDesc": "Provian stores your recovery phrase encrypted with your passkey and PIN. Provian can never open it. On another computer, your passkey and PIN restore your wallet.",
+      "driveTitle": "Back up to Google Drive",
+      "driveDesc": "Your recovery phrase is encrypted with your PIN and saved in a private Provian folder in your Google Drive. It restores on Android and on the web.",
+      "phraseTitle": "Write down your recovery phrase",
+      "phraseDesc": "Copy your 12 words onto paper and keep them somewhere safe.",
+      "recommended": "Recommended",
+      "recommendedMac": "Recommended on a Mac",
+      "passkeyPrompt": "Back up your wallet with your passkey",
+      "googleNotSignedIn": "Google Drive is not signed in. Try again and choose your Google account.",
+      "otherWalletMessage": "This Google Drive already holds a backup of a different Provian wallet. Keep both backups, or replace it with this wallet's backup?",
+      "failed": "The backup did not finish: {{message}}",
+      "note": "You can add another backup later in Settings."
+    },
+    "restore": {
+      "optionTitle": "Restore with your passkey",
+      "optionDesc": "Use the passkey and PIN from your passkey backup.",
+      "title": "Restore with your passkey",
+      "body": "Enter your PIN, then use the passkey you made the backup with. Passkeys sync through iCloud Keychain, Google Password Manager and other passkey managers.",
+      "button": "Use my passkey",
+      "note": "Provian checks the passkey and sends back your encrypted backup. Your PIN opens it here, in this browser.",
+      "offline": "Provian could not be reached. Check your connection and try again.",
+      "wrongPin": "That PIN does not open this backup.",
+      "noPrf": "This passkey cannot open a Provian backup in this browser. Try Chrome or Safari, or restore with Google Drive or your recovery phrase.",
+      "noBackup": "This passkey has no Provian backup. Choose the passkey you made the backup with.",
+      "failed": "Your wallet could not be restored: {{message}}"
+    },
+    "chat": {
+      "title": "Chat capture is in the phone app",
+      "body": "The Provian phone app opens your AI chats inside the app and records each conversation as it happens. A web page cannot see inside another site's tab, so the web app does not record chats. Your agents, commits and other witnessed work still earn here.",
+      "getPhoneApp": "Add your phone",
+      "download": "Get the phone app"
+    },
+    "addPhone": {
+      "title": "Add your phone",
+      "body": "Use this wallet on your phone too. Your phone and this browser stay signed in together.",
+      "step1Title": "Install Provian",
+      "step1Body": "Get the app for iPhone or Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Tap \"I already have a Provian wallet\"",
+      "step2Body": "Open the app and choose to restore your wallet.",
+      "step3Title": "Choose your recovery phrase",
+      "step3Body": "Type the 12 words below into your phone, in order.",
+      "show": "Show my recovery phrase",
+      "hide": "Hide the words",
+      "warning": "Anyone who sees these words can take your wallet. Type them only into the Provian app on your own phone, and close this page when you are done.",
+      "revealFailed": "Your recovery phrase could not be shown. Try again.",
+      "noWallet": "Open your wallet in this browser first, then come back to this page.",
+      "driveNote": "On Android you can also restore from Google Drive if you backed up there.",
+      "together": "Restoring on your phone does not sign this browser out."
+    },
+    "settings": {
+      "passkeyBackup": "Passkey backup",
+      "addPhone": "Add your phone",
+      "addPhoneSubtitle": "Put this wallet on your phone",
+      "modelExplainer": "In this browser your wallet is encrypted under your passkey and your PIN. It restores from a passkey backup, which Provian stores and can never open; from your Google Drive app data folder, the same backup Android uses, so each restores on the other; or from your recovery phrase. Provian cannot reset your PIN."
+    },
+    "onboarding": {
+      "walletSubtext": "Your passkey and your PIN protect your wallet in this browser. Your keys are encrypted here. Next you choose a backup: a passkey backup that Provian stores and can never open, your own Google Drive, or your twelve-word recovery phrase. A backup opens only with your PIN or your phrase, and Provian can open none of them. You can view your recovery phrase any time in Settings."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Your Google Drive backup could not be deleted. To remove it, open Google Drive on a computer, go to Settings, then Manage apps, find Provian and choose Delete hidden app data."
+    }
   }
 }

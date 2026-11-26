@@ -865,7 +865,7 @@
       "whatIsCourtA": "Thách thức trên diễn đàn được giải quyết bằng burn-để-trình-bày, không phải tòa án: người thách thức đặt cược một lần burn và nêu một điều kiện từ bộ từ vựng trình bày; tác giả trả lời bằng cách trình bày. Nếu điều kiện đúng, cược bị đốt; nếu sai, thách thức được giữ nguyên và cược trở lại; nếu tác giả không bao giờ trình bày, thách thức vẫn có hiệu lực. Chỉ kết quả là công khai. Tòa án vẫn là cơ quan tranh chấp ký quỹ trên các đường ray của tác nhân (ba trọng tài, đa số hai phiếu) và chỉ lập hội đồng khi đủ trọng tài đủ điều kiện tham gia.",
       "securityAndRecovery": "Bảo mật & Khôi phục",
       "howWalletSecured": "Ví của tôi được bảo mật như thế nào?",
-      "howWalletSecuredA": "Ví của bạn là tài khoản BIP-39 với cụm từ khôi phục được tạo và lưu trữ mã hóa trên thiết bị của bạn. Việc ký sử dụng xác thực cụ thể cho từng hành động: sinh trắc học được hỗ trợ hoặc phương án dự phòng bằng mật mã thiết bị được cấu hình rõ ràng. Cụm từ khôi phục chỉ rời khỏi thiết bị của bạn dưới dạng văn bản mã hóa: một bản sao lưu được mã hóa bằng mật khẩu sao lưu bạn chọn ( AES-256-GCM ) sẽ được đồng bộ hóa với iCloud Keychain trên iOS hoặc thư mục dữ liệu ứng dụng Google Drive trên Android. Khi tính năng sao lưu đám mây không khả dụng trong quá trình thiết lập, bạn sẽ sao lưu bằng cách ghi lại cụm từ khôi phục gồm mười hai từ và xác nhận ba từ. Bạn cũng có thể xuất cụm từ đó trong Cài đặt để sao lưu ngoại tuyến độc lập. Một khóa thiết bị phần cứng riêng biệt sẽ ký Provenance Envelopes ; nó xác định thiết bị, không phải ví, và bằng chứng nền tảng đã được xác minh, chứ không chỉ riêng việc ký, sẽ xác định bất kỳ cấp độ chứng thực phần cứng nào.",
+      "howWalletSecuredA": "Ví của bạn là tài khoản BIP-39 với cụm từ khôi phục được tạo và lưu trữ mã hóa trên thiết bị của bạn. Việc ký sử dụng xác thực cụ thể cho từng hành động: sinh trắc học được hỗ trợ hoặc phương án dự phòng bằng mật mã thiết bị được cấu hình rõ ràng. Cụm từ khôi phục chỉ rời khỏi thiết bị của bạn dưới dạng văn bản mã hóa: một bản sao lưu được mã hóa bằng mật khẩu sao lưu bạn chọn ( AES-256-GCM ) sẽ được đồng bộ hóa với iCloud Keychain trên iOS hoặc thư mục dữ liệu ứng dụng Google Drive trên Android. Khi tính năng sao lưu đám mây không khả dụng trong quá trình thiết lập, bạn sẽ sao lưu bằng cách ghi lại cụm từ khôi phục gồm mười hai từ và xác nhận ba từ. Bạn cũng có thể xuất cụm từ đó trong Cài đặt để sao lưu ngoại tuyến độc lập. Một khóa thiết bị phần cứng riêng biệt sẽ ký Provenance Envelopes ; nó xác định thiết bị, không phải ví, và bằng chứng nền tảng đã được xác minh, chứ không chỉ riêng việc ký, sẽ xác định bất kỳ cấp độ chứng thực phần cứng nào. Trong ứng dụng web tại app.provian.ai, seed được lưu mã hóa trong trình duyệt của bạn và chỉ mở được khi có cả khóa truy cập lẫn mã PIN; tại đó, bạn sao lưu seed lên Google Drive, bằng cụm từ khôi phục, hoặc dưới dạng bản sao lưu bằng khóa truy cập do Provian lưu và không bao giờ mở được.",
       "losePhone": "Nếu tôi mất điện thoại thì sao?",
       "losePhoneA": "Khôi phục bản sao lưu đám mây đã mã hóa bằng cách đăng nhập vào cùng tài khoản iCloud hoặc Google trên thiết bị mới và nhập mật khẩu sao lưu của bạn. Ngoài ra, bạn cũng có thể khôi phục bằng cụm từ khôi phục gồm mười hai từ mà bạn đã ghi lại trong quá trình thiết lập hoặc xuất từ ​​Cài đặt. Provian không thể đặt lại mật khẩu sao lưu hoặc khôi phục cụm từ đã mất. Nếu bạn mất thiết bị và cả hai phương pháp khôi phục, ví điện tử sẽ không thể được khôi phục.",
       "canProvianAccessFunds": "Provian có thể truy cập tiền của tôi không?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Vì sao dự kiến PVT của tôi khác với số dư ví?",
       "whyProjectionDiffersA": "Số dư ví là PVT đã được quyết toán trên Base. Dự tính ước lượng công việc chưa được quyết toán theo điều kiện quyết toán áp dụng. Lịch quyết toán (hiện là 30 ngày một lần cho từng người nhận), khả năng của epoch và cập nhật bằng chứng có thể ảnh hưởng đến thời điểm và số tiền cuối cùng. Những sự kiện không đúc riêng được loại trừ.",
       "complianceHoldA": "Việc phát hành được giữ lại theo chính sách khu vực pháp lý và giá trị đã niêm phong của bạn được giữ nguyên. Relay tự động thử lại các bước kiểm tra vị trí hoặc lệnh trừng phạt chưa được giải quyết. Lệnh chặn theo khu vực giữ việc phát hành đến khi chính sách của khu vực ban đầu cho phép giải phóng; sau đó tự động phát hành qua quyết toán thông thường theo giá trị niêm phong ban đầu, không định giá lại. Khu vực hoãn phát hành tuân theo lộ trình giải phóng dần. Địa chỉ khớp với danh sách SDN của OFAC bị từ chối vĩnh viễn và không được phát hành; đó không phải là tạm giữ. Bạn vẫn có thể ghi nhận bằng chứng khi việc phát hành đang bị giữ lại.",
-      "complianceHold": "Tại sao biên nhận của tôi ghi “Tạm giữ phát hành”?"
+      "complianceHold": "Tại sao biên nhận của tôi ghi “Tạm giữ phát hành”?",
+      "useInBrowser": "Tôi có thể dùng Provian trong trình duyệt web không?",
+      "useInBrowserA": "Có. Mở app.provian.ai trên máy tính: đó là cùng ứng dụng, ví và tài khoản với ứng dụng điện thoại, và điện thoại cùng trình duyệt của bạn vẫn cùng đăng nhập. Bạn mở khóa bằng khóa truy cập (Touch ID, Windows Hello hoặc trình quản lý mật khẩu của bạn) và mã PIN 6 chữ số. Để dùng một ví ở cả hai nơi, hãy khôi phục ví trong trình duyệt từ bản sao lưu Google Drive hoặc cụm từ khôi phục, hoặc bắt đầu trong trình duyệt rồi mở Thêm điện thoại của bạn trong Sao lưu và khôi phục; mục này hiện cụm từ khôi phục sau khi bạn dùng khóa truy cập và mã PIN. Ghi nhận chat chỉ chạy trong ứng dụng điện thoại."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT dùng trong 7 ngày. Số PVT này bị hủy và không chuyển cho ai.",
     "commonsPriceIfNeeded": "Nếu cần mở cuộc trò chuyện này, {{pvt}} PVT dùng trong 7 ngày. Số PVT này bị hủy và không chuyển cho ai.",
     "priceChanged": "Số tiền đã thay đổi. Hãy đóng cửa sổ này và kiểm tra số tiền mới."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Mở ví của bạn",
+      "presenceTitle": "Xác nhận đó là bạn",
+      "revealTitle": "Hiện cụm từ khôi phục của bạn",
+      "hint": "Dùng khóa truy cập của ví này: Touch ID, Face ID, Windows Hello hoặc khóa bảo mật.",
+      "pinLabel": "Mã PIN",
+      "pinPlaceholder": "Mã PIN của bạn",
+      "pinTooShort": "Mã PIN của bạn có ít nhất {{min}} ký tự.",
+      "continue": "Tiếp tục bằng khóa truy cập",
+      "cancel": "Hủy",
+      "noWallet": "Chưa có ví nào được thiết lập trong trình duyệt này.",
+      "cancelled": "Khóa truy cập chưa được xác nhận. Hãy thử lại.",
+      "wrongPin": "Mã PIN không đúng. Còn {{count}} lần thử trước khi phải chờ một lúc.",
+      "wrongPinNoCount": "Mã PIN không đúng.",
+      "wait": "Nhập sai mã PIN quá nhiều lần. Hãy thử lại sau {{time}}.",
+      "failed": "Không thể mở ví của bạn: {{message}}"
+    },
+    "vault": {
+      "title": "Bảo vệ ví của bạn trong trình duyệt này",
+      "body": "Tại đây, ví của bạn được mở bằng khóa truy cập và mã PIN. Khóa truy cập là Touch ID, Face ID, Windows Hello hoặc khóa bảo mật. Cụm từ khôi phục của bạn được lưu mã hóa trong trình duyệt này và không bao giờ rời khỏi đó ở dạng chưa mã hóa.",
+      "pinLabel": "Chọn mã PIN",
+      "pinPlaceholder": "Ít nhất {{min}} ký tự",
+      "confirmPlaceholder": "Nhập lại mã PIN",
+      "pinNote": "Nếu bạn đã có mã PIN trên điện thoại, hãy dùng cùng mã đó. Bạn cần mã PIN cùng với khóa truy cập mỗi lần mở ví tại đây.",
+      "pinRule": "Mã PIN có từ {{min}} đến {{max}} ký tự.",
+      "pinMismatch": "Hai mã PIN không khớp.",
+      "create": "Tạo khóa truy cập",
+      "passkeyName": "Ví Provian",
+      "passkeyCancelled": "Khóa truy cập chưa được tạo. Hãy thử lại.",
+      "noPasskeys": "Trình duyệt này không dùng được khóa truy cập. Hãy mở Provian trong phiên bản mới của Safari, Chrome, Edge hoặc Firefox.",
+      "failed": "Không thể thiết lập khóa truy cập: {{message}}",
+      "noPrf": "Khóa truy cập này không thể bảo vệ ví trên trình duyệt này. Hãy lưu khóa truy cập vào iCloud Keychain, Google Password Manager hoặc một trình quản lý mật khẩu hỗ trợ mã hóa bằng khóa truy cập, trên phiên bản Chrome, Safari hoặc Edge hiện tại, rồi thử lại."
+    },
+    "backup": {
+      "title": "Sao lưu ví của bạn",
+      "doneTitle": "Ví của bạn đã được sao lưu",
+      "body": "Hãy chọn một cách sao lưu trước khi dùng ví. Nếu không sao lưu, mất trình duyệt này nghĩa là mất ví.",
+      "passkeyTitle": "Sao lưu bằng khóa truy cập",
+      "passkeyDesc": "Provian lưu cụm từ khôi phục của bạn ở dạng mã hóa bằng khóa truy cập và mã PIN của bạn. Provian không bao giờ mở được bản này. Trên máy tính khác, khóa truy cập và mã PIN sẽ khôi phục ví của bạn.",
+      "driveTitle": "Sao lưu lên Google Drive",
+      "driveDesc": "Cụm từ khôi phục của bạn được mã hóa bằng mã PIN và lưu trong một thư mục Provian riêng tư trên Google Drive của bạn. Bản sao lưu này khôi phục được trên Android và trên web.",
+      "phraseTitle": "Chép lại cụm từ khôi phục",
+      "phraseDesc": "Chép 12 từ của bạn ra giấy và cất ở nơi an toàn.",
+      "recommended": "Khuyến nghị",
+      "recommendedMac": "Khuyến nghị trên Mac",
+      "passkeyPrompt": "Sao lưu ví của bạn bằng khóa truy cập",
+      "googleNotSignedIn": "Bạn chưa đăng nhập Google Drive. Hãy thử lại và chọn tài khoản Google của bạn.",
+      "otherWalletMessage": "Google Drive này đã có bản sao lưu của một ví Provian khác. Giữ cả hai bản sao lưu, hay thay bằng bản sao lưu của ví này?",
+      "failed": "Sao lưu chưa hoàn tất: {{message}}",
+      "note": "Bạn có thể thêm cách sao lưu khác sau trong Cài đặt."
+    },
+    "restore": {
+      "optionTitle": "Khôi phục bằng khóa truy cập",
+      "optionDesc": "Dùng khóa truy cập và mã PIN từ bản sao lưu bằng khóa truy cập của bạn.",
+      "title": "Khôi phục bằng khóa truy cập",
+      "body": "Nhập mã PIN, rồi dùng khóa truy cập mà bạn đã dùng để tạo bản sao lưu. Khóa truy cập được đồng bộ qua iCloud Keychain, Google Password Manager và các trình quản lý khóa truy cập khác.",
+      "button": "Dùng khóa truy cập của tôi",
+      "note": "Provian kiểm tra khóa truy cập và gửi lại bản sao lưu đã mã hóa của bạn. Mã PIN của bạn mở bản sao lưu ngay tại đây, trong trình duyệt này.",
+      "offline": "Không thể kết nối với Provian. Hãy kiểm tra kết nối và thử lại.",
+      "wrongPin": "Mã PIN này không mở được bản sao lưu này.",
+      "noPrf": "Khóa truy cập này không mở được bản sao lưu Provian trong trình duyệt này. Hãy thử Chrome hoặc Safari, hoặc khôi phục bằng Google Drive hay cụm từ khôi phục.",
+      "noBackup": "Khóa truy cập này không có bản sao lưu Provian. Hãy chọn khóa truy cập mà bạn đã dùng để tạo bản sao lưu.",
+      "failed": "Không thể khôi phục ví của bạn: {{message}}"
+    },
+    "chat": {
+      "title": "Ghi nhận chat có trong ứng dụng điện thoại",
+      "body": "Ứng dụng Provian trên điện thoại mở các cuộc chat AI của bạn ngay trong ứng dụng và ghi lại từng cuộc trò chuyện khi nó diễn ra. Một trang web không thể nhìn vào bên trong tab của trang khác, nên ứng dụng web không ghi lại chat. Các tác nhân, commit và công việc khác được chứng kiến của bạn vẫn tạo thu nhập tại đây.",
+      "getPhoneApp": "Thêm điện thoại của bạn",
+      "download": "Tải ứng dụng điện thoại"
+    },
+    "addPhone": {
+      "title": "Thêm điện thoại của bạn",
+      "body": "Dùng ví này trên cả điện thoại của bạn. Điện thoại và trình duyệt này vẫn cùng đăng nhập.",
+      "step1Title": "Cài Provian",
+      "step1Body": "Tải ứng dụng cho iPhone hoặc Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Chạm \"Tôi đã có ví Provian\"",
+      "step2Body": "Mở ứng dụng và chọn khôi phục ví của bạn.",
+      "step3Title": "Chọn cụm từ khôi phục",
+      "step3Body": "Nhập 12 từ bên dưới vào điện thoại, theo đúng thứ tự.",
+      "show": "Hiện cụm từ khôi phục của tôi",
+      "hide": "Ẩn các từ",
+      "warning": "Bất kỳ ai nhìn thấy các từ này đều có thể lấy ví của bạn. Chỉ nhập chúng vào ứng dụng Provian trên điện thoại của chính bạn, và đóng trang này khi xong.",
+      "revealFailed": "Không thể hiện cụm từ khôi phục của bạn. Hãy thử lại.",
+      "noWallet": "Hãy mở ví trong trình duyệt này trước, rồi quay lại trang này.",
+      "driveNote": "Trên Android, bạn cũng có thể khôi phục từ Google Drive nếu đã sao lưu ở đó.",
+      "together": "Khôi phục trên điện thoại không đăng xuất trình duyệt này."
+    },
+    "settings": {
+      "passkeyBackup": "Sao lưu bằng khóa truy cập",
+      "addPhone": "Thêm điện thoại của bạn",
+      "addPhoneSubtitle": "Đưa ví này lên điện thoại của bạn",
+      "modelExplainer": "Trong trình duyệt này, ví của bạn được mã hóa bằng khóa truy cập và mã PIN. Ví khôi phục được từ bản sao lưu bằng khóa truy cập, do Provian lưu và không bao giờ mở được; từ thư mục dữ liệu ứng dụng trên Google Drive của bạn, cũng là bản sao lưu mà Android dùng, nên bên này khôi phục được trên bên kia; hoặc từ cụm từ khôi phục của bạn. Provian không thể đặt lại mã PIN của bạn."
+    },
+    "onboarding": {
+      "walletSubtext": "Khóa truy cập và mã PIN bảo vệ ví của bạn trong trình duyệt này. Các khóa của bạn được mã hóa tại đây. Tiếp theo, bạn chọn một cách sao lưu: bản sao lưu bằng khóa truy cập do Provian lưu và không bao giờ mở được, Google Drive của chính bạn, hoặc cụm từ khôi phục mười hai từ. Bản sao lưu chỉ mở được bằng mã PIN hoặc cụm từ của bạn, và Provian không mở được bản nào. Bạn có thể xem cụm từ khôi phục bất cứ lúc nào trong Cài đặt."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Không thể xóa bản sao lưu trên Google Drive của bạn. Để xóa, hãy mở Google Drive trên máy tính, vào Cài đặt, rồi Quản lý ứng dụng, tìm Provian và chọn Xóa dữ liệu ứng dụng ẩn."
+    }
   }
 }

@@ -2,6 +2,8 @@ import { withBiometricAction, assertBiometricAction, type BiometricAction } from
 import SeedManager from '../SeedManager';
 import { setItemHmac } from '../../security/hmacAsyncStorage';
 import { translate } from '../../../i18n/translate';
+import { requirePinForAction } from '../../../platform/web/unlockRequests';
+import { Platform } from 'react-native';
 
 const SEED_EXPORTED_KEY = '@provian_seed_phrase_exported';
 
@@ -36,7 +38,11 @@ export const MnemonicExportService = {
      * their parent action. The seed read uses that same native approval.
      */
     async exportMnemonic(biometricAction?: BiometricAction): Promise<MnemonicExportResult> {
-        return await withBiometricAction(translate('biometricPrompts.exportSeedPhrase', 'Authenticate to export seed phrase'), async (biometricAction) => {
+        // The web app shows the phrase only after the passkey AND the PIN, as the phone asks for
+        // Face ID; an approval passed in by the caller is used as is.
+        const reason = translate('biometricPrompts.exportSeedPhrase', 'Authenticate to export seed phrase');
+        if (Platform.OS === 'web' && !biometricAction) requirePinForAction(reason);
+        return await withBiometricAction(reason, async (biometricAction) => {
             assertBiometricAction(biometricAction);
 
             const mnemonic = await SeedManager.getMnemonic(biometricAction);

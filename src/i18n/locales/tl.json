@@ -865,7 +865,7 @@
       "whatIsCourtA": "Nareresolba ang mga hamon sa forum sa pamamagitan ng burn-to-present, hindi ng korte: nagtataya ng burn ang humamon at nagpapangalan ng isang predicate mula sa bokabularyo ng presentasyon; sumasagot ang may-akda sa pamamagitan ng pagpepresenta. Kung totoo ang predicate, nasusunog ang taya; kung mabigo, pinanindigan ang hamon at babalik ang taya; kung hindi kailanman nagpresenta ang may-akda, mananatili ang hamon. Ang resulta lang ang pampubliko. Nananatili ang Korte bilang katawan ng alitan ng mga agent rail para sa escrow (tatlong arbitrator, mayorya ng dalawang boto) at bumubuo lang ng panel kapag sapat na ang mga kwalipikadong arbitrator na sumali.",
       "securityAndRecovery": "Seguridad at Recovery",
       "howWalletSecured": "Paano nase-secure ang aking wallet?",
-      "howWalletSecuredA": "Ang iyong wallet ay isang BIP-39 account kung saan ang seed na nabuo at nakaimbak ay naka-encrypt sa iyong device. Ang pag-sign ay gumagamit ng action-specific authentication: sinusuportahang biometrics o ang tahasang na-configure na device-passcode fallback. Ang seed ay nag-iiwan lamang ng iyong device bilang ciphertext: ang isang backup na naka-encrypt gamit ang backup password na iyong pinili ( AES-256-GCM ) ay nagsi-sync sa iyong iCloud Keychain sa iOS o sa iyong Google Drive app data folder sa Android. Kapag hindi magagamit ang cloud backup habang nagse-setup, magba-back up ka sa pamamagitan ng pagsulat ng labindalawang salita na recovery phrase at pagkumpirma ng tatlong salita. Maaari mo ring i-export ang pariralang iyon sa Mga Setting para sa isang independiyenteng offline backup. Ang isang hiwalay na hardware-held device key ay nagla-sign ng Provenance Envelopes ; kinikilala nito ang device, hindi ang wallet, at ang na-verify na ebidensya ng platform, hindi ang pag-sign lamang, ang tumutukoy sa anumang hardware attestation tier.",
+      "howWalletSecuredA": "Ang iyong wallet ay isang BIP-39 account kung saan ang seed na nabuo at nakaimbak ay naka-encrypt sa iyong device. Ang pag-sign ay gumagamit ng action-specific authentication: sinusuportahang biometrics o ang tahasang na-configure na device-passcode fallback. Ang seed ay nag-iiwan lamang ng iyong device bilang ciphertext: ang isang backup na naka-encrypt gamit ang backup password na iyong pinili ( AES-256-GCM ) ay nagsi-sync sa iyong iCloud Keychain sa iOS o sa iyong Google Drive app data folder sa Android. Kapag hindi magagamit ang cloud backup habang nagse-setup, magba-back up ka sa pamamagitan ng pagsulat ng labindalawang salita na recovery phrase at pagkumpirma ng tatlong salita. Maaari mo ring i-export ang pariralang iyon sa Mga Setting para sa isang independiyenteng offline backup. Ang isang hiwalay na hardware-held device key ay nagla-sign ng Provenance Envelopes ; kinikilala nito ang device, hindi ang wallet, at ang na-verify na ebidensya ng platform, hindi ang pag-sign lamang, ang tumutukoy sa anumang hardware attestation tier. Sa web app sa app.provian.ai, naka-encrypt na nakaimbak ang seed sa browser mo at nabubuksan lang ito kapag magkasama ang passkey at PIN mo; doon, iba-back up mo ito sa Google Drive, sa recovery phrase mo, o bilang passkey backup na itinatago ng Provian at hindi kailanman nito mabubuksan.",
       "losePhone": "Paano kung mawala ang aking phone?",
       "losePhoneA": "Ibalik ang iyong naka-encrypt na cloud backup sa pamamagitan ng pag-sign in sa parehong iCloud o Google account sa bagong device at pagpasok ng iyong backup password. Bilang kahalili, ibalik ito gamit ang labindalawang salitang parirala sa pagbawi na isinulat mo noong nag-setup o na-export mula sa Mga Setting. Hindi maaaring i-reset Provian ang backup password o mabawi ang isang nawawalang parirala. Kung mawala mo ang device at ang parehong paraan ng pagbawi, hindi na mababawi ang wallet.",
       "canProvianAccessFunds": "Maa-access ba ng Provian ang aking mga pondo?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Bakit iba ang PVT projection ko sa balanse ng wallet ko?",
       "whyProjectionDiffersA": "Ang balanse ng wallet mo ay PVT na na-settle na sa Base. Tinatantya ng projection ang nakabinbing trabaho ayon sa naaangkop na settlement context. Maaaring baguhin ng iskedyul ng settlement (sa ngayon bawat 30 araw para sa bawat tatanggap), kapasidad ng epoch at mga update sa ebidensya ang oras at huling halaga. Hindi kasama ang mga event na hindi hiwalay na nagmi-mint.",
       "complianceHoldA": "Nakahold ang pagmint sa ilalim ng patakaran ng hurisdiksiyon, at nananatili ang iyong selyadong halaga. Awtomatikong inuulit ng relay ang hindi pa nalulutas na pagsusuri sa lokasyon o mga sanksiyon. Hinahawakan ng pagbabawal sa hurisdiksiyon ang pagmint hanggang payagan ng patakaran ng orihinal na hurisdiksiyon ang pagpapalabas; pagkatapos ay awtomatikong imi-mint sa normal na settlement sa orihinal na selyadong halaga, nang walang muling pagpepresyo. Sinusunod ng ipinagpalibang hurisdiksiyon ang unti-unti nitong pagpapalabas. Ang pagtugma ng address sa listahan ng SDN ng OFAC ay pinal na pagtanggi at hindi imi-mint; hindi ito pansamantalang hold. Maaari ka pa ring magtala ng patunay habang nakahold ang pagmint.",
-      "complianceHold": "Bakit may “Nakahold ang pagmint” sa aking resibo?"
+      "complianceHold": "Bakit may “Nakahold ang pagmint” sa aking resibo?",
+      "useInBrowser": "Puwede ko bang gamitin ang Provian sa web browser?",
+      "useInBrowserA": "Oo. Buksan ang app.provian.ai sa isang computer: ito rin ang app, wallet at account ng phone app, at mananatiling sabay na naka-sign in ang phone at browser mo. Ina-unlock mo ito gamit ang passkey (Touch ID, Windows Hello o ang password manager mo) at isang 6-digit na PIN. Para magamit ang iisang wallet sa dalawang lugar, i-restore ito sa browser mula sa Google Drive backup mo o sa recovery phrase mo, o magsimula sa browser at buksan ang Idagdag ang phone mo sa Backup at Pag-recover, na nagpapakita ng recovery phrase mo pagkatapos ng passkey at PIN mo. Sa phone app lang gumagana ang pagkuha ng chat."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "Sakop ng {{pvt}} PVT ang 7 araw. Sinisira ang PVT at walang nakatatanggap nito.",
     "commonsPriceIfNeeded": "Kung kailangang buksan ang usapan, sakop ng {{pvt}} PVT ang 7 araw. Sinisira ang PVT at walang nakatatanggap nito.",
     "priceChanged": "Nagbago ang halaga. Isara ito at tingnan ang bagong halaga."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Buksan ang wallet mo",
+      "presenceTitle": "Kumpirmahin na ikaw ito",
+      "revealTitle": "Ipakita ang recovery phrase mo",
+      "hint": "Gamitin ang passkey ng wallet na ito: Touch ID, Face ID, Windows Hello o isang security key.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Ang PIN mo",
+      "pinTooShort": "May hindi bababa sa {{min}} na character ang PIN mo.",
+      "continue": "Magpatuloy gamit ang passkey",
+      "cancel": "Kanselahin",
+      "noWallet": "Walang naka-set up na wallet sa browser na ito.",
+      "cancelled": "Hindi nakumpirma ang passkey. Subukan muli.",
+      "wrongPin": "Mali ang PIN na iyan. {{count}} pang subok bago ang maikling paghihintay.",
+      "wrongPinNoCount": "Mali ang PIN na iyan.",
+      "wait": "Masyadong maraming maling PIN. Subukan muli pagkatapos ng {{time}}.",
+      "failed": "Hindi mabuksan ang wallet mo: {{message}}"
+    },
+    "vault": {
+      "title": "Protektahan ang wallet mo sa browser na ito",
+      "body": "Dito, nabubuksan ang wallet mo gamit ang passkey at PIN. Ang passkey ay Touch ID, Face ID, Windows Hello o isang security key. Naka-encrypt na nakaimbak sa browser na ito ang recovery phrase mo, at hindi ito kailanman lumalabas dito nang hindi naka-encrypt.",
+      "pinLabel": "Pumili ng PIN",
+      "pinPlaceholder": "Hindi bababa sa {{min}} na character",
+      "confirmPlaceholder": "Ilagay muli ang PIN",
+      "pinNote": "Kung may PIN ka sa phone mo, gamitin ang parehong PIN. Kailangan mo ito kasama ng passkey mo tuwing bubuksan mo rito ang wallet mo.",
+      "pinRule": "Ang PIN ay may {{min}} hanggang {{max}} na character.",
+      "pinMismatch": "Hindi magkatugma ang dalawang PIN.",
+      "create": "Gumawa ng passkey",
+      "passkeyName": "Provian wallet",
+      "passkeyCancelled": "Hindi nagawa ang passkey. Subukan muli.",
+      "noPasskeys": "Hindi makagamit ng passkey ang browser na ito. Buksan ang Provian sa kasalukuyang bersyon ng Safari, Chrome, Edge o Firefox.",
+      "failed": "Hindi ma-set up ang passkey: {{message}}",
+      "noPrf": "Hindi kayang protektahan ng passkey na ito ang isang wallet sa browser na ito. I-save ang passkey sa iCloud Keychain, Google Password Manager o isang password manager na sumusuporta sa passkey encryption, sa kasalukuyang bersyon ng Chrome, Safari o Edge, at subukang muli."
+    },
+    "backup": {
+      "title": "I-back up ang wallet mo",
+      "doneTitle": "Naka-back up na ang wallet mo",
+      "body": "Pumili ng backup bago mo gamitin ang wallet mo. Kung wala nito, kapag nawala ang browser na ito, mawawala rin ang wallet.",
+      "passkeyTitle": "Mag-back up gamit ang passkey mo",
+      "passkeyDesc": "Itinatago ng Provian ang recovery phrase mo na naka-encrypt gamit ang passkey at PIN mo. Hindi ito kailanman mabubuksan ng Provian. Sa ibang computer, maibabalik ng passkey at PIN mo ang wallet mo.",
+      "driveTitle": "Mag-back up sa Google Drive",
+      "driveDesc": "Naka-encrypt gamit ang PIN mo ang recovery phrase mo at naka-save ito sa isang pribadong Provian folder sa Google Drive mo. Mare-restore ito sa Android at sa web.",
+      "phraseTitle": "Isulat ang recovery phrase mo",
+      "phraseDesc": "Kopyahin sa papel ang 12 salita mo at itago ang mga ito sa ligtas na lugar.",
+      "recommended": "Inirerekomenda",
+      "recommendedMac": "Inirerekomenda sa Mac",
+      "passkeyPrompt": "I-back up ang wallet mo gamit ang passkey mo",
+      "googleNotSignedIn": "Hindi naka-sign in ang Google Drive. Subukan muli at piliin ang Google account mo.",
+      "otherWalletMessage": "May backup na ang Google Drive na ito ng ibang Provian wallet. Panatilihin ang dalawang backup, o palitan ito ng backup ng wallet na ito?",
+      "failed": "Hindi natapos ang backup: {{message}}",
+      "note": "Puwede kang magdagdag ng isa pang backup mamaya sa Mga Setting."
+    },
+    "restore": {
+      "optionTitle": "I-restore gamit ang passkey mo",
+      "optionDesc": "Gamitin ang passkey at PIN mula sa passkey backup mo.",
+      "title": "I-restore gamit ang passkey mo",
+      "body": "Ilagay ang PIN mo, pagkatapos ay gamitin ang passkey na ginamit mo sa paggawa ng backup. Nagsi-sync ang mga passkey sa iCloud Keychain, Google Password Manager at iba pang passkey manager.",
+      "button": "Gamitin ang passkey ko",
+      "note": "Sinusuri ng Provian ang passkey at ibinabalik ang naka-encrypt mong backup. Binubuksan ito ng PIN mo dito, sa browser na ito.",
+      "offline": "Hindi maabot ang Provian. Tingnan ang koneksyon mo at subukan muli.",
+      "wrongPin": "Hindi nabubuksan ng PIN na iyan ang backup na ito.",
+      "noPrf": "Hindi kayang buksan ng passkey na ito ang isang Provian backup sa browser na ito. Subukan ang Chrome o Safari, o mag-restore gamit ang Google Drive o ang recovery phrase mo.",
+      "noBackup": "Walang Provian backup ang passkey na ito. Piliin ang passkey na ginamit mo sa paggawa ng backup.",
+      "failed": "Hindi ma-restore ang wallet mo: {{message}}"
+    },
+    "chat": {
+      "title": "Nasa phone app ang pagkuha ng chat",
+      "body": "Binubuksan ng Provian phone app ang mga AI chat mo sa loob ng app at itinatala ang bawat usapan habang nangyayari ito. Hindi nakikita ng isang web page ang loob ng tab ng ibang site, kaya hindi nagtatala ng chat ang web app. Kumikita pa rin dito ang mga agent mo, ang mga commit mo at ang iba pang trabahong nasaksihan.",
+      "getPhoneApp": "Idagdag ang phone mo",
+      "download": "Kunin ang phone app"
+    },
+    "addPhone": {
+      "title": "Idagdag ang phone mo",
+      "body": "Gamitin din ang wallet na ito sa phone mo. Mananatiling sabay na naka-sign in ang phone mo at ang browser na ito.",
+      "step1Title": "I-install ang Provian",
+      "step1Body": "Kunin ang app para sa iPhone o Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "I-tap ang \"Mayroon na akong Provian wallet\"",
+      "step2Body": "Buksan ang app at piliing i-restore ang wallet mo.",
+      "step3Title": "Piliin ang recovery phrase",
+      "step3Body": "I-type sa phone mo ang 12 salita sa ibaba, nang sunod-sunod.",
+      "show": "Ipakita ang recovery phrase ko",
+      "hide": "Itago ang mga salita",
+      "warning": "Makukuha ng sinumang makakita sa mga salitang ito ang wallet mo. I-type lang ang mga ito sa Provian app sa sarili mong phone, at isara ang page na ito kapag tapos ka na.",
+      "revealFailed": "Hindi maipakita ang recovery phrase mo. Subukan muli.",
+      "noWallet": "Buksan muna ang wallet mo sa browser na ito, pagkatapos ay bumalik sa page na ito.",
+      "driveNote": "Sa Android, puwede ka ring mag-restore mula sa Google Drive kung doon ka nag-back up.",
+      "together": "Hindi nasa-sign out ang browser na ito kapag nag-restore ka sa phone mo."
+    },
+    "settings": {
+      "passkeyBackup": "Passkey backup",
+      "addPhone": "Idagdag ang phone mo",
+      "addPhoneSubtitle": "Ilagay ang wallet na ito sa phone mo",
+      "modelExplainer": "Sa browser na ito, naka-encrypt ang wallet mo gamit ang passkey at PIN mo. Mare-restore ito mula sa passkey backup, na itinatago ng Provian at hindi kailanman nito mabubuksan; mula sa app data folder ng Google Drive mo, ang parehong backup na ginagamit ng Android, kaya nare-restore ang bawat isa sa isa pa; o mula sa recovery phrase mo. Hindi kayang i-reset ng Provian ang PIN mo."
+    },
+    "onboarding": {
+      "walletSubtext": "Pinoprotektahan ng passkey at PIN mo ang wallet mo sa browser na ito. Naka-encrypt dito ang mga key mo. Susunod, pipili ka ng backup: isang passkey backup na itinatago ng Provian at hindi kailanman nito mabubuksan, ang sarili mong Google Drive, o ang labindalawang salitang recovery phrase mo. Nabubuksan lang ang isang backup gamit ang PIN o ang phrase mo, at wala sa mga ito ang kayang buksan ng Provian. Puwede mong tingnan ang recovery phrase mo anumang oras sa Mga Setting."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Hindi ma-delete ang backup mo sa Google Drive. Para alisin ito, buksan ang Google Drive sa isang computer, pumunta sa Settings, pagkatapos sa Manage apps, hanapin ang Provian at piliin ang Delete hidden app data."
+    }
   }
 }

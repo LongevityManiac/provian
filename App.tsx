@@ -21,6 +21,7 @@ import AppUpdateService from './src/services/AppUpdateService';
 import { useCommonsBlockStore } from './src/store/commonsBlockStore';
 import { resumeStorePurchases } from './src/core/store/storeRuntime';
 import InAppNotificationBanner from './src/components/InAppNotificationBanner';
+import WebOverlays from './src/platform/WebOverlays';
 import {
   initializeServices,
   shutdownServices,
@@ -369,6 +370,7 @@ export default function App() {
           onDismiss={handleNotificationDismiss}
           autoDismissMs={10000}
         />
+        <WebOverlays />
       </ThemeProvider>
     </SafeAreaProvider>
   );

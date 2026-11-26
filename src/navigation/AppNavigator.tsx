@@ -3,7 +3,7 @@ import BuildWithProvianScreen from '../screens/Vision/BuildWithProvianScreen';
 import ComputerPairingScreen from '../screens/Agent/ComputerPairingScreen';
 import CommonsHowItWorksScreen from '../screens/Commons/CommonsHowItWorksScreen';
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Linking } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Linking, Platform } from 'react-native';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useWalletStore, useHasHydrated, useSessionTimeoutWatcher, useBackgroundLock, useNetworkMonitor } from '../store/walletStore';
@@ -80,6 +80,9 @@ import { ChatWebViewScreen } from '../screens/Chat';
 
 // Recovery Flow Screens
 import { RecoveryStartScreen } from '../screens/Recovery';
+import PasskeyRestoreScreen from '../screens/Recovery/PasskeyRestoreScreen';
+import AddYourPhoneScreen from '../screens/Web/AddYourPhoneScreen';
+import withWebVault from '../platform/withWebVault';
 
 // Agent Screens
 import {
@@ -147,6 +150,12 @@ import CommonsWants from '../screens/Commons/CommonsWants';
 import CommonsConsentRequests from '../screens/Commons/CommonsConsentRequests';
 
 const Stack = createNativeStackNavigator<AppParamList>();
+
+// Web app: creating or restoring a wallet first sets up this browser's passkey + PIN vault.
+// On the phone these are the screens themselves.
+const WebVaultBiometricSetup = withWebVault(BiometricSetupScreen);
+const WebVaultImportRecoveryPhrase = withWebVault(ImportRecoveryPhraseScreen);
+const WebVaultCloudRecovery = withWebVault(CloudRecoveryScreen);
 
 // An agent link invitation that arrived before onboarding was complete (a tap, or the
 // first-launch deferred invite) is held in `./pendingLinkAccept` and replayed by the effect
@@ -458,11 +467,13 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="CommonsWants" component={CommonsWants} />
                 <Stack.Screen name="CommonsConsentRequests" component={CommonsConsentRequests} />
                 <Stack.Screen name="Consent" component={ConsentScreen} />
-                <Stack.Screen name="BiometricSetup" component={BiometricSetupScreen} />
+                <Stack.Screen name="BiometricSetup" component={WebVaultBiometricSetup} />
                 <Stack.Screen name="CloudBackupConfirm" component={CloudBackupConfirmScreen} />
                 <Stack.Screen name="PhraseBackup" component={PhraseBackupScreen} />
                 <Stack.Screen name="StayInTheLoop" component={StayInTheLoopScreen} />
-                <Stack.Screen name="ImportRecoveryPhrase" component={ImportRecoveryPhraseScreen} />
+                <Stack.Screen name="ImportRecoveryPhrase" component={WebVaultImportRecoveryPhrase} />
+                {Platform.OS === 'web' && <Stack.Screen name="PasskeyRestore" component={PasskeyRestoreScreen} />}
+                {Platform.OS === 'web' && <Stack.Screen name="AddYourPhone" component={AddYourPhoneScreen} />}
                 <Stack.Screen name="ExportMnemonic" component={ExportMnemonicScreen} />
                 <Stack.Screen name="Attestation" component={AttestationScreen} />
                 <Stack.Screen name="MainTabs" component={TabNavigator} />
@@ -519,7 +530,7 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
 
                 {/* Recovery Flow */}
                 <Stack.Screen name="RecoveryStart" component={RecoveryStartScreen} />
-                <Stack.Screen name="CloudRecovery" component={CloudRecoveryScreen} />
+                <Stack.Screen name="CloudRecovery" component={WebVaultCloudRecovery} />
 
                 {/* Agent Stack */}
                 <Stack.Screen name="AgentHub" component={AgentHubScreen} />

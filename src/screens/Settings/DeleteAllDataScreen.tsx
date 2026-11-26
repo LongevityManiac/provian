@@ -8,11 +8,13 @@ import {
     Alert,
     ActivityIndicator,
     ScrollView,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { requireBiometric, BiometricNotAvailableError, BiometricAuthError, clearBiometricFallback } from '../../core/security/requireBiometric';
+import { wipeWebStorage } from '../../platform/wipeWebStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +25,7 @@ import RelayAPIService, { type DataDeletionOutcome } from '../../services/RelayA
 import { useBiometricLabel } from '../../core/security/biometricLabel';
 import WalletCreationService from '../../core/wallet/WalletCreationService';
 import { deleteCloudBackup } from '../../core/recovery/cloud/CloudBackupV2';
+import { signInForRecovery } from '../../core/recovery/cloud/ProvianCloudKeychainSync';
 import BackButton, { BACK_BUTTON_SIZE } from '../../components/BackButton';
 const DeleteAllDataScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -63,10 +66,23 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
                 {
                     text: t('deleteData.confirmDelete'),
                     style: 'destructive',
-                    onPress: () => handleBiometricAuth(deleteCloudBackupToo),
+                    onPress: () => confirmAndDelete(deleteCloudBackupToo),
                 },
             ]
         );
+    };
+
+    // Web app: Google Drive is reachable only while signed in, and the sign-in popup must open from
+    // this click. Sign in before anything is deleted; if it does not happen, nothing is deleted.
+    const confirmAndDelete = async (deleteCloudBackupToo: boolean) => {
+        if (Platform.OS === 'web' && deleteCloudBackupToo) {
+            const signedIn = await signInForRecovery().catch(() => false);
+            if (!signedIn) {
+                Alert.alert(t('deleteData.deletionFailed'), t('webApp.backup.googleNotSignedIn'));
+                return;
+            }
+        }
+        await handleBiometricAuth(deleteCloudBackupToo);
     };
 
     const handleBiometricAuth = async (deleteCloudBackupToo: boolean) => {
@@ -157,11 +173,13 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
             //     local SecureStore/AsyncStorage wipes above. It must be deleted
             //     explicitly when the user opts in, or it persists in the cloud.
             let keptUnidentifiedBackup = false;
+            let cloudDeleteFailed = false;
             if (deleteCloudBackupToo) {
                 try {
                     keptUnidentifiedBackup = (await deleteCloudBackup(walletAddress)).keptUnidentifiedBackup;
                     console.log('[DeleteAllData] Cloud backup deleted');
                 } catch (cloudErr) {
+                    cloudDeleteFailed = Platform.OS === 'web';
                     console.warn('[DeleteAllData] Cloud backup deletion failed (continuing):', cloudErr);
                 }
             }
@@ -210,6 +228,8 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
             //    them write final-state markers as part of their wipe.
             await AsyncStorage.clear();
             console.log('[DeleteAllData] AsyncStorage cleared');
+            // Web app: the browser vault, its seed, the secure-store items and the device key.
+            await wipeWebStorage();
 
             // 7. Reset Zustand store
             resetOnboarding();
@@ -224,7 +244,12 @@ const DeleteAllDataScreen = ({ navigation }: any) => {
             });
             // A backup from before 2026-10-17 names no wallet; it may be another wallet's only
             // recovery, so it was left in place — say so rather than claim it was deleted.
-            if (keptUnidentifiedBackup) {
+            if (cloudDeleteFailed) {
+                // Web app: say plainly that the Drive backup is still there, and how to remove it.
+                Alert.alert(t('deleteData.deletionFailed'), t('webApp.deleteData.driveNotDeleted'), [
+                    { text: t('common.ok'), onPress: leave },
+                ], { cancelable: false });
+            } else if (keptUnidentifiedBackup) {
                 Alert.alert(t('deleteData.cloudBackupKeptTitle'), t('deleteData.cloudBackupKeptMsg'), [
                     { text: t('common.ok'), onPress: leave },
                 ], { cancelable: false });

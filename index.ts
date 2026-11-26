@@ -2,6 +2,8 @@
 // This shim uses require() internally so Buffer is set synchronously
 // before any subsequent import's module evaluation references it.
 import './shims/buffer-global';
+// Web only: the browser implementations of native bridges (a no-op module on iOS/Android).
+import './src/platform/bootstrap';
 
 import { registerRootComponent } from 'expo';
 import App from './App';

@@ -154,3 +154,6 @@ provian-backend/data/jurisdiction/*.mmdb
 provian-backend/data/jurisdiction/geo-metadata.json
 
 # Generated loopback-only simulator configuration.
+
+# The web app export (built by web-app/scripts/deploy-web-app.sh)
+web-app/dist/

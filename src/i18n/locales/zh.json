@@ -866,7 +866,7 @@
       "whatIsCourtA": "论坛质疑通过“销毁以呈示”解决，而非法庭：质疑者押注一次销毁并从呈示词汇表中指定一个条件；作者以呈示回应。条件成立则押注销毁；不成立则质疑成立、押注退回；作者始终不呈示则质疑保留。只有结果是公开的。法庭仍是智能体轨道上 Escrow 争议的裁决机构（三名仲裁员，两票多数），只有在足够多的合格仲裁员加入后才会组成合议庭。",
       "securityAndRecovery": "安全与恢复",
       "howWalletSecured": "我的钱包如何保护安全？",
-      "howWalletSecuredA": "您的钱包是一个BIP-39账户，助记词生成后以加密形式存储在您的设备上。签名采用特定操作的身份验证：支持的生物识别技术或显式配置的设备密码作为备用方案。助记词仅以密文形式离开您的设备：使用您选择的备份密码（ AES-256-GCM ）加密的备份会同步到 iOS 上的iCloud Keychain或 Android 上的Google Drive应用数据文件夹。如果在设置过程中云备份不可用，您可以通过记下 12 个单词的恢复短语并确认其中三个单词来进行备份。您也可以在“设置”中导出该短语以进行独立的离线备份。单独的硬件设备密钥用于Provenance Envelopes ；它识别的是设备而非钱包，并且任何硬件认证级别都取决于已验证的平台证据，而不仅仅是签名。",
+      "howWalletSecuredA": "您的钱包是一个BIP-39账户，助记词生成后以加密形式存储在您的设备上。签名采用特定操作的身份验证：支持的生物识别技术或显式配置的设备密码作为备用方案。助记词仅以密文形式离开您的设备：使用您选择的备份密码（ AES-256-GCM ）加密的备份会同步到 iOS 上的iCloud Keychain或 Android 上的Google Drive应用数据文件夹。如果在设置过程中云备份不可用，您可以通过记下 12 个单词的恢复短语并确认其中三个单词来进行备份。您也可以在“设置”中导出该短语以进行独立的离线备份。单独的硬件设备密钥用于Provenance Envelopes ；它识别的是设备而非钱包，并且任何硬件认证级别都取决于已验证的平台证据，而不仅仅是签名。在 app.provian.ai 的网页应用中，助记词以加密形式存储在您的浏览器中，只有同时使用您的通行密钥和 PIN 才能打开；在网页应用中，您可以将它备份到 Google Drive、通过抄写恢复助记词来备份，或者作为由 Provian 存储但永远无法打开的通行密钥备份。",
       "losePhone": "如果我丢了手机怎么办？",
       "losePhoneA": "要恢复加密的云备份，请在新设备上登录相同的 iCloud 或 Google 帐户，并输入备份密码。或者，您也可以使用设置过程中记下的或从“设置”中导出的十二个单词的恢复短语进行恢复。Provian 无法重置备份密码或恢复丢失的短语。如果您丢失了设备且两种恢复方法均失效， Provian钱包将无法恢复。",
       "canProvianAccessFunds": "Provian 能访问我的资金吗？",
@@ -896,7 +896,9 @@
       "whyProjectionDiffers": "为什么我的 PVT 预测与钱包余额不同？",
       "whyProjectionDiffersA": "钱包余额是在 Base 上已经结算的 PVT。预估根据适用的结算条件估算尚未结算的工作。结算时间表（目前每位收款人每 30 天一次）、周期容量和证据更新都可能影响时间及最终金额。不单独铸造的事件不计入。",
       "complianceHoldA": "根据司法辖区政策，铸币暂缓，您的封存价值保持不变。中继会自动重试尚未完成的位置或制裁筛查。司法辖区封锁会暂缓铸币，直到原司法辖区的政策允许解除；届时将按原封存价值通过正常结算自动铸币，不重新定价。递延辖区遵循其分阶段释放流程。钱包地址命中OFAC的SDN名单属于终局拒绝，不会铸币，并非临时暂缓。铸币暂缓期间，您仍可记录证明。",
-      "complianceHold": "为什么我的凭证显示“铸币暂缓”？"
+      "complianceHold": "为什么我的凭证显示“铸币暂缓”？",
+      "useInBrowser": "我可以在网页浏览器中使用 Provian 吗？",
+      "useInBrowserA": "可以。在电脑上打开 app.provian.ai：它与手机应用是同一个应用、钱包和账户，你的手机和浏览器会同时保持登录。你用通行密钥（Touch ID、Windows Hello 或你的密码管理器）和 6 位 PIN 解锁。要在两处使用同一个钱包，可以在浏览器中从你的 Google Drive 备份或恢复助记词恢复；也可以先在浏览器中开始，然后在“备份与恢复”中打开“添加你的手机”，验证通行密钥和 PIN 后会显示你的恢复助记词。聊天捕获只在手机应用中运行。"
     }
   },
   "developer": {
@@ -5417,5 +5419,108 @@
     "commonsPrice": "{{pvt}} PVT 可用 7 天。这笔 PVT 会销毁，不会付给任何人。",
     "commonsPriceIfNeeded": "如果需要开启此对话，{{pvt}} PVT 可用 7 天。这笔 PVT 会销毁，不会付给任何人。",
     "priceChanged": "金额已变更。请关闭此弹窗并查看新金额。"
+  },
+  "webApp": {
+    "unlock": {
+      "title": "打开你的钱包",
+      "presenceTitle": "确认是你本人",
+      "revealTitle": "显示你的恢复助记词",
+      "hint": "使用此钱包的通行密钥：Touch ID、Face ID、Windows Hello 或安全密钥。",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "你的 PIN",
+      "pinTooShort": "你的 PIN 至少有 {{min}} 个字符。",
+      "continue": "使用通行密钥继续",
+      "cancel": "取消",
+      "noWallet": "此浏览器中尚未设置钱包。",
+      "cancelled": "通行密钥未确认。请重试。",
+      "wrongPin": "PIN 不正确。再错 {{count}} 次后需要稍等片刻。",
+      "wrongPinNoCount": "PIN 不正确。",
+      "wait": "PIN 错误次数过多。请在 {{time}} 后重试。",
+      "failed": "无法打开你的钱包：{{message}}"
+    },
+    "vault": {
+      "title": "在此浏览器中保护你的钱包",
+      "body": "在这里，你的钱包用通行密钥和 PIN 打开。通行密钥可以是 Touch ID、Face ID、Windows Hello 或安全密钥。你的恢复助记词在此浏览器中加密保存，绝不会以未加密的形式离开浏览器。",
+      "pinLabel": "设置 PIN",
+      "pinPlaceholder": "至少 {{min}} 个字符",
+      "confirmPlaceholder": "再次输入 PIN",
+      "pinNote": "如果你在手机上已有 PIN，请使用相同的 PIN。每次在这里打开钱包时，都需要它和通行密钥一起使用。",
+      "pinRule": "PIN 为 {{min}} 到 {{max}} 个字符。",
+      "pinMismatch": "两次输入的 PIN 不一致。",
+      "create": "创建通行密钥",
+      "passkeyName": "Provian 钱包",
+      "passkeyCancelled": "未创建通行密钥。请重试。",
+      "noPasskeys": "此浏览器无法使用通行密钥。请在最新版本的 Safari、Chrome、Edge 或 Firefox 中打开 Provian。",
+      "failed": "无法设置通行密钥：{{message}}",
+      "noPrf": "此通行密钥无法在此浏览器中保护钱包。请在最新版 Chrome、Safari 或 Edge 中，将通行密钥保存到 iCloud 钥匙串、Google 密码管理器或支持通行密钥加密的密码管理器，然后重试。"
+    },
+    "backup": {
+      "title": "备份你的钱包",
+      "doneTitle": "你的钱包已备份",
+      "body": "使用钱包前，请先选择一种备份方式。如果没有备份，丢失此浏览器就意味着丢失钱包。",
+      "passkeyTitle": "用通行密钥备份",
+      "passkeyDesc": "Provian 保存用你的通行密钥和 PIN 加密的恢复助记词。Provian 永远无法打开它。在另一台电脑上，你的通行密钥和 PIN 可以恢复你的钱包。",
+      "driveTitle": "备份到 Google Drive",
+      "driveDesc": "你的恢复助记词用你的 PIN 加密，保存在你 Google Drive 中一个私有的 Provian 文件夹里。可在 Android 和网页上恢复。",
+      "phraseTitle": "抄写你的恢复助记词",
+      "phraseDesc": "把 12 个单词抄在纸上，并存放在安全的地方。",
+      "recommended": "推荐",
+      "recommendedMac": "在 Mac 上推荐",
+      "passkeyPrompt": "用你的通行密钥备份钱包",
+      "googleNotSignedIn": "未登录 Google Drive。请重试并选择你的 Google 账户。",
+      "otherWalletMessage": "此 Google Drive 中已有另一个 Provian 钱包的备份。保留两份备份，还是用此钱包的备份替换它？",
+      "failed": "备份未完成：{{message}}",
+      "note": "你之后可以在设置中添加其他备份。"
+    },
+    "restore": {
+      "optionTitle": "用通行密钥恢复",
+      "optionDesc": "使用你通行密钥备份中的通行密钥和 PIN。",
+      "title": "用通行密钥恢复",
+      "body": "输入你的 PIN，然后使用你创建备份时用的通行密钥。通行密钥通过 iCloud Keychain、Google Password Manager 和其他通行密钥管理器同步。",
+      "button": "使用我的通行密钥",
+      "note": "Provian 验证通行密钥后发回你的加密备份。你的 PIN 会在这里、在此浏览器中打开它。",
+      "offline": "无法连接到 Provian。请检查网络连接后重试。",
+      "wrongPin": "此 PIN 无法打开这份备份。",
+      "noPrf": "此通行密钥无法在此浏览器中打开 Provian 备份。请尝试 Chrome 或 Safari，或使用 Google Drive 或恢复助记词恢复。",
+      "noBackup": "此通行密钥没有 Provian 备份。请选择你创建备份时使用的通行密钥。",
+      "failed": "无法恢复你的钱包：{{message}}"
+    },
+    "chat": {
+      "title": "聊天捕获在手机应用中",
+      "body": "Provian 手机应用会在应用内打开你的 AI 聊天，并在对话进行时记录每一次对话。网页无法查看其他网站标签页中的内容，因此网页应用不会记录聊天。你的智能体、提交和其他经见证的工作在这里仍然可以获得收益。",
+      "getPhoneApp": "添加你的手机",
+      "download": "获取手机应用"
+    },
+    "addPhone": {
+      "title": "添加你的手机",
+      "body": "在手机上也使用这个钱包。你的手机和此浏览器会同时保持登录。",
+      "step1Title": "安装 Provian",
+      "step1Body": "获取适用于 iPhone 或 Android 的应用。",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "点按“我已经有一个 Provian 钱包”",
+      "step2Body": "打开应用，选择恢复你的钱包。",
+      "step3Title": "选择恢复助记词",
+      "step3Body": "按顺序将下面的 12 个单词输入到你的手机中。",
+      "show": "显示我的恢复助记词",
+      "hide": "隐藏单词",
+      "warning": "任何看到这些单词的人都可以拿走你的钱包。只在你自己手机上的 Provian 应用中输入它们，完成后关闭此页面。",
+      "revealFailed": "无法显示你的恢复助记词。请重试。",
+      "noWallet": "请先在此浏览器中打开你的钱包，然后再回到此页面。",
+      "driveNote": "在 Android 上，如果你备份到了 Google Drive，也可以从 Google Drive 恢复。",
+      "together": "在手机上恢复不会让此浏览器退出登录。"
+    },
+    "settings": {
+      "passkeyBackup": "通行密钥备份",
+      "addPhone": "添加你的手机",
+      "addPhoneSubtitle": "把这个钱包添加到你的手机上",
+      "modelExplainer": "在此浏览器中，你的钱包用你的通行密钥和 PIN 加密。它可以通过以下方式恢复：通行密钥备份（由 Provian 保存，但 Provian 永远无法打开）；你的 Google Drive 应用数据文件夹（与 Android 使用的是同一份备份，因此两边可以互相恢复）；或你的恢复助记词。Provian 无法重置你的 PIN。"
+    },
+    "onboarding": {
+      "walletSubtext": "在此浏览器中，你的通行密钥和 PIN 保护你的钱包。你的密钥在这里加密。接下来你要选择一种备份方式：由 Provian 保存但永远无法打开的通行密钥备份、你自己的 Google Drive，或 12 个单词的恢复助记词。备份只能用你的 PIN 或助记词打开，Provian 无法打开其中任何一份。你可以随时在设置中查看你的恢复助记词。"
+    },
+    "deleteData": {
+      "driveNotDeleted": "无法删除你的 Google 云端硬盘备份。如需删除，请在电脑上打开 Google 云端硬盘，依次进入“设置”和“管理应用”，找到 Provian，然后选择“删除隐藏的应用数据”。"
+    }
   }
 }

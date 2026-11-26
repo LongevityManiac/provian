@@ -45,6 +45,7 @@ import {
     deleteSynced,
     verifySync,
     isCloudKeychainAvailable,
+    isSyncAvailable,
     listSyncedKeys,
     signInForRecovery,
 } from './ProvianCloudKeychainSync';
@@ -354,6 +355,9 @@ export async function cloudBackupWalletAddress(): Promise<string | null> {
  * Without an address (no wallet on the device), the primary alone, as before.
  */
 export async function deleteCloudBackup(forWalletAddress?: string): Promise<{ deletedKeys: string[]; keptUnidentifiedBackup: boolean }> {
+    // The web app reads Google Drive only while signed in; signed out, every read is empty, so the
+    // plan below would delete nothing and report success. Refuse instead.
+    if (Platform.OS === 'web' && !(await isSyncAvailable())) throw new Error('cloud_sign_in_required');
     if (forWalletAddress) forWalletAddress = await backupIdentity(forWalletAddress);
     const plan = forWalletAddress
         ? backupKeysToDelete({

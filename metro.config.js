@@ -95,8 +95,30 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return { filePath: path.join(joseWebApiPath, 'index.js'), type: 'sourceFile' };
   }
 
+  // Web app: the browser implementations of the native-only packages the app's own code uses.
+  if (platform === 'web') {
+    const webDir = path.join(__dirname, 'src', 'platform', 'web');
+    const origin = context.originModulePath || '';
+    const fromAppCode = (origin.startsWith(path.join(__dirname, 'src') + path.sep)
+      || origin.startsWith(path.join(__dirname, 'modules') + path.sep)
+      || origin === path.join(__dirname, 'App.tsx'))
+      && !origin.startsWith(webDir + path.sep + 'expoModulesCoreWeb');
+    if (moduleName === 'expo-secure-store') {
+      return { filePath: path.join(webDir, 'secureStoreWeb.ts'), type: 'sourceFile' };
+    }
+    if (moduleName === 'expo-local-authentication') {
+      return { filePath: path.join(webDir, 'localAuthWeb.ts'), type: 'sourceFile' };
+    }
+    if (moduleName === 'expo-modules-core' && fromAppCode) {
+      return { filePath: path.join(webDir, 'expoModulesCoreWeb.ts'), type: 'sourceFile' };
+    }
+  }
+
   // Default resolution
   return context.resolveRequest(context, moduleName, platform);
 };
+
+// Web: expo-sqlite's wa-sqlite worker imports a .wasm asset.
+if (!config.resolver.assetExts.includes('wasm')) config.resolver.assetExts.push('wasm');
 
 module.exports = config;

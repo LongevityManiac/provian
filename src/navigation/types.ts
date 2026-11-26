@@ -56,12 +56,14 @@ export type AppParamList = {
     CommonsWants: undefined;
     CommonsConsentRequests: undefined;
     /** `next`: the restore method to continue to once accepted; absent on the create path. */
-    Consent: { next?: 'CloudRecovery' | 'ImportRecoveryPhrase' } | undefined;
+    Consent: { next?: 'CloudRecovery' | 'ImportRecoveryPhrase' | 'PasskeyRestore' } | undefined;
     BiometricSetup: undefined;
     CloudBackupConfirm: { fromSettings?: boolean; requiredBeforeApp?: boolean } | undefined;
     PhraseBackup: { fromSettings?: boolean; requiredBeforeApp?: boolean } | undefined;
     StayInTheLoop: { fromSettings?: boolean } | undefined;
-    ImportRecoveryPhrase: undefined;
+    ImportRecoveryPhrase: { restoredMnemonic?: string } | undefined;
+    PasskeyRestore: undefined;
+    AddYourPhone: undefined;
     ExportMnemonic: undefined;
     Attestation: undefined;
     // Main Tabs (unified bottom tab navigator)

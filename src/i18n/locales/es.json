@@ -865,7 +865,7 @@
       "whatIsCourtA": "Los desafíos del foro se resuelven por quemar-para-presentar, no por un tribunal: quien desafía apuesta una quema y nombra un predicado del vocabulario de presentación; el autor responde presentando. Si el predicado se cumple, la apuesta se quema; si falla, el desafío se sostiene y la apuesta vuelve; si el autor nunca presenta, el desafío queda en pie. Solo el resultado es público. El Tribunal sigue siendo el órgano de disputas de los rieles de agentes para depósitos en garantía (tres árbitros, mayoría de dos votos) y solo forma un panel cuando hay suficientes árbitros calificados inscritos.",
       "securityAndRecovery": "Seguridad y Recuperación",
       "howWalletSecured": "¿Cómo se asegura mi billetera?",
-      "howWalletSecuredA": "Tu monedero es una cuenta BIP-39 con la semilla generada y almacenada cifrada en tu dispositivo. La firma utiliza autenticación específica de la acción: datos biométricos compatibles o la contraseña de reserva del dispositivo configurada explícitamente. La semilla sale de tu dispositivo solo como texto cifrado: una copia de seguridad cifrada con una contraseña de respaldo que elijas ( AES-256-GCM ) se sincroniza con tu iCloud Keychain en iOS o con la carpeta de datos de tu aplicación Google Drive en Android. Si la copia de seguridad en la nube no está disponible durante la configuración, puedes hacer una copia de seguridad anotando la frase de recuperación de doce palabras y confirmando tres. También puedes exportar esa frase en Ajustes para una copia de seguridad independiente sin conexión. Una clave de dispositivo separada, almacenada en hardware, firma Provenance Envelopes ; identifica el dispositivo, no el monedero, y la evidencia de plataforma verificada, no solo la firma, determina cualquier nivel de atestación de hardware.",
+      "howWalletSecuredA": "Tu monedero es una cuenta BIP-39 con la semilla generada y almacenada cifrada en tu dispositivo. La firma utiliza autenticación específica de la acción: datos biométricos compatibles o la contraseña de reserva del dispositivo configurada explícitamente. La semilla sale de tu dispositivo solo como texto cifrado: una copia de seguridad cifrada con una contraseña de respaldo que elijas ( AES-256-GCM ) se sincroniza con tu iCloud Keychain en iOS o con la carpeta de datos de tu aplicación Google Drive en Android. Si la copia de seguridad en la nube no está disponible durante la configuración, puedes hacer una copia de seguridad anotando la frase de recuperación de doce palabras y confirmando tres. También puedes exportar esa frase en Ajustes para una copia de seguridad independiente sin conexión. Una clave de dispositivo separada, almacenada en hardware, firma Provenance Envelopes ; identifica el dispositivo, no el monedero, y la evidencia de plataforma verificada, no solo la firma, determina cualquier nivel de atestación de hardware. En la app web de app.provian.ai, la semilla se guarda cifrada en tu navegador y solo se abre con tu llave de acceso y tu PIN juntos; allí la respaldas en Google Drive, con tu frase de recuperación o como un respaldo con llave de acceso que Provian guarda y nunca puede abrir.",
       "losePhone": "¿Qué pasa si pierdo mi teléfono?",
       "losePhoneA": "Restaura tu copia de seguridad en la nube cifrada iniciando sesión con la misma cuenta de iCloud o Google en el nuevo dispositivo e introduciendo tu contraseña de copia de seguridad. También puedes restaurarla con la frase de recuperación de doce palabras que anotaste durante la configuración o que exportaste desde Ajustes. Provian no puede restablecer la contraseña de copia de seguridad ni recuperar una frase perdida. Si pierdes el dispositivo y ambos métodos de recuperación, no podrás recuperar la cartera.",
       "canProvianAccessFunds": "¿Provian puede acceder a mis fondos?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "¿Por qué mi proyección de PVT es diferente del saldo de mi billetera?",
       "whyProjectionDiffersA": "El saldo de tu billetera es PVT ya liquidado en Base. Una proyección estima el trabajo pendiente usando el contexto de liquidación aplicable. El calendario de liquidación (actualmente cada 30 días por destinatario), la capacidad de la época y las actualizaciones de evidencia pueden afectar el momento y el importe final. Se excluyen los eventos que no acuñan por separado.",
       "complianceHoldA": "La emisión está retenida por la política de jurisdicción y tu valor sellado se conserva. El relay reintenta automáticamente las comprobaciones de ubicación o sanciones pendientes. Un bloqueo jurisdiccional retiene la emisión hasta que la política de la jurisdicción original permita liberarla; entonces se emite automáticamente mediante la liquidación habitual al valor sellado original, sin recalcularlo. Una jurisdicción diferida sigue su vía de liberación gradual. Una coincidencia de dirección en la lista SDN de OFAC es una denegación definitiva y no emite; no es una retención temporal. Puedes seguir registrando pruebas mientras la emisión esté retenida.",
-      "complianceHold": "¿Por qué mi recibo dice «Emisión retenida»?"
+      "complianceHold": "¿Por qué mi recibo dice «Emisión retenida»?",
+      "useInBrowser": "¿Puedo usar Provian en un navegador web?",
+      "useInBrowserA": "Sí. Abre app.provian.ai en una computadora: es la misma app, billetera y cuenta que la app del teléfono, y tu teléfono y tu navegador mantienen la sesión iniciada a la vez. La desbloqueas con una llave de acceso (Touch ID, Windows Hello o tu gestor de contraseñas) y un PIN de 6 dígitos. Para usar una sola billetera en ambos lugares, restáurala en el navegador desde tu respaldo de Google Drive o con tu frase de recuperación, o empieza en el navegador y abre Agregar tu teléfono en Respaldo y recuperación, que muestra tu frase de recuperación después de tu llave de acceso y tu PIN. La captura de chat solo funciona en la app del teléfono."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT cubren 7 días. Los PVT se destruyen y no se entregan a nadie.",
     "commonsPriceIfNeeded": "Si hay que abrir esta conversación, {{pvt}} PVT cubren 7 días. Los PVT se destruyen y no se entregan a nadie.",
     "priceChanged": "El importe cambió. Cierra esta ventana y consulta el nuevo importe."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Abre tu billetera",
+      "presenceTitle": "Confirma que eres tú",
+      "revealTitle": "Muestra tu frase de recuperación",
+      "hint": "Usa la llave de acceso de esta billetera: Touch ID, Face ID, Windows Hello o una llave de seguridad.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Tu PIN",
+      "pinTooShort": "Tu PIN tiene al menos {{min}} caracteres.",
+      "continue": "Continuar con llave de acceso",
+      "cancel": "Cancelar",
+      "noWallet": "No hay ninguna billetera configurada en este navegador.",
+      "cancelled": "No se confirmó la llave de acceso. Inténtalo de nuevo.",
+      "wrongPin": "Ese PIN no es correcto. Intentos restantes antes de una breve espera: {{count}}.",
+      "wrongPinNoCount": "Ese PIN no es correcto.",
+      "wait": "Demasiados PIN incorrectos. Inténtalo de nuevo después de {{time}}.",
+      "failed": "No se pudo abrir tu billetera: {{message}}"
+    },
+    "vault": {
+      "title": "Protege tu billetera en este navegador",
+      "body": "Tu billetera se abre aquí con una llave de acceso y un PIN. La llave de acceso es Touch ID, Face ID, Windows Hello o una llave de seguridad. Tu frase de recuperación se guarda cifrada en este navegador y nunca sale de él sin cifrar.",
+      "pinLabel": "Elige un PIN",
+      "pinPlaceholder": "Al menos {{min}} caracteres",
+      "confirmPlaceholder": "Ingresa el PIN otra vez",
+      "pinNote": "Usa el mismo PIN que en tu teléfono, si tienes uno. Lo necesitas junto con tu llave de acceso cada vez que abras tu billetera aquí.",
+      "pinRule": "Un PIN tiene entre {{min}} y {{max}} caracteres.",
+      "pinMismatch": "Los dos PIN no coinciden.",
+      "create": "Crear llave de acceso",
+      "passkeyName": "Billetera Provian",
+      "passkeyCancelled": "No se creó la llave de acceso. Inténtalo de nuevo.",
+      "noPasskeys": "Este navegador no puede usar llaves de acceso. Abre Provian en una versión actual de Safari, Chrome, Edge o Firefox.",
+      "failed": "No se pudo configurar la llave de acceso: {{message}}",
+      "noPrf": "Esta llave de acceso no puede proteger una billetera en este navegador. Guarda la llave de acceso en el Llavero de iCloud, el Gestor de contraseñas de Google o un gestor de contraseñas que admita el cifrado con llaves de acceso, en una versión actual de Chrome, Safari o Edge, e inténtalo de nuevo."
+    },
+    "backup": {
+      "title": "Respalda tu billetera",
+      "doneTitle": "Tu billetera está respaldada",
+      "body": "Elige un respaldo antes de usar tu billetera. Sin uno, perder este navegador significa perder la billetera.",
+      "passkeyTitle": "Respaldar con tu llave de acceso",
+      "passkeyDesc": "Provian guarda tu frase de recuperación cifrada con tu llave de acceso y tu PIN. Provian nunca puede abrirla. En otra computadora, tu llave de acceso y tu PIN restauran tu billetera.",
+      "driveTitle": "Respaldar en Google Drive",
+      "driveDesc": "Tu frase de recuperación se cifra con tu PIN y se guarda en una carpeta privada de Provian en tu Google Drive. Se puede restaurar en Android y en la web.",
+      "phraseTitle": "Anota tu frase de recuperación",
+      "phraseDesc": "Copia tus 12 palabras en papel y guárdalas en un lugar seguro.",
+      "recommended": "Recomendado",
+      "recommendedMac": "Recomendado en Mac",
+      "passkeyPrompt": "Respalda tu billetera con tu llave de acceso",
+      "googleNotSignedIn": "No has iniciado sesión en Google Drive. Inténtalo de nuevo y elige tu cuenta de Google.",
+      "otherWalletMessage": "Este Google Drive ya tiene un respaldo de otra billetera Provian. ¿Conservar ambos respaldos o reemplazarlo con el respaldo de esta billetera?",
+      "failed": "El respaldo no se completó: {{message}}",
+      "note": "Puedes agregar otro respaldo más tarde en Configuración."
+    },
+    "restore": {
+      "optionTitle": "Restaurar con tu llave de acceso",
+      "optionDesc": "Usa la llave de acceso y el PIN de tu respaldo con llave de acceso.",
+      "title": "Restaurar con tu llave de acceso",
+      "body": "Ingresa tu PIN y luego usa la llave de acceso con la que hiciste el respaldo. Las llaves de acceso se sincronizan a través de iCloud Keychain, Google Password Manager y otros gestores de llaves de acceso.",
+      "button": "Usar mi llave de acceso",
+      "note": "Provian verifica la llave de acceso y te devuelve tu respaldo cifrado. Tu PIN lo abre aquí, en este navegador.",
+      "offline": "No se pudo conectar con Provian. Revisa tu conexión e inténtalo de nuevo.",
+      "wrongPin": "Ese PIN no abre este respaldo.",
+      "noPrf": "Esta llave de acceso no puede abrir un respaldo de Provian en este navegador. Prueba con Chrome o Safari, o restaura con Google Drive o con tu frase de recuperación.",
+      "noBackup": "Esta llave de acceso no tiene ningún respaldo de Provian. Elige la llave de acceso con la que hiciste el respaldo.",
+      "failed": "No se pudo restaurar tu billetera: {{message}}"
+    },
+    "chat": {
+      "title": "La captura de chat está en la app del teléfono",
+      "body": "La app de Provian para teléfono abre tus chats de IA dentro de la app y registra cada conversación mientras ocurre. Una página web no puede ver dentro de la pestaña de otro sitio, así que la app web no registra chats. Tus agentes, commits y demás trabajo atestiguado siguen ganando aquí.",
+      "getPhoneApp": "Agregar tu teléfono",
+      "download": "Obtener la app para teléfono"
+    },
+    "addPhone": {
+      "title": "Agregar tu teléfono",
+      "body": "Usa esta billetera también en tu teléfono. Tu teléfono y este navegador mantienen la sesión iniciada a la vez.",
+      "step1Title": "Instala Provian",
+      "step1Body": "Descarga la app para iPhone o Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Toca \"Ya tengo una billetera Provian\"",
+      "step2Body": "Abre la app y elige restaurar tu billetera.",
+      "step3Title": "Elige tu frase de recuperación",
+      "step3Body": "Escribe en tu teléfono las 12 palabras de abajo, en orden.",
+      "show": "Mostrar mi frase de recuperación",
+      "hide": "Ocultar las palabras",
+      "warning": "Cualquiera que vea estas palabras puede quedarse con tu billetera. Escríbelas solo en la app de Provian en tu propio teléfono y cierra esta página cuando termines.",
+      "revealFailed": "No se pudo mostrar tu frase de recuperación. Inténtalo de nuevo.",
+      "noWallet": "Primero abre tu billetera en este navegador y luego vuelve a esta página.",
+      "driveNote": "En Android también puedes restaurar desde Google Drive si hiciste el respaldo allí.",
+      "together": "Restaurar en tu teléfono no cierra la sesión en este navegador."
+    },
+    "settings": {
+      "passkeyBackup": "Respaldo con llave de acceso",
+      "addPhone": "Agregar tu teléfono",
+      "addPhoneSubtitle": "Pon esta billetera en tu teléfono",
+      "modelExplainer": "En este navegador, tu billetera está cifrada con tu llave de acceso y tu PIN. Se restaura desde un respaldo con llave de acceso, que Provian guarda y nunca puede abrir; desde la carpeta de datos de la app en tu Google Drive, el mismo respaldo que usa Android, así que cada uno se restaura en el otro; o desde tu frase de recuperación. Provian no puede restablecer tu PIN."
+    },
+    "onboarding": {
+      "walletSubtext": "Tu llave de acceso y tu PIN protegen tu billetera en este navegador. Tus claves están cifradas aquí. Luego eliges un respaldo: un respaldo con llave de acceso que Provian guarda y nunca puede abrir, tu propio Google Drive o tu frase de recuperación de doce palabras. Un respaldo solo se abre con tu PIN o con tu frase, y Provian no puede abrir ninguno. Puedes ver tu frase de recuperación en cualquier momento en Configuración."
+    },
+    "deleteData": {
+      "driveNotDeleted": "No se pudo eliminar tu respaldo de Google Drive. Para quitarlo, abre Google Drive en una computadora, ve a Configuración y luego a Administrar apps, busca Provian y elige Borrar datos ocultos de la app."
+    }
   }
 }

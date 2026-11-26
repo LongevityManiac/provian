@@ -7,7 +7,8 @@
  *
  * Every iOS build ships through the App Store. An Android build is a Google Play build only when
  * it was built with `EXPO_PUBLIC_DISTRIBUTION=play` (`scripts/build-android-release.sh --play`);
- * every other Android build is the website APK.
+ * every other Android build is the website APK. The web app (app.provian.ai) has no store either,
+ * so it pays and updates the way the website APK pays: USDC from the wallet, no APK update check.
  */
 import { Platform } from 'react-native';
 

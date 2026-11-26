@@ -90,6 +90,8 @@ import {
 } from './core/meter/owner-reads';
 import { readNetworkMeter24h } from './core/meter/actor-meter-totals';
 import { deleteUserRelayData } from './core/wallet/delete-user-data';
+import { commitRecoveryCredential, parseCredentialScope, resolveWalletAuthSecret, listDeviceSessions, revokeDeviceAuthSecret } from './core/wallet/device-auth-secrets';
+import { createPasskeyBackupRouter } from './routes/passkey-backup';
 import { endHumanBeneficiaryLinks } from './core/agent-wallet/end-human-beneficiary-links';
 import { invalidateDeviceCache } from './routes/middleware/device-auth';
 import { leaveCommons } from './core/commons/profiles';
@@ -326,6 +328,8 @@ const ALLOWED_ORIGINS = [
   'https://provian.ai',
   'https://www.provian.ai',
   'https://commons.provian.ai',
+  // The web app: the same wallet and account as the phone apps, in a browser.
+  'https://app.provian.ai',
 ];
 if (process.env.NODE_ENV !== 'production') {
   ALLOWED_ORIGINS.push('http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081');
@@ -1534,11 +1538,13 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
       signature,
       device_id,
       eip712,
+      credential_scope,
     } = req.body as {
       wallet_address?: string;
       timestamp?: number;
       signature?: string;
       device_id?: string;
+      credential_scope?: unknown;
       eip712?: {
         domain?: Record<string, unknown>;
         types?: Record<string, unknown>;
@@ -1558,6 +1564,13 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
       || typeof device_id !== 'string' || device_id.length > 128) {
       return res.status(400).json({ error: 'wallet_address, timestamp, signature, and device_id are required' });
     }
+    // 'device' (the web app): this device gets its own credential and every other signed-in
+    // device keeps working. Absent (every phone app): the account secret is replaced, as before.
+    const credentialScope = parseCredentialScope(credential_scope);
+    if (!credentialScope) {
+      return res.status(400).json({ error: 'credential_scope must be device or account' });
+    }
+    const deviceScoped = credentialScope === 'device';
 
     // Per-IP rate limit FIRST. 20 attempts per hour per IP. Strict (fail
     // closed under Redis outage) since this is security-critical. Mirrors the
@@ -1724,8 +1737,15 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
       // users doc carries it from here on.
       for (const device of devices) Object.assign(device, { network_class: recoveryNetworkClass });
       recoverBatch.update(db.collection('users').doc(userId), { devices, wallet_address: addressLc });
-      recoverBatch.set(db.collection('auth_secrets').doc(userId), { secret: newAuthSecret, created_at: Date.now() });
-      await recoverBatch.commit();
+      const issuedSecret = await commitRecoveryCredential(db, recoverBatch, {
+        scope: credentialScope, newAccount: false, userId, deviceId: device_id, walletAddress: addressLc, accountSecret: newAuthSecret,
+      });
+
+      if (deviceScoped) {
+        const deviceSecret = issuedSecret;
+        console.log(`[Recovery] Signed in device ${device_id} on user ${userId} with its own credential`);
+        return res.json({ user_id: userId, auth_secret: deviceSecret, recovered: true, credential_scope: 'device' });
+      }
 
       // Invalidate Redis cache so next auth reads the new secret
       cache.setUserAuthSecret(userId, newAuthSecret).catch(() => {});
@@ -1754,10 +1774,17 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
 
     const newUserBatch = db.batch();
     newUserBatch.set(db.collection('users').doc(userId), { ...user, network_class: 'external', devices: user.devices.map(device => ({ ...device, network_class: 'external' })) });
-    newUserBatch.set(db.collection('auth_secrets').doc(userId), { secret: newAuthSecret, created_at: Date.now() });
-    await newUserBatch.commit();
+    const issuedNewSecret = await commitRecoveryCredential(db, newUserBatch, {
+      scope: credentialScope, newAccount: true, userId, deviceId: device_id, walletAddress: wallet_address.toLowerCase(), accountSecret: newAuthSecret,
+    });
 
     console.log(`[Recovery] Created new user ${userId} for recovered wallet ${redactAddress(wallet_address)}`);
+
+    if (deviceScoped) {
+      // The account secret above is held by no one; a phone that later restores this wallet
+      // replaces it and signs in beside this device.
+      return res.status(201).json({ user_id: userId, auth_secret: issuedNewSecret, recovered: false, credential_scope: 'device' });
+    }
 
     res.status(201).json({
       user_id: userId,
@@ -1768,6 +1795,39 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Recovery] Error:', error);
     res.status(500).json({ error: 'Recovery failed' });
+  }
+});
+
+/**
+ * The web app's passkey backups of a wallet seed (routes/passkey-backup.ts).
+ */
+app.use('/v1/passkey-backup', createPasskeyBackupRouter({ db, cache, authenticate }));
+
+/**
+ * GET /v1/users/sessions — the devices signed in to this account with their own credential
+ * (a web browser beside the phone). DELETE /v1/users/sessions/:device_id signs one of them out.
+ * A phone app signs in with the account credential and is not listed.
+ */
+app.get('/v1/users/sessions', authenticate, async (req: Request, res: Response) => {
+  try {
+    res.json({ sessions: await listDeviceSessions(db, req.user!.id), current_device_id: req.user!.device_id ?? null });
+  } catch (error) {
+    console.error('[Sessions] list failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/v1/users/sessions/:device_id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const deviceId = req.params.device_id;
+    if (typeof deviceId !== 'string' || deviceId.length < 1 || deviceId.length > 128) {
+      return res.status(400).json({ error: 'device_id required' });
+    }
+    const revoked = await revokeDeviceAuthSecret(db, req.user!.id, deviceId);
+    res.status(revoked ? 200 : 404).json({ revoked });
+  } catch (error) {
+    console.error('[Sessions] revoke failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -3644,8 +3704,8 @@ app.post('/v1/meter/batch/mobile', authenticate, async (req: Request, res: Respo
       res.status(admission.status).json(admission.body);
       return;
     }
-    const secret=(await db.collection('auth_secrets').doc(userId).get()).data()?.secret;
-    const transport=unwrapPrivateBatch(req.body,typeof secret==='string'?secret:undefined);
+    const resolvedSecret=await resolveWalletAuthSecret(db,userId,tokenDeviceId);
+    const transport=unwrapPrivateBatch(req.body,resolvedSecret.ok?resolvedSecret.secret:undefined);
     const batchDeviceId = (transport.batch as { device_id?: unknown } | undefined)?.device_id;
     if (batchDeviceId !== tokenDeviceId) {
       res.status(403).json({ error: 'batch_device_mismatch', message: 'A phone batch names the device its wallet auth token was issued to.' });

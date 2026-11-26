@@ -4,7 +4,7 @@ import { readConfirmedProtocolBalance } from '../core/protocol/balance';
 import type { MembershipRequestPath } from '../core/recourse/membership-client';
 import i18next from 'i18next';
 import { ActionWallet } from '../core/security/ActionWallet';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { withBiometricAction, assertBiometricAction, isBiometricActionValid, type BiometricAction } from '../core/security/biometricAction';
 import {sealPrivatePricing} from '../core/meter/privatePricing';
 import i18n from '../i18n';
@@ -1064,7 +1064,7 @@ class RelayAPIService {
         if (!deviceId) {
             // Generate a unique device ID
             const randomBytes = await Crypto.getRandomBytesAsync(16);
-            deviceId = `device_${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
+            deviceId = `${Platform.OS === 'web' ? 'web' : 'device'}_${Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('')}`;
             await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
         }
         return deviceId;
@@ -1115,6 +1115,15 @@ class RelayAPIService {
         // Include wallet_address if available (links relay identity to on-chain identity)
         const { useWalletStore } = await import('../store/walletStore');
         const walletAddress = useWalletStore.getState().address;
+
+        // The web app's credential is always its own device credential, which only the
+        // wallet-signed sign-in issues: a new web wallet signs in with its key instead of
+        // creating a bare account.
+        if (Platform.OS === 'web') {
+            if (!walletAddress) throw new Error('Wallet address unavailable for sign-in');
+            const signedIn = await this.recoverRelayCredentials(walletAddress, biometricAction);
+            return { userId: signedIn.userId, authSecret: signedIn.authSecret };
+        }
 
         console.log('[RelayAPI] Registering new user with backend (no existing credentials)...');
 
@@ -1255,6 +1264,9 @@ class RelayAPIService {
             signature,
             device_id: deviceId,
             eip712: { domain, types, message },
+            // The web app signs in with its own credential, so a phone on the same wallet stays
+            // signed in beside it (and the phone's own recovery never signs the browser out).
+            ...(Platform.OS === 'web' ? { credential_scope: 'device' } : {}),
         });
     }
 
@@ -2812,6 +2824,62 @@ class RelayAPIService {
             return error === RELAY_AUTH_RECORD_GONE_ERROR ? 'account_gone' : 'no_access';
         }
         return 'not_finished';
+    }
+
+    // =========================================================================
+    // Passkey backup (web app)
+    // =========================================================================
+
+    /**
+     * Store this wallet's passkey backup (`PUT /v1/passkey-backup`): ciphertext the relay can never
+     * open, plus the passkey's public key that later proves a restore. Throws the relay's error.
+     */
+    async storePasskeyBackup(body: Record<string, unknown>, biometricAction?: BiometricAction): Promise<void> {
+        const response = await this.makeAuthenticatedRequest('/v1/passkey-backup', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }, true, biometricAction);
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({})) as { error?: string };
+            throw new Error(error.error || `passkey_backup_failed_${response.status}`);
+        }
+    }
+
+    /** The passkeys holding a backup of this account's wallet (no envelopes). */
+    async listPasskeyBackups(biometricAction?: BiometricAction): Promise<{ credential_id: string; created_at: number; updated_at: number }[]> {
+        const response = await this.makeAuthenticatedRequest('/v1/passkey-backup', { method: 'GET' }, true, biometricAction);
+        if (!response.ok) throw new Error(`passkey_backup_list_failed_${response.status}`);
+        const body = await response.json() as { backups?: { credential_id: string; created_at: number; updated_at: number }[] };
+        return Array.isArray(body.backups) ? body.backups : [];
+    }
+
+    /** A single-use challenge for a passkey restore (no account needed). */
+    async passkeyBackupChallenge(): Promise<string> {
+        const backendUrl = await this.getBackendUrl();
+        const response = await apiFetch(`${backendUrl}/v1/passkey-backup/challenge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (!response.ok) throw new Error(`passkey_challenge_failed_${response.status}`);
+        const body = await response.json() as { challenge?: string };
+        if (typeof body.challenge !== 'string') throw new Error('passkey_challenge_failed');
+        return body.challenge;
+    }
+
+    /** The backup a passkey assertion proves (no account needed). Throws the relay's error code. */
+    async fetchPasskeyBackup(assertion: { credential_id: string; authenticator_data: string; client_data_json: string; signature: string }): Promise<{ wallet_address: string; envelope: Record<string, unknown>; public_key_spki?: string; public_key_alg?: number }> {
+        const backendUrl = await this.getBackendUrl();
+        const response = await apiFetch(`${backendUrl}/v1/passkey-backup/fetch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(assertion),
+        });
+        const body = await response.json().catch(() => ({})) as { error?: string; wallet_address?: string; envelope?: Record<string, unknown>; public_key_spki?: unknown; public_key_alg?: unknown };
+        if (!response.ok || typeof body.wallet_address !== 'string' || !body.envelope) throw new Error(body.error || `passkey_restore_failed_${response.status}`);
+        return {
+            wallet_address: body.wallet_address,
+            envelope: body.envelope,
+            public_key_spki: typeof body.public_key_spki === 'string' ? body.public_key_spki : undefined,
+            public_key_alg: typeof body.public_key_alg === 'number' ? body.public_key_alg : undefined,
+        };
     }
 
     // =========================================================================

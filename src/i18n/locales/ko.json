@@ -866,7 +866,7 @@
       "whatIsCourtA": "포럼 챌린지는 법원이 아니라 번-투-프레젠트로 해결됩니다: 챌린저가 번을 걸고 프레젠테이션 어휘에서 조건 하나를 지정하면 저자가 프레젠테이션으로 응답합니다. 조건이 성립하면 판돈은 번되고, 실패하면 챌린지가 인정되어 판돈이 돌아오며, 저자가 프레젠테이션하지 않으면 챌린지는 남습니다. 결과만 공개됩니다. 법원은 여전히 에스크로에 대한 에이전트 레일의 분쟁 기구이며(중재인 3명, 2표 과반), 자격을 갖춘 중재인이 충분히 참여해야 패널을 구성합니다.",
       "securityAndRecovery": "보안 및 복구",
       "howWalletSecured": "지갑은 어떻게 보호되나요?",
-      "howWalletSecuredA": "지갑은 시드 구문이 생성되어 기기에 암호화된 상태로 저장되는 BIP-39 계정입니다. 서명에는 특정 작업에 대한 인증 방식이 사용됩니다. 지원되는 생체 인증 또는 명시적으로 구성된 기기 암호가 대체 인증 방식으로 사용됩니다. 시드 구문은 암호화된 형태로만 기기에서 전송됩니다. 사용자가 선택한 백업 암호( AES-256-GCM )로 암호화된 백업 파일은 iOS의 경우 iCloud Keychain 에, Android의 경우 Google Drive 앱 데이터 폴더에 동기화됩니다. 설정 중에 클라우드 백업을 사용할 수 없는 경우, 12단어 복구 문구를 적어두고 3단어를 확인하여 백업할 수 있습니다. 설정에서 해당 문구를 내보내 독립적인 오프라인 백업을 만들 수도 있습니다. 별도의 하드웨어에 저장된 기기 키가 Provenance Envelopes 서명하는 데 사용됩니다. 이 키는 지갑이 아닌 기기를 식별하며, 서명만으로는 확인되지 않고 검증된 플랫폼 증거를 통해 하드웨어 인증 등급이 결정됩니다.",
+      "howWalletSecuredA": "지갑은 시드 구문이 생성되어 기기에 암호화된 상태로 저장되는 BIP-39 계정입니다. 서명에는 특정 작업에 대한 인증 방식이 사용됩니다. 지원되는 생체 인증 또는 명시적으로 구성된 기기 암호가 대체 인증 방식으로 사용됩니다. 시드 구문은 암호화된 형태로만 기기에서 전송됩니다. 사용자가 선택한 백업 암호( AES-256-GCM )로 암호화된 백업 파일은 iOS의 경우 iCloud Keychain 에, Android의 경우 Google Drive 앱 데이터 폴더에 동기화됩니다. 설정 중에 클라우드 백업을 사용할 수 없는 경우, 12단어 복구 문구를 적어두고 3단어를 확인하여 백업할 수 있습니다. 설정에서 해당 문구를 내보내 독립적인 오프라인 백업을 만들 수도 있습니다. 별도의 하드웨어에 저장된 기기 키가 Provenance Envelopes 서명하는 데 사용됩니다. 이 키는 지갑이 아닌 기기를 식별하며, 서명만으로는 확인되지 않고 검증된 플랫폼 증거를 통해 하드웨어 인증 등급이 결정됩니다. app.provian.ai 웹 앱에서는 시드 구문이 브라우저에 암호화되어 저장되며, 패스키와 PIN이 함께 있어야만 열립니다. 웹 앱에서는 Google Drive, 복구 문구, 또는 Provian이 보관하지만 절대 열 수 없는 패스키 백업으로 백업합니다.",
       "losePhone": "스마트폰을 분실하면?",
       "losePhoneA": "새 기기에서 동일한 iCloud 또는 Google 계정에 로그인하고 백업 암호를 입력하여 암호화된 클라우드 백업을 복원하세요. 또는 설정 중에 적어 두었거나 설정에서 내보낸 12단어 복구 문구를 사용하여 복원할 수도 있습니다. Provian 백업 암호를 재설정하거나 분실한 복구 문구를 복구할 수 없습니다. 기기를 분실하고 두 가지 복구 방법 모두 사용할 수 없는 경우 지갑을 복구할 수 없습니다.",
       "canProvianAccessFunds": "Provian이 내 자금에 접근할 수 있나요?",
@@ -896,7 +896,9 @@
       "whyProjectionDiffers": "PVT 예상치가 지갑 잔액과 다른 이유는 무엇인가요?",
       "whyProjectionDiffersA": "지갑 잔액은 Base에서 이미 정산된 PVT입니다. 예상치는 적용되는 정산 조건에 따라 아직 정산되지 않은 작업을 추정합니다. 정산 일정(현재 수취인별로 30일마다), 에포크 용량 및 증거 업데이트는 시점과 최종 금액에 영향을 줄 수 있습니다. 별도로 발행하지 않는 이벤트는 제외됩니다.",
       "complianceHoldA": "관할 지역 정책에 따라 발행이 보류되며 봉인된 가치는 유지됩니다. 릴레이는 해결되지 않은 위치 또는 제재 확인을 자동으로 재시도합니다. 관할 지역 차단은 원래 관할 지역의 정책이 해제를 허용할 때까지 발행을 보류합니다. 이후 재평가 없이 원래 봉인된 가치로 일반 정산을 통해 자동 발행됩니다. 유예된 관할 지역은 단계적 해제 절차를 따릅니다. OFAC SDN 목록의 주소와 일치하면 최종 거부되며 발행되지 않습니다. 이는 일시적 보류가 아닙니다. 발행이 보류된 동안에도 증거를 기록할 수 있습니다.",
-      "complianceHold": "영수증에 “발행 보류”라고 표시되는 이유는 무엇인가요?"
+      "complianceHold": "영수증에 “발행 보류”라고 표시되는 이유는 무엇인가요?",
+      "useInBrowser": "웹 브라우저에서 Provian을 사용할 수 있나요?",
+      "useInBrowserA": "네. 컴퓨터에서 app.provian.ai를 여세요. 휴대폰 앱과 같은 앱, 지갑, 계정이며, 휴대폰과 브라우저 모두 로그인된 상태로 유지됩니다. 잠금 해제에는 패스키(Touch ID, Windows Hello 또는 비밀번호 관리자)와 6자리 PIN을 사용합니다. 하나의 지갑을 두 곳에서 모두 사용하려면 브라우저에서 Google Drive 백업이나 복구 문구로 복원하세요. 또는 브라우저에서 시작한 뒤 백업 및 복구에서 휴대폰 추가를 열면, 패스키와 PIN을 확인한 후 복구 문구가 표시됩니다. 채팅 캡처는 휴대폰 앱에서만 작동합니다."
     }
   },
   "developer": {
@@ -5417,5 +5419,108 @@
     "commonsPrice": "{{pvt}} PVT로 7일간 이용할 수 있습니다. PVT는 소각되며 누구에게도 지급되지 않습니다.",
     "commonsPriceIfNeeded": "대화를 열어야 하는 경우 {{pvt}} PVT로 7일간 이용합니다. PVT는 소각되며 누구에게도 지급되지 않습니다.",
     "priceChanged": "금액이 바뀌었습니다. 이 창을 닫고 새 금액을 확인하세요."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "지갑 열기",
+      "presenceTitle": "본인 확인",
+      "revealTitle": "복구 문구 보기",
+      "hint": "이 지갑의 패스키를 사용하세요: Touch ID, Face ID, Windows Hello 또는 보안 키.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "PIN 입력",
+      "pinTooShort": "PIN은 {{min}}자 이상입니다.",
+      "continue": "패스키로 계속",
+      "cancel": "취소",
+      "noWallet": "이 브라우저에 설정된 지갑이 없습니다.",
+      "cancelled": "패스키가 확인되지 않았습니다. 다시 시도하세요.",
+      "wrongPin": "PIN이 올바르지 않습니다. {{count}}번 더 틀리면 잠시 기다려야 합니다.",
+      "wrongPinNoCount": "PIN이 올바르지 않습니다.",
+      "wait": "잘못된 PIN을 너무 많이 입력했습니다. {{time}} 후에 다시 시도하세요.",
+      "failed": "지갑을 열 수 없습니다: {{message}}"
+    },
+    "vault": {
+      "title": "이 브라우저에서 지갑 보호하기",
+      "body": "이 브라우저에서는 패스키와 PIN으로 지갑을 엽니다. 패스키는 Touch ID, Face ID, Windows Hello 또는 보안 키입니다. 복구 문구는 이 브라우저에 암호화되어 보관되며, 암호화되지 않은 상태로 브라우저 밖으로 나가지 않습니다.",
+      "pinLabel": "PIN 설정",
+      "pinPlaceholder": "{{min}}자 이상",
+      "confirmPlaceholder": "PIN 다시 입력",
+      "pinNote": "휴대폰에서 PIN을 사용하고 있다면 같은 PIN을 사용하세요. 여기서 지갑을 열 때마다 패스키와 함께 이 PIN이 필요합니다.",
+      "pinRule": "PIN은 {{min}}~{{max}}자입니다.",
+      "pinMismatch": "두 PIN이 일치하지 않습니다.",
+      "create": "패스키 만들기",
+      "passkeyName": "Provian 지갑",
+      "passkeyCancelled": "패스키가 만들어지지 않았습니다. 다시 시도하세요.",
+      "noPasskeys": "이 브라우저에서는 패스키를 사용할 수 없습니다. 최신 버전의 Safari, Chrome, Edge 또는 Firefox에서 Provian을 여세요.",
+      "failed": "패스키를 설정할 수 없습니다: {{message}}",
+      "noPrf": "이 패스키로는 이 브라우저에서 지갑을 보호할 수 없습니다. 최신 Chrome, Safari 또는 Edge에서 패스키를 iCloud 키체인, Google 비밀번호 관리자 또는 패스키 암호화를 지원하는 비밀번호 관리자에 저장한 뒤 다시 시도하세요."
+    },
+    "backup": {
+      "title": "지갑 백업하기",
+      "doneTitle": "지갑이 백업되었습니다",
+      "body": "지갑을 사용하기 전에 백업 방법을 선택하세요. 백업이 없으면 이 브라우저를 잃을 때 지갑도 잃게 됩니다.",
+      "passkeyTitle": "패스키로 백업하기",
+      "passkeyDesc": "Provian은 패스키와 PIN으로 암호화된 복구 문구를 보관합니다. Provian은 이를 절대 열 수 없습니다. 다른 컴퓨터에서는 패스키와 PIN으로 지갑을 복원할 수 있습니다.",
+      "driveTitle": "Google Drive에 백업하기",
+      "driveDesc": "복구 문구는 PIN으로 암호화되어 Google Drive의 비공개 Provian 폴더에 저장됩니다. Android와 웹에서 복원할 수 있습니다.",
+      "phraseTitle": "복구 문구 적어 두기",
+      "phraseDesc": "12개 단어를 종이에 옮겨 적고 안전한 곳에 보관하세요.",
+      "recommended": "권장",
+      "recommendedMac": "Mac에서 권장",
+      "passkeyPrompt": "패스키로 지갑 백업하기",
+      "googleNotSignedIn": "Google Drive에 로그인되어 있지 않습니다. 다시 시도하고 Google 계정을 선택하세요.",
+      "otherWalletMessage": "이 Google Drive에는 이미 다른 Provian 지갑의 백업이 있습니다. 두 백업을 모두 유지할까요, 아니면 이 지갑의 백업으로 교체할까요?",
+      "failed": "백업이 완료되지 않았습니다: {{message}}",
+      "note": "나중에 설정에서 다른 백업을 추가할 수 있습니다."
+    },
+    "restore": {
+      "optionTitle": "패스키로 복원하기",
+      "optionDesc": "패스키 백업에 사용한 패스키와 PIN을 사용하세요.",
+      "title": "패스키로 복원하기",
+      "body": "PIN을 입력한 다음, 백업할 때 사용한 패스키를 사용하세요. 패스키는 iCloud Keychain, Google Password Manager 및 기타 패스키 관리자를 통해 동기화됩니다.",
+      "button": "내 패스키 사용",
+      "note": "Provian은 패스키를 확인하고 암호화된 백업을 돌려보냅니다. 백업은 이 브라우저에서 PIN으로 열립니다.",
+      "offline": "Provian에 연결할 수 없습니다. 연결 상태를 확인하고 다시 시도하세요.",
+      "wrongPin": "이 PIN으로는 이 백업을 열 수 없습니다.",
+      "noPrf": "이 패스키로는 이 브라우저에서 Provian 백업을 열 수 없습니다. Chrome 또는 Safari를 사용해 보거나, Google Drive 또는 복구 문구로 복원하세요.",
+      "noBackup": "이 패스키에는 Provian 백업이 없습니다. 백업할 때 사용한 패스키를 선택하세요.",
+      "failed": "지갑을 복원할 수 없습니다: {{message}}"
+    },
+    "chat": {
+      "title": "채팅 캡처는 휴대폰 앱에서 사용할 수 있습니다",
+      "body": "Provian 휴대폰 앱은 AI 채팅을 앱 안에서 열고 각 대화를 진행되는 대로 기록합니다. 웹 페이지는 다른 사이트의 탭 안을 볼 수 없으므로 웹 앱은 채팅을 기록하지 않습니다. 에이전트, 커밋 및 기타 입증된 작업은 여기에서도 계속 보상을 받습니다.",
+      "getPhoneApp": "휴대폰 추가",
+      "download": "휴대폰 앱 받기"
+    },
+    "addPhone": {
+      "title": "휴대폰 추가",
+      "body": "이 지갑을 휴대폰에서도 사용하세요. 휴대폰과 이 브라우저 모두 로그인된 상태로 유지됩니다.",
+      "step1Title": "Provian 설치",
+      "step1Body": "iPhone 또는 Android용 앱을 받으세요.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "‘나는 이미 Provian 지갑을 가지고 있습니다’ 탭하기",
+      "step2Body": "앱을 열고 지갑 복원을 선택하세요.",
+      "step3Title": "복구 문구 선택하기",
+      "step3Body": "아래 12개 단어를 순서대로 휴대폰에 입력하세요.",
+      "show": "복구 문구 보기",
+      "hide": "단어 숨기기",
+      "warning": "이 단어를 보는 사람은 누구나 지갑을 가져갈 수 있습니다. 본인 휴대폰의 Provian 앱에만 입력하고, 끝나면 이 페이지를 닫으세요.",
+      "revealFailed": "복구 문구를 표시할 수 없습니다. 다시 시도하세요.",
+      "noWallet": "먼저 이 브라우저에서 지갑을 연 다음 이 페이지로 돌아오세요.",
+      "driveNote": "Android에서는 Google Drive에 백업했다면 Google Drive에서 복원할 수도 있습니다.",
+      "together": "휴대폰에서 복원해도 이 브라우저는 로그아웃되지 않습니다."
+    },
+    "settings": {
+      "passkeyBackup": "패스키 백업",
+      "addPhone": "휴대폰 추가",
+      "addPhoneSubtitle": "이 지갑을 휴대폰에 추가",
+      "modelExplainer": "이 브라우저에서 지갑은 패스키와 PIN으로 암호화됩니다. 복원 방법은 세 가지입니다. Provian이 보관하지만 절대 열 수 없는 패스키 백업, Android가 사용하는 것과 같은 백업인 Google Drive 앱 데이터 폴더(어느 쪽에서 만든 백업이든 다른 쪽에서 복원할 수 있습니다), 그리고 복구 문구입니다. Provian은 PIN을 재설정할 수 없습니다."
+    },
+    "onboarding": {
+      "walletSubtext": "이 브라우저에서는 패스키와 PIN이 지갑을 보호합니다. 키는 여기에서 암호화됩니다. 다음으로 백업 방법을 선택합니다. Provian이 보관하지만 절대 열 수 없는 패스키 백업, 본인의 Google Drive, 또는 12단어 복구 문구 중에서 고르세요. 백업은 PIN이나 복구 문구로만 열리며, Provian은 어느 것도 열 수 없습니다. 복구 문구는 설정에서 언제든지 볼 수 있습니다."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Google Drive 백업을 삭제하지 못했습니다. 삭제하려면 컴퓨터에서 Google Drive를 열고 설정 > 앱 관리로 이동한 뒤 Provian을 찾아 숨겨진 앱 데이터 삭제를 선택하세요."
+    }
   }
 }

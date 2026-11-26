@@ -7,11 +7,12 @@ import { GenesisStrip } from '@/components/GenesisSection'
 import { GENESIS_PEOPLE } from '@/lib/genesisCopy'
 import { PendingStoreCard } from '@/components/PendingStoreCard'
 import { playStoreUrl } from '@/lib/inviteCarry'
+import { AddYourPhoneLink, WebAppCard } from '@/components/WebAppCard'
 
 export const metadata: Metadata = {
   title: 'Get Provian — Download the app',
   description:
-    'Get the Provian app for Android, set up the desktop app on your computer, or connect an agent with one command.',
+    'Get the Provian app for iPhone or Android, open it in your browser, set up the desktop app on your computer, or connect an agent with one command.',
 }
 
 export default function DownloadPage() {
@@ -45,8 +46,8 @@ export default function DownloadPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-2">
-          <PendingStoreCard platform="ios_app_store" />
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <PendingStoreCard platform="ios_app_store" footer={<AddYourPhoneLink />} />
           <div className="glass flex flex-col p-7">
             <h2 className="font-display text-2xl font-semibold tracking-[-0.02em]">Google Play</h2>
             <p className="mt-3 flex-1 leading-7 text-text-secondary">Install Provian for Android from Google Play.</p>
@@ -55,6 +56,7 @@ export default function DownloadPage() {
               <ArrowUpRight size={16} />
             </a>
           </div>
+          <WebAppCard />
         </div>
 
         <p className="mt-6"><Link href={route.downloadAndroid} className="text-provian-blue-bright underline">Download the signed Android APK</Link></p>

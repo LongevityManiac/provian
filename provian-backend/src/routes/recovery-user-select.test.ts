@@ -181,4 +181,16 @@ describe('POST /v1/users/recover wiring ', () => {
     expect(route).toMatch(/lookup\.kind === 'existing' \? /);
     expect(route).toMatch(/\{ devices, wallet_address: addressLc \}/);
   });
+
+  it('the credential scope reaches both credential writes: phones (no scope) replace the account secret, the web app gets its own', () => {
+    expect(route).toMatch(/const credentialScope = parseCredentialScope\(credential_scope\);\s*if \(!credentialScope\) \{\s*return res\.status\(400\)/);
+    const calls = route.match(/commitRecoveryCredential\(db, \w+, \{[^}]*\}/g) ?? [];
+    // RED: an existing-account or new-account call with a fixed scope would sign the phone out
+    // (or never give the browser its own credential); each call must carry the parsed scope.
+    expect(calls).toHaveLength(2);
+    for (const call of calls) expect(call).toMatch(/scope: credentialScope,/);
+    expect(calls.map(call => /newAccount: (true|false)/.exec(call)?.[1]).sort()).toEqual(['false', 'true']);
+    // No other path writes the account secret in this route.
+    expect(route).not.toMatch(/collection\('auth_secrets'\)/);
+  });
 });

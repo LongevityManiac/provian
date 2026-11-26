@@ -41,13 +41,20 @@ type AlertButton = { text?: string; style?: string; onPress?: () => unknown };
 /** What each relay deletion request resolves to, in order (the last one repeats). */
 type RelayOutcome = 'deleted' | 'account_gone' | 'not_finished' | 'unknown' | 'no_access' | 'throws';
 
-function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['deleted']) {
+type WebOptions = { os?: 'ios' | 'web'; driveSignIn?: boolean; cloudDeleteThrows?: boolean };
+
+function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['deleted'], web: WebOptions = {}) {
     const state: unknown[] = [];
     let cursor = 0;
     // Every side effect in the order it happened: the relay request must precede the local wipe.
     const order: string[] = [];
     const alert = vi.fn();
-    const deleteCloudBackup = vi.fn(async (_address?: string) => { order.push('cloudBackup'); return { keptUnidentifiedBackup: false }; });
+    const deleteCloudBackup = vi.fn(async (_address?: string) => {
+        order.push('cloudBackup');
+        if (web.cloudDeleteThrows) throw new Error('cloud_sign_in_required');
+        return { keptUnidentifiedBackup: false };
+    });
+    const signInForRecovery = vi.fn(async () => { order.push('driveSignIn'); return web.driveSignIn ?? true; });
     const deleteWallet = vi.fn(async () => { order.push('deleteWallet'); });
     const reset = vi.fn(() => { order.push('navigate'); });
     const asyncClear = vi.fn(async () => { order.push('asyncStorageClear'); });
@@ -81,7 +88,7 @@ function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['delete
         '../../components/ScreenActions': { ActionTouchable: native.TouchableOpacity },
         '../../i18n/displayCopy': { errorDisplayCopy: (value: string) => value },
         react,
-        'react-native': { ...native, StyleSheet: { create: (s: unknown) => s, absoluteFill: {} }, Alert: { alert } },
+        'react-native': { ...native, StyleSheet: { create: (s: unknown) => s, absoluteFill: {} }, Alert: { alert }, Platform: { OS: web.os ?? 'ios' } },
         'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
         'expo-linear-gradient': { LinearGradient: 'LinearGradient' },
         '@expo/vector-icons': { Ionicons: 'Ionicons' },
@@ -101,7 +108,9 @@ function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['delete
         '../../core/security/biometricLabel': { useBiometricLabel: () => ({ label: 'Face ID' }) },
         '../../core/wallet/WalletCreationService': { getInstance: () => ({ deleteWallet }) },
         '../../core/recovery/cloud/CloudBackupV2': { deleteCloudBackup },
+        '../../core/recovery/cloud/ProvianCloudKeychainSync': { signInForRecovery },
         '../../components/BackButton': { default: () => null, BACK_BUTTON_SIZE: 40 },
+        '../../platform/wipeWebStorage': { wipeWebStorage: async () => undefined },
     };
     const compiled = ts.transpileModule(code, { compilerOptions: { jsx: ts.JsxEmit.React, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
     const mod = { exports: {} as { default: (p: { navigation: unknown }) => Node } };
@@ -112,7 +121,7 @@ function screen(code = source, relayOutcomes: readonly RelayOutcome[] = ['delete
     const navigation = { reset, goBack: vi.fn() };
     return {
         render: () => { cursor = 0; return mod.exports.default({ navigation }); },
-        alert, deleteCloudBackup, deleteWallet, reset, requestDataDeletion, clearRelayCredentials, asyncClear, order, requireBiometric,
+        alert, deleteCloudBackup, deleteWallet, reset, requestDataDeletion, clearRelayCredentials, asyncClear, order, requireBiometric, signInForRecovery,
     };
 }
 
@@ -153,7 +162,7 @@ function preFixShape(src: string): string {
         ['onPress: () => handleSecondConfirmation(false),', 'onPress: () => { setDeleteCloudShares(false); handleSecondConfirmation(); },'],
         ['onPress: () => handleSecondConfirmation(true),', 'onPress: () => { setDeleteCloudShares(true); handleSecondConfirmation(); },'],
         ['const handleSecondConfirmation = (deleteCloudBackupToo: boolean) => {', 'const handleSecondConfirmation = () => {'],
-        ['onPress: () => handleBiometricAuth(deleteCloudBackupToo),', 'onPress: handleBiometricAuth,'],
+        ['onPress: () => confirmAndDelete(deleteCloudBackupToo),', 'onPress: handleBiometricAuth,'],
         ['const handleBiometricAuth = async (deleteCloudBackupToo: boolean) => {', 'const handleBiometricAuth = async () => {'],
         ['await performDeletion(deleteCloudBackupToo);', 'await performDeletion();'],
         ['const performDeletion = async (deleteCloudBackupToo: boolean) => {', 'const performDeletion = async () => {'],
@@ -260,5 +269,39 @@ describe('Delete All Data — the relay deletion runs first and its result decid
         expect(s.deleteWallet).toHaveBeenCalledTimes(1);
         expect(s.deleteCloudBackup).not.toHaveBeenCalled();
         expect(s.order[1]).toBe('relayDelete');
+    });
+});
+
+describe('Delete All Data — the web app\'s Google Drive backup', () => {
+    it('signs in to Google Drive in the confirm click, before anything is deleted', async () => {
+        const s = screen(source, ['deleted'], { os: 'web' });
+        await deleteWith(s, 'deleteData.deleteEverything');
+        expect(s.signInForRecovery).toHaveBeenCalledTimes(1);
+        expect(s.order.indexOf('driveSignIn')).toBeLessThan(s.order.indexOf('relayDelete'));
+        expect(s.deleteCloudBackup).toHaveBeenCalledWith('0xabc');
+    });
+
+    it('RED: a refused Drive sign-in deletes nothing and says why', async () => {
+        const s = screen(source, ['deleted'], { os: 'web', driveSignIn: false });
+        await confirmDeletion(s, 'deleteData.deleteEverything');
+        expect(s.requestDataDeletion).not.toHaveBeenCalled();
+        expect(wiped(s.order)).toEqual([]);
+        expect(s.alert.mock.calls.at(-1)?.[1]).toBe('webApp.backup.googleNotSignedIn');
+    });
+
+    it('RED: a Drive backup that could not be deleted is reported, not passed over', async () => {
+        const s = screen(source, ['deleted'], { os: 'web', cloudDeleteThrows: true });
+        await confirmDeletion(s, 'deleteData.deleteEverything');
+        const last = s.alert.mock.calls.at(-1)!;
+        expect(last[1]).toBe('webApp.deleteData.driveNotDeleted');
+        expect(s.reset).not.toHaveBeenCalled();
+        (last[2] as AlertButton[])[0].onPress!();
+        expect(s.reset).toHaveBeenCalledTimes(1);
+    });
+
+    it('"Keep cloud backup" on the web asks for no Drive sign-in', async () => {
+        const s = screen(source, ['deleted'], { os: 'web' });
+        await deleteWith(s, 'deleteData.keepCloudBackup');
+        expect(s.signInForRecovery).not.toHaveBeenCalled();
     });
 });

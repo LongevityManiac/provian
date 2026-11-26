@@ -865,7 +865,7 @@
       "whatIsCourtA": "Les contestations du forum se résolvent par la destruction pour présenter, pas par un tribunal : le contestataire mise une destruction et nomme un prédicat du vocabulaire de présentation ; l'auteur répond en présentant. Si le prédicat tient, la mise brûle ; s'il échoue, la contestation est confirmée et la mise revient ; si l'auteur ne présente jamais, la contestation reste. Seul le résultat est public. La Cour reste l'organe de litiges des rails d'agents pour les séquestres (trois arbitres, majorité de deux voix) et ne siège qu'une fois assez d'arbitres qualifiés inscrits.",
       "securityAndRecovery": "Sécurité et Récupération",
       "howWalletSecured": "Comment mon portefeuille est-il sécurisé ?",
-      "howWalletSecuredA": "Votre portefeuille est un compte BIP-39 dont la phrase de récupération est générée et stockée chiffrée sur votre appareil. La signature utilise une authentification spécifique à chaque action : biométrie prise en charge ou code d'accès de l'appareil configuré explicitement. La phrase de récupération quitte votre appareil uniquement sous forme chiffrée : une sauvegarde chiffrée avec un mot de passe de sauvegarde de votre choix ( AES-256-GCM ) est synchronisée avec votre iCloud Keychain sur iOS ou avec le dossier de données de votre application Google Drive sur Android. Si la sauvegarde cloud n'est pas disponible lors de la configuration, vous effectuez une sauvegarde en notant la phrase de récupération de douze mots et en confirmant trois mots. Vous pouvez également exporter cette phrase dans les Réglages pour une sauvegarde hors ligne indépendante. Une clé matérielle distincte, stockée sur l'appareil, signe Provenance Envelopes ; elle identifie l'appareil, et non le portefeuille, et ce sont les preuves de la plateforme vérifiées, et non la signature seule, qui déterminent le niveau d'attestation matérielle.",
+      "howWalletSecuredA": "Votre portefeuille est un compte BIP-39 dont la phrase de récupération est générée et stockée chiffrée sur votre appareil. La signature utilise une authentification spécifique à chaque action : biométrie prise en charge ou code d'accès de l'appareil configuré explicitement. La phrase de récupération quitte votre appareil uniquement sous forme chiffrée : une sauvegarde chiffrée avec un mot de passe de sauvegarde de votre choix ( AES-256-GCM ) est synchronisée avec votre iCloud Keychain sur iOS ou avec le dossier de données de votre application Google Drive sur Android. Si la sauvegarde cloud n'est pas disponible lors de la configuration, vous effectuez une sauvegarde en notant la phrase de récupération de douze mots et en confirmant trois mots. Vous pouvez également exporter cette phrase dans les Réglages pour une sauvegarde hors ligne indépendante. Une clé matérielle distincte, stockée sur l'appareil, signe Provenance Envelopes ; elle identifie l'appareil, et non le portefeuille, et ce sont les preuves de la plateforme vérifiées, et non la signature seule, qui déterminent le niveau d'attestation matérielle. Dans l'app web sur app.provian.ai, la graine est stockée chiffrée dans votre navigateur et ne s'ouvre qu'avec votre clé d'accès et votre PIN réunis ; vous la sauvegardez alors sur Google Drive, avec votre phrase de récupération, ou sous forme de sauvegarde par clé d'accès que Provian conserve et ne peut jamais ouvrir.",
       "losePhone": "Que se passe-t-il si je perds mon téléphone ?",
       "losePhoneA": "Restaurez votre sauvegarde cloud chiffrée en vous connectant au même compte iCloud ou Google sur votre nouvel appareil et en saisissant votre mot de passe de sauvegarde. Vous pouvez également la restaurer à l'aide de la phrase de récupération de douze mots que vous avez notée lors de la configuration ou exportée depuis les Réglages. Provian ne peut ni réinitialiser le mot de passe de sauvegarde ni récupérer une phrase perdue. Si vous perdez votre appareil et les deux méthodes de récupération, votre portefeuille sera définitivement perdu.",
       "canProvianAccessFunds": "Provian peut-il accéder à mes fonds ?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Pourquoi ma projection de PVT diffère-t-elle du solde de mon portefeuille ?",
       "whyProjectionDiffersA": "Le solde de votre portefeuille est du PVT déjà réglé sur Base. Une projection estime le travail en attente selon le contexte de règlement applicable. Le calendrier de règlement (actuellement tous les 30 jours par bénéficiaire), la capacité de l’époque et les nouvelles preuves peuvent modifier le délai et le montant final. Les événements sans frappe distincte sont exclus.",
       "complianceHoldA": "L’émission est suspendue selon la politique de juridiction et votre valeur scellée est conservée. Le relais relance automatiquement les vérifications de localisation ou de sanctions non résolues. Un blocage juridictionnel suspend l’émission jusqu’à ce que la politique de la juridiction d’origine autorise sa libération ; elle se fait alors automatiquement lors du règlement normal, à la valeur scellée d’origine, sans nouveau calcul. Une juridiction différée suit sa procédure de libération progressive. Une adresse correspondant à la liste SDN de l’OFAC entraîne un refus définitif et aucune émission ; ce n’est pas une suspension temporaire. Vous pouvez toujours enregistrer des preuves pendant la suspension.",
-      "complianceHold": "Pourquoi mon reçu indique-t-il « Émission en attente » ?"
+      "complianceHold": "Pourquoi mon reçu indique-t-il « Émission en attente » ?",
+      "useInBrowser": "Puis-je utiliser Provian dans un navigateur web ?",
+      "useInBrowserA": "Oui. Ouvrez app.provian.ai sur un ordinateur : c'est la même app, le même portefeuille et le même compte que l'app mobile, et votre téléphone et votre navigateur restent connectés tous les deux. Vous la déverrouillez avec une clé d'accès (Touch ID, Windows Hello ou votre gestionnaire de mots de passe) et un PIN à 6 chiffres. Pour utiliser un seul portefeuille aux deux endroits, restaurez-le dans le navigateur depuis votre sauvegarde Google Drive ou votre phrase de récupération, ou commencez dans le navigateur et ouvrez Ajouter votre téléphone dans Sauvegarde et récupération, qui affiche votre phrase de récupération après votre clé d'accès et votre PIN. La capture de discussion ne fonctionne que dans l'app mobile."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT couvrent 7 jours. Les PVT sont détruits et personne ne les reçoit.",
     "commonsPriceIfNeeded": "S’il faut ouvrir cette conversation, {{pvt}} PVT couvrent 7 jours. Les PVT sont détruits et personne ne les reçoit.",
     "priceChanged": "Le montant a changé. Fermez cette fenêtre et vérifiez le nouveau montant."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Ouvrez votre portefeuille",
+      "presenceTitle": "Confirmez que c'est bien vous",
+      "revealTitle": "Affichez votre phrase de récupération",
+      "hint": "Utilisez la clé d'accès de ce portefeuille : Touch ID, Face ID, Windows Hello ou une clé de sécurité.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Votre PIN",
+      "pinTooShort": "Votre PIN comporte au moins {{min}} caractères.",
+      "continue": "Continuer avec la clé d'accès",
+      "cancel": "Annuler",
+      "noWallet": "Aucun portefeuille n'est configuré dans ce navigateur.",
+      "cancelled": "La clé d'accès n'a pas été confirmée. Réessayez.",
+      "wrongPin": "Ce PIN est incorrect. Essais restants avant une courte attente : {{count}}.",
+      "wrongPinNoCount": "Ce PIN est incorrect.",
+      "wait": "Trop de PIN incorrects. Réessayez après {{time}}.",
+      "failed": "Impossible d'ouvrir votre portefeuille : {{message}}"
+    },
+    "vault": {
+      "title": "Protégez votre portefeuille dans ce navigateur",
+      "body": "Votre portefeuille s'ouvre ici avec une clé d'accès et un PIN. La clé d'accès est Touch ID, Face ID, Windows Hello ou une clé de sécurité. Votre phrase de récupération est conservée chiffrée dans ce navigateur et n'en sort jamais en clair.",
+      "pinLabel": "Choisissez un PIN",
+      "pinPlaceholder": "Au moins {{min}} caractères",
+      "confirmPlaceholder": "Saisissez à nouveau le PIN",
+      "pinNote": "Utilisez le même PIN que sur votre téléphone, si vous en avez un. Il vous faut ce PIN avec votre clé d'accès chaque fois que vous ouvrez votre portefeuille ici.",
+      "pinRule": "Un PIN comporte de {{min}} à {{max}} caractères.",
+      "pinMismatch": "Les deux PIN ne correspondent pas.",
+      "create": "Créer une clé d'accès",
+      "passkeyName": "Portefeuille Provian",
+      "passkeyCancelled": "La clé d'accès n'a pas été créée. Réessayez.",
+      "noPasskeys": "Ce navigateur ne peut pas utiliser de clés d'accès. Ouvrez Provian dans une version récente de Safari, Chrome, Edge ou Firefox.",
+      "failed": "Impossible de configurer la clé d'accès : {{message}}",
+      "noPrf": "Cette clé d'accès ne peut pas protéger un portefeuille dans ce navigateur. Enregistrez la clé d'accès dans le trousseau iCloud, le Gestionnaire de mots de passe de Google ou un gestionnaire de mots de passe qui prend en charge le chiffrement par clé d'accès, dans une version récente de Chrome, Safari ou Edge, puis réessayez."
+    },
+    "backup": {
+      "title": "Sauvegardez votre portefeuille",
+      "doneTitle": "Votre portefeuille est sauvegardé",
+      "body": "Choisissez une sauvegarde avant d'utiliser votre portefeuille. Sans sauvegarde, perdre ce navigateur revient à perdre le portefeuille.",
+      "passkeyTitle": "Sauvegarder avec votre clé d'accès",
+      "passkeyDesc": "Provian conserve votre phrase de récupération chiffrée avec votre clé d'accès et votre PIN. Provian ne peut jamais l'ouvrir. Sur un autre ordinateur, votre clé d'accès et votre PIN restaurent votre portefeuille.",
+      "driveTitle": "Sauvegarder sur Google Drive",
+      "driveDesc": "Votre phrase de récupération est chiffrée avec votre PIN et enregistrée dans un dossier Provian privé de votre Google Drive. Elle se restaure sur Android et sur le web.",
+      "phraseTitle": "Notez votre phrase de récupération",
+      "phraseDesc": "Recopiez vos 12 mots sur papier et conservez-les en lieu sûr.",
+      "recommended": "Recommandé",
+      "recommendedMac": "Recommandé sur Mac",
+      "passkeyPrompt": "Sauvegarder votre portefeuille avec votre clé d'accès",
+      "googleNotSignedIn": "Vous n'êtes pas connecté à Google Drive. Réessayez et choisissez votre compte Google.",
+      "otherWalletMessage": "Ce Google Drive contient déjà la sauvegarde d'un autre portefeuille Provian. Conserver les deux sauvegardes, ou la remplacer par la sauvegarde de ce portefeuille ?",
+      "failed": "La sauvegarde n'a pas abouti : {{message}}",
+      "note": "Vous pourrez ajouter une autre sauvegarde plus tard dans Paramètres."
+    },
+    "restore": {
+      "optionTitle": "Restaurer avec votre clé d'accès",
+      "optionDesc": "Utilisez la clé d'accès et le PIN de votre sauvegarde par clé d'accès.",
+      "title": "Restaurer avec votre clé d'accès",
+      "body": "Saisissez votre PIN, puis utilisez la clé d'accès avec laquelle vous avez fait la sauvegarde. Les clés d'accès se synchronisent via iCloud Keychain, Google Password Manager et d'autres gestionnaires de clés d'accès.",
+      "button": "Utiliser ma clé d'accès",
+      "note": "Provian vérifie la clé d'accès et vous renvoie votre sauvegarde chiffrée. Votre PIN l'ouvre ici, dans ce navigateur.",
+      "offline": "Impossible de joindre Provian. Vérifiez votre connexion et réessayez.",
+      "wrongPin": "Ce PIN n'ouvre pas cette sauvegarde.",
+      "noPrf": "Cette clé d'accès ne peut pas ouvrir une sauvegarde Provian dans ce navigateur. Essayez Chrome ou Safari, ou restaurez avec Google Drive ou votre phrase de récupération.",
+      "noBackup": "Cette clé d'accès n'a aucune sauvegarde Provian. Choisissez la clé d'accès avec laquelle vous avez fait la sauvegarde.",
+      "failed": "Impossible de restaurer votre portefeuille : {{message}}"
+    },
+    "chat": {
+      "title": "La capture de discussion se trouve dans l'app mobile",
+      "body": "L'app mobile Provian ouvre vos discussions IA dans l'app et enregistre chaque conversation au fur et à mesure. Une page web ne peut pas voir l'intérieur de l'onglet d'un autre site, donc l'app web n'enregistre pas les discussions. Vos agents, vos commits et vos autres travaux attestés continuent de rapporter ici.",
+      "getPhoneApp": "Ajouter votre téléphone",
+      "download": "Obtenir l'app mobile"
+    },
+    "addPhone": {
+      "title": "Ajouter votre téléphone",
+      "body": "Utilisez aussi ce portefeuille sur votre téléphone. Votre téléphone et ce navigateur restent connectés tous les deux.",
+      "step1Title": "Installez Provian",
+      "step1Body": "Téléchargez l'app pour iPhone ou Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Appuyez sur « J'ai déjà un portefeuille Provian »",
+      "step2Body": "Ouvrez l'app et choisissez de restaurer votre portefeuille.",
+      "step3Title": "Choisissez votre phrase de récupération",
+      "step3Body": "Saisissez dans votre téléphone les 12 mots ci-dessous, dans l'ordre.",
+      "show": "Afficher ma phrase de récupération",
+      "hide": "Masquer les mots",
+      "warning": "Toute personne qui voit ces mots peut prendre votre portefeuille. Saisissez-les uniquement dans l'app Provian sur votre propre téléphone, et fermez cette page quand vous avez terminé.",
+      "revealFailed": "Impossible d'afficher votre phrase de récupération. Réessayez.",
+      "noWallet": "Ouvrez d'abord votre portefeuille dans ce navigateur, puis revenez sur cette page.",
+      "driveNote": "Sur Android, vous pouvez aussi restaurer depuis Google Drive si vous y avez fait une sauvegarde.",
+      "together": "Restaurer sur votre téléphone ne déconnecte pas ce navigateur."
+    },
+    "settings": {
+      "passkeyBackup": "Sauvegarde par clé d'accès",
+      "addPhone": "Ajouter votre téléphone",
+      "addPhoneSubtitle": "Mettre ce portefeuille sur votre téléphone",
+      "modelExplainer": "Dans ce navigateur, votre portefeuille est chiffré avec votre clé d'accès et votre PIN. Il se restaure depuis une sauvegarde par clé d'accès, que Provian conserve et ne peut jamais ouvrir ; depuis le dossier de données de l'app dans votre Google Drive, la même sauvegarde qu'utilise Android, si bien que chacune se restaure sur l'autre ; ou depuis votre phrase de récupération. Provian ne peut pas réinitialiser votre PIN."
+    },
+    "onboarding": {
+      "walletSubtext": "Votre clé d'accès et votre PIN protègent votre portefeuille dans ce navigateur. Vos clés y sont chiffrées. Vous choisissez ensuite une sauvegarde : une sauvegarde par clé d'accès que Provian conserve et ne peut jamais ouvrir, votre propre Google Drive, ou votre phrase de récupération de douze mots. Une sauvegarde ne s'ouvre qu'avec votre PIN ou votre phrase, et Provian ne peut en ouvrir aucune. Vous pouvez afficher votre phrase de récupération à tout moment dans Paramètres."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Votre sauvegarde Google Drive n'a pas pu être supprimée. Pour la retirer, ouvrez Google Drive sur un ordinateur, allez dans Paramètres, puis Gérer les applications, trouvez Provian et choisissez Supprimer les données d'application masquées."
+    }
   }
 }

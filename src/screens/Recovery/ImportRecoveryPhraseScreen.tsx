@@ -3,7 +3,7 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
 import { type BiometricAction } from '../../core/security/biometricAction';
 import { withBiometricOrFallback } from '../../core/security/biometricOrFallback';
 import { onWalletUnlocked, preparePeCloudAccess } from '../../core/meter/phoneMeterRuntime';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
     ScrollView,
     View,
@@ -50,6 +50,8 @@ interface Props {
         goBack: () => void;
         dispatch: (action: any) => void;
     };
+    /** Web app: a phrase the passkey backup just opened, restored without retyping it. */
+    route?: { params?: { restoredMnemonic?: string } };
 }
 
 // B-1 (audit 2026-05-11) sibling-path fix (2026-05-12): when the device
@@ -63,7 +65,7 @@ type OverwriteState =
     | { kind: 'confirm'; mnemonic: string }
     | { kind: 'applying'; mnemonic: string };
 
-const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
+const ImportRecoveryPhraseScreen = ({ navigation, route }: Props) => {
     const { t } = useTranslation();
     const { width: windowWidth } = useWindowDimensions();
     const { setAddress, completeOnboarding } = useWalletStore();
@@ -298,8 +300,8 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
         await finishAfterRestore('with_session', evmAddress, biometricAction);
     }, [setAddress, completeOnboarding, finishAfterRestore]);
 
-    const handleRestore = useCallback(async () => {
-        const mnemonic = words
+    const handleRestore = useCallback(async (given?: string) => {
+        const mnemonic = typeof given === 'string' ? given : words
             .slice(0, wordCount)
             .map((w) => w.trim().toLowerCase())
             .join(' ');
@@ -341,6 +343,21 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
             setLoading(false);
         }
     }, [words, wordCount, performRestore]);
+
+    // Web app: the passkey backup already opened this wallet's phrase; restore it once, the same
+    // way a typed phrase is restored.
+    const restoredOnce = useRef(false);
+    const restoredMnemonic = route?.params?.restoredMnemonic;
+    useEffect(() => {
+        if (!restoredMnemonic || restoredOnce.current) return;
+        restoredOnce.current = true;
+        const list = restoredMnemonic.trim().split(/\s+/);
+        if (list.length === 12 || list.length === 24) {
+            setWordCount(list.length as WordCount);
+            setWords(list);
+        }
+        void handleRestore(restoredMnemonic);
+    }, [restoredMnemonic, handleRestore]);
 
     /**
      * B-1 sibling fix (2026-05-12): the user typed the confirmation
@@ -525,7 +542,7 @@ const ImportRecoveryPhraseScreen = ({ navigation }: Props) => {
 
                         <ActionTouchable
                             style={[styles.restoreButton, (!allFilled || loading) && styles.restoreButtonDisabled]}
-                            onPress={handleRestore}
+                            onPress={() => { void handleRestore(); }}
                             disabled={!allFilled || loading}
                             activeOpacity={0.8}
                         >

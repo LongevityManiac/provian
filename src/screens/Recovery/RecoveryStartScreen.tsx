@@ -20,7 +20,9 @@ import { restoreEntry, type RestoreMethod } from '../../navigation/restoreConsen
 
 const RecoveryStartScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
-    const cloudName = Platform.OS === 'ios' ? 'iCloud' : 'Google';
+    const cloudName = Platform.OS === 'ios' ? 'iCloud' : Platform.OS === 'web' ? 'Google Drive' : 'Google';
+    // The web app also restores from the passkey backup (passkey + PIN).
+    const isWeb = Platform.OS === 'web';
     const legalAccepted = useWalletStore(selectLegalAcceptanceCurrent);
 
     // Restoring passes through the same three acknowledgements as creating, unless this install
@@ -32,6 +34,8 @@ const RecoveryStartScreen = ({ navigation }: any) => {
     };
 
     const handleCloudRecovery = () => startRestore('CloudRecovery');
+
+    const handlePasskeyRecovery = () => startRestore('PasskeyRestore');
 
     const handleSeedPhraseRecovery = () => startRestore('ImportRecoveryPhrase');
 
@@ -66,6 +70,25 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                 <Text style={styles.subtitle}>
                     {t('recoveryStart.subtitle')}
                 </Text>
+
+                {isWeb && (
+                    <ActionTouchable
+                        style={styles.optionCard}
+                        onPress={handlePasskeyRecovery}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.optionRow}>
+                            <View style={[styles.optionIconBg, { backgroundColor: 'rgba(74,142,232,0.14)' }]}>
+                                <Ionicons name="finger-print" size={24} color="#4A8EE8" />
+                            </View>
+                            <View style={styles.optionContent}>
+                                <Text style={styles.optionTitle}>{t('webApp.restore.optionTitle')}</Text>
+                                <Text style={styles.optionDesc}>{t('webApp.restore.optionDesc')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        </View>
+                    </ActionTouchable>
+                )}
 
                 {/* Option 1: Cloud Recovery */}
                 <ActionTouchable

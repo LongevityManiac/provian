@@ -865,7 +865,7 @@
       "whatIsCourtA": "Tantangan forum diselesaikan dengan burn-untuk-presentasi, bukan pengadilan: penantang mempertaruhkan burn dan menyebut satu predikat dari kosakata presentasi; penulis menjawab dengan presentasi. Jika predikat terbukti, taruhan terbakar; jika gagal, tantangan ditegakkan dan taruhan kembali; jika penulis tidak pernah melakukan presentasi, tantangan tetap berlaku. Hanya hasilnya yang publik. Pengadilan tetap menjadi badan sengketa jalur agen untuk escrow (tiga arbiter, mayoritas dua suara) dan hanya membentuk panel setelah cukup arbiter berkualifikasi mendaftar.",
       "securityAndRecovery": "Keamanan & Pemulihan",
       "howWalletSecured": "Bagaimana dompet saya diamankan?",
-      "howWalletSecuredA": "Dompet Anda adalah akun BIP-39 dengan seed yang dihasilkan dan disimpan dalam bentuk terenkripsi di perangkat Anda. Penandatanganan menggunakan otentikasi spesifik tindakan: biometrik yang didukung atau fallback kode sandi perangkat yang dikonfigurasi secara eksplisit. Seed hanya meninggalkan perangkat Anda sebagai teks sandi: cadangan yang dienkripsi dengan kata sandi cadangan yang Anda pilih ( AES-256-GCM ) disinkronkan ke iCloud Keychain Anda di iOS atau ke folder data aplikasi Google Drive Anda di Android. Jika pencadangan cloud tidak tersedia selama penyiapan, Anda melakukan pencadangan dengan menuliskan frasa pemulihan dua belas kata dan mengkonfirmasi tiga kata. Anda juga dapat mengekspor frasa tersebut di Pengaturan untuk pencadangan offline independen. Kunci perangkat yang dipegang perangkat keras terpisah menandatangani Provenance Envelopes ; kunci tersebut mengidentifikasi perangkat, bukan dompet, dan bukti platform yang terverifikasi, bukan hanya penandatanganan, menentukan tingkatan pengesahan perangkat keras apa pun.",
+      "howWalletSecuredA": "Dompet Anda adalah akun BIP-39 dengan seed yang dihasilkan dan disimpan dalam bentuk terenkripsi di perangkat Anda. Penandatanganan menggunakan otentikasi spesifik tindakan: biometrik yang didukung atau fallback kode sandi perangkat yang dikonfigurasi secara eksplisit. Seed hanya meninggalkan perangkat Anda sebagai teks sandi: cadangan yang dienkripsi dengan kata sandi cadangan yang Anda pilih ( AES-256-GCM ) disinkronkan ke iCloud Keychain Anda di iOS atau ke folder data aplikasi Google Drive Anda di Android. Jika pencadangan cloud tidak tersedia selama penyiapan, Anda melakukan pencadangan dengan menuliskan frasa pemulihan dua belas kata dan mengkonfirmasi tiga kata. Anda juga dapat mengekspor frasa tersebut di Pengaturan untuk pencadangan offline independen. Kunci perangkat yang dipegang perangkat keras terpisah menandatangani Provenance Envelopes ; kunci tersebut mengidentifikasi perangkat, bukan dompet, dan bukti platform yang terverifikasi, bukan hanya penandatanganan, menentukan tingkatan pengesahan perangkat keras apa pun. Di aplikasi web di app.provian.ai, seed disimpan terenkripsi di browser Anda dan hanya terbuka dengan passkey dan PIN Anda sekaligus; di sana Anda mencadangkannya ke Google Drive, ke frasa pemulihan Anda, atau sebagai cadangan passkey yang disimpan Provian dan tidak pernah bisa dibuka oleh Provian.",
       "losePhone": "Bagaimana jika saya kehilangan ponsel?",
       "losePhoneA": "Pulihkan cadangan cloud terenkripsi Anda dengan masuk ke akun iCloud atau Google yang sama di perangkat baru dan masukkan kata sandi cadangan Anda. Atau, pulihkan dengan frasa pemulihan dua belas kata yang Anda catat selama pengaturan atau yang diekspor dari Pengaturan. Provian tidak dapat mengatur ulang kata sandi cadangan atau memulihkan frasa yang hilang. Jika Anda kehilangan perangkat dan kedua metode pemulihan tersebut, dompet tidak dapat dipulihkan.",
       "canProvianAccessFunds": "Bisakah Provian mengakses dana saya?",
@@ -895,7 +895,9 @@
       "whyProjectionDiffers": "Mengapa proyeksi PVT saya berbeda dari saldo dompet saya?",
       "whyProjectionDiffersA": "Saldo dompet Anda adalah PVT yang sudah diselesaikan di Base. Proyeksi memperkirakan pekerjaan tertunda menggunakan konteks penyelesaian yang berlaku. Jadwal penyelesaian (saat ini setiap 30 hari per penerima), kapasitas epoch dan pembaruan bukti dapat memengaruhi waktu dan jumlah akhir. Peristiwa yang tidak mencetak secara terpisah dikecualikan.",
       "complianceHoldA": "Pencetakan ditahan berdasarkan kebijakan yurisdiksi, dan nilai tersegel Anda tetap disimpan. Relay otomatis mengulangi pemeriksaan lokasi atau sanksi yang belum terselesaikan. Pemblokiran yurisdiksi menahan pencetakan sampai kebijakan yurisdiksi asal mengizinkan pelepasan; kemudian pencetakan berlangsung otomatis melalui penyelesaian normal dengan nilai tersegel semula, tanpa penilaian ulang. Yurisdiksi yang ditangguhkan mengikuti proses pelepasan bertahapnya. Kecocokan alamat dalam daftar SDN OFAC merupakan penolakan final dan tidak mencetak; ini bukan penahanan sementara. Anda tetap dapat mencatat bukti selama pencetakan ditahan.",
-      "complianceHold": "Mengapa tanda terima saya bertuliskan “Pencetakan ditahan”?"
+      "complianceHold": "Mengapa tanda terima saya bertuliskan “Pencetakan ditahan”?",
+      "useInBrowser": "Bisakah saya menggunakan Provian di browser web?",
+      "useInBrowserA": "Ya. Buka app.provian.ai di komputer: ini adalah aplikasi, dompet, dan akun yang sama dengan aplikasi ponsel, dan ponsel serta browser Anda tetap masuk bersama. Anda membukanya dengan passkey (Touch ID, Windows Hello, atau pengelola kata sandi Anda) dan PIN 6 digit. Untuk menggunakan satu dompet di kedua tempat, pulihkan dompet di browser dari cadangan Google Drive atau frasa pemulihan Anda, atau mulai di browser lalu buka Tambahkan ponsel Anda di Pencadangan dan Pemulihan, yang menampilkan frasa pemulihan Anda setelah passkey dan PIN. Perekaman obrolan hanya berjalan di aplikasi ponsel."
     }
   },
   "developer": {
@@ -5416,5 +5418,108 @@
     "commonsPrice": "{{pvt}} PVT berlaku 7 hari. PVT dimusnahkan tanpa diberikan kepada siapa pun.",
     "commonsPriceIfNeeded": "Jika percakapan ini perlu dibuka, {{pvt}} PVT berlaku 7 hari. PVT dimusnahkan tanpa diberikan kepada siapa pun.",
     "priceChanged": "Jumlahnya berubah. Tutup jendela ini dan periksa jumlah baru."
+  },
+  "webApp": {
+    "unlock": {
+      "title": "Buka dompet Anda",
+      "presenceTitle": "Konfirmasi bahwa ini Anda",
+      "revealTitle": "Tampilkan frasa pemulihan Anda",
+      "hint": "Gunakan passkey dompet ini: Touch ID, Face ID, Windows Hello, atau kunci keamanan.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "PIN Anda",
+      "pinTooShort": "PIN Anda terdiri dari minimal {{min}} karakter.",
+      "continue": "Lanjutkan dengan passkey",
+      "cancel": "Batal",
+      "noWallet": "Belum ada dompet yang disiapkan di browser ini.",
+      "cancelled": "Passkey tidak dikonfirmasi. Coba lagi.",
+      "wrongPin": "PIN itu salah. Tersisa {{count}} percobaan lagi sebelum jeda singkat.",
+      "wrongPinNoCount": "PIN itu salah.",
+      "wait": "Terlalu banyak PIN yang salah. Coba lagi setelah {{time}}.",
+      "failed": "Dompet Anda tidak dapat dibuka: {{message}}"
+    },
+    "vault": {
+      "title": "Lindungi dompet Anda di browser ini",
+      "body": "Dompet Anda terbuka di sini dengan passkey dan PIN. Passkey adalah Touch ID, Face ID, Windows Hello, atau kunci keamanan. Frasa pemulihan Anda disimpan terenkripsi di browser ini dan tidak pernah keluar dari browser ini tanpa enkripsi.",
+      "pinLabel": "Pilih PIN",
+      "pinPlaceholder": "Minimal {{min}} karakter",
+      "confirmPlaceholder": "Masukkan PIN sekali lagi",
+      "pinNote": "Gunakan PIN yang sama dengan di ponsel Anda jika ada. Anda memerlukannya bersama passkey setiap kali membuka dompet di sini.",
+      "pinRule": "PIN terdiri dari {{min}} sampai {{max}} karakter.",
+      "pinMismatch": "Kedua PIN tidak cocok.",
+      "create": "Buat passkey",
+      "passkeyName": "Dompet Provian",
+      "passkeyCancelled": "Passkey tidak dibuat. Coba lagi.",
+      "noPasskeys": "Browser ini tidak dapat menggunakan passkey. Buka Provian di versi terbaru Safari, Chrome, Edge, atau Firefox.",
+      "failed": "Passkey tidak dapat disiapkan: {{message}}",
+      "noPrf": "Passkey ini tidak dapat melindungi dompet di browser ini. Simpan passkey di iCloud Keychain, Google Password Manager, atau pengelola sandi yang mendukung enkripsi passkey, di Chrome, Safari, atau Edge versi terbaru, lalu coba lagi."
+    },
+    "backup": {
+      "title": "Cadangkan dompet Anda",
+      "doneTitle": "Dompet Anda sudah dicadangkan",
+      "body": "Pilih cadangan sebelum Anda menggunakan dompet. Tanpa cadangan, kehilangan browser ini berarti kehilangan dompet.",
+      "passkeyTitle": "Cadangkan dengan passkey Anda",
+      "passkeyDesc": "Provian menyimpan frasa pemulihan Anda dalam bentuk terenkripsi dengan passkey dan PIN Anda. Provian tidak pernah bisa membukanya. Di komputer lain, passkey dan PIN Anda memulihkan dompet Anda.",
+      "driveTitle": "Cadangkan ke Google Drive",
+      "driveDesc": "Frasa pemulihan Anda dienkripsi dengan PIN Anda dan disimpan di folder Provian pribadi di Google Drive Anda. Cadangan ini bisa dipulihkan di Android dan di web.",
+      "phraseTitle": "Catat frasa pemulihan Anda",
+      "phraseDesc": "Salin 12 kata Anda ke kertas dan simpan di tempat yang aman.",
+      "recommended": "Disarankan",
+      "recommendedMac": "Disarankan di Mac",
+      "passkeyPrompt": "Cadangkan dompet Anda dengan passkey Anda",
+      "googleNotSignedIn": "Google Drive belum masuk. Coba lagi dan pilih akun Google Anda.",
+      "otherWalletMessage": "Google Drive ini sudah berisi cadangan dompet Provian yang lain. Simpan kedua cadangan, atau ganti dengan cadangan dompet ini?",
+      "failed": "Pencadangan tidak selesai: {{message}}",
+      "note": "Anda dapat menambahkan cadangan lain nanti di Pengaturan."
+    },
+    "restore": {
+      "optionTitle": "Pulihkan dengan passkey Anda",
+      "optionDesc": "Gunakan passkey dan PIN dari cadangan passkey Anda.",
+      "title": "Pulihkan dengan passkey Anda",
+      "body": "Masukkan PIN Anda, lalu gunakan passkey yang Anda pakai saat membuat cadangan. Passkey disinkronkan melalui iCloud Keychain, Google Password Manager, dan pengelola passkey lainnya.",
+      "button": "Gunakan passkey saya",
+      "note": "Provian memeriksa passkey dan mengirimkan kembali cadangan terenkripsi Anda. PIN Anda membukanya di sini, di browser ini.",
+      "offline": "Provian tidak dapat dihubungi. Periksa koneksi Anda dan coba lagi.",
+      "wrongPin": "PIN itu tidak membuka cadangan ini.",
+      "noPrf": "Passkey ini tidak dapat membuka cadangan Provian di browser ini. Coba Chrome atau Safari, atau pulihkan dengan Google Drive atau frasa pemulihan Anda.",
+      "noBackup": "Passkey ini tidak memiliki cadangan Provian. Pilih passkey yang Anda pakai saat membuat cadangan.",
+      "failed": "Dompet Anda tidak dapat dipulihkan: {{message}}"
+    },
+    "chat": {
+      "title": "Perekaman obrolan ada di aplikasi ponsel",
+      "body": "Aplikasi ponsel Provian membuka obrolan AI Anda di dalam aplikasi dan merekam setiap percakapan saat berlangsung. Halaman web tidak dapat melihat isi tab situs lain, jadi aplikasi web tidak merekam obrolan. Agen, commit, dan pekerjaan lain Anda yang disaksikan tetap menghasilkan di sini.",
+      "getPhoneApp": "Tambahkan ponsel Anda",
+      "download": "Dapatkan aplikasi ponsel"
+    },
+    "addPhone": {
+      "title": "Tambahkan ponsel Anda",
+      "body": "Gunakan dompet ini di ponsel Anda juga. Ponsel Anda dan browser ini tetap masuk bersama.",
+      "step1Title": "Instal Provian",
+      "step1Body": "Dapatkan aplikasinya untuk iPhone atau Android.",
+      "iphone": "iPhone",
+      "android": "Google Play",
+      "step2Title": "Ketuk \"Saya sudah memiliki dompet Provian\"",
+      "step2Body": "Buka aplikasi dan pilih untuk memulihkan dompet Anda.",
+      "step3Title": "Pilih frasa pemulihan Anda",
+      "step3Body": "Ketik 12 kata di bawah ini ke ponsel Anda, sesuai urutan.",
+      "show": "Tampilkan frasa pemulihan saya",
+      "hide": "Sembunyikan kata-kata",
+      "warning": "Siapa pun yang melihat kata-kata ini dapat mengambil dompet Anda. Ketikkan hanya di aplikasi Provian di ponsel Anda sendiri, dan tutup halaman ini setelah selesai.",
+      "revealFailed": "Frasa pemulihan Anda tidak dapat ditampilkan. Coba lagi.",
+      "noWallet": "Buka dompet Anda di browser ini terlebih dahulu, lalu kembali ke halaman ini.",
+      "driveNote": "Di Android, Anda juga dapat memulihkan dari Google Drive jika Anda mencadangkan di sana.",
+      "together": "Memulihkan di ponsel Anda tidak membuat browser ini keluar."
+    },
+    "settings": {
+      "passkeyBackup": "Cadangan passkey",
+      "addPhone": "Tambahkan ponsel Anda",
+      "addPhoneSubtitle": "Pasang dompet ini di ponsel Anda",
+      "modelExplainer": "Di browser ini dompet Anda dienkripsi dengan passkey dan PIN Anda. Dompet dapat dipulihkan dari cadangan passkey, yang disimpan Provian dan tidak pernah bisa dibuka oleh Provian; dari folder data aplikasi Google Drive Anda, cadangan yang sama yang digunakan Android, sehingga masing-masing bisa dipulihkan di yang lain; atau dari frasa pemulihan Anda. Provian tidak dapat mengatur ulang PIN Anda."
+    },
+    "onboarding": {
+      "walletSubtext": "Passkey dan PIN Anda melindungi dompet Anda di browser ini. Kunci Anda dienkripsi di sini. Selanjutnya Anda memilih cadangan: cadangan passkey yang disimpan Provian dan tidak pernah bisa dibuka oleh Provian, Google Drive Anda sendiri, atau frasa pemulihan dua belas kata Anda. Cadangan hanya terbuka dengan PIN atau frasa Anda, dan Provian tidak dapat membuka satu pun. Anda dapat melihat frasa pemulihan Anda kapan saja di Pengaturan."
+    },
+    "deleteData": {
+      "driveNotDeleted": "Cadangan Google Drive Anda tidak dapat dihapus. Untuk menghapusnya, buka Google Drive di komputer, buka Setelan lalu Kelola aplikasi, cari Provian, dan pilih Hapus data aplikasi tersembunyi."
+    }
   }
 }

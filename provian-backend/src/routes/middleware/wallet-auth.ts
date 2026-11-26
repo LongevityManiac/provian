@@ -21,6 +21,7 @@ import crypto from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import type { RedisCache } from '../../cache';
 import { isValidFirestoreDocumentId } from '../../firestore-document-id';
+import { resolveWalletAuthSecret } from '../../core/wallet/device-auth-secrets';
 
 export const AUTH_NONCE_TTL_SECONDS = 120;
 /**
@@ -84,8 +85,8 @@ export async function verifyWalletAuthToken(
   );
   if(result.ok&&(req.body?.private_request||req.query?.private_query)){
     try {
-      const secret=(await deps.db.collection('auth_secrets').doc(result.userId).get()).data()?.secret;
-      openPrivateAuthenticatedRequest(req,secret);
+      const resolved=await resolveWalletAuthSecret(deps.db,result.userId,result.deviceId);
+      openPrivateAuthenticatedRequest(req,resolved.ok?resolved.secret:undefined);
     }catch{return {ok:false,status:400,error:'Private request could not be opened'};}
   }
   if (result.ok) await observeActorSession(deps.db, req, result.userId);
@@ -132,7 +133,7 @@ export async function verifyWalletAuthTokenWithBinding(
 
   const userId = payload.sub;
   const deviceId = payload.device_id;
-  if (!deviceId) {
+  if (!deviceId || typeof deviceId !== 'string' || deviceId.length > 128) {
     return { ok: false, status: 401, error: 'Incomplete token payload' };
   }
 
@@ -162,20 +163,13 @@ export async function verifyWalletAuthTokenWithBinding(
   // Recovery replaces this record atomically with owner state. Redis cannot
   // participate in that transaction: a stale cached secret must never extend
   // the old key's authority after the recovery commits.
-  let authSecret: string;
-  try {
-    const secretDoc = await db.collection('auth_secrets').doc(userId).get();
-    if (!secretDoc.exists) {
-      return { ok: false, status: 401, error: 'Auth secret not configured. Re-register device.' };
-    }
-    const secretData = secretDoc.data();
-    if (typeof secretData?.secret !== 'string' || !secretData.secret) {
-      return { ok: false, status: 401, error: 'Auth secret not configured. Re-register device.' };
-    }
-    authSecret = secretData.secret;
-  } catch {
-    return { ok: false, status: 503, error: 'Auth state unavailable' };
+  // A device that signed in with its own credential (several devices on one wallet) verifies
+  // against that device's secret; every other device against the account secret.
+  const resolved = await resolveWalletAuthSecret(db, userId, deviceId);
+  if (!resolved.ok) {
+    return { ok: false, status: resolved.status, error: resolved.error };
   }
+  const authSecret = resolved.secret;
 
   const expectedSignature = crypto
     .createHmac('sha256', authSecret)
