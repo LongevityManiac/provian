@@ -2864,6 +2864,24 @@ class RelayAPIService {
         return body.challenge;
     }
 
+    /**
+     * The QR handoff mailbox (/v1/handoff): moving a wallet between the phone app and the web app.
+     * No account needed; each side carries its own session token. The relay sees only ciphertext.
+     * Throws an Error whose message is the relay's error code.
+     */
+    async handoffCall<T>(action: 'open' | 'join' | 'state' | 'seal' | 'take' | 'cancel', body: Record<string, unknown>): Promise<T> {
+        const backendUrl = await this.getBackendUrl();
+        const path = action === 'open' ? '/v1/handoff' : `/v1/handoff/${action}`;
+        const response = await apiFetch(`${backendUrl}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const parsed = await response.json().catch(() => ({})) as T & { error?: string };
+        if (!response.ok) throw new Error(parsed.error || `handoff_${action}_failed_${response.status}`);
+        return parsed;
+    }
+
     /** The backup a passkey assertion proves (no account needed). Throws the relay's error code. */
     async fetchPasskeyBackup(assertion: { credential_id: string; authenticator_data: string; client_data_json: string; signature: string }): Promise<{ wallet_address: string; envelope: Record<string, unknown>; public_key_spki?: string; public_key_alg?: number }> {
         const backendUrl = await this.getBackendUrl();

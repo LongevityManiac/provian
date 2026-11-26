@@ -255,6 +255,15 @@ const BackupAndRecoveryScreen = ({ navigation }: any) => {
                         onPress={() => navigation.navigate('AddYourPhone')}
                     />
                 )}
+                {Platform.OS !== 'web' && (
+                    <ActionCard
+                        icon="laptop-outline"
+                        dotColor="#4CC38A"
+                        title={t('handoff.addComputer')}
+                        subtitle={t('handoff.addComputerSubtitle')}
+                        onPress={() => navigation.navigate('HandoffScan', { mode: 'send' })}
+                    />
+                )}
 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>

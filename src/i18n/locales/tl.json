@@ -897,7 +897,7 @@
       "complianceHoldA": "Nakahold ang pagmint sa ilalim ng patakaran ng hurisdiksiyon, at nananatili ang iyong selyadong halaga. Awtomatikong inuulit ng relay ang hindi pa nalulutas na pagsusuri sa lokasyon o mga sanksiyon. Hinahawakan ng pagbabawal sa hurisdiksiyon ang pagmint hanggang payagan ng patakaran ng orihinal na hurisdiksiyon ang pagpapalabas; pagkatapos ay awtomatikong imi-mint sa normal na settlement sa orihinal na selyadong halaga, nang walang muling pagpepresyo. Sinusunod ng ipinagpalibang hurisdiksiyon ang unti-unti nitong pagpapalabas. Ang pagtugma ng address sa listahan ng SDN ng OFAC ay pinal na pagtanggi at hindi imi-mint; hindi ito pansamantalang hold. Maaari ka pa ring magtala ng patunay habang nakahold ang pagmint.",
       "complianceHold": "Bakit may “Nakahold ang pagmint” sa aking resibo?",
       "useInBrowser": "Puwede ko bang gamitin ang Provian sa web browser?",
-      "useInBrowserA": "Oo. Buksan ang app.provian.ai sa isang computer: ito rin ang app, wallet at account ng phone app, at mananatiling sabay na naka-sign in ang phone at browser mo. Ina-unlock mo ito gamit ang passkey (Touch ID, Windows Hello o ang password manager mo) at isang 6-digit na PIN. Para magamit ang iisang wallet sa dalawang lugar, i-restore ito sa browser mula sa Google Drive backup mo o sa recovery phrase mo, o magsimula sa browser at buksan ang Idagdag ang phone mo sa Backup at Pag-recover, na nagpapakita ng recovery phrase mo pagkatapos ng passkey at PIN mo. Sa phone app lang gumagana ang pagkuha ng chat."
+      "useInBrowserA": "Oo. Buksan ang app.provian.ai sa isang computer: ito rin ang app, wallet at account ng phone app, at mananatiling sabay na naka-sign in ang phone at browser mo. Ina-unlock mo ito gamit ang passkey (Touch ID, Windows Hello o ang password manager mo) at isang 6-digit na PIN. Para magamit ang iisang wallet sa dalawang lugar, ilipat ito gamit ang QR code: kung nasa phone mo ang wallet, buksan ang Mayroon na akong Provian wallet sa app.provian.ai at i-scan ang code nito mula sa Mga Setting → Backup at Pag-recover → Magdagdag ng computer sa phone app; kung nasa browser mo ang wallet, buksan ang Idagdag ang phone mo sa Backup at Pag-recover at i-scan ang code nito mula sa Mayroon na akong Provian wallet → Mula sa computer mo. Bago magpadala, hinihingi ng device na nagpapadala ng wallet ang pag-unlock nito at ipinapakita kung saan pupunta ang wallet, at naka-seal ang wallet habang inililipat kaya ang tumatanggap na device lang ang makakabukas nito. Puwede ka ring mag-restore mula sa Google Drive backup mo o sa recovery phrase mo. Sa phone app lang gumagana ang pagkuha ng chat."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Huling aktibo: {{time}}",
     "totalPEs": "Kabuuang PE: {{count}}",
     "registeredDate": "Nakarehistro: {{date}}",
-    "registerDevicePrompt": "Magrehistro ng coding tool para makita ang trabaho nito: ang bawat session ay nag-iiwan ng PE na pagmamay-ari mo, at lumilikha ng PVT ang iyong trabaho.",
+    "registerDevicePrompt": "Magrehistro ng coding tool para makita ang trabaho nito: ang bawat commit ay nag-iiwan ng PE na pagmamay-ari mo, at lumilikha ng PVT ang iyong trabaho.",
     "commonsTitle": "Ang Commons",
     "commonsDesc": "Mga profile, forum, directory, at trabaho",
     "never": "Kailanman",
@@ -5424,6 +5424,7 @@
       "title": "Buksan ang wallet mo",
       "presenceTitle": "Kumpirmahin na ikaw ito",
       "revealTitle": "Ipakita ang recovery phrase mo",
+      "moveTitle": "Ilipat ang wallet mo",
       "hint": "Gamitin ang passkey ng wallet na ito: Touch ID, Face ID, Windows Hello o isang security key.",
       "pinLabel": "PIN",
       "pinPlaceholder": "Ang PIN mo",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Hindi ma-delete ang backup mo sa Google Drive. Para alisin ito, buksan ang Google Drive sa isang computer, pumunta sa Settings, pagkatapos sa Manage apps, hanapin ang Provian at piliin ang Delete hidden app data."
     }
+  },
+  "handoff": {
+    "optionTitle": "Mula sa computer mo",
+    "optionDesc": "I-scan ang code sa Provian web app sa app.provian.ai. Walang kailangang i-type.",
+    "addComputer": "Magdagdag ng computer",
+    "addComputerSubtitle": "Gamitin ang wallet na ito sa web app sa app.provian.ai",
+    "scanTitleReceive": "Mula sa computer mo",
+    "scanBodyReceive": "Sa computer mo, buksan ang wallet mo sa app.provian.ai at pumunta sa Mga Setting → Backup at Pag-recover → Idagdag ang phone mo. I-scan ang code na ipinapakita nito.",
+    "scanTitleSend": "Magdagdag ng computer",
+    "scanBodySend": "Sa computer mo, buksan ang app.provian.ai, piliin ang Mayroon na akong Provian wallet, at i-scan ang code na ipinapakita nito.",
+    "scanButton": "I-scan ang code",
+    "pointCamera": "Itutok ang camera mo sa code na nasa computer mo.",
+    "qrTitleSend": "I-scan ang code na ito gamit ang phone mo",
+    "qrBodySend": "Sa Provian app sa phone mo, i-tap ang Mayroon na akong Provian wallet, pagkatapos ang Mula sa computer mo, at i-scan ang code na ito.",
+    "qrTitleReceive": "Ilipat ang wallet mo mula sa phone mo",
+    "qrBodyReceive": "Sa Provian app sa phone mo, pumunta sa Mga Setting → Backup at Pag-recover → Magdagdag ng computer, at i-scan ang code na ito.",
+    "qrAlt": "QR code para sa paglipat ng wallet mo",
+    "latestApp": "Kailangan nito ang pinakabagong bersyon ng Provian app.",
+    "expires": "Gumagana ang code sa loob ng 10 minuto.",
+    "expired": "Nag-expire na ang code na ito.",
+    "newCode": "Magpakita ng bagong code",
+    "destination": "Ililipat ang wallet mo sa {{label}}.",
+    "source": "Nanggagaling ang wallet mo sa {{label}}.",
+    "matchCode": "Code {{code}}",
+    "matchHint": "Tiyaking pareho ang code na ipinapakita ng isa mo pang device.",
+    "confirmSend": "Ipadala ang wallet ko",
+    "confirmHintWeb": "Kukumpirmahin mo gamit ang passkey at PIN mo.",
+    "confirmHintPhone": "Kukumpirmahin mo gamit ang {{biometric}}.",
+    "unlockReason": "Kumpirmahin para ilipat ang wallet mo sa {{label}}",
+    "waitingForSender": "Kumpirmahin sa {{label}} para maipadala rito ang wallet mo.",
+    "sentBody": "Papunta na ang wallet mo sa {{label}}. Tapusin doon.",
+    "together": "Mananatiling naka-sign in ang dalawang device.",
+    "done": "Tapos na",
+    "scanAgain": "I-scan ulit",
+    "cameraNeeded": "Payagan ang camera sa Mga Setting para ma-scan ang code.",
+    "notACode": "Hindi iyan Provian code. I-scan ang code na ipinapakita sa app.provian.ai.",
+    "wrongCodeReceive": "Ang code na ito ay para sa pagpapadala ng wallet sa computer mo. Sa computer mo, buksan ang Idagdag ang phone mo para ipakita ang tamang code.",
+    "wrongCodeSend": "Ang code na ito ay para sa pagpapadala ng wallet sa phone mo. Sa computer mo, piliin ang Mayroon na akong Provian wallet para ipakita ang tamang code.",
+    "alreadyUsed": "Na-scan na ang code na ito. Magpakita ng bagong code at i-scan ulit.",
+    "tampered": "Hindi masuri ang code na ito. Magpakita ng bagong code at i-scan ulit.",
+    "failed": "Hindi natapos ang paglipat: {{message}}",
+    "olderApp": "Sa mas lumang bersyon ng Provian app"
   }
 }

@@ -897,7 +897,7 @@
       "complianceHoldA": "L’émission est suspendue selon la politique de juridiction et votre valeur scellée est conservée. Le relais relance automatiquement les vérifications de localisation ou de sanctions non résolues. Un blocage juridictionnel suspend l’émission jusqu’à ce que la politique de la juridiction d’origine autorise sa libération ; elle se fait alors automatiquement lors du règlement normal, à la valeur scellée d’origine, sans nouveau calcul. Une juridiction différée suit sa procédure de libération progressive. Une adresse correspondant à la liste SDN de l’OFAC entraîne un refus définitif et aucune émission ; ce n’est pas une suspension temporaire. Vous pouvez toujours enregistrer des preuves pendant la suspension.",
       "complianceHold": "Pourquoi mon reçu indique-t-il « Émission en attente » ?",
       "useInBrowser": "Puis-je utiliser Provian dans un navigateur web ?",
-      "useInBrowserA": "Oui. Ouvrez app.provian.ai sur un ordinateur : c'est la même app, le même portefeuille et le même compte que l'app mobile, et votre téléphone et votre navigateur restent connectés tous les deux. Vous la déverrouillez avec une clé d'accès (Touch ID, Windows Hello ou votre gestionnaire de mots de passe) et un PIN à 6 chiffres. Pour utiliser un seul portefeuille aux deux endroits, restaurez-le dans le navigateur depuis votre sauvegarde Google Drive ou votre phrase de récupération, ou commencez dans le navigateur et ouvrez Ajouter votre téléphone dans Sauvegarde et récupération, qui affiche votre phrase de récupération après votre clé d'accès et votre PIN. La capture de discussion ne fonctionne que dans l'app mobile."
+      "useInBrowserA": "Oui. Ouvrez app.provian.ai sur un ordinateur : c'est la même app, le même portefeuille et le même compte que l'app mobile, et votre téléphone et votre navigateur restent connectés tous les deux. Vous la déverrouillez avec une clé d'accès (Touch ID, Windows Hello ou votre gestionnaire de mots de passe) et un PIN à 6 chiffres. Pour utiliser un seul portefeuille aux deux endroits, transférez-le avec un code QR : si le portefeuille est sur votre téléphone, ouvrez J'ai déjà un portefeuille Provian sur app.provian.ai et scannez le code affiché depuis Paramètres → Sauvegarde et récupération → Ajouter un ordinateur dans l'app mobile ; si le portefeuille est dans votre navigateur, ouvrez Ajouter votre téléphone dans Sauvegarde et récupération et scannez le code affiché depuis J'ai déjà un portefeuille Provian → Depuis votre ordinateur. L'appareil qui envoie le portefeuille demande son déverrouillage et indique d'abord où va le portefeuille, et le portefeuille voyage scellé pour que seul l'appareil qui le reçoit puisse l'ouvrir. Vous pouvez aussi le restaurer depuis votre sauvegarde Google Drive ou votre phrase de récupération. La capture de discussion ne fonctionne que dans l'app mobile."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Dernière activité : {{time}}",
     "totalPEs": "Total PE : {{count}}",
     "registeredDate": "Enregistré : {{date}}",
-    "registerDevicePrompt": "Enregistrez un outil de codage afin que son travail soit observé : chaque session laisse un PE que vous possédez et votre travail génère du PVT.",
+    "registerDevicePrompt": "Enregistrez un outil de codage afin que son travail soit observé : chaque commit laisse un PE que vous possédez et votre travail génère du PVT.",
     "commonsTitle": "Les Communs",
     "commonsDesc": "Profils, forum, répertoire et emplois",
     "never": "Jamais",
@@ -5424,6 +5424,7 @@
       "title": "Ouvrez votre portefeuille",
       "presenceTitle": "Confirmez que c'est bien vous",
       "revealTitle": "Affichez votre phrase de récupération",
+      "moveTitle": "Déplacez votre portefeuille",
       "hint": "Utilisez la clé d'accès de ce portefeuille : Touch ID, Face ID, Windows Hello ou une clé de sécurité.",
       "pinLabel": "PIN",
       "pinPlaceholder": "Votre PIN",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Votre sauvegarde Google Drive n'a pas pu être supprimée. Pour la retirer, ouvrez Google Drive sur un ordinateur, allez dans Paramètres, puis Gérer les applications, trouvez Provian et choisissez Supprimer les données d'application masquées."
     }
+  },
+  "handoff": {
+    "optionTitle": "Depuis votre ordinateur",
+    "optionDesc": "Scannez le code dans l'app web Provian sur app.provian.ai. Rien à saisir.",
+    "addComputer": "Ajouter un ordinateur",
+    "addComputerSubtitle": "Utiliser ce portefeuille dans l'app web sur app.provian.ai",
+    "scanTitleReceive": "Depuis votre ordinateur",
+    "scanBodyReceive": "Sur votre ordinateur, ouvrez votre portefeuille sur app.provian.ai et allez dans Paramètres → Sauvegarde et récupération → Ajouter votre téléphone. Scannez le code affiché.",
+    "scanTitleSend": "Ajouter un ordinateur",
+    "scanBodySend": "Sur votre ordinateur, ouvrez app.provian.ai, choisissez J'ai déjà un portefeuille Provian et scannez le code affiché.",
+    "scanButton": "Scanner le code",
+    "pointCamera": "Pointez votre caméra vers le code affiché sur votre ordinateur.",
+    "qrTitleSend": "Scannez ce code avec votre téléphone",
+    "qrBodySend": "Dans l'app Provian sur votre téléphone, appuyez sur J'ai déjà un portefeuille Provian, puis sur Depuis votre ordinateur, et scannez ce code.",
+    "qrTitleReceive": "Transférer votre portefeuille depuis votre téléphone",
+    "qrBodyReceive": "Dans l'app Provian sur votre téléphone, allez dans Paramètres → Sauvegarde et récupération → Ajouter un ordinateur, et scannez ce code.",
+    "qrAlt": "Code QR pour transférer votre portefeuille",
+    "latestApp": "Cela nécessite la dernière version de l'app Provian.",
+    "expires": "Le code fonctionne pendant 10 minutes.",
+    "expired": "Ce code a expiré.",
+    "newCode": "Afficher un nouveau code",
+    "destination": "Votre portefeuille sera transféré vers {{label}}.",
+    "source": "Votre portefeuille arrive de {{label}}.",
+    "matchCode": "Code {{code}}",
+    "matchHint": "Vérifiez que votre autre appareil affiche le même code.",
+    "confirmSend": "Envoyer mon portefeuille",
+    "confirmHintWeb": "Vous confirmerez avec votre clé d'accès et votre PIN.",
+    "confirmHintPhone": "Vous confirmerez avec {{biometric}}.",
+    "unlockReason": "Confirmez pour transférer votre portefeuille vers {{label}}",
+    "waitingForSender": "Confirmez sur {{label}} pour envoyer votre portefeuille ici.",
+    "sentBody": "Votre portefeuille est en route vers {{label}}. Terminez là-bas.",
+    "together": "Les deux appareils restent connectés.",
+    "done": "Terminé",
+    "scanAgain": "Scanner à nouveau",
+    "cameraNeeded": "Autorisez la caméra dans les Paramètres pour scanner le code.",
+    "notACode": "Ce n'est pas un code Provian. Scannez le code affiché sur app.provian.ai.",
+    "wrongCodeReceive": "Ce code sert à envoyer un portefeuille vers votre ordinateur. Sur votre ordinateur, ouvrez Ajouter votre téléphone pour afficher le bon code.",
+    "wrongCodeSend": "Ce code sert à envoyer un portefeuille vers votre téléphone. Sur votre ordinateur, choisissez J'ai déjà un portefeuille Provian pour afficher le bon code.",
+    "alreadyUsed": "Ce code a déjà été scanné. Affichez un nouveau code et scannez à nouveau.",
+    "tampered": "Ce code n'a pas pu être vérifié. Affichez un nouveau code et scannez à nouveau.",
+    "failed": "Le transfert n'a pas abouti : {{message}}",
+    "olderApp": "Sur une ancienne version de l'app Provian"
   }
 }

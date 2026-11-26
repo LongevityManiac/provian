@@ -395,6 +395,11 @@ describe('pre-launch surface gate', () => {
         '/v1/recourse/break-registrations', '/v1/recourse/break-registrations/:id',
         '/v1/recourse/break-restorations', '/v1/recourse/break-restorations/:id',
         '/v1/recourse/break-restorations/:id/receipt',
+        // QR wallet handoff between the phone app and the web app: the receiving device has no
+        // relay credential yet. The relay carries only ciphertext sealed to the receiver's one-time
+        // key, behind per-session bearer tokens it stores only as hashes; a session expires after
+        // ten minutes and is deleted when taken. Rate-limited per IP.
+        '/v1/handoff',
 
         // (2) the agent rail opened by
         '/v1/agent/wallet', '/v1/pe/propose-type',

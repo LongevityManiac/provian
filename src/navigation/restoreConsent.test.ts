@@ -44,7 +44,16 @@ describe('restoreEntry', () => {
 const START_HANDLERS = [
   "    const handleCloudRecovery = () => startRestore('CloudRecovery');",
   "    const handleSeedPhraseRecovery = () => startRestore('ImportRecoveryPhrase');",
+  "    const handleFromComputer = () => startRestore('HandoffScan');",
+  '    const handleReceivedFromPhone = (restoredMnemonic: string) => restoreReceivedPhrase(restoredMnemonic);',
 ];
+const RECEIVED_ROUTER = [
+  '    const restoreReceivedPhrase = (restoredMnemonic: string) => {',
+  "        const entry = restoreEntry('ImportRecoveryPhrase', legalAccepted);",
+  "        if (entry.screen === 'Consent') navigation.navigate('Consent', { ...entry.params, restoredMnemonic });",
+  '        else navigation.navigate(entry.screen, { restoredMnemonic });',
+  '    };',
+].join('\n');
 const START_ROUTER = [
   '    const startRestore = (method: RestoreMethod) => {',
   '        const entry = restoreEntry(method, legalAccepted);',
@@ -55,6 +64,8 @@ const START_ROUTER = [
 const CONSENT_ACCEPT = [
   '                        acceptTos();',
   "                        if (review) navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });",
+  '                        // A phrase the web app already received (the QR handoff) goes on to the restore.',
+  "                        else if (restoreNext === 'ImportRecoveryPhrase' && typeof route?.params?.restoredMnemonic === 'string') navigation.replace(restoreNext, { restoredMnemonic: route.params.restoredMnemonic });",
   '                        else if (restoreNext) navigation.replace(restoreNext);',
   "                        else navigation.navigate('BiometricSetup');",
 ].join('\n');
@@ -63,6 +74,7 @@ function startViolations(src: string): string[] {
   const out: string[] = [];
   for (const h of START_HANDLERS) if (!src.includes(h)) out.push('a restore choice skips the acknowledgements');
   if (!src.includes(START_ROUTER)) out.push('the restore router does not check acceptance');
+  if (!src.includes(RECEIVED_ROUTER)) out.push('the restore router does not check acceptance');
   if (!src.includes('useWalletStore(selectLegalAcceptanceCurrent)')) out.push('the restore router does not read acceptance');
   if (/navigate\(\s*'(?:CloudRecovery|ImportRecoveryPhrase)'/.test(src)) out.push('a restore choice skips the acknowledgements');
   return out;
@@ -103,6 +115,16 @@ describe('restore wiring', () => {
     const mutated = START.replace("startRestore('CloudRecovery')", "navigation.navigate('CloudRecovery')");
     expect(mutated).not.toBe(START);
     expect(startViolations(mutated)).toContain('a restore choice skips the acknowledgements');
+  });
+
+  it('RED: a phrase received over the QR code that skips the acknowledgements is caught', () => {
+    const mutated = START.replace('    const handleReceivedFromPhone = (restoredMnemonic: string) => restoreReceivedPhrase(restoredMnemonic);',
+      "    const handleReceivedFromPhone = (restoredMnemonic: string) => navigation.navigate('ImportRecoveryPhrase', { restoredMnemonic });");
+    expect(mutated).not.toBe(START);
+    expect(startViolations(mutated)).toContain('a restore choice skips the acknowledgements');
+    const ignoring = START.replace("        const entry = restoreEntry('ImportRecoveryPhrase', legalAccepted);", "        const entry = restoreEntry('ImportRecoveryPhrase', true);");
+    expect(ignoring).not.toBe(START);
+    expect(startViolations(ignoring)).toContain('the restore router does not check acceptance');
   });
 
   it('RED: a router that ignores acceptance is caught', () => {

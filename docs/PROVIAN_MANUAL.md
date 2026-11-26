@@ -1580,7 +1580,13 @@ recovery phrase, or a passkey backup — the seed sealed in the browser under HK
 stored by the relay with the passkey's public key and the wallet address, released only against a
 fresh user-verified passkey assertion on a single-use challenge, and erased by Delete All Data.
 Each browser signs in to the relay with its own device credential, so a phone and a browser stay
-signed in together. The device key in the browser is a software P-256 key, so a browser's PEs
+signed in together. A wallet moves between the phone app and the web app by QR code in either
+direction: the web app shows the code (the relay session id and a 32-byte secret that never reaches
+the relay), the phone scans it, the receiving device sends a one-time X25519 key MAC'd under that
+secret, both screens show a six-digit match code, and the sending device, after its own unlock and
+showing the destination, seals the seed to that key (X25519 + HKDF-SHA256 salted with the secret →
+AES-256-GCM). The relay (`/v1/handoff`) holds only ciphertext and deletes the session at pickup,
+cancel or ten minutes. The device key in the browser is a software P-256 key, so a browser's PEs
 carry the software tier.
 
 **Recovery on a new device.** There are no guardians, no Shamir shares, no on-chain signer

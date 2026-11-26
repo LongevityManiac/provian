@@ -898,7 +898,7 @@
       "complianceHoldA": "根据司法辖区政策，铸币暂缓，您的封存价值保持不变。中继会自动重试尚未完成的位置或制裁筛查。司法辖区封锁会暂缓铸币，直到原司法辖区的政策允许解除；届时将按原封存价值通过正常结算自动铸币，不重新定价。递延辖区遵循其分阶段释放流程。钱包地址命中OFAC的SDN名单属于终局拒绝，不会铸币，并非临时暂缓。铸币暂缓期间，您仍可记录证明。",
       "complianceHold": "为什么我的凭证显示“铸币暂缓”？",
       "useInBrowser": "我可以在网页浏览器中使用 Provian 吗？",
-      "useInBrowserA": "可以。在电脑上打开 app.provian.ai：它与手机应用是同一个应用、钱包和账户，你的手机和浏览器会同时保持登录。你用通行密钥（Touch ID、Windows Hello 或你的密码管理器）和 6 位 PIN 解锁。要在两处使用同一个钱包，可以在浏览器中从你的 Google Drive 备份或恢复助记词恢复；也可以先在浏览器中开始，然后在“备份与恢复”中打开“添加你的手机”，验证通行密钥和 PIN 后会显示你的恢复助记词。聊天捕获只在手机应用中运行。"
+      "useInBrowserA": "可以。在电脑上打开 app.provian.ai：它与手机应用是同一个应用、钱包和账户，你的手机和浏览器会同时保持登录。你用通行密钥（Touch ID、Windows Hello 或你的密码管理器）和 6 位 PIN 解锁。要在两处使用同一个钱包，可以用 QR 码转移：如果钱包在手机上，在 app.provian.ai 打开“我已经有一个 Provian 钱包”，然后在手机应用的“设置 → 备份与恢复 → 添加电脑”中扫描它的二维码；如果钱包在浏览器中，在“备份与恢复”中打开“添加你的手机”，然后在“我已经有一个 Provian 钱包 → 从你的电脑”中扫描它的二维码。发送钱包的设备会先要求解锁，并显示钱包要去往哪里；钱包以密封方式传输，只有接收设备能打开。你也可以从你的 Google Drive 备份或恢复助记词恢复。聊天捕获只在手机应用中运行。"
     }
   },
   "developer": {
@@ -1509,7 +1509,7 @@
     "lastActive": "上次活跃：{{time}}",
     "totalPEs": "PE 总数：{{count}}",
     "registeredDate": "注册时间：{{date}}",
-    "registerDevicePrompt": "注册一个编码工具，以便见证其工作：每次会话都会留下您拥有的 PE，并且您的工作会铸造 PVT。",
+    "registerDevicePrompt": "注册一个编码工具，以便见证其工作：每次提交都会留下您拥有的 PE，并且您的工作会铸造 PVT。",
     "commonsTitle": "公共空间",
     "commonsDesc": "个人主页、论坛、名录和工作",
     "never": "从未",
@@ -5425,6 +5425,7 @@
       "title": "打开你的钱包",
       "presenceTitle": "确认是你本人",
       "revealTitle": "显示你的恢复助记词",
+      "moveTitle": "转移你的钱包",
       "hint": "使用此钱包的通行密钥：Touch ID、Face ID、Windows Hello 或安全密钥。",
       "pinLabel": "PIN",
       "pinPlaceholder": "你的 PIN",
@@ -5523,5 +5524,47 @@
     "deleteData": {
       "driveNotDeleted": "无法删除你的 Google 云端硬盘备份。如需删除，请在电脑上打开 Google 云端硬盘，依次进入“设置”和“管理应用”，找到 Provian，然后选择“删除隐藏的应用数据”。"
     }
+  },
+  "handoff": {
+    "optionTitle": "从你的电脑",
+    "optionDesc": "扫描 app.provian.ai 上 Provian 网页应用中的二维码。无需输入任何内容。",
+    "addComputer": "添加电脑",
+    "addComputerSubtitle": "在 app.provian.ai 的网页应用中使用这个钱包",
+    "scanTitleReceive": "从你的电脑",
+    "scanBodyReceive": "在电脑上打开 app.provian.ai 中的钱包，前往“设置 → 备份与恢复 → 添加你的手机”。扫描它显示的二维码。",
+    "scanTitleSend": "添加电脑",
+    "scanBodySend": "在电脑上打开 app.provian.ai，选择“我已经有一个 Provian 钱包”，然后扫描它显示的二维码。",
+    "scanButton": "扫描二维码",
+    "pointCamera": "将相机对准电脑上显示的二维码。",
+    "qrTitleSend": "用你的手机扫描此二维码",
+    "qrBodySend": "在手机上的 Provian 应用中，点按“我已经有一个 Provian 钱包”，再点按“从你的电脑”，然后扫描此二维码。",
+    "qrTitleReceive": "从手机转移你的钱包",
+    "qrBodyReceive": "在手机上的 Provian 应用中，前往“设置 → 备份与恢复 → 添加电脑”，然后扫描此二维码。",
+    "qrAlt": "用于转移钱包的 QR 码",
+    "latestApp": "这需要最新版本的 Provian 应用。",
+    "expires": "此二维码在 10 分钟内有效。",
+    "expired": "此二维码已过期。",
+    "newCode": "显示新的二维码",
+    "destination": "你的钱包将转移到 {{label}}。",
+    "source": "你的钱包来自 {{label}}。",
+    "matchCode": "代码 {{code}}",
+    "matchHint": "请确认你的另一台设备显示相同的代码。",
+    "confirmSend": "发送我的钱包",
+    "confirmHintWeb": "你将用通行密钥和 PIN 确认。",
+    "confirmHintPhone": "你将用 {{biometric}} 确认。",
+    "unlockReason": "确认将你的钱包转移到 {{label}}",
+    "waitingForSender": "请在 {{label}} 上确认，把你的钱包发送到这里。",
+    "sentBody": "你的钱包正在发送到 {{label}}。请在那里完成。",
+    "together": "两台设备都会保持登录。",
+    "done": "完成",
+    "scanAgain": "重新扫描",
+    "cameraNeeded": "请在设置中允许使用相机，以扫描二维码。",
+    "notACode": "这不是 Provian 的二维码。请扫描 app.provian.ai 上显示的二维码。",
+    "wrongCodeReceive": "此二维码用于把钱包发送到你的电脑。请在电脑上打开“添加你的手机”，显示正确的二维码。",
+    "wrongCodeSend": "此二维码用于把钱包发送到你的手机。请在电脑上选择“我已经有一个 Provian 钱包”，显示正确的二维码。",
+    "alreadyUsed": "此二维码已被扫描过。请显示新的二维码，然后重新扫描。",
+    "tampered": "无法核验此二维码。请显示新的二维码，然后重新扫描。",
+    "failed": "钱包转移未完成：{{message}}",
+    "olderApp": "使用旧版 Provian 应用时"
   }
 }

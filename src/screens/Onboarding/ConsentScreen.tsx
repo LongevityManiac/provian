@@ -151,6 +151,8 @@ const ConsentScreen = ({ navigation, route }: any) => {
                         // (link above) and is not required to continue.
                         acceptTos();
                         if (review) navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+                        // A phrase the web app already received (the QR handoff) goes on to the restore.
+                        else if (restoreNext === 'ImportRecoveryPhrase' && typeof route?.params?.restoredMnemonic === 'string') navigation.replace(restoreNext, { restoredMnemonic: route.params.restoredMnemonic });
                         else if (restoreNext) navigation.replace(restoreNext);
                         else navigation.navigate('BiometricSetup');
                     }}

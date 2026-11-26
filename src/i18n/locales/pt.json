@@ -897,7 +897,7 @@
       "complianceHoldA": "A emissão está retida pela política de jurisdição, e seu valor selado é preservado. O relay repete automaticamente as verificações de localização ou sanções ainda não resolvidas. Um bloqueio jurisdicional retém a emissão até que a política da jurisdição original permita a liberação; então ela ocorre automaticamente na liquidação normal, pelo valor selado original, sem recalcular. Uma jurisdição diferida segue seu processo de liberação gradual. Uma correspondência de endereço na lista SDN da OFAC é uma recusa definitiva e não gera emissão; não é uma retenção temporária. Você pode continuar registrando provas enquanto a emissão está retida.",
       "complianceHold": "Por que meu recibo mostra “Emissão retida”?",
       "useInBrowser": "Posso usar a Provian em um navegador web?",
-      "useInBrowserA": "Sim. Abra app.provian.ai em um computador: é o mesmo app, a mesma carteira e a mesma conta do app para telefone, e seu telefone e seu navegador continuam conectados ao mesmo tempo. Você o desbloqueia com uma chave de acesso (Touch ID, Windows Hello ou seu gerenciador de senhas) e um PIN de 6 dígitos. Para usar uma só carteira nos dois lugares, restaure-a no navegador a partir do seu backup do Google Drive ou da sua frase de recuperação, ou comece no navegador e abra Adicionar seu telefone em Backup e recuperação, que mostra sua frase de recuperação depois da sua chave de acesso e do seu PIN. A captura de chat só funciona no app para telefone."
+      "useInBrowserA": "Sim. Abra app.provian.ai em um computador: é o mesmo app, a mesma carteira e a mesma conta do app para telefone, e seu telefone e seu navegador continuam conectados ao mesmo tempo. Você o desbloqueia com uma chave de acesso (Touch ID, Windows Hello ou seu gerenciador de senhas) e um PIN de 6 dígitos. Para usar uma só carteira nos dois lugares, transfira-a com um código QR: com a carteira no seu telefone, abra Já tenho uma carteira Provian em app.provian.ai e escaneie o código exibido usando Configurações → Backup e recuperação → Adicionar um computador no app para telefone; com a carteira no seu navegador, abra Adicionar seu telefone em Backup e recuperação e escaneie o código exibido usando Já tenho uma carteira Provian → Do seu computador. O dispositivo que envia a carteira pede o próprio desbloqueio e mostra antes para onde a carteira vai, e a carteira viaja selada para que só o dispositivo que a recebe consiga abri-la. Você também pode restaurá-la a partir do seu backup do Google Drive ou da sua frase de recuperação. A captura de chat só funciona no app para telefone."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Última atividade: {{time}}",
     "totalPEs": "Total de PEs: {{count}}",
     "registeredDate": "Registrado: {{date}}",
-    "registerDevicePrompt": "Registre uma ferramenta de codificação para que seu trabalho seja testemunhado: cada sessão deixa um PE que você possui e seu trabalho gera PVT.",
+    "registerDevicePrompt": "Registre uma ferramenta de codificação para que seu trabalho seja testemunhado: cada commit deixa um PE que você possui e seu trabalho gera PVT.",
     "commonsTitle": "O Commons",
     "commonsDesc": "Perfis, fórum, diretório e trabalhos",
     "never": "Nunca",
@@ -5424,6 +5424,7 @@
       "title": "Abra sua carteira",
       "presenceTitle": "Confirme que é você",
       "revealTitle": "Mostre sua frase de recuperação",
+      "moveTitle": "Mova sua carteira",
       "hint": "Use a chave de acesso desta carteira: Touch ID, Face ID, Windows Hello ou uma chave de segurança.",
       "pinLabel": "PIN",
       "pinPlaceholder": "Seu PIN",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Não foi possível excluir seu backup no Google Drive. Para removê-lo, abra o Google Drive em um computador, vá em Configurações e depois em Gerenciar apps, encontre o Provian e escolha Excluir dados ocultos do app."
     }
+  },
+  "handoff": {
+    "optionTitle": "Do seu computador",
+    "optionDesc": "Escaneie o código no app web da Provian em app.provian.ai. Nada para digitar.",
+    "addComputer": "Adicionar um computador",
+    "addComputerSubtitle": "Use esta carteira no app web em app.provian.ai",
+    "scanTitleReceive": "Do seu computador",
+    "scanBodyReceive": "No seu computador, abra sua carteira em app.provian.ai e vá em Configurações → Backup e recuperação → Adicionar seu telefone. Escaneie o código exibido.",
+    "scanTitleSend": "Adicionar um computador",
+    "scanBodySend": "No seu computador, abra app.provian.ai, escolha Já tenho uma carteira Provian e escaneie o código exibido.",
+    "scanButton": "Escanear o código",
+    "pointCamera": "Aponte a câmera para o código no seu computador.",
+    "qrTitleSend": "Escaneie este código com seu telefone",
+    "qrBodySend": "No app da Provian no seu telefone, toque em Já tenho uma carteira Provian, depois em Do seu computador, e escaneie este código.",
+    "qrTitleReceive": "Transfira sua carteira do seu telefone",
+    "qrBodyReceive": "No app da Provian no seu telefone, vá em Configurações → Backup e recuperação → Adicionar um computador e escaneie este código.",
+    "qrAlt": "Código QR para transferir sua carteira",
+    "latestApp": "Isso requer a versão mais recente do app da Provian.",
+    "expires": "O código funciona por 10 minutos.",
+    "expired": "Este código expirou.",
+    "newCode": "Mostrar um novo código",
+    "destination": "Sua carteira será transferida para {{label}}.",
+    "source": "Sua carteira está vindo de {{label}}.",
+    "matchCode": "Código {{code}}",
+    "matchHint": "Verifique se o seu outro dispositivo mostra o mesmo código.",
+    "confirmSend": "Enviar minha carteira",
+    "confirmHintWeb": "Você vai confirmar com sua chave de acesso e seu PIN.",
+    "confirmHintPhone": "Você vai confirmar com {{biometric}}.",
+    "unlockReason": "Confirme para transferir sua carteira para {{label}}",
+    "waitingForSender": "Confirme em {{label}} para enviar sua carteira para cá.",
+    "sentBody": "Sua carteira está a caminho de {{label}}. Conclua lá.",
+    "together": "Os dois dispositivos continuam conectados.",
+    "done": "Concluído",
+    "scanAgain": "Escanear novamente",
+    "cameraNeeded": "Permita a câmera em Configurações para escanear o código.",
+    "notACode": "Esse não é um código da Provian. Escaneie o código exibido em app.provian.ai.",
+    "wrongCodeReceive": "Este código serve para enviar uma carteira para o seu computador. No seu computador, abra Adicionar seu telefone para mostrar o código certo.",
+    "wrongCodeSend": "Este código serve para enviar uma carteira para o seu telefone. No seu computador, escolha Já tenho uma carteira Provian para mostrar o código certo.",
+    "alreadyUsed": "Este código já foi escaneado. Mostre um novo código e escaneie novamente.",
+    "tampered": "Não foi possível verificar este código. Mostre um novo código e escaneie novamente.",
+    "failed": "A transferência não foi concluída: {{message}}",
+    "olderApp": "Em uma versão mais antiga do app da Provian"
   }
 }

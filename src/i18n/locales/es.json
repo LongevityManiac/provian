@@ -897,7 +897,7 @@
       "complianceHoldA": "La emisión está retenida por la política de jurisdicción y tu valor sellado se conserva. El relay reintenta automáticamente las comprobaciones de ubicación o sanciones pendientes. Un bloqueo jurisdiccional retiene la emisión hasta que la política de la jurisdicción original permita liberarla; entonces se emite automáticamente mediante la liquidación habitual al valor sellado original, sin recalcularlo. Una jurisdicción diferida sigue su vía de liberación gradual. Una coincidencia de dirección en la lista SDN de OFAC es una denegación definitiva y no emite; no es una retención temporal. Puedes seguir registrando pruebas mientras la emisión esté retenida.",
       "complianceHold": "¿Por qué mi recibo dice «Emisión retenida»?",
       "useInBrowser": "¿Puedo usar Provian en un navegador web?",
-      "useInBrowserA": "Sí. Abre app.provian.ai en una computadora: es la misma app, billetera y cuenta que la app del teléfono, y tu teléfono y tu navegador mantienen la sesión iniciada a la vez. La desbloqueas con una llave de acceso (Touch ID, Windows Hello o tu gestor de contraseñas) y un PIN de 6 dígitos. Para usar una sola billetera en ambos lugares, restáurala en el navegador desde tu respaldo de Google Drive o con tu frase de recuperación, o empieza en el navegador y abre Agregar tu teléfono en Respaldo y recuperación, que muestra tu frase de recuperación después de tu llave de acceso y tu PIN. La captura de chat solo funciona en la app del teléfono."
+      "useInBrowserA": "Sí. Abre app.provian.ai en una computadora: es la misma app, billetera y cuenta que la app del teléfono, y tu teléfono y tu navegador mantienen la sesión iniciada a la vez. La desbloqueas con una llave de acceso (Touch ID, Windows Hello o tu gestor de contraseñas) y un PIN de 6 dígitos. Para usar una sola billetera en ambos lugares, muévela con un código QR: si la billetera está en tu teléfono, abre Ya tengo una billetera Provian en app.provian.ai y escanea el código que aparece desde Configuración → Respaldo y recuperación → Agregar una computadora en la app del teléfono; si la billetera está en tu navegador, abre Agregar tu teléfono en Respaldo y recuperación y escanea el código que aparece desde Ya tengo una billetera Provian → Desde tu computadora. El dispositivo que envía la billetera pide su desbloqueo y primero muestra adónde va la billetera, y la billetera viaja sellada para que solo el dispositivo que la recibe pueda abrirla. También puedes restaurarla desde tu respaldo de Google Drive o con tu frase de recuperación. La captura de chat solo funciona en la app del teléfono."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Última actividad: {{time}}",
     "totalPEs": "PEs totales: {{count}}",
     "registeredDate": "Registrado: {{date}}",
-    "registerDevicePrompt": "Registre una herramienta de codificación para que su trabajo sea testigo: cada sesión deja un PE de su propiedad y su trabajo genera un PVT.",
+    "registerDevicePrompt": "Registre una herramienta de codificación para que su trabajo sea testigo: cada commit deja un PE de su propiedad y su trabajo genera un PVT.",
     "commonsTitle": "El Commons",
     "commonsDesc": "Perfiles, foro, directorio y trabajos",
     "never": "Nunca",
@@ -5424,6 +5424,7 @@
       "title": "Abre tu billetera",
       "presenceTitle": "Confirma que eres tú",
       "revealTitle": "Muestra tu frase de recuperación",
+      "moveTitle": "Mueve tu billetera",
       "hint": "Usa la llave de acceso de esta billetera: Touch ID, Face ID, Windows Hello o una llave de seguridad.",
       "pinLabel": "PIN",
       "pinPlaceholder": "Tu PIN",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "No se pudo eliminar tu respaldo de Google Drive. Para quitarlo, abre Google Drive en una computadora, ve a Configuración y luego a Administrar apps, busca Provian y elige Borrar datos ocultos de la app."
     }
+  },
+  "handoff": {
+    "optionTitle": "Desde tu computadora",
+    "optionDesc": "Escanea el código en la app web de Provian en app.provian.ai. No hay nada que escribir.",
+    "addComputer": "Agregar una computadora",
+    "addComputerSubtitle": "Usa esta billetera en la app web en app.provian.ai",
+    "scanTitleReceive": "Desde tu computadora",
+    "scanBodyReceive": "En tu computadora, abre tu billetera en app.provian.ai y ve a Configuración → Respaldo y recuperación → Agregar tu teléfono. Escanea el código que aparece.",
+    "scanTitleSend": "Agregar una computadora",
+    "scanBodySend": "En tu computadora, abre app.provian.ai, elige Ya tengo una billetera Provian y escanea el código que aparece.",
+    "scanButton": "Escanear el código",
+    "pointCamera": "Apunta la cámara al código en tu computadora.",
+    "qrTitleSend": "Escanea este código con tu teléfono",
+    "qrBodySend": "En la app de Provian en tu teléfono, toca Ya tengo una billetera Provian, luego Desde tu computadora, y escanea este código.",
+    "qrTitleReceive": "Mueve tu billetera desde tu teléfono",
+    "qrBodyReceive": "En la app de Provian en tu teléfono, ve a Configuración → Respaldo y recuperación → Agregar una computadora y escanea este código.",
+    "qrAlt": "Código QR para mover tu billetera",
+    "latestApp": "Esto requiere la versión más reciente de la app de Provian.",
+    "expires": "El código funciona durante 10 minutos.",
+    "expired": "Este código caducó.",
+    "newCode": "Mostrar un código nuevo",
+    "destination": "Tu billetera se moverá a {{label}}.",
+    "source": "Tu billetera viene de {{label}}.",
+    "matchCode": "Código {{code}}",
+    "matchHint": "Comprueba que tu otro dispositivo muestre el mismo código.",
+    "confirmSend": "Enviar mi billetera",
+    "confirmHintWeb": "Confirmarás con tu llave de acceso y tu PIN.",
+    "confirmHintPhone": "Confirmarás con {{biometric}}.",
+    "unlockReason": "Confirma para mover tu billetera a {{label}}",
+    "waitingForSender": "Confirma en {{label}} para enviar tu billetera aquí.",
+    "sentBody": "Tu billetera va en camino a {{label}}. Termina allí.",
+    "together": "Ambos dispositivos mantienen la sesión iniciada.",
+    "done": "Listo",
+    "scanAgain": "Escanear de nuevo",
+    "cameraNeeded": "Permite la cámara en Configuración para escanear el código.",
+    "notACode": "Ese no es un código de Provian. Escanea el código que aparece en app.provian.ai.",
+    "wrongCodeReceive": "Este código es para enviar una billetera a tu computadora. En tu computadora, abre Agregar tu teléfono para mostrar el código correcto.",
+    "wrongCodeSend": "Este código es para enviar una billetera a tu teléfono. En tu computadora, elige Ya tengo una billetera Provian para mostrar el código correcto.",
+    "alreadyUsed": "Este código ya se escaneó. Muestra un código nuevo y escanea de nuevo.",
+    "tampered": "No se pudo verificar este código. Muestra un código nuevo y escanea de nuevo.",
+    "failed": "El traslado no terminó: {{message}}",
+    "olderApp": "En una versión anterior de la app de Provian"
   }
 }

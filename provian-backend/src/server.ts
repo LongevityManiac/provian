@@ -92,6 +92,7 @@ import { readNetworkMeter24h } from './core/meter/actor-meter-totals';
 import { deleteUserRelayData } from './core/wallet/delete-user-data';
 import { commitRecoveryCredential, parseCredentialScope, resolveWalletAuthSecret, listDeviceSessions, revokeDeviceAuthSecret } from './core/wallet/device-auth-secrets';
 import { createPasskeyBackupRouter } from './routes/passkey-backup';
+import { createWalletHandoffRouter } from './routes/wallet-qr-move';
 import { endHumanBeneficiaryLinks } from './core/agent-wallet/end-human-beneficiary-links';
 import { invalidateDeviceCache } from './routes/middleware/device-auth';
 import { leaveCommons } from './core/commons/profiles';
@@ -1802,6 +1803,8 @@ app.post('/v1/users/recover', async (req: Request, res: Response) => {
  * The web app's passkey backups of a wallet seed (routes/passkey-backup.ts).
  */
 app.use('/v1/passkey-backup', createPasskeyBackupRouter({ db, cache, authenticate }));
+// Moving a wallet between the phone app and the web app with a QR code: a mailbox for ciphertext.
+app.use('/v1/handoff', createWalletHandoffRouter({ db, cache }));
 
 /**
  * GET /v1/users/sessions — the devices signed in to this account with their own credential

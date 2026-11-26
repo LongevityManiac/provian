@@ -173,8 +173,17 @@ describe('the PIN for showing the recovery phrase', () => {
     it('is bound to the reveal action, so another action queued first cannot use it up (RED)', async () => {
         const unlock = await import('../unlockRequests');
         unlock.requirePinForAction('Show recovery phrase');
-        expect(unlock.takePinForAction('Sign a transaction')).toBe(false);
-        expect(unlock.takePinForAction('Show recovery phrase')).toBe(true);
-        expect(unlock.takePinForAction('Show recovery phrase')).toBe(false);
+        expect(unlock.takePinForAction('Sign a transaction')).toBeNull();
+        expect(unlock.takePinForAction('Show recovery phrase')).toBe('reveal');
+        expect(unlock.takePinForAction('Show recovery phrase')).toBeNull();
+    });
+
+    it('names what it is for: moving the wallet by QR code asks under its own title', async () => {
+        const unlock = await import('../unlockRequests');
+        unlock.requirePinForAction('Move to iPhone', 'move');
+        unlock.requirePinForAction('Move to iPhone');
+        expect(unlock.takePinForAction('Move to iPhone')).toBe('move');
+        expect(unlock.takePinForAction('Move to iPhone')).toBe('reveal');
+        expect(unlock.takePinForAction('Move to iPhone')).toBeNull();
     });
 });

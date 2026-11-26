@@ -1,10 +1,12 @@
 /**
  * AddYourPhoneScreen (web app): put the same wallet on a phone.
  *
- * Install Provian, tap "I already have a wallet", choose the recovery phrase, and type the words
- * this page shows (after the passkey AND the PIN, as the phone asks for Face ID). On Android a
- * Google Drive backup restores too. The phone signs in with its own credential and this browser
- * stays signed in beside it.
+ * It leads with the QR code: in the latest Provian app, "I already have a Provian wallet" → "From
+ * your computer" scans it, this browser shows the phone and the match code, the person confirms
+ * with the passkey and PIN, and the wallet moves over sealed (HandoffQrPanel). Below it, for a phone
+ * on an older version: install Provian, choose the recovery phrase, and type the words this page
+ * shows (after the passkey AND the PIN). On Android a Google Drive backup restores too. The phone
+ * signs in beside this browser; neither signs the other out.
  */
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Linking } from 'react-native';
@@ -18,6 +20,7 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import { MnemonicExportService } from '../../core/wallet/export/MnemonicExportService';
 import { useSensitiveDisplay } from '../../hooks/useSensitiveDisplay';
 import { useWalletStore } from '../../store/walletStore';
+import HandoffQrPanel from '../../components/HandoffQrPanel';
 
 export const DOWNLOAD_URL = 'https://provian.ai/download';
 export const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.provian.wallet';
@@ -25,6 +28,7 @@ export const PLAY_URL = 'https://play.google.com/store/apps/details?id=com.provi
 export default function AddYourPhoneScreen({ navigation }: { navigation: { goBack(): void; canGoBack(): boolean; navigate(name: string): void } }): React.ReactElement {
     const { t } = useTranslation();
     const onboarded = useWalletStore(s => s.onboardingComplete);
+    const walletAddress = useWalletStore(s => s.address);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { value: phrase, reveal, hide } = useSensitiveDisplay({ ttlSeconds: 300 });
@@ -64,6 +68,9 @@ export default function AddYourPhoneScreen({ navigation }: { navigation: { goBac
                 <Text style={styles.title} accessibilityRole="header">{t('webApp.addPhone.title')}</Text>
                 <Text style={styles.body}>{t('webApp.addPhone.body')}</Text>
 
+                {onboarded && <HandoffQrPanel mode="send" walletAddress={walletAddress} />}
+
+                <Text style={styles.sectionTitle}>{t('handoff.olderApp')}</Text>
                 {step(1, t('webApp.addPhone.step1Title'), t('webApp.addPhone.step1Body'))}
                 <View style={styles.links}>
                     <ActionTouchable style={styles.linkButton} onPress={() => { void Linking.openURL(DOWNLOAD_URL); }}>
@@ -115,6 +122,7 @@ const styles = StyleSheet.create({
     icon: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: SPACING.l },
     title: { color: COLORS.chrome, fontSize: 26, fontFamily: 'Inter_700Bold', textAlign: 'center', marginBottom: SPACING.s },
     body: { color: COLORS.chromeMuted, fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: SPACING.xl },
+    sectionTitle: { color: COLORS.chrome, fontSize: 17, fontFamily: 'Inter_600SemiBold', marginBottom: SPACING.m, marginTop: SPACING.s },
     step: { flexDirection: 'row', marginBottom: SPACING.m },
     stepNumber: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginRight: SPACING.m },
     stepNumberText: { color: COLORS.primary, fontFamily: 'Inter_700Bold' },

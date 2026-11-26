@@ -897,7 +897,7 @@
       "complianceHoldA": "Pencetakan ditahan berdasarkan kebijakan yurisdiksi, dan nilai tersegel Anda tetap disimpan. Relay otomatis mengulangi pemeriksaan lokasi atau sanksi yang belum terselesaikan. Pemblokiran yurisdiksi menahan pencetakan sampai kebijakan yurisdiksi asal mengizinkan pelepasan; kemudian pencetakan berlangsung otomatis melalui penyelesaian normal dengan nilai tersegel semula, tanpa penilaian ulang. Yurisdiksi yang ditangguhkan mengikuti proses pelepasan bertahapnya. Kecocokan alamat dalam daftar SDN OFAC merupakan penolakan final dan tidak mencetak; ini bukan penahanan sementara. Anda tetap dapat mencatat bukti selama pencetakan ditahan.",
       "complianceHold": "Mengapa tanda terima saya bertuliskan “Pencetakan ditahan”?",
       "useInBrowser": "Bisakah saya menggunakan Provian di browser web?",
-      "useInBrowserA": "Ya. Buka app.provian.ai di komputer: ini adalah aplikasi, dompet, dan akun yang sama dengan aplikasi ponsel, dan ponsel serta browser Anda tetap masuk bersama. Anda membukanya dengan passkey (Touch ID, Windows Hello, atau pengelola kata sandi Anda) dan PIN 6 digit. Untuk menggunakan satu dompet di kedua tempat, pulihkan dompet di browser dari cadangan Google Drive atau frasa pemulihan Anda, atau mulai di browser lalu buka Tambahkan ponsel Anda di Pencadangan dan Pemulihan, yang menampilkan frasa pemulihan Anda setelah passkey dan PIN. Perekaman obrolan hanya berjalan di aplikasi ponsel."
+      "useInBrowserA": "Ya. Buka app.provian.ai di komputer: ini adalah aplikasi, dompet, dan akun yang sama dengan aplikasi ponsel, dan ponsel serta browser Anda tetap masuk bersama. Anda membukanya dengan passkey (Touch ID, Windows Hello, atau pengelola kata sandi Anda) dan PIN 6 digit. Untuk menggunakan satu dompet di kedua tempat, pindahkan dompet dengan kode QR: jika dompet ada di ponsel Anda, buka Saya sudah memiliki dompet Provian di app.provian.ai dan pindai kodenya melalui Pengaturan → Pencadangan dan Pemulihan → Tambahkan komputer di aplikasi ponsel; jika dompet ada di browser Anda, buka Tambahkan ponsel Anda di Pencadangan dan Pemulihan dan pindai kodenya melalui Saya sudah memiliki dompet Provian → Dari komputer Anda. Perangkat yang mengirim dompet meminta Anda membuka kuncinya dan terlebih dahulu menampilkan ke mana dompet akan dikirim, dan dompet dikirim dalam keadaan tersegel sehingga hanya perangkat penerima yang dapat membukanya. Anda juga dapat memulihkan dari cadangan Google Drive atau frasa pemulihan Anda. Perekaman obrolan hanya berjalan di aplikasi ponsel."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Terakhir aktif: {{time}}",
     "totalPEs": "Total PE: {{count}}",
     "registeredDate": "Terdaftar: {{date}}",
-    "registerDevicePrompt": "Daftarkan alat pengkodean sehingga pekerjaannya dapat dilihat: setiap sesi meninggalkan PE yang Anda miliki, dan pekerjaan Anda mencetak PVT.",
+    "registerDevicePrompt": "Daftarkan alat pengkodean sehingga pekerjaannya dapat dilihat: setiap commit meninggalkan PE yang Anda miliki, dan pekerjaan Anda mencetak PVT.",
     "commonsTitle": "Commons",
     "commonsDesc": "Profil, forum, direktori, dan pekerjaan",
     "never": "Belum Pernah",
@@ -5424,6 +5424,7 @@
       "title": "Buka dompet Anda",
       "presenceTitle": "Konfirmasi bahwa ini Anda",
       "revealTitle": "Tampilkan frasa pemulihan Anda",
+      "moveTitle": "Pindahkan dompet Anda",
       "hint": "Gunakan passkey dompet ini: Touch ID, Face ID, Windows Hello, atau kunci keamanan.",
       "pinLabel": "PIN",
       "pinPlaceholder": "PIN Anda",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Cadangan Google Drive Anda tidak dapat dihapus. Untuk menghapusnya, buka Google Drive di komputer, buka Setelan lalu Kelola aplikasi, cari Provian, dan pilih Hapus data aplikasi tersembunyi."
     }
+  },
+  "handoff": {
+    "optionTitle": "Dari komputer Anda",
+    "optionDesc": "Pindai kode di aplikasi web Provian di app.provian.ai. Tidak perlu mengetik apa pun.",
+    "addComputer": "Tambahkan komputer",
+    "addComputerSubtitle": "Gunakan dompet ini di aplikasi web di app.provian.ai",
+    "scanTitleReceive": "Dari komputer Anda",
+    "scanBodyReceive": "Di komputer Anda, buka dompet Anda di app.provian.ai lalu buka Pengaturan → Pencadangan dan Pemulihan → Tambahkan ponsel Anda. Pindai kode yang ditampilkan.",
+    "scanTitleSend": "Tambahkan komputer",
+    "scanBodySend": "Di komputer Anda, buka app.provian.ai, pilih Saya sudah memiliki dompet Provian, lalu pindai kode yang ditampilkan.",
+    "scanButton": "Pindai kode",
+    "pointCamera": "Arahkan kamera Anda ke kode di komputer Anda.",
+    "qrTitleSend": "Pindai kode ini dengan ponsel Anda",
+    "qrBodySend": "Di aplikasi Provian di ponsel Anda, ketuk Saya sudah memiliki dompet Provian, lalu Dari komputer Anda, dan pindai kode ini.",
+    "qrTitleReceive": "Pindahkan dompet Anda dari ponsel",
+    "qrBodyReceive": "Di aplikasi Provian di ponsel Anda, buka Pengaturan → Pencadangan dan Pemulihan → Tambahkan komputer, lalu pindai kode ini.",
+    "qrAlt": "Kode QR untuk memindahkan dompet Anda",
+    "latestApp": "Ini memerlukan versi terbaru aplikasi Provian.",
+    "expires": "Kode ini berlaku selama 10 menit.",
+    "expired": "Kode ini sudah kedaluwarsa.",
+    "newCode": "Tampilkan kode baru",
+    "destination": "Dompet Anda akan dipindahkan ke {{label}}.",
+    "source": "Dompet Anda datang dari {{label}}.",
+    "matchCode": "Kode {{code}}",
+    "matchHint": "Pastikan perangkat Anda yang lain menampilkan kode yang sama.",
+    "confirmSend": "Kirim dompet saya",
+    "confirmHintWeb": "Anda akan mengonfirmasi dengan passkey dan PIN Anda.",
+    "confirmHintPhone": "Anda akan mengonfirmasi dengan {{biometric}}.",
+    "unlockReason": "Konfirmasi untuk memindahkan dompet Anda ke {{label}}",
+    "waitingForSender": "Konfirmasi di {{label}} untuk mengirim dompet Anda ke sini.",
+    "sentBody": "Dompet Anda sedang dikirim ke {{label}}. Selesaikan di sana.",
+    "together": "Kedua perangkat tetap masuk.",
+    "done": "Selesai",
+    "scanAgain": "Pindai lagi",
+    "cameraNeeded": "Izinkan kamera di Pengaturan untuk memindai kode.",
+    "notACode": "Itu bukan kode Provian. Pindai kode yang ditampilkan di app.provian.ai.",
+    "wrongCodeReceive": "Kode ini untuk mengirim dompet ke komputer Anda. Di komputer Anda, buka Tambahkan ponsel Anda untuk menampilkan kode yang benar.",
+    "wrongCodeSend": "Kode ini untuk mengirim dompet ke ponsel Anda. Di komputer Anda, pilih Saya sudah memiliki dompet Provian untuk menampilkan kode yang benar.",
+    "alreadyUsed": "Kode ini sudah dipindai. Tampilkan kode baru lalu pindai lagi.",
+    "tampered": "Kode ini tidak dapat diperiksa. Tampilkan kode baru lalu pindai lagi.",
+    "failed": "Pemindahan tidak selesai: {{message}}",
+    "olderApp": "Di versi lama aplikasi Provian"
   }
 }

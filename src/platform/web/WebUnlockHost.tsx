@@ -32,7 +32,8 @@ export default function WebUnlockHost(): React.ReactElement | null {
     const needsPin = request.mode !== 'presence';
     const title = request.mode === 'presence'
         ? t('webApp.unlock.presenceTitle')
-        : request.mode === 'reveal' ? t('webApp.unlock.revealTitle') : t('webApp.unlock.title');
+        : request.mode === 'reveal' ? t('webApp.unlock.revealTitle')
+        : request.mode === 'move' ? t('webApp.unlock.moveTitle') : t('webApp.unlock.title');
 
     const submit = async () => {
         if (busy) return;

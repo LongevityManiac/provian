@@ -897,7 +897,7 @@
       "complianceHoldA": "Utoaji umeshikiliwa chini ya sera ya mamlaka ya kisheria, na thamani yako iliyofungwa imehifadhiwa. Relay hurudia kiotomatiki ukaguzi wa eneo au vikwazo ambao haujatatuliwa. Kizuizi cha mamlaka hushikilia utoaji hadi sera ya mamlaka ya awali iruhusu kuachiliwa; kisha hutolewa kiotomatiki kupitia malipo ya kawaida kwa thamani ya awali iliyofungwa, bila kukokotolewa upya. Mamlaka iliyoahirishwa hufuata njia yake ya kuachilia kwa hatua. Anwani inayolingana na orodha ya SDN ya OFAC hukataliwa kabisa na haitolewi; huu si ushikiliaji wa muda. Unaweza kuendelea kurekodi ushahidi utoaji ukiwa umeshikiliwa.",
       "complianceHold": "Kwa nini risiti yangu inasema “Utoaji umeshikiliwa”?",
       "useInBrowser": "Je, ninaweza kutumia Provian kwenye kivinjari cha wavuti?",
-      "useInBrowserA": "Ndiyo. Fungua app.provian.ai kwenye kompyuta: ni programu ileile, pochi ileile na akaunti ileile kama programu ya simu, na simu yako na kivinjari chako hubaki vimeingia pamoja. Unaifungua kwa passkey (Touch ID, Windows Hello au kidhibiti chako cha manenosiri) na PIN ya tarakimu 6. Ili kutumia pochi moja mahali pote pawili, irejeshe kwenye kivinjari kutoka nakala rudufu yako ya Google Drive au maneno yako ya urejesho, au anza kwenye kivinjari kisha ufungue Ongeza simu yako katika Hifadhi na Urejesho, ambayo huonyesha maneno yako ya urejesho baada ya passkey na PIN yako. Kunasa Soga hufanya kazi kwenye programu ya simu pekee."
+      "useInBrowserA": "Ndiyo. Fungua app.provian.ai kwenye kompyuta: ni programu ileile, pochi ileile na akaunti ileile kama programu ya simu, na simu yako na kivinjari chako hubaki vimeingia pamoja. Unaifungua kwa passkey (Touch ID, Windows Hello au kidhibiti chako cha manenosiri) na PIN ya tarakimu 6. Ili kutumia pochi moja mahali pote pawili, ihamishe kwa msimbo wa QR: pochi ikiwa kwenye simu yako, fungua Tayari nina Provian pochi katika app.provian.ai na uchanganue msimbo wake kupitia Mipangilio → Hifadhi na Urejesho → Ongeza kompyuta kwenye programu ya simu; pochi ikiwa kwenye kivinjari chako, fungua Ongeza simu yako katika Hifadhi na Urejesho na uchanganue msimbo wake kupitia Tayari nina Provian pochi → Kutoka kwenye kompyuta yako. Kifaa kinachotuma pochi hukuomba ukifungue na kwanza huonyesha pochi inakokwenda, na pochi husafiri ikiwa imefungwa kwa muhuri ili kifaa kinachopokea pekee kiweze kuifungua. Unaweza pia kurejesha kutoka nakala rudufu yako ya Google Drive au maneno yako ya urejesho. Kunasa Soga hufanya kazi kwenye programu ya simu pekee."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Ilifanya kazi mwisho: {{time}}",
     "totalPEs": "PE Zote: {{count}}",
     "registeredDate": "Kimesajiliwa: {{date}}",
-    "registerDevicePrompt": "Sajili zana ya kusimba ili kazi yake ishuhudiwe: kila kipindi huacha PE unayomiliki, na kazi yako inazalisha PVT.",
+    "registerDevicePrompt": "Sajili zana ya kusimba ili kazi yake ishuhudiwe: kila commit huacha PE unayomiliki, na kazi yako inazalisha PVT.",
     "commonsTitle": "Commons",
     "commonsDesc": "Wasifu, forum, orodha, na kazi",
     "never": "Kamwe",
@@ -5424,6 +5424,7 @@
       "title": "Fungua pochi yako",
       "presenceTitle": "Thibitisha kuwa ni wewe",
       "revealTitle": "Onyesha maneno yako ya urejesho",
+      "moveTitle": "Hamisha pochi yako",
       "hint": "Tumia passkey ya pochi hii: Touch ID, Face ID, Windows Hello au ufunguo wa usalama.",
       "pinLabel": "PIN",
       "pinPlaceholder": "PIN yako",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Nakala rudufu yako ya Google Drive haikuweza kufutwa. Ili kuiondoa, fungua Google Drive kwenye kompyuta, nenda kwenye Mipangilio, kisha Dhibiti programu, tafuta Provian na uchague Futa data fiche ya programu."
     }
+  },
+  "handoff": {
+    "optionTitle": "Kutoka kwenye kompyuta yako",
+    "optionDesc": "Changanua msimbo kwenye programu ya wavuti ya Provian katika app.provian.ai. Hakuna cha kuandika.",
+    "addComputer": "Ongeza kompyuta",
+    "addComputerSubtitle": "Tumia pochi hii kwenye programu ya wavuti katika app.provian.ai",
+    "scanTitleReceive": "Kutoka kwenye kompyuta yako",
+    "scanBodyReceive": "Kwenye kompyuta yako, fungua pochi yako katika app.provian.ai kisha uende Mipangilio → Hifadhi na Urejesho → Ongeza simu yako. Changanua msimbo unaoonyeshwa.",
+    "scanTitleSend": "Ongeza kompyuta",
+    "scanBodySend": "Kwenye kompyuta yako, fungua app.provian.ai, chagua Tayari nina Provian pochi, kisha uchanganue msimbo unaoonyeshwa.",
+    "scanButton": "Changanua msimbo",
+    "pointCamera": "Elekeza kamera yako kwenye msimbo ulio kwenye kompyuta yako.",
+    "qrTitleSend": "Changanua msimbo huu kwa simu yako",
+    "qrBodySend": "Katika programu ya Provian kwenye simu yako, gusa Tayari nina Provian pochi, kisha Kutoka kwenye kompyuta yako, na uchanganue msimbo huu.",
+    "qrTitleReceive": "Hamisha pochi yako kutoka kwenye simu yako",
+    "qrBodyReceive": "Katika programu ya Provian kwenye simu yako, nenda Mipangilio → Hifadhi na Urejesho → Ongeza kompyuta, kisha uchanganue msimbo huu.",
+    "qrAlt": "Msimbo wa QR wa kuhamisha pochi yako",
+    "latestApp": "Hii inahitaji toleo la hivi karibuni la programu ya Provian.",
+    "expires": "Msimbo huu unafanya kazi kwa dakika 10.",
+    "expired": "Msimbo huu umeisha muda.",
+    "newCode": "Onyesha msimbo mpya",
+    "destination": "Pochi yako itahamia {{label}}.",
+    "source": "Pochi yako inatoka {{label}}.",
+    "matchCode": "Msimbo {{code}}",
+    "matchHint": "Hakikisha kifaa chako kingine kinaonyesha msimbo uleule.",
+    "confirmSend": "Tuma pochi yangu",
+    "confirmHintWeb": "Utathibitisha kwa passkey yako na PIN yako.",
+    "confirmHintPhone": "Utathibitisha kwa {{biometric}}.",
+    "unlockReason": "Thibitisha ili kuhamisha pochi yako kwenda {{label}}",
+    "waitingForSender": "Thibitisha kwenye {{label}} ili kutuma pochi yako hapa.",
+    "sentBody": "Pochi yako iko njiani kwenda {{label}}. Malizia huko.",
+    "together": "Vifaa vyote viwili hubaki vimeingia.",
+    "done": "Imekamilika",
+    "scanAgain": "Changanua tena",
+    "cameraNeeded": "Ruhusu kamera katika Mipangilio ili kuchanganua msimbo.",
+    "notACode": "Huo si msimbo wa Provian. Changanua msimbo unaoonyeshwa katika app.provian.ai.",
+    "wrongCodeReceive": "Msimbo huu ni wa kutuma pochi kwenda kwenye kompyuta yako. Kwenye kompyuta yako, fungua Ongeza simu yako ili kuonyesha msimbo sahihi.",
+    "wrongCodeSend": "Msimbo huu ni wa kutuma pochi kwenda kwenye simu yako. Kwenye kompyuta yako, chagua Tayari nina Provian pochi ili kuonyesha msimbo sahihi.",
+    "alreadyUsed": "Msimbo huu tayari umechanganuliwa. Onyesha msimbo mpya kisha uchanganue tena.",
+    "tampered": "Msimbo huu haukuweza kukaguliwa. Onyesha msimbo mpya kisha uchanganue tena.",
+    "failed": "Uhamisho haukukamilika: {{message}}",
+    "olderApp": "Kwenye toleo la zamani la programu ya Provian"
   }
 }

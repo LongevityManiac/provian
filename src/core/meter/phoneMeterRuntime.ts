@@ -10,7 +10,7 @@ import { withBiometricAction, assertBiometricAction, isBiometricActionValid, typ
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { createExpoMeterFiles } from './meterFiles';
 import { createPlatformCloudFiles } from './cloudFiles';
@@ -552,6 +552,9 @@ export async function exportAllMyPes(onProgress?: (progress: PhonePeExportProgre
 
 /** Explicit storage buttons own one approval; scheduling never creates one. */
 export async function preparePeCloudAccess(meter: PhoneMeter = getPhoneMeter()): Promise<boolean> {
+    // The web app keeps no PE files (a browser has no document directory for the meter), so there is
+    // nothing to back up to Drive here, and a restore must not open Google's sign-in on its own.
+    if (Platform.OS === 'web') return false;
     const available = await meter.backup.prepareCloud();
     // Android Google sign-in can resolve before React Native observes the returning Activity.
     // Wait before starting authentication; no already-approved grant is retained through that UI.

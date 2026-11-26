@@ -1,14 +1,16 @@
 /**
  * RecoveryStartScreen - Entry point for wallet recovery
  *
- * Two recovery paths:
+ * Recovery paths:
  *   1. Cloud Recovery (primary): PIN-encrypted backup in iCloud Keychain (iOS) / Google Drive encrypted app folder (Android)
  *   2. Recovery Phrase (fallback): Manual 12/24 word seed entry. Offline escape hatch when cloud backup is unavailable or the user prefers seed-only recovery.
+ *   3. From your computer (phone app): scan the code the web app shows; the wallet moves over sealed.
+ * The web app adds its passkey backup and, at the top, the code a phone scans to send the wallet here.
  */
 
 import { ActionTouchable } from '../../components/ScreenActions';
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import BackButton from '../../components/BackButton';
 import { useWalletStore, selectLegalAcceptanceCurrent } from '../../store/walletStore';
 import { restoreEntry, type RestoreMethod } from '../../navigation/restoreConsent';
+import HandoffQrPanel from '../../components/HandoffQrPanel';
 
 const RecoveryStartScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -33,11 +36,25 @@ const RecoveryStartScreen = ({ navigation }: any) => {
         else navigation.navigate(entry.screen);
     };
 
+    /** The same router, carrying a phrase this browser already received (the QR handoff). */
+    const restoreReceivedPhrase = (restoredMnemonic: string) => {
+        const entry = restoreEntry('ImportRecoveryPhrase', legalAccepted);
+        if (entry.screen === 'Consent') navigation.navigate('Consent', { ...entry.params, restoredMnemonic });
+        else navigation.navigate(entry.screen, { restoredMnemonic });
+    };
+
     const handleCloudRecovery = () => startRestore('CloudRecovery');
 
     const handlePasskeyRecovery = () => startRestore('PasskeyRestore');
 
     const handleSeedPhraseRecovery = () => startRestore('ImportRecoveryPhrase');
+
+    // Phone app: scan the code the web app shows ("From your computer").
+    const handleFromComputer = () => startRestore('HandoffScan');
+
+    // Web app: the phone sent the wallet over the QR code; restore it as a typed phrase restores,
+    // through the acknowledgements first when this browser has not accepted them.
+    const handleReceivedFromPhone = (restoredMnemonic: string) => restoreReceivedPhrase(restoredMnemonic);
 
     const handleBack = () => {
         if (navigation.canGoBack()) {
@@ -61,7 +78,7 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                 <BackButton onPress={handleBack} />
             </View>
 
-            <View style={styles.content}>
+            <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.iconContainer}>
                     <Ionicons name="wallet" size={48} color="#4A8EE8" />
                 </View>
@@ -70,6 +87,8 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                 <Text style={styles.subtitle}>
                     {t('recoveryStart.subtitle')}
                 </Text>
+
+                {isWeb && <HandoffQrPanel mode="receive" onReceived={handleReceivedFromPhone} />}
 
                 {isWeb && (
                     <ActionTouchable
@@ -133,6 +152,26 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                     </View>
                 </ActionTouchable>
 
+                {/* Option 3 (phone app): from the web app at app.provian.ai, by its QR code */}
+                {!isWeb && (
+                    <ActionTouchable
+                        style={styles.optionCard}
+                        onPress={handleFromComputer}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.optionRow}>
+                            <View style={[styles.optionIconBg, { backgroundColor: 'rgba(74,142,232,0.14)' }]}>
+                                <Ionicons name="qr-code" size={24} color="#4A8EE8" />
+                            </View>
+                            <View style={styles.optionContent}>
+                                <Text style={styles.optionTitle}>{t('handoff.optionTitle')}</Text>
+                                <Text style={styles.optionDesc}>{t('handoff.optionDesc')}</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        </View>
+                    </ActionTouchable>
+                )}
+
                 {/* Help link */}
                 <ActionTouchable
                     style={styles.helpLink}
@@ -141,7 +180,7 @@ const RecoveryStartScreen = ({ navigation }: any) => {
                 >
                     <Text style={styles.helpText}>{t('recoveryStart.helpLink')}</Text>
                 </ActionTouchable>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 };
@@ -157,9 +196,13 @@ const styles = StyleSheet.create({
         paddingBottom: SPACING.s,
     },
     content: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: SPACING.l,
+        paddingBottom: SPACING.l,
         justifyContent: 'center',
+        maxWidth: 640,
+        width: '100%',
+        alignSelf: 'center',
     },
     iconContainer: {
         width: 88,

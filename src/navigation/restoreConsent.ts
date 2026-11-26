@@ -8,8 +8,11 @@
  * as not accepted (see core/legal/legalAcceptance).
  */
 
-/** PasskeyRestore exists only in the web app (the passkey backup). */
-export const RESTORE_METHODS = ['CloudRecovery', 'ImportRecoveryPhrase', 'PasskeyRestore'] as const;
+/**
+ * PasskeyRestore exists only in the web app (the passkey backup); HandoffScan only in the phone app
+ * (scanning the web app's code: "From your computer").
+ */
+export const RESTORE_METHODS = ['CloudRecovery', 'ImportRecoveryPhrase', 'PasskeyRestore', 'HandoffScan'] as const;
 export type RestoreMethod = (typeof RESTORE_METHODS)[number];
 
 export type RestoreEntry =

@@ -9,7 +9,12 @@ export type UnlockMode =
     /** The vault is open: a fresh passkey check only. */
     | 'presence'
     /** Passkey + PIN again even though the vault is open (showing the recovery phrase). */
-    | 'reveal';
+    | 'reveal'
+    /** Passkey + PIN again even though the vault is open (moving the wallet to a phone by QR code). */
+    | 'move';
+
+/** Why an open vault asks for the PIN again; the prompt's title names it. */
+export type PinPurpose = 'reveal' | 'move';
 
 export interface UnlockRequest {
     readonly id: number;
@@ -68,23 +73,27 @@ export function cancelAllUnlockRequests(): void {
     notify();
 }
 
-const pinReasons = new Map<string, number>();
+const pinReasons = new Map<string, PinPurpose[]>();
 
 /**
  * The seed access started with this exact `reason` must ask for the PIN as well as the passkey,
- * even while the wallet is open (showing the recovery phrase). It is bound to the reason, not to
- * whichever action starts next, so another action queued ahead of it cannot use it up. A no-op off
- * the web.
+ * even while the wallet is open (showing the recovery phrase, or moving the wallet to a phone). It is
+ * bound to the reason, not to whichever action starts next, so another action queued ahead of it
+ * cannot use it up. A no-op off the web.
  */
-export function requirePinForAction(reason: string): void {
-    pinReasons.set(reason, (pinReasons.get(reason) ?? 0) + 1);
+export function requirePinForAction(reason: string, purpose: PinPurpose = 'reveal'): void {
+    pinReasons.set(reason, [...(pinReasons.get(reason) ?? []), purpose]);
 }
 
-/** Called by `beginActionAsync`: true (and consumed) when an action with this reason must ask for the PIN. */
-export function takePinForAction(reason: string): boolean {
-    const count = pinReasons.get(reason) ?? 0;
-    if (count <= 0) return false;
-    if (count === 1) pinReasons.delete(reason);
-    else pinReasons.set(reason, count - 1);
-    return true;
+/**
+ * Called by `beginActionAsync`: the purpose (consumed) when an action with this reason must ask for
+ * the PIN, otherwise null.
+ */
+export function takePinForAction(reason: string): PinPurpose | null {
+    const pending = pinReasons.get(reason);
+    if (!pending?.length) return null;
+    const [purpose, ...rest] = pending;
+    if (rest.length) pinReasons.set(reason, rest);
+    else pinReasons.delete(reason);
+    return purpose;
 }

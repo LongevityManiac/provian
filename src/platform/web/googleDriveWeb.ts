@@ -66,9 +66,20 @@ function tokenValid(): boolean {
     return !!token && token.expiresAt > Date.now() + 30_000;
 }
 
-/** Ask Google for Drive app-folder access. Call from a click. Resolves true once signed in. */
+/** Whether a popup may open now: browsers allow one only right after a click or a key press. */
+export function popupAllowedNow(): boolean {
+    const activation = (globalThis as unknown as { navigator?: { userActivation?: { isActive?: boolean } } }).navigator?.userActivation;
+    return activation?.isActive !== false;
+}
+
+/**
+ * Ask Google for Drive app-folder access. Call from a click. Resolves true once signed in.
+ * Outside a click (a restore that continues on its own, a background check) the browser would block
+ * Google's popup and Google never answers, so this resolves false at once instead of waiting forever.
+ */
 export async function signIn(): Promise<boolean> {
     if (tokenValid()) return true;
+    if (!popupAllowedNow()) return false;
     const oauth = googleOAuth() ?? await preloadGoogleIdentity();
     return new Promise<boolean>((resolve, reject) => {
         const client = oauth.initTokenClient({

@@ -279,7 +279,7 @@ Restore your encrypted cloud backup by signing in to the same iCloud or Google a
 
 ### Can I use Provian in a web browser? <!-- app:useInBrowser -->
 
-Yes. Open app.provian.ai on a computer: it is the same app, wallet and account as the phone app, and your phone and your browser stay signed in together. You unlock it with a passkey (Touch ID, Windows Hello or your password manager) and a 6-digit PIN. To use one wallet in both places, restore it in the browser from your Google Drive backup or your recovery phrase, or start in the browser and open Add your phone in Backup & Recovery, which shows your recovery phrase after your passkey and PIN. Chat capture runs only in the phone app.
+Yes. Open app.provian.ai on a computer: it is the same app, wallet and account as the phone app, and your phone and your browser stay signed in together. You unlock it with a passkey (Touch ID, Windows Hello or your password manager) and a 6-digit PIN. To use one wallet in both places, move it with a QR code: with the wallet on your phone, open I already have a Provian wallet at app.provian.ai and scan its code from Settings → Backup & Recovery → Add a computer in the phone app; with the wallet in your browser, open Add your phone in Backup & Recovery and scan its code from I already have a Provian wallet → From your computer. The device sending the wallet asks for its unlock and shows where the wallet is going first, and the wallet travels sealed so only the receiving device can open it. You can also restore from your Google Drive backup or your recovery phrase. Chat capture runs only in the phone app.
 
 ### Can Provian access my funds? <!-- app:canProvianAccessFunds -->
 

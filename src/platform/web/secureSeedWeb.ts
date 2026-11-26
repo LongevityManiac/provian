@@ -31,9 +31,9 @@ export const secureSeedWeb: ProvianSecureSeedModule = {
     },
     async beginActionAsync(reason: string): Promise<string> {
         if (!hasVault()) throw codedError('ERR_SEED_AUTH_UNAVAILABLE', 'No wallet is set up in this browser.');
-        const needsPin = takePinForAction(reason);
+        const pinPurpose = takePinForAction(reason);
         if (!isVaultOpen()) await requestVaultAccess(reason, 'unlock');
-        else if (needsPin) await requestVaultAccess(reason, 'reveal');
+        else if (pinPurpose) await requestVaultAccess(reason, pinPurpose);
         else if (Date.now() - lastVerifiedAt() > PRESENCE_WINDOW_MS) await requestVaultAccess(reason, 'presence');
         const id = crypto.randomUUID();
         actions.add(id);

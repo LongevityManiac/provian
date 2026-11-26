@@ -82,6 +82,7 @@ import { ChatWebViewScreen } from '../screens/Chat';
 import { RecoveryStartScreen } from '../screens/Recovery';
 import PasskeyRestoreScreen from '../screens/Recovery/PasskeyRestoreScreen';
 import AddYourPhoneScreen from '../screens/Web/AddYourPhoneScreen';
+import HandoffScanScreen from '../screens/Recovery/HandoffScanScreen';
 import withWebVault from '../platform/withWebVault';
 
 // Agent Screens
@@ -474,6 +475,8 @@ const AppNavigator = ({ navigationRef, onReady }: AppNavigatorProps) => {
                 <Stack.Screen name="ImportRecoveryPhrase" component={WebVaultImportRecoveryPhrase} />
                 {Platform.OS === 'web' && <Stack.Screen name="PasskeyRestore" component={PasskeyRestoreScreen} />}
                 {Platform.OS === 'web' && <Stack.Screen name="AddYourPhone" component={AddYourPhoneScreen} />}
+                {/* The phone scans the web app's QR code to move a wallet (both directions). */}
+                {Platform.OS !== 'web' && <Stack.Screen name="HandoffScan" component={HandoffScanScreen} />}
                 <Stack.Screen name="ExportMnemonic" component={ExportMnemonicScreen} />
                 <Stack.Screen name="Attestation" component={AttestationScreen} />
                 <Stack.Screen name="MainTabs" component={TabNavigator} />

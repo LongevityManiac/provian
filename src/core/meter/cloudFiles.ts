@@ -185,6 +185,9 @@ export function createDriveFiles(mod: DriveAppDataModule | null = loadDriveModul
             return mod.listKeys();
         },
         async prepare() {
+            // The web app keeps no PE files to back up, and its Google sign-in needs a click: never
+            // open it from here.
+            if (Platform.OS === 'web') return false;
             if (!mod?.signIn) return false;
             try {
                 return await mod.signIn();

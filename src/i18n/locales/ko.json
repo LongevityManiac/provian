@@ -898,7 +898,7 @@
       "complianceHoldA": "관할 지역 정책에 따라 발행이 보류되며 봉인된 가치는 유지됩니다. 릴레이는 해결되지 않은 위치 또는 제재 확인을 자동으로 재시도합니다. 관할 지역 차단은 원래 관할 지역의 정책이 해제를 허용할 때까지 발행을 보류합니다. 이후 재평가 없이 원래 봉인된 가치로 일반 정산을 통해 자동 발행됩니다. 유예된 관할 지역은 단계적 해제 절차를 따릅니다. OFAC SDN 목록의 주소와 일치하면 최종 거부되며 발행되지 않습니다. 이는 일시적 보류가 아닙니다. 발행이 보류된 동안에도 증거를 기록할 수 있습니다.",
       "complianceHold": "영수증에 “발행 보류”라고 표시되는 이유는 무엇인가요?",
       "useInBrowser": "웹 브라우저에서 Provian을 사용할 수 있나요?",
-      "useInBrowserA": "네. 컴퓨터에서 app.provian.ai를 여세요. 휴대폰 앱과 같은 앱, 지갑, 계정이며, 휴대폰과 브라우저 모두 로그인된 상태로 유지됩니다. 잠금 해제에는 패스키(Touch ID, Windows Hello 또는 비밀번호 관리자)와 6자리 PIN을 사용합니다. 하나의 지갑을 두 곳에서 모두 사용하려면 브라우저에서 Google Drive 백업이나 복구 문구로 복원하세요. 또는 브라우저에서 시작한 뒤 백업 및 복구에서 휴대폰 추가를 열면, 패스키와 PIN을 확인한 후 복구 문구가 표시됩니다. 채팅 캡처는 휴대폰 앱에서만 작동합니다."
+      "useInBrowserA": "네. 컴퓨터에서 app.provian.ai를 여세요. 휴대폰 앱과 같은 앱, 지갑, 계정이며, 휴대폰과 브라우저 모두 로그인된 상태로 유지됩니다. 잠금 해제에는 패스키(Touch ID, Windows Hello 또는 비밀번호 관리자)와 6자리 PIN을 사용합니다. 하나의 지갑을 두 곳에서 모두 사용하려면 QR 코드로 옮기세요. 지갑이 휴대폰에 있다면 app.provian.ai에서 ‘나는 이미 Provian 지갑을 가지고 있습니다’를 열고, 휴대폰 앱의 설정 → 백업 및 복구 → 컴퓨터 추가에서 그 코드를 스캔하세요. 지갑이 브라우저에 있다면 백업 및 복구에서 ‘휴대폰 추가’를 열고, ‘나는 이미 Provian 지갑을 가지고 있습니다’ → ‘컴퓨터에서 가져오기’에서 그 코드를 스캔하세요. 지갑을 보내는 기기는 먼저 잠금 해제를 요청하고 지갑이 갈 곳을 보여 주며, 지갑은 봉인된 채로 전송되므로 받는 기기만 열 수 있습니다. Google Drive 백업이나 복구 문구로 복원할 수도 있습니다. 채팅 캡처는 휴대폰 앱에서만 작동합니다."
     }
   },
   "developer": {
@@ -1509,7 +1509,7 @@
     "lastActive": "마지막 활동: {{time}}",
     "totalPEs": "총 PE: {{count}}",
     "registeredDate": "등록일: {{date}}",
-    "registerDevicePrompt": "작업이 목격되도록 코딩 도구를 등록하세요. 모든 세션은 귀하가 소유한 PE를 남기고 귀하의 작업은 PVT를 발행합니다.",
+    "registerDevicePrompt": "작업이 목격되도록 코딩 도구를 등록하세요. 모든 커밋은 귀하가 소유한 PE를 남기고 귀하의 작업은 PVT를 발행합니다.",
     "commonsTitle": "커먼즈",
     "commonsDesc": "프로필, 포럼, 디렉터리, 구인",
     "never": "없음",
@@ -5425,6 +5425,7 @@
       "title": "지갑 열기",
       "presenceTitle": "본인 확인",
       "revealTitle": "복구 문구 보기",
+      "moveTitle": "지갑 옮기기",
       "hint": "이 지갑의 패스키를 사용하세요: Touch ID, Face ID, Windows Hello 또는 보안 키.",
       "pinLabel": "PIN",
       "pinPlaceholder": "PIN 입력",
@@ -5523,5 +5524,47 @@
     "deleteData": {
       "driveNotDeleted": "Google Drive 백업을 삭제하지 못했습니다. 삭제하려면 컴퓨터에서 Google Drive를 열고 설정 > 앱 관리로 이동한 뒤 Provian을 찾아 숨겨진 앱 데이터 삭제를 선택하세요."
     }
+  },
+  "handoff": {
+    "optionTitle": "컴퓨터에서 가져오기",
+    "optionDesc": "app.provian.ai의 Provian 웹 앱에 표시된 코드를 스캔하세요. 입력할 것은 없습니다.",
+    "addComputer": "컴퓨터 추가",
+    "addComputerSubtitle": "app.provian.ai 웹 앱에서 이 지갑 사용",
+    "scanTitleReceive": "컴퓨터에서 가져오기",
+    "scanBodyReceive": "컴퓨터에서 app.provian.ai의 지갑을 열고 설정 → 백업 및 복구 → 휴대폰 추가로 이동하세요. 표시된 코드를 스캔하세요.",
+    "scanTitleSend": "컴퓨터 추가",
+    "scanBodySend": "컴퓨터에서 app.provian.ai를 열고 ‘나는 이미 Provian 지갑을 가지고 있습니다’를 선택한 다음, 표시된 코드를 스캔하세요.",
+    "scanButton": "코드 스캔",
+    "pointCamera": "컴퓨터에 표시된 코드에 카메라를 비추세요.",
+    "qrTitleSend": "휴대폰으로 이 코드를 스캔하세요",
+    "qrBodySend": "휴대폰의 Provian 앱에서 ‘나는 이미 Provian 지갑을 가지고 있습니다’를 누르고 ‘컴퓨터에서 가져오기’를 누른 다음, 이 코드를 스캔하세요.",
+    "qrTitleReceive": "휴대폰에서 지갑 옮기기",
+    "qrBodyReceive": "휴대폰의 Provian 앱에서 설정 → 백업 및 복구 → 컴퓨터 추가로 이동한 다음, 이 코드를 스캔하세요.",
+    "qrAlt": "지갑을 옮기기 위한 QR 코드",
+    "latestApp": "최신 버전의 Provian 앱이 필요합니다.",
+    "expires": "이 코드는 10분 동안 유효합니다.",
+    "expired": "이 코드는 만료되었습니다.",
+    "newCode": "새 코드 표시",
+    "destination": "지갑이 {{label}}(으)로 이동합니다.",
+    "source": "지갑을 {{label}}에서 가져옵니다.",
+    "matchCode": "코드 {{code}}",
+    "matchHint": "다른 기기에 같은 코드가 표시되는지 확인하세요.",
+    "confirmSend": "내 지갑 보내기",
+    "confirmHintWeb": "패스키와 PIN으로 확인합니다.",
+    "confirmHintPhone": "{{biometric}}(으)로 확인합니다.",
+    "unlockReason": "지갑을 {{label}}(으)로 옮기려면 확인하세요",
+    "waitingForSender": "지갑을 이곳으로 보내려면 {{label}}에서 확인하세요.",
+    "sentBody": "지갑을 {{label}}(으)로 보내는 중입니다. 그곳에서 마무리하세요.",
+    "together": "두 기기 모두 로그인 상태가 유지됩니다.",
+    "done": "완료",
+    "scanAgain": "다시 스캔",
+    "cameraNeeded": "코드를 스캔하려면 설정에서 카메라를 허용하세요.",
+    "notACode": "Provian 코드가 아닙니다. app.provian.ai에 표시된 코드를 스캔하세요.",
+    "wrongCodeReceive": "이 코드는 지갑을 컴퓨터로 보내기 위한 코드입니다. 컴퓨터에서 ‘휴대폰 추가’를 열어 올바른 코드를 표시하세요.",
+    "wrongCodeSend": "이 코드는 지갑을 휴대폰으로 보내기 위한 코드입니다. 컴퓨터에서 ‘나는 이미 Provian 지갑을 가지고 있습니다’를 선택해 올바른 코드를 표시하세요.",
+    "alreadyUsed": "이미 스캔된 코드입니다. 새 코드를 표시하고 다시 스캔하세요.",
+    "tampered": "이 코드를 확인할 수 없습니다. 새 코드를 표시하고 다시 스캔하세요.",
+    "failed": "지갑 이동을 완료하지 못했습니다: {{message}}",
+    "olderApp": "이전 버전의 Provian 앱을 사용하는 경우"
   }
 }

@@ -897,7 +897,7 @@
       "complianceHoldA": "Việc phát hành được giữ lại theo chính sách khu vực pháp lý và giá trị đã niêm phong của bạn được giữ nguyên. Relay tự động thử lại các bước kiểm tra vị trí hoặc lệnh trừng phạt chưa được giải quyết. Lệnh chặn theo khu vực giữ việc phát hành đến khi chính sách của khu vực ban đầu cho phép giải phóng; sau đó tự động phát hành qua quyết toán thông thường theo giá trị niêm phong ban đầu, không định giá lại. Khu vực hoãn phát hành tuân theo lộ trình giải phóng dần. Địa chỉ khớp với danh sách SDN của OFAC bị từ chối vĩnh viễn và không được phát hành; đó không phải là tạm giữ. Bạn vẫn có thể ghi nhận bằng chứng khi việc phát hành đang bị giữ lại.",
       "complianceHold": "Tại sao biên nhận của tôi ghi “Tạm giữ phát hành”?",
       "useInBrowser": "Tôi có thể dùng Provian trong trình duyệt web không?",
-      "useInBrowserA": "Có. Mở app.provian.ai trên máy tính: đó là cùng ứng dụng, ví và tài khoản với ứng dụng điện thoại, và điện thoại cùng trình duyệt của bạn vẫn cùng đăng nhập. Bạn mở khóa bằng khóa truy cập (Touch ID, Windows Hello hoặc trình quản lý mật khẩu của bạn) và mã PIN 6 chữ số. Để dùng một ví ở cả hai nơi, hãy khôi phục ví trong trình duyệt từ bản sao lưu Google Drive hoặc cụm từ khôi phục, hoặc bắt đầu trong trình duyệt rồi mở Thêm điện thoại của bạn trong Sao lưu và khôi phục; mục này hiện cụm từ khôi phục sau khi bạn dùng khóa truy cập và mã PIN. Ghi nhận chat chỉ chạy trong ứng dụng điện thoại."
+      "useInBrowserA": "Có. Mở app.provian.ai trên máy tính: đó là cùng ứng dụng, ví và tài khoản với ứng dụng điện thoại, và điện thoại cùng trình duyệt của bạn vẫn cùng đăng nhập. Bạn mở khóa bằng khóa truy cập (Touch ID, Windows Hello hoặc trình quản lý mật khẩu của bạn) và mã PIN 6 chữ số. Để dùng một ví ở cả hai nơi, hãy chuyển ví bằng mã QR: nếu ví đang ở trên điện thoại, hãy mở Tôi đã có ví Provian tại app.provian.ai rồi quét mã đó từ Cài đặt → Sao lưu và khôi phục → Thêm máy tính trong ứng dụng điện thoại; nếu ví đang ở trong trình duyệt, hãy mở Thêm điện thoại của bạn trong Sao lưu và khôi phục rồi quét mã đó từ Tôi đã có ví Provian → Từ máy tính của bạn. Thiết bị gửi ví sẽ yêu cầu mở khóa và trước tiên cho thấy ví sẽ được chuyển đến đâu, và ví được niêm phong trên đường chuyển nên chỉ thiết bị nhận mới mở được. Bạn cũng có thể khôi phục từ bản sao lưu Google Drive hoặc cụm từ khôi phục. Ghi nhận chat chỉ chạy trong ứng dụng điện thoại."
     }
   },
   "developer": {
@@ -1508,7 +1508,7 @@
     "lastActive": "Hoạt động lần cuối: {{time}}",
     "totalPEs": "Tổng PE: {{count}}",
     "registeredDate": "Đăng ký: {{date}}",
-    "registerDevicePrompt": "Đăng ký một công cụ mã hóa để công việc của nó được chứng kiến: mỗi phiên để lại một PE mà bạn sở hữu và công việc của bạn tạo ra PVT.",
+    "registerDevicePrompt": "Đăng ký một công cụ mã hóa để công việc của nó được chứng kiến: mỗi commit để lại một PE mà bạn sở hữu và công việc của bạn tạo ra PVT.",
     "commonsTitle": "Commons",
     "commonsDesc": "Hồ sơ, diễn đàn, danh bạ và việc làm",
     "never": "Chưa bao giờ",
@@ -5424,6 +5424,7 @@
       "title": "Mở ví của bạn",
       "presenceTitle": "Xác nhận đó là bạn",
       "revealTitle": "Hiện cụm từ khôi phục của bạn",
+      "moveTitle": "Chuyển ví của bạn",
       "hint": "Dùng khóa truy cập của ví này: Touch ID, Face ID, Windows Hello hoặc khóa bảo mật.",
       "pinLabel": "Mã PIN",
       "pinPlaceholder": "Mã PIN của bạn",
@@ -5522,5 +5523,47 @@
     "deleteData": {
       "driveNotDeleted": "Không thể xóa bản sao lưu trên Google Drive của bạn. Để xóa, hãy mở Google Drive trên máy tính, vào Cài đặt, rồi Quản lý ứng dụng, tìm Provian và chọn Xóa dữ liệu ứng dụng ẩn."
     }
+  },
+  "handoff": {
+    "optionTitle": "Từ máy tính của bạn",
+    "optionDesc": "Quét mã trong ứng dụng web Provian tại app.provian.ai. Không cần nhập gì.",
+    "addComputer": "Thêm máy tính",
+    "addComputerSubtitle": "Dùng ví này trong ứng dụng web tại app.provian.ai",
+    "scanTitleReceive": "Từ máy tính của bạn",
+    "scanBodyReceive": "Trên máy tính, mở ví của bạn tại app.provian.ai rồi vào Cài đặt → Sao lưu và khôi phục → Thêm điện thoại của bạn. Quét mã hiện ra.",
+    "scanTitleSend": "Thêm máy tính",
+    "scanBodySend": "Trên máy tính, mở app.provian.ai, chọn Tôi đã có ví Provian rồi quét mã hiện ra.",
+    "scanButton": "Quét mã",
+    "pointCamera": "Hướng camera vào mã trên máy tính của bạn.",
+    "qrTitleSend": "Quét mã này bằng điện thoại của bạn",
+    "qrBodySend": "Trong ứng dụng Provian trên điện thoại, nhấn Tôi đã có ví Provian, rồi Từ máy tính của bạn, và quét mã này.",
+    "qrTitleReceive": "Chuyển ví từ điện thoại của bạn",
+    "qrBodyReceive": "Trong ứng dụng Provian trên điện thoại, vào Cài đặt → Sao lưu và khôi phục → Thêm máy tính, rồi quét mã này.",
+    "qrAlt": "Mã QR để chuyển ví của bạn",
+    "latestApp": "Cần phiên bản mới nhất của ứng dụng Provian.",
+    "expires": "Mã có hiệu lực trong 10 phút.",
+    "expired": "Mã này đã hết hạn.",
+    "newCode": "Hiện mã mới",
+    "destination": "Ví của bạn sẽ được chuyển đến {{label}}.",
+    "source": "Ví của bạn đang được chuyển từ {{label}}.",
+    "matchCode": "Mã {{code}}",
+    "matchHint": "Kiểm tra xem thiết bị kia của bạn có hiện cùng mã không.",
+    "confirmSend": "Gửi ví của tôi",
+    "confirmHintWeb": "Bạn sẽ xác nhận bằng khóa truy cập và mã PIN.",
+    "confirmHintPhone": "Bạn sẽ xác nhận bằng {{biometric}}.",
+    "unlockReason": "Xác nhận để chuyển ví của bạn đến {{label}}",
+    "waitingForSender": "Xác nhận trên {{label}} để gửi ví của bạn đến đây.",
+    "sentBody": "Ví của bạn đang được chuyển đến {{label}}. Hãy hoàn tất ở đó.",
+    "together": "Cả hai thiết bị vẫn đăng nhập.",
+    "done": "Xong",
+    "scanAgain": "Quét lại",
+    "cameraNeeded": "Cho phép camera trong Cài đặt để quét mã.",
+    "notACode": "Đó không phải mã Provian. Hãy quét mã hiện tại app.provian.ai.",
+    "wrongCodeReceive": "Mã này dùng để gửi ví đến máy tính của bạn. Trên máy tính, mở Thêm điện thoại của bạn để hiện đúng mã.",
+    "wrongCodeSend": "Mã này dùng để gửi ví đến điện thoại của bạn. Trên máy tính, chọn Tôi đã có ví Provian để hiện đúng mã.",
+    "alreadyUsed": "Mã này đã được quét. Hãy hiện mã mới và quét lại.",
+    "tampered": "Không thể kiểm tra mã này. Hãy hiện mã mới và quét lại.",
+    "failed": "Việc chuyển ví chưa hoàn tất: {{message}}",
+    "olderApp": "Trên phiên bản cũ của ứng dụng Provian"
   }
 }
