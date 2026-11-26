@@ -2,7 +2,7 @@
   "expo": {
     "name": "Provian",
     "slug": "provian-wallet",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -34,7 +34,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "buildNumber": "2026112016"
+      "buildNumber": "2026112601"
     },
     "android": {
       "adaptiveIcon": {
@@ -44,7 +44,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.provian.wallet",
-      "versionCode": 130,
+      "versionCode": 131,
       "googleServicesFile": "./config/firebase/google-services.json",
       "permissions": [
         "INTERNET",
