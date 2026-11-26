@@ -374,7 +374,7 @@ export default function HomePage() {
           <figure>
             <blockquote className="font-display text-2xl font-medium leading-[1.3] tracking-[-0.01em] text-text-primary md:text-4xl md:leading-[1.25]">
               We are going to the stars. The ship is being built now, and there is room on it for
-              everyone who does the work.
+              everyone.
             </blockquote>
             <figcaption className="mt-6 text-base text-text-secondary md:text-lg">
               — Provian’s founder, <cite className="not-italic">The Founding Statement</cite>
