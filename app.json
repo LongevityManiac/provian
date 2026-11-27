@@ -35,7 +35,7 @@
       "entitlements": {
         "aps-environment": "production"
       },
-      "buildNumber": "2026112602"
+      "buildNumber": "2026112603"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,7 +45,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.provian.wallet",
-      "versionCode": 132,
+      "versionCode": 133,
       "googleServicesFile": "./config/firebase/google-services.json",
       "permissions": [
         "INTERNET",
