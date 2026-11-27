@@ -635,8 +635,7 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
 
     req.device = device;
     req.deviceAuthMethod = 'bearer';
-    await observeActorSession(db, req, device.owner_type === 'human' ? device.owner_user_id : device.owner_wallet_id,
-      { skipWhileUnchanged: heartbeat, cache });
+    await observeActorSession(db, req, device.owner_type === 'human' ? device.owner_user_id : device.owner_wallet_id);
     openPrivateAuthenticatedRequest(req,deviceSecret);
     next();
    } catch (err) {

@@ -4,7 +4,6 @@ import { AsyncLocalStorage } from 'async_hooks';
 import type { Request } from 'express';
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 import { relayDb } from '../../firestore-db';
-import { cache as relayCache } from '../../cache';
 import { countryFromIp, type CountryObservation } from './country';
 import { resolveJurisdictionPolicy, type JurisdictionMintPolicy } from './jurisdiction-policy';
 import { canonicalCurrencyAddress, screenAddresses } from './sdn';
@@ -72,11 +71,8 @@ async function mayObserve(db: Firestore, txn: Transaction, address: string, acto
   const registrations = await txn.get(db.collection('wallets').where('address', '==', address).where('type', '==', 'human'));
   return !registrations.docs.length || registrations.docs.some(d => d.data().released_at_ms === undefined && d.data().displaced_at_ms === undefined);
 }
-/** Called only after authentication or registration proof. Stores country/region, never raw IP.
- * `onUnchangedUntil` receives, per address, the moment before which a repeat observation of the same
- * country, region and database would write nothing. */
-export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip'>, addresses: readonly string[], actorId?: string,
-  onUnchangedUntil?: (address: string, untilMs: number) => void): Promise<boolean> {
+/** Called only after authentication or registration proof. Stores country/region, never raw IP. */
+export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip'>, addresses: readonly string[], actorId?: string): Promise<boolean> {
   const observation = countryFromIp(req.ip);
   const accepted = await Promise.all(addresses.filter(a => EVM.test(a)).map(async address => {
     const id = canonicalCurrencyAddress(address);
@@ -88,14 +84,8 @@ export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip
       const retentionExpired = typeof before?.retention_until_ms === 'number' && before.retention_until_ms <= location.observed_at_ms;
       // Serialize changes across relay instances. A delayed request cannot overwrite a newer session.
       if (before && !retentionExpired && before.observed_at_ms > location.observed_at_ms) return true;
-      const unchangedUntil = (observedAt: number): number => Math.min(observedAt + SESSION_REWRITE_MS,
-        typeof before?.retention_until_ms === 'number' && before.retention_until_ms > location.observed_at_ms ? before.retention_until_ms : Number.MAX_SAFE_INTEGER);
       if (before && !retentionExpired && before.country === location.country && before.region === location.region
-        && before.database === location.database && location.observed_at_ms - before.observed_at_ms < SESSION_REWRITE_MS) {
-        onUnchangedUntil?.(id, unchangedUntil(before.observed_at_ms));
-        return true;
-      }
-      onUnchangedUntil?.(id, unchangedUntil(location.observed_at_ms));
+        && before.database === location.database && location.observed_at_ms - before.observed_at_ms < 15 * 60 * 1000) return true;
       txn.set(ref, { ...location, ...(typeof before?.retention_until_ms === 'number' && before.retention_until_ms > location.observed_at_ms ? { retention_until_ms: before.retention_until_ms, ...(before.expire_at ? { expire_at: before.expire_at } : {}) } : {}),
         ...(typeof before?.deletion_requested_at_ms === 'number' ? { deletion_requested_at_ms: before.deletion_requested_at_ms } : {}) });
       return true;
@@ -105,65 +95,14 @@ export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip
   }));
   return accepted.length > 0 && accepted.every(Boolean);
 }
-/** A session is rewritten for the same jurisdiction at most this often. */
-const SESSION_REWRITE_MS = 15 * 60 * 1000;
-
-/** The cache that holds each actor's "nothing to write" marker. */
-export interface ObservationCache {
-  get<T>(key: string): Promise<T | null>;
-  set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
-  del(key: string): Promise<void>;
-}
-
-/** An actor's marker: the jurisdiction its stored sessions hold, and until when a repeat writes nothing. */
-interface ObservationMarker { readonly where: string; readonly untilMs: number }
-export const observationMarkerKey = (actorId: string): string => `jurisdiction_observed_v2:${actorId}`;
-
-/**
- * Auth remains usable if the observation cannot be saved. Mint checks remain fail closed.
- *
- * `skipWhileUnchanged` is for a request that makes no compliance decision (the capture-health
- * heartbeat). One marker per actor names the jurisdiction its stored sessions hold and the moment a
- * repeat observation of it would write again. Every observation that runs first removes the marker,
- * and only an observation that leaves every session holding its own jurisdiction sets it again, so a
- * marker can exist only while no other request has observed since. A heartbeat skips only when the
- * marker names its own country, region and database and that moment has not passed; any other
- * jurisdiction, any expired marker, and every request without the option observe exactly as before.
- * Requests that price or settle never pass it. A cache that cannot be read or cleared never causes a
- * skip: the read failing observes, and a failed clear leaves at most a marker that a later
- * observation of another jurisdiction replaces.
- */
-export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'>, actorId: string,
-  options: { readonly skipWhileUnchanged?: boolean; readonly cache?: ObservationCache } = {}): Promise<void> {
+/** Auth remains usable if the observation cannot be saved. Mint checks remain fail closed. */
+export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'>, actorId: string): Promise<void> {
   const context = requestLocations.getStore();
   context?.failedActors.add(actorId);
-  const cache: ObservationCache = options.cache ?? relayCache;
-  const observed = countryFromIp(req.ip);
-  const where = `${observed.country ?? '-'}:${observed.region ?? '-'}:${observed.database}`;
-  const markerKey = observationMarkerKey(actorId);
-  if (options.skipWhileUnchanged) {
-    const marker = await cache.get<ObservationMarker>(markerKey).catch(() => null);
-    if (marker && typeof marker === 'object' && marker.where === where && typeof marker.untilMs === 'number' && Date.now() < marker.untilMs) {
-      context?.failedActors.delete(actorId);
-      return;
-    }
-  }
-  await cache.del(markerKey).catch(() => { /* see above: a stale marker never names another jurisdiction's write */ });
   try {
     const addresses = await actorWalletAddresses(db, actorId);
     if (addresses.length === 0) return;
-    let unchangedUntil = Number.MAX_SAFE_INTEGER;
-    let reported = 0;
-    const saved = await observeWalletSession(db, req, addresses, actorId, (_address, untilMs) => {
-      unchangedUntil = Math.min(unchangedUntil, untilMs);
-      reported += 1;
-    });
-    if (saved) context?.failedActors.delete(actorId);
-    const ttlSeconds = Math.floor((unchangedUntil - Date.now()) / 1000);
-    if (options.skipWhileUnchanged && saved && reported === addresses.length && ttlSeconds >= 1) {
-      const marker: ObservationMarker = { where, untilMs: unchangedUntil };
-      await cache.set(markerKey, marker, ttlSeconds).catch(() => { /* the next request observes */ });
-    }
+    if (await observeWalletSession(db, req, addresses, actorId)) context?.failedActors.delete(actorId);
   } catch { console.warn('[jurisdiction] authenticated location could not be persisted'); }
 }
 export async function evaluateMintCompliance(actorId: string, beneficiaryAddress?: string | null,
