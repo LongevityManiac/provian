@@ -1,11 +1,14 @@
 /**
  * RPC USAGE METER — which request spends which JSON-RPC calls.
  *
- * Provider bills are per call and per method, and every relay call to a chain
- * goes through ethers' `JsonRpcProvider._send` (single payloads and batches
- * alike). This meter counts those calls by provider host and method inside the
- * request that caused them, and writes one structured log line per request that
- * made any call. Scheduled jobs are requests too, so the line names the job.
+ * Provider bills are per call and per method. Every relay JSON-RPC call enters
+ * through `JsonRpcProvider.send` (the relay's own provider class inherits it;
+ * ethers' internal `_perform` reaches it too). That entry runs synchronously in
+ * the caller's async context, before ethers queues the call and sends a batch from
+ * a shared timer, so each call is counted in the request that made it, even when
+ * concurrent requests share one provider. One structured log line is written per
+ * request that made any call. Scheduled jobs are requests too, so the line names
+ * the job. A transport retry of the same call is not counted again.
  *
  * It observes only: it never changes, delays or drops a call, and a fault in
  * the meter itself is swallowed. The provider label comes from the URL's host
@@ -38,26 +41,22 @@ export function rpcHostLabel(url: string): string {
   return 'other';
 }
 
-function count(provider: JsonRpcProvider, payload: unknown): void {
+function count(provider: JsonRpcProvider, method: unknown): void {
   const counts = usage.getStore();
   if (!counts) return;
   const label = rpcHostLabel(provider._getConnection().url);
-  for (const item of Array.isArray(payload) ? payload : [payload]) {
-    const method = item && typeof item === 'object' && typeof (item as { method?: unknown }).method === 'string'
-      ? (item as { method: string }).method : 'unknown';
-    const key = `${label} ${/^[A-Za-z0-9_]{1,64}$/.test(method) ? method : 'unknown'}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
+  const key = `${label} ${typeof method === 'string' && /^[A-Za-z0-9_]{1,64}$/.test(method) ? method : 'unknown'}`;
+  counts.set(key, (counts.get(key) ?? 0) + 1);
 }
 
-/** Patch `JsonRpcProvider._send` once, at startup. */
+/** Patch `JsonRpcProvider.send` once, at startup. */
 export function installRpcUsageMeter(): void {
   if (installed) return;
   installed = true;
-  const original = JsonRpcProvider.prototype._send;
-  JsonRpcProvider.prototype._send = function meteredSend(this: JsonRpcProvider, payload) {
-    try { count(this, payload); } catch { /* the meter never affects a call */ }
-    return original.call(this, payload);
+  const original = JsonRpcProvider.prototype.send;
+  JsonRpcProvider.prototype.send = function meteredSend(this: JsonRpcProvider, method: string, params: Array<unknown> | Record<string, unknown>) {
+    try { count(this, method); } catch { /* the meter never affects a call */ }
+    return original.call(this, method, params);
   };
 }
 

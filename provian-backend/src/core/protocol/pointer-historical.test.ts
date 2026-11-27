@@ -16,7 +16,8 @@ function manifest(revision: bigint): string {
 }
 
 /** A chain where block N has hash hashOf(N) and the pointer serves `revisionAt(N)`. */
-function rpc(options: { revisionAt?: (height: number) => bigint; count?: (method: string) => void } = {}): PointerRpc {
+function rpc(options: { revisionAt?: (height: number) => bigint; count?: (method: string) => void; reorgAfter?: number; chain?: string } = {}): PointerRpc {
+  let blockReads = 0;
   const revisionAt = options.revisionAt ?? (() => 1n);
   const heightOf = (tag: unknown): number => {
     const hash = (tag as { blockHash?: string }).blockHash;
@@ -25,8 +26,12 @@ function rpc(options: { revisionAt?: (height: number) => bigint; count?: (method
   };
   return { async request(method, params) {
     options.count?.(method);
-    if (method === 'eth_chainId') return '0x2105';
-    if (method === 'eth_getBlockByNumber') { const n = Number(BigInt(params[0] as string)); return { number: params[0], hash: hashOf(n) }; }
+    if (method === 'eth_chainId') return options.chain ?? '0x2105';
+    if (method === 'eth_getBlockByNumber') {
+      const n = Number(BigInt(params[0] as string));
+      const reorged = options.reorgAfter !== undefined && ++blockReads > options.reorgAfter;
+      return { number: params[0], hash: reorged ? `0x${'cd'.repeat(32)}` : hashOf(n) };
+    }
     if (method === 'eth_getCode') return runtime;
     if (method === 'eth_call') {
       const call = params[0] as { data: string };
@@ -104,4 +109,20 @@ test('RED: a pointer whose runtime no longer matches the pin is refused on the r
     method === 'eth_getCode' && params[0] === pointer ? '0x6001' : leg.request(method, params) })) as unknown as [PointerRpc, PointerRpc];
   await expect(resolveHistoricalProtocolDeployment(swapped, pointer, runtimeHash, 250, hashOf(250)))
     .rejects.toThrow('protocol_pointer_runtime_mismatch');
+});
+
+test('RED: a block that leaves the canonical chain during the reuse read is refused as a reorg', async () => {
+  const { legs } = counted();
+  await resolveHistoricalProtocolDeployment(legs, pointer, runtimeHash, 100, hashOf(100));
+  // On the reuse path the first block read matches; the closing canonical re-check sees another hash.
+  const reorging = [rpc({ reorgAfter: 1 }), rpc({ reorgAfter: 1 })] as const;
+  await expect(resolveHistoricalProtocolDeployment(reorging, pointer, runtimeHash, 250, hashOf(250)))
+    .rejects.toThrow('protocol_pointer_reorg');
+});
+
+test('RED: another chain is refused on the reuse path', async () => {
+  const { legs } = counted();
+  await resolveHistoricalProtocolDeployment(legs, pointer, runtimeHash, 100, hashOf(100));
+  await expect(resolveHistoricalProtocolDeployment([rpc({ chain: '0x1' }), rpc({ chain: '0x1' })], pointer, runtimeHash, 250, hashOf(250)))
+    .rejects.toThrow('protocol_pointer_wrong_chain');
 });

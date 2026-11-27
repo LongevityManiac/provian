@@ -1,23 +1,23 @@
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, FetchRequest } from 'ethers';
 import { rpcHostLabel, withRpcUsage, installRpcUsageMeter } from './rpc-usage-meter';
+import { LinearDecodeJsonRpcProvider } from './rpc-provider';
 
-// A provider whose transport is local: `_send` is replaced per instance below the
-// prototype patch, so the meter (on the prototype) is what these tests exercise.
-function localProvider(url: string): JsonRpcProvider {
-  const provider = new JsonRpcProvider(url, 8453, { staticNetwork: true, batchMaxCount: 1 });
-  return provider;
+// The relay's own provider class, as buildJsonRpc constructs it, with its transport
+// replaced so no network is used. The meter sits above the transport.
+function relayProvider(url: string, batchMaxCount?: number): JsonRpcProvider {
+  return new LinearDecodeJsonRpcProvider(new FetchRequest(url), 8453, { staticNetwork: true, ...(batchMaxCount ? { batchMaxCount } : {}) });
 }
 
 describe('rpc usage meter', () => {
-  const realSend = JsonRpcProvider.prototype._send;
+  const realSend = LinearDecodeJsonRpcProvider.prototype._send;
   beforeAll(() => {
-    // Stand-in transport under the meter: answer every payload without a network.
-    JsonRpcProvider.prototype._send = async function fake(payload) {
+    LinearDecodeJsonRpcProvider.prototype._send = async function fake(payload) {
       const items = Array.isArray(payload) ? payload : [payload];
+      await new Promise(resolve => setTimeout(resolve, 5));
       return items.map(item => ({ id: item.id, result: item.method === 'eth_blockNumber' ? '0x10' : '0x' }));
     };
   });
-  afterAll(() => { JsonRpcProvider.prototype._send = realSend; });
+  afterAll(() => { LinearDecodeJsonRpcProvider.prototype._send = realSend; });
 
   it('labels providers by host only and never by the key-bearing path', () => {
     expect(rpcHostLabel('https://base-mainnet.g.alchemy.com/v2/SECRETKEY')).toBe('base-mainnet.alchemy');
@@ -27,25 +27,33 @@ describe('rpc usage meter', () => {
   });
 
   it('RED control: before installation nothing is counted', async () => {
-    const provider = localProvider('https://base-mainnet.g.alchemy.com/v2/k');
+    const provider = relayProvider('https://base-mainnet.g.alchemy.com/v2/k', 1);
     const { calls } = await withRpcUsage(async () => { await provider.send('eth_blockNumber', []); });
     expect(calls).toEqual({});
   });
 
-  it('counts each call by provider and method inside the request that made it', async () => {
+  it('counts the relay provider class by provider and method inside the request that made each call', async () => {
     installRpcUsageMeter();
-    const alchemy = localProvider('https://base-mainnet.g.alchemy.com/v2/k');
-    const drpc = localProvider('https://lb.drpc.org/ogrpc?network=base&dkey=k');
+    const alchemy = relayProvider('https://base-mainnet.g.alchemy.com/v2/k', 1);
+    const drpc = relayProvider('https://lb.drpc.org/ogrpc?network=base&dkey=k', 1);
     const { calls } = await withRpcUsage(async () => {
       await alchemy.send('eth_blockNumber', []);
-      await alchemy.send('eth_call', [{ to: '0x0000000000000000000000000000000000000001', data: '0x' }, 'latest']);
-      await alchemy.send('eth_call', [{ to: '0x0000000000000000000000000000000000000001', data: '0x' }, 'latest']);
+      await Promise.all([alchemy.send('eth_call', [{}, 'latest']), alchemy.send('eth_call', [{}, 'latest'])]);
       await drpc.send('eth_getLogs', [{}]);
     });
     expect(calls).toEqual({ 'base-mainnet.alchemy eth_blockNumber': 1, 'base-mainnet.alchemy eth_call': 2, 'drpc eth_getLogs': 1 });
-    // Nothing leaks across requests: a call outside any request is not counted anywhere.
-    await alchemy.send('eth_blockNumber', []);
-    const { calls: next } = await withRpcUsage(async () => undefined);
-    expect(next).toEqual({});
+    await alchemy.send('eth_blockNumber', []); // outside any request: counted nowhere
+    expect((await withRpcUsage(async () => undefined)).calls).toEqual({});
+  });
+
+  it('concurrent requests on one shared, batching provider are each charged only their own calls', async () => {
+    installRpcUsageMeter();
+    const shared = relayProvider('https://arb-mainnet.g.alchemy.com/v2/k'); // default batching, shared drain timer
+    const [a, b] = await Promise.all([
+      withRpcUsage(async () => { await Promise.all([shared.send('eth_getLogs', [{}]), shared.send('eth_call', [{}, 'latest'])]); }),
+      withRpcUsage(async () => { await shared.send('eth_blockNumber', []); }),
+    ]);
+    expect(a.calls).toEqual({ 'arb-mainnet.alchemy eth_getLogs': 1, 'arb-mainnet.alchemy eth_call': 1 });
+    expect(b.calls).toEqual({ 'arb-mainnet.alchemy eth_blockNumber': 1 });
   });
 });
