@@ -17,10 +17,10 @@
  *     or session ID, AND app foreground/background transitions. App-
  *     backgrounded => emit with `providerContext: null`; app-foregrounded
  *     onto a matching provider URL => emit with the ProviderContext.
- *   - `input_event`        : keyboard input signals. M3 supplies these from
- *     `Keyboard.addListener('keyboardDidShow', ...)` or from the
- *     MutationObserver bridge installed in M4. M3 ships only the event
- *     type; actual wiring lands downstream.
+ *   - `input_event`        : engagement. The chat screen sends one when the
+ *     keyboard opens on a chat page and one when a new turn appears at the end
+ *     of the conversation (`turnWatcher.ts`), so a spoken turn in the
+ *     provider's own voice mode counts exactly like a typed one.
  *   - `tick`               : 1 Hz clock from the caller, same as desktop.
  *   - `system_state`       : phone lock / unlock, sleep / wake. Retained
  *     for parity with desktop; on iOS and Android these events are rarer
@@ -186,12 +186,20 @@ export class MobileSessionStateMachine {
             if (ctx.provider === s.provider && sameSessionId(ctx, s)) {
                 return [];
             }
+            if (isFirstSessionId(ctx, s)) {
+                s.sessionId = ctx.sessionId;
+                return [];
+            }
             this.state = this.newCandidate(ts, ctx);
             return [];
         }
 
         if (s.kind === 'active') {
             if (ctx && ctx.provider === s.provider && sameSessionId(ctx, s)) {
+                return [];
+            }
+            if (ctx && isFirstSessionId(ctx, s)) {
+                s.sessionId = ctx.sessionId;
                 return [];
             }
             if (!ctx) {
@@ -212,6 +220,10 @@ export class MobileSessionStateMachine {
         }
         if (ctx.provider === s.provider && sameSessionId(ctx, s)) {
             this.state = { kind: 'active', ...pickActiveFields(s) };
+            return [];
+        }
+        if (isFirstSessionId(ctx, s)) {
+            this.state = { kind: 'active', ...pickActiveFields(s), sessionId: ctx.sessionId };
             return [];
         }
         const outputs: MachineOutput[] = [];
@@ -494,6 +506,22 @@ function sameSessionId(
 ): boolean {
     if (state.boundaryMode === 'timestamp_gap') return true;
     return ctx.sessionId === state.sessionId;
+}
+
+/**
+ * A fresh chat has no thread id in its URL until its first message lands; then the URL gains
+ * one (`chatgpt.com/` becomes `chatgpt.com/c/<id>`). That is the same conversation getting its
+ * name, not a new one: the session keeps going and takes the id. Moving from one thread id to a
+ * different one is still a new conversation.
+ */
+function isFirstSessionId(
+    ctx: ProviderContext,
+    state: { provider: string; sessionId: string | null; boundaryMode: SessionBoundaryMode },
+): boolean {
+    return ctx.provider === state.provider
+        && state.boundaryMode === 'url_session_id'
+        && state.sessionId === null
+        && ctx.sessionId !== null;
 }
 
 function pickActiveFields(s: ActiveLikeBase): ActiveLikeBase {

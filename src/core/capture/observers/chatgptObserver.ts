@@ -8,10 +8,13 @@
  * expected and will be reconciled in a follow-up patch when the smoke
  * test surfaces mismatches.
  *
- * Selector basis (ai-footprint-lab patterns + public convention):
- *   - Turn containers:    [data-testid^="conversation-turn-"]
- *   - User-role marker:   [data-message-author-role="user"]
- *   - Assistant marker:   [data-message-author-role="assistant"]
+ * Selector basis (checked against the live page): ChatGPT serves two shapes.
+ *   - Signed-in page:     turns are [data-turn-key]; the user's turns carry
+ *                         [data-conversation-role="user"].
+ *   - Signed-out page:    turns are [data-testid^="conversation-turn-"]; the
+ *                         user's carry [data-message-author-role="user"].
+ *   - The signed-in page also has a "conversation-turn-location-footer" that
+ *     is not a turn, so turn ids ending in "-footer" are excluded.
  *   - charCount sums textContent over user messages only.
  *   - imageCount counts every <img> inside any conversation turn.
  *   - videoSeconds sums finite, positive <video>.duration values over any
@@ -30,15 +33,16 @@ import {
     type ProviderObserver,
 } from './types';
 
-const TURN_SELECTOR = '[data-testid^="conversation-turn-"]';
-const USER_MESSAGE_SELECTOR = '[data-message-author-role="user"]';
+const TURN_SELECTOR = '[data-turn-key], [data-testid^="conversation-turn-"]:not([data-testid$="-footer"])';
+const USER_MESSAGE_SELECTOR = '[data-conversation-role="user"], [data-message-author-role="user"]';
+const IMAGE_SELECTOR = '[data-turn-key] img, [data-testid^="conversation-turn-"]:not([data-testid$="-footer"]) img';
 
 /** See `CLAUDE_OBSERVER_SELECTORS` for rationale. */
 export const CHATGPT_OBSERVER_SELECTORS = {
     turn: TURN_SELECTOR,
     countTurns: true,
     userCharSource: USER_MESSAGE_SELECTOR,
-    image: `${TURN_SELECTOR} img`,
+    image: IMAGE_SELECTOR,
     countVideo: true,
 } as const;
 
@@ -48,8 +52,8 @@ export const observeChatGPT: ProviderObserver = (root: DomRoot): ObserverMetrics
 
     const turns = scope.querySelectorAll(TURN_SELECTOR);
     const userMessages = scope.querySelectorAll(USER_MESSAGE_SELECTOR);
-    const images = scope.querySelectorAll(`${TURN_SELECTOR} img`);
-    const videos = scope.querySelectorAll<HTMLVideoElement>(`${TURN_SELECTOR} video`);
+    const images = scope.querySelectorAll(IMAGE_SELECTOR);
+    const videos = scope.querySelectorAll<HTMLVideoElement>(IMAGE_SELECTOR.replace(/ img/g, ' video'));
 
     let charCount = 0;
     userMessages.forEach(el => {

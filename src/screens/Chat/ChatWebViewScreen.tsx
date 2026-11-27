@@ -14,13 +14,28 @@ import { errorDisplayCopy } from '../../i18n/displayCopy';
  *        - foreground_changed on WebView navigation state changes whose
  *          URL maps to (or away from) a known provider
  *        - foreground_changed on AppState foreground/background transitions
- *        - input_event on Keyboard.keyboardDidShow
+ *        - input_event on Keyboard.keyboardDidShow, except on a provider's
+ *          sign-in page or over a sign-in form (signing in is not a chat)
+ *        - input_event on each new turn at the end of the conversation
+ *          (turnMarkers.ts), so a turn spoken in the provider's own voice
+ *          mode counts exactly like a typed one
  *        - 1 Hz tick from setInterval
  *        - shutdown on screen unmount
  *   4. Forwards MachineOutput payloads into a ChatPEEmitter which assembles
  *      ai_conversation_metadata, computes the session fingerprint, checks
  *      the 24 h FingerprintCache, and calls ProvenanceEnvelopeManager.
  *      createEnvelope for successful emissions.
+ *
+ * Voice: the provider's own voice feature runs inside the WebView. The page
+ * may use the microphone (iOS grants the provider's own host after the OS
+ * permission) and play its replies; nothing here times, records or reads the
+ * audio. When the app leaves the screen the OS stops the page's microphone,
+ * and voice stops; coming back offers one tap that reopens the page with a
+ * working microphone.
+ *
+ * Only the app coming back to the foreground revives a session: a navigation
+ * that fires while the app is in the background records the URL but does not
+ * tell the session the chat is on screen.
  *
  * Hardware signing happens inside PEM on the existing path. Submission to
  * the relay happens via PEM's existing fire-and-forget flush; the retry
@@ -58,7 +73,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, SPACING } from '../../constants/theme';
+import { BORDER_RADIUS, COLORS, SPACING } from '../../constants/theme';
 import type { AppParamList } from '../../navigation/types';
 import { PROVIDER_CATALOG } from '../../core/capture/catalog';
 import {
@@ -86,6 +101,27 @@ import {
     shouldRunCapturePipeline,
     type MobileChatConsent,
 } from '../../core/capture/mobileChatConsent';
+import {
+    buildTurnWatcherScript,
+    parseTurnWatcherMessage,
+} from '../../core/capture/turnMarkers';
+import { isAuthUrl, keyboardCounts, navigationMayRevive } from '../../core/capture/chatScreenSignals';
+import { MarkerHealthReporter } from '../../core/capture/markerHealth';
+import RelayAPIService from '../../services/RelayAPIService';
+
+/** How long the "turn the microphone back on" bar stays after returning to the app. */
+const RESTORE_VOICE_BAR_MS = 20_000;
+
+let markerHealthReporter: MarkerHealthReporter | null = null;
+function getMarkerHealthReporter(): MarkerHealthReporter {
+    if (!markerHealthReporter) {
+        markerHealthReporter = new MarkerHealthReporter({
+            send: body => RelayAPIService.reportChatMarkers(body),
+            storage: AsyncStorage,
+        });
+    }
+    return markerHealthReporter;
+}
 
 type ChatWebViewRoute = RouteProp<AppParamList, 'ChatWebView'>;
 type Nav = NativeStackNavigationProp<AppParamList>;
@@ -102,7 +138,14 @@ const ChatWebViewScreen: React.FC = () => {
     const webViewRef = useRef<WebView | null>(null);
     const canGoBackRef = useRef(false);
     const lastUrlRef = useRef<string | null>(null);
+    const authFormVisibleRef = useRef(false);
+    // The opaque cover shows only while a page is first loading (on open, and after a reopen or
+    // retry). Android reports in-page navigations as loads that never finish, so after the first
+    // load nothing puts the cover back over a page that is working.
     const [loading, setLoading] = useState(true);
+    const [webViewKey, setWebViewKey] = useState(0);
+    const [sourceUri, setSourceUri] = useState<string | null>(null);
+    const [showRestoreVoice, setShowRestoreVoice] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const providerId = route.params?.providerId ?? '';
@@ -166,10 +209,32 @@ const ChatWebViewScreen: React.FC = () => {
         }
     }, [handleOutputs]);
 
-    const onMessage = useMemo(
+    const metricsOnMessage = useMemo(
         () => (captureEnabled ? createOnMessageHandler() : undefined),
         [captureEnabled],
     );
+    const onMessage = useMemo(() => {
+        if (!metricsOnMessage) return undefined;
+        return (event: { nativeEvent: { data: string } }): void => {
+            const raw = event?.nativeEvent?.data;
+            const msg = typeof raw === 'string' && entry ? parseTurnWatcherMessage(raw, entry.provider) : null;
+            if (!msg) {
+                metricsOnMessage(event);
+                return;
+            }
+            if (msg.t === 'turns_added') {
+                // A new turn at the end of the conversation, typed or spoken.
+                if (AppState.currentState === 'active') {
+                    setShowRestoreVoice(false);
+                    stepMachine({ t: 'input_event', ts: Date.now() });
+                }
+            } else if (msg.t === 'auth_page') {
+                authFormVisibleRef.current = msg.visible;
+            } else {
+                void getMarkerHealthReporter().report(msg);
+            }
+        };
+    }, [metricsOnMessage, stepMachine, entry]);
 
     const close = useCallback(() => {
         navigation.goBack();
@@ -188,6 +253,36 @@ const ChatWebViewScreen: React.FC = () => {
         const sub = BackHandler.addEventListener('hardwareBackPress', onAndroidBack);
         return () => sub.remove();
     }, [onAndroidBack]);
+
+    // --- Voice after the app was away ------------------------------------
+    //
+    // Leaving the app (home, lock) makes the OS stop the page's microphone. Some providers'
+    // pages notice and recover; others keep showing "listening" with nothing reaching them, and
+    // only a fresh page brings the microphone back. Coming back offers that in one tap. This
+    // runs whether or not chat capture is on: it is about the person's voice chat working.
+    useEffect(() => {
+        let wasBackground = false;
+        const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
+            if (next === 'background') wasBackground = true;
+            else if (next === 'active' && wasBackground) {
+                wasBackground = false;
+                setShowRestoreVoice(true);
+            }
+        });
+        return () => sub.remove();
+    }, []);
+    useEffect(() => {
+        if (!showRestoreVoice) return;
+        const timer = setTimeout(() => setShowRestoreVoice(false), RESTORE_VOICE_BAR_MS);
+        return () => clearTimeout(timer);
+    }, [showRestoreVoice]);
+    const restoreVoice = useCallback(() => {
+        setShowRestoreVoice(false);
+        setErrorMessage(null);
+        setSourceUri(lastUrlRef.current);
+        setLoading(true);
+        setWebViewKey(k => k + 1);
+    }, []);
 
     // --- AppState + Keyboard + 1 Hz tick wiring ------------------------
     useEffect(() => {
@@ -210,6 +305,8 @@ const ChatWebViewScreen: React.FC = () => {
             stepMachine({ t: 'foreground_changed', ts: Date.now(), providerContext: null });
         });
         const kbSub = Keyboard.addListener('keyboardDidShow', () => {
+            if (!keyboardCounts({ url: lastUrlRef.current, authFormVisible: authFormVisibleRef.current })) return;
+            setShowRestoreVoice(false);
             stepMachine({ t: 'input_event', ts: Date.now() });
         });
         const timer = setInterval(() => {
@@ -251,16 +348,21 @@ const ChatWebViewScreen: React.FC = () => {
     if (lastUrlRef.current === null) {
         lastUrlRef.current = startUrl;
     }
+    const uri = sourceUri ?? startUrl;
 
     const injectedJavaScript: string | undefined = captureEnabled
         && SUPPORTED_INJECTED_PROVIDERS.includes(entry.provider)
             ? buildInjectedScript(entry.provider as SupportedProvider)
+                + buildTurnWatcherScript(entry.provider as SupportedProvider)
             : undefined;
 
     const handleNavigationStateChange = (state: { canGoBack: boolean; url: string }): void => {
         canGoBackRef.current = state.canGoBack;
         lastUrlRef.current = state.url;
         if (!captureEnabled) return;
+        // Only the app coming back to the foreground revives a session (the AppState handler
+        // replays the last URL then).
+        if (!navigationMayRevive(AppState.currentState)) return;
         const ctx = providerContextFromUrl(state.url);
         stepMachine({
             t: 'foreground_changed',
@@ -289,8 +391,9 @@ const ChatWebViewScreen: React.FC = () => {
             </View>
             <View style={styles.webContainer}>
                 <WebView
+                    key={webViewKey}
                     ref={webViewRef}
-                    source={{ uri: startUrl }}
+                    source={{ uri }}
                     originWhitelist={['https://*']}
                     javaScriptEnabled
                     sharedCookiesEnabled
@@ -299,22 +402,22 @@ const ChatWebViewScreen: React.FC = () => {
                     startInLoadingState={false}
                     injectedJavaScript={injectedJavaScript}
                     onMessage={onMessage}
-                    onLoadStart={() => {
-                        setLoading(true);
-                        setErrorMessage(null);
-                    }}
+                    onLoadStart={() => setErrorMessage(null)}
                     onLoadEnd={() => setLoading(false)}
+                    onLoadProgress={(e: { nativeEvent: { progress: number } }) => {
+                        if ((e.nativeEvent?.progress ?? 0) >= 1) setLoading(false);
+                    }}
                     onError={(e: { nativeEvent: { description?: string } }) => {
                         setLoading(false);
                         setErrorMessage(e.nativeEvent.description ?? t('chatWebView.failedToLoad'));
                     }}
-                    onHttpError={(e: { nativeEvent: { statusCode: number } }) => {
-                        if (e.nativeEvent.statusCode >= 500) {
-                            setErrorMessage(t('chatWebView.serverError', { statusCode: e.nativeEvent.statusCode }));
-                        }
-                    }}
                     onNavigationStateChange={handleNavigationStateChange}
                     keyboardDisplayRequiresUserAction={false}
+                    // The provider's own voice: the page may use the microphone (iOS grants the
+                    // provider's own host once the OS permission is given) and play its replies.
+                    mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+                    allowsInlineMediaPlayback
+                    mediaPlaybackRequiresUserAction={false}
                     style={styles.webView}
                 />
                 {loading && (
@@ -334,6 +437,7 @@ const ChatWebViewScreen: React.FC = () => {
                             style={styles.retryButton}
                             onPress={() => {
                                 setErrorMessage(null);
+                                setLoading(true);
                                 webViewRef.current?.reload();
                             }}
                         >
@@ -341,12 +445,26 @@ const ChatWebViewScreen: React.FC = () => {
                         </ActionTouchable>
                     </View>
                 )}
+                {showRestoreVoice && !errorMessage && (
+                    <ActionTouchable
+                        style={styles.restoreVoiceBar}
+                        onPress={restoreVoice}
+                        accessibilityLabel={t('chatWebView.restoreVoice')}
+                    >
+                        <Ionicons name="mic-outline" size={18} color={COLORS.text} />
+                        <Text style={styles.restoreVoiceText} numberOfLines={2}>
+                            {t('chatWebView.restoreVoice')}
+                        </Text>
+                    </ActionTouchable>
+                )}
             </View>
         </SafeAreaView>
     );
 };
 
 function providerContextFromUrl(url: string): ProviderContext | null {
+    // A provider's sign-in page is not its chat surface: signing in is not a chat.
+    if (isAuthUrl(url)) return null;
     const entry: ProviderEntry | null = matchUrlToProvider(url, PROVIDER_CATALOG);
     if (!entry) return null;
     const boundaryMode: SessionBoundaryMode = entry.session_boundary;
@@ -382,6 +500,26 @@ function providerTitle(id: string): string {
 }
 
 const styles = StyleSheet.create({
+    restoreVoiceBar: {
+        position: 'absolute',
+        left: SPACING.m,
+        right: SPACING.m,
+        bottom: SPACING.l,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.s,
+        paddingVertical: SPACING.s,
+        paddingHorizontal: SPACING.m,
+        borderRadius: BORDER_RADIUS.l,
+        backgroundColor: COLORS.surfaceElevated,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: COLORS.border,
+    },
+    restoreVoiceText: {
+        flex: 1,
+        color: COLORS.text,
+        fontSize: 14,
+    },
     root: {
         flex: 1,
         backgroundColor: COLORS.background,

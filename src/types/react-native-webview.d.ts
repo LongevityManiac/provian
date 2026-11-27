@@ -43,6 +43,16 @@ declare module 'react-native-webview' {
         onHttpError?: (event: WebViewHttpErrorEvent) => void;
         onNavigationStateChange?: (state: WebViewNavigationState) => void;
         injectedJavaScript?: string;
+        onLoadProgress?: (event: { nativeEvent: { progress: number; url: string } }) => void;
+        /** iOS 15+: how a page's camera/microphone request is answered. */
+        mediaCapturePermissionGrantType?:
+            | 'grantIfSameHostElsePrompt'
+            | 'grantIfSameHostElseDeny'
+            | 'deny'
+            | 'grant'
+            | 'prompt';
+        allowsInlineMediaPlayback?: boolean;
+        mediaPlaybackRequiresUserAction?: boolean;
     }
 
     export class WebView extends Component<WebViewProps> {

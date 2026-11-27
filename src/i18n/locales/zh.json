@@ -2460,11 +2460,12 @@
     "readsTimes": "你何时打开聊天以及何时离开。",
     "readsTurns": "大致的轮次数量（一轮是一条用户消息加上一条助手回复）。",
     "readsAttachments": "对话中附带的图片大致数量和视频的秒数。",
-    "readsKeyboard": "键盘活动的时间戳。",
+    "readsKeyboard": "键盘活动以及新轮次（输入或说出的）出现时的时间戳。",
     "neverContent": "你消息的内容。",
     "neverReplies": "助手的回复。",
     "neverPages": "你在封装器内浏览的页面或访问的 URL。",
     "neverTyping": "你输入的任何内容。封装器无法读取你对话的内容。",
+    "neverMicrophone": "你的麦克风或你说的任何内容。语音聊天在 AI 自己的语音模式中进行；Provian 从不录制或收听。",
     "optOut": "你可以随时在设置的「聊天捕获」中更改此设置。",
     "declineLabel": "拒绝聊天捕获",
     "decline": "拒绝",
@@ -2486,7 +2487,7 @@
     "providerNotFound": "未找到供应商",
     "providerNotInCatalog": "供应商 “{{providerId}}” 不在目录中。",
     "failedToLoad": "加载失败",
-    "serverError": "服务器错误（{{statusCode}}）",
+    "restoreVoice": "你离开时语音已停止。轻点即可重新打开麦克风。",
     "retry": "重试"
   },
   "claims": {

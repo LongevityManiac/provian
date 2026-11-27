@@ -1,3 +1,4 @@
+import type { MarkerHealthBody } from '../core/capture/markerHealth';
 import type { HomeBalanceVerification } from '../core/protocol/homeBalanceVerification';
 import { currentProtocolDeployment, protocolDeploymentCandidate } from '../core/protocol/runtime';
 import { readConfirmedProtocolBalance } from '../core/protocol/balance';
@@ -1783,6 +1784,23 @@ class RelayAPIService {
             return await response.json();
         } catch {
             return null;
+        }
+    }
+
+    /**
+     * Chat marker health: whether a provider's conversation page still matches the chat screen's
+     * turn markers (`POST /v1/capture/chat-markers`). Carries the provider, the verdict and marker
+     * counts only. Best effort: false on any failure, never a biometric prompt.
+     */
+    async reportChatMarkers(body: MarkerHealthBody): Promise<boolean> {
+        try {
+            const response = await this.makeAuthenticatedRequest(
+                '/v1/capture/chat-markers',
+                { method: 'POST', body: JSON.stringify(body), timeoutMs: 10_000 },
+            );
+            return response.ok;
+        } catch {
+            return false;
         }
     }
 

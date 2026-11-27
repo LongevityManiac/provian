@@ -2459,11 +2459,12 @@
     "readsTimes": "Quand vous avez ouvert le chat et quand vous l'avez quitté.",
     "readsTurns": "Le nombre approximatif d'échanges (un échange correspond à un message de l'utilisateur plus une réponse de l'assistant).",
     "readsAttachments": "Le nombre approximatif d'images et de secondes de vidéo jointes à la conversation.",
-    "readsKeyboard": "Les horodatages de l'activité du clavier.",
+    "readsKeyboard": "Les horodatages de l'activité du clavier et des nouveaux tours qui apparaissent, tapés ou parlés.",
     "neverContent": "Le contenu de vos messages.",
     "neverReplies": "Les réponses de l'assistant.",
     "neverPages": "Les pages que vous consultez ou les URL que vous visitez dans l'affichage intégré.",
     "neverTyping": "Tout ce que vous tapez. L'affichage intégré ne peut pas lire le contenu de votre conversation.",
+    "neverMicrophone": "Votre micro ni rien de ce que vous dites. Une conversation vocale passe par le mode vocal de l'IA elle-même ; Provian ne l'enregistre ni ne l'écoute jamais.",
     "optOut": "Vous pouvez modifier ce choix à tout moment dans les Paramètres, sous Capture du Chat.",
     "declineLabel": "Refuser la capture du Chat",
     "decline": "Refuser",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Fournisseur introuvable",
     "providerNotInCatalog": "Le fournisseur « {{providerId}} » n'est pas dans le catalogue.",
     "failedToLoad": "Échec du chargement",
-    "serverError": "Erreur du serveur ({{statusCode}})",
+    "restoreVoice": "La voix s'est arrêtée pendant votre absence. Touchez pour réactiver le micro.",
     "retry": "Réessayer"
   },
   "claims": {

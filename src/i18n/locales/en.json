@@ -2502,11 +2502,12 @@
     "readsTimes": "When you opened the chat and when you left.",
     "readsTurns": "Approximate number of turns (one turn is one user message plus one assistant reply).",
     "readsAttachments": "Approximate count of images and seconds of video attached to the conversation.",
-    "readsKeyboard": "Timestamps of keyboard activity.",
+    "readsKeyboard": "Timestamps of keyboard activity and of new turns appearing, typed or spoken.",
     "neverContent": "The content of your messages.",
     "neverReplies": "The assistant’s replies.",
     "neverPages": "Pages you browse or URLs you visit inside the wrapper.",
     "neverTyping": "Anything you type. The wrapper cannot read the content of your conversation.",
+    "neverMicrophone": "Your microphone or anything you say. A voice chat runs in the AI's own voice mode; Provian never records or listens to it.",
     "optOut": "You can change this at any time in Settings, under Chat capture.",
     "declineLabel": "Decline chat capture",
     "decline": "Decline",
@@ -2528,7 +2529,7 @@
     "providerNotFound": "Provider not found",
     "providerNotInCatalog": "Provider \"{{providerId}}\" is not in the catalog.",
     "failedToLoad": "Failed to load",
-    "serverError": "Server error ({{statusCode}})",
+    "restoreVoice": "Voice stopped while you were away. Tap to turn the microphone back on.",
     "retry": "Retry"
   },
   "claims": {

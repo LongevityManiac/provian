@@ -24,6 +24,7 @@
       "infoPlist": {
         "NSFaceIDUsageDescription": "Provian uses Face ID to unlock your wallet and to confirm the transactions, signatures, and approvals you make.",
         "NSCameraUsageDescription": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
+        "NSMicrophoneUsageDescription": "Provian lets the AI you choose in the Chat tab use the microphone for its own voice conversations. Provian does not record or listen to the audio.",
         "NSMotionUsageDescription": "Provian reads the motion sensor only while you send or swap, to notice hard shaking that can mean a transfer is being made under pressure. Readings stay on this device.",
         "NSPhotoLibraryUsageDescription": "Provian opens your photo library only when you choose a picture for your Commons profile. Only the picture you pick is used.",
         "UIBackgroundModes": [
@@ -52,7 +53,9 @@
         "VIBRATE",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
-        "CAMERA"
+        "CAMERA",
+        "RECORD_AUDIO",
+        "MODIFY_AUDIO_SETTINGS"
       ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -111,7 +114,7 @@
         {
           "photosPermission": "Provian opens your photo library only when you choose a picture for your Commons profile. Only the picture you pick is used.",
           "cameraPermission": "Provian uses the camera to scan QR codes: wallet addresses, WalletConnect connection links, and agent pairing codes. Nothing is recorded or uploaded.",
-          "microphonePermission": false
+          "microphonePermission": "Provian lets the AI you choose in the Chat tab use the microphone for its own voice conversations. Provian does not record or listen to the audio."
         }
       ],
       [

@@ -1,6 +1,7 @@
 {
   "ios": {
     "NSFaceIDUsageDescription": "Provian utiliza Face ID para desbloquear tu billetera y confirmar las transacciones, firmas y aprobaciones que realices.",
+    "NSMicrophoneUsageDescription": "Provian permite que la IA que eliges en la pestaña Chat use el micrófono para sus propias conversaciones de voz. Provian no graba ni escucha el audio.",
     "NSCameraUsageDescription": "Provian utiliza la cámara para escanear códigos QR: direcciones de monedero, enlaces de conexión WalletConnect y códigos de emparejamiento de agentes. No se graba ni se sube ningún dato a la plataforma.",
     "NSMotionUsageDescription": "Provian lee el sensor de movimiento solo mientras envías o intercambias objetos, para detectar sacudidas fuertes que pueden indicar que la transferencia se está realizando bajo presión. Las lecturas se almacenan en este dispositivo.",
     "NSPhotoLibraryUsageDescription": "Provian solo abre tu biblioteca de fotos cuando eliges una imagen para tu perfil Commons . Solo se utiliza la imagen que seleccionas."

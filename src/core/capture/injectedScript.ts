@@ -213,10 +213,10 @@ export const SELECTORS_BY_PROVIDER: Record<SupportedProvider, ProviderSelectors>
         countVideo: false,
     },
     chatgpt: {
-        turn: '[data-testid^="conversation-turn-"]',
+        turn: '[data-turn-key], [data-testid^="conversation-turn-"]:not([data-testid$="-footer"])',
         countTurns: true,
-        userCharSource: '[data-message-author-role="user"]',
-        image: '[data-testid^="conversation-turn-"] img',
+        userCharSource: '[data-conversation-role="user"], [data-message-author-role="user"]',
+        image: '[data-turn-key] img, [data-testid^="conversation-turn-"]:not([data-testid$="-footer"]) img',
         countVideo: true,
     },
     gemini: {
@@ -227,10 +227,10 @@ export const SELECTORS_BY_PROVIDER: Record<SupportedProvider, ProviderSelectors>
         countVideo: true,
     },
     perplexity: {
-        turn: '[data-testid="thread-question"], [data-testid="thread-answer"]',
+        turn: '[data-message-bubble="right"], [data-workflow-final-text], [data-testid="thread-question"], [data-testid="thread-answer"]',
         countTurns: true,
-        userCharSource: '[data-testid="thread-question"]',
-        image: '[data-testid="thread-question"] img, [data-testid="thread-answer"] img',
+        userCharSource: '[data-message-bubble="right"], [data-testid="thread-question"]',
+        image: '[data-message-bubble="right"] img, [data-workflow-final-text] img, [data-testid="thread-question"] img, [data-testid="thread-answer"] img',
         countVideo: true,
     },
     grok: {

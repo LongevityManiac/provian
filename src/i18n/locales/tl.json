@@ -2459,11 +2459,12 @@
     "readsTimes": "Kung kailan mo binuksan ang chat at kung kailan ka umalis.",
     "readsTurns": "Tinatayang bilang ng turn (ang isang turn ay isang mensahe ng user at isang sagot ng assistant).",
     "readsAttachments": "Tinatayang bilang ng mga larawan at segundo ng video na naka-attach sa usapan.",
-    "readsKeyboard": "Mga timestamp ng aktibidad sa keyboard.",
+    "readsKeyboard": "Mga timestamp ng aktibidad sa keyboard at ng mga bagong turn na lumalabas, tina-type man o sinasabi.",
     "neverContent": "Ang nilalaman ng mga mensahe mo.",
     "neverReplies": "Ang mga sagot ng assistant.",
     "neverPages": "Mga pahinang bino-browse mo o mga URL na binibisita mo sa loob ng wrapper.",
     "neverTyping": "Anumang tina-type mo. Hindi mababasa ng wrapper ang nilalaman ng usapan mo.",
+    "neverMicrophone": "Ang mikropono mo o anumang sinasabi mo. Tumatakbo ang voice chat sa sariling voice mode ng AI; hindi ito kailanman nire-record o pinakikinggan ng Provian.",
     "optOut": "Pwede mo itong baguhin anumang oras sa Settings, sa ilalim ng Chat capture.",
     "declineLabel": "Tanggihan ang chat capture",
     "decline": "Tanggihan",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Hindi nahanap ang provider",
     "providerNotInCatalog": "Ang provider na \"{{providerId}}\" ay wala sa catalog.",
     "failedToLoad": "Nabigong mag-load",
-    "serverError": "Error sa server ({{statusCode}})",
+    "restoreVoice": "Huminto ang voice habang wala ka. I-tap para buksan ulit ang mikropono.",
     "retry": "Subukan muli"
   },
   "claims": {

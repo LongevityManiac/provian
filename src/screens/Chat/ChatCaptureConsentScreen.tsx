@@ -56,6 +56,7 @@ const NEVER_ITEM_KEYS: string[] = [
     'chatCaptureConsent.neverReplies',
     'chatCaptureConsent.neverPages',
     'chatCaptureConsent.neverTyping',
+    'chatCaptureConsent.neverMicrophone',
 ];
 
 const ChatCaptureConsentScreen: React.FC<ChatCaptureConsentScreenProps> = ({

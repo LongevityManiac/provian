@@ -36,3 +36,31 @@ describe('observeChatGPT', () => {
         expect(metrics).toEqual({ turnCount: 0, charCount: 0, imageCount: 0, videoSeconds: 0 });
     });
 });
+
+describe('observeChatGPT on the page ChatGPT serves today', () => {
+    // Shape checked on the live signed-in page: data-turn-key turns, data-conversation-role on the
+    // user's turns, and a "conversation-turn-location-footer" that is not a turn.
+    const signedIn = `<main>
+      <div data-turn-key="t1"><div data-conversation-role="user">hello there</div></div>
+      <div data-turn-key="t2"><div data-conversation-role="assistant">hi</div><img src="x.png"></div>
+      <div data-testid="conversation-turn-location-footer"></div>
+    </main>`;
+
+    it('counts the signed-in turns and the user text, and never the footer', async () => {
+        const { Window } = await import('happy-dom');
+        const w = new Window();
+        w.document.write(signedIn);
+        const m = observeChatGPT(w.document as unknown as Document);
+        expect(m.turnCount).toBe(2);
+        expect(m.charCount).toBe('hello there'.length);
+        expect(m.imageCount).toBe(1);
+    });
+
+    it('RED control: the previous selectors saw one "turn" (the footer) and no user text there', async () => {
+        const { Window } = await import('happy-dom');
+        const w = new Window();
+        w.document.write(signedIn);
+        expect(w.document.querySelectorAll('[data-testid^="conversation-turn-"]').length).toBe(1);
+        expect(w.document.querySelectorAll('[data-message-author-role="user"]').length).toBe(0);
+    });
+});

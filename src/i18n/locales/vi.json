@@ -2459,11 +2459,12 @@
     "readsTimes": "Khi bạn mở cuộc trò chuyện và khi bạn rời đi.",
     "readsTurns": "Số lượt trao đổi gần đúng (một lượt là một tin nhắn của người dùng cộng một phản hồi của trợ lý).",
     "readsAttachments": "Số lượng hình ảnh gần đúng và số giây video được đính kèm vào cuộc trò chuyện.",
-    "readsKeyboard": "Dấu thời gian của hoạt động bàn phím.",
+    "readsKeyboard": "Dấu thời gian của hoạt động bàn phím và của các lượt mới xuất hiện, dù gõ hay nói.",
     "neverContent": "Nội dung tin nhắn của bạn.",
     "neverReplies": "Phản hồi của trợ lý.",
     "neverPages": "Các trang bạn duyệt hoặc URL bạn truy cập bên trong trình bao bọc.",
     "neverTyping": "Bất cứ điều gì bạn nhập. Trình bao bọc không thể đọc nội dung cuộc trò chuyện của bạn.",
+    "neverMicrophone": "Micrô của bạn hay bất cứ điều gì bạn nói. Cuộc trò chuyện bằng giọng nói chạy trong chế độ giọng nói riêng của AI; Provian không bao giờ ghi âm hay nghe nó.",
     "optOut": "Bạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt, mục Chụp trò chuyện.",
     "declineLabel": "Từ chối chụp trò chuyện",
     "decline": "Từ chối",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Không tìm thấy nhà cung cấp",
     "providerNotInCatalog": "Nhà cung cấp \"{{providerId}}\" không có trong danh mục.",
     "failedToLoad": "Không tải được",
-    "serverError": "Lỗi máy chủ ({{statusCode}})",
+    "restoreVoice": "Giọng nói đã dừng khi bạn rời đi. Chạm để bật lại micrô.",
     "retry": "Thử lại"
   },
   "claims": {

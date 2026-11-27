@@ -2459,11 +2459,12 @@
     "readsTimes": "Wakati ulipofungua soga na wakati ulipoondoka.",
     "readsTurns": "Idadi ya makadirio ya zamu (zamu moja ni ujumbe mmoja wa mtumiaji pamoja na jibu moja la msaidizi).",
     "readsAttachments": "Hesabu ya makadirio ya picha na sekunde za video zilizoambatishwa kwenye mazungumzo.",
-    "readsKeyboard": "Alama za muda za shughuli za kibodi.",
+    "readsKeyboard": "Alama za muda za shughuli za kibodi na za zamu mpya zinazoonekana, zilizoandikwa au kusemwa.",
     "neverContent": "Maudhui ya ujumbe wako.",
     "neverReplies": "Majibu ya msaidizi.",
     "neverPages": "Kurasa unazovinjari au URL unazotembelea ndani ya kifungashio.",
     "neverTyping": "Chochote unachoandika. Kifungashio hakiwezi kusoma maudhui ya mazungumzo yako.",
+    "neverMicrophone": "Maikrofoni yako wala chochote unachosema. Mazungumzo ya sauti hufanyika katika hali ya sauti ya AI yenyewe; Provian haiyarekodi wala kuyasikiliza kamwe.",
     "optOut": "Unaweza kubadilisha hili wakati wowote kwenye Mipangilio, chini ya Kunasa Soga.",
     "declineLabel": "Kataa kunasa soga",
     "decline": "Kataa",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Mtoa huduma hakupatikana",
     "providerNotInCatalog": "Mtoa huduma \"{{providerId}}\" hayupo kwenye katalogi.",
     "failedToLoad": "Imeshindwa kupakia",
-    "serverError": "Hitilafu ya seva ({{statusCode}})",
+    "restoreVoice": "Sauti ilisimama ulipokuwa mbali. Gusa ili kuwasha maikrofoni tena.",
     "retry": "Jaribu tena"
   },
   "claims": {

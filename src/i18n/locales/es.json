@@ -2459,11 +2459,12 @@
     "readsTimes": "Cuándo abriste el chat y cuándo lo dejaste.",
     "readsTurns": "Número aproximado de turnos (un turno es un mensaje del usuario más una respuesta del asistente).",
     "readsAttachments": "Recuento aproximado de imágenes y segundos de video adjuntos a la conversación.",
-    "readsKeyboard": "Marcas de tiempo de la actividad del teclado.",
+    "readsKeyboard": "Marcas de tiempo de la actividad del teclado y de los nuevos turnos que aparecen, escritos o hablados.",
     "neverContent": "El contenido de tus mensajes.",
     "neverReplies": "Las respuestas del asistente.",
     "neverPages": "Las páginas que navegas o las URL que visitas dentro del contenedor.",
     "neverTyping": "Nada de lo que escribes. El contenedor no puede leer el contenido de tu conversación.",
+    "neverMicrophone": "Tu micrófono ni nada de lo que dices. Una conversación de voz usa el modo de voz propio de la IA; Provian nunca la graba ni la escucha.",
     "optOut": "Puedes cambiar esto en cualquier momento en Configuración, en Captura de chat.",
     "declineLabel": "Rechazar la captura de chat",
     "decline": "Rechazar",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Proveedor no encontrado",
     "providerNotInCatalog": "El proveedor \"{{providerId}}\" no está en el catálogo.",
     "failedToLoad": "No se pudo cargar",
-    "serverError": "Error del servidor ({{statusCode}})",
+    "restoreVoice": "La voz se detuvo mientras no estabas. Toca para volver a activar el micrófono.",
     "retry": "Reintentar"
   },
   "claims": {

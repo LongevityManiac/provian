@@ -2459,11 +2459,12 @@
     "readsTimes": "Quando você abriu o bate-papo e quando você saiu.",
     "readsTurns": "Número aproximado de turnos (um turno é uma mensagem do usuário mais uma resposta do assistente).",
     "readsAttachments": "Contagem aproximada de imagens e segundos de vídeo anexados à conversa.",
-    "readsKeyboard": "Registros de horário da atividade do teclado.",
+    "readsKeyboard": "Registros de horário da atividade do teclado e de novos turnos que aparecem, digitados ou falados.",
     "neverContent": "O conteúdo das suas mensagens.",
     "neverReplies": "As respostas do assistente.",
     "neverPages": "As páginas que você navega ou os URLs que você visita dentro do wrapper.",
     "neverTyping": "Qualquer coisa que você digite. O wrapper não consegue ler o conteúdo da sua conversa.",
+    "neverMicrophone": "Seu microfone ou qualquer coisa que você diga. Uma conversa por voz usa o próprio modo de voz da IA; o Provian nunca a grava nem a ouve.",
     "optOut": "Você pode alterar isso a qualquer momento em Configurações, em Captura de bate-papo.",
     "declineLabel": "Recusar a captura de bate-papo",
     "decline": "Recusar",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Provedor não encontrado",
     "providerNotInCatalog": "O provedor \"{{providerId}}\" não está no catálogo.",
     "failedToLoad": "Falha ao carregar",
-    "serverError": "Erro do servidor ({{statusCode}})",
+    "restoreVoice": "A voz parou enquanto você estava fora. Toque para ligar o microfone de novo.",
     "retry": "Tentar novamente"
   },
   "claims": {

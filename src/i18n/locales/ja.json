@@ -2460,11 +2460,12 @@
     "readsTimes": "チャットを開いた時刻と離れた時刻。",
     "readsTurns": "おおよそのターン数（1 ターンは、ユーザーのメッセージ 1 件とアシスタントの返信 1 件です）。",
     "readsAttachments": "会話に添付された画像のおおよその数と、動画の秒数。",
-    "readsKeyboard": "キーボード操作のタイムスタンプ。",
+    "readsKeyboard": "キーボード操作と、入力または音声による新しいターンが表示された時刻のタイムスタンプ。",
     "neverContent": "あなたのメッセージの内容。",
     "neverReplies": "アシスタントの返信。",
     "neverPages": "アプリ内ブラウザで閲覧するページや、アクセスする URL。",
     "neverTyping": "入力する内容のすべて。アプリ内ブラウザは会話の内容を読み取ることはできません。",
+    "neverMicrophone": "マイクや、あなたが話す内容。音声チャットは AI 自身の音声モードで行われ、Provian が録音したり聞いたりすることはありません。",
     "optOut": "これは設定の「チャットキャプチャ」からいつでも変更できます。",
     "declineLabel": "チャットキャプチャを拒否",
     "decline": "拒否",
@@ -2486,7 +2487,7 @@
     "providerNotFound": "プロバイダーが見つかりません",
     "providerNotInCatalog": "プロバイダー「{{providerId}}」はカタログにありません。",
     "failedToLoad": "読み込みに失敗しました",
-    "serverError": "サーバーエラー（{{statusCode}}）",
+    "restoreVoice": "離れている間に音声が止まりました。タップしてマイクを再びオンにします。",
     "retry": "再試行"
   },
   "claims": {

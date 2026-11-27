@@ -9,8 +9,10 @@
  * test surfaces mismatches.
  *
  * Selector basis (ai-footprint-lab patterns + public convention):
- *   - Question container:  [data-testid="thread-question"]
- *   - Answer container:    [data-testid="thread-answer"]
+ *   - Question container:  [data-message-bubble="right"] (current page),
+ *                          [data-testid="thread-question"] (older page)
+ *   - Answer container:    [data-workflow-final-text] (current page),
+ *                          [data-testid="thread-answer"] (older page)
  *   - turnCount counts questions plus answers inside the thread scope.
  *   - charCount sums textContent over questions only (user-authored).
  *   - imageCount counts any <img> inside a question or answer.
@@ -32,16 +34,18 @@ import {
     type ProviderObserver,
 } from './types';
 
-const QUESTION_SELECTOR = '[data-testid="thread-question"]';
-const ANSWER_SELECTOR = '[data-testid="thread-answer"]';
-const TURN_SELECTOR = `${QUESTION_SELECTOR}, ${ANSWER_SELECTOR}`;
+// The current page marks the person's question [data-message-bubble="right"] and the answer
+// [data-workflow-final-text]; the older thread-question / thread-answer test ids are kept.
+const QUESTION_SELECTOR = '[data-message-bubble="right"], [data-testid="thread-question"]';
+const TURN_SELECTOR = '[data-message-bubble="right"], [data-workflow-final-text], [data-testid="thread-question"], [data-testid="thread-answer"]';
+const IMAGE_SELECTOR = '[data-message-bubble="right"] img, [data-workflow-final-text] img, [data-testid="thread-question"] img, [data-testid="thread-answer"] img';
 
 /** See `CLAUDE_OBSERVER_SELECTORS` for rationale. */
 export const PERPLEXITY_OBSERVER_SELECTORS = {
     turn: TURN_SELECTOR,
     countTurns: true,
     userCharSource: QUESTION_SELECTOR,
-    image: `${QUESTION_SELECTOR} img, ${ANSWER_SELECTOR} img`,
+    image: IMAGE_SELECTOR,
     countVideo: true,
 } as const;
 
@@ -51,8 +55,8 @@ export const observePerplexity: ProviderObserver = (root: DomRoot): ObserverMetr
 
     const turns = scope.querySelectorAll(TURN_SELECTOR);
     const questions = scope.querySelectorAll(QUESTION_SELECTOR);
-    const images = scope.querySelectorAll(`${TURN_SELECTOR} img`);
-    const videos = scope.querySelectorAll<HTMLVideoElement>(`${TURN_SELECTOR} video`);
+    const images = scope.querySelectorAll(IMAGE_SELECTOR);
+    const videos = scope.querySelectorAll<HTMLVideoElement>(IMAGE_SELECTOR.replace(/ img/g, ' video'));
 
     let charCount = 0;
     questions.forEach(el => {

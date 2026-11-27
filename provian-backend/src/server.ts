@@ -205,6 +205,7 @@ import { createPersonExternalAddressRouter } from './routes/person-external-addr
 import { createRecourseRouter } from './routes/recourse';
 import { createAgentSolanaAddressRouter, createPersonSolanaAddressRouter } from './routes/solana-address';
 import { createLaunchStateRouter } from './routes/launch-state';
+import { createChatMarkersRouter } from './routes/chat-markers';
 import { retiredLegacyAgentWalletCreateHandler } from './routes/retired-wallet-creation';
 import { seedCatalog, startCatalogFlushTimer } from './core/provenance/pe-type-catalog';
 import {
@@ -3919,6 +3920,8 @@ app.use('/v1/wallet', createPersonSolanaAddressRouter({ agentBankDeps, authentic
  * above the `/v1/wallet` catch-all.
  */
 app.use('/v1/wallet/launch-state', createLaunchStateRouter({ authenticate }));
+// The chat screen's turn-marker verdicts, so a provider page change that stops chats being counted is told.
+app.use('/v1/capture', createChatMarkersRouter({ db, authenticate }));
 
 app.use('/v1/escrow', createAgentEscrowRouter(agentBankDeps));
 app.use('/v1/promises', createAgentPromisesRouter(agentBankDeps));

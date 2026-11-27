@@ -2459,11 +2459,12 @@
     "readsTimes": "Kapan Anda membuka obrolan dan kapan Anda pergi.",
     "readsTurns": "Perkiraan jumlah giliran (satu giliran adalah satu pesan pengguna ditambah satu balasan asisten).",
     "readsAttachments": "Perkiraan jumlah gambar dan detik video yang dilampirkan ke percakapan.",
-    "readsKeyboard": "Stempel waktu aktivitas keyboard.",
+    "readsKeyboard": "Stempel waktu aktivitas keyboard dan giliran baru yang muncul, diketik atau diucapkan.",
     "neverContent": "Isi pesan Anda.",
     "neverReplies": "Balasan asisten.",
     "neverPages": "Halaman yang Anda jelajahi atau URL yang Anda kunjungi di dalam pembungkus.",
     "neverTyping": "Apa pun yang Anda ketik. Pembungkus tidak dapat membaca isi percakapan Anda.",
+    "neverMicrophone": "Mikrofon Anda atau apa pun yang Anda ucapkan. Obrolan suara berjalan di mode suara milik AI itu sendiri; Provian tidak pernah merekam atau mendengarkannya.",
     "optOut": "Anda dapat mengubah ini kapan saja di Pengaturan, di bawah Chat capture.",
     "declineLabel": "Tolak chat capture",
     "decline": "Tolak",
@@ -2485,7 +2486,7 @@
     "providerNotFound": "Penyedia tidak ditemukan",
     "providerNotInCatalog": "Penyedia \"{{providerId}}\" tidak ada dalam katalog.",
     "failedToLoad": "Gagal memuat",
-    "serverError": "Kesalahan server ({{statusCode}})",
+    "restoreVoice": "Suara berhenti saat Anda pergi. Ketuk untuk menyalakan mikrofon lagi.",
     "retry": "Coba Lagi"
   },
   "claims": {
