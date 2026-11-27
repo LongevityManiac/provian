@@ -31,6 +31,7 @@
  */
 
 import crypto from 'crypto';
+import { recordRpcCalls } from './rpc-usage-meter';
 
 import { allSettledOrThrow } from '../net/map-bounded';
 import { isSolanaAddress, isSolanaSignature } from '../external-address/solana-keys';
@@ -157,6 +158,7 @@ function jsonRpcLeg(url: string, operatorId: string, fetchImpl: typeof fetch): S
     operatorId,
     send: async (method: string, params: readonly unknown[]): Promise<unknown> => {
       id += 1;
+      recordRpcCalls(url, [method]);
       let res: Response;
       try {
         res = await fetchImpl(url, {

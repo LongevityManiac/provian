@@ -5,8 +5,8 @@
  * through `JsonRpcProvider.send` (the relay's own provider class inherits it;
  * ethers' internal `_perform` reaches it too); the few paths that post JSON-RPC
  * with a plain fetch (the app's RPC proxy, the swap route's Solana reads, the
- * facilitator's Solana reader, the legacy mint reader) call `recordRpcCalls`
- * before they send. The ethers entry runs synchronously in
+ * facilitator's Solana reader, the Solana chain-record legs, the Solana proof's
+ * head-slot read, the legacy mint reader) call `recordRpcCalls` before they send. The ethers entry runs synchronously in
  * the caller's async context, before ethers queues the call and sends a batch from
  * a shared timer, so each call is counted in the request that made it, even when
  * concurrent requests share one provider. One structured log line is written per

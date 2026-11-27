@@ -11,7 +11,8 @@
  * The upstream here is a real local HTTP server reached through the SAME bounded
  * fetch production wires in (core/net/bounded-fetch.ts).
  */
-import { describe, it, expect, afterEach } from '@jest/globals';
+import { describe, it, expect, afterEach, jest } from '@jest/globals';
+import { rpcUsageMiddleware } from '../core/onchain/rpc-usage-meter';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import request from 'supertest';
 import http from 'http';
@@ -70,7 +71,7 @@ interface Harness {
   upstreamCalls: () => number;
 }
 
-function harness(upstreamUrl: string | null, opts: { deadlineMs?: number; allow?: boolean } = {}): Harness {
+function harness(upstreamUrl: string | null, opts: { deadlineMs?: number; allow?: boolean; meter?: boolean } = {}): Harness {
   const rateCalls: Harness['rateCalls'] = [];
   let upstreamCalls = 0;
   const deps: AlchemyRpcProxyDeps = {
@@ -98,6 +99,7 @@ function harness(upstreamUrl: string | null, opts: { deadlineMs?: number; allow?
     logError: () => undefined,
   };
   const app = express();
+  if (opts.meter) app.use(rpcUsageMiddleware);
   app.use(express.json());
   app.use((req: Request, _res: Response, next: NextFunction) => {
     req.user = { id: 'user-1' } as Request['user'];
@@ -318,3 +320,30 @@ describe('Alchemy RPC proxy — method allowlist', () => {
     expect(firstDisallowedRpcMethod(rpc('x'.repeat(500)), 'base-mainnet')).toHaveLength(64);
   });
 });
+
+describe('Alchemy RPC proxy — usage meter', () => {
+  const usageLines = (spy: { mock: { calls: unknown[][] } }) => spy.mock.calls
+    .map(args => String(args[0])).filter(line => line.includes('"rpc_usage"')).map(line => JSON.parse(line).rpc_usage);
+
+  it('a forwarded batch is counted once per call in the request\'s usage line', async () => {
+    const h = harness(await upstream(echoRpc), { meter: true });
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      const res = await request(h.app).post('/api/proxy/alchemy/rpc/base-mainnet').send([call(1), call(2), call(3)]);
+      expect(res.status).toBe(200);
+      expect(usageLines(spy)).toEqual([expect.objectContaining({ total: 3, calls: { 'other eth_blockNumber': 3 } })]);
+    } finally { spy.mockRestore(); }
+  });
+
+  it('a single call counts one; a refused batch reaches no upstream and logs no usage', async () => {
+    const h = harness(await upstream(echoRpc), { meter: true });
+    const spy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      await request(h.app).post('/api/proxy/alchemy/rpc/base-mainnet').send(call(1));
+      await request(h.app).post('/api/proxy/alchemy/rpc/base-mainnet')
+        .send(Array.from({ length: ALCHEMY_RPC_MAX_BATCH + 1 }, (_, i) => call(i)));
+      expect(usageLines(spy)).toEqual([expect.objectContaining({ total: 1, calls: { 'other eth_blockNumber': 1 } })]);
+    } finally { spy.mockRestore(); }
+  });
+});
+

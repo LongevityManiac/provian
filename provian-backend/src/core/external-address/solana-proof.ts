@@ -31,6 +31,7 @@
  */
 
 import crypto from 'crypto';
+import { recordRpcCalls } from '../onchain/rpc-usage-meter';
 import type { AgentBankDeps } from '../agent-bank/types';
 import { generatePE } from '../agent-bank/pe-utils';
 import type { PopCacheDeps } from '../agent-wallet/proof-of-possession';
@@ -230,6 +231,7 @@ export function buildSolanaHeadSlotReader(
   env: Env = process.env,
 ): () => Promise<number> {
   return async () => {
+    recordRpcCalls(facilitatorSolanaRpcUrl(env), ['getSlot']);
     const res = await fetchImpl(facilitatorSolanaRpcUrl(env), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
