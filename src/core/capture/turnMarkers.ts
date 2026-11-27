@@ -22,12 +22,22 @@
  *    new turns. A fresh chat's empty page is an empty baseline.
  *  - Opening an existing thread re-baselines, including from a fresh chat page (the screen opens
  *    on one, and its history list sits there). Going from a fresh chat to its own new thread
- *    does not: the conversation is being created. The page shows which it is: it renamed its own
- *    history entry (replaceState) from this fresh path to exactly this thread path, or a turn
- *    appeared on the fresh page moments before (and the fresh page is not a temporary or
- *    incognito chat, which never gets a thread of its own). Anything else is opening an existing
- *    thread. The watcher posts its verdict (`path_change`) so the session machine adopts a
- *    thread id only for a chat being created.
+ *    does not: the conversation is being created, and its first turns are new turns. The page
+ *    shows which it is. An existing thread is opened by the person: a tap on a link to exactly
+ *    that thread (history lists are links), a tap on a history or search row that is not a link
+ *    when that was their last tap before the move, or going back. A thread being created gets
+ *    there with none of these: the page itself moves its history entry (pushState or
+ *    replaceState) from this fresh path to exactly this thread path, or a turn appeared on the
+ *    fresh page moments before. A just-created thread's id never had a link, so a tap on a link
+ *    to that exact path, however long the page then takes to move, always means opening. A
+ *    voice chat's first question and answer may render only after the move (Claude does this),
+ *    so the move alone is enough. A temporary or incognito chat never gets a thread of its own:
+ *    a move off one is always opening a thread. The watcher posts its verdict (`path_change`)
+ *    so the session machine adopts a thread id only for a chat being created.
+ *  - A "created" thread's new last turn counts as soon as it appears (a voice chat has no other
+ *    signal, and the person may leave moments later). During the arrival window, if more turns
+ *    arrive than a just-created chat can have, it was an existing thread opened some other way:
+ *    they are taken as already there and nothing is posted for them.
  *  - For a few seconds after arriving at an existing thread, turns that render are absorbed into
  *    the baseline: a provider may still be swapping the old thread's turns for the new one's.
  *  - Only a new LAST turn counts. Older turns appearing above it (virtualized lists render them on
@@ -131,8 +141,24 @@ export const SIGNED_OUT_HINT_SELECTOR = [
 
 /** How long turns rendering on arrival at an existing thread are treated as already there. */
 export const THREAD_ARRIVAL_ABSORB_MS = 3_000;
-/** How recent a replaceState must be to mean "the fresh chat was renamed to its thread". */
+/** How recent the page's own history move must be to mean "the fresh chat moved to its thread". */
 export const RENAME_WINDOW_MS = 2_000;
+/** A tap on a link to exactly the thread the page then moves to, this recent, means it was opened. */
+export const LINK_TAP_WINDOW_MS = 60_000;
+/** A last tap on a history or search row (not a link) this recent before the move means opened. */
+export const ROW_TAP_WINDOW_MS = 10_000;
+/** More new turns than this while a created thread arrives means it was an existing thread. */
+export const ARRIVAL_MAX_NEW_TURNS = 4;
+/**
+ * A history or search row that opens a thread without being a link: anything tappable in the
+ * page's navigation (sidebar), or a result row in a dialog (a search box). The composer, its
+ * suggestions and the voice controls are outside both and never match.
+ */
+const ROW_CONTAINERS = ['nav', 'aside', '[role="navigation"]', '[role="dialog"]'];
+const ROW_ITEMS = ['li', '[role="listitem"]', '[role="option"]', '[role="menuitem"]', '[role="treeitem"]', '[role="link"]', '[cmdk-item]', '[role="button"]', 'button'];
+export const HISTORY_ROW_SELECTOR = ROW_CONTAINERS
+    .flatMap(c => ROW_ITEMS.filter(i => c !== '[role="dialog"]' || (i !== 'button' && i !== '[role="button"]')).map(i => `${c} ${i}`))
+    .join(', ');
 /** How recent a turn on the fresh page must be to mean "this fresh chat just got its thread". */
 export const FRESH_TURN_WINDOW_MS = 10_000;
 /** A fresh-path chat that never gets a thread of its own. */
@@ -158,24 +184,87 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
     var FIRST_CHECK = ${MARKER_HEALTH_FIRST_CHECK_MS};
     var ABSORB_MS = ${THREAD_ARRIVAL_ABSORB_MS};
     var RENAME_MS = ${RENAME_WINDOW_MS};
+    var LINK_TAP_MS = ${LINK_TAP_WINDOW_MS};
+    var ROW_TAP_MS = ${ROW_TAP_WINDOW_MS};
+    var ARRIVAL_MAX = ${ARRIVAL_MAX_NEW_TURNS};
+    var HISTORY_ROW = ${JSON.stringify(HISTORY_ROW_SELECTOR)};
     var FRESH_TURN_MS = ${FRESH_TURN_WINDOW_MS};
     var TEMPORARY = new RegExp(${JSON.stringify(TEMPORARY_CHAT_QUERY)}, 'i');
     var absorbUntil = 0;
     var lastFreshTurnAt = -1;
     var lastSearch = '';
-    var lastRename = null;
+    var moves = [];
+    var linkTaps = [];
+    var lastTap = null;
+    var arrival = null;
+    function trimPath(p) { return p.length > 1 ? p.replace(/[/]+$/, '') : p; }
+    function hookHistory(name) {
+      try {
+        var orig = history[name];
+        history[name] = function (state, title, url) {
+          try {
+            var from = location.pathname || '/';
+            var to = from;
+            if (url !== undefined && url !== null) to = new URL(String(url), location.href).pathname || '/';
+            moves.push({ from: from, to: to, at: Date.now() });
+            if (moves.length > 8) moves.shift();
+            schedule();
+          } catch (e) {}
+          return orig.apply(history, arguments);
+        };
+      } catch (e) {}
+    }
+    hookHistory('pushState');
+    hookHistory('replaceState');
+    // Which thread the person reached for. Read on press as well as click: some routers move on
+    // pointerdown. Only the tapped element's link path and role are read.
+    function onTap(ev) {
+      try {
+        var t = ev.target;
+        if (t && t.nodeType === 3) t = t.parentElement;
+        if (!t || !t.closest) return;
+        var now = Date.now();
+        var a = t.closest('a[href]');
+        if (a) {
+          var lp = trimPath(new URL(a.getAttribute('href'), location.href).pathname || '/');
+          var isThread = THREAD.test(lp);
+          if (isThread) {
+            linkTaps.push({ path: lp, at: now });
+            if (linkTaps.length > 16) linkTaps.shift();
+          }
+          lastTap = { row: false, at: now };
+          return;
+        }
+        lastTap = { row: !!t.closest(HISTORY_ROW), at: now };
+      } catch (e) {}
+    }
+    // Typing in the composer is the person's latest act: a row tap before it no longer counts.
+    // Only the key's target is looked at, never the key.
+    function onKey(ev) {
+      try {
+        var t = ev.target;
+        if (!t || !t.closest || t.closest('[role="dialog"]')) return;
+        if (t.closest('input, textarea, [contenteditable=""], [contenteditable="true"]')) lastTap = { row: false, at: Date.now() };
+      } catch (e) {}
+    }
     try {
-      var origReplace = history.replaceState;
-      history.replaceState = function (state, title, url) {
-        try {
-          var from = location.pathname || '/';
-          var to = from;
-          if (url !== undefined && url !== null) to = new URL(String(url), location.href).pathname || '/';
-          lastRename = { from: from, to: to, at: Date.now() };
-        } catch (e) {}
-        return origReplace.apply(history, arguments);
-      };
+      var tapEvents = ['pointerdown', 'touchstart', 'mousedown', 'click'];
+      for (var te = 0; te < tapEvents.length; te++) document.addEventListener(tapEvents[te], onTap, true);
+      document.addEventListener('keydown', onKey, true);
     } catch (e) {}
+    function tappedLinkTo(p, now) {
+      for (var i = linkTaps.length - 1; i >= 0; i--) {
+        if (linkTaps[i].path === p && now - linkTaps[i].at <= LINK_TAP_MS) return true;
+      }
+      return false;
+    }
+    function pageMoved(from, to, now) {
+      for (var i = moves.length - 1; i >= 0; i--) {
+        var m = moves[i];
+        if (m.from === from && m.to === to && now - m.at <= RENAME_MS) return m.at;
+      }
+      return -1;
+    }
     var FINAL_CHECK = ${MARKER_HEALTH_FINAL_CHECK_MS};
     var seen = {};
     var lastPath = null;
@@ -252,11 +341,16 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
         var search = location.search || '';
         if (lastPath !== null && path !== lastPath) {
           var now = Date.now();
-          var renamed = lastRename !== null && lastRename.from === lastPath && lastRename.to === path
-            && now - lastRename.at <= RENAME_MS;
-          var turnedOnFresh = lastFreshTurnAt >= 0 && now - lastFreshTurnAt <= FRESH_TURN_MS
-            && !TEMPORARY.test(lastSearch);
-          var created = FRESH.test(lastPath) && !FRESH.test(path) && (renamed || turnedOnFresh);
+          var movedAt = pageMoved(lastPath, path, now);
+          var turnedOnFresh = lastFreshTurnAt >= 0 && now - lastFreshTurnAt <= FRESH_TURN_MS;
+          var refAt = movedAt >= 0 ? movedAt : now;
+          // A tap on a link to exactly this thread, before or just after the page moved.
+          var linkOpened = tappedLinkTo(trimPath(path), now);
+          // The last tap before the move (or since) was on a history or search row.
+          var rowOpened = lastTap !== null && lastTap.row && refAt - lastTap.at <= ROW_TAP_MS;
+          var created = FRESH.test(lastPath) && !FRESH.test(path) && !TEMPORARY.test(lastSearch)
+            && !linkOpened && !rowOpened && (movedAt >= 0 || turnedOnFresh);
+          arrival = created ? { path: path, until: now + ABSORB_MS } : null;
           if (!created) {
             baselined = false;
             if (!FRESH.test(path)) absorbUntil = now + ABSORB_MS;
@@ -281,6 +375,20 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
           baselined = true;
           lastTail = tail;
           return;
+        }
+        if (arrival !== null) {
+          if (arrival.path !== path || Date.now() >= arrival.until) {
+            arrival = null;
+          } else {
+            var arriving = 0;
+            for (var q = 0; q < ids.length; q++) if (!seen[ids[q]]) arriving += 1;
+            if (arriving > ARRIVAL_MAX) {
+              // More than a just-created chat can have: an existing thread, opened some other way.
+              for (var r = 0; r < ids.length; r++) seen[ids[r]] = 1;
+              lastTail = tail;
+              return;
+            }
+          }
         }
         if (Date.now() < absorbUntil) {
           for (var a = 0; a < ids.length; a++) seen[ids[a]] = 1;

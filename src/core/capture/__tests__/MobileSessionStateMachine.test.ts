@@ -588,6 +588,45 @@ describe('MobileSessionStateMachine: a fresh chat gaining its thread id stays on
         expect(out[0]).toMatchObject({ sessionId: 'abc', inputEventCount: 3 });
     });
 
+    it('one-exchange voice chat whose question and answer land after the move: one record', () => {
+        const sm = new MobileSessionStateMachine();
+        const out = drive(sm, [
+            // Chat screen opens on a fresh page; nothing typed (voice).
+            { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
+            // The page moves to the new thread before its first exchange renders; it created it.
+            { t: 'foreground_changed', ts: 9_000, providerContext: CHATGPT('abc', true) },
+            // The spoken question and the answer render together: one new last turn.
+            { t: 'input_event', ts: 9_500 },
+            { t: 'shutdown', ts: 25_000 },
+        ]);
+        expect(out).toHaveLength(1);
+        expect(out[0]).toMatchObject({ sessionId: 'abc', inputEventCount: 1 });
+    });
+
+    it('RED control: an old chat opened from the fresh page with nothing new said makes no record', () => {
+        const sm = new MobileSessionStateMachine();
+        const out = drive(sm, [
+            { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
+            { t: 'foreground_changed', ts: 4_000, providerContext: CHATGPT('old', false) },
+            { t: 'shutdown', ts: 25_000 },
+        ]);
+        expect(out).toHaveLength(0);
+    });
+
+    it('Grok (time-gap sessions): one-exchange voice chat after the move to its thread is one record', () => {
+        const GROK = (sessionId: string | null): ProviderContext => ({
+            provider: 'grok', sessionId, boundaryMode: 'timestamp_gap', timestampGapMs: 300_000,
+        });
+        const sm = new MobileSessionStateMachine();
+        const out = drive(sm, [
+            { t: 'foreground_changed', ts: 0, providerContext: GROK(null) },
+            { t: 'foreground_changed', ts: 9_000, providerContext: GROK('/c/abc') },
+            { t: 'input_event', ts: 9_500 },
+            { t: 'shutdown', ts: 25_000 },
+        ]);
+        expect(out).toHaveLength(1);
+    });
+
     it('a closing session that comes back on its new thread id resumes', () => {
         const sm = new MobileSessionStateMachine();
         const out = drive(sm, [
