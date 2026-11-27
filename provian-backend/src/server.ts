@@ -4699,18 +4699,17 @@ app.post('/v1/internal/scheduler/chain-record-discovery', async (req, res) => {
       const ownershipLedger = await runOwnershipLedgerWatcher(agentBankDeps.db);
       const { runRecourseLifecycleWatcher } = await import('./core/recourse/lifecycle-records');
       const recourseRecords = await runRecourseLifecycleWatcher(agentBankDeps.db);
-      {
-        const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
-        const { refreshRecoursePoolDisplay } = await import('./core/recourse/pool-display');
-        const { refreshMonthlyApprovalDisplays } = await import('./core/recourse/monthly-approval-display');
-        const [ratio] = await Promise.allSettled([
-          refreshRecoursePoolRatio(agentBankDeps.db),
-          refreshRecoursePoolDisplay(agentBankDeps.db).catch(() => console.warn('[Recourse] Pool display refresh unavailable')),
-          refreshMonthlyApprovalDisplays(agentBankDeps.db).catch(() => console.warn('[Recourse] Monthly display queue unavailable')),
-        ]);
-        if (ratio.status === 'rejected') throw ratio.reason;
-      }
-      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, recourse_records: recourseRecords };
+      const { refreshRecoursePoolRatio } = await import('./core/recourse/pool-ratio');
+      const { refreshRecoursePoolDisplay } = await import('./core/recourse/pool-display');
+      const { refreshMonthlyApprovalDisplays } = await import('./core/recourse/monthly-approval-display');
+      const { refreshRecourseDisplays } = await import('./core/recourse/display-refresh-cadence');
+      const recourseDisplay = await refreshRecourseDisplays(agentBankDeps.db, Date.now(), {
+        ratio: () => refreshRecoursePoolRatio(agentBankDeps.db),
+        display: () => refreshRecoursePoolDisplay(agentBankDeps.db),
+        monthlyApprovals: () => refreshMonthlyApprovalDisplays(agentBankDeps.db),
+      });
+      return { watch_registry: registryReconcile, inbound_scan: inboundScan, ownership_ledger: ownershipLedger, recourse_records: recourseRecords,
+        recourse_display: recourseDisplay };
     }, () => releaseChainRecordRunLease(db, { workerId, nowMs: Date.now(), workload: 'discovery' }));
     res.json(report);
   } catch (error) {
