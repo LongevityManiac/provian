@@ -1,5 +1,6 @@
 import { pushLanguage, pushTokenHash } from './core/notifications/localization';
 import { createGitHubTaskRouter } from './routes/github-tasks';
+import { installRpcUsageMeter, rpcUsageMiddleware } from './core/onchain/rpc-usage-meter';
 import { redispatchGitHubWebhookInbox } from './core/witnesses/github-webhook-inbox';
 import { withJurisdictionRequest, evaluateMintCompliance } from './core/jurisdiction/mint-compliance';
 import { countryFromIp } from './core/jurisdiction/country';
@@ -301,6 +302,9 @@ app.use(burnTimingMiddleware);
 // Re-audit MED-1 (docs/audit/chunk_h_reaudit_2026_05.md §3 MED-1).
 app.set('trust proxy', 1);
 app.use((_req, _res, next) => withJurisdictionRequest(() => next()));
+// Count each request's JSON-RPC calls by provider and method (one log line per request that made any).
+installRpcUsageMeter();
+app.use(rpcUsageMiddleware);
 
 // =============================================================================
 // PRE-LAUNCH LOCKDOWN - single env flag gates the public discovery surface.

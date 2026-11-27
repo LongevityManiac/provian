@@ -17,6 +17,7 @@ import {
 } from './chain-record-multichain-scan';
 import { CHAIN_RECORD_OBSERVATIONS_COLLECTION, chainRecordObservationId, provenObservationWalletId } from './chain-record-watcher';
 import { HUMAN_PROVEN_ADDRESSES_COLLECTION } from '../external-address/link';
+import { CANONICAL_NATIVE_ADDRESS_INDEX_SCHEMA, NATIVE_WALLET_ADDRESS_INDEX_COLLECTION, nativeWalletAddressIndexId } from './native-wallet-registration';
 
 const A = '0xa11ce00000000000000000000000000000000001';
 const B = '0xb0b0000000000000000000000000000000000002';
@@ -162,6 +163,21 @@ describe('runChainRecordMultichainScan', () => {
 });
 
 describe('resolveMultichainEntry', () => {
+  const indexRow = (address: string, walletId: string) => ({
+    schema_version: CANONICAL_NATIVE_ADDRESS_INDEX_SCHEMA, chain_id: 8453, address, wallet_id: walletId,
+    owner_type: 'agent', owner_id: `agent-${walletId}`, created_at_ms: 1,
+  });
+  it('a test-platform agent wallet is not watched off Base (the lane refuses it); the same row on a real platform is', async () => {
+    const db = createFakeFirestore();
+    db.store.set(`${NATIVE_WALLET_ADDRESS_INDEX_COLLECTION}/${nativeWalletAddressIndexId(A)}`, indexRow(A, 'wallet_aw_test'));
+    db.store.set('agent_wallets/wallet_aw_test', { id: 'wallet_aw_test', platform: 'test' });
+    db.store.set(`${NATIVE_WALLET_ADDRESS_INDEX_COLLECTION}/${nativeWalletAddressIndexId(B)}`, indexRow(B, 'wallet_aw_real'));
+    db.store.set('agent_wallets/wallet_aw_real', { id: 'wallet_aw_real', platform: 'sdk' });
+    expect(await resolveMultichainEntry(db as unknown as Firestore, { address: A, kinds: new Set(['native']) })).toBeNull();
+    // RED control: the identical row on a real platform is watched.
+    expect(await resolveMultichainEntry(db as unknown as Firestore, { address: B, kinds: new Set(['native']) }))
+      .toEqual({ address: B, walletId: 'wallet_aw_real', ownerType: 'agent' });
+  });
   it('a person-proven EOA is watched under proven:<address>; a contract proof is not watched off Base', async () => {
     const db = createFakeFirestore();
     db.store.set(`${HUMAN_PROVEN_ADDRESSES_COLLECTION}/${A}`, { proof_method: 'eip191_eoa' });

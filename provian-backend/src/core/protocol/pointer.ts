@@ -63,7 +63,43 @@ export async function resolveProtocolDeployment(rpcs: readonly [PointerRpc, Poin
 export async function resolveHistoricalProtocolDeployment(rpcs: readonly [PointerRpc, PointerRpc],
   pointer: string, pointerRuntimeHash: string, block: number, blockHash: string): Promise<ProtocolDeployment> {
   if (!Number.isSafeInteger(block) || block < 0 || !/^0x[0-9a-f]{64}$/.test(blockHash)) throw Error('protocol_pointer_invalid_block');
-  return resolveDeployment(rpcs, pointer, pointerRuntimeHash, 0n, { height: BigInt(block), hash: blockHash });
+  const key = `${getAddress(pointer)}|${pointerRuntimeHash.toLowerCase()}`, height = BigInt(block);
+  // A manifest fully verified at block V stays verified at any later block where the
+  // pointer still returns exactly that manifest: component bytecode and their immutable
+  // links cannot change after V. Earlier blocks and other manifests are verified in full.
+  const known = verifiedHistorical.get(key);
+  if (known && height >= known.height) {
+    const confirmed = await confirmHistoricalDeployment(rpcs, known.deployment, pointerRuntimeHash, height, blockHash);
+    if (confirmed) return confirmed;
+  }
+  const deployment = await resolveDeployment(rpcs, pointer, pointerRuntimeHash, 0n, { height, hash: blockHash });
+  if (!known || known.deployment.manifestHash !== deployment.manifestHash || height < known.height)
+    verifiedHistorical.set(key, { deployment, height });
+  return deployment;
+}
+/** Per process: the earliest block at which each pointer's latest seen manifest was fully verified. */
+const verifiedHistorical = new Map<string, { readonly deployment: ProtocolDeployment; readonly height: bigint }>();
+/** Tests: forget every reused historical verification. */
+export function resetHistoricalProtocolVerification(): void { verifiedHistorical.clear(); }
+/** The historical form of confirmProtocolDeployment: the same pointer, the same runtime and
+ * exactly the verified manifest at this canonical block; null when the manifest differs. */
+async function confirmHistoricalDeployment(rpcs: readonly [PointerRpc, PointerRpc], verified: ProtocolDeployment,
+  pointerRuntimeHash: string, height: bigint, blockHash: string): Promise<ProtocolDeployment | null> {
+  if (quantity(await agreement(rpcs, 'eth_chainId', [])) !== 8453n) throw Error('protocol_pointer_wrong_chain');
+  const block = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
+  if (!block || typeof block !== 'object' || !('hash' in block) || !('number' in block)
+    || quantity(block.number) !== height || hex(block.hash) !== blockHash) throw Error('protocol_pointer_invalid_block');
+  const pin = { blockHash, requireCanonical: true };
+  const code = hex(await agreement(rpcs, 'eth_getCode', [verified.pointer, pin]));
+  if (code === '0x' || keccak256(code) !== pointerRuntimeHash.toLowerCase()) throw Error('protocol_pointer_runtime_mismatch');
+  const expected = iface.encodeFunctionResult('current', [verified.revision, verified.manifestHash,
+    PROTOCOL_COMPONENTS.map(key => verified.addresses[key]), verified.runtimeHashes]).toLowerCase();
+  const encoded = hex(await agreement(rpcs, 'eth_call', [{ to: verified.pointer, data: iface.encodeFunctionData('current') }, pin]));
+  if (encoded !== expected) return null;
+  const canonical = await agreement(rpcs, 'eth_getBlockByNumber', [`0x${height.toString(16)}`, false]);
+  if (!canonical || typeof canonical !== 'object' || !('hash' in canonical) || hex(canonical.hash) !== blockHash)
+    throw Error('protocol_pointer_reorg');
+  return { ...verified, blockHash };
 }
 async function resolveDeployment(rpcs: readonly [PointerRpc, PointerRpc], pointer: string,
   pointerRuntimeHash: string, minimumRevision: bigint, historical?: { readonly height: bigint; readonly hash: string }): Promise<ProtocolDeployment> {

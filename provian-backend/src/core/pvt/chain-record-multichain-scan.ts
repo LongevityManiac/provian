@@ -247,6 +247,12 @@ export async function resolveMultichainEntry(
     if (!snap.exists) return null;
     // A malformed index row is the Base inbound scan's set-aside; nothing is guessed here.
     const row = parseCanonicalNativeAddressIndex(snap.data() as Record<string, unknown>, id);
+    // A test-platform agent wallet is refused by the lane (resolveChainRecordWallet), so
+    // discovery for it on another chain would be paid for and then thrown away. Skip it here.
+    if (row.owner_type === 'agent') {
+      const agent = await db.collection('agent_wallets').doc(row.wallet_id).get();
+      if (agent.exists && (agent.data() as { platform?: unknown }).platform === 'test') return null;
+    }
     return { address: row.address, walletId: row.wallet_id, ownerType: row.owner_type };
   }
   for (const [kind, collection, ownerType] of [
