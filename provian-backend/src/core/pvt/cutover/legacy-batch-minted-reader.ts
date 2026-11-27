@@ -21,6 +21,7 @@
  */
 
 import { id as ethersId } from 'ethers';
+import { recordRpcCalls } from '../../onchain/rpc-usage-meter';
 import {
   resolveMintContractForDocument,
   type LegacyMintChainId,
@@ -123,6 +124,7 @@ export function makeJsonRpcTransport(
           + 'refusing to answer rather than answering false',
         );
       }
+      recordRpcCalls(url, ['eth_call']);
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

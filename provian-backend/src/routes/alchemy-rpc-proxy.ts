@@ -28,6 +28,7 @@
  */
 
 import type { Request, Response } from 'express';
+import { recordRpcCalls } from '../core/onchain/rpc-usage-meter';
 import { ResponseTooLargeError } from '../core/net/bounded-fetch';
 
 /** Max JSON-RPC calls in one batched request. */
@@ -161,6 +162,8 @@ export function createAlchemyRpcHandler(deps: AlchemyRpcProxyDeps) {
         return;
       }
 
+      recordRpcCalls(upstreamUrl, (Array.isArray(req.body) ? req.body : [req.body])
+        .map((call: unknown) => (call && typeof call === 'object' ? (call as { method?: unknown }).method : undefined)));
       const upstream = await deps.fetch(
         upstreamUrl,
         {

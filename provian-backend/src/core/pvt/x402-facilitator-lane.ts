@@ -55,6 +55,7 @@ import { observationBaseAssets } from '../protocol/observation-assets';
  */
 
 import type { Firestore } from 'firebase-admin/firestore';
+import { recordRpcCalls } from '../onchain/rpc-usage-meter';
 import type { AgentBankDeps } from '../agent-bank/types';
 import { generatePE } from '../agent-bank/pe-utils';
 import { resolvableOrigin, chainWatcherWitness } from '../provenance/origin-capture';
@@ -614,6 +615,7 @@ export function buildSolanaTransactionReader(
   env: NodeJS.ProcessEnv | Readonly<Record<string, string | undefined>> = process.env,
 ): (signature: string) => Promise<SolanaParsedTransaction | null> {
   return async (signature) => {
+    recordRpcCalls(facilitatorSolanaRpcUrl(env), ['getTransaction']);
     const res = await fetchImpl(facilitatorSolanaRpcUrl(env), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

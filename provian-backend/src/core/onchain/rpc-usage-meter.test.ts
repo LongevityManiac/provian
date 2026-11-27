@@ -1,5 +1,5 @@
 import { JsonRpcProvider, FetchRequest } from 'ethers';
-import { rpcHostLabel, withRpcUsage, installRpcUsageMeter } from './rpc-usage-meter';
+import { rpcHostLabel, withRpcUsage, installRpcUsageMeter, recordRpcCalls } from './rpc-usage-meter';
 import { LinearDecodeJsonRpcProvider } from './rpc-provider';
 
 // The relay's own provider class, as buildJsonRpc constructs it, with its transport
@@ -55,5 +55,16 @@ describe('rpc usage meter', () => {
     ]);
     expect(a.calls).toEqual({ 'arb-mainnet.alchemy eth_getLogs': 1, 'arb-mainnet.alchemy eth_call': 1 });
     expect(b.calls).toEqual({ 'arb-mainnet.alchemy eth_blockNumber': 1 });
+  });
+
+  it('plain-fetch paths record their calls in the request; outside a request nothing is recorded', async () => {
+    const { calls } = await withRpcUsage(async () => {
+      recordRpcCalls('https://base-mainnet.g.alchemy.com/v2/k', ['eth_getLogs', 'eth_getLogs', 'eth_chainId']);
+      recordRpcCalls('https://solana-mainnet.g.alchemy.com/v2/k', ['getTransaction', 42]);
+    });
+    expect(calls).toEqual({ 'base-mainnet.alchemy eth_getLogs': 2, 'base-mainnet.alchemy eth_chainId': 1,
+      'solana-mainnet.alchemy getTransaction': 1, 'solana-mainnet.alchemy unknown': 1 });
+    recordRpcCalls('https://base-mainnet.g.alchemy.com/v2/k', ['eth_call']); // RED control: no request, no count
+    expect((await withRpcUsage(async () => undefined)).calls).toEqual({});
   });
 });

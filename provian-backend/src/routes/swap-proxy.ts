@@ -13,6 +13,7 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { recordRpcCalls } from '../core/onchain/rpc-usage-meter';
 import { ResponseTooLargeError } from '../core/net/bounded-fetch';
 import {
   SwapFeeError,
@@ -170,6 +171,7 @@ export function createSwapProxyRouter(deps: SwapProxyDeps): Router {
     const rpc = deps.env.ALCHEMY_API_KEY
       ? `https://solana-mainnet.g.alchemy.com/v2/${deps.env.ALCHEMY_API_KEY}`
       : 'https://api.mainnet-beta.solana.com';
+    recordRpcCalls(rpc, [method]);
     const r = await deps.fetch(rpc, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
