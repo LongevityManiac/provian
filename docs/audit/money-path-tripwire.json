@@ -1001,6 +1001,8 @@
     "provian-backend/src/core/recourse/determination.test.ts": "a32cad2e63b9d2269aebb40e357ea0df722eddbb7bc253aab6e9d04e45d14414",
     "provian-backend/src/core/recourse/determination.ts": "07f8425650aecd09c3ff838d00ed3600ffe71b88a2e46400ee215a9b41aeb7e9",
     "provian-backend/src/core/recourse/discovery-rpc-cost.test.ts": "161993d46973fa34d4b0f8794697da9cf259264f3bcfd4753ff79ebc3b08c47d",
+    "provian-backend/src/core/recourse/display-refresh-cadence.test.ts": "4b8113582384e6f30e8958dee7fece42e0b9b4fd1ea31bd3126f6867598e6290",
+    "provian-backend/src/core/recourse/display-refresh-cadence.ts": "e33cc0d387eafb4a2fef350269b1c7551f1ad93c7290acf79a6128234fc52ba9",
     "provian-backend/src/core/recourse/execution-transaction.test.ts": "ec217b3f86968a8b588357981732e2b1fce8105feab466993e6387f11de2b743",
     "provian-backend/src/core/recourse/execution-transaction.ts": "199f40b212809d06d8dab457a5dc1fa5ae2a2a9f1451b675a9ccc6d3cc9b807f",
     "provian-backend/src/core/recourse/gas-signer.test.ts": "c79fa1c3a29c0caf23e06a0586f4111bd8f7eed2e67f812495ed2320ecfcd5b7",
