@@ -135,7 +135,10 @@ export class NavigationGate {
 
     navigate(ctx: ProviderContext | null, path: string, ts: number): void {
         if (this.pending) {
-            if (ctx && sameConversation(ctx, this.pending.ctx)) return;
+            // A repeat of the latest move (queued, or the held one if nothing is queued) changes
+            // nothing; anything else (including coming back after a queued background) queues.
+            const latest = this.queue.length > 0 ? this.queue[this.queue.length - 1].ctx : this.pending.ctx;
+            if (ctx && latest && sameConversation(ctx, latest)) return;
             this.queue.push({ ctx, path, ts });
             return;
         }

@@ -172,6 +172,17 @@ describe('NavigationGate: a thread id is adopted only for a chat being created',
         expect(steps[2]).toMatchObject({ providerContext: { continuesFreshChat: false } });
     });
 
+    it('RED control (review round 4): held move, then background, then the return replay all reach the machine', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);    // held
+        g.navigate(null, '/', 3);           // app leaves
+        g.navigate(thread, '/c/abc', 4);    // app returns: the replay
+        g.verdict('/c/abc', true);
+        expect(steps.map(s => (s as { ts: number }).ts)).toEqual([1, 2, 3, 4]);
+        expect(steps[3]).toMatchObject({ providerContext: { sessionId: 'abc' } });
+    });
+
     it('release() on close lets nothing stay held', () => {
         const { g, steps } = gate();
         g.navigate(fresh, '/', 1);
