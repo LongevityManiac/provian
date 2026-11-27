@@ -560,6 +560,13 @@
       "artifact": "app-release.apk",
       "sha256": "064607e3be301bbe6f2f975bf733b499d062471cac08a8d45526b6b7c081e185",
       "built_at": "2026-11-27T15:59:02.135Z"
+    },
+    {
+      "versionCode": 135,
+      "channel": "play",
+      "artifact": "app-release.aab",
+      "sha256": "bff60b5e72cb79b7aea53dec0a3e37574c44945e6abfd1c88d8f0d1e1ff9c96d",
+      "built_at": "2026-11-27T23:57:08.599Z"
     }
   ]
 }
