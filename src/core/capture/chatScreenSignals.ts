@@ -117,17 +117,49 @@ export interface NavigationGateDeps {
  * on the same provider is held until the page says whether it created that thread or opened an
  * existing one, so the machine adopts the id only for a chat being created. With no verdict in
  * time, it is treated as opening an existing thread (the machine starts a new conversation).
+ *
+ * - Repeats of the held move (the WebView reports every history call, often several for one
+ *   URL) are ignored; anything else that happens while a move is held queues behind it, so the
+ *   machine always sees events in order.
+ * - A null context (app in the background, or a page that is not the provider's chat) never
+ *   erases the last chat page seen, so the replay when the app comes back is judged against the
+ *   page the person left, and a verdict that arrived meanwhile still applies.
  */
 export class NavigationGate {
-    private last: ProviderContext | null = null;
+    private lastOnScreen: ProviderContext | null = null;
     private pending: { ctx: ProviderContext; ts: number; path: string; timer: unknown } | null = null;
+    private queue: Array<{ ctx: ProviderContext | null; path: string; ts: number }> = [];
     private readonly verdicts = new Map<string, boolean>();
 
     constructor(private readonly deps: NavigationGateDeps) {}
 
     navigate(ctx: ProviderContext | null, path: string, ts: number): void {
-        this.flush(false);
-        const prev = this.last;
+        if (this.pending) {
+            if (ctx && sameConversation(ctx, this.pending.ctx)) return;
+            this.queue.push({ ctx, path, ts });
+            return;
+        }
+        this.process(ctx, path, ts);
+    }
+
+    /** The page's verdict on a path change. */
+    verdict(path: string, created: boolean): void {
+        if (this.pending && this.pending.path === path) {
+            this.resolve(created);
+            return;
+        }
+        // The verdict can arrive before the navigation event; keep it for that path.
+        this.verdicts.clear();
+        this.verdicts.set(path, created);
+    }
+
+    /** Anything held is released now as "not created" (screen closing). */
+    release(): void {
+        while (this.pending) this.resolve(false);
+    }
+
+    private process(ctx: ProviderContext | null, path: string, ts: number): void {
+        const prev = this.lastOnScreen;
         const freshToThread = ctx !== null && prev !== null
             && ctx.boundaryMode === 'url_session_id'
             && prev.provider === ctx.provider
@@ -142,36 +174,28 @@ export class NavigationGate {
             this.forward({ ...ctx, continuesFreshChat: known }, ts);
             return;
         }
-        const timer = this.deps.setTimer(() => this.flush(false), PATH_VERDICT_WAIT_MS);
+        const timer = this.deps.setTimer(() => this.resolve(false), PATH_VERDICT_WAIT_MS);
         this.pending = { ctx, ts, path, timer };
     }
 
-    /** The page's verdict on a path change. */
-    verdict(path: string, created: boolean): void {
-        if (this.pending && this.pending.path === path) {
-            this.flush(created);
-            return;
-        }
-        // The verdict can arrive before the navigation event; keep it briefly for that path.
-        this.verdicts.clear();
-        this.verdicts.set(path, created);
-    }
-
-    /** Anything held is released now (unmount, background). */
-    release(): void {
-        this.flush(false);
-    }
-
-    private flush(created: boolean): void {
+    private resolve(created: boolean): void {
         const p = this.pending;
         if (!p) return;
         this.pending = null;
         this.deps.clearTimer(p.timer);
         this.forward({ ...p.ctx, continuesFreshChat: created }, p.ts);
+        while (!this.pending && this.queue.length > 0) {
+            const next = this.queue.shift()!;
+            this.process(next.ctx, next.path, next.ts);
+        }
     }
 
     private forward(ctx: ProviderContext | null, ts: number): void {
-        this.last = ctx;
+        if (ctx) this.lastOnScreen = ctx;
         this.deps.step({ t: 'foreground_changed', ts, providerContext: ctx });
     }
+}
+
+function sameConversation(a: ProviderContext, b: ProviderContext): boolean {
+    return a.provider === b.provider && a.sessionId === b.sessionId;
 }

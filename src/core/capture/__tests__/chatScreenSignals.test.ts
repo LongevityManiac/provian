@@ -129,13 +129,56 @@ describe('NavigationGate: a thread id is adopted only for a chat being created',
         expect(steps[1]).toMatchObject({ ts: 2, providerContext: { continuesFreshChat: false } });
     });
 
-    it('any other move passes straight through, and a held move is released first', () => {
+    it('a repeat of the held move does not release it (review round 3)', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        g.navigate(thread, '/c/abc', 3);
+        g.navigate(thread, '/c/abc', 4);
+        expect(steps).toHaveLength(1);
+        g.verdict('/c/abc', true);
+        expect(steps).toHaveLength(2);
+        expect(steps[1]).toMatchObject({ ts: 2, providerContext: { continuesFreshChat: true } });
+    });
+
+    it('anything else during a hold queues behind it, in order', () => {
         const { g, steps } = gate();
         g.navigate(fresh, '/', 1);
         g.navigate(thread, '/c/abc', 2);
         g.navigate(null, '/', 3);
+        expect(steps).toHaveLength(1);
+        g.verdict('/c/abc', true);
         expect(steps.map(s => (s as { ts: number }).ts)).toEqual([1, 2, 3]);
-        expect(steps[1]).toMatchObject({ providerContext: { continuesFreshChat: false } });
+        expect(steps[1]).toMatchObject({ providerContext: { continuesFreshChat: true } });
+        expect(steps[2]).toMatchObject({ providerContext: null });
+    });
+
+    it('a chat renamed while the app was away is still recognised on return (review round 3)', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(null, '/', 2);            // app leaves the screen
+        g.verdict('/c/abc', true);           // the page renamed the fresh chat meanwhile
+        g.navigate(thread, '/c/abc', 3);     // the replay when the app comes back
+        expect(steps[2]).toEqual({ t: 'foreground_changed', ts: 3, providerContext: { ...thread, continuesFreshChat: true } });
+    });
+
+    it('RED control: on return with no verdict, the replay is held and then not created', () => {
+        const { g, steps, fire } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(null, '/', 2);
+        g.navigate(thread, '/c/abc', 3);
+        expect(steps).toHaveLength(2);
+        fire();
+        expect(steps[2]).toMatchObject({ providerContext: { continuesFreshChat: false } });
+    });
+
+    it('release() on close lets nothing stay held', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        g.navigate(null, '/', 3);
+        g.release();
+        expect(steps).toHaveLength(3);
     });
 
     it('pathOfUrl matches location.pathname', () => {
