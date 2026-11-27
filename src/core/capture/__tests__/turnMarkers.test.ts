@@ -38,11 +38,15 @@ async function openPage(provider: SupportedProvider, path: string): Promise<Page
     const posts: Array<Record<string, unknown>> = [];
     let now = 1_000_000;
     const timers: Array<{ at: number; fn: () => void; every?: number }> = [];
-    const loc = { pathname: path };
+    const loc = { pathname: path.split('?')[0], search: path.includes('?') ? '?' + path.split('?')[1] : '', href: 'https://example.test' + path };
+    const setUrl = (url: string) => {
+        const u = new URL(url, loc.href);
+        loc.pathname = u.pathname; loc.search = u.search; loc.href = u.href;
+    };
     const fakeWindow = { ReactNativeWebView: { postMessage: (s: string) => posts.push(JSON.parse(s)) } };
     const fakeHistory = {
-        replaceState(_s: unknown, _t: string, url: string) { loc.pathname = url; },
-        pushState(_s: unknown, _t: string, url: string) { loc.pathname = url; },
+        replaceState(_s: unknown, _t: string, url: string) { setUrl(url); },
+        pushState(_s: unknown, _t: string, url: string) { setUrl(url); },
     };
     const run = new Function('window', 'document', 'location', 'history', 'MutationObserver', 'setTimeout', 'setInterval', 'Date', buildTurnWatcherScript(provider));
     run(
@@ -57,7 +61,7 @@ async function openPage(provider: SupportedProvider, path: string): Promise<Page
         doc,
         main: doc.getElementById('m') as HTMLElement,
         nav(p: string) { fakeHistory.pushState(null, '', p); },
-        rename(p: string) { fakeHistory.replaceState(null, '', p); },
+        rename(p: string) { (fakeHistory.replaceState as (s: unknown, t: string, u: string) => void)(null, '', p); },
         async advance(ms: number) {
             const end = now + ms;
             for (;;) {
@@ -191,6 +195,48 @@ describe('turn watcher: a fresh page is where old threads are opened from', () =
         for (const k of ['o1', 'o2']) p.addTurn({ 'data-turn-key': k });
         await p.advance(1_000);
         expect(turnsAdded(p)).toBe(0);
+    });
+
+    it('RED control (review round 2): push to an old thread, then a same-URL replaceState, is not creation', async () => {
+        const p = await openPage('claude', '/new');
+        p.nav('/chat/0123456789abcdef');
+        p.rename('/chat/0123456789abcdef');
+        for (const k of ['o1', 'o2']) p.addTurn({ 'data-turn-key': k });
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 1_000);
+        expect(turnsAdded(p)).toBe(0);
+        expect(p.posts.filter(m => m.t === 'path_change')).toEqual([expect.objectContaining({ path: '/chat/0123456789abcdef', created: false })]);
+    });
+
+    it('a replaceState on the fresh page that keeps its path is not a rename to the thread', async () => {
+        const p = await openPage('chatgpt', '/');
+        p.rename('/?model=x');
+        p.nav('/c/0123456789abcdef');
+        for (const k of ['o1', 'o2']) p.addTurn({ 'data-turn-key': k });
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 1_000);
+        expect(turnsAdded(p)).toBe(0);
+    });
+
+    it('a turn on the fresh page just before the move marks creation', async () => {
+        const p = await openPage('chatgpt', '/');
+        p.addTurn({ 'data-turn-key': 'u1' });
+        await p.advance(500);
+        p.nav('/c/0123456789abcdef');
+        p.addTurn({ 'data-turn-key': 'a1' });
+        await p.advance(500);
+        expect(turnsAdded(p)).toBe(2);
+        expect(p.posts.filter(m => m.t === 'path_change')).toEqual([expect.objectContaining({ created: true })]);
+    });
+
+    it('RED control (review round 2): a temporary chat that opens an old thread is not creation', async () => {
+        const p = await openPage('chatgpt', '/?temporary-chat=true');
+        p.addTurn({ 'data-turn-key': 't1' });
+        await p.advance(500);
+        p.nav('/c/0123456789abcdef');
+        p.main.innerHTML = '';
+        for (const k of ['o1', 'o2']) p.addTurn({ 'data-turn-key': k });
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 1_000);
+        expect(turnsAdded(p)).toBe(1);
+        expect(p.posts.filter(m => m.t === 'path_change')).toEqual([expect.objectContaining({ created: false })]);
     });
 
     it('turns still swapping in on arrival at another thread are absorbed', async () => {

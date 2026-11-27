@@ -44,6 +44,12 @@ export interface ProviderContext {
     boundaryMode: SessionBoundaryMode;
     /** Required when boundaryMode is 'timestamp_gap', else null. */
     timestampGapMs: number | null;
+    /**
+     * The page says this thread id names the fresh chat the session is already in (the chat
+     * being created), not an existing thread opened from it. Only then does a session with no
+     * id adopt this one; otherwise a new id is a new conversation.
+     */
+    continuesFreshChat?: boolean;
 }
 
 export type MachineInput =
@@ -511,14 +517,17 @@ function sameSessionId(
 /**
  * A fresh chat has no thread id in its URL until its first message lands; then the URL gains
  * one (`chatgpt.com/` becomes `chatgpt.com/c/<id>`). That is the same conversation getting its
- * name, not a new one: the session keeps going and takes the id. Moving from one thread id to a
- * different one is still a new conversation.
+ * name, not a new one: the session keeps going and takes the id. Only the page can tell that
+ * apart from opening an existing thread from the fresh page, so the caller says so
+ * (`continuesFreshChat`). Moving from one thread id to a different one is always a new
+ * conversation.
  */
 function isFirstSessionId(
     ctx: ProviderContext,
     state: { provider: string; sessionId: string | null; boundaryMode: SessionBoundaryMode },
 ): boolean {
-    return ctx.provider === state.provider
+    return ctx.continuesFreshChat === true
+        && ctx.provider === state.provider
         && state.boundaryMode === 'url_session_id'
         && state.sessionId === null
         && ctx.sessionId !== null;

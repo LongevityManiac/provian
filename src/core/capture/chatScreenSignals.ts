@@ -41,6 +41,12 @@ export function keyboardCounts(input: { url: string | null; authFormVisible: boo
     return true;
 }
 
+/** The path part of a URL, as the page's `location.pathname` reports it. */
+export function pathOfUrl(url: string): string {
+    const m = /^https?:\/\/[^/?#]+([^?#]*)/i.exec(url);
+    return m && m[1] ? m[1] : '/';
+}
+
 /** Whether a WebView navigation may tell the session the chat is on screen. */
 export function navigationMayRevive(appState: string | null | undefined): boolean {
     return appState === 'active';
@@ -56,6 +62,8 @@ export interface WatcherMessageEffect {
     authFormVisible?: boolean;
     /** A marker verdict to forward to the relay. */
     markerVerdict?: Extract<TurnWatcherMessage, { t: 'marker_health' }>;
+    /** The page's verdict on a path change: did it create that thread or open an existing one. */
+    pathVerdict?: { path: string; created: boolean };
     /** Engagement on screen: the "turn the microphone back on" offer is no longer needed. */
     hideRestoreVoice: boolean;
 }
@@ -71,6 +79,7 @@ export function effectOfWatcherMessage(
         return { step: { t: 'input_event', ts: now }, hideRestoreVoice: true };
     }
     if (msg.t === 'auth_page') return { step: null, authFormVisible: msg.visible, hideRestoreVoice: false };
+    if (msg.t === 'path_change') return { step: null, pathVerdict: { path: msg.path, created: msg.created }, hideRestoreVoice: false };
     return { step: null, markerVerdict: msg, hideRestoreVoice: false };
 }
 
@@ -92,4 +101,77 @@ export function stepForNavigation(
 ): MachineInput | null {
     if (!navigationMayRevive(appState)) return null;
     return { t: 'foreground_changed', ts: now, providerContext };
+}
+
+/** How long a move off a fresh chat waits for the page's verdict before it counts as "opened". */
+export const PATH_VERDICT_WAIT_MS = 1_500;
+
+export interface NavigationGateDeps {
+    step: (input: MachineInput) => void;
+    setTimer: (fn: () => void, ms: number) => unknown;
+    clearTimer: (handle: unknown) => void;
+}
+
+/**
+ * Feeds navigations to the session machine. A move from a fresh chat (no thread id) to a thread
+ * on the same provider is held until the page says whether it created that thread or opened an
+ * existing one, so the machine adopts the id only for a chat being created. With no verdict in
+ * time, it is treated as opening an existing thread (the machine starts a new conversation).
+ */
+export class NavigationGate {
+    private last: ProviderContext | null = null;
+    private pending: { ctx: ProviderContext; ts: number; path: string; timer: unknown } | null = null;
+    private readonly verdicts = new Map<string, boolean>();
+
+    constructor(private readonly deps: NavigationGateDeps) {}
+
+    navigate(ctx: ProviderContext | null, path: string, ts: number): void {
+        this.flush(false);
+        const prev = this.last;
+        const freshToThread = ctx !== null && prev !== null
+            && ctx.boundaryMode === 'url_session_id'
+            && prev.provider === ctx.provider
+            && prev.sessionId === null && ctx.sessionId !== null;
+        if (!freshToThread || ctx === null) {
+            this.forward(ctx, ts);
+            return;
+        }
+        const known = this.verdicts.get(path);
+        if (known !== undefined) {
+            this.verdicts.delete(path);
+            this.forward({ ...ctx, continuesFreshChat: known }, ts);
+            return;
+        }
+        const timer = this.deps.setTimer(() => this.flush(false), PATH_VERDICT_WAIT_MS);
+        this.pending = { ctx, ts, path, timer };
+    }
+
+    /** The page's verdict on a path change. */
+    verdict(path: string, created: boolean): void {
+        if (this.pending && this.pending.path === path) {
+            this.flush(created);
+            return;
+        }
+        // The verdict can arrive before the navigation event; keep it briefly for that path.
+        this.verdicts.clear();
+        this.verdicts.set(path, created);
+    }
+
+    /** Anything held is released now (unmount, background). */
+    release(): void {
+        this.flush(false);
+    }
+
+    private flush(created: boolean): void {
+        const p = this.pending;
+        if (!p) return;
+        this.pending = null;
+        this.deps.clearTimer(p.timer);
+        this.forward({ ...p.ctx, continuesFreshChat: created }, p.ts);
+    }
+
+    private forward(ctx: ProviderContext | null, ts: number): void {
+        this.last = ctx;
+        this.deps.step({ t: 'foreground_changed', ts, providerContext: ctx });
+    }
 }

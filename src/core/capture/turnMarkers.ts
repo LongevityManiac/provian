@@ -22,9 +22,12 @@
  *    new turns. A fresh chat's empty page is an empty baseline.
  *  - Opening an existing thread re-baselines, including from a fresh chat page (the screen opens
  *    on one, and its history list sits there). Going from a fresh chat to its own new thread
- *    does not: the conversation is being created. The page shows which it is: a turn already
- *    appeared on the fresh page, or the page renamed its own history entry (replaceState) to
- *    the new thread. A path change without either is treated as opening an existing thread.
+ *    does not: the conversation is being created. The page shows which it is: it renamed its own
+ *    history entry (replaceState) from this fresh path to exactly this thread path, or a turn
+ *    appeared on the fresh page moments before (and the fresh page is not a temporary or
+ *    incognito chat, which never gets a thread of its own). Anything else is opening an existing
+ *    thread. The watcher posts its verdict (`path_change`) so the session machine adopts a
+ *    thread id only for a chat being created.
  *  - For a few seconds after arriving at an existing thread, turns that render are absorbed into
  *    the baseline: a provider may still be swapping the old thread's turns for the new one's.
  *  - Only a new LAST turn counts. Older turns appearing above it (virtualized lists render them on
@@ -130,6 +133,10 @@ export const SIGNED_OUT_HINT_SELECTOR = [
 export const THREAD_ARRIVAL_ABSORB_MS = 3_000;
 /** How recent a replaceState must be to mean "the fresh chat was renamed to its thread". */
 export const RENAME_WINDOW_MS = 2_000;
+/** How recent a turn on the fresh page must be to mean "this fresh chat just got its thread". */
+export const FRESH_TURN_WINDOW_MS = 10_000;
+/** A fresh-path chat that never gets a thread of its own. */
+export const TEMPORARY_CHAT_QUERY = 'temporary-chat=true|incognito';
 
 /** Seconds after a conversation page settles before its markers are judged. */
 export const MARKER_HEALTH_FIRST_CHECK_MS = 8_000;
@@ -151,13 +158,21 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
     var FIRST_CHECK = ${MARKER_HEALTH_FIRST_CHECK_MS};
     var ABSORB_MS = ${THREAD_ARRIVAL_ABSORB_MS};
     var RENAME_MS = ${RENAME_WINDOW_MS};
+    var FRESH_TURN_MS = ${FRESH_TURN_WINDOW_MS};
+    var TEMPORARY = new RegExp(${JSON.stringify(TEMPORARY_CHAT_QUERY)}, 'i');
     var absorbUntil = 0;
-    var sawTurnOnFresh = false;
-    var lastRenameAt = -1;
+    var lastFreshTurnAt = -1;
+    var lastSearch = '';
+    var lastRename = null;
     try {
       var origReplace = history.replaceState;
-      history.replaceState = function () {
-        lastRenameAt = Date.now();
+      history.replaceState = function (state, title, url) {
+        try {
+          var from = location.pathname || '/';
+          var to = from;
+          if (url !== undefined && url !== null) to = new URL(String(url), location.href).pathname || '/';
+          lastRename = { from: from, to: to, at: Date.now() };
+        } catch (e) {}
         return origReplace.apply(history, arguments);
       };
     } catch (e) {}
@@ -234,18 +249,25 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
         var path = location.pathname || '/';
         checkAuth();
         checkHealth(path);
+        var search = location.search || '';
         if (lastPath !== null && path !== lastPath) {
-          var created = FRESH.test(lastPath) && !FRESH.test(path)
-            && (sawTurnOnFresh || (lastRenameAt >= 0 && Date.now() - lastRenameAt <= RENAME_MS));
+          var now = Date.now();
+          var renamed = lastRename !== null && lastRename.from === lastPath && lastRename.to === path
+            && now - lastRename.at <= RENAME_MS;
+          var turnedOnFresh = lastFreshTurnAt >= 0 && now - lastFreshTurnAt <= FRESH_TURN_MS
+            && !TEMPORARY.test(lastSearch);
+          var created = FRESH.test(lastPath) && !FRESH.test(path) && (renamed || turnedOnFresh);
           if (!created) {
             baselined = false;
-            if (!FRESH.test(path)) absorbUntil = Date.now() + ABSORB_MS;
+            if (!FRESH.test(path)) absorbUntil = now + ABSORB_MS;
           }
-          sawTurnOnFresh = false;
+          lastFreshTurnAt = -1;
+          post({ v: 1, t: 'path_change', provider: PROVIDER, path: path, created: created });
         } else if (lastPath === null && !FRESH.test(path)) {
           absorbUntil = Date.now() + ABSORB_MS;
         }
         lastPath = path;
+        lastSearch = search;
         var p = pick();
         var c = p >= 0 ? CANDIDATES[p] : null;
         var els = c ? document.querySelectorAll(c.sel) : [];
@@ -272,7 +294,7 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
         }
         if (tailIsNew && tail !== lastTail) {
           lastTail = tail;
-          if (FRESH.test(path)) sawTurnOnFresh = true;
+          if (FRESH.test(path)) lastFreshTurnAt = Date.now();
           post({ v: 1, t: 'turns_added', provider: PROVIDER, n: added });
         }
       } catch (e) {}
@@ -312,6 +334,7 @@ export function threadKeyFromUrl(provider: string, url: string): string | null {
 
 export type TurnWatcherMessage =
     | { t: 'turns_added'; provider: string; n: number }
+    | { t: 'path_change'; provider: string; path: string; created: boolean }
     | { t: 'auth_page'; provider: string; visible: boolean }
     | {
         t: 'marker_health';
@@ -343,6 +366,9 @@ export function parseTurnWatcherMessage(raw: string, provider: string): TurnWatc
     if (m.v !== 1 || m.provider !== provider) return null;
     if (m.t === 'turns_added' && isSmallInt(m.n, 10_000) && m.n > 0) {
         return { t: 'turns_added', provider, n: m.n };
+    }
+    if (m.t === 'path_change' && typeof m.path === 'string' && m.path.length <= 512 && m.path.startsWith('/') && typeof m.created === 'boolean') {
+        return { t: 'path_change', provider, path: m.path, created: m.created };
     }
     if (m.t === 'auth_page' && typeof m.visible === 'boolean') {
         return { t: 'auth_page', provider, visible: m.visible };

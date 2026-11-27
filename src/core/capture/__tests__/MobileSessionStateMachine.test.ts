@@ -555,8 +555,9 @@ describe('MobileSessionStateMachine: input on a surface still on screen reopens 
 });
 
 describe('MobileSessionStateMachine: a fresh chat gaining its thread id stays one session', () => {
-    const CHATGPT = (sessionId: string | null): ProviderContext => ({
+    const CHATGPT = (sessionId: string | null, continuesFreshChat?: boolean): ProviderContext => ({
         provider: 'chatgpt', sessionId, boundaryMode: 'url_session_id', timestampGapMs: null,
+        ...(continuesFreshChat === undefined ? {} : { continuesFreshChat }),
     });
 
     it('typed fresh chat with two messages ends in exactly one record', () => {
@@ -564,8 +565,8 @@ describe('MobileSessionStateMachine: a fresh chat gaining its thread id stays on
         const out = drive(sm, [
             { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
             { t: 'input_event', ts: 3_000 },
-            // The first message lands and the URL becomes /c/<id>.
-            { t: 'foreground_changed', ts: 8_000, providerContext: CHATGPT('abc') },
+            // The first message lands and the URL becomes /c/<id>; the page says it created it.
+            { t: 'foreground_changed', ts: 8_000, providerContext: CHATGPT('abc', true) },
             { t: 'input_event', ts: 28_000 },
             { t: 'shutdown', ts: 48_000 },
         ]);
@@ -578,7 +579,7 @@ describe('MobileSessionStateMachine: a fresh chat gaining its thread id stays on
         const out = drive(sm, [
             { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
             { t: 'input_event', ts: 6_000 },
-            { t: 'foreground_changed', ts: 6_100, providerContext: CHATGPT('abc') },
+            { t: 'foreground_changed', ts: 6_100, providerContext: CHATGPT('abc', true) },
             { t: 'input_event', ts: 12_000 },
             { t: 'input_event', ts: 20_000 },
             { t: 'shutdown', ts: 30_000 },
@@ -593,12 +594,37 @@ describe('MobileSessionStateMachine: a fresh chat gaining its thread id stays on
             { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
             { t: 'input_event', ts: 1_000 },
             { t: 'foreground_changed', ts: 5_000, providerContext: null },
-            { t: 'foreground_changed', ts: 20_000, providerContext: CHATGPT('abc') },
+            { t: 'foreground_changed', ts: 20_000, providerContext: CHATGPT('abc', true) },
             { t: 'shutdown', ts: 30_000 },
         ]);
         expect(out).toHaveLength(1);
         expect(sm.getState().kind).toBe('idle');
         expect(out[0]).toMatchObject({ sessionId: 'abc', windowEnd: 30_000 });
+    });
+
+    it('RED control: an existing thread opened from a fresh chat (no creation verdict) is a new session', () => {
+        const sm = new MobileSessionStateMachine();
+        const out = drive(sm, [
+            { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
+            { t: 'input_event', ts: 1_000 },
+            { t: 'foreground_changed', ts: 10_000, providerContext: CHATGPT('old', false) },
+            { t: 'input_event', ts: 11_000 },
+            { t: 'shutdown', ts: 20_000 },
+        ]);
+        expect(out).toHaveLength(2);
+        expect(out.map(o => o.sessionId)).toEqual([null, 'old']);
+    });
+
+    it('RED control: with no verdict at all, a new id is a new session', () => {
+        const sm = new MobileSessionStateMachine();
+        const out = drive(sm, [
+            { t: 'foreground_changed', ts: 0, providerContext: CHATGPT(null) },
+            { t: 'input_event', ts: 1_000 },
+            { t: 'foreground_changed', ts: 10_000, providerContext: CHATGPT('old') },
+            { t: 'shutdown', ts: 20_000 },
+        ]);
+        expect(out).toHaveLength(1);
+        expect(out[0]).toMatchObject({ sessionId: null, windowEnd: 10_000 });
     });
 
     it('RED control: moving from one thread id to a different one is still a new session', () => {

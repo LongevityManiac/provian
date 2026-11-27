@@ -107,10 +107,12 @@ import {
     threadKeyFromUrl,
 } from '../../core/capture/turnMarkers';
 import {
+    NavigationGate,
     effectOfWatcherMessage,
     isAuthUrl,
+    navigationMayRevive,
+    pathOfUrl,
     stepForKeyboard,
-    stepForNavigation,
 } from '../../core/capture/chatScreenSignals';
 import { MarkerHealthReporter } from '../../core/capture/markerHealth';
 import RelayAPIService from '../../services/RelayAPIService';
@@ -215,6 +217,22 @@ const ChatWebViewScreen: React.FC = () => {
         }
     }, [handleOutputs]);
 
+    // Every foreground change goes through the gate, which holds a move off a fresh chat until
+    // the page says whether it created that thread or opened an existing one.
+    const stepMachineRef = useRef(stepMachine);
+    stepMachineRef.current = stepMachine;
+    const gateRef = useRef<NavigationGate | null>(null);
+    if (gateRef.current === null) {
+        gateRef.current = new NavigationGate({
+            step: input => stepMachineRef.current(input),
+            setTimer: (fn, ms) => setTimeout(fn, ms),
+            clearTimer: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
+        });
+    }
+    const navigateTo = useCallback((url: string | null, ts: number) => {
+        gateRef.current?.navigate(url ? providerContextFromUrl(url) : null, url ? pathOfUrl(url) : '/', ts);
+    }, []);
+
     const metricsOnMessage = useMemo(
         () => (captureEnabled ? createOnMessageHandler() : undefined),
         [captureEnabled],
@@ -234,6 +252,7 @@ const ChatWebViewScreen: React.FC = () => {
             if (effect.authFormVisible !== undefined) authFormVisibleRef.current = effect.authFormVisible;
             if (effect.hideRestoreVoice) setShowRestoreVoice(false);
             if (effect.step) stepMachine(effect.step);
+            if (effect.pathVerdict) gateRef.current?.verdict(effect.pathVerdict.path, effect.pathVerdict.created);
             if (effect.markerVerdict) void getMarkerHealthReporter().report(effect.markerVerdict);
         };
     }, [metricsOnMessage, stepMachine, entry]);
@@ -298,13 +317,11 @@ const ChatWebViewScreen: React.FC = () => {
                 // If the state machine is in `closing`, a provider-matching
                 // synthesized event returns it to `active` before the 60s
                 // closingWindowMs fires and splits the session.
-                const url = lastUrlRef.current;
-                const ctx = url ? providerContextFromUrl(url) : null;
-                stepMachine({ t: 'foreground_changed', ts: Date.now(), providerContext: ctx });
+                navigateTo(lastUrlRef.current, Date.now());
                 return;
             }
             // Any other state counts as foreground loss.
-            stepMachine({ t: 'foreground_changed', ts: Date.now(), providerContext: null });
+            navigateTo(null, Date.now());
         });
         const kbSub = Keyboard.addListener('keyboardDidShow', () => {
             const step = stepForKeyboard({
@@ -323,9 +340,10 @@ const ChatWebViewScreen: React.FC = () => {
             clearInterval(timer);
             appSub.remove();
             kbSub.remove();
+            gateRef.current?.release();
             stepMachine({ t: 'shutdown', ts: Date.now() });
         };
-    }, [stepMachine, captureEnabled]);
+    }, [stepMachine, captureEnabled, navigateTo]);
 
     if (!entry) {
         return (
@@ -369,8 +387,8 @@ const ChatWebViewScreen: React.FC = () => {
         if (!captureEnabled) return;
         // Only the app coming back to the foreground revives a session (the AppState handler
         // replays the last URL then).
-        const step = stepForNavigation(providerContextFromUrl(state.url), AppState.currentState, Date.now());
-        if (step) stepMachine(step);
+        if (!navigationMayRevive(AppState.currentState)) return;
+        navigateTo(state.url, Date.now());
     };
 
     return (

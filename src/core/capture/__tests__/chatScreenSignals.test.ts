@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { effectOfWatcherMessage, isAuthUrl, keyboardCounts, navigationMayRevive, stepForKeyboard, stepForNavigation } from '../chatScreenSignals';
+import { NavigationGate, PATH_VERDICT_WAIT_MS, pathOfUrl, effectOfWatcherMessage, isAuthUrl, keyboardCounts, navigationMayRevive, stepForKeyboard, stepForNavigation } from '../chatScreenSignals';
 
 describe('isAuthUrl: a provider sign-in page is not its chat surface', () => {
     it.each([
@@ -79,5 +79,67 @@ describe('screen gates: what each event does to the session', () => {
     it('RED control: navigation while backgrounded never revives a session', () => {
         expect(stepForNavigation(ctx, 'background', 9)).toBeNull();
         expect(stepForNavigation(ctx, 'inactive', 9)).toBeNull();
+    });
+});
+
+describe('NavigationGate: a thread id is adopted only for a chat being created', () => {
+    const fresh = { provider: 'chatgpt', sessionId: null, boundaryMode: 'url_session_id' as const, timestampGapMs: null };
+    const thread = { ...fresh, sessionId: 'abc' };
+    function gate() {
+        const steps: unknown[] = [];
+        const timers: Array<() => void> = [];
+        const g = new NavigationGate({
+            step: i => steps.push(i),
+            setTimer: fn => { timers.push(fn); return timers.length; },
+            clearTimer: () => {},
+        });
+        return { g, steps, fire: () => timers.splice(0).forEach(f => f()) };
+    }
+
+    it('holds a fresh-to-thread move until the page says it created the thread', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        expect(steps).toHaveLength(1);
+        g.verdict('/c/abc', true);
+        expect(steps[1]).toEqual({ t: 'foreground_changed', ts: 2, providerContext: { ...thread, continuesFreshChat: true } });
+    });
+
+    it('a verdict that arrives before the navigation is used', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.verdict('/c/abc', true);
+        g.navigate(thread, '/c/abc', 2);
+        expect(steps[1]).toMatchObject({ providerContext: { continuesFreshChat: true } });
+    });
+
+    it('RED control: "opened an existing thread" is passed on as not created', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        g.verdict('/c/abc', false);
+        expect(steps[1]).toMatchObject({ providerContext: { continuesFreshChat: false } });
+    });
+
+    it(`RED control: no verdict within ${PATH_VERDICT_WAIT_MS} ms means not created`, () => {
+        const { g, steps, fire } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        fire();
+        expect(steps[1]).toMatchObject({ ts: 2, providerContext: { continuesFreshChat: false } });
+    });
+
+    it('any other move passes straight through, and a held move is released first', () => {
+        const { g, steps } = gate();
+        g.navigate(fresh, '/', 1);
+        g.navigate(thread, '/c/abc', 2);
+        g.navigate(null, '/', 3);
+        expect(steps.map(s => (s as { ts: number }).ts)).toEqual([1, 2, 3]);
+        expect(steps[1]).toMatchObject({ providerContext: { continuesFreshChat: false } });
+    });
+
+    it('pathOfUrl matches location.pathname', () => {
+        expect(pathOfUrl('https://chatgpt.com/c/abc?x=1#y')).toBe('/c/abc');
+        expect(pathOfUrl('https://chatgpt.com')).toBe('/');
     });
 });
