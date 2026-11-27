@@ -6,5 +6,5 @@ export const ATLAS = {
   walletId: 'wallet_aw_6c5e74b0-5202-414a-96d6-818d0a126ac5',
   portrait: '/atlas/atlas-portrait.jpg',
   // His public history page.
-  recordPath: '/a/atlas',
+  recordPath: '/a/atlas/',
 } as const
