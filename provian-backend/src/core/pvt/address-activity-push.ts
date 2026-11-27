@@ -63,7 +63,9 @@ const SIGNING_KEY_CACHE_MS = 10 * 60 * 1000;
 export type AddressActivityNetwork = 'ARB_MAINNET' | 'OPT_MAINNET' | 'SOLANA_MAINNET';
 export const ADDRESS_ACTIVITY_NETWORKS: readonly AddressActivityNetwork[] = Object.freeze(['ARB_MAINNET', 'OPT_MAINNET', 'SOLANA_MAINNET']);
 const EVM_CHAIN_IDS: Readonly<Record<'ARB_MAINNET' | 'OPT_MAINNET', 42161 | 10>> = Object.freeze({ ARB_MAINNET: 42161, OPT_MAINNET: 10 });
-const EVM_CATEGORIES: ReadonlySet<string> = new Set(['external', 'erc20']); // the scan's categories
+// The scan's categories (native transfers and ERC-20 transfers). The address-activity webhook labels
+// an ERC-20 transfer "token" (its documented payloads); "erc20" is accepted as the same thing.
+const EVM_CATEGORIES: ReadonlySet<string> = new Set(['external', 'token', 'erc20']);
 
 const EVM_ADDRESS = /^0x[0-9a-f]{40}$/;
 const EVM_HASH = /^0x[0-9a-f]{64}$/;
@@ -346,8 +348,10 @@ export class AddressActivitySigningKeys {
 
   async get(webhookId: string): Promise<AlchemyWebhook | null> {
     const now = this.now();
-    if (now - this.loadedAtMs >= SIGNING_KEY_CACHE_MS) await this.refresh();
-    else if (!this.keys.has(webhookId) && now - this.lastRefreshMs >= SIGNING_KEY_REFRESH_MIN_MS) await this.refresh();
+    // Stale keys or an unknown id refresh, but never more than once a minute (counted from the last
+    // attempt, successful or not), so posts (forged ones included) cannot turn into list calls.
+    const stale = now - this.loadedAtMs >= SIGNING_KEY_CACHE_MS;
+    if ((stale || !this.keys.has(webhookId)) && now - this.lastRefreshMs >= SIGNING_KEY_REFRESH_MIN_MS) await this.refresh();
     return this.keys.get(webhookId) ?? null;
   }
 }

@@ -10,13 +10,16 @@ jest.mock('../../cache', () => {
   const del = jest.fn(async (key: string) => { store.delete(key); return 1; });
   const set = jest.fn(async (key: string, value: unknown) => { store.set(key, value); return 'OK'; });
   const get = jest.fn(async (key: string) => (store.has(key) ? store.get(key) : null));
-  return { __esModule: true, cache: { del, get, set, isEnabled: () => true }, __mocks: { del, set, get, store } };
+  const setNx = jest.fn(async (key: string, value: unknown) => { if (store.has(key)) return false; store.set(key, value); return true; });
+  return { __esModule: true, cache: { del, get, set, setNx, isEnabled: () => true }, __mocks: { del, set, get, setNx, store } };
 });
+jest.mock('../../core/agent-wallet/api-key', () => ({ __esModule: true, verifyApiCredentialAsync: async () => true }));
+jest.mock('../../core/jurisdiction/mint-compliance', () => ({ __esModule: true, observeActorSession: async () => undefined }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mocks = (require('../../cache') as unknown as { __mocks: { set: jest.Mock; store: Map<string, unknown> } }).__mocks;
 
-import { invalidateDeviceCache, isCaptureHealthHeartbeat } from './device-auth';
+import { createDeviceAuthMiddleware, invalidateDeviceCache, isCaptureHealthHeartbeat } from './device-auth';
 
 function fakeDb(prefix: string): never {
   return {
@@ -38,5 +41,46 @@ describe('heartbeat device cache', () => {
     expect(isCaptureHealthHeartbeat({ method: 'PUT', originalUrl: '/V1/devices/me/capture-health?x=1' })).toBe(true);
     expect(isCaptureHealthHeartbeat({ method: 'POST', originalUrl: '/v1/meter/batch' })).toBe(false);
     expect(isCaptureHealthHeartbeat({ method: 'GET', originalUrl: '/v1/devices/me/capture-health' })).toBe(false);
+  });
+
+  it('a heartbeat whose device read started before a revocation cannot put the old document back over the tombstone', async () => {
+    const prefix = 'pdk_aaaaaaaaaaaaaaaa';
+    const hbKey = `device:hb:${prefix}`;
+    let status = 'active';
+    let revokeDuringRead = true;
+    const db = {
+      collection: (name: string) => ({
+        doc: () => ({
+          get: async () => {
+            if (name === 'device_key_index') return { exists: true, data: () => ({ device_id: 'd1' }) };
+            const snapshot = { device_id: 'd1', device_key_prefix: prefix, owner_type: 'agent', owner_wallet_id: 'w1', status,
+              device_key_hash: 'h', device_key_salt: 's' };
+            if (revokeDuringRead) {
+              // The revocation commits and invalidates while this read is in flight.
+              revokeDuringRead = false;
+              status = 'revoked';
+              mocks.store.set(hbKey, { device_cache_tombstone: true });
+            }
+            return { exists: true, data: () => snapshot };
+          },
+        }),
+      }),
+    } as never;
+    const middleware = createDeviceAuthMiddleware(db);
+    const run = async () => {
+      let code = 0;
+      let passed = false;
+      const req = { method: 'PUT', originalUrl: '/v1/devices/me/capture-health', url: '/v1/devices/me/capture-health', path: '/v1/devices/me/capture-health',
+        headers: { authorization: `DeviceKey ${prefix}xyz:pds_secret` }, body: {}, query: {}, ip: '8.8.8.8' } as never;
+      const res = { status: (c: number) => { code = c; return { json: () => undefined }; } } as never;
+      await middleware(req, res, () => { passed = true; });
+      return { code, passed };
+    };
+    // The in-flight heartbeat still answers from its (pre-revocation) read, as any request already past auth would.
+    expect((await run()).passed).toBe(true);
+    // RED: a plain set here would leave the active document cached for an hour.
+    expect(mocks.store.get(hbKey)).toEqual({ device_cache_tombstone: true });
+    // The next heartbeat is decided by Firestore: revoked.
+    expect(await run()).toEqual({ code: 403, passed: false });
   });
 });

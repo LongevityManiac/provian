@@ -15,6 +15,8 @@ import {
   openNextWatchRegistryGeneration,
   readWatchMarks,
   readWatchRegistry,
+  readWatchRegistryWriteGenerationInTransaction,
+  removeWatchMarkInTransaction,
   resetWatchRegistryGenerationCacheForTests,
   seedWatchMarks,
   unmarkAddresses,
@@ -93,5 +95,28 @@ describe('watch registry generations', () => {
     expect(await readWatchMarks(db, 'chain_record')).toEqual(new Set([A, B]));
     await unmarkAddresses(db, 'chain_record', [A, B]);
     expect(await readWatchMarks(db, 'chain_record')).toEqual(new Set());
+  });
+
+  it('a rebind in a process whose cached generation is stale still clears a mark another process wrote in a later generation', async () => {
+    const db = createFakeFirestore() as unknown as Firestore;
+    await markWatchRegistrySeeded(db, 1);
+    expect(await openNextWatchRegistryGeneration(db, 0, 2)).toBe(1);
+    expect(await openNextWatchRegistryGeneration(db, 1, 3)).toBe(2);
+    await seedWatchMarks(db, 'outbound_usdc', [A], 4);
+    expect((await readWatchMarks(db, 'outbound_usdc'))?.has(A)).toBe(true);
+
+    // RED: a fresh instance (cache at generation 0) zeroing only what its cache names leaves the mark.
+    resetWatchRegistryGenerationCacheForTests();
+    await db.runTransaction(async (txn) => { removeWatchMarkInTransaction(txn, db, 'outbound_usdc', A, 0); });
+    expect((await readWatchMarks(db, 'outbound_usdc'))?.has(A)).toBe(true);
+
+    // The rebind reads the generation in its own transaction and clears it.
+    resetWatchRegistryGenerationCacheForTests();
+    await db.runTransaction(async (txn) => {
+      const generation = await readWatchRegistryWriteGenerationInTransaction(txn, db);
+      expect(generation).toBe(2);
+      removeWatchMarkInTransaction(txn, db, 'outbound_usdc', A, generation);
+    });
+    expect((await readWatchMarks(db, 'outbound_usdc'))?.has(A)).toBe(false);
   });
 });

@@ -16,8 +16,10 @@
  *   reorgs; rows merge by id) and only signatures newer than the last one seen. The first scan of
  *   approvals reads the whole history once, so every approval the wallet ever granted is listed.
  * - FORCED. Pull-to-refresh, a week-old scan (for what no fingerprint shows: an unverified token, an
- *   allowance granted by a permit signed in another wallet app), a failed change check, and a signed WalletConnect
- *   typed-data request (a permit grants an allowance without moving the nonce) always scan.
+ *   allowance granted by a permit signed in another wallet app) and a failed change check always
+ *   scan. A typed-data request signed through WalletConnect (a permit grants an allowance without
+ *   moving the nonce, whenever a third party submits it) scans once at once, then at least hourly
+ *   until the permit's own deadline (at most 30 days; a week when it names none).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -64,18 +66,73 @@ export async function saveChainSyncState(primaryAddress: string, chain: SyncedCh
     }
 }
 
-/** The wallet signed something that can grant an allowance without a transaction: scan next time. */
-export async function markHistoryRescanDue(nowMs: number = Date.now()): Promise<void> {
-    try { await AsyncStorage.setItem(RESCAN_DUE_KEY, String(nowMs)); } catch { /* next daily scan */ }
+/**
+ * While a signed permit can still land (a third party submits it, the nonce never moves), every
+ * EVM scan at least this often reads Alchemy.
+ */
+export const PERMIT_RESCAN_INTERVAL_MS = 60 * 60 * 1000;
+/** A permit with no readable deadline is watched this long; the weekly scan covers anything later. */
+export const PERMIT_RESCAN_DEFAULT_MS = HISTORY_FULL_REFRESH_MS;
+/** The longest a permit is watched hourly, whatever its deadline (the weekly scan covers the rest). */
+export const PERMIT_RESCAN_MAX_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** The window in which a signed permit may still land, as stored. */
+export interface PermitRescanWindow {
+    /** When the typed data was signed (every chain scans once after it). */
+    readonly signedAtMs: number;
+    /** Until when EVM scans read Alchemy at least hourly. */
+    readonly untilMs: number;
 }
 
-export async function readHistoryRescanDueAt(): Promise<number> {
+/**
+ * Until when a signed typed-data request may still create an allowance: its own deadline
+ * (`deadline` for an ERC-2612 permit, `sigDeadline` for a Permit2 signature, `expiry` for a DAI-style
+ * permit, in seconds), capped at 30 days; the default when none is readable.
+ */
+export function permitRescanUntilMs(typedData: unknown, nowMs: number): number {
+    let parsed: unknown = typedData;
+    if (typeof typedData === 'string') {
+        try { parsed = JSON.parse(typedData); } catch { parsed = null; }
+    }
+    const message = parsed && typeof parsed === 'object' ? (parsed as { message?: unknown }).message : undefined;
+    const fields = message && typeof message === 'object' ? message as Record<string, unknown> : {};
+    const deadlines: number[] = [];
+    for (const key of ['deadline', 'sigDeadline', 'expiry']) {
+        const raw = fields[key];
+        if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'bigint') continue;
+        let seconds: bigint;
+        try { seconds = BigInt(raw); } catch { continue; }
+        if (seconds <= 0n) continue; // 0 means no expiry
+        deadlines.push(seconds > BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 1000)) ? Number.MAX_SAFE_INTEGER : Number(seconds) * 1000);
+    }
+    const until = deadlines.length > 0 ? Math.max(...deadlines) : nowMs + PERMIT_RESCAN_DEFAULT_MS;
+    return Math.max(nowMs, Math.min(until, nowMs + PERMIT_RESCAN_MAX_MS));
+}
+
+/** The wallet signed something that can grant an allowance without a transaction: watch for it landing. */
+export async function markHistoryRescanDue(window: PermitRescanWindow): Promise<void> {
+    try {
+        const current = await readHistoryRescanWindow();
+        const next: PermitRescanWindow = { signedAtMs: Math.max(current.signedAtMs, window.signedAtMs), untilMs: Math.max(current.untilMs, window.untilMs) };
+        await AsyncStorage.setItem(RESCAN_DUE_KEY, JSON.stringify(next));
+    } catch { /* the weekly scan */ }
+}
+
+export async function readHistoryRescanWindow(): Promise<PermitRescanWindow> {
     try {
         const raw = await AsyncStorage.getItem(RESCAN_DUE_KEY);
-        const n = raw ? Number(raw) : 0;
-        return Number.isFinite(n) ? n : 0;
+        if (!raw) return { signedAtMs: 0, untilMs: 0 };
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed === 'number' && Number.isFinite(parsed)) return { signedAtMs: parsed, untilMs: parsed };
+        if (parsed && typeof parsed === 'object') {
+            const { signedAtMs, untilMs } = parsed as Record<string, unknown>;
+            if (typeof signedAtMs === 'number' && Number.isFinite(signedAtMs) && typeof untilMs === 'number' && Number.isFinite(untilMs)) {
+                return { signedAtMs, untilMs };
+            }
+        }
+        return { signedAtMs: 0, untilMs: 0 };
     } catch {
-        return 0;
+        return { signedAtMs: 0, untilMs: 0 };
     }
 }
 
@@ -84,20 +141,70 @@ export function chainScanDue(input: {
     readonly state: ChainSyncState | undefined;
     readonly fingerprint: string | null;
     readonly nowMs: number;
-    readonly rescanDueAtMs: number;
+    /** The signed-permit window (EVM chains only; Solana passes none). */
+    readonly permit?: PermitRescanWindow;
     readonly force: boolean;
 }): boolean {
-    const { state, fingerprint, nowMs, rescanDueAtMs, force } = input;
+    const { state, fingerprint, nowMs, permit, force } = input;
     if (force || !state || fingerprint === null || state.fingerprint === null) return true;
     if (state.fingerprint !== fingerprint) return true;
     if (nowMs - state.scannedAtMs >= HISTORY_FULL_REFRESH_MS || state.scannedAtMs > nowMs) return true;
-    return rescanDueAtMs > state.scannedAtMs;
+    if (!permit) return false;
+    // Once right after signing, then at least hourly while the permit can still land.
+    if (permit.signedAtMs > state.scannedAtMs) return true;
+    return nowMs <= permit.untilMs && nowMs - state.scannedAtMs >= PERMIT_RESCAN_INTERVAL_MS;
 }
 
+/**
+ * The re-read below the last scan also spans this much time, because the scan's block comes from the
+ * public RPC's change check while Alchemy answers up to its own head, which can trail it.
+ */
+export const HISTORY_HEAD_LAG_OVERLAP_MS = 10 * 60 * 1000;
+
 /** The first block an incremental read starts at (null: read as a first scan). */
-export function incrementalFromBlock(throughBlock: number | null | undefined): number | null {
+export function incrementalFromBlock(throughBlock: number | null | undefined, blockTimeMs: number = 2_000): number | null {
     if (typeof throughBlock !== 'number' || !Number.isSafeInteger(throughBlock) || throughBlock < 0) return null;
-    return Math.max(0, throughBlock - HISTORY_REORG_OVERLAP_BLOCKS);
+    const lagBlocks = blockTimeMs > 0 ? Math.ceil(HISTORY_HEAD_LAG_OVERLAP_MS / blockTimeMs) : 0;
+    return Math.max(0, throughBlock - Math.max(HISTORY_REORG_OVERLAP_BLOCKS, lagBlocks));
+}
+
+/**
+ * The EVM state to store after a scan, or null to store nothing (the next open reads again from the
+ * same place). Transfers must have been read in both directions; approvals that were not read keep
+ * their old block and clear the fingerprint, so the next open scans again even when nothing moved.
+ */
+export function nextEvmSyncState(input: {
+    readonly previous: ChainSyncState | undefined;
+    readonly fingerprint: string | null;
+    readonly nowMs: number;
+    readonly latestBlock: number;
+    readonly transfersRead: boolean;
+    readonly approvalsRead: boolean;
+}): ChainSyncState | null {
+    const { previous, fingerprint, nowMs, latestBlock, transfersRead, approvalsRead } = input;
+    if (!transfersRead || !Number.isSafeInteger(latestBlock) || latestBlock <= 0) return null;
+    return {
+        fingerprint: approvalsRead ? fingerprint : null,
+        scannedAtMs: nowMs,
+        throughBlock: latestBlock,
+        approvalsThroughBlock: approvalsRead ? latestBlock : (previous?.approvalsThroughBlock ?? null),
+        lastSignature: null,
+    };
+}
+
+/** The Solana state to store after a scan, or null when a signature's transaction was not read. */
+export function nextSolanaSyncState(input: {
+    readonly previous: ChainSyncState | undefined;
+    readonly fingerprint: string | null;
+    readonly nowMs: number;
+    readonly newestSignature: string | null;
+    readonly allRead: boolean;
+}): ChainSyncState | null {
+    if (!input.allRead) return null;
+    return {
+        fingerprint: input.fingerprint, scannedAtMs: input.nowMs, throughBlock: null, approvalsThroughBlock: null,
+        lastSignature: input.newestSignature ?? input.previous?.lastSignature ?? null,
+    };
 }
 
 type JsonRpcRequest = { jsonrpc: '2.0'; id: number; method: string; params: unknown[] };

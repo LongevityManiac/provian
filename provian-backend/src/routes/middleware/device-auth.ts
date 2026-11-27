@@ -307,7 +307,9 @@ const DEVICE_CACHE_TTL_S = 30;
  * The capture-health heartbeat (display and alerting only; it never affects auth decisions beyond
  * this route, attestation, eligibility or earning) reads its device document from a separate,
  * longer-lived cache entry, so a heartbeat every 10 minutes does not re-read Firestore each time.
- * Revocation deletes it with the others (`invalidateDeviceCache`); scrypt still runs every time.
+ * Revocation overwrites it with a tombstone (`invalidateDeviceCache`) that lives as long as the entry,
+ * and the heartbeat only ever creates the entry (set-if-absent), so a read that started before the
+ * revocation cannot put the old document back. A tombstone reads as a miss; scrypt still runs every time.
  */
 const HEARTBEAT_DEVICE_CACHE_TTL_S = 60 * 60;
 const HEARTBEAT_PATH = '/v1/devices/me/capture-health';
@@ -606,8 +608,11 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
       }
       device = rawDevice as unknown as DeviceDocument;
 
-      // Cache the device document (NOT the auth result - scrypt must still run)
-      await cache.set(cacheKey, device, heartbeat ? HEARTBEAT_DEVICE_CACHE_TTL_S : DEVICE_CACHE_TTL_S);
+      // Cache the device document (NOT the auth result - scrypt must still run). The heartbeat entry is
+      // only created, never overwritten: a revocation that lands between this read and this write has
+      // left its tombstone in the slot, and the stale document must not replace it.
+      if (heartbeat) await cache.setNx(cacheKey, device, HEARTBEAT_DEVICE_CACHE_TTL_S);
+      else await cache.set(cacheKey, device, DEVICE_CACHE_TTL_S);
     }
 
     if (device.status === 'revoked') {
@@ -631,7 +636,7 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
     req.device = device;
     req.deviceAuthMethod = 'bearer';
     await observeActorSession(db, req, device.owner_type === 'human' ? device.owner_user_id : device.owner_wallet_id,
-      heartbeat ? { skipWhileUnchanged: cache } : {});
+      { skipWhileUnchanged: heartbeat, cache });
     openPrivateAuthenticatedRequest(req,deviceSecret);
     next();
    } catch (err) {

@@ -9,9 +9,12 @@ import {
     chainScanDue,
     incrementalFromBlock,
     loadHistorySyncState,
+    nextEvmSyncState,
+    nextSolanaSyncState,
     probeEvmChain,
     probeSolanaAddress,
-    readHistoryRescanDueAt,
+    readHistoryRescanWindow,
+    type PermitRescanWindow,
     saveChainSyncState,
     type HistorySyncState,
 } from './historySync';
@@ -240,7 +243,7 @@ function changeCheckTokens(chain: ChainType): string[] {
 interface ScanContext {
     readonly primaryAddress: string;
     readonly state: HistorySyncState;
-    readonly rescanDueAtMs: number;
+    readonly permit: PermitRescanWindow;
     readonly force: boolean;
     readonly nowMs: number;
 }
@@ -382,7 +385,7 @@ class TransactionHistoryService {
                 const ctx: ScanContext = {
                     primaryAddress,
                     state: await loadHistorySyncState(primaryAddress),
-                    rescanDueAtMs: await readHistoryRescanDueAt(),
+                    permit: await readHistoryRescanWindow(),
                     force,
                     nowMs: Date.now(),
                 };
@@ -457,19 +460,17 @@ class TransactionHistoryService {
         const sync = ctx?.state.Solana;
         const probe = ctx ? await probeSolanaAddress({ rpcUrl: getActiveSolanaCluster().fallbackRpcUrl, address }) : null;
         const fingerprint = probe ? `sig:${probe.newestSignature ?? ''}` : null;
-        if (ctx && !chainScanDue({ state: sync, fingerprint, nowMs: ctx.nowMs, rescanDueAtMs: ctx.rescanDueAtMs, force: ctx.force })) {
+        if (ctx && !chainScanDue({ state: sync, fingerprint, nowMs: ctx.nowMs, force: ctx.force })) {
             return [];
         }
 
         // Only signatures newer than the last one read (a first scan reads the newest 20).
         const sigs = await solanaRpc.getSignaturesForAddress(address, 20, sync?.lastSignature ?? undefined);
         // The state moves only after every new signature was read, so a failed read is retried.
-        const recordScan = async (complete: boolean): Promise<void> => {
-            if (!ctx || !complete) return;
-            await saveChainSyncState(ctx.primaryAddress, 'Solana', {
-                fingerprint, scannedAtMs: ctx.nowMs, throughBlock: null, approvalsThroughBlock: null,
-                lastSignature: sigs[0]?.signature ?? sync?.lastSignature ?? null,
-            });
+        const recordScan = async (allRead: boolean): Promise<void> => {
+            if (!ctx) return;
+            const next = nextSolanaSyncState({ previous: sync, fingerprint, nowMs: ctx.nowMs, newestSignature: sigs[0]?.signature ?? null, allRead });
+            if (next) await saveChainSyncState(ctx.primaryAddress, 'Solana', next);
         };
         if (sigs.length === 0) { await recordScan(true); return []; }
 
@@ -645,11 +646,11 @@ class TransactionHistoryService {
         const probe = ctx && publicConfig
             ? await probeEvmChain({ rpcUrls: [publicConfig.rpcUrl, ...(publicConfig.fallbackRpcUrl ? [publicConfig.fallbackRpcUrl] : [])], address, tokenAddresses: changeCheckTokens(chain) })
             : null;
-        if (ctx && !chainScanDue({ state: sync, fingerprint: probe?.fingerprint ?? null, nowMs: ctx.nowMs, rescanDueAtMs: ctx.rescanDueAtMs, force: ctx.force })) {
+        if (ctx && !chainScanDue({ state: sync, fingerprint: probe?.fingerprint ?? null, nowMs: ctx.nowMs, permit: ctx.permit, force: ctx.force })) {
             return [];
         }
         // Only blocks after the last scan (a first scan reads the newest 50 per direction).
-        const transfersFrom = incrementalFromBlock(sync?.throughBlock);
+        const transfersFrom = incrementalFromBlock(sync?.throughBlock, CHAIN_BLOCK_TIME_MS[chain]);
 
         // [Etherscan migration] Switched from the deprecated Etherscan v1
         // explorer proxy (`/api/proxy/explorer/...`) to Alchemy's
@@ -741,22 +742,23 @@ class TransactionHistoryService {
                     chain,
                     address,
                     latestBlockHex,
-                    incrementalFromBlock(sync?.approvalsThroughBlock) ?? 0,
+                    incrementalFromBlock(sync?.approvalsThroughBlock, CHAIN_BLOCK_TIME_MS[chain]) ?? 0,
                 );
                 transactions.push(...approvals.rows);
                 approvalsRead = approvals.complete;
             }
 
             // Record the scan only for what was read completely, so a failed read is retried.
-            const latest = latestBlockHex ? parseInt(latestBlockHex, 16) : NaN;
-            if (ctx && Number.isSafeInteger(latest) && latest > 0 && transfersRead) {
-                await saveChainSyncState(ctx.primaryAddress, chain as 'Base' | 'Arbitrum' | 'Optimism', {
+            if (ctx) {
+                const next = nextEvmSyncState({
+                    previous: sync,
                     fingerprint: probe?.fingerprint ?? null,
-                    scannedAtMs: ctx.nowMs,
-                    throughBlock: latest,
-                    approvalsThroughBlock: approvalsRead ? latest : (sync?.approvalsThroughBlock ?? null),
-                    lastSignature: null,
+                    nowMs: ctx.nowMs,
+                    latestBlock: latestBlockHex ? parseInt(latestBlockHex, 16) : NaN,
+                    transfersRead,
+                    approvalsRead,
                 });
+                if (next) await saveChainSyncState(ctx.primaryAddress, chain as 'Base' | 'Arbitrum' | 'Optimism', next);
             }
 
             // Merge swap pairs: any tx hash with both a sent and a received

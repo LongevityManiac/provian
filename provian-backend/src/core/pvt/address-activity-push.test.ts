@@ -80,7 +80,7 @@ function evmBody(activity: unknown[], network = 'ARB_MAINNET', webhookId = 'wh_a
   return JSON.stringify({ webhookId, id: 'whevt_1', createdAt: '2026-11-27T00:00:00Z', type: 'ADDRESS_ACTIVITY', event: { network, activity } });
 }
 
-const transfer = (hash: string, from: string, to: string, category = 'erc20') =>
+const transfer = (hash: string, from: string, to: string, category = 'token') =>
   ({ blockNum: '0x10', hash, fromAddress: from, toAddress: to, category, value: 1, asset: 'USDC' });
 
 beforeEach(() => {
@@ -125,6 +125,26 @@ describe('delivery signature', () => {
     expect(api.listWebhooks).toHaveBeenCalledTimes(1);
     t += 61_000;
     await k.get('wh_unknown');
+    expect(api.listWebhooks).toHaveBeenCalledTimes(2);
+  });
+
+  it('RED: a failing key list (bad token, Alchemy down) is retried at most once a minute, whatever posts arrive', async () => {
+    let t = NOW;
+    const failing = { ...apiWith([]), listWebhooks: jest.fn(async () => { throw new Error('alchemy_down'); }) } as unknown as jest.Mocked<AlchemyNotifyApi>;
+    const k = new AddressActivitySigningKeys(failing, () => t);
+    for (let i = 0; i < 20; i += 1) await k.get('wh_forged').catch(() => null);
+    expect(failing.listWebhooks).toHaveBeenCalledTimes(1);
+    t += 61_000;
+    await k.get('wh_forged').catch(() => null);
+    expect(failing.listWebhooks).toHaveBeenCalledTimes(2);
+  });
+
+  it('known keys past their cache age refresh once, then serve from cache until the next minute', async () => {
+    let t = NOW;
+    const k = new AddressActivitySigningKeys(api, () => t);
+    expect(await k.get('wh_arb')).not.toBeNull();
+    t += 11 * 60_000;
+    for (let i = 0; i < 5; i += 1) expect(await k.get('wh_arb')).not.toBeNull();
     expect(api.listWebhooks).toHaveBeenCalledTimes(2);
   });
 });

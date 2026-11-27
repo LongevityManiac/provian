@@ -14,7 +14,7 @@ import type {
   Firestore,
   Transaction,
 } from 'firebase-admin/firestore';
-import { recordWatchRegistryEntry, removeWatchMarkInTransaction } from './watch-registry';
+import { readWatchRegistryWriteGenerationInTransaction, recordWatchRegistryEntry, removeWatchMarkInTransaction } from './watch-registry';
 
 export const WATCHER_ADDRESS_ADMISSION_COLLECTION = 'pvt_watcher_address_admissions_v1';
 export const INBOUND_WATCHER_CHECKPOINT_COLLECTION = 'genesis_inbound_checkpoints';
@@ -268,6 +268,8 @@ export interface NativeWalletWatcherRegistrationPlan {
    * exactly one to replace). The write overwrites it; every other registration creates.
    */
   readonly replaceExisting?: true;
+  /** For a rebind: the watch registry's write generation, read in the same transaction. */
+  readonly registryWriteGeneration?: number;
 }
 
 /**
@@ -339,6 +341,8 @@ async function planNativeWalletWatcherRegistration(
     }
     replaceExisting = true;
   }
+  // A rebind clears the address's watcher marks in every generation a writer could have used.
+  const registryWriteGeneration = replaceExisting ? await readWatchRegistryWriteGenerationInTransaction(txn, db) : undefined;
   const checkpoint = parseCheckpoint(
     checkpointSnap.exists
       ? checkpointSnap.data() as Record<string, unknown> | undefined
@@ -376,7 +380,7 @@ async function planNativeWalletWatcherRegistration(
     admission,
     membershipGeneration,
     priorLastProcessedBlock: checkpoint.lastProcessedBlock,
-    ...(replaceExisting ? { replaceExisting: true as const } : {}),
+    ...(replaceExisting ? { replaceExisting: true as const, registryWriteGeneration } : {}),
   };
 }
 
@@ -405,9 +409,11 @@ export function writeNativeWalletWatcherRegistration(
     // A rebind binds the address to a different wallet: the outbound watcher's admission for it
     // names the displaced wallet, so its mark no longer holds; an inbound admission that is not
     // live needs its catch-up, so its mark goes too.
-    removeWatchMarkInTransaction(txn, plan.db, 'outbound_usdc', plan.admission.address);
+    const generation = plan.registryWriteGeneration;
+    if (generation === undefined) throw new Error('native_watcher_rebind_registry_generation_missing');
+    removeWatchMarkInTransaction(txn, plan.db, 'outbound_usdc', plan.admission.address, generation);
     if (plan.admission.state !== 'live') {
-      removeWatchMarkInTransaction(txn, plan.db, 'inbound_usdc', plan.admission.address);
+      removeWatchMarkInTransaction(txn, plan.db, 'inbound_usdc', plan.admission.address, generation);
     }
   }
 }

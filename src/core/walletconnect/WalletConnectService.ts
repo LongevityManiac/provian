@@ -1,5 +1,5 @@
 import { currentProtocolDeployment } from '../protocol/runtime';
-import { markHistoryRescanDue } from '../history/historySync';
+import { markHistoryRescanDue, permitRescanUntilMs } from '../history/historySync';
 import type { RecoverableWalletTransaction } from '../security/ActionWallet';
 import { ActionWallet } from '../security/ActionWallet';
 import { withBiometricAction, assertBiometricAction, type BiometricAction } from '../security/biometricAction';
@@ -1337,10 +1337,13 @@ class WalletConnectService {
             throw err;
         }
 
-        // A signed typed-data request can grant an allowance (a permit) without a transaction, so the
-        // next history refresh reads approvals even though the wallet's nonce did not move.
+        // A signed typed-data request can grant an allowance (a permit) without a transaction, whenever a
+        // third party submits it, so history reads approvals until the permit's deadline even though
+        // the wallet's nonce does not move.
         if (request.method === 'eth_signTypedData' || request.method === 'eth_signTypedData_v4') {
-            void markHistoryRescanDue();
+            const signedAtMs = Date.now();
+            const typedData = Array.isArray(request.params) ? (request.params as unknown[])[1] : undefined;
+            void markHistoryRescanDue({ signedAtMs, untilMs: permitRescanUntilMs(typedData, signedAtMs) });
         }
         if (!this.recoveryOperation(request)) await this.web3wallet!.respondSessionRequest({
             topic: request.topic,

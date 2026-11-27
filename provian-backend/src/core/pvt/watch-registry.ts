@@ -436,17 +436,36 @@ export async function raiseWatchMarksGenerationHighWater(
   });
 }
 
-/** Remove one mark inside the caller's transaction (a native rebind that leaves the admission backfilling). */
+/**
+ * The registry's write generation, read inside the caller's transaction (before its writes). A
+ * generation opened after this read conflicts with the transaction, so the value is exact at commit.
+ */
+export async function readWatchRegistryWriteGenerationInTransaction(txn: Transaction, db: Firestore): Promise<number> {
+  const snap = await txn.get(db.collection(WATCH_REGISTRY_COLLECTION).doc(WATCH_REGISTRY_META_DOC));
+  const generation = parseWriteGeneration(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+  noteWriteGeneration(generation, Date.now());
+  return generation;
+}
+
+/**
+ * Remove one mark inside the caller's transaction (a native rebind that leaves the admission
+ * backfilling). `writeGeneration` is the registry's write generation read in the same transaction
+ * (`readWatchRegistryWriteGenerationInTransaction`); no writer can have marked the address in a
+ * later generation, so zeroing every generation through it (and one past, for good measure) clears
+ * the mark wherever any process wrote it.
+ */
 export function removeWatchMarkInTransaction(
   txn: Transaction,
   db: Firestore,
   watcher: WatchRegistryWatcher,
   address: string,
+  writeGeneration: number,
 ): void {
   assertWatcher(watcher);
+  if (!Number.isSafeInteger(writeGeneration) || writeGeneration < 0) throw new Error('watch_registry_generation_invalid');
   const lower = normalizeAddress(address);
-  // Every generation up to one past this process's cached write generation (see markGenerations).
-  for (let g = 0; g <= cachedWriteGeneration + 1; g += 1) {
+  const through = Math.max(writeGeneration, cachedWriteGeneration) + 1;
+  for (let g = 0; g <= through; g += 1) {
     txn.set(
       db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, watchRegistryShardOf(lower), g)),
       { schema_version: MARKS_SCHEMA, m: { [lower]: 0 } },

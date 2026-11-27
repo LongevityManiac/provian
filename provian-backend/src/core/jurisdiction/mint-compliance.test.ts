@@ -228,27 +228,49 @@ describe('heartbeat observation skip (a request that makes no compliance decisio
       entries,
       get: async <T,>(key: string): Promise<T | null> => (entries.has(key) ? entries.get(key) as T : null),
       set: async (key: string, value: unknown) => { entries.set(key, value); },
+      del: async (key: string) => { entries.delete(key); },
     };
   };
   it('after an observation, a repeat from the same jurisdiction before its rewrite time reads nothing; RED: another jurisdiction observes again', async () => {
     const cache = memoryCache();
-    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: cache });
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
     expect(fake.store.get(`${SESSION_COLLECTION}/${ACTOR}`)).toMatchObject({ country: 'US' });
     expect(cache.entries.size).toBe(1);
-    const [until] = [...cache.entries.values()] as number[];
+    const [{ untilMs: until }] = [...cache.entries.values()] as Array<{ untilMs: number }>;
     expect(until).toBeGreaterThan(Date.now());
     expect(until).toBeLessThanOrEqual(Date.now() + 15 * 60 * 1000);
 
     const original = fake.collection.bind(fake);
     let reads = 0;
     fake.collection = ((name: string) => { reads += 1; return original(name); }) as typeof fake.collection;
-    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: cache });
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
     expect(reads).toBe(0);
     // RED: a different jurisdiction (another country's address) is observed (and recorded) at once.
-    await observeActorSession(db, { ip: '5.34.192.1' }, 'actor', { skipWhileUnchanged: cache });
+    await observeActorSession(db, { ip: '5.34.192.1' }, 'actor', { skipWhileUnchanged: true, cache });
     expect(reads).toBeGreaterThan(0);
     fake.collection = original;
     expect(fake.store.get(`${SESSION_COLLECTION}/${ACTOR}`)).toMatchObject({ country: countryFromIp('5.34.192.1').country });
+  });
+  it('another request observing in between removes the marker, so the next heartbeat writes its own jurisdiction again', async () => {
+    const cache = memoryCache();
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
+    expect(fake.store.get(`${SESSION_COLLECTION}/${ACTOR}`)).toMatchObject({ country: 'US' });
+    // A non-heartbeat request from another country stores its own session.
+    await observeActorSession(db, { ip: '5.34.192.1' }, 'actor', { cache });
+    expect(fake.store.get(`${SESSION_COLLECTION}/${ACTOR}`)).toMatchObject({ country: countryFromIp('5.34.192.1').country });
+    // RED: the heartbeat from the first country must not skip on its old marker.
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
+    expect(fake.store.get(`${SESSION_COLLECTION}/${ACTOR}`)).toMatchObject({ country: 'US' });
+  });
+  it('a marker that cannot be read never skips the observation', async () => {
+    const cache = { ...memoryCache(), get: async () => { throw new Error('cache down'); } };
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
+    const original = fake.collection.bind(fake);
+    let reads = 0;
+    fake.collection = ((name: string) => { reads += 1; return original(name); }) as typeof fake.collection;
+    await observeActorSession(db, { ip: '8.8.8.8' }, 'actor', { skipWhileUnchanged: true, cache });
+    fake.collection = original;
+    expect(reads).toBeGreaterThan(0);
   });
   it('RED: without the option (any request that prices or settles) the observation always runs', async () => {
     await observeActorSession(db, { ip: '8.8.8.8' }, 'actor');

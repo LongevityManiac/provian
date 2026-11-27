@@ -5,7 +5,7 @@
  * top level, not under `action_report.metadata`).
  */
 
-import { findPEsByCommitSha } from './pe-lookup';
+import { ACT_KEY_COMMIT_SHA_LIFT_MS, ACT_KEY_COMMIT_SHA_SCAN_UNTIL_MS, findPEsByCommitSha } from './pe-lookup';
 
 interface DocSnap {
   exists: boolean;
@@ -155,7 +155,21 @@ describe('act keys by commit (the lifted, indexed commit_sha)', () => {
     seedKey(store, 'pe_m_new', { commit_sha: sha, row: { commit_sha: sha }, actor_id: 'a1', pe_hash: 'h1', action_type: 'coding_session' });
     seedKey(store, 'pe_m_old', { row: { commit_sha: sha }, actor_id: 'a2', pe_hash: 'h2', action_type: 'coding_session' });
     seedKey(store, 'pe_m_other', { commit_sha: 'e'.repeat(40), row: { commit_sha: 'e'.repeat(40) }, actor_id: 'a3', pe_hash: 'h3', action_type: 'coding_session' });
-    const matches = await findPEsByCommitSha(db, sha);
-    expect(matches.map((m) => m.envelopeId).sort()).toEqual(['pe_m_new', 'pe_m_old']);
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(ACT_KEY_COMMIT_SHA_LIFT_MS + 1);
+    try {
+      const matches = await findPEsByCommitSha(db, sha);
+      expect(matches.map((m) => m.envelopeId).sort()).toEqual(['pe_m_new', 'pe_m_old']);
+    } finally { clock.mockRestore(); }
+  });
+  it('after the scan window only the indexed query runs (a key sealed before the lift is past retention by then)', async () => {
+    const { db, store } = makeFakeDb();
+    const sha = 'f'.repeat(40);
+    seedKey(store, 'pe_m_new', { commit_sha: sha, row: { commit_sha: sha }, actor_id: 'a1', pe_hash: 'h1', action_type: 'coding_session' });
+    seedKey(store, 'pe_m_old', { row: { commit_sha: sha }, actor_id: 'a2', pe_hash: 'h2', action_type: 'coding_session' });
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(ACT_KEY_COMMIT_SHA_SCAN_UNTIL_MS);
+    try {
+      const matches = await findPEsByCommitSha(db, sha);
+      expect(matches.map((m) => m.envelopeId)).toEqual(['pe_m_new']);
+    } finally { clock.mockRestore(); }
   });
 });

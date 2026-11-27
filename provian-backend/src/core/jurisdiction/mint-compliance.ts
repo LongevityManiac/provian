@@ -4,6 +4,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 import type { Request } from 'express';
 import type { Firestore, Transaction } from 'firebase-admin/firestore';
 import { relayDb } from '../../firestore-db';
+import { cache as relayCache } from '../../cache';
 import { countryFromIp, type CountryObservation } from './country';
 import { resolveJurisdictionPolicy, type JurisdictionMintPolicy } from './jurisdiction-policy';
 import { canonicalCurrencyAddress, screenAddresses } from './sdn';
@@ -107,34 +108,47 @@ export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip
 /** A session is rewritten for the same jurisdiction at most this often. */
 const SESSION_REWRITE_MS = 15 * 60 * 1000;
 
-/** The cache a request that makes no compliance decision (the capture-health heartbeat) uses to
- * skip an observation that would write nothing. */
+/** The cache that holds each actor's "nothing to write" marker. */
 export interface ObservationCache {
   get<T>(key: string): Promise<T | null>;
   set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
+  del(key: string): Promise<void>;
 }
+
+/** An actor's marker: the jurisdiction its stored sessions hold, and until when a repeat writes nothing. */
+interface ObservationMarker { readonly where: string; readonly untilMs: number }
+export const observationMarkerKey = (actorId: string): string => `jurisdiction_observed_v2:${actorId}`;
 
 /**
  * Auth remains usable if the observation cannot be saved. Mint checks remain fail closed.
  *
  * `skipWhileUnchanged` is for a request that makes no compliance decision (the capture-health
- * heartbeat). After an observation whose stored session already holds this country, region and
- * database, a repeat from the same jurisdiction before the session's rewrite time would write
- * nothing; such a request skips the reads. Any other jurisdiction, or a request past that time,
- * observes exactly as before. Requests that price or settle never pass it.
+ * heartbeat). One marker per actor names the jurisdiction its stored sessions hold and the moment a
+ * repeat observation of it would write again. Every observation that runs first removes the marker,
+ * and only an observation that leaves every session holding its own jurisdiction sets it again, so a
+ * marker can exist only while no other request has observed since. A heartbeat skips only when the
+ * marker names its own country, region and database and that moment has not passed; any other
+ * jurisdiction, any expired marker, and every request without the option observe exactly as before.
+ * Requests that price or settle never pass it. A cache that cannot be read or cleared never causes a
+ * skip: the read failing observes, and a failed clear leaves at most a marker that a later
+ * observation of another jurisdiction replaces.
  */
 export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'>, actorId: string,
-  options: { readonly skipWhileUnchanged?: ObservationCache } = {}): Promise<void> {
+  options: { readonly skipWhileUnchanged?: boolean; readonly cache?: ObservationCache } = {}): Promise<void> {
   const context = requestLocations.getStore();
   context?.failedActors.add(actorId);
-  const cache = options.skipWhileUnchanged;
-  let markerKey: string | null = null;
-  if (cache) {
-    const where = countryFromIp(req.ip);
-    markerKey = `jurisdiction_observed:${actorId}:${where.country ?? '-'}:${where.region ?? '-'}:${where.database}`;
-    const until = await cache.get<number>(markerKey).catch(() => null);
-    if (typeof until === 'number' && Date.now() < until) { context?.failedActors.delete(actorId); return; }
+  const cache: ObservationCache = options.cache ?? relayCache;
+  const observed = countryFromIp(req.ip);
+  const where = `${observed.country ?? '-'}:${observed.region ?? '-'}:${observed.database}`;
+  const markerKey = observationMarkerKey(actorId);
+  if (options.skipWhileUnchanged) {
+    const marker = await cache.get<ObservationMarker>(markerKey).catch(() => null);
+    if (marker && typeof marker === 'object' && marker.where === where && typeof marker.untilMs === 'number' && Date.now() < marker.untilMs) {
+      context?.failedActors.delete(actorId);
+      return;
+    }
   }
+  await cache.del(markerKey).catch(() => { /* see above: a stale marker never names another jurisdiction's write */ });
   try {
     const addresses = await actorWalletAddresses(db, actorId);
     if (addresses.length === 0) return;
@@ -146,8 +160,9 @@ export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'
     });
     if (saved) context?.failedActors.delete(actorId);
     const ttlSeconds = Math.floor((unchangedUntil - Date.now()) / 1000);
-    if (cache && markerKey && saved && reported === addresses.length && ttlSeconds >= 1) {
-      await cache.set(markerKey, unchangedUntil, ttlSeconds).catch(() => { /* the next request observes */ });
+    if (options.skipWhileUnchanged && saved && reported === addresses.length && ttlSeconds >= 1) {
+      const marker: ObservationMarker = { where, untilMs: unchangedUntil };
+      await cache.set(markerKey, marker, ttlSeconds).catch(() => { /* the next request observes */ });
     }
   } catch { console.warn('[jurisdiction] authenticated location could not be persisted'); }
 }
