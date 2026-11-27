@@ -20,8 +20,13 @@
  * Rules, so that loading or scrolling an old thread is never counted as engagement:
  *  - The turns present when a thread first renders (opened from history) are the baseline, not
  *    new turns. A fresh chat's empty page is an empty baseline.
- *  - Opening a different existing thread re-baselines. Going from a fresh chat (no thread id in
- *    the URL) to its new thread does not, because that is the conversation being created.
+ *  - Opening an existing thread re-baselines, including from a fresh chat page (the screen opens
+ *    on one, and its history list sits there). Going from a fresh chat to its own new thread
+ *    does not: the conversation is being created. The page shows which it is: a turn already
+ *    appeared on the fresh page, or the page renamed its own history entry (replaceState) to
+ *    the new thread. A path change without either is treated as opening an existing thread.
+ *  - For a few seconds after arriving at an existing thread, turns that render are absorbed into
+ *    the baseline: a provider may still be swapping the old thread's turns for the new one's.
  *  - Only a new LAST turn counts. Older turns appearing above it (virtualized lists render them on
  *    scroll) are added to the seen set silently.
  *
@@ -121,6 +126,11 @@ export const SIGNED_OUT_HINT_SELECTOR = [
     'a[href*="/auth/login"]',
 ].join(', ');
 
+/** How long turns rendering on arrival at an existing thread are treated as already there. */
+export const THREAD_ARRIVAL_ABSORB_MS = 3_000;
+/** How recent a replaceState must be to mean "the fresh chat was renamed to its thread". */
+export const RENAME_WINDOW_MS = 2_000;
+
 /** Seconds after a conversation page settles before its markers are judged. */
 export const MARKER_HEALTH_FIRST_CHECK_MS = 8_000;
 export const MARKER_HEALTH_FINAL_CHECK_MS = 20_000;
@@ -139,6 +149,18 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
     var AUTH_FIELDS = ${JSON.stringify(AUTH_FIELD_SELECTOR)};
     var SIGNED_OUT = ${JSON.stringify(SIGNED_OUT_HINT_SELECTOR)};
     var FIRST_CHECK = ${MARKER_HEALTH_FIRST_CHECK_MS};
+    var ABSORB_MS = ${THREAD_ARRIVAL_ABSORB_MS};
+    var RENAME_MS = ${RENAME_WINDOW_MS};
+    var absorbUntil = 0;
+    var sawTurnOnFresh = false;
+    var lastRenameAt = -1;
+    try {
+      var origReplace = history.replaceState;
+      history.replaceState = function () {
+        lastRenameAt = Date.now();
+        return origReplace.apply(history, arguments);
+      };
+    } catch (e) {}
     var FINAL_CHECK = ${MARKER_HEALTH_FINAL_CHECK_MS};
     var seen = {};
     var lastPath = null;
@@ -212,7 +234,17 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
         var path = location.pathname || '/';
         checkAuth();
         checkHealth(path);
-        if (lastPath !== null && path !== lastPath && !FRESH.test(lastPath)) { baselined = false; }
+        if (lastPath !== null && path !== lastPath) {
+          var created = FRESH.test(lastPath) && !FRESH.test(path)
+            && (sawTurnOnFresh || (lastRenameAt >= 0 && Date.now() - lastRenameAt <= RENAME_MS));
+          if (!created) {
+            baselined = false;
+            if (!FRESH.test(path)) absorbUntil = Date.now() + ABSORB_MS;
+          }
+          sawTurnOnFresh = false;
+        } else if (lastPath === null && !FRESH.test(path)) {
+          absorbUntil = Date.now() + ABSORB_MS;
+        }
         lastPath = path;
         var p = pick();
         var c = p >= 0 ? CANDIDATES[p] : null;
@@ -228,6 +260,11 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
           lastTail = tail;
           return;
         }
+        if (Date.now() < absorbUntil) {
+          for (var a = 0; a < ids.length; a++) seen[ids[a]] = 1;
+          lastTail = tail;
+          return;
+        }
         var added = 0;
         var tailIsNew = tail !== null && !seen[tail];
         for (var k = 0; k < ids.length; k++) {
@@ -235,6 +272,7 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
         }
         if (tailIsNew && tail !== lastTail) {
           lastTail = tail;
+          if (FRESH.test(path)) sawTurnOnFresh = true;
           post({ v: 1, t: 'turns_added', provider: PROVIDER, n: added });
         }
       } catch (e) {}
@@ -253,6 +291,21 @@ export function buildTurnWatcherScript(provider: SupportedProvider): string {
 })();
 true;
 `;
+}
+
+/**
+ * A stable key for the conversation a URL shows, or null on a fresh chat page. The catalog's
+ * session-id patterns do not cover every conversation URL providers serve today (ChatGPT
+ * `/g/<gpt>/c/<id>`, Perplexity `/session/<id>`, Venice `/chat/agent/<id>`); the session machine
+ * reads a null id as "a fresh chat that has no thread yet", so every conversation URL needs one.
+ */
+export function threadKeyFromUrl(provider: string, url: string): string | null {
+    const spec = (TURN_MARKERS as Record<string, TurnMarkerSpec | undefined>)[provider];
+    if (!spec) return null;
+    const m = /^https?:\/\/[^/?#]+([^?#]*)/i.exec(url);
+    const path = m ? (m[1] || '/') : null;
+    if (!path) return null;
+    return new RegExp(spec.threadPath).test(path) ? path.replace(/\/+$/, '') : null;
 }
 
 // --- messages the watcher posts, as the chat screen reads them ---------------------------------

@@ -10,6 +10,8 @@ import {
     buildTurnWatcherScript,
     parseTurnWatcherMessage,
     MARKER_HEALTH_FINAL_CHECK_MS,
+    THREAD_ARRIVAL_ABSORB_MS,
+    threadKeyFromUrl,
 } from '../turnMarkers';
 import type { SupportedProvider } from '../injectedScript';
 
@@ -18,6 +20,8 @@ interface Page {
     doc: Document;
     main: HTMLElement;
     nav(path: string): void;
+    /** The page renames its own history entry (what a fresh chat does when it gets its thread). */
+    rename(path: string): void;
     advance(ms: number): Promise<void>;
     addTurn(attrs: Record<string, string>, opts?: { top?: boolean; tag?: string }): HTMLElement;
 }
@@ -36,9 +40,13 @@ async function openPage(provider: SupportedProvider, path: string): Promise<Page
     const timers: Array<{ at: number; fn: () => void; every?: number }> = [];
     const loc = { pathname: path };
     const fakeWindow = { ReactNativeWebView: { postMessage: (s: string) => posts.push(JSON.parse(s)) } };
-    const run = new Function('window', 'document', 'location', 'MutationObserver', 'setTimeout', 'setInterval', 'Date', buildTurnWatcherScript(provider));
+    const fakeHistory = {
+        replaceState(_s: unknown, _t: string, url: string) { loc.pathname = url; },
+        pushState(_s: unknown, _t: string, url: string) { loc.pathname = url; },
+    };
+    const run = new Function('window', 'document', 'location', 'history', 'MutationObserver', 'setTimeout', 'setInterval', 'Date', buildTurnWatcherScript(provider));
     run(
-        fakeWindow, doc, loc, win.MutationObserver,
+        fakeWindow, doc, loc, fakeHistory, win.MutationObserver,
         (fn: () => void, ms: number) => timers.push({ at: now + ms, fn }),
         (fn: () => void, ms: number) => timers.push({ at: now + ms, fn, every: ms }),
         { now: () => now },
@@ -48,7 +56,8 @@ async function openPage(provider: SupportedProvider, path: string): Promise<Page
         posts,
         doc,
         main: doc.getElementById('m') as HTMLElement,
-        nav(p: string) { loc.pathname = p; },
+        nav(p: string) { fakeHistory.pushState(null, '', p); },
+        rename(p: string) { fakeHistory.replaceState(null, '', p); },
         async advance(ms: number) {
             const end = now + ms;
             for (;;) {
@@ -82,7 +91,7 @@ describe('turn watcher: new turns count, old ones do not', () => {
     it('a fresh ChatGPT chat whose URL gains its id counts every new turn (4 spoken turns)', async () => {
         const p = await openPage('chatgpt', '/');
         p.addTurn({ 'data-turn-key': 'u1' });
-        p.nav('/c/0123456789abcdef');
+        p.rename('/c/0123456789abcdef');
         await p.advance(500);
         for (const k of ['a1', 'u2', 'a2']) { p.addTurn({ 'data-turn-key': k }); await p.advance(500); }
         expect(turnsAdded(p)).toBe(4);
@@ -99,7 +108,7 @@ describe('turn watcher: new turns count, old ones do not', () => {
     it('older turns rendering above on scroll count nothing; a new last turn counts once', async () => {
         const p = await openPage('claude', '/chat/0123456789abcdef');
         p.addTurn({ 'data-turn-key': 'o3' }); p.addTurn({ 'data-turn-key': 'o4' });
-        await p.advance(500);
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 500);
         p.addTurn({ 'data-turn-key': 'o2' }, { top: true }); p.addTurn({ 'data-turn-key': 'o1' }, { top: true });
         await p.advance(500);
         expect(turnsAdded(p)).toBe(0);
@@ -123,7 +132,7 @@ describe('turn watcher: new turns count, old ones do not', () => {
     it('RED control: the same thread switch WITHOUT the path change counts the new turns', async () => {
         const p = await openPage('claude', '/chat/aaaaaaaaaaaaaaaa');
         p.addTurn({ 'data-turn-key': 'one' });
-        await p.advance(500);
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 500);
         p.main.innerHTML = '';
         await p.advance(500);
         p.addTurn({ 'data-turn-key': 't1' }); p.addTurn({ 'data-turn-key': 't2' });
@@ -141,6 +150,75 @@ describe('turn watcher: new turns count, old ones do not', () => {
         await p.advance(500);
         expect(turnsAdded(p)).toBe(1);
     });
+});
+
+describe('turn watcher: a fresh page is where old threads are opened from', () => {
+    it('opening an old thread from the fresh page counts nothing', async () => {
+        const p = await openPage('chatgpt', '/');
+        p.nav('/c/0123456789abcdef');
+        await p.advance(500);
+        for (const k of ['o1', 'o2', 'o3']) p.addTurn({ 'data-turn-key': k });
+        await p.advance(THREAD_ARRIVAL_ABSORB_MS + 2_000);
+        expect(turnsAdded(p)).toBe(0);
+        p.addTurn({ 'data-turn-key': 'new' });
+        await p.advance(500);
+        expect(turnsAdded(p)).toBe(1);
+    });
+
+    it('a fresh chat the page renames to its thread counts its first turns', async () => {
+        const p = await openPage('claude', '/new');
+        p.rename('/chat/0123456789abcdef');
+        p.addTurn({ 'data-turn-key': 'u1' });
+        p.addTurn({ 'data-turn-key': 'a1' });
+        await p.advance(500);
+        expect(turnsAdded(p)).toBe(1);
+    });
+
+    it('RED control: the same arrival without the rename is read as an opened thread', async () => {
+        const p = await openPage('claude', '/new');
+        p.nav('/chat/0123456789abcdef');
+        p.addTurn({ 'data-turn-key': 'u1' });
+        p.addTurn({ 'data-turn-key': 'a1' });
+        await p.advance(500);
+        expect(turnsAdded(p)).toBe(0);
+    });
+
+    it('a rename long before the move does not count as creation', async () => {
+        const p = await openPage('chatgpt', '/');
+        p.rename('/');
+        await p.advance(5_000);
+        p.nav('/c/0123456789abcdef');
+        for (const k of ['o1', 'o2']) p.addTurn({ 'data-turn-key': k });
+        await p.advance(1_000);
+        expect(turnsAdded(p)).toBe(0);
+    });
+
+    it('turns still swapping in on arrival at another thread are absorbed', async () => {
+        const p = await openPage('claude', '/chat/aaaaaaaaaaaaaaaa');
+        p.addTurn({ 'data-turn-key': 'a1' });
+        await p.advance(500);
+        p.nav('/chat/bbbbbbbbbbbbbbbb');
+        await p.advance(500);
+        // The old thread's turn is still up when the first run after the move fires.
+        p.main.innerHTML = '';
+        p.addTurn({ 'data-turn-key': 'b1' }); p.addTurn({ 'data-turn-key': 'b2' });
+        await p.advance(1_000);
+        expect(turnsAdded(p)).toBe(0);
+    });
+});
+
+describe('threadKeyFromUrl: every conversation URL has a key', () => {
+    it.each([
+        ['venice', 'https://venice.ai/chat/agent/Lr4lQG6', '/chat/agent/Lr4lQG6'],
+        ['perplexity', 'https://www.perplexity.ai/session/ca3aacf9-91f3-4a49-a0c9-49a2bb36f6f8', '/session/ca3aacf9-91f3-4a49-a0c9-49a2bb36f6f8'],
+        ['chatgpt', 'https://chatgpt.com/g/g-abc/c/6b0850e7-8ffc-83e9-aad5-2fe47b368e08?x=1', '/g/g-abc/c/6b0850e7-8ffc-83e9-aad5-2fe47b368e08'],
+    ])('%s %s', (provider, url, key) => expect(threadKeyFromUrl(provider, url)).toBe(key));
+    it.each([
+        ['venice', 'https://venice.ai/chat/agent'],
+        ['chatgpt', 'https://chatgpt.com/?temporary-chat=true'],
+        ['claude', 'https://claude.ai/new'],
+        ['nobody', 'https://example.com/c/abc'],
+    ])('fresh or unknown: %s %s', (provider, url) => expect(threadKeyFromUrl(provider, url)).toBeNull());
 });
 
 describe('turn watcher: sign-in forms', () => {

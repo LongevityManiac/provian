@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isAuthUrl, keyboardCounts, navigationMayRevive } from '../chatScreenSignals';
+import { effectOfWatcherMessage, isAuthUrl, keyboardCounts, navigationMayRevive, stepForKeyboard, stepForNavigation } from '../chatScreenSignals';
 
 describe('isAuthUrl: a provider sign-in page is not its chat surface', () => {
     it.each([
@@ -45,5 +45,39 @@ describe('keyboardCounts', () => {
 describe('navigationMayRevive: only the app in the foreground', () => {
     it.each([['active', true], ['background', false], ['inactive', false], [null, false], [undefined, false]] as const)('%s', (state, expected) => {
         expect(navigationMayRevive(state)).toBe(expected);
+    });
+});
+
+describe('screen gates: what each event does to the session', () => {
+    const ctx = { provider: 'claude', sessionId: 'x', boundaryMode: 'url_session_id' as const, timestampGapMs: null };
+
+    it('a new turn on screen is an input event and hides the restore offer', () => {
+        expect(effectOfWatcherMessage({ t: 'turns_added', provider: 'claude', n: 1 }, 'active', 5)).toEqual({ step: { t: 'input_event', ts: 5 }, hideRestoreVoice: true });
+    });
+    it('RED control: a new turn while the app is in the background is not engagement', () => {
+        expect(effectOfWatcherMessage({ t: 'turns_added', provider: 'claude', n: 1 }, 'background', 5).step).toBeNull();
+        expect(effectOfWatcherMessage({ t: 'turns_added', provider: 'claude', n: 1 }, 'inactive', 5).step).toBeNull();
+    });
+    it('a sign-in form message only sets the flag; a verdict is forwarded', () => {
+        expect(effectOfWatcherMessage({ t: 'auth_page', provider: 'claude', visible: true }, 'active', 5)).toEqual({ step: null, authFormVisible: true, hideRestoreVoice: false });
+        const v = { t: 'marker_health' as const, provider: 'claude', matched: false, candidate: -1, counts: [0], account: 'signed_in' as const };
+        expect(effectOfWatcherMessage(v, 'active', 5)).toEqual({ step: null, markerVerdict: v, hideRestoreVoice: false });
+    });
+
+    it('keyboard: counts on a chat page in the foreground', () => {
+        expect(stepForKeyboard({ url: 'https://claude.ai/new', authFormVisible: false, appState: 'active' }, 7)).toEqual({ t: 'input_event', ts: 7 });
+    });
+    it('RED control: keyboard over a sign-in form, on a sign-in page, or in the background is not a chat', () => {
+        expect(stepForKeyboard({ url: 'https://claude.ai/new', authFormVisible: true, appState: 'active' }, 7)).toBeNull();
+        expect(stepForKeyboard({ url: 'https://claude.ai/login', authFormVisible: false, appState: 'active' }, 7)).toBeNull();
+        expect(stepForKeyboard({ url: 'https://claude.ai/new', authFormVisible: false, appState: 'background' }, 7)).toBeNull();
+    });
+
+    it('navigation in the foreground reports what is on screen', () => {
+        expect(stepForNavigation(ctx, 'active', 9)).toEqual({ t: 'foreground_changed', ts: 9, providerContext: ctx });
+    });
+    it('RED control: navigation while backgrounded never revives a session', () => {
+        expect(stepForNavigation(ctx, 'background', 9)).toBeNull();
+        expect(stepForNavigation(ctx, 'inactive', 9)).toBeNull();
     });
 });

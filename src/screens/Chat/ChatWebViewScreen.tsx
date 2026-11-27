@@ -104,8 +104,14 @@ import {
 import {
     buildTurnWatcherScript,
     parseTurnWatcherMessage,
+    threadKeyFromUrl,
 } from '../../core/capture/turnMarkers';
-import { isAuthUrl, keyboardCounts, navigationMayRevive } from '../../core/capture/chatScreenSignals';
+import {
+    effectOfWatcherMessage,
+    isAuthUrl,
+    stepForKeyboard,
+    stepForNavigation,
+} from '../../core/capture/chatScreenSignals';
 import { MarkerHealthReporter } from '../../core/capture/markerHealth';
 import RelayAPIService from '../../services/RelayAPIService';
 
@@ -222,17 +228,13 @@ const ChatWebViewScreen: React.FC = () => {
                 metricsOnMessage(event);
                 return;
             }
-            if (msg.t === 'turns_added') {
-                // A new turn at the end of the conversation, typed or spoken.
-                if (AppState.currentState === 'active') {
-                    setShowRestoreVoice(false);
-                    stepMachine({ t: 'input_event', ts: Date.now() });
-                }
-            } else if (msg.t === 'auth_page') {
-                authFormVisibleRef.current = msg.visible;
-            } else {
-                void getMarkerHealthReporter().report(msg);
-            }
+            // A new turn at the end of the conversation (typed or spoken) is engagement while the
+            // app is on screen; a sign-in form switches the keyboard off as a signal.
+            const effect = effectOfWatcherMessage(msg, AppState.currentState, Date.now());
+            if (effect.authFormVisible !== undefined) authFormVisibleRef.current = effect.authFormVisible;
+            if (effect.hideRestoreVoice) setShowRestoreVoice(false);
+            if (effect.step) stepMachine(effect.step);
+            if (effect.markerVerdict) void getMarkerHealthReporter().report(effect.markerVerdict);
         };
     }, [metricsOnMessage, stepMachine, entry]);
 
@@ -305,9 +307,14 @@ const ChatWebViewScreen: React.FC = () => {
             stepMachine({ t: 'foreground_changed', ts: Date.now(), providerContext: null });
         });
         const kbSub = Keyboard.addListener('keyboardDidShow', () => {
-            if (!keyboardCounts({ url: lastUrlRef.current, authFormVisible: authFormVisibleRef.current })) return;
+            const step = stepForKeyboard({
+                url: lastUrlRef.current,
+                authFormVisible: authFormVisibleRef.current,
+                appState: AppState.currentState,
+            }, Date.now());
+            if (!step) return;
             setShowRestoreVoice(false);
-            stepMachine({ t: 'input_event', ts: Date.now() });
+            stepMachine(step);
         });
         const timer = setInterval(() => {
             stepMachine({ t: 'tick', ts: Date.now() });
@@ -362,13 +369,8 @@ const ChatWebViewScreen: React.FC = () => {
         if (!captureEnabled) return;
         // Only the app coming back to the foreground revives a session (the AppState handler
         // replays the last URL then).
-        if (!navigationMayRevive(AppState.currentState)) return;
-        const ctx = providerContextFromUrl(state.url);
-        stepMachine({
-            t: 'foreground_changed',
-            ts: Date.now(),
-            providerContext: ctx,
-        });
+        const step = stepForNavigation(providerContextFromUrl(state.url), AppState.currentState, Date.now());
+        if (step) stepMachine(step);
     };
 
     return (
@@ -468,7 +470,11 @@ function providerContextFromUrl(url: string): ProviderContext | null {
     const entry: ProviderEntry | null = matchUrlToProvider(url, PROVIDER_CATALOG);
     if (!entry) return null;
     const boundaryMode: SessionBoundaryMode = entry.session_boundary;
-    const sessionId = entry.session_id_extraction ? extractSessionId(url, entry) : null;
+    // Every conversation URL carries a key; null means a fresh chat that has no thread yet.
+    const catalogId = entry.session_id_extraction ? extractSessionId(url, entry) : null;
+    const sessionId = boundaryMode === 'url_session_id'
+        ? catalogId ?? threadKeyFromUrl(entry.provider, url)
+        : catalogId;
     const timestampGapMs = entry.timestamp_gap_seconds === null
         ? null
         : entry.timestamp_gap_seconds * 1000;
