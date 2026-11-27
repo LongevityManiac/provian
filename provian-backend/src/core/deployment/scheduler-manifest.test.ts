@@ -66,8 +66,8 @@ const SEED_LIVE_JOBS: readonly LiveJob[] = Object.freeze([
   { name: 'provian-ordinary-accrual-replay', state: 'ENABLED', schedule: '40 * * * *', endpoint: '/v1/internal/scheduler/ordinary-accrual-replay', nonHttpTarget: null },
   // the chain-record lane (transfer/swap records mint), created live before the deploy.
   { name: 'provian-chain-record-watcher', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record', nonHttpTarget: null },
-  { name: 'provian-chain-record-auxiliary', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record-auxiliary', nonHttpTarget: null },
-  { name: 'provian-chain-record-discovery', state: 'ENABLED', schedule: '*/5 * * * *', endpoint: '/v1/internal/scheduler/chain-record-discovery', nonHttpTarget: null },
+  { name: 'provian-chain-record-auxiliary', state: 'ENABLED', schedule: '*/15 * * * *', endpoint: '/v1/internal/scheduler/chain-record-auxiliary', nonHttpTarget: null },
+  { name: 'provian-chain-record-discovery', state: 'ENABLED', schedule: '*/15 * * * *', endpoint: '/v1/internal/scheduler/chain-record-discovery', nonHttpTarget: null },
   // the Recourse transaction lane, created live before the deploy.
   { name: 'provian-recourse-lane', state: 'ENABLED', schedule: '* * * * *', endpoint: '/v1/internal/scheduler/recourse-lane', nonHttpTarget: null },
   { name: 'provian-pending-cache-backfill', state: 'ENABLED', schedule: '0 * * * *', endpoint: '/v1/internal/scheduler/pending-cache-backfill', nonHttpTarget: null },

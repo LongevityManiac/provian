@@ -71,8 +71,11 @@ async function mayObserve(db: Firestore, txn: Transaction, address: string, acto
   const registrations = await txn.get(db.collection('wallets').where('address', '==', address).where('type', '==', 'human'));
   return !registrations.docs.length || registrations.docs.some(d => d.data().released_at_ms === undefined && d.data().displaced_at_ms === undefined);
 }
-/** Called only after authentication or registration proof. Stores country/region, never raw IP. */
-export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip'>, addresses: readonly string[], actorId?: string): Promise<boolean> {
+/** Called only after authentication or registration proof. Stores country/region, never raw IP.
+ * `onUnchangedUntil` receives, per address, the moment before which a repeat observation of the same
+ * country, region and database would write nothing. */
+export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip'>, addresses: readonly string[], actorId?: string,
+  onUnchangedUntil?: (address: string, untilMs: number) => void): Promise<boolean> {
   const observation = countryFromIp(req.ip);
   const accepted = await Promise.all(addresses.filter(a => EVM.test(a)).map(async address => {
     const id = canonicalCurrencyAddress(address);
@@ -84,8 +87,14 @@ export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip
       const retentionExpired = typeof before?.retention_until_ms === 'number' && before.retention_until_ms <= location.observed_at_ms;
       // Serialize changes across relay instances. A delayed request cannot overwrite a newer session.
       if (before && !retentionExpired && before.observed_at_ms > location.observed_at_ms) return true;
+      const unchangedUntil = (observedAt: number): number => Math.min(observedAt + SESSION_REWRITE_MS,
+        typeof before?.retention_until_ms === 'number' && before.retention_until_ms > location.observed_at_ms ? before.retention_until_ms : Number.MAX_SAFE_INTEGER);
       if (before && !retentionExpired && before.country === location.country && before.region === location.region
-        && before.database === location.database && location.observed_at_ms - before.observed_at_ms < 15 * 60 * 1000) return true;
+        && before.database === location.database && location.observed_at_ms - before.observed_at_ms < SESSION_REWRITE_MS) {
+        onUnchangedUntil?.(id, unchangedUntil(before.observed_at_ms));
+        return true;
+      }
+      onUnchangedUntil?.(id, unchangedUntil(location.observed_at_ms));
       txn.set(ref, { ...location, ...(typeof before?.retention_until_ms === 'number' && before.retention_until_ms > location.observed_at_ms ? { retention_until_ms: before.retention_until_ms, ...(before.expire_at ? { expire_at: before.expire_at } : {}) } : {}),
         ...(typeof before?.deletion_requested_at_ms === 'number' ? { deletion_requested_at_ms: before.deletion_requested_at_ms } : {}) });
       return true;
@@ -95,14 +104,51 @@ export async function observeWalletSession(db: Firestore, req: Pick<Request, 'ip
   }));
   return accepted.length > 0 && accepted.every(Boolean);
 }
-/** Auth remains usable if the observation cannot be saved. Mint checks remain fail closed. */
-export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'>, actorId: string): Promise<void> {
+/** A session is rewritten for the same jurisdiction at most this often. */
+const SESSION_REWRITE_MS = 15 * 60 * 1000;
+
+/** The cache a request that makes no compliance decision (the capture-health heartbeat) uses to
+ * skip an observation that would write nothing. */
+export interface ObservationCache {
+  get<T>(key: string): Promise<T | null>;
+  set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
+}
+
+/**
+ * Auth remains usable if the observation cannot be saved. Mint checks remain fail closed.
+ *
+ * `skipWhileUnchanged` is for a request that makes no compliance decision (the capture-health
+ * heartbeat). After an observation whose stored session already holds this country, region and
+ * database, a repeat from the same jurisdiction before the session's rewrite time would write
+ * nothing; such a request skips the reads. Any other jurisdiction, or a request past that time,
+ * observes exactly as before. Requests that price or settle never pass it.
+ */
+export async function observeActorSession(db: Firestore, req: Pick<Request, 'ip'>, actorId: string,
+  options: { readonly skipWhileUnchanged?: ObservationCache } = {}): Promise<void> {
   const context = requestLocations.getStore();
   context?.failedActors.add(actorId);
+  const cache = options.skipWhileUnchanged;
+  let markerKey: string | null = null;
+  if (cache) {
+    const where = countryFromIp(req.ip);
+    markerKey = `jurisdiction_observed:${actorId}:${where.country ?? '-'}:${where.region ?? '-'}:${where.database}`;
+    const until = await cache.get<number>(markerKey).catch(() => null);
+    if (typeof until === 'number' && Date.now() < until) { context?.failedActors.delete(actorId); return; }
+  }
   try {
     const addresses = await actorWalletAddresses(db, actorId);
     if (addresses.length === 0) return;
-    if (await observeWalletSession(db, req, addresses, actorId)) context?.failedActors.delete(actorId);
+    let unchangedUntil = Number.MAX_SAFE_INTEGER;
+    let reported = 0;
+    const saved = await observeWalletSession(db, req, addresses, actorId, (_address, untilMs) => {
+      unchangedUntil = Math.min(unchangedUntil, untilMs);
+      reported += 1;
+    });
+    if (saved) context?.failedActors.delete(actorId);
+    const ttlSeconds = Math.floor((unchangedUntil - Date.now()) / 1000);
+    if (cache && markerKey && saved && reported === addresses.length && ttlSeconds >= 1) {
+      await cache.set(markerKey, unchangedUntil, ttlSeconds).catch(() => { /* the next request observes */ });
+    }
   } catch { console.warn('[jurisdiction] authenticated location could not be persisted'); }
 }
 export async function evaluateMintCompliance(actorId: string, beneficiaryAddress?: string | null,

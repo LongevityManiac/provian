@@ -57,6 +57,12 @@ export interface MeterActKeyDoc {
    * Set once at seal; the row field never changes after. Absent on keys sealed before it existed.
    */
   readonly beneficiary_id?: string | null;
+  /**
+   * The commit the act's row names (`row.commit_sha`), lifted to the top level so a forge push's
+   * cross-witness lookup is an indexed query instead of a scan of every key. Set once at seal.
+   * Absent on keys sealed before it existed.
+   */
+  readonly commit_sha?: string | null;
   /** Null only for a Genesis grant until it mints (see `meter-seal.ts`). */
   readonly expire_at: FirebaseFirestore.Timestamp | null;
 }

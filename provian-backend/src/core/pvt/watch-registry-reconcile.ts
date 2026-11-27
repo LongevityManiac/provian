@@ -27,9 +27,10 @@ import {
   WATCH_REGISTRY_COLLECTION,
   addWatchRegistryEntries,
   createLateRecord,
+  hasWatchRegistryEntry,
   markWatchRegistrySeeded,
+  openNextWatchRegistryGeneration,
   readWatchRegistry,
-  watchRegistryShardOf,
   WATCH_REGISTRY_SHARD_WARN_ENTRIES,
   type WatchRegistryKind,
   type WatchRegistrySnapshot,
@@ -180,10 +181,7 @@ async function reconcileRows(
     if (!registry.entries.get(address)?.has(source.kind)) suspects.push({ kind: source.kind, address });
   }
   for (const suspect of suspects) {
-    const shard = await db.collection(WATCH_REGISTRY_COLLECTION)
-      .doc(`s${String(watchRegistryShardOf(suspect.address)).padStart(2, '0')}`).get();
-    const e = (shard.data() as { e?: Record<string, unknown> } | undefined)?.e;
-    if (e && Number.isSafeInteger(e[`${suspect.kind}|${suspect.address}`])) continue;
+    if (await hasWatchRegistryEntry(db, suspect.kind, suspect.address)) continue;
     missing += 1;
     console.error('[watch-registry] watch_registry_entry_missing: a source row bypassed the registry writers; '
       + 'added, and every watcher rescans it from its fence', { collection: source.collection, ...suspect });
@@ -256,8 +254,14 @@ export async function runWatchRegistryReconcile(
   }
   const completed = due && phase >= PHASES.length;
   const totalMissing = state.missing_found + missingFound;
-  if (registry.largestShardEntries > WATCH_REGISTRY_SHARD_WARN_ENTRIES) {
-    console.error('[watch-registry] watch_registry_shard_near_limit', { largest_shard_entries: registry.largestShardEntries });
+  // A shard of the current write generation past the alarm line opens the next generation, so the
+  // registry never reaches the 1 MiB document limit (see GENERATIONS in watch-registry.ts).
+  let writeGeneration = registry.writeGeneration;
+  if (registry.largestWriteGenerationShardEntries > WATCH_REGISTRY_SHARD_WARN_ENTRIES) {
+    writeGeneration = await openNextWatchRegistryGeneration(db, registry.writeGeneration, nowMs);
+    console.warn('[watch-registry] watch_registry_generation_opened', {
+      largest_shard_entries: registry.largestWriteGenerationShardEntries, write_generation: writeGeneration,
+    });
   }
   await stateRef.set({
     schema_version: RECONCILE_SCHEMA,
@@ -272,6 +276,7 @@ export async function runWatchRegistryReconcile(
       last_missing_found: totalMissing,
     } : {}),
     largest_shard_entries: registry.largestShardEntries,
+    write_generation: writeGeneration,
     updated_at_ms: nowMs,
   }, { merge: true });
   return { ran: due, completed, eager, docs_read: docsRead, missing_found: missingFound, malformed };

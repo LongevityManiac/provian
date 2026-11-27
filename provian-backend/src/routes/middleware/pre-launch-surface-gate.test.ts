@@ -400,6 +400,9 @@ describe('pre-launch surface gate', () => {
         // key, behind per-session bearer tokens it stores only as hashes; a session expires after
         // ten minutes and is deleted when taken. Rate-limited per IP.
         '/v1/handoff',
+        // Alchemy address-activity webhook deliveries: refused unless signed with the webhook's
+        // own HMAC key; a delivery only queues pointers the chain-record lanes verify on chain.
+        '/v1/alchemy/address-activity',
 
         // (2) the agent rail opened by
         '/v1/agent/wallet', '/v1/pe/propose-type',

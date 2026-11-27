@@ -31,8 +31,12 @@ export interface AgentStatusView {
   hasWork: boolean;
 }
 
-/** A capture heartbeat is "live" only when it landed within this window. */
-export const AGENT_ACTIVE_HEARTBEAT_MS = 10 * 60 * 1000; // 10 minutes
+/**
+ * A capture heartbeat is "live" only when it landed within this window. The relay stores an
+ * unchanged report at most every 45 minutes (the daemon reports every 10), so the stored report
+ * is at most 55 minutes old while the device is healthy.
+ */
+export const AGENT_ACTIVE_HEARTBEAT_MS = 60 * 60 * 1000; // 60 minutes
 
 export interface AgentStatusInput {
   linked?: {

@@ -3,11 +3,13 @@ import { RECOURSE_RATIO_COLLECTION } from './pool-ratio';
 
 /** The pool figures the app shows (reserve, ratio, current rule) are display
  * checkpoints. Binding, membership and restoration paths read the chain
- * themselves, so these checkpoints refresh every 15 minutes, not on every
- * five-minute discovery run. The display also refreshes on every run while its
- * month is not the current UTC calendar month, so a new month's rule shows on
- * the first run whose finalized block has crossed into it. */
-export const RECOURSE_DISPLAY_REFRESH_MS = 15 * 60_000;
+ * themselves, so these checkpoints refresh once per 15-minute discovery run.
+ * A checkpoint is due at 10 minutes old, below the job's cadence, so scheduling
+ * jitter never makes a run skip it; an extra run inside the window does not
+ * refresh again. The display also refreshes on every run while its month is not
+ * the current UTC calendar month, so a new month's rule shows on the first run
+ * whose finalized block has crossed into it. */
+export const RECOURSE_DISPLAY_REFRESH_MS = 10 * 60_000;
 
 /** The pool contract's calendar month: year * 12 + zero-based UTC month. */
 export function utcCalendarMonth(ms: number): string {

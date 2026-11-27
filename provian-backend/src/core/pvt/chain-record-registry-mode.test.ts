@@ -339,7 +339,7 @@ describe('nonce scanner, bounded mode (after B_F)', () => {
 
   it('while the chain-record scan lags, it covers from that scan\'s cursor to the finalized head', async () => {
     await ensureWatchRegistrySeededForTest(db);
-    setScanCheckpoint(db, FINAL - 500); // 500 blocks behind
+    setScanCheckpoint(db, FINAL - 1_000); // 1,000 blocks behind (past the 20-minute lag allowance)
     const r = await runChainRecordProvenOutboundScan(deps());
     expect(r).toMatchObject({ lagging: true });
     expect(obsOf(P, 1)).toMatchObject({ source: 'proven_outbound_scan' });

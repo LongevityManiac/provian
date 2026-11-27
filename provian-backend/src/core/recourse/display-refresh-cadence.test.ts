@@ -31,7 +31,7 @@ describe('Recourse display refresh cadence', () => {
     expect(utcCalendarMonth(Date.UTC(2028, 1, 29, 12))).toBe(String(2028 * 12 + 1));
   });
 
-  test('a checkpoint younger than 15 minutes is fresh; at 15 minutes it is due', () => {
+  test('a checkpoint younger than 10 minutes is fresh; at 10 minutes it is due', () => {
     expect(checkpointDue({ observedAtMs: now - RECOURSE_DISPLAY_REFRESH_MS + 1 }, now)).toBe(false);
     expect(checkpointDue({ observedAtMs: now - RECOURSE_DISPLAY_REFRESH_MS }, now)).toBe(true);
   });

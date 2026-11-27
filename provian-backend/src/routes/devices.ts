@@ -1495,6 +1495,35 @@ export function buildDeviceCaptureHealth(
   };
 }
 
+/**
+ * How often an UNCHANGED capture-health report is stored. The daemon reports every 10 minutes;
+ * the stored report is therefore at most 55 minutes old (inside the console's 60-minute freshness
+ * line), and the app reads an agent as working now when its stored capture is within 60 minutes.
+ */
+export const CAPTURE_HEALTH_PERSIST_MS = 45 * 60 * 1000;
+
+/**
+ * The state a capture-health report carries, without the fields that move on every report
+ * (timestamps, window counters, read cursors). Two reports with the same digest differ only in
+ * time; a different digest is a state change and is stored at once.
+ */
+export function captureHealthStateDigest(report: NonNullable<DeviceDocument['capture_health']>): string {
+  const volatile = (key: string): boolean => key === 'updated_at' || key === 'cursor_total' || key === 'count'
+    || key.endsWith('_at_ms') || key.endsWith('_since_ms') || key.endsWith('_in_window');
+  const project = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(project);
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+        if (!volatile(key)) out[key] = project((value as Record<string, unknown>)[key]);
+      }
+      return out;
+    }
+    return value;
+  };
+  return crypto.createHash('sha256').update(JSON.stringify(project(report))).digest('hex');
+}
+
 /** The broken reasons the process lane's own state carries (the daemon reports when that state began). */
 const PROCESS_STATE_REASONS: ReadonlySet<string> = new Set(['process_launcher_changed', 'process_launcher_not_seen', 'process_no_launcher', 'process_launcher_unsupported']);
 const CAPTURE_BROKEN_REASONS: ReadonlySet<string> = new Set(['no_readable_sources', 'sole_witness_silence', 'session_format_broken', 'process_launcher_changed', 'process_launcher_not_seen', 'process_no_launcher', 'process_launcher_unsupported', 'process_lane_silence']);
@@ -1640,7 +1669,18 @@ export function createDeviceSelfRouter(deps: Pick<DeviceRouterDeps, 'db' | 'cach
       const now = Date.now();
       const incoming = buildDeviceCaptureHealth(req.body, now);
       const ref = db.collection('devices').doc(device.device_id);
-      const capture_health = await db.runTransaction(async tx => {
+      // A report whose state matches the one stored less than CAPTURE_HEALTH_PERSIST_MS ago is not
+      // written again (no read, no write): only its timestamps and window counters moved. A state
+      // change is stored at once; an unchanged report at least every CAPTURE_HEALTH_PERSIST_MS.
+      const persistKey = `capture_health_persisted:${device.device_id}`;
+      const stateDigest = captureHealthStateDigest(incoming);
+      // An unavailable cache reads as "not stored recently": the report is written as before.
+      const persisted = await Promise.resolve()
+        .then(() => deps.cache.get<{ digest?: unknown; at?: unknown }>(persistKey))
+        .catch(() => null);
+      const skipWrite = persisted !== null && persisted.digest === stateDigest
+        && typeof persisted.at === 'number' && now - persisted.at >= 0 && now - persisted.at < CAPTURE_HEALTH_PERSIST_MS;
+      const capture_health = skipWrite ? incoming : await db.runTransaction(async tx => {
         // Device auth may have cached a doc from before the last report.
         const prev = (await tx.get(ref)).data() as DeviceDocument | undefined;
         const priorHealth = prev?.capture_health;
@@ -1658,6 +1698,11 @@ export function createDeviceSelfRouter(deps: Pick<DeviceRouterDeps, 'db' | 'cach
         tx.set(ref, { capture_health: report }, { mergeFields: ['capture_health'] });
         return report;
       });
+      if (!skipWrite) {
+        await Promise.resolve()
+          .then(() => deps.cache.set(persistKey, { digest: stateDigest, at: now }, Math.ceil((CAPTURE_HEALTH_PERSIST_MS * 2) / 1000)))
+          .catch(() => { /* the next report writes again */ });
+      }
       // the device's own registration time, the fence a daemon applies before
       // minting a snapshot-written (backfilled) transcript turn — turns whose activity
       // predates registration never mint (09-07 backfill ruling).

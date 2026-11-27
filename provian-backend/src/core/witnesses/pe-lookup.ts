@@ -15,6 +15,28 @@ import { normalizeInputOrigins } from '../provenance/input-origins';
 import { mergeInputOrigins } from '../provenance/origin-capture';
 import { METER_ACT_KEYS_COLLECTION } from '../meter/meter-store';
 import type { MeterActKeyDoc } from '../meter/meter-act-key';
+import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
+
+/**
+ * When act keys began carrying `commit_sha` at the top level (an indexed lookup). A key sealed
+ * earlier carries it only inside `row`, which only a scan of every key can match, so the scan
+ * runs alongside the indexed query until every such key is past any use: the 31-day cross-witness
+ * window and the longest standard key retention (settlement + 30 days) both end well inside 90 days.
+ */
+export const ACT_KEY_COMMIT_SHA_LIFT_MS = Date.UTC(2026, 10, 28, 0, 0, 0);
+export const ACT_KEY_COMMIT_SHA_SCAN_UNTIL_MS = ACT_KEY_COMMIT_SHA_LIFT_MS + 90 * 24 * 60 * 60 * 1000;
+
+/** Every live act key naming `commitSha`: the indexed query, plus the scan while pre-lift keys can matter. */
+async function actKeysByCommitSha(db: Firestore, commitSha: string, nowMs: number = Date.now()): Promise<QueryDocumentSnapshot[]> {
+  const keys = privateRetentionCollection(db, METER_ACT_KEYS_COLLECTION);
+  const [indexed, scanned] = await Promise.all([
+    keys.where('commit_sha', '==', commitSha).get(),
+    nowMs < ACT_KEY_COMMIT_SHA_SCAN_UNTIL_MS ? keys.where('row.commit_sha', '==', commitSha).get() : Promise.resolve(null),
+  ]);
+  const byId = new Map<string, QueryDocumentSnapshot>();
+  for (const doc of [...indexed.docs, ...(scanned?.docs ?? [])]) if (!byId.has(doc.id)) byId.set(doc.id, doc);
+  return [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
 
 // The IMMUTABLE envelope store is the source of truth for both the commit_sha
 // metadata AND the canonical hash. The derived `pe_history` collection
@@ -71,7 +93,7 @@ export async function findPEsByCommitSha(
   // PE METER: a metered act's commit lives on its 31-day act key (the ruled cross-witness window);
   // pre-meter envelopes are read until the migration removes them.
   const [keys, legacy] = await Promise.all([
-    privateRetentionCollection(db, METER_ACT_KEYS_COLLECTION).where('row.commit_sha', '==', commitSha).get(),
+    actKeysByCommitSha(db, commitSha).then((docs) => ({ docs })),
     db.collection(PROVENANCE_ENVELOPES).where('metadata.commit_sha', '==', commitSha).get(),
   ]);
   // Re-delivery from the same forge, such as mirroring master to prod, is
@@ -115,7 +137,7 @@ export async function findCommitOriginsBySha(
 ): Promise<InputOrigin[]> {
   if (!commitSha) return [];
   const [keys, snaps] = await Promise.all([
-    privateRetentionCollection(db, METER_ACT_KEYS_COLLECTION).where('row.commit_sha', '==', commitSha).get(),
+    actKeysByCommitSha(db, commitSha).then((docs) => ({ docs })),
     db.collection(PROVENANCE_ENVELOPES).where('metadata.commit_sha', '==', commitSha).get(),
   ]);
   let union: InputOrigin[] = [];

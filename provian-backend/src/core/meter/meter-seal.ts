@@ -282,6 +282,8 @@ export async function sealMeterAct(
     beneficiary_id: typeof row.beneficiary_wallet_id === 'string' && row.beneficiary_wallet_id.length > 0
       ? row.beneficiary_wallet_id
       : null,
+    // A forge push's cross-witness lookup is an indexed query on this (`row` is not indexed).
+    commit_sha: typeof row.commit_sha === 'string' && row.commit_sha.length > 0 ? row.commit_sha : null,
     // A Genesis grant settles on the Genesis lane from its reservation, which is kept until the
     // grant mints; its key is kept with it (the mint's writeback starts its 31 days).
     pending_retention_v1: true,

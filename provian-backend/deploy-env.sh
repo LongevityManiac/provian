@@ -76,7 +76,6 @@ MANAGED_SECRET_KEYS=(
     BASESCAN_API_KEY
     ARBISCAN_API_KEY
     OPTIMISM_ETHERSCAN_API_KEY
-    SOLSCAN_API_KEY
     # 2026-09-25 swap-fee run: LI.FI partner API key for the relay-built cross-chain quote
     # (integrator `provian`, 25 bps). Provisioned in Secret Manager as `lifi-api-key` from
     # the operator’s 1Password item "li.fi API Key". While unset the LI.FI proxy fails closed (503).
@@ -100,6 +99,10 @@ MANAGED_SECRET_KEYS=(
     # and holds no protocol role; the lane refuses to sign if it ever does. Its own EOA so it
     # never shares a nonce with the settlement minter. Generated straight into Secret Manager.
     RECOURSE_GAS_KEY
+    # Alchemy's webhook management token (address-activity webhooks: push discovery on Arbitrum
+    # One, OP Mainnet and Solana). From the Alchemy dashboard's Webhooks page, staged straight into
+    # Secret Manager as `alchemy-notify-auth-token`. A placeholder value leaves push discovery off.
+    ALCHEMY_NOTIFY_AUTH_TOKEN
 )
 
 managed_secret_name() {
@@ -130,13 +133,13 @@ managed_secret_name() {
         BASESCAN_API_KEY) echo "basescan-api-key" ;;
         ARBISCAN_API_KEY) echo "arbiscan-api-key" ;;
         OPTIMISM_ETHERSCAN_API_KEY) echo "optimism-etherscan-api-key" ;;
-        SOLSCAN_API_KEY) echo "solscan-api-key" ;;
         LIFI_API_KEY) echo "lifi-api-key" ;;
         PAYOUT_BASE_GAS_KEY) echo "payout-base-gas-key" ;;
         FACILITATOR_RELAY_SECRET) echo "facilitator-relay-secret" ;;
         APP_STORE_CONNECT_PRIVATE_KEY) echo "app-store-connect-private-key" ;;
         GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) echo "google-play-service-account-json" ;;
         RECOURSE_GAS_KEY) echo "recourse-gas-key" ;;
+        ALCHEMY_NOTIFY_AUTH_TOKEN) echo "alchemy-notify-auth-token" ;;
         *) return 1 ;;
     esac
 }

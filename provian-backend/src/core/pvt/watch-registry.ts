@@ -21,12 +21,21 @@
  * removed: a rotated-away, test or deleted address only widens the log filter, and the registry
  * is ADD-ONLY (no rebuild ever rewrites a shard, and concurrent writers merge distinct map keys).
  *
- * Layout: `watch_registry_v1/s00..s15`, each `{ e: { "<kind>|<address>" created_at_ms } }`,
+ * Layout: `watch_registry_v1/s00..s31`, each `{ e: { "<kind>|<address>" created_at_ms } }`,
  * plus `watch_registry_v1/meta { seeded: true }` once the one-time seed has copied every
  * pre-existing source row in. The map fields are exempt from indexing (firestore.indexes.json),
  * so a shard is bounded only by the 1 MiB document limit, about 15,000 entries: 32 shards hold
- * about 480,000. The reconcile records the largest shard; `WATCH_REGISTRY_SHARD_WARN_ENTRIES`
- * is the alarm line.
+ * about 480,000.
+ *
+ * GENERATIONS (capacity for millions). The shards above are generation 0. When the daily
+ * reconcile finds a shard of the current write generation past `WATCH_REGISTRY_SHARD_WARN_ENTRIES`
+ * (about 288,000 addresses in that generation), it opens the next one: `meta.write_generation`
+ * goes up by one and new entries go to `g<N>_s00..g<N>_s31`. Readers read every generation up to
+ * `meta.write_generation`, so an address is found whichever generation holds it, and a read costs
+ * 33 documents until a second generation opens (32 more per generation after that). A writer
+ * learns the write generation from the meta document (cached for minutes); one that has not yet
+ * seen a new generation writes to the previous one, which still has room below the 1 MiB limit,
+ * and readers read it too. Marks follow the same generations.
  *
  * Marks (`watch_registry_marks_v1`) record, per watcher, the addresses that need no per-address
  * work this run (for the USDC watchers: the direction's admission is live; for chain-record: the
@@ -59,6 +68,8 @@ export const WATCH_REGISTRY_WATCHERS: readonly WatchRegistryWatcher[] = Object.f
 const ADDRESS = /^0x[0-9a-f]{40}$/;
 /** A shard past this many entries is alarmed (the 1 MiB limit is about 15,000). */
 export const WATCH_REGISTRY_SHARD_WARN_ENTRIES = 9_000;
+/** How long a process trusts its cached write generation before re-reading the meta document. */
+export const WATCH_REGISTRY_GENERATION_CACHE_MS = 10 * 60 * 1000;
 
 function normalizeAddress(address: string): string {
   const lower = typeof address === 'string' ? address.toLowerCase() : '';
@@ -71,8 +82,63 @@ export function watchRegistryShardOf(address: string): number {
   return digest[0] % WATCH_REGISTRY_SHARDS;
 }
 
-function shardId(index: number): string {
-  return `s${String(index).padStart(2, '0')}`;
+function shardId(index: number, generation: number = 0): string {
+  const base = `s${String(index).padStart(2, '0')}`;
+  return generation === 0 ? base : `g${generation}_${base}`;
+}
+
+// The write generation this process uses (see GENERATIONS above). Never lowered.
+let cachedWriteGeneration = 0;
+let cachedWriteGenerationAtMs = 0;
+let generationRefresh: Promise<number> | null = null;
+
+function parseWriteGeneration(meta: Record<string, unknown> | undefined): number {
+  const raw = meta?.write_generation;
+  if (raw === undefined) return 0;
+  if (!Number.isSafeInteger(raw) || (raw as number) < 0) throw new Error('watch_registry_meta_invalid');
+  return raw as number;
+}
+
+function noteWriteGeneration(generation: number, nowMs: number): void {
+  if (generation > cachedWriteGeneration) cachedWriteGeneration = generation;
+  cachedWriteGenerationAtMs = nowMs;
+}
+
+/** The current write generation, from the cache when fresh, else from the meta document. */
+export async function watchRegistryWriteGeneration(db: Firestore, nowMs: number = Date.now()): Promise<number> {
+  if (nowMs - cachedWriteGenerationAtMs < WATCH_REGISTRY_GENERATION_CACHE_MS) return cachedWriteGeneration;
+  if (!generationRefresh) {
+    generationRefresh = (async () => {
+      const snap = await db.collection(WATCH_REGISTRY_COLLECTION).doc(WATCH_REGISTRY_META_DOC).get();
+      noteWriteGeneration(parseWriteGeneration(snap.exists ? snap.data() as Record<string, unknown> : undefined), nowMs);
+      return cachedWriteGeneration;
+    })().finally(() => { generationRefresh = null; });
+  }
+  return generationRefresh;
+}
+
+/** Test seam: forget the cached write generation. */
+export function resetWatchRegistryGenerationCacheForTests(): void {
+  cachedWriteGeneration = 0;
+  cachedWriteGenerationAtMs = 0;
+  generationRefresh = null;
+}
+
+/**
+ * Open the next write generation if `expected` is still current (the reconcile calls this when a
+ * shard of the current generation passes the alarm line). Returns the generation now current.
+ */
+export async function openNextWatchRegistryGeneration(db: Firestore, expected: number, nowMs: number): Promise<number> {
+  const ref = db.collection(WATCH_REGISTRY_COLLECTION).doc(WATCH_REGISTRY_META_DOC);
+  const next = await db.runTransaction(async (txn) => {
+    const snap = await txn.get(ref);
+    const current = parseWriteGeneration(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+    if (current !== expected) return current;
+    txn.set(ref, { write_generation: current + 1, generation_opened_at_ms: nowMs }, { merge: true });
+    return current + 1;
+  });
+  noteWriteGeneration(next, nowMs);
+  return next;
 }
 
 function entryKey(kind: WatchRegistryKind, address: string): string {
@@ -102,8 +168,12 @@ export function recordWatchRegistryEntry(
   assertKind(kind);
   const lower = normalizeAddress(address);
   if (!Number.isSafeInteger(nowMs) || nowMs <= 0) throw new Error('watch_registry_time_invalid');
+  // The cached generation (refreshed in the background when stale; see GENERATIONS above).
+  if (Date.now() - cachedWriteGenerationAtMs >= WATCH_REGISTRY_GENERATION_CACHE_MS) {
+    void watchRegistryWriteGeneration(db).catch(() => { /* the next writer retries */ });
+  }
   txn.set(
-    db.collection(WATCH_REGISTRY_COLLECTION).doc(shardId(watchRegistryShardOf(lower))),
+    db.collection(WATCH_REGISTRY_COLLECTION).doc(shardId(watchRegistryShardOf(lower), cachedWriteGeneration)),
     { schema_version: REGISTRY_SCHEMA, e: { [entryKey(kind, lower)]: nowMs } },
     { merge: true },
   );
@@ -117,6 +187,10 @@ export interface WatchRegistrySnapshot {
   /** address -> the latest time any of its entries was recorded (a registration or proof). */
   readonly latestMs: ReadonlyMap<string, number>;
   readonly largestShardEntries: number;
+  /** The generation new entries are written to (0 until a second generation opens). */
+  readonly writeGeneration: number;
+  /** The largest shard of the write generation (the reconcile opens the next past the alarm line). */
+  readonly largestWriteGenerationShardEntries: number;
 }
 
 /** Every registry address carrying one of `kinds` (all kinds when omitted), sorted. */
@@ -132,31 +206,47 @@ export function watchRegistryAddresses(
 }
 
 /**
- * Read the whole registry (33 documents: meta + 32 shards). Returns null until the one-time seed has completed,
- * so a caller can never mistake an unseeded registry for an empty watched set. A malformed
- * shard throws: the run stops before any cursor moves.
+ * Read the whole registry (33 documents: meta + 32 shards, plus 32 per later generation). Returns
+ * null until the one-time seed has completed, so a caller can never mistake an unseeded registry
+ * for an empty watched set. A malformed shard throws: the run stops before any cursor moves.
  */
 export async function readWatchRegistry(db: Firestore): Promise<WatchRegistrySnapshot | null> {
   const collection = db.collection(WATCH_REGISTRY_COLLECTION);
   const refs = [collection.doc(WATCH_REGISTRY_META_DOC)];
   for (let i = 0; i < WATCH_REGISTRY_SHARDS; i += 1) refs.push(collection.doc(shardId(i)));
-  const [meta, ...shards] = await db.getAll(...refs);
+  const [meta, ...generationZero] = await db.getAll(...refs);
   if (!meta.exists) return null;
   const metaData = meta.data() as Record<string, unknown> | undefined;
   if (metaData?.schema_version !== REGISTRY_SCHEMA || metaData.seeded !== true) {
     throw new Error('watch_registry_meta_invalid');
   }
+  const writeGeneration = parseWriteGeneration(metaData);
+  noteWriteGeneration(writeGeneration, Date.now());
+  const shards: Array<{ snap: FirebaseFirestore.DocumentSnapshot; index: number; generation: number }> =
+    generationZero.map((snap, index) => ({ snap, index, generation: 0 }));
+  if (writeGeneration > 0) {
+    const later: FirebaseFirestore.DocumentReference[] = [];
+    for (let g = 1; g <= writeGeneration; g += 1) {
+      for (let i = 0; i < WATCH_REGISTRY_SHARDS; i += 1) later.push(collection.doc(shardId(i, g)));
+    }
+    const snaps = await db.getAll(...later);
+    snaps.forEach((snap, k) => shards.push({ snap, index: k % WATCH_REGISTRY_SHARDS, generation: 1 + Math.floor(k / WATCH_REGISTRY_SHARDS) }));
+  }
   const entries = new Map<string, Set<WatchRegistryKind>>();
   const latestMs = new Map<string, number>();
   let largestShardEntries = 0;
-  shards.forEach((snap, index) => {
-    if (!snap.exists) return;
+  let largestWriteGenerationShardEntries = 0;
+  for (const { snap, index, generation } of shards) {
+    if (!snap.exists) continue;
     const data = snap.data() as Record<string, unknown> | undefined;
     if (data?.schema_version !== REGISTRY_SCHEMA || !isPlainMap(data.e)) {
-      throw new Error(`watch_registry_shard_invalid:${shardId(index)}`);
+      throw new Error(`watch_registry_shard_invalid:${shardId(index, generation)}`);
     }
     const keys = Object.keys(data.e);
     largestShardEntries = Math.max(largestShardEntries, keys.length);
+    if (generation === writeGeneration) {
+      largestWriteGenerationShardEntries = Math.max(largestWriteGenerationShardEntries, keys.length);
+    }
     for (const key of keys) {
       const value = data.e[key];
       const separator = key.indexOf('|');
@@ -165,15 +255,30 @@ export async function readWatchRegistry(db: Firestore): Promise<WatchRegistrySna
       if (separator < 0 || !(WATCH_REGISTRY_KINDS as readonly string[]).includes(kind)
         || !ADDRESS.test(address) || watchRegistryShardOf(address) !== index
         || !Number.isSafeInteger(value) || (value as number) <= 0) {
-        throw new Error(`watch_registry_shard_invalid:${shardId(index)}`);
+        throw new Error(`watch_registry_shard_invalid:${shardId(index, generation)}`);
       }
       const recorded = entries.get(address) ?? new Set<WatchRegistryKind>();
       recorded.add(kind as WatchRegistryKind);
       entries.set(address, recorded);
       latestMs.set(address, Math.max(latestMs.get(address) ?? 0, value as number));
     }
+  }
+  return { entries, latestMs, largestShardEntries, writeGeneration, largestWriteGenerationShardEntries };
+}
+
+/** Whether one (kind, address) entry is recorded in any generation (the reconcile's re-check). */
+export async function hasWatchRegistryEntry(db: Firestore, kind: WatchRegistryKind, address: string): Promise<boolean> {
+  assertKind(kind);
+  const lower = normalizeAddress(address);
+  const generation = await watchRegistryWriteGeneration(db);
+  const collection = db.collection(WATCH_REGISTRY_COLLECTION);
+  const refs: FirebaseFirestore.DocumentReference[] = [];
+  for (let g = 0; g <= generation; g += 1) refs.push(collection.doc(shardId(watchRegistryShardOf(lower), g)));
+  const snaps = await db.getAll(...refs);
+  return snaps.some((snap) => {
+    const e = (snap.data() as { e?: Record<string, unknown> } | undefined)?.e;
+    return !!e && Number.isSafeInteger(e[entryKey(kind, lower)]);
   });
-  return { entries, latestMs, largestShardEntries };
 }
 
 /** Merge many entries outside a transaction (seed and reconcile only), one write per shard. */
@@ -191,8 +296,10 @@ export async function addWatchRegistryEntries(
     map[entryKey(kind, lower)] = nowMs;
     byShard.set(shard, map);
   }
+  if (byShard.size === 0) return;
+  const generation = await watchRegistryWriteGeneration(db);
   for (const [shard, e] of byShard) {
-    await db.collection(WATCH_REGISTRY_COLLECTION).doc(shardId(shard))
+    await db.collection(WATCH_REGISTRY_COLLECTION).doc(shardId(shard, generation))
       .set({ schema_version: REGISTRY_SCHEMA, e }, { merge: true });
   }
 }
@@ -207,8 +314,18 @@ export async function markWatchRegistrySeeded(db: Firestore, nowMs: number): Pro
 // MARKS
 // =============================================================================
 
-function marksDocId(watcher: WatchRegistryWatcher, shard: number): string {
-  return `${watcher}_${shardId(shard)}`;
+function marksDocId(watcher: WatchRegistryWatcher, shard: number, generation: number = 0): string {
+  return `${watcher}_${shardId(shard, generation)}`;
+}
+
+/**
+ * The generations a removal (a 0 mark) is written to: every generation up to one past this
+ * process's write generation, so a positive mark written by a process that has already seen a
+ * newer generation is cleared too. Marks are read as "marked in any generation".
+ */
+async function markGenerations(db: Firestore): Promise<{ write: number; clearThrough: number }> {
+  const write = await watchRegistryWriteGeneration(db);
+  return { write, clearThrough: write + 1 };
 }
 
 function assertWatcher(watcher: string): asserts watcher is WatchRegistryWatcher {
@@ -217,7 +334,8 @@ function assertWatcher(watcher: string): asserts watcher is WatchRegistryWatcher
 
 /**
  * The addresses `watcher` has marked. Returns null until that watcher's marks were seeded. A
- * mark whose value is 0 is a removal (the rebind case) and is not returned.
+ * mark whose value is 0 is a removal (the rebind case) and is not returned. An address is marked
+ * when any generation holds a positive mark for it (a removal clears every generation).
  */
 export async function readWatchMarks(
   db: Firestore,
@@ -225,8 +343,11 @@ export async function readWatchMarks(
 ): Promise<Set<string> | null> {
   assertWatcher(watcher);
   const collection = db.collection(WATCH_REGISTRY_MARKS_COLLECTION);
+  const generation = await watchRegistryWriteGeneration(db);
   const refs = [collection.doc(`${watcher}_meta`)];
-  for (let i = 0; i < WATCH_REGISTRY_SHARDS; i += 1) refs.push(collection.doc(marksDocId(watcher, i)));
+  for (let g = 0; g <= generation; g += 1) {
+    for (let i = 0; i < WATCH_REGISTRY_SHARDS; i += 1) refs.push(collection.doc(marksDocId(watcher, i, g)));
+  }
   const [meta, ...shards] = await db.getAll(...refs);
   if (!meta.exists) return null;
   const metaData = meta.data() as Record<string, unknown> | undefined;
@@ -234,16 +355,18 @@ export async function readWatchMarks(
     throw new Error(`watch_registry_marks_meta_invalid:${watcher}`);
   }
   const out = new Set<string>();
-  shards.forEach((snap, index) => {
+  shards.forEach((snap, k) => {
+    const index = k % WATCH_REGISTRY_SHARDS;
+    const g = Math.floor(k / WATCH_REGISTRY_SHARDS);
     if (!snap.exists) return;
     const data = snap.data() as Record<string, unknown> | undefined;
     if (data?.schema_version !== MARKS_SCHEMA || !isPlainMap(data.m)) {
-      throw new Error(`watch_registry_marks_invalid:${marksDocId(watcher, index)}`);
+      throw new Error(`watch_registry_marks_invalid:${marksDocId(watcher, index, g)}`);
     }
     for (const [address, value] of Object.entries(data.m)) {
       if (!ADDRESS.test(address) || watchRegistryShardOf(address) !== index
         || !Number.isSafeInteger(value) || (value as number) < 0) {
-        throw new Error(`watch_registry_marks_invalid:${marksDocId(watcher, index)}`);
+        throw new Error(`watch_registry_marks_invalid:${marksDocId(watcher, index, g)}`);
       }
       if ((value as number) > 0) out.add(address);
     }
@@ -267,8 +390,10 @@ export async function writeWatchMarks(
     map[lower] = nowMs;
     byShard.set(shard, map);
   }
+  if (byShard.size === 0) return;
+  const { write } = await markGenerations(db);
   for (const [shard, m] of byShard) {
-    await db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, shard))
+    await db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, shard, write))
       .set({ schema_version: MARKS_SCHEMA, m }, { merge: true });
   }
 }
@@ -320,11 +445,14 @@ export function removeWatchMarkInTransaction(
 ): void {
   assertWatcher(watcher);
   const lower = normalizeAddress(address);
-  txn.set(
-    db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, watchRegistryShardOf(lower))),
-    { schema_version: MARKS_SCHEMA, m: { [lower]: 0 } },
-    { merge: true },
-  );
+  // Every generation up to one past this process's cached write generation (see markGenerations).
+  for (let g = 0; g <= cachedWriteGeneration + 1; g += 1) {
+    txn.set(
+      db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, watchRegistryShardOf(lower), g)),
+      { schema_version: MARKS_SCHEMA, m: { [lower]: 0 } },
+      { merge: true },
+    );
+  }
 }
 
 /** Seed a watcher's marks: write them, then the meta that makes them authoritative. */
@@ -409,9 +537,13 @@ export async function unmarkAddresses(
     map[lower] = 0;
     byShard.set(shard, map);
   }
+  if (byShard.size === 0) return;
+  const { clearThrough } = await markGenerations(db);
   for (const [shard, m] of byShard) {
-    await db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, shard))
-      .set({ schema_version: MARKS_SCHEMA, m }, { merge: true });
+    for (let g = 0; g <= clearThrough; g += 1) {
+      await db.collection(WATCH_REGISTRY_MARKS_COLLECTION).doc(marksDocId(watcher, shard, g))
+        .set({ schema_version: MARKS_SCHEMA, m }, { merge: true });
+    }
   }
 }
 

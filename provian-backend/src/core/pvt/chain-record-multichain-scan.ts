@@ -45,8 +45,9 @@ export const MULTICHAIN_SCAN_CURSORS_COLLECTION = 'chain_record_multichain_curso
 export const MULTICHAIN_SCAN_META_DOC = 'rotation';
 /** Each address, per chain, at most this often. */
 export const MULTICHAIN_SCAN_INTERVAL_MS = 60 * 60 * 1000;
-/** The whole scan at most this often (the chain-record job ticks every 5 minutes). */
-export const MULTICHAIN_SCAN_RUN_INTERVAL_MS = 15 * 60 * 1000;
+/** The whole scan at most this often. The auxiliary job ticks every 15 minutes; the gate sits
+ * below that so scheduling jitter never skips a run. */
+export const MULTICHAIN_SCAN_RUN_INTERVAL_MS = 10 * 60 * 1000;
 const DEFAULT_MAX_ADDRESSES = 40;
 const MAX_PAGES_PER_DIRECTION = 5;
 /** A block holding more transactions than this cannot be passed by listing it (refused, never skipped). */

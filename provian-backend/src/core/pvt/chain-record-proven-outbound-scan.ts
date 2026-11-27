@@ -85,7 +85,9 @@ export { PROVEN_OUTBOUND_CURSOR_PREFIX, PROVEN_OUTBOUND_FLOOR_BLOCK };
 const CURSOR_SCHEMA = 'chain-record-proven-outbound-cursor/v1';
 const ROTATION_SCHEMA = 'chain-record-proven-outbound-rotation/v1';
 export const PROVEN_OUTBOUND_ROTATION_DOC = 'proven_outbound__rotation';
-const DEFAULT_MAX_CALLS = 200;
+/** RPC calls per run. The auxiliary job runs every 15 minutes; 600 keeps the hourly
+ * capacity it had at 200 per five-minute run. */
+const DEFAULT_MAX_CALLS = 600;
 
 export interface ProvenOutboundAddress {
   readonly address: string; // lowercased
@@ -346,9 +348,10 @@ export const PROVEN_OUTBOUND_LAG_PREFIX = 'proven_outbound_lag_';
 const RANGE_ROTATION_DOC = 'proven_outbound__range_rotation';
 const LAG_ROTATION_DOC = 'proven_outbound__lag_rotation';
 /** The chain-record scan is LAGGING when its cursor is more than this far behind the finalized
- * head (~5 minutes, one run): this scan then finds proven EOAs' new transactions itself, from the
- * scan's cursor up, so a backlog there never delays them beyond today's latency. */
-export const PROVEN_OUTBOUND_LAG_SECONDS = 300;
+ * head (20 minutes: one 15-minute discovery run plus its run time and scheduling jitter): this scan
+ * then finds proven EOAs' new transactions itself, from the scan's cursor up, so a backlog there
+ * never delays them beyond one discovery run. */
+export const PROVEN_OUTBOUND_LAG_SECONDS = 1200;
 
 /** The proven EOA an address is, for this scan: one valid row, proved by EOA signature. */
 async function resolveProvenEoa(

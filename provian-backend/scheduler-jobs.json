@@ -24,7 +24,7 @@
       "path": "/v1/internal/scheduler/chain-record-discovery",
       "required": true,
       "job": "provian-chain-record-discovery",
-      "schedule": "*/5 * * * *",
+      "schedule": "*/15 * * * *",
       "note": "Independent Base discovery and registry repair; queues records without waiting for the verification drain."
     },
     {
@@ -45,7 +45,7 @@
       "path": "/v1/internal/scheduler/chain-record-auxiliary",
       "required": true,
       "job": "provian-chain-record-auxiliary",
-      "schedule": "*/5 * * * *",
+      "schedule": "*/15 * * * *",
       "note": "Independent proven-address recovery, other EVM chains, facilitator and Solana discovery/drain."
     },
     {

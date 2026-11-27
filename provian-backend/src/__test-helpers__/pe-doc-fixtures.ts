@@ -285,7 +285,7 @@ export const RELAY_ACT_INTAKE_FIELDS: readonly string[] = [
 export const METER_ACT_KEY_FIELDS: readonly string[] = [
   'schema', 'relay_pe_id', 'client_pe_id', 'pe_hash', 'prev_hash', 'device_id', 'batch_hash',
   'actor_id', 'timestamp', 'action_type', 'row', 'legs', 'unit', 'held_reason', 'side',
-  'created_at_ms', 'facts', 'beneficiary_id', 'expire_at', 'pending_retention_v1',
+  'created_at_ms', 'facts', 'beneficiary_id', 'commit_sha', 'expire_at', 'pending_retention_v1',
 ];
 
 export interface MeterActKeyOverrides {
@@ -343,6 +343,7 @@ export function makeMeterActKeyDoc(opts: MeterActKeyOverrides): Record<string, u
     created_at_ms: timestamp,
     facts: null,
     beneficiary_id: typeof opts.row?.beneficiary_wallet_id === 'string' ? opts.row.beneficiary_wallet_id : null,
+    commit_sha: typeof opts.commitSha === 'string' && opts.commitSha.length > 0 ? opts.commitSha : null,
     expire_at: null,
   };
 }

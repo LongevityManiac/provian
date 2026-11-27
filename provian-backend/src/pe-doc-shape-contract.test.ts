@@ -273,7 +273,7 @@ const INTAKE_KEYS: Record<keyof RelayActIntake, true> = {
 const ACT_KEY_KEYS: Record<keyof MeterActKeyDoc, true> = {
   schema: true, relay_pe_id: true, client_pe_id: true, pe_hash: true, prev_hash: true, device_id: true,
   batch_hash: true, actor_id: true, timestamp: true, action_type: true, row: true, legs: true,
-  unit: true, held_reason: true, side: true, created_at_ms: true, facts: true, beneficiary_id: true, expire_at: true, pending_retention_v1: true,
+  unit: true, held_reason: true, side: true, created_at_ms: true, facts: true, beneficiary_id: true, commit_sha: true, expire_at: true, pending_retention_v1: true,
 };
 const ACT_RECORD_KEYS: Record<keyof ActRecord, true> = {
   pe_id: true, pe_hash: true, prev_hash: true, timestamp: true, action_type: true, pricing: true,

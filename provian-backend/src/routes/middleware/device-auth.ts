@@ -303,6 +303,23 @@ export type DeviceType =
 
 /** Cache TTL for device document lookups (seconds) */
 const DEVICE_CACHE_TTL_S = 30;
+/**
+ * The capture-health heartbeat (display and alerting only; it never affects auth decisions beyond
+ * this route, attestation, eligibility or earning) reads its device document from a separate,
+ * longer-lived cache entry, so a heartbeat every 10 minutes does not re-read Firestore each time.
+ * Revocation deletes it with the others (`invalidateDeviceCache`); scrypt still runs every time.
+ */
+const HEARTBEAT_DEVICE_CACHE_TTL_S = 60 * 60;
+const HEARTBEAT_PATH = '/v1/devices/me/capture-health';
+const HEARTBEAT_CACHE_TOMBSTONE = Object.freeze({ device_cache_tombstone: true });
+
+function isHeartbeatCacheTombstone(value: unknown): boolean {
+  return !!value && typeof value === 'object' && (value as Record<string, unknown>).device_cache_tombstone === true;
+}
+
+export function isCaptureHealthHeartbeat(req: Pick<Request, 'method' | 'originalUrl'>): boolean {
+  return req.method === 'PUT' && (req.originalUrl ?? '').split('?')[0].toLowerCase() === HEARTBEAT_PATH;
+}
 
 /**
  * Invalidate the cached device document by device_id.
@@ -329,6 +346,9 @@ export async function invalidateDeviceCache(db: Firestore, deviceId: string): Pr
         && rawDevice.device_key_prefix.length > 0
       ) {
         cacheKeys.push(`device:${rawDevice.device_key_prefix}`);
+        // The heartbeat's longer-lived entry is overwritten with a tombstone (read as a miss), so a
+        // revoked device's next heartbeat re-reads Firestore and is refused there.
+        await cache.set(`device:hb:${rawDevice.device_key_prefix}`, HEARTBEAT_CACHE_TOMBSTONE, HEARTBEAT_DEVICE_CACHE_TTL_S);
       }
       await Promise.all(cacheKeys.map((key) => cache.del(key)));
     } else {
@@ -547,9 +567,12 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-    const cacheKey = `device:${prefix}`;
+    const heartbeat = isCaptureHealthHeartbeat(req);
+    const cacheKey = heartbeat ? `device:hb:${prefix}` : `device:${prefix}`;
 
-    const cachedDevice = await cache.get<unknown>(cacheKey);
+    const cachedRaw = await cache.get<unknown>(cacheKey);
+    // A revoked device's heartbeat entry is a tombstone: read as a miss (Firestore decides).
+    const cachedDevice = isHeartbeatCacheTombstone(cachedRaw) ? null : cachedRaw;
     let device: DeviceDocument | null = null;
 
     if (cachedDevice !== null) {
@@ -584,7 +607,7 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
       device = rawDevice as unknown as DeviceDocument;
 
       // Cache the device document (NOT the auth result - scrypt must still run)
-      await cache.set(cacheKey, device, DEVICE_CACHE_TTL_S);
+      await cache.set(cacheKey, device, heartbeat ? HEARTBEAT_DEVICE_CACHE_TTL_S : DEVICE_CACHE_TTL_S);
     }
 
     if (device.status === 'revoked') {
@@ -607,7 +630,8 @@ export function createDeviceAuthMiddleware(db: Firestore): RequestHandler {
 
     req.device = device;
     req.deviceAuthMethod = 'bearer';
-    await observeActorSession(db, req, device.owner_type === 'human' ? device.owner_user_id : device.owner_wallet_id);
+    await observeActorSession(db, req, device.owner_type === 'human' ? device.owner_user_id : device.owner_wallet_id,
+      heartbeat ? { skipWhileUnchanged: cache } : {});
     openPrivateAuthenticatedRequest(req,deviceSecret);
     next();
    } catch (err) {

@@ -258,11 +258,11 @@ export class SolanaRpc {
         ]);
     }
 
-    /** Confirmed signatures for an address (most recent first). */
-    async getSignaturesForAddress(address: string, limit = 25): Promise<SignatureInfo[]> {
+    /** Confirmed signatures for an address (most recent first), newer than `until` when given. */
+    async getSignaturesForAddress(address: string, limit = 25, until?: string): Promise<SignatureInfo[]> {
         return this.call<SignatureInfo[]>('getSignaturesForAddress', [
             address,
-            { limit, commitment: 'confirmed' },
+            { limit, commitment: 'confirmed', ...(until ? { until } : {}) },
         ]);
     }
 

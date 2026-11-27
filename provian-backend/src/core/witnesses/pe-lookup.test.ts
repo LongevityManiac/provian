@@ -143,3 +143,19 @@ describe('findPEsByCommitSha', () => {
     expect(matches[0].userId).toBe('');
   });
 });
+
+describe('act keys by commit (the lifted, indexed commit_sha)', () => {
+  const seedKey = (store: Map<string, Map<string, Record<string, unknown>>>, id: string, key: Record<string, unknown>) => {
+    if (!store.has('meter_act_keys_v1')) store.set('meter_act_keys_v1', new Map());
+    store.get('meter_act_keys_v1')!.set(id, key);
+  };
+  it('finds a key sealed with the top-level commit_sha and, during the scan window, one sealed before it existed — each once', async () => {
+    const { db, store } = makeFakeDb();
+    const sha = 'f'.repeat(40);
+    seedKey(store, 'pe_m_new', { commit_sha: sha, row: { commit_sha: sha }, actor_id: 'a1', pe_hash: 'h1', action_type: 'coding_session' });
+    seedKey(store, 'pe_m_old', { row: { commit_sha: sha }, actor_id: 'a2', pe_hash: 'h2', action_type: 'coding_session' });
+    seedKey(store, 'pe_m_other', { commit_sha: 'e'.repeat(40), row: { commit_sha: 'e'.repeat(40) }, actor_id: 'a3', pe_hash: 'h3', action_type: 'coding_session' });
+    const matches = await findPEsByCommitSha(db, sha);
+    expect(matches.map((m) => m.envelopeId).sort()).toEqual(['pe_m_new', 'pe_m_old']);
+  });
+});

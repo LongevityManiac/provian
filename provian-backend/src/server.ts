@@ -394,6 +394,14 @@ app.use(['/v1/archive/device/parts', '/v1/archive/mobile/parts'], express.json({
     (req as Request).rawBody = buf.toString('utf8');
   },
 }));
+// Alchemy address-activity deliveries: a Solana delivery carries whole transactions, so this route
+// takes a larger body. Same raw-body capture (the webhook signs the exact bytes).
+app.use('/v1/alchemy/address-activity', express.json({ inflate: false,
+  limit: '4mb',
+  verify: (req, _res, buf) => {
+    (req as Request).rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.json({ inflate: false,
   limit: '220kb', // authenticated ciphertext of the former 100 KB logical request
   // express types `req` here as the raw http.IncomingMessage; cast to the express
@@ -1080,6 +1088,30 @@ async function redisRateLimitMiddleware(req: Request, res: Response, next: NextF
 // Coinbase / swap proxies) is included (2026-10-17): it had only post-auth per-user
 // limits, so an anonymous caller with a syntactically valid token could drive an
 // unbounded stream of `auth_secrets/{sub}` reads with an attacker-chosen `sub`.
+// Alchemy address-activity webhooks (push discovery on Arbitrum One, OP Mainnet and Solana).
+// Mounted ahead of the pre-auth rate limiter: Alchemy delivers from a few fixed addresses, so the
+// per-IP bucket would throttle it at scale. Every delivery is refused unless it carries the
+// webhook's own HMAC signature, and an unknown webhook id refreshes the key list at most once a
+// minute. A delivery only queues pointers; the chain-record lanes verify everything on chain.
+let addressActivityKeys: import('./core/pvt/address-activity-push').AddressActivitySigningKeys | null = null;
+app.post('/v1/alchemy/address-activity', async (req, res) => {
+  try {
+    const push = await import('./core/pvt/address-activity-push');
+    addressActivityKeys ??= new push.AddressActivitySigningKeys(push.buildAlchemyNotifyApi());
+    const rawBody = typeof req.rawBody === 'string' ? req.rawBody : '';
+    const report = await push.handleAddressActivityDelivery(agentBankDeps.db, addressActivityKeys, rawBody, req.headers['x-alchemy-signature']);
+    res.json({ ok: true, queued: report.queued });
+  } catch (error) {
+    const push = await import('./core/pvt/address-activity-push');
+    if (error instanceof push.AddressActivityDeliveryError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    console.error('[AddressActivity] Delivery error:', error instanceof Error ? error.message : error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.use('/v1', redisRateLimitMiddleware);
 app.use('/api', redisRateLimitMiddleware);
 
@@ -4793,9 +4825,19 @@ app.post('/v1/internal/scheduler/chain-record-auxiliary', async (req, res) => {
         console.error('[Scheduler] Chain-record proven outbound scan error:', scanError);
         provenOutboundScan = { error: scanError instanceof Error ? scanError.message : String(scanError) };
       }
-      // Arbitrum One and OP Mainnet: transfers into and out of every watched address,
-      // queued for the next drain (each address at most hourly per chain). Independent of the
-      // Base drain, so it never delays it.
+      // Push discovery: register every watched address (Arbitrum One, OP Mainnet, Solana) on
+      // Alchemy's address-activity webhooks; deliveries queue the same pointers the scans do.
+      let addressActivitySync: unknown;
+      try {
+        const { syncAddressActivityWebhooks, buildAddressActivitySyncDeps } = await import('./core/pvt/address-activity-push');
+        addressActivitySync = await syncAddressActivityWebhooks(buildAddressActivitySyncDeps(db));
+      } catch (syncError) {
+        console.error('[Scheduler] Address-activity webhook sync error:', syncError);
+        addressActivitySync = { error: syncError instanceof Error ? syncError.message : String(syncError) };
+      }
+      // Arbitrum One and OP Mainnet, the backup sweep: transfers into and out of every watched
+      // address, queued for the next drain (each address at most hourly per chain). Independent of
+      // the Base drain, so it never delays it.
       let multichainScan: unknown;
       try {
         const { runChainRecordMultichainScan, buildChainRecordMultichainScanDeps } = await import('./core/pvt/chain-record-multichain-scan');
@@ -4823,7 +4865,7 @@ app.post('/v1/internal/scheduler/chain-record-auxiliary', async (req, res) => {
         console.error('[Scheduler] Solana chain-record lane error:', solanaError);
         solanaChainRecord = { error: solanaError instanceof Error ? solanaError.message : String(solanaError) };
       }
-      return { proven_outbound_scan: provenOutboundScan, multichain_scan: multichainScan, x402_facilitator_sweep: facilitatorSweep, solana_chain_record: solanaChainRecord };
+      return { proven_outbound_scan: provenOutboundScan, address_activity_sync: addressActivitySync, multichain_scan: multichainScan, x402_facilitator_sweep: facilitatorSweep, solana_chain_record: solanaChainRecord };
     }, () => releaseChainRecordRunLease(db, { workerId: leaseWorker, nowMs: Date.now(), workload: 'auxiliary' }));
     res.json(response);
   } catch (error) {

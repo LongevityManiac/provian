@@ -135,11 +135,12 @@ export const SOLANA_CHAIN_RECORD_LIMITS = Object.freeze({
   pageSize: 100,
   /** New observations queued per cycle (no further page is read once reached). */
   queuedPerCycle: 400,
-  /** Observations drained per cycle. */
-  drainBatch: 40,
+  /** Observations drained per cycle (the cycle runs every 15 minutes: 120 per cycle keeps the
+   * drain's hourly throughput what it was at a five-minute cycle). */
+  drainBatch: 120,
   /** Wall-clock budget for discovery, then for the drain (no new unit starts past it). */
   discoveryBudgetMs: 45_000,
-  drainBudgetMs: 60_000,
+  drainBudgetMs: 180_000,
 });
 
 /** Facilitator-act statuses under which that PE minted, or will (the Base lane's set). */

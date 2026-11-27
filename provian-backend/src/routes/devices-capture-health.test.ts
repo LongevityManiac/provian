@@ -10,7 +10,7 @@
  * blind is not a question the blind device gets to answer.
  */
 
-import { buildDeviceCaptureHealth, linkedAgentCaptureFields, buildDeviceCaptureStatus } from './devices';
+import { buildDeviceCaptureHealth, linkedAgentCaptureFields, buildDeviceCaptureStatus, captureHealthStateDigest } from './devices';
 
 const NOW = 1_788_900_000_000;
 
@@ -616,5 +616,20 @@ describe('linkedAgentCaptureFields', () => {
     expect(linkedAgentCaptureFields({ broken: true, broken_reason: 'session_format_broken' }, null)).toMatchObject({ capture_broken: true, capture_broken_reason: 'session_format_broken' });
     expect(linkedAgentCaptureFields({ broken: true, broken_reason: '/x' }, null)).toMatchObject({ capture_broken: true, capture_broken_reason: 'no_readable_sources' });
     expect(linkedAgentCaptureFields({}, null)).toMatchObject({ capture_broken: false, capture_broken_reason: null, capture_broken_since_ms: null });
+  });
+});
+
+
+describe('captureHealthStateDigest (the heartbeat stores a report only on a state change or every 45 minutes)', () => {
+  it('two reports that differ only in time, window counters and cursors have the same digest', () => {
+    const a = buildDeviceCaptureHealth({ ...GOOD, cursor_total: 1, records_consumed_in_window: 3, last_capture_at_ms: NOW - 5 }, NOW);
+    const b = buildDeviceCaptureHealth({ ...GOOD, cursor_total: 9, records_consumed_in_window: 0, last_capture_at_ms: NOW + 600_000 }, NOW + 600_000);
+    expect(captureHealthStateDigest(a)).toBe(captureHealthStateDigest(b));
+  });
+  it('RED: a state change (a harness going blind) changes the digest', () => {
+    const a = buildDeviceCaptureHealth(GOOD, NOW);
+    const blind = buildDeviceCaptureHealth({ ...GOOD, harnesses: [{ harness: 'claude_code', sources: 0, containers: ['file'] }] }, NOW);
+    expect(captureHealthStateDigest(blind)).not.toBe(captureHealthStateDigest(a));
+    expect(blind.broken).toBe(true);
   });
 });

@@ -4,7 +4,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { ethers } from 'ethers';
 import ProxyConfig from '../../services/ProxyConfig';
 import { VERIFIED_TOKENS } from '../../data/verified-tokens';
-import { PVT9_TOKEN } from '../chains/evm/config';
+import { PVT9_TOKEN, BASE_MAINNET, ARBITRUM_MAINNET, OPTIMISM_MAINNET, type ChainConfig } from '../chains/evm/config';
+import {
+    chainScanDue,
+    incrementalFromBlock,
+    loadHistorySyncState,
+    probeEvmChain,
+    probeSolanaAddress,
+    readHistoryRescanDueAt,
+    saveChainSyncState,
+    type HistorySyncState,
+} from './historySync';
 import {
     PVT_MIGRATION_DISTRIBUTOR,
     PREDECESSOR_PVT9_KERNEL_FOR_HISTORY,
@@ -192,15 +202,48 @@ const WETH_ADDRESSES: Partial<Record<ChainType, string>> = {
 const TOPIC_WETH_WITHDRAWAL = '0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65';
 const TOPIC_ERC20_APPROVAL = '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925';
 
-// Window for the approval-event scan: the last APPROVAL_LOG_BLOCK_WINDOW blocks
-// in ONE eth_getLogs call. At Base's ~2s block time that is roughly the last
-// ~5h (longer on slower chains) — NOT 24h; a genuine multi-day/full-history
-// view would need a wider window plus backward pagination (deliberately not done
-// here, to keep per-scan cost minimal). The scan requires Alchemy Pay-As-You-Go
+// Fallback window for the approval-event scan: when the provider refuses the incremental range,
+// the last APPROVAL_LOG_BLOCK_WINDOW blocks (~5h on Base) in ONE eth_getLogs call. Normally the
+// scan reads from the last scan's block (see historySync.ts). The scan requires Alchemy Pay-As-You-Go
 // (the Free tier's 10-block eth_getLogs cap makes any window impossible), so it
 // is gated behind isApprovalScanEnabled() (EXPO_PUBLIC_ALCHEMY_PAYG). PAYG is
 // active and the flag is on.
 const APPROVAL_LOG_BLOCK_WINDOW = 9_000;
+
+// The public RPCs the free change check asks (see historySync.ts). Mainnet only, like the
+// Alchemy mapping above.
+const CHAIN_PUBLIC_CONFIG: Partial<Record<ChainType, ChainConfig>> = {
+    Base: BASE_MAINNET,
+    Arbitrum: ARBITRUM_MAINNET,
+    Optimism: OPTIMISM_MAINNET,
+};
+
+// Average block time per chain, for dating an approval found in the one-time full-history scan
+// whose block was not looked up individually.
+const CHAIN_BLOCK_TIME_MS: Partial<Record<ChainType, number>> = { Base: 2_000, Optimism: 2_000, Arbitrum: 250 };
+/** Blocks whose timestamps an approval scan looks up individually (the newest first). */
+const APPROVAL_BLOCK_LOOKUPS = 50;
+
+/** The verified token contracts whose balances the change check reads on a chain. */
+function changeCheckTokens(chain: ChainType): string[] {
+    const chainId = CHAIN_PUBLIC_CONFIG[chain]?.chainId;
+    if (chainId === undefined) return [];
+    const out = Object.values((VERIFIED_TOKENS as Record<number, Record<string, { address: string }>>)[chainId] ?? {})
+        .map((t) => t.address);
+    if (chain === 'Base') {
+        try { out.push(PVT9_TOKEN.address); } catch { /* protocol not resolved: the scan still runs on a nonce or balance change */ }
+    }
+    return out;
+}
+
+/** Per-refresh context: the stored sync state and whether this refresh is forced. */
+interface ScanContext {
+    readonly primaryAddress: string;
+    readonly state: HistorySyncState;
+    readonly rescanDueAtMs: number;
+    readonly force: boolean;
+    readonly nowMs: number;
+}
 
 /**
  * Is the Alchemy approval scan enabled? Alchemy Pay-As-You-Go is active and
@@ -223,6 +266,8 @@ class TransactionHistoryService {
     private static instance: TransactionHistoryService;
     private cache: Map<string, { data: Transaction[]; timestamp: number }> = new Map();
     private lastFetch: Map<string, number> = new Map();
+    /** Primary addresses whose next refresh is forced (pull-to-refresh). */
+    private forceNext: Set<string> = new Set();
 
     private constructor() {}
 
@@ -268,7 +313,8 @@ class TransactionHistoryService {
         const shouldRefresh = this.shouldRefreshCache(primaryAddress);
         if (shouldRefresh) {
             const chainsToFetch = chains || ['Base', 'Arbitrum', 'Optimism', 'Solana'];
-            await this.fetchFromChains(addressMap, chainsToFetch as ChainType[]);
+            const force = this.forceNext.delete(primaryAddress);
+            await this.fetchFromChains(addressMap, chainsToFetch as ChainType[], force);
             transactions = await this.loadCachedTransactions(primaryAddress);
         }
 
@@ -319,7 +365,8 @@ class TransactionHistoryService {
 
     private async fetchFromChains(
         addressMap: Partial<Record<ChainType, string>>,
-        chains: ChainType[]
+        chains: ChainType[],
+        force: boolean = false,
     ): Promise<void> {
         const primaryAddress = Object.values(addressMap)[0] || '';
         const cacheKey = `fetch_${primaryAddress}`;
@@ -332,6 +379,13 @@ class TransactionHistoryService {
 
         const fetchPromise = (async () => {
             try {
+                const ctx: ScanContext = {
+                    primaryAddress,
+                    state: await loadHistorySyncState(primaryAddress),
+                    rescanDueAtMs: await readHistoryRescanDueAt(),
+                    force,
+                    nowMs: Date.now(),
+                };
                 // [Fix 1C] Pass correct address for each chain
                 const fetchPromises = chains.map(chain => {
                     const chainAddress = addressMap[chain];
@@ -339,7 +393,7 @@ class TransactionHistoryService {
                         // Skip chains without configured address
                         return Promise.resolve([]);
                     }
-                    return this.fetchFromChain(chainAddress, chain);
+                    return this.fetchFromChain(chainAddress, chain, ctx);
                 });
 
                 const results = await Promise.allSettled(fetchPromises);
@@ -368,15 +422,15 @@ class TransactionHistoryService {
         return fetchPromise;
     }
 
-    private async fetchFromChain(address: string, chain: ChainType): Promise<Transaction[]> {
+    private async fetchFromChain(address: string, chain: ChainType, ctx?: ScanContext): Promise<Transaction[]> {
         try {
             switch (chain) {
                 case 'Base':
                 case 'Arbitrum':
                 case 'Optimism':
-                    return await this.fetchEVMTransactions(address, chain);
+                    return await this.fetchEVMTransactions(address, chain, ctx);
                 case 'Solana':
-                    return await this.fetchSolanaTransactions(address);
+                    return await this.fetchSolanaTransactions(address, ctx);
                 default:
                     return [];
             }
@@ -393,14 +447,31 @@ class TransactionHistoryService {
      * the canonical USDC mint are surfaced; other SPL activity is skipped to
      * avoid airdrop-spam noise (parity with the EVM verified-token filter).
      */
-    private async fetchSolanaTransactions(address: string): Promise<Transaction[]> {
+    private async fetchSolanaTransactions(address: string, ctx?: ScanContext): Promise<Transaction[]> {
         const { default: solanaRpc } = await import('../chains/solana/SolanaRpc');
-        const { getSolanaUsdcMint, SOL_DECIMALS, SOLANA_USDC_DECIMALS } =
+        const { getSolanaUsdcMint, SOL_DECIMALS, SOLANA_USDC_DECIMALS, getActiveSolanaCluster } =
             await import('../chains/solana/config');
         const usdcMint = getSolanaUsdcMint();
 
-        const sigs = await solanaRpc.getSignaturesForAddress(address, 20);
-        if (sigs.length === 0) return [];
+        // Free change check on the public cluster: no newer signature since the last scan, no read.
+        const sync = ctx?.state.Solana;
+        const probe = ctx ? await probeSolanaAddress({ rpcUrl: getActiveSolanaCluster().fallbackRpcUrl, address }) : null;
+        const fingerprint = probe ? `sig:${probe.newestSignature ?? ''}` : null;
+        if (ctx && !chainScanDue({ state: sync, fingerprint, nowMs: ctx.nowMs, rescanDueAtMs: ctx.rescanDueAtMs, force: ctx.force })) {
+            return [];
+        }
+
+        // Only signatures newer than the last one read (a first scan reads the newest 20).
+        const sigs = await solanaRpc.getSignaturesForAddress(address, 20, sync?.lastSignature ?? undefined);
+        // The state moves only after every new signature was read, so a failed read is retried.
+        const recordScan = async (complete: boolean): Promise<void> => {
+            if (!ctx || !complete) return;
+            await saveChainSyncState(ctx.primaryAddress, 'Solana', {
+                fingerprint, scannedAtMs: ctx.nowMs, throughBlock: null, approvalsThroughBlock: null,
+                lastSignature: sigs[0]?.signature ?? sync?.lastSignature ?? null,
+            });
+        };
+        if (sigs.length === 0) { await recordScan(true); return []; }
 
         const parsed = await Promise.allSettled(
             sigs.map(s =>
@@ -408,6 +479,7 @@ class TransactionHistoryService {
             ),
         );
 
+        await recordScan(parsed.every(r => r.status === 'fulfilled' && r.value.parsed !== null));
         const out: Transaction[] = [];
         for (const r of parsed) {
             if (r.status !== 'fulfilled' || !r.value.parsed) continue;
@@ -562,10 +634,22 @@ class TransactionHistoryService {
      * Fetch EVM transactions including both native transfers and ERC-20 token transfers.
      * Routes through backend proxy which holds the API keys.
      */
-    private async fetchEVMTransactions(address: string, chain: ChainType): Promise<Transaction[]> {
+    private async fetchEVMTransactions(address: string, chain: ChainType, ctx?: ScanContext): Promise<Transaction[]> {
         await currentProtocolDeployment();
         const alchemyNetwork = CHAIN_TO_ALCHEMY_NETWORK[chain];
         if (!alchemyNetwork) return [];
+
+        // Free change check on the chain's public RPC: nothing changed since the last scan, no read.
+        const sync = ctx?.state[chain as 'Base' | 'Arbitrum' | 'Optimism'];
+        const publicConfig = CHAIN_PUBLIC_CONFIG[chain];
+        const probe = ctx && publicConfig
+            ? await probeEvmChain({ rpcUrls: [publicConfig.rpcUrl, ...(publicConfig.fallbackRpcUrl ? [publicConfig.fallbackRpcUrl] : [])], address, tokenAddresses: changeCheckTokens(chain) })
+            : null;
+        if (ctx && !chainScanDue({ state: sync, fingerprint: probe?.fingerprint ?? null, nowMs: ctx.nowMs, rescanDueAtMs: ctx.rescanDueAtMs, force: ctx.force })) {
+            return [];
+        }
+        // Only blocks after the last scan (a first scan reads the newest 50 per direction).
+        const transfersFrom = incrementalFromBlock(sync?.throughBlock);
 
         // [Etherscan migration] Switched from the deprecated Etherscan v1
         // explorer proxy (`/api/proxy/explorer/...`) to Alchemy's
@@ -592,7 +676,7 @@ class TransactionHistoryService {
             // Two parallel calls: one for transfers OUT, one for transfers IN.
             // Alchemy doesn't have a single "all transfers for this address" call.
             const baseParams = {
-                fromBlock: '0x0',
+                fromBlock: transfersFrom === null ? '0x0' : '0x' + transfersFrom.toString(16),
                 toBlock: 'latest',
                 category: ['external', 'erc20', 'erc721', 'erc1155'],
                 order: 'desc' as const,
@@ -610,9 +694,10 @@ class TransactionHistoryService {
                     ...baseParams,
                     toAddress: address,
                 }]),
-                // Used as the upper bound for the recent-Approval scan below.
-                this.alchemyRpc(alchemyNetwork, 'eth_blockNumber', []),
+                // The scan's block: from the change check when it answered, else one Alchemy read.
+                probe ? Promise.resolve({ result: '0x' + probe.block.toString(16) }) : this.alchemyRpc(alchemyNetwork, 'eth_blockNumber', []),
             ]);
+            const transfersRead = outResp?.result?.transfers !== undefined && inResp?.result?.transfers !== undefined;
 
             const outTransfers = outResp?.result?.transfers ?? [];
             const inTransfers = inResp?.result?.transfers ?? [];
@@ -649,14 +734,29 @@ class TransactionHistoryService {
             // eth_getLogs over a recent block window so the user can see
             // their token approvals in the activity history.
             const latestBlockHex = latestBlockResp?.result;
+            let approvalsRead = false;
             if (latestBlockHex) {
                 const approvals = await this.fetchRecentApprovalLogs(
                     alchemyNetwork,
                     chain,
                     address,
                     latestBlockHex,
+                    incrementalFromBlock(sync?.approvalsThroughBlock) ?? 0,
                 );
-                transactions.push(...approvals);
+                transactions.push(...approvals.rows);
+                approvalsRead = approvals.complete;
+            }
+
+            // Record the scan only for what was read completely, so a failed read is retried.
+            const latest = latestBlockHex ? parseInt(latestBlockHex, 16) : NaN;
+            if (ctx && Number.isSafeInteger(latest) && latest > 0 && transfersRead) {
+                await saveChainSyncState(ctx.primaryAddress, chain as 'Base' | 'Arbitrum' | 'Optimism', {
+                    fingerprint: probe?.fingerprint ?? null,
+                    scannedAtMs: ctx.nowMs,
+                    throughBlock: latest,
+                    approvalsThroughBlock: approvalsRead ? latest : (sync?.approvalsThroughBlock ?? null),
+                    lastSignature: null,
+                });
             }
 
             // Merge swap pairs: any tx hash with both a sent and a received
@@ -834,18 +934,18 @@ class TransactionHistoryService {
      * where the indexed `owner` topic matches the user's address. Adds each
      * match to the transaction history as a synthetic 'approve' entry.
      *
-     * Limited to a recent block window (~24h on Base) to keep the call within
-     * Alchemy free-tier eth_getLogs constraints (10k blocks per call). The
-     * approve() flow is rare enough that a 24h window covers most user-visible
-     * activity; older approvals can still be revoked from a dedicated security
-     * screen if/when one is built.
+     * Reads from `fromBlockWanted` (the last scan's block, less the reorg overlap; 0 on the
+     * first scan, so every approval the wallet ever granted is listed once) to the scan's block.
+     * If the provider refuses that range, it falls back to the recent APPROVAL_LOG_BLOCK_WINDOW and
+     * reports the read incomplete, so the next scan tries the full range again.
      */
     private async fetchRecentApprovalLogs(
         alchemyNetwork: string,
         chain: ChainType,
         userAddress: string,
         latestBlockHex: string,
-    ): Promise<Transaction[]> {
+        fromBlockWanted: number = 0,
+    ): Promise<{ rows: Transaction[]; complete: boolean }> {
         // Feature-gated: requires Alchemy Pay-As-You-Go plan. On Free tier
         // Alchemy caps eth_getLogs at 10 blocks per call (downgraded from
         // 10,000 in early 2026) which makes any useful scan impossible.
@@ -853,38 +953,56 @@ class TransactionHistoryService {
         // disabled" card when isApprovalScanEnabled() is false, instead of
         // a misleading "no approvals found" empty state.
         if (!isApprovalScanEnabled()) {
-            return [];
+            return { rows: [], complete: false };
         }
 
         try {
             const latest = parseInt(latestBlockHex, 16);
-            if (!Number.isFinite(latest) || latest <= 0) return [];
+            if (!Number.isFinite(latest) || latest <= 0) return { rows: [], complete: false };
 
-            const fromBlock = Math.max(0, latest - APPROVAL_LOG_BLOCK_WINDOW);
             // ERC-20 Approval has owner as topic1 and spender as topic2.
             // Pad the user address to 32 bytes for the topic filter.
             const ownerTopic = '0x' + userAddress.toLowerCase().replace('0x', '').padStart(64, '0');
-
-            const resp = await this.alchemyRpc(alchemyNetwork, 'eth_getLogs', [{
-                fromBlock: '0x' + fromBlock.toString(16),
+            const readLogs = (from: number) => this.alchemyRpc(alchemyNetwork, 'eth_getLogs', [{
+                fromBlock: '0x' + Math.max(0, Math.min(from, latest)).toString(16),
                 toBlock: latestBlockHex,
                 topics: [TOPIC_ERC20_APPROVAL, ownerTopic],
             }]);
 
-            const logs: any[] = resp?.result ?? [];
-            if (logs.length === 0) return [];
+            // From the last scan (the first scan: the whole history, once). A range the provider
+            // refuses falls back to the recent window, and the scan then counts as incomplete.
+            let resp = await readLogs(fromBlockWanted);
+            let complete = Array.isArray(resp?.result);
+            if (!complete && latest - fromBlockWanted > APPROVAL_LOG_BLOCK_WINDOW) {
+                resp = await readLogs(latest - APPROVAL_LOG_BLOCK_WINDOW);
+                complete = false;
+            }
 
-            // Resolve unique block timestamps with a single batch - same block
-            // can host multiple approvals.
-            const uniqueBlocks = Array.from(new Set(logs.map(l => l.blockNumber).filter(Boolean)));
+            const logs: any[] = resp?.result ?? [];
+            if (logs.length === 0) return { rows: [], complete };
+
+            // Resolve unique block timestamps - same block can host multiple approvals. The newest
+            // blocks are looked up; older ones (a first full-history scan) are dated from the
+            // newest lookup and the chain's block time.
+            const uniqueBlocks = Array.from(new Set(logs.map(l => l.blockNumber).filter(Boolean)))
+                .sort((a, b) => parseInt(b, 16) - parseInt(a, 16));
+            const looked = uniqueBlocks.slice(0, APPROVAL_BLOCK_LOOKUPS);
             const blockResps = await Promise.all(
-                uniqueBlocks.map(bn => this.alchemyRpc(alchemyNetwork, 'eth_getBlockByNumber', [bn, false])),
+                looked.map(bn => this.alchemyRpc(alchemyNetwork, 'eth_getBlockByNumber', [bn, false])),
             );
             const blockTs = new Map<string, number>();
-            uniqueBlocks.forEach((bn, i) => {
+            looked.forEach((bn, i) => {
                 const ts = blockResps[i]?.result?.timestamp;
                 if (ts) blockTs.set(bn, parseInt(ts, 16) * 1000);
             });
+            const anchorBlock = looked.find(bn => blockTs.has(bn));
+            const blockTime = CHAIN_BLOCK_TIME_MS[chain];
+            if (anchorBlock && blockTime) {
+                const anchorTs = blockTs.get(anchorBlock)!;
+                for (const bn of uniqueBlocks.slice(APPROVAL_BLOCK_LOOKUPS)) {
+                    blockTs.set(bn, anchorTs - (parseInt(anchorBlock, 16) - parseInt(bn, 16)) * blockTime);
+                }
+            }
 
             const out: Transaction[] = [];
             for (const log of logs) {
@@ -920,10 +1038,10 @@ class TransactionHistoryService {
                     blockNumber: log.blockNumber ? parseInt(log.blockNumber, 16) : undefined,
                 });
             }
-            return out;
+            return { rows: out, complete };
         } catch (err) {
             console.warn(`[TransactionHistory] Approval log fetch failed for ${chain}:`, err);
-            return [];
+            return { rows: [], complete: false };
         }
     }
 
@@ -1153,6 +1271,8 @@ class TransactionHistoryService {
     async refreshTransactions(addresses: Record<ChainType, string> | string): Promise<void> {
         const primaryAddress = typeof addresses === 'string' ? addresses : (Object.values(addresses)[0] || '');
         this.lastFetch.delete(primaryAddress);
+        // Pull-to-refresh always reads (incrementally), whatever the change check says.
+        this.forceNext.add(primaryAddress);
         await this.getTransactions(addresses, { page: 1, limit: 20 });
     }
 
