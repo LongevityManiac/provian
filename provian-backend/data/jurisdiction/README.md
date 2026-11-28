@@ -1,4 +1,5 @@
-Offline country and subdivision data: DB-IP IP to City Lite, November 2026.
+Offline country and subdivision data: DB-IP IP to City Lite, the newest monthly release (the
+image build takes the current UTC month, or the previous one before the current month is out).
 Source: https://db-ip.com/db/download/ip-to-city-lite
 Copyright DB-IP, distributed under Creative Commons Attribution 4.0:
 https://creativecommons.org/licenses/by/4.0/

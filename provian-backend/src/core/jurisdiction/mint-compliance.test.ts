@@ -6,7 +6,7 @@ jest.unmock('./sdn');
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore } from '../pvt/__test-helpers__/fake-firestore';
 import { INITIAL_JURISDICTION_POLICIES } from './jurisdiction-policy';
-import { countryFromIp, occupiedUaRegion } from './country';
+import { countryFromIp, geoDatabaseLabel, occupiedUaRegion } from './country';
 import { observeWalletSession, observeActorSession, withJurisdictionRequest, evaluateMintCompliance, SESSION_COLLECTION } from './mint-compliance';
 import { buildPEHistoryRow } from '../../pe-history';
 import { computeRecordSnapshot } from '../pvt/policy/monetary-accounting';
@@ -96,6 +96,19 @@ it.each(['91.200.60.1', '5.248.22.1', '46.148.16.1', '5.180.128.1', '46.148.22.1
     await locate(ACTOR, ip);
     expect(await status()).toMatchObject({ mint_status: 'eligible' });
   });
+describe('the database label names the bundled release', () => {
+  it('is the UTC month of the file\'s own build date', () => {
+    expect(geoDatabaseLabel(new Date('2026-11-01T02:52:26Z'))).toBe('dbip-city-lite-2026-11');
+    expect(geoDatabaseLabel(new Date('2027-01-01T00:00:00Z'))).toBe('dbip-city-lite-2027-01');
+    expect(geoDatabaseLabel(new Date(Number.NaN))).toBe('dbip-city-lite-unknown');
+  });
+  it('every observation, public or private, carries the bundled file\'s label', () => {
+    const { database } = countryFromIp('8.8.8.8');
+    expect(database).toMatch(/^dbip-city-lite-\d{4}-\d{2}$/);
+    expect(countryFromIp('10.0.0.1').database).toBe(database);
+    expect(countryFromIp(undefined).database).toBe(database);
+  });
+});
 describe('occupiedUaRegion keeps every spelling of the embargoed regions', () => {
   it.each([
     ['Crimea', 'UA-43'], ['Republic of Crimea', 'UA-43'], ['Autonomous Republic of Crimea', 'UA-43'], ['Krym', 'UA-43'],

@@ -9,6 +9,23 @@ export interface CountryObservation {
   readonly database: string;
 }
 let reader: Reader<CityResponse> | null = null;
+let databaseLabel: string | null = null;
+
+/**
+ * Names the bundled database's monthly release from the file's own build date, so the label always
+ * matches the file the image bundled (the build takes the newest month db-ip still serves).
+ */
+export function geoDatabaseLabel(buildEpoch: Date): string {
+  return Number.isFinite(buildEpoch.getTime())
+    ? `dbip-city-lite-${buildEpoch.toISOString().slice(0, 7)}`
+    : 'dbip-city-lite-unknown';
+}
+
+function bundledDatabase(): { readonly reader: Reader<CityResponse>; readonly database: string } {
+  reader ??= new Reader<CityResponse>(fs.readFileSync(path.resolve(__dirname, '../../../data/jurisdiction/city.mmdb')));
+  databaseLabel ??= geoDatabaseLabel(reader.metadata.buildEpoch);
+  return { reader, database: databaseLabel };
+}
 /**
  * The occupied Ukrainian regions under US embargo — Crimea and Sevastopol, Donetsk,
  * and Luhansk — matched by the tokens that name each region, not an exact string.
@@ -30,13 +47,18 @@ export function occupiedUaRegion(name: string): string | null {
   return null;
 }
 export function countryFromIp(ip: string | undefined): CountryObservation {
-  const database = 'dbip-city-lite-2026-11';
+  let bundled: ReturnType<typeof bundledDatabase>;
+  try {
+    bundled = bundledDatabase();
+  } catch {
+    return { country: null, region: null, database: 'dbip-city-lite-unavailable' };
+  }
+  const { database } = bundled;
   const unknown = { country: null, region: null, database };
   const address = ip?.replace(/^::ffff:/i, '');
   if (!address || isPrivateIp(address)) return unknown;
   try {
-    reader ??= new Reader<CityResponse>(fs.readFileSync(path.resolve(__dirname, '../../../data/jurisdiction/city.mmdb')));
-    const result = reader.get(address);
+    const result = bundled.reader.get(address);
     const country = result?.country?.iso_code;
     const subdivision = result?.subdivisions?.[0];
     const name = subdivision?.names?.en ?? '';
