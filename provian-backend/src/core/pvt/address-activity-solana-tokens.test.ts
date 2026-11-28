@@ -25,6 +25,7 @@ import {
   derivedTokenAccounts,
   isOnEd25519Curve,
   tokenBalancePairs,
+  listOwnerTokenAccounts,
 } from './address-activity-solana-tokens';
 import { base58Decode, base58Encode } from '../external-address/solana-keys';
 import {
@@ -269,5 +270,32 @@ describe('delivery: a token receive names only the token account', () => {
     expect(s.networks.SOLANA_MAINNET.token_accounts).toMatchObject({ registered: 1 });
     expect(api.createWebhook).toHaveBeenCalledWith(expect.objectContaining({ network: 'SOLANA_MAINNET', addresses: [created] }));
     expect(db.store.get(`${SOLANA_TOKEN_ACCOUNTS_COLLECTION}/${created}`)).toMatchObject({ registered: true });
+  });
+});
+
+describe('listOwnerTokenAccounts', () => {
+  const OWNER = '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM';
+  const A = 'FGETo8T8wMcN2wCjav8VK6eh3dLk63evNDPxzLSJra8B';
+  const B = '897krAvWH3RbymaCYE3o9emopUwocieHuKTUk9nySpq6';
+  const answering = (byProgram: Record<string, string[]>) => jest.fn(async (_m: string, params: readonly unknown[]) => {
+    const programId = (params[1] as { programId: string }).programId;
+    return { value: (byProgram[programId] ?? []).map((pubkey) => ({ pubkey })) };
+  });
+  const failing = () => jest.fn(async () => { throw new Error('solana_rpc_leg_failed:x:getTokenAccountsByOwner:http_429'); });
+  const TOKEN = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', T22 = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
+
+  it('reads both token programs from the primary alone when it answers (the rate-limited secondary is never asked)', async () => {
+    const primary = answering({ [TOKEN]: [A], [T22]: [B, OWNER] }), secondary = failing();
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: primary }, { operatorId: 's', send: secondary }], OWNER)).resolves.toEqual([B, A].sort());
+    expect(primary).toHaveBeenCalledTimes(2);
+    expect(secondary).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the secondary when the primary fails or answers malformed, and throws when neither answers', async () => {
+    const secondary = answering({ [TOKEN]: [A] });
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: failing() }, { operatorId: 's', send: secondary }], OWNER)).resolves.toEqual([A]);
+    const malformed = jest.fn(async () => ({ value: [{ pubkey: 'not-an-address' }] }));
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: malformed }, { operatorId: 's', send: answering({ [T22]: [B] }) }], OWNER)).resolves.toEqual([B]);
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: failing() }, { operatorId: 's', send: failing() }], OWNER)).rejects.toThrow('http_429');
   });
 });

@@ -43,12 +43,13 @@ import { readWatchRegistry, type WatchRegistryKind } from './watch-registry';
 import { enqueueSolanaChainRecordObservation } from './solana-chain-record-lane';
 import { SOLANA_PROVEN_ADDRESSES_COLLECTION, isSolanaProvenAddressRecord } from '../external-address/solana-link';
 import { isSolanaAddress, isSolanaSignature } from '../external-address/solana-keys';
-import { buildSolanaRpcLegs, readSolanaTokenAccountsUnion } from '../onchain/solana-economic-discovery';
+import { buildSolanaRpcLegs } from '../onchain/solana-economic-discovery';
 import {
   SOLANA_OWNER_ENUMERATIONS_PER_RUN,
   SOLANA_TOKEN_ACCOUNTS_PER_DELIVERY,
   SOLANA_TOKEN_ACCOUNT_REGISTRATIONS_PER_RUN,
   dueTokenOwners,
+  listOwnerTokenAccounts,
   markTokenAccountsRegistered,
   markTokenOwnerEnumerated,
   markTokenOwnersDue,
@@ -522,7 +523,7 @@ function solanaTokenAccountReader(env: Env): ((owner: string) => Promise<readonl
   } catch {
     return null;
   }
-  return (owner) => readSolanaTokenAccountsUnion(legs, owner);
+  return (owner) => listOwnerTokenAccounts(legs, owner);
 }
 
 // =============================================================================

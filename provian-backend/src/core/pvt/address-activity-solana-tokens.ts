@@ -23,7 +23,7 @@
 import { createHash } from 'crypto';
 import { FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { base58Decode, base58Encode, isSolanaAddress } from '../external-address/solana-keys';
-import { SOLANA_TOKEN_PROGRAM } from '../onchain/solana-economic-discovery';
+import { SOLANA_TOKEN_2022_PROGRAM, SOLANA_TOKEN_PROGRAM, type SolanaRpcLegs } from '../onchain/solana-economic-discovery';
 import { SOLANA_ASSOCIATED_TOKEN_PROGRAM, SOLANA_USDC_MINT_ADDRESS } from './solana-chain-record-derive';
 
 /** token account → the watched owners it was seen under, and whether it is on a webhook yet. */
@@ -308,4 +308,34 @@ export function tokenBalancePairs(item: Record<string, unknown>): TokenAccountOw
     if (validPair(pair)) out.set(`${pair.tokenAccount}|${pair.owner}`, pair);
   }
   return [...out.values()];
+}
+
+/**
+ * An owner's token accounts (Token and Token-2022), read from the first source that answers: the
+ * primary, else the secondary. Registering an account on the webhook is only a pointer (every pushed
+ * transaction is re-read on both sources before anything mints), so one source is enough, and the
+ * public secondary's per-method rate limit never throttles the listing.
+ */
+export async function listOwnerTokenAccounts(legs: SolanaRpcLegs, owner: string): Promise<string[]> {
+  if (!isSolanaAddress(owner)) throw new Error('solana_token_accounts_owner_invalid');
+  let lastError: unknown = new Error('solana_token_accounts_unavailable');
+  for (const leg of legs) {
+    try {
+      const accounts = new Set<string>();
+      for (const programId of [SOLANA_TOKEN_PROGRAM, SOLANA_TOKEN_2022_PROGRAM]) {
+        const result = await leg.send('getTokenAccountsByOwner', [owner, { programId }, { encoding: 'base64', commitment: 'finalized', dataSlice: { offset: 0, length: 0 } }]);
+        const value = (result as { value?: unknown } | null)?.value;
+        if (!Array.isArray(value)) throw new Error('solana_token_accounts_invalid');
+        for (const entry of value) {
+          const pubkey = (entry as { pubkey?: unknown } | null)?.pubkey;
+          if (typeof pubkey !== 'string' || !isSolanaAddress(pubkey)) throw new Error('solana_token_accounts_invalid');
+          if (pubkey !== owner) accounts.add(pubkey);
+        }
+      }
+      return [...accounts].sort();
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
