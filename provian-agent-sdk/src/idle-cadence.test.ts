@@ -100,4 +100,65 @@ describe('capture-health heartbeat', () => {
     noteCapturedWork(Date.now());
     expect(reportCaptureHealth).toHaveBeenCalledTimes(1);
   });
+
+  function deferredReports() {
+    const pending: Array<(v: unknown) => void> = [];
+    const reportCaptureHealth = vi.fn(() => new Promise((resolve) => { pending.push(resolve); }));
+    const observer = { reportCaptureHealth, getLastWorkPeAtMs: () => null } as unknown as ProvianObserver;
+    return { reportCaptureHealth, observer, pending };
+  }
+
+  it('an idle report answered after work resumed never pushes the resumed report out by 6 hours', async () => {
+    const { reportCaptureHealth, observer, pending } = deferredReports();
+    const timer = startCaptureHealthHeartbeat(observer, null);
+    try {
+      pending.shift()?.({});
+      await vi.advanceTimersByTimeAsync(IDLE_AFTER_MS);
+      while (pending.length > 1) pending.shift()?.({});
+      const idleReport = pending.shift();             // the idle declaration, still in flight
+      noteCapturedWork(Date.now());                   // work resumes: the normal-cadence report goes out
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(8);
+      pending.shift()?.({});                          // the resumed report lands
+      await vi.advanceTimersByTimeAsync(0);
+      idleReport?.({});                               // then the stale idle answer arrives
+      await vi.advanceTimersByTimeAsync(CAPTURE_HEALTH_INTERVAL_MS);
+      // RED: without the stale-answer guard the idle answer sets a 6-hour wait.
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(9);
+    } finally { clearInterval(timer); }
+  });
+
+  it('work that resumes while the machine slept reports on the first tick after waking, even if the idle report lands late', async () => {
+    const { reportCaptureHealth, observer, pending } = deferredReports();
+    const timer = startCaptureHealthHeartbeat(observer, null);
+    try {
+      pending.shift()?.({});
+      await vi.advanceTimersByTimeAsync(IDLE_AFTER_MS);
+      while (pending.length > 1) pending.shift()?.({});
+      const idleReport = pending.shift();
+      const before = reportCaptureHealth.mock.calls.length;
+      // The machine sleeps for 30 minutes: the clock moves, no tick runs.
+      vi.setSystemTime(Date.now() + 30 * 60_000);
+      noteCapturedWork(Date.now());
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(before);
+      idleReport?.({});
+      await vi.advanceTimersByTimeAsync(60_000);
+      // RED: the first tick after waking reports (a late idle answer cannot cancel it).
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(before + 1);
+    } finally { clearInterval(timer); }
+  });
+
+  it('work that resumes while the machine slept, after the idle report landed, reports on the first tick after waking', async () => {
+    const reportCaptureHealth = vi.fn().mockResolvedValue({});
+    const observer = { reportCaptureHealth, getLastWorkPeAtMs: () => null } as unknown as ProvianObserver;
+    const timer = startCaptureHealthHeartbeat(observer, null);
+    try {
+      await vi.advanceTimersByTimeAsync(IDLE_AFTER_MS);
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(7);   // the idle declaration landed: next due in 6 hours
+      vi.setSystemTime(Date.now() + 30 * 60_000);
+      noteCapturedWork(Date.now());
+      await vi.advanceTimersByTimeAsync(60_000);
+      // RED: without marking the report due, the woken daemon would wait out the 6 hours.
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(8);
+    } finally { clearInterval(timer); }
+  });
 });

@@ -176,6 +176,7 @@ import {
   createDeviceSelfRouter,
   createRegisterDeviceHandler,
   linkedAgentCaptureFields,
+  pickLinkedAgentDevice,
   resolveAttestationTierFromSigning,
   type DeviceEconomicAttestationTier,
 } from './routes/devices';
@@ -2270,16 +2271,7 @@ app.get('/v1/relay/agent/sessions', authenticate, async (req: Request, res: Resp
           if (idx >= LIVE_COUNT_FANOUT_CAP) return empty;
           try {
             const devSnap = await db.collection('devices').where('owner_wallet_id', '==', doc.id).get();
-            let best: FirebaseFirestore.DocumentData | null = null;
-            let bestT = -1;
-            for (const dd of devSnap.docs) {
-              const d = dd.data();
-              if (d.owner_type !== 'agent') continue;
-              const ch = d.capture_health;
-              const t = (ch && typeof ch.updated_at === 'number') ? ch.updated_at
-                : (typeof d.last_pe_at === 'number' ? d.last_pe_at : 0);
-              if (t > bestT) { bestT = t; best = d; }
-            }
+            const best = pickLinkedAgentDevice(devSnap.docs.map(dd => dd.data()));
             if (!best) return empty;
             return linkedAgentCaptureFields((best.capture_health || {}) as Record<string, unknown>, best.last_pe_at);
           } catch { return empty; }

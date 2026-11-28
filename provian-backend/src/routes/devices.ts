@@ -1546,6 +1546,29 @@ type CaptureBrokenReason = NonNullable<NonNullable<DeviceDocument['capture_healt
  * an unconfirmed suspicion) is not broken; a stored `launcher_not_seen` state (which one older relay
  * stored as `process_launcher_changed`, and the next as not broken) is `process_launcher_not_seen`.
  */
+/** How much longer than the normal 10 minutes a report's declared check-in interval runs (0 for an older daemon). */
+function captureReportLiveExtraMs(reportIntervalMs: unknown): number {
+  return typeof reportIntervalMs === 'number' && Number.isFinite(reportIntervalMs) ? Math.max(0, reportIntervalMs - 10 * 60 * 1000) : 0;
+}
+
+/**
+ * The agent device whose capture health the linked-agent card shows: the one whose report stays live
+ * longest (its report time plus however much longer than normal it declared it would wait), so a
+ * stopped device never outranks a healthy idle one. A device that never reported ranks by its last PE.
+ */
+export function pickLinkedAgentDevice<T extends Record<string, unknown>>(devices: readonly T[]): T | null {
+  let best: T | null = null;
+  let bestT = -1;
+  for (const d of devices) {
+    if (d.owner_type !== 'agent') continue;
+    const ch = d.capture_health as { updated_at?: unknown; report_interval_ms?: unknown } | undefined;
+    const t = ch && typeof ch.updated_at === 'number' ? ch.updated_at + captureReportLiveExtraMs(ch.report_interval_ms)
+      : typeof d.last_pe_at === 'number' ? d.last_pe_at : 0;
+    if (t > bestT) { bestT = t; best = d; }
+  }
+  return best;
+}
+
 export function linkedAgentCaptureFields(ch: Record<string, unknown>, lastPeAt: unknown): {
   last_capture_at_ms: number | null;
   capture_reported_at_ms: number | null;

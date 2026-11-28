@@ -1260,7 +1260,7 @@ export function startCaptureHealthHeartbeat(
   // machine slept) reports on its next tick.
   onWorkResumed(() => {
     if (Date.now() - lastTickAtMs <= 2 * tickMs) send();
-    else nextDueAtMs = 0;
+    else { sent += 1; nextDueAtMs = 0; } // an answer still in flight no longer sets the schedule
   });
   return timer;
 }

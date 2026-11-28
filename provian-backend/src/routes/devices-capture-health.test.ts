@@ -10,7 +10,7 @@
  * blind is not a question the blind device gets to answer.
  */
 
-import { buildDeviceCaptureHealth, linkedAgentCaptureFields, buildDeviceCaptureStatus, captureHealthStateDigest } from './devices';
+import { buildDeviceCaptureHealth, linkedAgentCaptureFields, pickLinkedAgentDevice, buildDeviceCaptureStatus, captureHealthStateDigest } from './devices';
 
 const NOW = 1_788_900_000_000;
 
@@ -559,6 +559,15 @@ describe('process lane silence (, parity)', () => {
 // because a doc a relay from before the ruling wrote may say process_launcher_changed for a suspicion
 // or a launcher no program matches, and a device that stopped reporting keeps that doc indefinitely.
 describe('linkedAgentCaptureFields', () => {
+  it('the card shows the device whose report stays live longest, so a stopped device never outranks a healthy idle one', () => {
+    const T = 1_800_000_000_000, H = 60 * 60 * 1000;
+    const idle = { id: 'idle', owner_type: 'agent', capture_health: { updated_at: T, report_interval_ms: 6 * H } };
+    const stopped = { id: 'stopped', owner_type: 'agent', capture_health: { updated_at: T + H } };
+    expect(pickLinkedAgentDevice([stopped, idle])?.id).toBe('idle');
+    // RED: on the normal cadence, the newer report wins.
+    expect(pickLinkedAgentDevice([stopped, { ...idle, capture_health: { updated_at: T } }])?.id).toBe('stopped');
+    expect(pickLinkedAgentDevice([{ id: 'human', owner_type: 'human', capture_health: { updated_at: T + 9 * H } }])).toBeNull();
+  });
   it('passes on the check-in interval the daemon declared with its report (null for an older daemon)', () => {
     expect(linkedAgentCaptureFields({ updated_at: 5, report_interval_ms: 6 * 60 * 60 * 1000 }, null).capture_report_interval_ms).toBe(6 * 60 * 60 * 1000);
     expect(linkedAgentCaptureFields({ updated_at: 5 }, null).capture_report_interval_ms).toBeNull();
