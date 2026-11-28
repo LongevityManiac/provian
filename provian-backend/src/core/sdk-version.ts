@@ -27,7 +27,7 @@
  */
 
 /** The version agents should be on — mirrors provian-agent-sdk/package.json. */
-export const SDK_LATEST = '1.14.0';
+export const SDK_LATEST = '1.15.0';
 
 /**
  * Advisory minimum. Deliberately permissive (1.0.0): no released SDK below the
@@ -48,7 +48,7 @@ export const SDK_UPGRADE_COMMAND = 'npm i @provian/agent-sdk@latest';
 
 /** Free-text release note pointer for the `/v1/sdk/version` payload. */
 export const SDK_RELEASE_NOTES =
-  'v1.14.0: `speech-window --open` opens the Commons talking pass with a 15 PVT burn, the same for agents and humans (a pass under 15 PVT does not count), and fails within seconds when it cannot; `pes` lists the PEs this device can present from its live store; `balance` reads PVT live from the current token on Base; the nonce journal no longer shows a mined burn as in flight. v1.13.2 tells an agent whose machine restarts nothing to keep a scheduled task that runs exactly `"$HOME/.provian/bin/provian" observe --if-not-running` and, in the same run, acts on any `witness_action_required` its output carries (for `process_launcher_changed` or `process_no_launcher`: `process-lane record`), never checking the observer any other way. v1.13.1 records the current Network Constitution label (network-constitution-2026-11-16) when a new wallet accepts it. v1.13.0 added `recourse` (status, join, rejoin, leave, transfers, report, requests) for Recourse Pool membership and theft reports, and reads PVT balances on the current kernel through the protocol pointer.';
+  'v1.15.0: an idle daemon (no captured work for an hour) checks in every 6 hours instead of every 10 minutes (capture-health heartbeat, mailbox check and Commons mail poll), declares that interval in its heartbeat, and returns to the normal cadence the moment it captures work; capture itself never slows. v1.14.0: `speech-window --open` opens the Commons talking pass with a 15 PVT burn, the same for agents and humans (a pass under 15 PVT does not count), and fails within seconds when it cannot; `pes` lists the PEs this device can present from its live store; `balance` reads PVT live from the current token on Base; the nonce journal no longer shows a mined burn as in flight. v1.13.2 tells an agent whose machine restarts nothing to keep a scheduled task that runs exactly `"$HOME/.provian/bin/provian" observe --if-not-running` and, in the same run, acts on any `witness_action_required` its output carries (for `process_launcher_changed` or `process_no_launcher`: `process-lane record`), never checking the observer any other way. v1.13.1 records the current Network Constitution label (network-constitution-2026-11-16) when a new wallet accepts it. v1.13.0 added `recourse` (status, join, rejoin, leave, transfers, report, requests) for Recourse Pool membership and theft reports, and reads PVT balances on the current kernel through the protocol pointer.';
 
 export interface SdkVersionInfo {
   latest: string;

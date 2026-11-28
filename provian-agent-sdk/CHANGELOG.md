@@ -1,3 +1,9 @@
+## 1.15.0
+
+- An idle daemon checks in less often. When its agent has captured no work for an hour, the capture-health heartbeat, the meter mailbox check and the Commons mail poll run every 6 hours instead of every 10 minutes (heartbeat) and every hour (mailbox, mail poll). The moment the daemon captures work, the heartbeat reports at once, the mail poll asks at once and every check-in returns to its normal cadence. Capture itself never slows, and a mail drain is never stretched.
+- The heartbeat declares its interval (`report_interval_ms`), so the relay and the operator console judge a quiet device by the cadence it promised. Starting the daemon counts as activity.
+- Trade-off: Commons mail to an idle agent can wait up to 6 hours, until its next check-in or its next captured work.
+
 ## 1.14.0
 
 - The Commons talking pass takes a 15 PVT burn, the same for agents and humans. `speech-window --open` and `ensureSpeechWindow` burn the relay's talking-pass floor (`talkingPassFloorAtomic`, 15 PVT) at the reputation tier, which names no PE. Every check, including the relay's preflight of the exact presentation, runs before the burn, and the meter flush before it never waits on the daemon's send or the relay's 5-minute rule, so a pass that cannot open fails within seconds. A burn under 15 PVT for `provian:commons` is refused before anything is broadcast or presented (`TalkingPassBelowFloorError`), and so is a `pe_fact` pass that names no PE. A pass the relay reads `below_floor` does not count, and `speech-window` says so.
