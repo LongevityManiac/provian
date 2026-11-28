@@ -69,9 +69,9 @@ function seedProven(address: string, provenAtSlot = FENCE): SolanaProvenAddressR
 interface History { [account: string]: SolanaSignaturePointer[] }
 
 function discoveryOf(legs: [History, History], opts: {
-  floor?: number; tokenAccounts?: Record<string, string[]>; failLeg?: 0 | 1; failListing?: boolean;
+  floor?: number; tokenAccounts?: Record<string, string[]>; failLeg?: 0 | 1; failListing?: boolean; failLegAfterFirstPage?: 0 | 1;
 } = {}) {
-  const calls = { pages: 0 };
+  const calls = { pages: 0, befores: [] as Array<[0 | 1, string | null]> };
   return {
     calls,
     discovery: {
@@ -82,6 +82,8 @@ function discoveryOf(legs: [History, History], opts: {
       },
       signaturesPage: async (leg: 0 | 1, account: string, page: { before: string | null; limit: number }) => {
         calls.pages += 1;
+        calls.befores.push([leg, page.before]);
+        if (opts.failLegAfterFirstPage === leg && page.before !== null) throw new Error('solana_rpc_leg_failed:leg1:getSignaturesForAddress:http_429');
         if (opts.failLeg === leg) throw new Error(`solana_rpc_leg_failed:leg${leg}:getSignaturesForAddress:http_503`);
         const all = legs[leg][account] ?? [];
         const start = page.before === null ? 0 : all.findIndex((e) => e.signature === page.before) + 1;
@@ -165,6 +167,28 @@ describe('discovery — a pointer read, bounded, never evidence', () => {
     expect(await runSolanaChainRecordDiscovery(deps({ discovery: healthy.discovery }))).toMatchObject({ errors: 0, passes_completed: 1 });
     expect((db.store.get(cursorKey) as { low_slot: number }).low_slot).toBe(FENCE + 1_000);
     expect(queued()).toHaveLength(1);
+  });
+
+  it('a leg that fails after its first page resumes from that page, not from the top, and the pass then completes', async () => {
+    const W = addr();
+    seedProven(W);
+    const entries = [entry(FENCE + 30), entry(FENCE + 20), entry(FENCE + 10)];
+    const history: History = { [W]: entries };
+    const L = { ...(await import('./solana-chain-record-lane')).SOLANA_CHAIN_RECORD_LIMITS, pageSize: 1, pagesPerLeg: 4 };
+    const failing = discoveryOf([history, history], { failLegAfterFirstPage: 1 });
+    const r1 = await runSolanaChainRecordDiscovery(deps({ discovery: failing.discovery }), L);
+    expect(r1).toMatchObject({ errors: 1, passes_completed: 0, queued: 3 });
+    const cursorKey = `${SOLANA_CHAIN_RECORD_CURSORS_COLLECTION}/${solanaChainRecordCursorId(W, W)}`;
+    const cursor = db.store.get(cursorKey) as { low_slot: number; pass: { done: boolean[]; before: Array<string | null> } };
+    expect(cursor.low_slot).toBe(FENCE);
+    expect(cursor.pass.done).toEqual([true, false]);
+    expect(cursor.pass.before[1]).toBe(entries[0].signature);
+    const healthy = discoveryOf([history, history]);
+    expect(await runSolanaChainRecordDiscovery(deps({ discovery: healthy.discovery }), L)).toMatchObject({ errors: 0, passes_completed: 1 });
+    // Only leg 1 is read again, starting after the page it already read.
+    expect(healthy.calls.befores[0]).toEqual([1, entries[0].signature]);
+    expect(healthy.calls.befores.every(([leg]) => leg === 1)).toBe(true);
+    expect(queued()).toHaveLength(3);
   });
 
   it('an owner whose token accounts cannot be listed still has its own address scanned', async () => {
