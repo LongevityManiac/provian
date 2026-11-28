@@ -581,6 +581,10 @@ describe('linkedAgentCaptureFields', () => {
     const fresh = { id: 'fresh', owner_type: 'agent', capture_health: { updated_at: T - 5 * M } };
     const once = { id: 'once', owner_type: 'agent', capture_health: { updated_at: T - 3 * H, last_capture_at_ms: T - 3 * H } };
     expect(pickLinkedAgentDevice([once, fresh], T)?.id).toBe('fresh');
+    // Among devices not working, the newest report wins (not the most recent work, not input order).
+    const brokenNow = { id: 'brokenNow', owner_type: 'agent', capture_health: { updated_at: T - 5 * M, last_capture_at_ms: T - 5 * H, broken: true, broken_reason: 'no_readable_sources' } };
+    const stoppedEarlier = { id: 'stoppedEarlier', owner_type: 'agent', capture_health: { updated_at: T - 3 * H, last_capture_at_ms: T - 3 * H } };
+    expect(pickLinkedAgentDevice([stoppedEarlier, brokenNow], T)?.id).toBe('brokenNow');
     // Fresh work counts as working even with no report, so it outranks an idle device that last worked hours ago.
     expect(pickLinkedAgentDevice([idle, { id: 'pe', owner_type: 'agent', last_pe_at: T + 5 * M }], T + 10 * M)?.id).toBe('pe');
     expect(pickLinkedAgentDevice([{ id: 'human', owner_type: 'human', capture_health: { updated_at: T + 9 * H } }], T)).toBeNull();
