@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import crypto from 'crypto';
 import type { Firestore } from 'firebase-admin/firestore';
 import { createFakeFirestore, type FakeFirestore } from './__test-helpers__/fake-firestore';
+import { solanaTokenAccountReader } from './address-activity-push';
 import {
   ADDRESS_ACTIVITY_MEMBERS_COLLECTION,
   ADDRESS_ACTIVITY_STATE_COLLECTION,
@@ -297,5 +298,30 @@ describe('listOwnerTokenAccounts', () => {
     const malformed = jest.fn(async () => ({ value: [{ pubkey: 'not-an-address' }] }));
     await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: malformed }, { operatorId: 's', send: answering({ [T22]: [B] }) }], OWNER)).resolves.toEqual([B]);
     await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: failing() }, { operatorId: 's', send: failing() }], OWNER)).rejects.toThrow('http_429');
+  });
+
+  it('a primary that answers Token and then fails Token-2022 returns nothing partial: the secondary answers both', async () => {
+    let calls = 0;
+    const halfPrimary = jest.fn(async (_m: string, params: readonly unknown[]) => {
+      calls += 1;
+      if ((params[1] as { programId: string }).programId === T22) throw new Error('solana_rpc_leg_failed:p:getTokenAccountsByOwner:http_429');
+      return { value: [{ pubkey: A }] };
+    });
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: halfPrimary }, { operatorId: 's', send: answering({ [TOKEN]: [A], [T22]: [B] }) }], OWNER)).resolves.toEqual([B, A].sort());
+    expect(calls).toBe(2);
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: halfPrimary }, { operatorId: 's', send: failing() }], OWNER)).rejects.toThrow('http_429');
+  });
+
+  it('the push sync lists from the production legs primary first, so the rate-limited public secondary is never asked', async () => {
+    const hosts: string[] = [];
+    const fakeFetch = (async (url: string, init: { body: string }) => {
+      const host = new URL(url).host; hosts.push(host);
+      if (host !== 'solana-mainnet.g.alchemy.com') return new Response('rate limited', { status: 429 });
+      const programId = (JSON.parse(init.body).params[1] as { programId: string }).programId;
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { value: programId === TOKEN ? [{ pubkey: A }] : [] } }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const read = solanaTokenAccountReader({ SOLANA_RPC_URL: 'https://solana-mainnet.g.alchemy.com/v2/KEY', SOLANA_RPC_URL_SECONDARY: 'https://solana-rpc.publicnode.com' }, fakeFetch);
+    await expect(read?.(OWNER)).resolves.toEqual([A]);
+    expect(hosts.every((h) => h === 'solana-mainnet.g.alchemy.com')).toBe(true);
   });
 });

@@ -516,10 +516,11 @@ export function buildAddressActivitySyncDeps(db: Firestore, env: Env = process.e
   };
 }
 
-function solanaTokenAccountReader(env: Env): ((owner: string) => Promise<readonly string[]>) | null {
+/** The push sync's token-account listing: the configured Solana legs, primary first (null when unconfigured). */
+export function solanaTokenAccountReader(env: Env, fetchImpl: typeof fetch = fetch): ((owner: string) => Promise<readonly string[]>) | null {
   let legs: ReturnType<typeof buildSolanaRpcLegs>;
   try {
-    legs = buildSolanaRpcLegs(env, fetch);
+    legs = buildSolanaRpcLegs(env, fetchImpl);
   } catch {
     return null;
   }
