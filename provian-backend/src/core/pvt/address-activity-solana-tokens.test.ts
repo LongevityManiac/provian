@@ -26,8 +26,8 @@ import {
   derivedTokenAccounts,
   isOnEd25519Curve,
   tokenBalancePairs,
-  listOwnerTokenAccounts,
 } from './address-activity-solana-tokens';
+import { listOwnerTokenAccounts } from '../onchain/solana-economic-discovery';
 import { base58Decode, base58Encode } from '../external-address/solana-keys';
 import {
   SOLANA_PROVEN_ADDRESSES_COLLECTION,

@@ -589,29 +589,33 @@ export async function readSolanaFinalizedSlotFloor(legs: SolanaRpcLegs): Promise
 }
 
 /**
- * Every SPL token account (Token and Token-2022) `owner` holds, the UNION of both legs' answers,
- * sorted. A token receive into an existing account does not name the owner in the transaction, so
- * each of these accounts is scanned too.
+ * An owner's token accounts (Token and Token-2022), read from the first source that answers: the
+ * primary, else the secondary; one source's full answer or nothing, never a partial list. A token
+ * receive into an existing account does not name the owner, so each account is watched or scanned
+ * too. The list only points discovery at accounts (every transaction found is re-read on both
+ * sources before anything mints), so one source is enough, and the public secondary's per-method
+ * rate limit never throttles it.
  */
-export async function readSolanaTokenAccountsUnion(legs: SolanaRpcLegs, owner: string): Promise<string[]> {
+export async function listOwnerTokenAccounts(legs: SolanaRpcLegs, owner: string): Promise<string[]> {
   if (!isSolanaAddress(owner)) throw new Error('solana_token_accounts_owner_invalid');
-  assertIndependent(legs);
-  const reads: Array<Promise<unknown>> = [];
-  for (const programId of [SOLANA_TOKEN_PROGRAM, SOLANA_TOKEN_2022_PROGRAM]) {
-    for (const leg of legs) {
-      reads.push(leg.send('getTokenAccountsByOwner', [owner, { programId }, { encoding: 'base64', commitment: 'finalized', dataSlice: { offset: 0, length: 0 } }]));
+  let lastError: unknown = new Error('solana_token_accounts_unavailable');
+  for (const leg of legs) {
+    try {
+      const accounts = new Set<string>();
+      for (const programId of [SOLANA_TOKEN_PROGRAM, SOLANA_TOKEN_2022_PROGRAM]) {
+        const result = await leg.send('getTokenAccountsByOwner', [owner, { programId }, { encoding: 'base64', commitment: 'finalized', dataSlice: { offset: 0, length: 0 } }]);
+        const value = (result as { value?: unknown } | null)?.value;
+        if (!Array.isArray(value)) throw new Error('solana_token_accounts_invalid');
+        for (const entry of value) {
+          const pubkey = (entry as { pubkey?: unknown } | null)?.pubkey;
+          if (typeof pubkey !== 'string' || !isSolanaAddress(pubkey)) throw new Error('solana_token_accounts_invalid');
+          if (pubkey !== owner) accounts.add(pubkey);
+        }
+      }
+      return [...accounts].sort();
+    } catch (error) {
+      lastError = error;
     }
   }
-  const results = await allSettledOrThrow<unknown[]>(reads);
-  const accounts = new Set<string>();
-  for (const result of results) {
-    const value = obj(result, 'token_accounts').value;
-    if (!Array.isArray(value)) throw new Error('solana_token_accounts_invalid');
-    for (const entry of value) {
-      const pubkey = obj(entry, 'token_account').pubkey;
-      if (!isSolanaAddress(pubkey)) throw new Error('solana_token_accounts_invalid');
-      if (pubkey !== owner) accounts.add(pubkey);
-    }
-  }
-  return [...accounts].sort();
+  throw lastError;
 }

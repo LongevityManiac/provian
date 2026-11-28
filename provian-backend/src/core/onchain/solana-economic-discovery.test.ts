@@ -16,7 +16,6 @@ import {
   readAgreedSolanaTransaction,
   readSolanaFinalizedSlotFloor,
   readSolanaSignaturesPage,
-  readSolanaTokenAccountsUnion,
   solanaVerifierEndpointConfig,
   type SolanaRpcLeg,
   type SolanaRpcLegs,
@@ -229,14 +228,5 @@ describe('pointer reads', () => {
     expect(await readSolanaFinalizedSlotFloor([legOf('op-a', () => 500), legOf('op-b', () => 498)])).toBe(498);
     await expect(readSolanaFinalizedSlotFloor([legOf('op-a', () => 500), legOf('op-b', () => { throw new Error('down'); })]))
       .rejects.toThrow('down');
-  });
-  it('token accounts are the UNION of both legs over both token programs (an omission by one leg is covered)', async () => {
-    const T1 = '6UbcjAEYbtnqooVtyD2VYEAjBRMxa5DwHK2sJzcdn3b8';
-    const T2 = '6yUiEbPc8uuGh5Sp9mAEeG6Q5me6LziRZGu21Si5uzoX';
-    const a = legOf('op-a', (_m, params) => ({ value: (params[1] as { programId: string }).programId.startsWith('Tokenkeg') ? [{ pubkey: T1 }] : [] }));
-    const b = legOf('op-b', (_m, params) => ({ value: (params[1] as { programId: string }).programId.startsWith('Tokenz') ? [{ pubkey: T2 }] : [] }));
-    expect(await readSolanaTokenAccountsUnion([a, b], ADDRESS)).toEqual([T1, T2].sort());
-    expect([a.calls, b.calls]).toEqual([2, 2]);
-    await expect(readSolanaTokenAccountsUnion([a, legOf('op-b', () => { throw new Error('down'); })], ADDRESS)).rejects.toThrow('down');
   });
 });

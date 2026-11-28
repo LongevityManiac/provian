@@ -73,7 +73,7 @@ import {
   readAgreedSolanaTransaction,
   readSolanaFinalizedSlotFloor,
   readSolanaSignaturesPage,
-  readSolanaTokenAccountsUnion,
+  listOwnerTokenAccounts,
   solanaVerifierEndpointConfig,
   type SolanaAgreedTransaction,
   type SolanaRpcLegs,
@@ -513,23 +513,30 @@ async function scanAccount(run: DiscoveryRun, owner: SolanaProvenAddressRecord, 
   }
   const pass = cursor.pass as CursorPass;
   const candidates = new Map<string, number>();
+  // A leg that fails stops paging for this cycle and keeps its place; the other leg's pages and
+  // candidates still land, and the pass completes only once both legs have read to its floor.
+  let legError: unknown = null;
   for (const leg of [0, 1] as const) {
     let pages = 0;
-    while (!pass.done[leg] && pages < limits.pagesPerLeg
-      && run.report.queued + candidates.size < limits.queuedPerCycle) {
-      const page = await discovery.signaturesPage(leg, account, { before: pass.before[leg], limit: limits.pageSize });
-      pages += 1;
-      run.report.pages += 1;
-      let reachedEnd = page.length < limits.pageSize;
-      for (const entry of page) {
-        if (entry.slot <= cursor.low_slot) { reachedEnd = true; continue; }
-        if (entry.blockTimeMs !== null && entry.blockTimeMs < SOLANA_COMMERCE_CUT_LINE_MS) { reachedEnd = true; continue; }
-        if (entry.slot > pass.high_slot || !entry.succeeded) continue;
-        const prior = candidates.get(entry.signature);
-        candidates.set(entry.signature, prior === undefined ? entry.slot : Math.min(prior, entry.slot));
+    try {
+      while (!pass.done[leg] && pages < limits.pagesPerLeg
+        && run.report.queued + candidates.size < limits.queuedPerCycle) {
+        const page = await discovery.signaturesPage(leg, account, { before: pass.before[leg], limit: limits.pageSize });
+        pages += 1;
+        run.report.pages += 1;
+        let reachedEnd = page.length < limits.pageSize;
+        for (const entry of page) {
+          if (entry.slot <= cursor.low_slot) { reachedEnd = true; continue; }
+          if (entry.blockTimeMs !== null && entry.blockTimeMs < SOLANA_COMMERCE_CUT_LINE_MS) { reachedEnd = true; continue; }
+          if (entry.slot > pass.high_slot || !entry.succeeded) continue;
+          const prior = candidates.get(entry.signature);
+          candidates.set(entry.signature, prior === undefined ? entry.slot : Math.min(prior, entry.slot));
+        }
+        if (reachedEnd) pass.done[leg] = true;
+        else pass.before[leg] = page[page.length - 1].signature;
       }
-      if (reachedEnd) pass.done[leg] = true;
-      else pass.before[leg] = page[page.length - 1].signature;
+    } catch (error) {
+      legError ??= error;
     }
   }
   for (const [signature, slot] of candidates) {
@@ -546,6 +553,10 @@ async function scanAccount(run: DiscoveryRun, owner: SolanaProvenAddressRecord, 
     cursor = { ...cursor, pass };
   }
   await ref.set({ ...cursor, updated_at_ms: run.now });
+  if (legError !== null) {
+    run.report.errors += 1;
+    return `${outcome}:leg_error:${errorText(legError)}`;
+  }
   return outcome;
 }
 
@@ -609,18 +620,26 @@ export async function runSolanaChainRecordDiscovery(
       continue;
     }
     report.owners += 1;
+    // The owner's own address is scanned even when its token accounts cannot be listed this visit,
+    // and a fault on one account never stops the owner's other accounts.
+    const accounts = [record.address];
     try {
-      const tokenAccounts = await nextTokenAccountWindow(deps.db, record.address,
-        await discovery.tokenAccounts(record.address), limits.tokenAccountsPerOwner, now);
-      for (const account of [record.address, ...tokenAccounts]) {
-        if (clock() >= run.deadline) break;
-        report.accounts += 1;
-        const outcome = await scanAccount(run, record, account);
-        report.outcomes.push({ address: record.address, outcome: account === record.address ? outcome : `token_account:${outcome}` });
-      }
+      accounts.push(...await nextTokenAccountWindow(deps.db, record.address,
+        await discovery.tokenAccounts(record.address), limits.tokenAccountsPerOwner, now));
     } catch (error) {
       report.errors += 1;
-      report.outcomes.push({ address: record.address, outcome: `error:${errorText(error)}` });
+      report.outcomes.push({ address: record.address, outcome: `token_accounts_error:${errorText(error)}` });
+    }
+    for (const account of accounts) {
+      if (clock() >= run.deadline) break;
+      const label = account === record.address ? '' : 'token_account:';
+      report.accounts += 1;
+      try {
+        report.outcomes.push({ address: record.address, outcome: `${label}${await scanAccount(run, record, account)}` });
+      } catch (error) {
+        report.errors += 1;
+        report.outcomes.push({ address: record.address, outcome: `${label}error:${errorText(error)}` });
+      }
     }
   }
   // A short page is the end of the registry: the next cycle starts again from the beginning.
@@ -919,7 +938,7 @@ export function buildSolanaChainRecordDeps(
     readTransaction: (signature) => readAgreedSolanaTransaction(useLegs(), signature),
     discovery: {
       finalizedSlotFloor: () => readSolanaFinalizedSlotFloor(useLegs()),
-      tokenAccounts: (owner) => readSolanaTokenAccountsUnion(useLegs(), owner),
+      tokenAccounts: (owner) => listOwnerTokenAccounts(useLegs(), owner),
       signaturesPage: (leg, account, page) => readSolanaSignaturesPage(useLegs()[leg], account, page),
     },
     emitActPE: buildSolanaChainRecordEmit(deps),

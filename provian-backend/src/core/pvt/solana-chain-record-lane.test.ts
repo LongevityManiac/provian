@@ -16,6 +16,7 @@ import {
 } from '../external-address/solana-link';
 import {
   SOLANA_SYSTEM_PROGRAM,
+  SOLANA_TOKEN_PROGRAM,
   type SolanaAgreedTransaction,
   type SolanaSignaturePointer,
 } from '../onchain/solana-economic-discovery';
@@ -24,6 +25,7 @@ import {
   SOLANA_CHAIN_RECORD_OBSERVATIONS_COLLECTION,
   SOLANA_CHAIN_RECORD_OBSERVATION_HORIZON_MS,
   SOLANA_COMMERCE_CUT_LINE_MS,
+  buildSolanaChainRecordDeps,
   enqueueSolanaChainRecordObservation,
   runSolanaChainRecordCycle,
   runSolanaChainRecordDiscovery,
@@ -34,6 +36,7 @@ import {
   type SolanaChainRecordEmitInput,
   type SolanaChainRecordLimits,
 } from './solana-chain-record-lane';
+import type { AgentBankDeps } from '../agent-bank/types';
 import { FACILITATOR_SETTLEMENTS_COLLECTION, type FacilitatorSolanaIdentity } from './x402-facilitator-lane';
 import { FACILITATOR_SOLANA_GAS_ADDRESS_DEFAULT } from './x402-facilitator-settlement';
 
@@ -65,13 +68,18 @@ function seedProven(address: string, provenAtSlot = FENCE): SolanaProvenAddressR
 
 interface History { [account: string]: SolanaSignaturePointer[] }
 
-function discoveryOf(legs: [History, History], opts: { floor?: number; tokenAccounts?: Record<string, string[]>; failLeg?: 0 | 1 } = {}) {
+function discoveryOf(legs: [History, History], opts: {
+  floor?: number; tokenAccounts?: Record<string, string[]>; failLeg?: 0 | 1; failListing?: boolean;
+} = {}) {
   const calls = { pages: 0 };
   return {
     calls,
     discovery: {
       finalizedSlotFloor: async () => opts.floor ?? FENCE + 1_000,
-      tokenAccounts: async (owner: string) => opts.tokenAccounts?.[owner] ?? [],
+      tokenAccounts: async (owner: string) => {
+        if (opts.failListing) throw new Error('solana_rpc_leg_failed:leg1:getTokenAccountsByOwner:http_429');
+        return opts.tokenAccounts?.[owner] ?? [];
+      },
       signaturesPage: async (leg: 0 | 1, account: string, page: { before: string | null; limit: number }) => {
         calls.pages += 1;
         if (opts.failLeg === leg) throw new Error(`solana_rpc_leg_failed:leg${leg}:getSignaturesForAddress:http_503`);
@@ -97,6 +105,11 @@ function deps(over: Partial<SolanaChainRecordDeps>): SolanaChainRecordDeps {
     ...over,
   };
 }
+
+const outcomesOf = (report: Awaited<ReturnType<typeof runSolanaChainRecordDiscovery>>): string[] => {
+  if (!('outcomes' in report)) throw new Error(`discovery skipped: ${report.skipped}`);
+  return report.outcomes.map((o) => o.outcome);
+};
 
 const queued = (): Array<Record<string, unknown>> => [...db.store.entries()]
   .filter(([k]) => k.startsWith(`${SOLANA_CHAIN_RECORD_OBSERVATIONS_COLLECTION}/`)).map(([, v]) => v as Record<string, unknown>);
@@ -131,17 +144,54 @@ describe('discovery — a pointer read, bounded, never evidence', () => {
       .toMatchObject({ low_slot: FENCE + 1_000, pass: null });
   });
 
-  it('RED (a failed leg propagates): nothing is queued and the cursor does not move; the next cycle reads it all', async () => {
+  it.each([0, 1] as const)('a failed leg %i keeps its place: the other leg\'s finds are queued, and the floor moves only once both legs have read the pass', async (failLeg) => {
     const W = addr();
     seedProven(W);
     const e = entry(FENCE + 10);
     const history: History = { [W]: [e] };
-    const failing = discoveryOf([history, history], { failLeg: 1 });
-    const report = await runSolanaChainRecordDiscovery(deps({ discovery: failing.discovery }));
-    expect(report).toMatchObject({ errors: 1, queued: 0 });
-    expect(db.store.has(`${SOLANA_CHAIN_RECORD_CURSORS_COLLECTION}/${solanaChainRecordCursorId(W, W)}`)).toBe(false);
+    const cursorKey = `${SOLANA_CHAIN_RECORD_CURSORS_COLLECTION}/${solanaChainRecordCursorId(W, W)}`;
+    const failing = discoveryOf([history, history], { failLeg });
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      const report = await runSolanaChainRecordDiscovery(deps({ discovery: failing.discovery }));
+      expect(report).toMatchObject({ errors: 1, passes_completed: 0 });
+      expect(outcomesOf(report)).toEqual([expect.stringContaining('pass_in_progress:leg_error:')]);
+      const cursor = db.store.get(cursorKey) as { low_slot: number; pass: { done: boolean[] } };
+      // RED: the floor never moves while a leg has not read the pass.
+      expect(cursor.low_slot).toBe(FENCE);
+      expect(cursor.pass.done).toEqual(failLeg === 0 ? [false, true] : [true, false]);
+    }
+    expect(queued().map((q) => q.signature)).toEqual([e.signature]);
     const healthy = discoveryOf([history, history]);
-    expect(await runSolanaChainRecordDiscovery(deps({ discovery: healthy.discovery }))).toMatchObject({ errors: 0, queued: 1 });
+    expect(await runSolanaChainRecordDiscovery(deps({ discovery: healthy.discovery }))).toMatchObject({ errors: 0, passes_completed: 1 });
+    expect((db.store.get(cursorKey) as { low_slot: number }).low_slot).toBe(FENCE + 1_000);
+    expect(queued()).toHaveLength(1);
+  });
+
+  it('an owner whose token accounts cannot be listed still has its own address scanned', async () => {
+    const W = addr();
+    seedProven(W);
+    const e = entry(FENCE + 10);
+    const { discovery } = discoveryOf([{ [W]: [e] }, { [W]: [e] }], { failListing: true });
+    const report = await runSolanaChainRecordDiscovery(deps({ discovery }));
+    expect(report).toMatchObject({ owners: 1, accounts: 1, errors: 1, queued: 1, passes_completed: 1 });
+    expect(outcomesOf(report)).toEqual([expect.stringContaining('token_accounts_error:'), 'pass_complete']);
+    expect(queued().map((q) => q.signature)).toEqual([e.signature]);
+  });
+
+  it('a fault on one token account never stops the owner\'s other accounts', async () => {
+    const W = addr();
+    const [broken, fine] = [addr(), addr()].sort();
+    seedProven(W);
+    const [eW, eFine, eBroken] = [entry(FENCE + 10), entry(FENCE + 20), entry(FENCE + 30)];
+    const history: History = { [W]: [eW], [fine]: [eFine], [broken]: [eBroken] };
+    db.store.set(`${SOLANA_CHAIN_RECORD_CURSORS_COLLECTION}/${solanaChainRecordCursorId(W, broken)}`, { schema_version: 'garbage' });
+    const { discovery } = discoveryOf([history, history], { tokenAccounts: { [W]: [broken, fine] } });
+    const report = await runSolanaChainRecordDiscovery(deps({ discovery }));
+    expect(report).toMatchObject({ accounts: 3, errors: 1, queued: 2, passes_completed: 2 });
+    expect(outcomesOf(report)).toEqual([
+      'pass_complete', 'token_account:error:solana_chain_record_cursor_invalid', 'token_account:pass_complete',
+    ]);
+    expect(queued().map((q) => q.signature).sort()).toEqual([eW.signature, eFine.signature].sort());
   });
 
   it('a long history is read across cycles (bounded pages, persisted pass) and never re-read once done', async () => {
@@ -265,6 +315,27 @@ function harness(): Harness {
   };
   return h;
 }
+
+describe('discovery wiring — the production legs', () => {
+  it('the backup sweep lists token accounts from the primary, so the rate-limited public secondary is never asked', async () => {
+    const owner = addr();
+    const account = addr();
+    const hosts: string[] = [];
+    const fakeFetch = (async (url: string, init: { body: string }) => {
+      const host = new URL(url).host;
+      hosts.push(host);
+      if (host !== 'solana-mainnet.g.alchemy.com') return new Response('rate limited', { status: 429 });
+      const programId = (JSON.parse(init.body).params[1] as { programId: string }).programId;
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: 1, result: { value: programId === SOLANA_TOKEN_PROGRAM ? [{ pubkey: account }] : [] } }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const built = buildSolanaChainRecordDeps({ db } as unknown as AgentBankDeps, {
+      env: { SOLANA_RPC_URL: 'https://solana-mainnet.g.alchemy.com/v2/KEY', SOLANA_RPC_URL_SECONDARY: 'https://solana-rpc.publicnode.com' },
+      fetchImpl: fakeFetch,
+    });
+    await expect(built.discovery?.tokenAccounts(owner)).resolves.toEqual([account]);
+    expect(hosts).toEqual(['solana-mainnet.g.alchemy.com', 'solana-mainnet.g.alchemy.com']);
+  });
+});
 
 describe('drain — verify on both legs, derive, gate, emit', () => {
   it('GREEN: a verified send emits once; the counterparty a stranger is handed over raw', async () => {
