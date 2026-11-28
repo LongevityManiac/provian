@@ -1505,7 +1505,8 @@ export function buildDeviceCaptureHealth(
  * the stored report is therefore at most 55 minutes old (inside the console's 60-minute freshness
  * line), and the app reads an agent as working now when its stored capture is within 60 minutes.
  * An idle daemon reports every six hours and declares it (`report_interval_ms`), so each of its
- * reports is stored, and the console judges it by that interval.
+ * reports is stored, and the console and the app judge it by that interval (60 minutes plus however
+ * much longer than 10 minutes it declared).
  */
 export const CAPTURE_HEALTH_PERSIST_MS = 45 * 60 * 1000;
 
@@ -1548,6 +1549,7 @@ type CaptureBrokenReason = NonNullable<NonNullable<DeviceDocument['capture_healt
 export function linkedAgentCaptureFields(ch: Record<string, unknown>, lastPeAt: unknown): {
   last_capture_at_ms: number | null;
   capture_reported_at_ms: number | null;
+  capture_report_interval_ms: number | null;
   capture_broken: boolean;
   capture_broken_reason: CaptureBrokenReason | null;
   capture_receiving: boolean;
@@ -1571,6 +1573,9 @@ export function linkedAgentCaptureFields(ch: Record<string, unknown>, lastPeAt: 
   return {
     last_capture_at_ms: witnessedAt ?? (typeof lastPeAt === 'number' ? lastPeAt : null),
     capture_reported_at_ms: typeof ch.updated_at === 'number' ? ch.updated_at : null,
+    // The check-in interval the daemon declared with that report (an idle daemon reports every 6
+    // hours), so the card judges a quiet device by its own cadence. Null for an older daemon.
+    capture_report_interval_ms: typeof ch.report_interval_ms === 'number' ? ch.report_interval_ms : null,
     capture_broken: reason !== null,
     capture_broken_reason: reason,
     capture_receiving: reason === null,

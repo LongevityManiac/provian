@@ -559,11 +559,15 @@ describe('process lane silence (, parity)', () => {
 // because a doc a relay from before the ruling wrote may say process_launcher_changed for a suspicion
 // or a launcher no program matches, and a device that stopped reporting keeps that doc indefinitely.
 describe('linkedAgentCaptureFields', () => {
+  it('passes on the check-in interval the daemon declared with its report (null for an older daemon)', () => {
+    expect(linkedAgentCaptureFields({ updated_at: 5, report_interval_ms: 6 * 60 * 60 * 1000 }, null).capture_report_interval_ms).toBe(6 * 60 * 60 * 1000);
+    expect(linkedAgentCaptureFields({ updated_at: 5 }, null).capture_report_interval_ms).toBeNull();
+  });
   it('a doc an older relay wrote (no confirmation) for a suspicion is not broken (RED: a confirmed doc is broken)', () => {
     expect(linkedAgentCaptureFields({ broken: true, broken_reason: 'process_launcher_changed', process_lane_state: 'launcher_changed', updated_at: 5 }, 3))
-      .toEqual({ last_capture_at_ms: 3, capture_reported_at_ms: 5, capture_broken: false, capture_broken_reason: null, capture_receiving: true, capture_broken_since_ms: null });
+      .toEqual({ last_capture_at_ms: 3, capture_reported_at_ms: 5, capture_report_interval_ms: null, capture_broken: false, capture_broken_reason: null, capture_receiving: true, capture_broken_since_ms: null });
     expect(linkedAgentCaptureFields({ broken: true, broken_reason: 'process_launcher_changed', process_launcher_change_confirmed: true, broken_since_ms: 9, last_capture_at_ms: 7, updated_at: 10 }, 3))
-      .toEqual({ last_capture_at_ms: 7, capture_reported_at_ms: 10, capture_broken: true, capture_broken_reason: 'process_launcher_changed', capture_receiving: false, capture_broken_since_ms: 9 });
+      .toEqual({ last_capture_at_ms: 7, capture_reported_at_ms: 10, capture_report_interval_ms: null, capture_broken: true, capture_broken_reason: 'process_launcher_changed', capture_receiving: false, capture_broken_since_ms: 9 });
   });
   it('a launcher no program matches is broken as process_launcher_not_seen, whichever older relay stored it (RED: a lane not running, or another reason, is left alone)', () => {
     // The first relay stored it as process_launcher_changed; stored it not broken (an attention reason).

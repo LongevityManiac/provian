@@ -192,6 +192,8 @@ export interface LinkedAgent {
      */
     last_capture_at_ms?: number | null;
     capture_reported_at_ms?: number | null;
+    /** The check-in interval the daemon declared with that report; null or absent for an older daemon or relay. */
+    capture_report_interval_ms?: number | null;
     capture_broken?: boolean | null;
     capture_broken_reason?: CaptureBrokenReason | null;
     capture_receiving?: boolean | null;

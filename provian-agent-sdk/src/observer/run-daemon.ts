@@ -1157,11 +1157,17 @@ export function startCaptureHealthHeartbeat(
   extras: {
   } = {},
 ): NodeJS.Timeout {
+  const tickMs = Math.min(intervalMs, CAPTURE_HEALTH_TICK_MS);
   let nextDueAtMs = 0;
+  let lastTickAtMs = Date.now();
+  let sent = 0;
   const send = (): void => {
     const nowMs = Date.now();
     const reportIntervalMs = checkInInterval(intervalMs, nowMs);
-    nextDueAtMs = nowMs + reportIntervalMs;
+    // Until this report lands, the next one is due on the normal cadence: a lost report (relay
+    // restart, timeout, a laptop waking before its network) is retried, never left for 6 hours.
+    nextDueAtMs = nowMs + intervalMs;
+    const attempt = ++sent;
     try {
       const health = plugin?.captureHealth();
       const report = buildCaptureHealthReport({
@@ -1233,6 +1239,7 @@ export function startCaptureHealthHeartbeat(
       });
       void observer.reportCaptureHealth(report as unknown as Record<string, unknown>)
         .then((answer) => {
+          if (answer && attempt === sent) nextDueAtMs = nowMs + reportIntervalMs;
           if (answer?.deviceRegisteredAtMs) plugin?.setDeviceRegisteredAtMs(answer.deviceRegisteredAtMs);
           if (answer?.commonsMailWaiting) signalCommonsMailWaiting();
         })
@@ -1242,11 +1249,19 @@ export function startCaptureHealthHeartbeat(
     }
   };
   send();
-  const timer = setInterval(() => { if (Date.now() >= nextDueAtMs) send(); }, Math.min(intervalMs, CAPTURE_HEALTH_TICK_MS));
+  const timer = setInterval(() => {
+    lastTickAtMs = Date.now();
+    if (lastTickAtMs >= nextDueAtMs) send();
+  }, tickMs);
   // Never hold the process open on this timer alone.
   if (typeof timer.unref === 'function') timer.unref();
   // Captured work after an idle stretch: report now (and the cadence is the normal one again).
-  onWorkResumed(send);
+  // A heartbeat whose timer was cleared never reports again; one whose ticks are only late (the
+  // machine slept) reports on its next tick.
+  onWorkResumed(() => {
+    if (Date.now() - lastTickAtMs <= 2 * tickMs) send();
+    else nextDueAtMs = 0;
+  });
   return timer;
 }
 

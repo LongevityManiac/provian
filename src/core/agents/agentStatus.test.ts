@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { deriveAgentStatus, AGENT_ACTIVE_HEARTBEAT_MS } from './agentStatus';
 
+const SIX_HOURS = 6 * 60 * 60 * 1000;
+
 const NOW = 1_800_000_000_000;
 
 describe('deriveAgentStatus (capture heartbeat, no relay session)', () => {
@@ -26,6 +28,13 @@ describe('deriveAgentStatus (capture heartbeat, no relay session)', () => {
       now: NOW,
     });
     expect(s.key).toBe('active');
+  });
+
+  it('an idle daemon that declared a 6-hour check-in stays active until it misses it (RED: a 10-minute daemon is stale after an hour)', () => {
+    const linked = { pe_count: 0, capture_reported_at_ms: NOW - 3 * 60 * 60 * 1000, capture_receiving: true };
+    expect(deriveAgentStatus({ linked: { ...linked, capture_report_interval_ms: SIX_HOURS }, now: NOW }).key).toBe('active');
+    expect(deriveAgentStatus({ linked, now: NOW }).key).toBe('attention');
+    expect(deriveAgentStatus({ linked: { ...linked, capture_report_interval_ms: SIX_HOURS, capture_reported_at_ms: NOW - SIX_HOURS - AGENT_ACTIVE_HEARTBEAT_MS + 10 * 60 * 1000 - 1 }, now: NOW }).key).toBe('attention');
   });
 
   it('idle when the device has reported, has work, but the last capture is stale', () => {

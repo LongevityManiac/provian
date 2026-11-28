@@ -71,4 +71,33 @@ describe('capture-health heartbeat', () => {
       expect(reportCaptureHealth).toHaveBeenCalledTimes(10);
     } finally { clearInterval(timer); }
   });
+
+  it('retries a lost idle report on the normal cadence, then waits the idle interval once one lands', async () => {
+    const reportCaptureHealth = vi.fn().mockResolvedValue({});
+    const observer = { reportCaptureHealth, getLastWorkPeAtMs: () => null } as unknown as ProvianObserver;
+    const timer = startCaptureHealthHeartbeat(observer, null);
+    try {
+      await vi.advanceTimersByTimeAsync(IDLE_AFTER_MS - CAPTURE_HEALTH_INTERVAL_MS + 1);
+      // The idle declaration is lost (relay restart, timeout).
+      reportCaptureHealth.mockResolvedValueOnce(null);
+      await vi.advanceTimersByTimeAsync(CAPTURE_HEALTH_INTERVAL_MS);
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(7);
+      // RED for "retried": the next attempt comes 10 minutes later, not 6 hours later.
+      await vi.advanceTimersByTimeAsync(CAPTURE_HEALTH_INTERVAL_MS);
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(8);
+      await vi.advanceTimersByTimeAsync(IDLE_CHECK_IN_INTERVAL_MS - 60_000);
+      expect(reportCaptureHealth).toHaveBeenCalledTimes(8);
+    } finally { clearInterval(timer); }
+  });
+
+  it('a stopped heartbeat stays stopped when work resumes', async () => {
+    const reportCaptureHealth = vi.fn().mockResolvedValue({});
+    const observer = { reportCaptureHealth, getLastWorkPeAtMs: () => null } as unknown as ProvianObserver;
+    const timer = startCaptureHealthHeartbeat(observer, null);
+    clearInterval(timer);
+    await vi.advanceTimersByTimeAsync(2 * IDLE_AFTER_MS);
+    expect(reportCaptureHealth).toHaveBeenCalledTimes(1);
+    noteCapturedWork(Date.now());
+    expect(reportCaptureHealth).toHaveBeenCalledTimes(1);
+  });
 });

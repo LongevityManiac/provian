@@ -2261,6 +2261,7 @@ app.get('/v1/relay/agent/sessions', authenticate, async (req: Request, res: Resp
           const empty = {
             last_capture_at_ms: null,
             capture_reported_at_ms: null,
+            capture_report_interval_ms: null,
             capture_broken: false,
             capture_broken_reason: null,
             capture_receiving: true,

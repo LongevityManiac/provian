@@ -37,12 +37,21 @@ export interface AgentStatusView {
  * is at most 55 minutes old while the device is healthy.
  */
 export const AGENT_ACTIVE_HEARTBEAT_MS = 60 * 60 * 1000; // 60 minutes
+/** The daemon's normal check-in interval. An idle daemon declares a longer one (6 hours). */
+export const AGENT_NORMAL_REPORT_INTERVAL_MS = 10 * 60 * 1000;
+
+/** How long a report stays live: the window above, widened by however much longer than normal its daemon declared it would wait. */
+export function heartbeatLiveMs(reportIntervalMs: number | null | undefined): number {
+  const declared = typeof reportIntervalMs === 'number' && Number.isFinite(reportIntervalMs) ? reportIntervalMs : AGENT_NORMAL_REPORT_INTERVAL_MS;
+  return AGENT_ACTIVE_HEARTBEAT_MS + Math.max(0, declared - AGENT_NORMAL_REPORT_INTERVAL_MS);
+}
 
 export interface AgentStatusInput {
   linked?: {
     pe_count?: number;
     last_capture_at_ms?: number | null;
     capture_reported_at_ms?: number | null;
+    capture_report_interval_ms?: number | null;
     capture_receiving?: boolean | null;
     capture_broken?: boolean | null;
   } | null;
@@ -75,7 +84,7 @@ export function deriveAgentStatus(input: AgentStatusInput): AgentStatusView {
   const receivingNow = !broken
     && linked?.capture_receiving === true
     && reportedAt !== null
-    && now - reportedAt <= AGENT_ACTIVE_HEARTBEAT_MS;
+    && now - reportedAt <= heartbeatLiveMs(linked?.capture_report_interval_ms);
   if (!broken && (captureFresh || receivingNow)) {
     return { key: 'active', tone: 'positive', labelKey: 'agentStatus.active', hasWork };
   }
