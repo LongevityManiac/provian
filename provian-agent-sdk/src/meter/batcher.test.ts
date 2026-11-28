@@ -4,6 +4,7 @@
  * own ingest rules (shape, same-batch idempotency, seq / prev_batch_hash / act-chain continuity),
  * with RED controls for each guard.
  */
+import { noteCapturedWork, resetIdleCadenceForTests } from '../idle-cadence';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -902,6 +903,25 @@ describe('mailbox — PEs sealed to this agent are filed, verified, then acknowl
     const again = await batcherFor(store, relay, { messageSecretKey: async () => new Uint8Array(keyCopy) }).drainMailbox();
     expect(again).toMatchObject({ received: 0, acked: 1 });
     expect(await store.listLegacy()).toHaveLength(1);
+  });
+
+  it('checks the mailbox hourly, every six hours while the agent captures nothing, and at once when work resumes', async () => {
+    resetIdleCadenceForTests(NOW);
+    const relay = new FakeMeterRelay(), store = new MemoryPeStore(TEST_DEVICE_ID), base = transportFor(relay);
+    relay.now = NOW;
+    const peekMailbox = vi.fn(async () => ({ status: 200, error: null, body: { version: 'same' } }));
+    const b = batcherFor(store, relay, { transport: { ...base, peekMailbox }, messageSecretKey: async () => new Uint8Array(32) });
+    await b.tick();
+    expect(peekMailbox).toHaveBeenCalledTimes(1);
+    // An hour and a minute with nothing captured: idle, so the next check waits six hours.
+    relay.now = NOW + 61 * 60_000;
+    await b.tick();
+    expect(peekMailbox).toHaveBeenCalledTimes(1);
+    // RED: captured work makes the overdue hourly check run at once.
+    noteCapturedWork(relay.now);
+    await b.tick();
+    expect(peekMailbox).toHaveBeenCalledTimes(2);
+    resetIdleCadenceForTests();
   });
 
   it('checks one head, skips unchanged mailboxes, and notices arrivals during a drain', async () => {

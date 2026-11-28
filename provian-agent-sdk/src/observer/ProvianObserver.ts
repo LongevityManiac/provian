@@ -1,3 +1,4 @@
+import { noteCapturedWork } from '../idle-cadence';
 import { ProvianClient } from '../ProvianClient';
 import { SUBMIT_OBSERVED_PE } from '../observed-submit';
 import { SessionManager } from './SessionManager';
@@ -765,6 +766,7 @@ export class ProvianObserver {
           this.dedup.claim(pe.windowStart, pe.windowEnd, result.pe_id, pluginName);
         }
         this.lastWorkPeAtMs = Date.now();
+        noteCapturedWork(this.lastWorkPeAtMs);
         this.log('info', 'plugin PE submitted', {
           plugin: pluginName,
           action_type: pe.actionType,

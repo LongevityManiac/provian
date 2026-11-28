@@ -250,6 +250,12 @@ export interface DeviceDocument {
     restart_mechanism?: 'systemd' | 'launchd' | 'scheduled_task' | 'cron' | 'shell_rc' | 'agent' | null;
     /** Epoch ms of the last work PE the daemon submitted on any lane; null if none. */
     last_work_pe_at_ms?: number | null;
+    /**
+     * How long until the daemon's next report: its normal cadence, or the idle cadence while its
+     * agent captures nothing. A report past this (plus the console's freshness margin) is late.
+     * Null for an older daemon (its cadence is the normal one).
+     */
+    report_interval_ms?: number | null;
     // --- Sole-witness silence -----------------------------
     /** Records the watcher read this window (recognized or not). 0 = idle source. */
     records_consumed_in_window?: number;

@@ -301,6 +301,8 @@ export interface CaptureHealthReport {
   last_work_pe_at_ms: number | null;
   format_broken_programs: string[];
   reported_at_ms: number;
+  /** How long until this daemon's next report: the normal cadence, or the idle cadence while its agent captures nothing. */
+  report_interval_ms: number | null;
 }
 
 export interface CaptureHealthInput {
@@ -333,6 +335,8 @@ export interface CaptureHealthInput {
   restartMechanism?: RestartMechanism | null;
   lastWorkPeAtMs?: number | null;
   formatBrokenPrograms?: string[];
+  /** The interval until the next report; default null (an older caller). */
+  reportIntervalMs?: number | null;
 }
 
 /**
@@ -397,6 +401,8 @@ export function buildCaptureHealthReport(input: CaptureHealthInput): CaptureHeal
     last_work_pe_at_ms: input.lastWorkPeAtMs ?? null,
     format_broken_programs: (input.formatBrokenPrograms ?? []).filter(h => /^[a-z0-9][a-z0-9_-]{0,63}$/.test(h)),
     reported_at_ms: input.nowMs,
+    report_interval_ms: typeof input.reportIntervalMs === 'number' && Number.isSafeInteger(input.reportIntervalMs) && input.reportIntervalMs > 0
+      ? input.reportIntervalMs : null,
   };
 }
 

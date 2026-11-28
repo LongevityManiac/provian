@@ -1475,6 +1475,11 @@ export function buildDeviceCaptureHealth(
     restart_mechanism: RESTART_MECHANISMS.has(b.restart_mechanism as string)
       ? b.restart_mechanism as RestartMechanism : null,
     last_work_pe_at_ms: msOrNull(b.last_work_pe_at_ms),
+    // The daemon's declared interval until its next report (a minute to a day; anything else is
+    // dropped). Not a timestamp, so it is part of the report's state: a change between the normal
+    // and the idle cadence is stored at once.
+    report_interval_ms: typeof b.report_interval_ms === 'number' && Number.isSafeInteger(b.report_interval_ms)
+      && b.report_interval_ms >= 60_000 && b.report_interval_ms <= 24 * 60 * 60 * 1000 ? b.report_interval_ms : null,
     records_consumed_in_window: recordsConsumedInWindow,
     tool_calls_recognized_in_window: toolCallsRecognizedInWindow,
     // item 2 — the daemon's last self-update outcome (closed-enum) + when + to which version.
@@ -1499,6 +1504,8 @@ export function buildDeviceCaptureHealth(
  * How often an UNCHANGED capture-health report is stored. The daemon reports every 10 minutes;
  * the stored report is therefore at most 55 minutes old (inside the console's 60-minute freshness
  * line), and the app reads an agent as working now when its stored capture is within 60 minutes.
+ * An idle daemon reports every six hours and declares it (`report_interval_ms`), so each of its
+ * reports is stored, and the console judges it by that interval.
  */
 export const CAPTURE_HEALTH_PERSIST_MS = 45 * 60 * 1000;
 

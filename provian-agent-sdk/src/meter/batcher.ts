@@ -26,6 +26,7 @@
  * and the mailbox (PEs other devices or the relay sealed to this agent).
  */
 
+import { checkInInterval } from '../idle-cadence';
 import * as fs from 'fs';
 import * as path from 'path';
 import { tryAcquireFileLock } from './file-lock';
@@ -214,7 +215,8 @@ export class MeterBatcher {
   private noKeyLogged = false;
   private nextSendAtMs = 0;
   private nextProofsAtMs = 0;
-  private nextMailboxAtMs = 0;
+  /** When the mailbox was last checked; it is due again after its interval (longer while idle). */
+  private lastMailboxAtMs = Number.NEGATIVE_INFINITY;
   private lastMailboxVersion: string | null = null;
   private nextTransitHash: string | null = null;
 
@@ -257,9 +259,11 @@ export class MeterBatcher {
           }
         }
       }
-      if (now >= this.nextMailboxAtMs) {
+      // Hourly; every six hours while the agent captures nothing (idle-cadence.ts). Judged at each
+      // tick, so captured work brings an overdue check forward at once.
+      if (now - this.lastMailboxAtMs >= checkInInterval(METER_MAILBOX_INTERVAL_MS, now)) {
         await this.checkMailbox();
-        this.nextMailboxAtMs = this.now() + METER_MAILBOX_INTERVAL_MS;
+        this.lastMailboxAtMs = this.now();
       }
       if (now >= this.nextProofsAtMs) {
         const proofs = await this.fetchProofs();

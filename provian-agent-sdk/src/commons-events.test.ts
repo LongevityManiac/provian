@@ -1,5 +1,6 @@
 import {describe,it,expect,vi} from 'vitest';
 import * as fs from 'fs';import * as os from 'os';import * as path from 'path';
+import {IDLE_CHECK_IN_INTERVAL_MS,noteCapturedWork,resetIdleCadenceForTests} from './idle-cadence';
 import {CommonsEventConsumer,parseCommonsPoll,parseCommonsEvent,commonsEventPrompt,startCommonsEvents,signalCommonsMailWaiting,COMMONS_POLL_TIMEOUT_MS,type CommonsRuntime} from './commons-events';
 import {deriveMessageKeyPair,sealThreadMessage} from './thread-crypto';
 const wallet='wallet_aw_a',thread='thr_123',message='msg_'+'1'.repeat(24);
@@ -70,6 +71,24 @@ describe('Commons event delivery',()=>{
     expect(String(url)).toBe(relayUrl+'/v1/threads/events/poll');
     expect(JSON.parse(String(init?.body))).toHaveProperty('private_request');
    }finally{loop.stop();await loop.done;vi.useRealTimers();fs.rmSync(f.home,{recursive:true,force:true});}
+  });
+  it('while the agent captures nothing the relay idle cadence stretches to the idle check-in; RED: a drain is never stretched',async()=>{
+   vi.useFakeTimers();vi.spyOn(Math,'random').mockReturnValue(0);const f=fixture();let n=0;
+   resetIdleCadenceForTests(Date.now());
+   const fetchFn=vi.fn<typeof fetch>(async()=>reply({...idle,checkpoint:{cursor:0},next_poll_ms:++n===3?1_000:3_600_000}));
+   const loop=await run(fetchFn,f);
+   try{
+    await vi.waitFor(()=>expect(fetchFn).toHaveBeenCalledTimes(1));
+    await vi.advanceTimersByTimeAsync(3_600_000);expect(fetchFn).toHaveBeenCalledTimes(2);
+    // Now idle: the relay's hourly cadence waits the idle interval.
+    await vi.advanceTimersByTimeAsync(IDLE_CHECK_IN_INTERVAL_MS-60_000);expect(fetchFn).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(60_000);expect(fetchFn).toHaveBeenCalledTimes(3);
+    // The third answer asks for a drain: it follows within a second even though the agent is idle.
+    await vi.advanceTimersByTimeAsync(1_000);expect(fetchFn).toHaveBeenCalledTimes(4);
+    // Captured work wakes the poll at once.
+    noteCapturedWork(Date.now());
+    await vi.waitFor(()=>expect(fetchFn).toHaveBeenCalledTimes(5));
+   }finally{loop.stop();await loop.done;vi.useRealTimers();resetIdleCadenceForTests();fs.rmSync(f.home,{recursive:true,force:true});}
   });
   it('an idle agent asks once per relay cadence, and a live conversation polls faster',async()=>{
    vi.useFakeTimers();vi.spyOn(Math,'random').mockReturnValue(0);const f=fixture();let n=0;

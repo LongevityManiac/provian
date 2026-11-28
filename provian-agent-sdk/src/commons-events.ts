@@ -1,4 +1,5 @@
 /** Ordered Commons notifications, polled. No work recording, held connections or history scans. */
+import {checkInInterval,onWorkResumed} from './idle-cadence';
 import {createHash} from 'node:crypto';
 import {cliCommand} from './cli-command';
 import {sealPrivatePricing} from './meter/private-pricing';
@@ -122,7 +123,11 @@ export class CommonsEventConsumer {
  */
 export const COMMONS_POLL_MIN_MS=1_000,COMMONS_POLL_MAX_MS=3_600_000,COMMONS_POLL_MAX_ITEMS=500;
 export const COMMONS_ACTIVE_POLL_MS=15_000,COMMONS_ACTIVE_WINDOW_MS=3*60_000,COMMONS_POLL_TIMEOUT_MS=30_000;
+/** A poll interval at least this long is the relay's idle cadence (a drain asks within seconds). */
+export const COMMONS_POLL_IDLE_STRETCH_FROM_MS=60_000;
 const mailWaiting=new Set<()=>void>();
+// Captured work after an idle stretch: the poll asks now and follows the relay's cadence again.
+onWorkResumed(()=>signalCommonsMailWaiting());
 /** The heartbeat found mail waiting: every running poll loop asks now instead of at its next turn. */
 export function signalCommonsMailWaiting():void{for(const wake of [...mailWaiting])wake();}
 export function startCommonsEvents(input:EventDeliveryInput):{stop:()=>void;done:Promise<void>} {
@@ -148,6 +153,8 @@ export function startCommonsEvents(input:EventDeliveryInput):{stop:()=>void;done
     for(const e of poll.approvals){if(stopped)break;await consumer.approval(e);lastActivity=Date.now();}
     failures=0;
     wait=Date.now()-lastActivity<COMMONS_ACTIVE_WINDOW_MS?Math.min(poll.next_poll_ms,COMMONS_ACTIVE_POLL_MS):poll.next_poll_ms;
+    // The relay's idle cadence stretches while the agent captures nothing; a drain never does.
+    if(wait>=COMMONS_POLL_IDLE_STRETCH_FROM_MS)wait=checkInInterval(wait);
    }catch(error){
     const code=error instanceof Error?error.message:'unknown';
     if(!stopped)input.log?.(`[commons] poll failed (${code}); durable retry scheduled`);

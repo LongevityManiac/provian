@@ -10,6 +10,7 @@ import type { ObserverPlugin } from './plugins/PluginInterface';
 import type { PluginContribution, PluginPE, SessionState } from './types';
 import { transcriptPEsRecordedFromLog } from '../scripts/doctor';
 import { CapturingPeStore } from '../meter/capturing-store.test-support';
+import { isIdle, resetIdleCadenceForTests, IDLE_AFTER_MS } from '../idle-cadence';
 
 // The stub stands in for the daemon's own transcript lane (a third-party plugin may never emit
 // agent_tool_orchestration — see observation-types.test.ts), so it is treated as built in.
@@ -63,5 +64,13 @@ describe('plugin PE submitted carries idempotent_replay ', () => {
     expect(again).toMatchObject({ pe_id: first?.pe_id, idempotent_replay: true });
     expect(store.bodies).toHaveLength(1);
     expect(transcriptPEsRecordedFromLog(`[observer info] plugin PE submitted ${JSON.stringify(again)}`)).toBe(0);
+  });
+
+  it('a recorded work PE ends the daemon\'s idle stretch (its check-ins return to the normal cadence)', async () => {
+    resetIdleCadenceForTests(Date.now() - 2 * IDLE_AFTER_MS);
+    expect(isIdle()).toBe(true);
+    await submittedLine(new CapturingPeStore());
+    expect(isIdle()).toBe(false);
+    resetIdleCadenceForTests();
   });
 });

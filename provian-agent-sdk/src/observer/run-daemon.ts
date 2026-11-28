@@ -1,6 +1,7 @@
 import { ensureRecourseBinding, type BindingHealOutcome } from '../recourse-binding-heal';
 import type { RecourseConfig } from '../recourse';
 import {startCommonsEvents,signalCommonsMailWaiting} from '../commons-events';
+import { checkInInterval, onWorkResumed } from '../idle-cadence';
 import {commonsRuntime} from '../commons-runtime';
 /**
  * run-daemon — the Provian observer daemon runner, extracted from
@@ -1132,6 +1133,8 @@ export function startSelfUpdateLoop(
  * fleet of agents does not turn it into traffic.
  */
 export const CAPTURE_HEALTH_INTERVAL_MS = 10 * 60 * 1000;
+/** How often the heartbeat looks whether a report is due (local only; nothing is sent unless due). */
+export const CAPTURE_HEALTH_TICK_MS = 60 * 1000;
 
 /**
  * Report capture health on a slow loop, starting immediately.
@@ -1139,6 +1142,10 @@ export const CAPTURE_HEALTH_INTERVAL_MS = 10 * 60 * 1000;
  * Deliberately NOT driven by capture events. A device that has gone blind
  * produces no events at all, and that is precisely the device whose health we
  * most need to hear about — so the heartbeat is on a timer, not a trigger.
+ *
+ * While the agent captures nothing (`idle-cadence.ts`) the timer slows to the idle cadence; the
+ * report says how long until the next one, so a device that misses its own check-in is still dark.
+ * Captured work after an idle stretch sends a report at once and restores the normal cadence.
  */
 export function startCaptureHealthHeartbeat(
   observer: ProvianObserver,
@@ -1150,7 +1157,11 @@ export function startCaptureHealthHeartbeat(
   extras: {
   } = {},
 ): NodeJS.Timeout {
+  let nextDueAtMs = 0;
   const send = (): void => {
+    const nowMs = Date.now();
+    const reportIntervalMs = checkInInterval(intervalMs, nowMs);
+    nextDueAtMs = nowMs + reportIntervalMs;
     try {
       const health = plugin?.captureHealth();
       const report = buildCaptureHealthReport({
@@ -1217,7 +1228,8 @@ export function startCaptureHealthHeartbeat(
           });
         })(),
         lastWorkPeAtMs: observer.getLastWorkPeAtMs(),
-        nowMs: Date.now(),
+        nowMs,
+        reportIntervalMs,
       });
       void observer.reportCaptureHealth(report as unknown as Record<string, unknown>)
         .then((answer) => {
@@ -1230,9 +1242,11 @@ export function startCaptureHealthHeartbeat(
     }
   };
   send();
-  const timer = setInterval(send, intervalMs);
+  const timer = setInterval(() => { if (Date.now() >= nextDueAtMs) send(); }, Math.min(intervalMs, CAPTURE_HEALTH_TICK_MS));
   // Never hold the process open on this timer alone.
   if (typeof timer.unref === 'function') timer.unref();
+  // Captured work after an idle stretch: report now (and the cadence is the normal one again).
+  onWorkResumed(send);
   return timer;
 }
 

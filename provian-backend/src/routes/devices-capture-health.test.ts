@@ -632,4 +632,15 @@ describe('captureHealthStateDigest (the heartbeat stores a report only on a stat
     expect(captureHealthStateDigest(blind)).not.toBe(captureHealthStateDigest(a));
     expect(blind.broken).toBe(true);
   });
+  it('the declared report interval is stored, and RED: a change between the normal and idle cadence is a state change', () => {
+    const active = buildDeviceCaptureHealth({ ...GOOD, report_interval_ms: 600_000 }, NOW);
+    const idle = buildDeviceCaptureHealth({ ...GOOD, report_interval_ms: 6 * 3_600_000 }, NOW);
+    expect(active.report_interval_ms).toBe(600_000);
+    expect(idle.report_interval_ms).toBe(6 * 3_600_000);
+    expect(captureHealthStateDigest(idle)).not.toBe(captureHealthStateDigest(active));
+    // An older daemon (none), or a value outside a minute to a day, is no declaration.
+    for (const bad of [undefined, 59_999, 24 * 3_600_000 + 1, 1.5e6 + 0.5, '600000']) {
+      expect(buildDeviceCaptureHealth({ ...GOOD, report_interval_ms: bad }, NOW).report_interval_ms).toBeNull();
+    }
+  });
 });
