@@ -319,11 +319,19 @@ export function createFakeFirestore(options?: {
       const prior = next[field];
       // Real-Firestore parity: a `FieldValue.increment` in a `set` adds to the stored number (or
       // to 0 when the field or document is absent), exactly as in `update`.
+      // Likewise `FieldValue.arrayUnion`: the stored array plus each element not already in it.
       next[field] = isIncrement(value)
         ? (typeof prior === 'number' ? prior : 0) + value.operand
-        : isPlainMap(value) && isPlainMap(prior) ? mergeSetData(prior, value) : value;
+        : isArrayUnion(value)
+          ? [...(Array.isArray(prior) ? prior : []), ...value.elements.filter((e, i, all) => all.indexOf(e) === i && !(Array.isArray(prior) && prior.includes(e)))]
+          : isPlainMap(value) && isPlainMap(prior) ? mergeSetData(prior, value) : value;
     }
     return next;
+  }
+  function isArrayUnion(value: unknown): value is { elements: unknown[] } {
+    return value !== null && typeof value === 'object'
+      && (value as { constructor?: { name?: string } }).constructor?.name === 'ArrayUnionTransform'
+      && Array.isArray((value as { elements?: unknown }).elements);
   }
   function isIncrement(value: unknown): value is { operand: number } {
     return value !== null && typeof value === 'object'

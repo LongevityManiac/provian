@@ -215,6 +215,7 @@ describe('sync', () => {
     webhookUrl: 'https://relay.test/hook',
     evmCandidates: async () => evm,
     solanaCandidates: async () => sol,
+    solanaTokenAccounts: async () => [],
     now: () => NOW,
     ...(capacity === undefined ? {} : { capacity }),
   });
@@ -230,6 +231,7 @@ describe('sync', () => {
     expect(db.store.get(`${ADDRESS_ACTIVITY_MEMBERS_COLLECTION}/ARB_MAINNET_${WATCHED}`)).toMatchObject({ webhook_id: 'wh_new_1' });
 
     // RED for "once": the same candidates again register nothing.
+    api.addAddresses.mockClear();
     const again = await syncAddressActivityWebhooks(syncDeps([WATCHED, PROVEN], [sol]));
     expect(again.networks.ARB_MAINNET).toMatchObject({ candidates: 2, added: 0 });
     expect(api.addAddresses).not.toHaveBeenCalled();

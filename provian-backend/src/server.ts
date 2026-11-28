@@ -1093,13 +1093,22 @@ async function redisRateLimitMiddleware(req: Request, res: Response, next: NextF
 // per-IP bucket would throttle it at scale. Every delivery is refused unless it carries the
 // webhook's own HMAC signature, and an unknown webhook id refreshes the key list at most once a
 // minute. A delivery only queues pointers; the chain-record lanes verify everything on chain.
+// A Solana delivery that names a new token account of a watched owner registers it on the spot,
+// so the next receive into it is pushed too.
 let addressActivityKeys: import('./core/pvt/address-activity-push').AddressActivitySigningKeys | null = null;
+let addressActivityRegistrar: import('./core/pvt/address-activity-push').AddressActivityRegistrar | null | undefined;
 app.post('/v1/alchemy/address-activity', async (req, res) => {
   try {
     const push = await import('./core/pvt/address-activity-push');
-    addressActivityKeys ??= new push.AddressActivitySigningKeys(push.buildAlchemyNotifyApi());
+    const notifyApi = push.buildAlchemyNotifyApi();
+    addressActivityKeys ??= new push.AddressActivitySigningKeys(notifyApi);
+    if (addressActivityRegistrar === undefined) {
+      const url = push.addressActivityWebhookUrl();
+      addressActivityRegistrar = notifyApi && url ? { api: notifyApi, url } : null;
+    }
     const rawBody = typeof req.rawBody === 'string' ? req.rawBody : '';
-    const report = await push.handleAddressActivityDelivery(agentBankDeps.db, addressActivityKeys, rawBody, req.headers['x-alchemy-signature']);
+    const report = await push.handleAddressActivityDelivery(agentBankDeps.db, addressActivityKeys, rawBody, req.headers['x-alchemy-signature'],
+      Date.now(), addressActivityRegistrar);
     res.json({ ok: true, queued: report.queued });
   } catch (error) {
     const push = await import('./core/pvt/address-activity-push');

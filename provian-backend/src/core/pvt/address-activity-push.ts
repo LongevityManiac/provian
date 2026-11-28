@@ -21,8 +21,10 @@
  *   registry is add-only, so registration is too; a delivery for an address that no longer resolves
  *   to a watched wallet (a test wallet, a contract-proven address) queues nothing, exactly as the
  *   scan's resolver skips it.
- * - Solana: every address in `solana_proven_addresses`. A delivery is matched against that
- *   collection by document id, so an address whose proof was removed queues nothing.
+ * - Solana: every address in `solana_proven_addresses`, and every token account each one holds
+ *   (`address-activity-solana-tokens.ts`: a token receive names the account, not its owner). A
+ *   delivery is matched against that collection by document id, directly or through a registered
+ *   token account's recorded owner, so an address whose proof was removed queues nothing.
  *
  * SYNC. Each run (the chain-record auxiliary job) registers the addresses recorded since the last
  * run (with a 15-minute overlap for transactions that committed late), checking a membership
@@ -41,6 +43,22 @@ import { readWatchRegistry, type WatchRegistryKind } from './watch-registry';
 import { enqueueSolanaChainRecordObservation } from './solana-chain-record-lane';
 import { SOLANA_PROVEN_ADDRESSES_COLLECTION, isSolanaProvenAddressRecord } from '../external-address/solana-link';
 import { isSolanaAddress, isSolanaSignature } from '../external-address/solana-keys';
+import { buildSolanaRpcLegs, readSolanaTokenAccountsUnion } from '../onchain/solana-economic-discovery';
+import {
+  SOLANA_OWNER_ENUMERATIONS_PER_RUN,
+  SOLANA_TOKEN_ACCOUNTS_PER_DELIVERY,
+  SOLANA_TOKEN_ACCOUNT_REGISTRATIONS_PER_RUN,
+  dueTokenOwners,
+  markTokenAccountsRegistered,
+  markTokenOwnerEnumerated,
+  markTokenOwnersDue,
+  ownersOfTokenAccounts,
+  pendingTokenAccounts,
+  recordTokenAccountOwners,
+  seedTokenOwners,
+  tokenBalancePairs,
+  type TokenAccountOwner,
+} from './address-activity-solana-tokens';
 
 export const ADDRESS_ACTIVITY_STATE_COLLECTION = 'alchemy_address_activity_v1';
 export const ADDRESS_ACTIVITY_MEMBERS_COLLECTION = 'alchemy_address_activity_members_v1';
@@ -184,9 +202,18 @@ function parseState(raw: Record<string, unknown> | undefined): NetworkState {
   return { webhooks, synced_through_ms: Number.isSafeInteger(through) ? through as number : null };
 }
 
+interface NetworkSyncReport {
+  candidates: number;
+  added: number;
+  webhooks: number;
+  complete: boolean;
+  error?: string;
+  token_accounts?: SolanaTokenSyncReport;
+}
+
 export interface AddressActivitySyncReport {
   skipped?: string;
-  networks: Record<string, { candidates: number; added: number; webhooks: number; complete: boolean; error?: string }>;
+  networks: Record<string, NetworkSyncReport>;
 }
 
 export interface AddressActivitySyncDeps {
@@ -197,6 +224,8 @@ export interface AddressActivitySyncDeps {
   readonly evmCandidates: (sinceMs: number | null) => Promise<readonly string[]>;
   /** Solana proven addresses proven at or after `sinceMs` (all when null). */
   readonly solanaCandidates: (sinceMs: number | null) => Promise<readonly string[]>;
+  /** Every token account a Solana owner holds (both legs); null when the legs are not configured. */
+  readonly solanaTokenAccounts: ((owner: string) => Promise<readonly string[]>) | null;
   readonly now?: () => number;
   /** Addresses per webhook (tests); defaults to `ADDRESS_ACTIVITY_WEBHOOK_CAPACITY`. */
   readonly capacity?: number;
@@ -229,6 +258,93 @@ async function recordMembers(
   }
 }
 
+/**
+ * Room on a network's webhooks, reserved transactionally, so the sync and a delivery that registers
+ * a new token account never overwrite each other's counts. Returns the webhook and how many
+ * addresses it takes, or null when every webhook is full. A reservation whose add then fails stays
+ * counted: the count only ever overstates, and the capacity is below Alchemy's limit.
+ */
+async function reserveWebhookRoom(
+  db: Firestore,
+  network: AddressActivityNetwork,
+  want: number,
+  capacity: number,
+  nowMs: number,
+): Promise<{ readonly id: string; readonly take: number } | null> {
+  const ref = stateRef(db, network);
+  return db.runTransaction(async (txn) => {
+    const snap = await txn.get(ref);
+    const state = parseState(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+    const slot = state.webhooks.find((w) => w.count < capacity);
+    if (!slot) return null;
+    const take = Math.min(want, capacity - slot.count);
+    if (take <= 0) return null; // never a zero-size reservation (the caller would not advance)
+    slot.count += take;
+    txn.set(ref, { webhooks: state.webhooks.map((w) => ({ id: w.id, count: w.count })), updated_at_ms: nowMs }, { merge: true });
+    return { id: slot.id, take };
+  });
+}
+
+async function appendWebhook(db: Firestore, network: AddressActivityNetwork, id: string, count: number, nowMs: number): Promise<number> {
+  const ref = stateRef(db, network);
+  return db.runTransaction(async (txn) => {
+    const snap = await txn.get(ref);
+    const state = parseState(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+    state.webhooks.push({ id, count });
+    txn.set(ref, { webhooks: state.webhooks.map((w) => ({ id: w.id, count: w.count })), updated_at_ms: nowMs }, { merge: true });
+    return state.webhooks.length;
+  });
+}
+
+/**
+ * Put `addresses` (none of them members yet) on the network's webhooks, filling in order. Only the
+ * sync creates a webhook (`mayCreate`); a delivery that finds every webhook full leaves the rest
+ * for the sync. Returns how many were added and whether all were.
+ */
+async function addToNetwork(
+  db: Firestore,
+  api: AlchemyNotifyApi,
+  url: string,
+  network: AddressActivityNetwork,
+  addresses: readonly string[],
+  nowMs: number,
+  options: { readonly capacity: number; readonly budget: { remaining: number }; readonly mayCreate: boolean },
+): Promise<{ added: string[]; complete: boolean }> {
+  const added: string[] = [];
+  let cursor = 0;
+  while (cursor < addresses.length) {
+    if (options.budget.remaining <= 0) return { added, complete: false };
+    const want = Math.min(ADDRESS_ACTIVITY_UPDATE_CHUNK, options.budget.remaining, addresses.length - cursor);
+    const room = await reserveWebhookRoom(db, network, want, options.capacity, nowMs);
+    let chunk: string[];
+    let webhookId: string;
+    if (room) {
+      chunk = addresses.slice(cursor, cursor + room.take);
+      await api.addAddresses(room.id, chunk);
+      webhookId = room.id;
+    } else {
+      if (!options.mayCreate) return { added, complete: false };
+      chunk = addresses.slice(cursor, cursor + Math.min(want, options.capacity));
+      const existing = parseState((await stateRef(db, network).get()).data() as Record<string, unknown> | undefined).webhooks.length;
+      const created = await api.createWebhook({
+        network, url, name: `provian-address-activity-${network.toLowerCase()}-${existing + 1}`, addresses: chunk,
+      });
+      await appendWebhook(db, network, created.id, chunk.length, nowMs);
+      webhookId = created.id;
+    }
+    await recordMembers(db, network, webhookId, chunk, nowMs);
+    added.push(...chunk);
+    cursor += chunk.length;
+    options.budget.remaining -= chunk.length;
+  }
+  return { added, complete: true };
+}
+
+async function webhookCount(db: Firestore, network: AddressActivityNetwork): Promise<number> {
+  const snap = await stateRef(db, network).get();
+  return parseState(snap.exists ? snap.data() as Record<string, unknown> : undefined).webhooks.length;
+}
+
 async function syncNetwork(
   deps: AddressActivitySyncDeps,
   api: AlchemyNotifyApi,
@@ -236,45 +352,102 @@ async function syncNetwork(
   network: AddressActivityNetwork,
   runStartMs: number,
   budget: { remaining: number },
-): Promise<{ candidates: number; added: number; webhooks: number; complete: boolean }> {
+): Promise<NetworkSyncReport> {
   const ref = stateRef(deps.db, network);
   const snap = await ref.get();
-  const state = parseState(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+  const raw = snap.exists ? snap.data() as Record<string, unknown> : undefined;
+  const state = parseState(raw);
   const since = state.synced_through_ms === null ? null : state.synced_through_ms - ADDRESS_ACTIVITY_SYNC_OVERLAP_MS;
   const candidates = [...new Set(network === 'SOLANA_MAINNET'
     ? await deps.solanaCandidates(since)
     : await deps.evmCandidates(since))].sort();
   const missing = await missingMembers(deps.db, network, candidates);
   const capacity = deps.capacity ?? ADDRESS_ACTIVITY_WEBHOOK_CAPACITY;
-  let added = 0;
-  let complete = true;
-  let cursor = 0;
-  while (cursor < missing.length) {
-    if (budget.remaining <= 0) { complete = false; break; }
-    let slot = state.webhooks.find((w) => w.count < capacity);
-    const room = slot ? capacity - slot.count : capacity;
-    const take = Math.min(ADDRESS_ACTIVITY_UPDATE_CHUNK, room, budget.remaining, missing.length - cursor);
-    const chunk = missing.slice(cursor, cursor + take);
-    if (!slot) {
-      const created = await api.createWebhook({
-        network, url, name: `provian-address-activity-${network.toLowerCase()}-${state.webhooks.length + 1}`, addresses: chunk,
-      });
-      slot = { id: created.id, count: 0 };
-      state.webhooks.push(slot);
-    } else {
-      await api.addAddresses(slot.id, chunk);
+  const result = await addToNetwork(deps.db, api, url, network, missing, runStartMs, { capacity, budget, mayCreate: true });
+  if (result.complete) {
+    await ref.set({ synced_through_ms: runStartMs, updated_at_ms: runStartMs }, { merge: true });
+  }
+  const report: NetworkSyncReport = {
+    candidates: candidates.length, added: result.added.length, webhooks: 0, complete: result.complete,
+  };
+  if (network === 'SOLANA_MAINNET') {
+    try {
+      // Every owner already proven is seeded once; later owners as they are synced.
+      const seedAll = raw?.token_owners_seeded !== true;
+      const owners = seedAll ? await deps.solanaCandidates(null) : candidates;
+      const tokens = await syncSolanaTokenAccounts(deps, api, url, owners, runStartMs, capacity, budget);
+      if (seedAll) await ref.set({ token_owners_seeded: true }, { merge: true });
+      report.token_accounts = tokens;
+      if (!tokens.complete) report.complete = false;
+    } catch (error) {
+      report.complete = false;
+      report.token_accounts = { error: error instanceof Error ? error.message : String(error) };
     }
-    await recordMembers(deps.db, network, slot.id, chunk, runStartMs);
-    slot.count += chunk.length;
-    await ref.set({ webhooks: state.webhooks.map((w) => ({ id: w.id, count: w.count })), updated_at_ms: runStartMs }, { merge: true });
-    cursor += chunk.length;
-    added += chunk.length;
-    budget.remaining -= chunk.length;
   }
-  if (complete) {
-    await ref.set({ webhooks: state.webhooks.map((w) => ({ id: w.id, count: w.count })), synced_through_ms: runStartMs, updated_at_ms: runStartMs }, { merge: true });
+  report.webhooks = await webhookCount(deps.db, network);
+  return report;
+}
+
+export interface SolanaTokenSyncReport {
+  owners_seeded?: number;
+  owners_enumerated?: number;
+  enumeration_errors?: number;
+  pending?: number;
+  registered?: number;
+  complete?: boolean;
+  enumeration?: string;
+  error?: string;
+}
+
+/**
+ * The Solana token-account half of a sync: seed new owners (their derived accounts), enumerate the
+ * owners that are due (first sight, named by a delivery, or a day since), and register every
+ * pending token account.
+ */
+async function syncSolanaTokenAccounts(
+  deps: AddressActivitySyncDeps,
+  api: AlchemyNotifyApi,
+  url: string,
+  owners: readonly string[],
+  nowMs: number,
+  capacity: number,
+  budget: { remaining: number },
+): Promise<SolanaTokenSyncReport & { complete: boolean }> {
+  const report: SolanaTokenSyncReport & { complete: boolean } = { complete: true };
+  report.owners_seeded = await seedTokenOwners(deps.db, owners, nowMs);
+  if (deps.solanaTokenAccounts) {
+    const due = await dueTokenOwners(deps.db, nowMs, SOLANA_OWNER_ENUMERATIONS_PER_RUN);
+    let enumerated = 0;
+    let errors = 0;
+    for (const owner of due) {
+      let accounts: readonly string[];
+      try {
+        accounts = await deps.solanaTokenAccounts(owner);
+      } catch {
+        errors += 1; // stays due: the next run tries again
+        continue;
+      }
+      await recordTokenAccountOwners(deps.db, accounts.map((tokenAccount) => ({ tokenAccount, owner })), 'enumeration', nowMs);
+      await markTokenOwnerEnumerated(deps.db, owner, nowMs);
+      enumerated += 1;
+    }
+    report.owners_enumerated = enumerated;
+    report.enumeration_errors = errors;
+    if (errors > 0) report.complete = false;
+  } else {
+    report.enumeration = 'solana_legs_unconfigured';
+    report.complete = false;
   }
-  return { candidates: candidates.length, added, webhooks: state.webhooks.length, complete };
+  const pending = await pendingTokenAccounts(deps.db, SOLANA_TOKEN_ACCOUNT_REGISTRATIONS_PER_RUN);
+  report.pending = pending.length;
+  const missing = new Set(await missingMembers(deps.db, 'SOLANA_MAINNET', pending));
+  // Accounts already on a webhook (a delivery registered them) only need their flag.
+  const already = pending.filter((a) => !missing.has(a));
+  const added = await addToNetwork(deps.db, api, url, 'SOLANA_MAINNET', [...missing], nowMs, { capacity, budget, mayCreate: true });
+  await markTokenAccountsRegistered(deps.db, [...already, ...added.added], nowMs);
+  report.registered = added.added.length;
+  if (!added.complete) report.complete = false;
+  return report;
 }
 
 /** Register every watched address not yet on an address-activity webhook. A network's fault is reported, never fatal. */
@@ -315,7 +488,18 @@ export function buildAddressActivitySyncDeps(db: Firestore, env: Env = process.e
       const snap = sinceMs === null ? await collection.get() : await collection.where('proven_at_ms', '>=', sinceMs).get();
       return snap.docs.map((d) => d.id).filter((id) => isSolanaAddress(id));
     },
+    solanaTokenAccounts: solanaTokenAccountReader(env),
   };
+}
+
+function solanaTokenAccountReader(env: Env): ((owner: string) => Promise<readonly string[]>) | null {
+  let legs: ReturnType<typeof buildSolanaRpcLegs>;
+  try {
+    legs = buildSolanaRpcLegs(env, fetch);
+  } catch {
+    return null;
+  }
+  return (owner) => readSolanaTokenAccountsUnion(legs, owner);
 }
 
 // =============================================================================
@@ -369,6 +553,8 @@ export interface AddressActivityDeliveryReport {
   readonly queued: number;
   readonly already_queued: number;
   readonly unwatched: number;
+  /** Solana: new token accounts of watched owners this delivery put on the webhook. */
+  readonly token_accounts_registered?: number;
 }
 
 export class AddressActivityDeliveryError extends Error {
@@ -445,15 +631,38 @@ function solanaSignatureOf(item: Record<string, unknown>): string | null {
   return null;
 }
 
+/** Where a delivery registers the new token accounts it names (null: leave them to the sync). */
+export interface AddressActivityRegistrar {
+  readonly api: AlchemyNotifyApi;
+  readonly url: string;
+  /** Addresses per webhook (tests); defaults to `ADDRESS_ACTIVITY_WEBHOOK_CAPACITY`. */
+  readonly capacity?: number;
+}
+
+/** Which of `addresses` are proven Solana addresses (the watched owners). */
+async function provenSolanaOwners(db: Firestore, addresses: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  const list = [...new Set(addresses)];
+  for (let i = 0; i < list.length; i += 300) {
+    const chunk = list.slice(i, i + 300);
+    const snaps = await db.getAll(...chunk.map((a) => db.collection(SOLANA_PROVEN_ADDRESSES_COLLECTION).doc(a)));
+    snaps.forEach((snap, k) => { if (snap.exists && isSolanaProvenAddressRecord(snap.data(), chunk[k])) out.add(chunk[k]); });
+  }
+  return out;
+}
+
 async function handleSolanaDelivery(
   db: Firestore,
   event: Record<string, unknown>,
   nowMs: number,
+  registrar: AddressActivityRegistrar | null,
 ): Promise<AddressActivityDeliveryReport> {
   const items = Array.isArray(event.transaction) ? event.transaction : null;
   if (!items) throw new AddressActivityDeliveryError(400, 'address_activity_payload_invalid');
   const eventSlot = Number.isSafeInteger(event.slot) ? event.slot as number : null;
   let queued = 0, already = 0, unwatched = 0, transactions = 0;
+  const namedOwners = new Set<string>();
+  const newPairs: TokenAccountOwner[] = [];
   for (const raw of items) {
     if (!raw || typeof raw !== 'object') continue;
     const item = raw as Record<string, unknown>;
@@ -461,22 +670,49 @@ async function handleSolanaDelivery(
     if (!signature) continue;
     transactions += 1;
     const slot = Number.isSafeInteger(item.slot) ? item.slot as number : eventSlot ?? 0;
+    const balances = tokenBalancePairs(item);
     const candidates = new Set<string>();
     solanaAddressesIn(item, candidates, MAX_SOLANA_CANDIDATES_PER_TRANSACTION);
+    for (const p of balances) { candidates.add(p.owner); candidates.add(p.tokenAccount); }
     candidates.delete(signature);
     const list = [...candidates];
-    const snaps = list.length === 0 ? [] : await db.getAll(...list.map((a) => db.collection(SOLANA_PROVEN_ADDRESSES_COLLECTION).doc(a)));
-    let matched = 0;
-    for (let k = 0; k < snaps.length; k += 1) {
-      const snap = snaps[k];
-      if (!snap.exists || !isSolanaProvenAddressRecord(snap.data(), list[k])) continue;
-      matched += 1;
-      if (await enqueueSolanaChainRecordObservation(db, { signature, address: list[k], slot }, nowMs)) queued += 1;
+    // Owners named directly, and owners of the registered token accounts the transaction names.
+    const accountOwners = await ownersOfTokenAccounts(db, list);
+    const mappedOwners = [...accountOwners.values()].flat();
+    const proven = await provenSolanaOwners(db, [...list, ...mappedOwners]);
+    const owners = new Set<string>();
+    for (const address of list) {
+      if (proven.has(address)) owners.add(address);
+      for (const owner of accountOwners.get(address) ?? []) if (proven.has(owner)) owners.add(owner);
+    }
+    for (const owner of [...owners].sort()) {
+      namedOwners.add(owner);
+      if (await enqueueSolanaChainRecordObservation(db, { signature, address: owner, slot }, nowMs)) queued += 1;
       else already += 1;
     }
-    if (matched === 0) unwatched += 1;
+    if (owners.size === 0) unwatched += 1;
+    // A token account of a watched owner that the transaction's balances name (one it just created).
+    for (const p of balances) if (proven.has(p.owner) && !accountOwners.get(p.tokenAccount)?.includes(p.owner)) newPairs.push(p);
   }
-  return { network: 'SOLANA_MAINNET', transactions, queued, already_queued: already, unwatched };
+  let tokenAccountsRegistered = 0;
+  try {
+    await markTokenOwnersDue(db, [...namedOwners], nowMs);
+    const pending = newPairs.length === 0 ? [] : await recordTokenAccountOwners(db, newPairs.slice(0, SOLANA_TOKEN_ACCOUNTS_PER_DELIVERY), 'delivery', nowMs);
+    if (registrar && pending.length > 0) {
+      const missing = new Set(await missingMembers(db, 'SOLANA_MAINNET', pending));
+      const added = await addToNetwork(db, registrar.api, registrar.url, 'SOLANA_MAINNET', [...missing], nowMs, {
+        capacity: registrar.capacity ?? ADDRESS_ACTIVITY_WEBHOOK_CAPACITY,
+        budget: { remaining: SOLANA_TOKEN_ACCOUNTS_PER_DELIVERY },
+        mayCreate: false,
+      });
+      await markTokenAccountsRegistered(db, [...pending.filter((a) => !missing.has(a)), ...added.added], nowMs);
+      tokenAccountsRegistered = added.added.length;
+    }
+  } catch (error) {
+    // The pointers are queued; a token account left pending is registered by the next sync.
+    console.warn('[address-activity] token account registration deferred:', error instanceof Error ? error.message : String(error));
+  }
+  return { network: 'SOLANA_MAINNET', transactions, queued, already_queued: already, unwatched, token_accounts_registered: tokenAccountsRegistered };
 }
 
 /**
@@ -490,6 +726,7 @@ export async function handleAddressActivityDelivery(
   rawBody: string,
   signature: unknown,
   nowMs: number = Date.now(),
+  registrar: AddressActivityRegistrar | null = null,
 ): Promise<AddressActivityDeliveryReport> {
   let payload: Record<string, unknown>;
   try {
@@ -518,6 +755,6 @@ export async function handleAddressActivityDelivery(
     throw new AddressActivityDeliveryError(400, 'address_activity_network_mismatch');
   }
   if (network === 'ARB_MAINNET' || network === 'OPT_MAINNET') return handleEvmDelivery(db, network, event, nowMs);
-  if (network === 'SOLANA_MAINNET') return handleSolanaDelivery(db, event, nowMs);
+  if (network === 'SOLANA_MAINNET') return handleSolanaDelivery(db, event, nowMs, registrar);
   throw new AddressActivityDeliveryError(400, 'address_activity_network_unsupported');
 }
