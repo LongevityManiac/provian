@@ -463,7 +463,7 @@
     "provian-backend/src/core/pvt/actor-stats.ts": "0fff587d3c0a3e7adbd267e2eaa8665b2caf47b59f1bea77cae5abdd439ed33b",
     "provian-backend/src/core/pvt/address-activity-push.test.ts": "313a09c91d5f18e7c517da9a425bf2c6a8908b5f2381eaf14a77b3eaf61ede7f",
     "provian-backend/src/core/pvt/address-activity-push.ts": "48439b73a2c4adb7af716761c8d8ec4f81559776222e05b2dbcf0bc1d61fceda",
-    "provian-backend/src/core/pvt/address-activity-solana-tokens.test.ts": "bf8f3ae6a2ba27f83325fc3aa8b3d44143fdf2c51d6e4fc8a539a7a6e04b2f3b",
+    "provian-backend/src/core/pvt/address-activity-solana-tokens.test.ts": "01a35d14c9d9066832ac4bd3ff2979d164aeebf6cead762f05910e61df29f3b2",
     "provian-backend/src/core/pvt/address-activity-solana-tokens.ts": "cb935f5aba2ae4ae7eef9858e18e64365809f480a3478196e7a5f43c5634a2e2",
     "provian-backend/src/core/pvt/anchor-recovery-cli.test.ts": "bc4b58cbd8186f4b88a08c99f6886fe7ca42d392e4d071fb9c76e3258d6de44c",
     "provian-backend/src/core/pvt/anchor-recovery-cli.ts": "3b5a3c6cc2da0f897b415845cdfa3d1fbe137f3357533abc5f41a87eefe12168",

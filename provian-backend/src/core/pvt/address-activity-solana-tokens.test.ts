@@ -307,7 +307,8 @@ describe('listOwnerTokenAccounts', () => {
       if ((params[1] as { programId: string }).programId === T22) throw new Error('solana_rpc_leg_failed:p:getTokenAccountsByOwner:http_429');
       return { value: [{ pubkey: A }] };
     });
-    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: halfPrimary }, { operatorId: 's', send: answering({ [TOKEN]: [A], [T22]: [B] }) }], OWNER)).resolves.toEqual([B, A].sort());
+    // The secondary does not hold A: only the secondary's own answer comes back, never the failed leg's leftovers.
+    await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: halfPrimary }, { operatorId: 's', send: answering({ [T22]: [B] }) }], OWNER)).resolves.toEqual([B]);
     expect(calls).toBe(2);
     await expect(listOwnerTokenAccounts([{ operatorId: 'p', send: halfPrimary }, { operatorId: 's', send: failing() }], OWNER)).rejects.toThrow('http_429');
   });
