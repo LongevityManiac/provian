@@ -142,7 +142,7 @@ describe('sync: every watched owner\'s token accounts go on the Solana webhook',
       expect(db.store.get(`${SOLANA_TOKEN_ACCOUNTS_COLLECTION}/${account}`)).toMatchObject({ owners: [owner], registered: true });
     }
     expect(db.store.get(`${SOLANA_TOKEN_OWNERS_COLLECTION}/${owner}`)).toMatchObject({ next_enumeration_at_ms: NOW + SOLANA_OWNER_ENUMERATION_INTERVAL_MS });
-    expect(db.store.get(`${ADDRESS_ACTIVITY_STATE_COLLECTION}/state_SOLANA_MAINNET`)).toMatchObject({ webhooks: [{ id: 'wh_sol', count: 3 }], token_owners_seeded: true });
+    expect(db.store.get(`${ADDRESS_ACTIVITY_STATE_COLLECTION}/state_SOLANA_MAINNET`)).toMatchObject({ webhooks: [{ id: 'wh_sol', count: 3 }], token_owners_synced_through_ms: NOW });
 
     // RED for "once": the next run enumerates nobody and adds nothing.
     api.addAddresses.mockClear();
@@ -161,6 +161,31 @@ describe('sync: every watched owner\'s token accounts go on the Solana webhook',
     const r = await syncAddressActivityWebhooks({ ...syncDeps([], async () => []), solanaCandidates: all });
     expect(r.networks.SOLANA_MAINNET.token_accounts).toMatchObject({ owners_seeded: 1 });
     expect(all).toHaveBeenCalledWith(null);
+  });
+
+  it('RED: a run whose seeding fails leaves the owner for the next run, even after the owner cursor moved on', async () => {
+    const T0 = NOW - 60 * 60_000;
+    const owner = solAddr();
+    seedSolana(owner);
+    const provenAt = T0 + 30_000;
+    db.store.set(`${ADDRESS_ACTIVITY_STATE_COLLECTION}/state_SOLANA_MAINNET`, {
+      webhooks: [{ id: 'wh_sol', count: 0 }], synced_through_ms: T0, token_owners_synced_through_ms: T0,
+    });
+    const candidates = async (since: number | null) => (since === null || provenAt >= since ? [owner] : []);
+    const realGetAll = db.getAll.bind(db);
+    let failOnce = true;
+    db.getAll = (async (...refs: Parameters<typeof db.getAll>) => {
+      if (failOnce && String((refs[0] as { path?: string }).path ?? '').startsWith(SOLANA_TOKEN_OWNERS_COLLECTION)) { failOnce = false; throw new Error('UNAVAILABLE'); }
+      return realGetAll(...refs);
+    }) as typeof db.getAll;
+    const deps = (at: number) => ({ ...syncDeps([], async () => []), solanaCandidates: candidates, now: () => at });
+    const r1 = await syncAddressActivityWebhooks(deps(T0 + 16 * 60_000));
+    expect(r1.networks.SOLANA_MAINNET).toMatchObject({ complete: false });
+    expect(db.store.get(`${SOLANA_TOKEN_OWNERS_COLLECTION}/${owner}`)).toBeUndefined();
+    const r2 = await syncAddressActivityWebhooks(deps(T0 + 31 * 60_000));
+    expect(r2.networks.SOLANA_MAINNET.token_accounts).toMatchObject({ owners_seeded: 1 });
+    expect(db.store.get(`${SOLANA_TOKEN_OWNERS_COLLECTION}/${owner}`)).toBeDefined();
+    db.getAll = realGetAll;
   });
 
   it('RED: an enumeration that fails leaves the owner due and the run incomplete', async () => {

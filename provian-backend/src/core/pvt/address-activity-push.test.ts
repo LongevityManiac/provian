@@ -244,6 +244,17 @@ describe('sync', () => {
     expect(r.networks.ARB_MAINNET).toMatchObject({ added: 1, webhooks: 2 });
   });
 
+  it('RED: a failed add gives its reserved room back, so failures never inflate the count', async () => {
+    api = apiWith([]);
+    await syncAddressActivityWebhooks(syncDeps([WATCHED], []));
+    api.addAddresses.mockRejectedValue(new Error('alchemy_notify_http_503'));
+    for (let i = 0; i < 3; i += 1) {
+      const r = await syncAddressActivityWebhooks(syncDeps([WATCHED, PROVEN, STRANGER], []));
+      expect(r.networks.ARB_MAINNET).toMatchObject({ complete: false });
+    }
+    expect(db.store.get('alchemy_address_activity_v1/state_ARB_MAINNET')).toMatchObject({ webhooks: [{ id: 'wh_new_1', count: 1 }] });
+  });
+
   it('RED: without the auth token nothing is called', async () => {
     const r = await syncAddressActivityWebhooks({ ...syncDeps([WATCHED], []), api: null });
     expect(r.skipped).toBe('auth_token_unconfigured');

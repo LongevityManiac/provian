@@ -285,6 +285,19 @@ async function reserveWebhookRoom(
   });
 }
 
+/** Give back room reserved for an add that failed, so a failed call never inflates the count. */
+async function releaseWebhookRoom(db: Firestore, network: AddressActivityNetwork, id: string, take: number, nowMs: number): Promise<void> {
+  const ref = stateRef(db, network);
+  await db.runTransaction(async (txn) => {
+    const snap = await txn.get(ref);
+    const state = parseState(snap.exists ? snap.data() as Record<string, unknown> : undefined);
+    const slot = state.webhooks.find((w) => w.id === id);
+    if (!slot) return;
+    slot.count = Math.max(0, slot.count - take);
+    txn.set(ref, { webhooks: state.webhooks.map((w) => ({ id: w.id, count: w.count })), updated_at_ms: nowMs }, { merge: true });
+  });
+}
+
 async function appendWebhook(db: Firestore, network: AddressActivityNetwork, id: string, count: number, nowMs: number): Promise<number> {
   const ref = stateRef(db, network);
   return db.runTransaction(async (txn) => {
@@ -320,7 +333,12 @@ async function addToNetwork(
     let webhookId: string;
     if (room) {
       chunk = addresses.slice(cursor, cursor + room.take);
-      await api.addAddresses(room.id, chunk);
+      try {
+        await api.addAddresses(room.id, chunk);
+      } catch (error) {
+        await releaseWebhookRoom(db, network, room.id, room.take, nowMs).catch(() => { /* the count only ever overstates */ });
+        throw error;
+      }
       webhookId = room.id;
     } else {
       if (!options.mayCreate) return { added, complete: false };
@@ -372,11 +390,14 @@ async function syncNetwork(
   };
   if (network === 'SOLANA_MAINNET') {
     try {
-      // Every owner already proven is seeded once; later owners as they are synced.
-      const seedAll = raw?.token_owners_seeded !== true;
-      const owners = seedAll ? await deps.solanaCandidates(null) : candidates;
-      const tokens = await syncSolanaTokenAccounts(deps, api, url, owners, runStartMs, capacity, budget);
-      if (seedAll) await ref.set({ token_owners_seeded: true }, { merge: true });
+      // Owners are seeded on their own cursor, which moves only after their seeding succeeded: a
+      // run that fails before seeding leaves them for the next run (seeding an owner twice is a
+      // no-op). The first run seeds every owner already proven.
+      const seededThrough = raw?.token_owners_synced_through_ms;
+      const ownersSince = Number.isSafeInteger(seededThrough) ? (seededThrough as number) - ADDRESS_ACTIVITY_SYNC_OVERLAP_MS : null;
+      const owners = ownersSince === since ? candidates : await deps.solanaCandidates(ownersSince);
+      const tokens = await syncSolanaTokenAccounts(deps, api, url, owners, runStartMs, capacity, budget,
+        () => ref.set({ token_owners_synced_through_ms: runStartMs }, { merge: true }).then(() => undefined));
       report.token_accounts = tokens;
       if (!tokens.complete) report.complete = false;
     } catch (error) {
@@ -412,9 +433,11 @@ async function syncSolanaTokenAccounts(
   nowMs: number,
   capacity: number,
   budget: { remaining: number },
+  ownersSeeded: () => Promise<void>,
 ): Promise<SolanaTokenSyncReport & { complete: boolean }> {
   const report: SolanaTokenSyncReport & { complete: boolean } = { complete: true };
   report.owners_seeded = await seedTokenOwners(deps.db, owners, nowMs);
+  await ownersSeeded();
   if (deps.solanaTokenAccounts) {
     const due = await dueTokenOwners(deps.db, nowMs, SOLANA_OWNER_ENUMERATIONS_PER_RUN);
     let enumerated = 0;
