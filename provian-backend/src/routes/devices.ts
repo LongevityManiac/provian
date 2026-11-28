@@ -1555,22 +1555,31 @@ function captureReportLiveExtraMs(reportIntervalMs: unknown): number {
 }
 
 /**
- * The agent device whose capture health the linked-agent card shows. A device whose report is live
- * now (reported within 60 minutes plus however much longer than normal it declared it would wait)
- * comes first, so a stopped device never outranks a healthy idle one; then the newest report, so an
- * idle device never outranks one that is working. A device that never reported ranks by its last PE.
+ * The agent device whose capture health the linked-agent card shows. A device the app would read as
+ * working comes first: not broken, and either receiving with a live report (60 minutes plus however
+ * much longer than normal it declared it would wait) or with witnessed work in the last 60 minutes.
+ * Among those, the most recent witnessed work wins, so an idle device never outranks a working one;
+ * among the rest, the newest report (else the last PE) wins, as before. A stopped device never
+ * outranks a healthy idle one.
  */
 export function pickLinkedAgentDevice<T extends Record<string, unknown>>(devices: readonly T[], nowMs: number = Date.now()): T | null {
   let best: T | null = null;
-  let bestLive = false;
-  let bestT = -1;
+  let bestKey: readonly [number, number, number] = [-1, -1, -1];
   for (const d of devices) {
     if (d.owner_type !== 'agent') continue;
-    const ch = d.capture_health as { updated_at?: unknown; report_interval_ms?: unknown } | undefined;
-    const reported = ch && typeof ch.updated_at === 'number' ? ch.updated_at : null;
+    const ch = (d.capture_health ?? {}) as Record<string, unknown>;
+    const fields = linkedAgentCaptureFields(ch, d.last_pe_at);
+    const reported = fields.capture_reported_at_ms;
+    const lastWork = fields.last_capture_at_ms;
+    const receivingNow = fields.capture_receiving && reported !== null
+      && nowMs - reported <= LINKED_AGENT_REPORT_LIVE_MS + captureReportLiveExtraMs(fields.capture_report_interval_ms);
+    const workFresh = lastWork !== null && nowMs - lastWork <= LINKED_AGENT_REPORT_LIVE_MS;
+    const working = !fields.capture_broken && (receivingNow || workFresh);
     const t = reported ?? (typeof d.last_pe_at === 'number' ? d.last_pe_at : 0);
-    const live = reported !== null && nowMs - reported <= LINKED_AGENT_REPORT_LIVE_MS + captureReportLiveExtraMs(ch?.report_interval_ms);
-    if (live && !bestLive || live === bestLive && t > bestT) { best = d; bestLive = live; bestT = t; }
+    const key = [working ? 1 : 0, working ? lastWork ?? -1 : 0, t] as const;
+    if (key[0] > bestKey[0] || key[0] === bestKey[0] && (key[1] > bestKey[1] || key[1] === bestKey[1] && key[2] > bestKey[2])) {
+      best = d; bestKey = key;
+    }
   }
   return best;
 }
