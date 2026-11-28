@@ -573,6 +573,14 @@ describe('linkedAgentCaptureFields', () => {
     // A broken device never outranks one with fresh work, even one that never reported.
     const broken = { id: 'broken', owner_type: 'agent', capture_health: { updated_at: T - 30 * M, broken: true, broken_reason: 'no_readable_sources' } };
     expect(pickLinkedAgentDevice([broken, { id: 'pe', owner_type: 'agent', last_pe_at: T - 5 * M }], T)?.id).toBe('pe');
+    // A broken device with fresh work is not working: a healthy device with older work wins.
+    const brokenFresh = { id: 'brokenFresh', owner_type: 'agent', capture_health: { updated_at: T - 5 * M, last_capture_at_ms: T - 5 * M, broken: true, broken_reason: 'no_readable_sources' } };
+    const healthy = { id: 'healthy', owner_type: 'agent', capture_health: { updated_at: T - 20 * M, last_capture_at_ms: T - 20 * M } };
+    expect(pickLinkedAgentDevice([brokenFresh, healthy], T)?.id).toBe('healthy');
+    // A newly connected healthy daemon with no work yet outranks a stopped device that once worked.
+    const fresh = { id: 'fresh', owner_type: 'agent', capture_health: { updated_at: T - 5 * M } };
+    const once = { id: 'once', owner_type: 'agent', capture_health: { updated_at: T - 3 * H, last_capture_at_ms: T - 3 * H } };
+    expect(pickLinkedAgentDevice([once, fresh], T)?.id).toBe('fresh');
     // Fresh work counts as working even with no report, so it outranks an idle device that last worked hours ago.
     expect(pickLinkedAgentDevice([idle, { id: 'pe', owner_type: 'agent', last_pe_at: T + 5 * M }], T + 10 * M)?.id).toBe('pe');
     expect(pickLinkedAgentDevice([{ id: 'human', owner_type: 'human', capture_health: { updated_at: T + 9 * H } }], T)).toBeNull();
