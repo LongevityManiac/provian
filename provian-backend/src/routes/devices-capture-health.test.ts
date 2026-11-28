@@ -559,14 +559,18 @@ describe('process lane silence (, parity)', () => {
 // because a doc a relay from before the ruling wrote may say process_launcher_changed for a suspicion
 // or a launcher no program matches, and a device that stopped reporting keeps that doc indefinitely.
 describe('linkedAgentCaptureFields', () => {
-  it('the card shows the device whose report stays live longest, so a stopped device never outranks a healthy idle one', () => {
-    const T = 1_800_000_000_000, H = 60 * 60 * 1000;
+  it('the card shows a live device first (a stopped device never outranks a healthy idle one), then the newest report (an idle device never outranks a working one)', () => {
+    const T = 1_800_000_000_000, H = 60 * 60 * 1000, M = 60_000;
     const idle = { id: 'idle', owner_type: 'agent', capture_health: { updated_at: T, report_interval_ms: 6 * H } };
     const stopped = { id: 'stopped', owner_type: 'agent', capture_health: { updated_at: T + H } };
-    expect(pickLinkedAgentDevice([stopped, idle])?.id).toBe('idle');
-    // RED: on the normal cadence, the newer report wins.
-    expect(pickLinkedAgentDevice([stopped, { ...idle, capture_health: { updated_at: T } }])?.id).toBe('stopped');
-    expect(pickLinkedAgentDevice([{ id: 'human', owner_type: 'human', capture_health: { updated_at: T + 9 * H } }])).toBeNull();
+    expect(pickLinkedAgentDevice([stopped, idle], T + 2 * H + 10 * M)?.id).toBe('idle');
+    // RED: on the normal cadence the idle device's report is not live, and the newer report wins.
+    expect(pickLinkedAgentDevice([stopped, { ...idle, capture_health: { updated_at: T } }], T + 2 * H + 10 * M)?.id).toBe('stopped');
+    const working = { id: 'working', owner_type: 'agent', capture_health: { updated_at: T + 2 * H - 40 * M } };
+    expect(pickLinkedAgentDevice([idle, working], T + 2 * H)?.id).toBe('working');
+    expect(pickLinkedAgentDevice([{ id: 'human', owner_type: 'human', capture_health: { updated_at: T + 9 * H } }], T)).toBeNull();
+    // A device that never reported ranks by its last PE, behind any live report.
+    expect(pickLinkedAgentDevice([{ id: 'pe', owner_type: 'agent', last_pe_at: T + 3 * H }, idle], T + 3 * H)?.id).toBe('idle');
   });
   it('passes on the check-in interval the daemon declared with its report (null for an older daemon)', () => {
     expect(linkedAgentCaptureFields({ updated_at: 5, report_interval_ms: 6 * 60 * 60 * 1000 }, null).capture_report_interval_ms).toBe(6 * 60 * 60 * 1000);
