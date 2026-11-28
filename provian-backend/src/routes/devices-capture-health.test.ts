@@ -559,6 +559,26 @@ describe('process lane silence (, parity)', () => {
 // because a doc a relay from before the ruling wrote may say process_launcher_changed for a suspicion
 // or a launcher no program matches, and a device that stopped reporting keeps that doc indefinitely.
 describe('linkedAgentCaptureFields', () => {
+  it('the card pins every window the app uses: 60 minutes for a report and for work, widened by the declared interval less 10 minutes, inclusive', () => {
+    const T = 1_800_000_000_000, H = 60 * 60 * 1000, M = 60_000;
+    const broken = (at: number) => ({ id: 'B', owner_type: 'agent', capture_health: { updated_at: at, broken: true, broken_reason: 'no_readable_sources' } });
+    const a = (fields: Record<string, unknown>) => ({ id: 'A', owner_type: 'agent', ...fields });
+    const cases: Array<[string, Record<string, unknown>, number, 'A' | 'B']> = [
+      ['work 90 min old is not fresh', a({ capture_health: { updated_at: T - 90 * M, last_capture_at_ms: T - 90 * M } }), T - 80 * M, 'B'],
+      ['a last PE 45 min old is fresh work', a({ last_pe_at: T - 45 * M }), T - 40 * M, 'A'],
+      ['a report 45 min old is live', a({ capture_health: { updated_at: T - 45 * M } }), T - 40 * M, 'A'],
+      ['a report 90 min old is not live', a({ capture_health: { updated_at: T - 90 * M } }), T - 80 * M, 'B'],
+      ['a 6-hour report is live for 6h50m, not 7h', a({ capture_health: { updated_at: T - 6 * H - 55 * M, report_interval_ms: 6 * H } }), T - 6 * H - 50 * M, 'B'],
+      ['a declared interval under 10 min never shrinks the window', a({ capture_health: { updated_at: T - 58 * M, report_interval_ms: 5 * M } }), T - 50 * M, 'A'],
+      ['a report exactly 60 min old is still live', a({ capture_health: { updated_at: T - 60 * M } }), T - 59 * M, 'A'],
+      ['work exactly 60 min old is still fresh', a({ last_pe_at: T - 60 * M }), T - 59 * M, 'A'],
+    ];
+    for (const [name, device, brokenAt, want] of cases) {
+      expect([name, pickLinkedAgentDevice([broken(brokenAt), device], T)?.id]).toEqual([name, want]);
+    }
+    // Neither working: a device that never reported ranks by its last PE.
+    expect(pickLinkedAgentDevice([{ id: 'B', owner_type: 'agent', capture_health: { updated_at: T - 5 * H } }, a({ last_pe_at: T - 3 * H })], T)?.id).toBe('A');
+  });
   it('the card shows a device the app reads as working first (a stopped device never outranks a healthy idle one), then the most recent work (an idle device never outranks a working one)', () => {
     const T = 1_800_000_000_000, H = 60 * 60 * 1000, M = 60_000;
     const idle = { id: 'idle', owner_type: 'agent', capture_health: { updated_at: T, report_interval_ms: 6 * H, last_capture_at_ms: T - 2 * H } };
